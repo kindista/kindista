@@ -100,6 +100,7 @@
   (finish-output stream)
   (sb-posix:fsync (sb-posix:file-descriptor stream)))
 
+;;; {{{ geo stuff
 (define-constant earth-radius 6372.8) ; km
 
 (defun air-distance (lat1 long1 lat2 long2)
@@ -144,6 +145,26 @@
                    (setf long (+ long 1024))))
                 (collect (+ (ash lat 10) long))))))))
 
+; }}}
+
+(defun load-tokens ()
+  (with-mutex (*make-token-lock*)
+    (setf *auth-tokens*
+          (append *auth-tokens*
+                  (with-open-file (in (s+ +db-path+ "tokens") :if-does-not-exist nil)
+                    (when in
+                      (with-standard-io-syntax
+                        (read in))))))))
+
+(defun save-tokens ()
+  (with-open-file (out (s+ +db-path+ "tokens-tmp")
+                       :direction :output
+                       :if-exists :supersede)
+    (with-standard-io-syntax
+      (prin1 *auth-tokens* out))
+    (fsync out))
+  (rename-file (s+ +db-path+ "tokens-tmp") "tokens"))
+
 (defun load-user (username)
   (with-open-file (in (s+ +db-path+ "users/" username) :if-does-not-exist nil)
     (when in
@@ -169,9 +190,14 @@
                        :direction :output
                        :if-exists :supersede)
     (with-standard-io-syntax
-      (print data out))
+      (prin1 data out))
     (fsync out))
   (rename-file (s+ +db-path+ "users/" username "-tmp") username))
+
+(defun run ()
+  (load-users)
+  (load-tokens)
+  (start *acceptor*))
 
 (defmacro json (&rest properties)
   `(progn
@@ -418,7 +444,7 @@
 
 
 (defun timestamp (time)
-  (html (:div :class "timestamp" :data-time time (str (humanize-universal-time time)))))
+  (html (:h3 :class "timestamp" :data-time time (str (humanize-universal-time time)))))
 
 (defun love-button (url)
   (html
@@ -436,21 +462,21 @@
       (:input :type "hidden" :name "next" :value next-url)
       (:input :type "submit" :value "Flag"))))
 
-(defun activity-icons (&key hearts comments)
+(defun activity-icons (&key url hearts comments)
   (html
-    (:div :class "icons"
+    (:a :class "icons" :href url
       (when hearts
         (htm
-          (:img :src "/media/icons/heart16.png") 
+          (:img :alt "love:" :src "/media/icons/heart16.png") 
           (str hearts))) 
       (when comments
         (htm
-          (:img :src "/media/icons/comment16.png") 
+          (:img :alt "comments:" :src "/media/icons/comment16.png") 
           (str comments))))))
 
 (defun activity-item (&key url content time next-url hearts comments)
   (html
-    (:div :class "item resource"
+    (:div :class "item left resource"
       (str (timestamp time))
       (str content)
       (:div :class "actions"
@@ -459,7 +485,7 @@
         (str (comment-button url))
         " &middot; "
         (str (flag-button url))
-        (str (activity-icons :hearts hearts :comments comments))))))
+        (str (activity-icons :hearts hearts :comments comments :url (s+ url "/comments")))))))
 
 (defun offer-activity-item (&key time user-name user-id offer-id next-url hearts comments text)
   (activity-item :url (s+ "/offers/" offer-id)
@@ -548,13 +574,56 @@
         "Home"
         (html
           (:div :class "profile"
-            (:div :class "wrap"
-              (:img :src "/media/oldeamon.jpg")
-              (:div :class "info"
-              (:h1 "Eamon Walker") 
-              (:p "I co-created Kindista with Benjamin. I live in Eugene. I currently get all of my needs met through gift (which includes some money), so if you like Kindista and want to support me everything you need to know is here!")) 
-                 
-           )))
+            (:img :src "/media/oldeamon.jpg") 
+            (:div :class "basics"
+              (:h1 "Eamon Walker")
+              (:p :class "city" "Eugene, OR")
+            (:form :method "GET" :action "/people/eamon/message"
+              (:input :type "submit" :value "Send a message")) 
+            (:form :method "POST" :action "/friends"
+              (:input :type "hidden" :name "add" :value "eamon")
+              (:input :type "hidden" :name "next" :value "/people/eamon")
+              (:input :type "submit" :value "Add as friend")))
+            (:p :class "bio" "Kindista co-creator. I am committed to living fully in gift, which means that I don't charge for anything. If you appreciate what I do, please support me! xxxxxx")
+
+            (:div :class "right only item people"
+             (:h3 "Mutual Friends")
+             (:ul
+               (:li (:a :href "/people/eamon" "Eamon Walker"))
+               (:li (:a :href "/people/eamon" "Eamon Walker"))
+               (:li (:a :href "/people/eamon" "Eamon Walker"))
+               (:li (:a :href "/people/eamon" "Eamon Walker"))
+               (:li (:a :href "/people/eamon/friends" "and xx more"))))
+
+            (:menu :class "bar"
+              (:h3 :class "label" "Profile Menu")
+              (:li :class "selected" "Activity")
+              (:li (:a :href "/people/eamon/resources" "Resources"))
+              (:li (:a :href "/people/eamon/testimonials" "Testimonials"))
+              (:li (:a :href "/people/eamon/blog" "Blog"))
+              (:li :class "notonly" (:a :href "/people/eamon/friends" "Mutual Friends"))) 
+
+            (:div :class "activity"
+              (str (offer-activity-item
+                :time (get-universal-time)
+                :user-name "Benjamin Crandall"
+                :user-id "ben"
+                :offer-id "12345"
+                :next-url "/home"
+                :hearts 3
+                :comments 7
+                :text "[google](http://google.com) Saxophone lessons. I am **conservatory trained** (Bachelor of Music in Jazz Saxophone Performance from the CCM at University of Cincinnati). I have been playing for over 20 years, performing professionally in a reggae band (JohnStone Reggae in Washington DC and multiple jazz ensembles (currently StoneCold Jazz in Eugene.)"))
+              (str (offer-activity-item
+                :time (get-universal-time)
+                :user-name "Benjamin Crandall"
+                :user-id "ben"
+                :offer-id "12345"
+                :next-url "/home"
+                :hearts 3
+                :comments 7
+                :text "[google](http://google.com) Saxophone lessons. I am **conservatory trained** (Bachelor of Music in Jazz Saxophone Performance from the CCM at University of Cincinnati). I have been playing for over 20 years, performing professionally in a reggae band (JohnStone Reggae in Washington DC and multiple jazz ensembles (currently StoneCold Jazz in Eugene.)")))
+            ))
+
         :selected "people"))))
 
 
