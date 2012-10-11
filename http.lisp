@@ -298,7 +298,9 @@
 
 (defun page-header (&optional extra)
   (html
-    (:div :id "header" (:img :src "/media/logo.png" :alt "Kindista")
+    (:div :id "header"
+     (:a :href "/" (:img :src "/media/logo.png" :alt "kindista"))
+     ;(:h1 "kindista")
      (when extra
        (str extra)))))
 
@@ -326,8 +328,11 @@
       (:head
         (:title (if title (str (s+ title " | Kindista")) "Kindista"))
         (:meta :name "viewport" :content "width=device-width,initial-scale=1.0,maximum-scale=1.0")
-        (:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
-        (:link :rel "stylesheet" :href "/media/style.css"))
+        ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
+        (:link :rel "stylesheet" :href "/media/style.css")
+        (str "<!--[if lt IE 9]>")
+        (:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
+        (str "<![endif]-->"))
       (:body :class class :onload "window.scrollTo(0,0);"
         (:a :name "top")
         (str body)))))
@@ -335,9 +340,7 @@
 (defun header-page (title header-extra body &key class)
   (base-page title
              (html
-               (:div :id "header" (:a :href "/" (:img :src "/media/logo.png" :alt "Kindista"))
-                (when header-extra
-                  (str header-extra)))
+               (str (page-header header-extra))
                (str body))
              :class class))
 
@@ -491,10 +494,12 @@
       (when hearts
         (htm
           (:img :alt "love:" :src "/media/icons/heart16.png") 
+          ;(:span :class "unicon" "♥ ")
           (str hearts))) 
       (when comments
         (htm
           (:img :alt "comments:" :src "/media/icons/comment16.png") 
+          ;(:span :class "unicon" " ✎ ")
           (str comments))))))
 
 (defun activity-item (&key url content time next-url hearts comments)
@@ -595,7 +600,8 @@
                   (:div :class "item"
                     (:h2 "Upcoming Events")
                     (:menu
-                      (:li "10/20 7:00PM " (:a :href "x" "West Eugene Gift Circle")))))))))
+                      (:li "10/20 7:00PM " (:a :href "x" "East Eugene Gift Circle"))       
+                      (:li "10/24 7:00PM " (:a :href "x" "West Eugene Gift Circle")))))))))
 
 (defroute "/people/<name>" (name)
   (:get

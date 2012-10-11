@@ -3,7 +3,7 @@
  -moz-box-sizing: border-box;
  -webkit-box-sizing: border-box;
  -webkit-appearance: none;
- font-family: Terminus, "Helvetica Neue", Verdana, Ubuntu, sans-serif;
+ font-family: Verdana, Terminus, "Helvetica Neue", Verdana, Ubuntu, sans-serif;
 }
 
 body {
@@ -85,6 +85,12 @@ body.landing li {
  height:46px;
  background:#eaeaea;
  /*background:#eee;*/
+}
+
+#header h1 {
+ color:#5c8a2f;
+ margin:0.15em 0.6em;
+ font-weight:bold;
 }
 
 #header > a > img {
@@ -221,7 +227,7 @@ body.landing li {
 
 #menu > table {
  width:100%;
- padding:0 0.5em;
+ margin:0 0.5em;
 }
 
 #menu table img {
@@ -341,6 +347,7 @@ body.landing li {
 }
 
 .activity .actions {
+ position:relative;
  border-top:1px solid #dfdfdf;
  margin:0 3px;
  padding-top:5px;
@@ -348,7 +355,9 @@ body.landing li {
 }
 
 .activity .icons {
- float:right;
+ position:absolute;
+ right:0;
+ top:0.5em;
  color:#5c8a2f;
  font-weight:bold;
  font-size:0.9em;
@@ -415,7 +424,8 @@ body.landing li {
 }
 
 .basics h1 {
- font-size: 1.25em;
+ font-size: 1.3em;
+ font-weight:normal;
  margin: 0.85em 0 0.25em;
 }
 
@@ -555,4 +565,10 @@ hr {
 h2 {
  font-size: 1.2em;
  margin:0;
+}
+
+.unicon {
+ font-size: 1.6em;
+ vertical-align: middle;
+ font-weight:normal;
 }
