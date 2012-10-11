@@ -1,84 +1,78 @@
- #header div {
-  display:none;
- }
+#header div {
+ display:none;
+}
 
- body {
-  margin-top:46px;
- }
+body {
+ margin-top:46px;
+}
 
- #header {
-  position:fixed;
-  top:0;
-  left:0;
-  z-index:9;
- }
+#header {
+ position:fixed;
+ top:0;
+ left:0;
+ z-index:9;
+ margin-left:0;
+}
 
- #search {
-  position:fixed;
-  top:-3px;
-  right:0;
-  width:400px;
-  padding:0 0.5em;
-  z-index:10;
- }
+#search {
+ position:fixed;
+ top:-3px;
+ right:0;
+ width:400px;
+ padding:0 0.5em;
+ z-index:10;
+}
 
- #menu {
-  display:block;
-  position:fixed;
-  left:0;
-  top:46px;
-  bottom:0;
-  padding-top: 1em;
-  margin-left:0;
-  width:16em;
-  background:#eee;
- }
+#menu {
+ display:block;
+ position:fixed;
+ left:0;
+ top:46px;
+ bottom:0;
+ padding-top: 1em;
+ margin-left:0;
+ width:16em;
+ background:#eee;
+}
 
- #menu > a {
-  display:none;
- }
+#menu > a {
+ display:none;
+}
 
- #header {
-  margin-left:0;
- }
+#full {
+ margin-left:16em;
+}
 
- #full {
-  margin-left:16em;
- }
+#full .profile {
+ margin-top: 1em;
+}
 
- #full .profile {
-  margin-top: 1em;
- }
+#body {
+ margin-left:16em;
+ position:relative;
+}
 
- #body {
-  margin-left:16em;
-  position:relative;
- }
+.profile .item.right {
+ margin:50px 8px 8px;
+}
 
- .profile .item.right {
-  margin:50px 8px 8px;
- }
+ menu.bar .notonly {
+ display:none;
+}
 
-  menu.bar .notonly {
-  display:none;
- }
+body.right #body {
+ margin-right:17.4em;
+}
 
- body.right #body {
-  margin-right:17.4em;
- }
+#right {
+ position: absolute;
+ top:0;
+ right:-17.4em;
+ width:18em;
+}
 
- #right {
-  position: absolute;
-  top:0;
-  right:-17.4em;
-  width:18em;
- }
-
- menu.bar li {
-  display:inline;
- }
-.activity .actions {
- margin-top:0;
+menu.bar li {
+ display:inline;
 }
 
 #search input {
