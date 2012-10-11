@@ -308,7 +308,7 @@
 
 (defun menu-item (title slug icon &optional selected)
   (html
-    (:li :class (when selected "selected") (:a :href (str (s+ "/" icon)) (str (icon slug)) (str title)))))
+    (:li :class (when selected "selected") (:a :href (s+ "/" icon) (str (icon slug)) (str title)))))
 
 (defun menu (items &optional selected)
   (html
@@ -329,6 +329,7 @@
         (:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
         (:link :rel "stylesheet" :href "/media/style.css"))
       (:body :class class :onload "window.scrollTo(0,0);"
+        (:a :name "top")
         (str body)))))
 
 (defun header-page (title header-extra body &key class)
@@ -340,36 +341,58 @@
                (str body))
              :class class))
 
-(defun standard-page (title body &key (selected "news"))
+(defun standard-page (title body &key (selected "news") top right)
   (header-page title
                (html
                  (:div
-                   (:label :for "show-search" (:img :src "/media/icons/search.png"))
-                   (:label :for "show-menu" (:img :src "/media/icons/menu.png"))))
+                   (:a :href "#search" (:img :alt "Search" :src "/media/icons/search.png"))  
+                   " "
+                   (:a :href "#menu" (:img :alt "Menu" :src "/media/icons/menu.png"))))
                (html
-                (:input :type "checkbox" :id "show-search")
-                (:form :action "/search" :method "POST" :id "search"
-                  (:table
-                   (:tr
-                     (:td (:input :type "text" :name "q"))
-                     (:td (:input :type "submit" :value "Search")))))
-                (:input :type "checkbox" :id "show-menu")
-                (:div :id "menu"
-                  (:table
-                    (:tr
-                      (:td :rowspan "2"
-                       (:img :src "/media/eamon.jpg"))
-                      (:td (:a :href "/people/eamon" "Eamon Walker")))
-                    (:tr
-                      (:td (:a :href "/logout" "Log out"))))
+                 (when top
+                   (htm
+                     (:div :id "full"
+                      (str top))))
+                 (:div :id "body"
+                   (when right
+                     (htm
+                       (:div :id "right"
+                        (str right))))
+                   (str body))
 
-                  (str (menu '(("Home" "news" "")
-                               ("Inbox" "inbox")
-                               ("People" "people")
-                               ("Events" "events")
-                               ("Resources" "resources"))
-                             selected)))
-                (str body))))
+                 (:form :action "/search" :method "POST" :id "search"
+                   (:table
+                    (:tr
+                      (:td (:input :type "text" :name "q"))
+                      (:td (:input :type "submit" :value "Search")))))
+
+                 (:div :id "menu"
+                   (:table
+                     (:tr
+                       (:td :rowspan "2"
+                        (:img :src "/media/eamon.jpg"))
+                       (:td (:a :href "/people/eamon" "Eamon Walker")))
+                     (:tr
+                       (:td (:a :href "/logout" "Log out"))))
+
+                   (str (menu '(("Home" "news" "")
+                                ("Inbox" "inbox")
+                                ("People" "people")
+                                ("Events" "events")
+                                ("Resources" "resources"))
+                              selected))
+
+                   (:p :id "copyright"
+                     "Kindista &copy; 2012"
+                     (:br)
+                     "Programmed in " (:a :href "http://www.gigamonkeys.com/book/introduction-why-lisp.html" "Common Lisp")) 
+
+                   (:a :href "#top"
+                       "Back to the top")
+                   )
+                 )
+               :class (when right "right")))
+
 
 ;;; routes {{{
 
@@ -516,6 +539,8 @@
         "Home"
         (html
           (:div :class "activity"
+            (:div :class "item"
+              (:h2 "Recent Activity"))
             (str (offer-activity-item
               :time (get-universal-time)
               :user-name "Benjamin Crandall"
@@ -565,7 +590,12 @@
                      of living.")))
             (:div :class "item joined"
               (:div :class "timestamp" "June 15, 2012")
-              (:a :href "/people/eamon" "Eamon Walker") " joined Kindista")))))))
+              (:a :href "/people/eamon" "Eamon Walker") " joined Kindista")))
+         :right (html
+                  (:div :class "item"
+                    (:h2 "Upcoming Events")
+                    (:menu
+                      (:li "10/20 7:00PM " (:a :href "x" "West Eugene Gift Circle")))))))))
 
 (defroute "/people/<name>" (name)
   (:get
@@ -574,35 +604,6 @@
         "Home"
         (html
           (:div :class "profile"
-            (:img :src "/media/oldeamon.jpg") 
-            (:div :class "basics"
-              (:h1 "Eamon Walker")
-              (:p :class "city" "Eugene, OR")
-            (:form :method "GET" :action "/people/eamon/message"
-              (:input :type "submit" :value "Send a message")) 
-            (:form :method "POST" :action "/friends"
-              (:input :type "hidden" :name "add" :value "eamon")
-              (:input :type "hidden" :name "next" :value "/people/eamon")
-              (:input :type "submit" :value "Add as friend")))
-            (:p :class "bio" "Kindista co-creator. I am committed to living fully in gift, which means that I don't charge for anything. If you appreciate what I do, please support me! xxxxxx")
-
-            (:div :class "right only item people"
-             (:h3 "Mutual Friends")
-             (:ul
-               (:li (:a :href "/people/eamon" "Eamon Walker"))
-               (:li (:a :href "/people/eamon" "Eamon Walker"))
-               (:li (:a :href "/people/eamon" "Eamon Walker"))
-               (:li (:a :href "/people/eamon" "Eamon Walker"))
-               (:li (:a :href "/people/eamon/friends" "and xx more"))))
-
-            (:menu :class "bar"
-              (:h3 :class "label" "Profile Menu")
-              (:li :class "selected" "Activity")
-              (:li (:a :href "/people/eamon/resources" "Resources"))
-              (:li (:a :href "/people/eamon/testimonials" "Testimonials"))
-              (:li (:a :href "/people/eamon/blog" "Blog"))
-              (:li :class "notonly" (:a :href "/people/eamon/friends" "Mutual Friends"))) 
-
             (:div :class "activity"
               (str (offer-activity-item
                 :time (get-universal-time)
@@ -623,6 +624,36 @@
                 :comments 7
                 :text "[google](http://google.com) Saxophone lessons. I am **conservatory trained** (Bachelor of Music in Jazz Saxophone Performance from the CCM at University of Cincinnati). I have been playing for over 20 years, performing professionally in a reggae band (JohnStone Reggae in Washington DC and multiple jazz ensembles (currently StoneCold Jazz in Eugene.)")))
             ))
+        :top (html
+               (:div :class "profile"
+               (:img :src "/media/oldeamon.jpg") 
+               (:div :class "basics"
+                 (:h1 "Eamon Walker")
+                 (:p :class "city" "Eugene, OR")
+               (:form :method "GET" :action "/people/eamon/message"
+                 (:input :type "submit" :value "Send a message")) 
+               (:form :method "POST" :action "/friends"
+                 (:input :type "hidden" :name "add" :value "eamon")
+                 (:input :type "hidden" :name "next" :value "/people/eamon")
+                 (:input :type "submit" :value "Add as friend")))
+               (:p :class "bio" "Kindista co-creator. I am committed to living fully in gift, which means that I don't charge for anything. If you appreciate what I do, please support me! xxxxxx")
+
+               (:menu :class "bar"
+                 (:h3 :class "label" "Profile Menu")
+                 (:li :class "selected" "Activity")
+                 (:li (:a :href "/people/eamon/resources" "Resources"))
+                 (:li (:a :href "/people/eamon/testimonials" "Testimonials"))
+                 (:li (:a :href "/people/eamon/blog" "Blog"))
+                 (:li :class "notonly" (:a :href "/people/eamon/friends" "Mutual Friends")))))
+        :right (html
+                 (:div :class "item people"
+                  (:h3 "Mutual Friends")
+                  (:ul
+                    (:li (:a :href "/people/eamon" "Eamon Walker"))
+                    (:li (:a :href "/people/eamon" "Eamon Walker"))
+                    (:li (:a :href "/people/eamon" "Eamon Walker"))
+                    (:li (:a :href "/people/eamon" "Eamon Walker"))
+                    (:li (:a :href "/people/eamon/friends" "and xx more")))))
 
         :selected "people"))))
 
