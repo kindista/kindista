@@ -193,7 +193,7 @@ body.landing li {
 @media (min-width:52em) {
  #menu {
   display:block;
-  position:fixed;
+  position:absolute;
   left:0;
   top:46px;
   bottom:0;
