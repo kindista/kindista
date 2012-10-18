@@ -13,11 +13,6 @@ body {
  width:100%;
 }
 
-
-body.landing {
- text-align:center;
-}
-
 #biglogo {
  display:block;
  width:226px;
@@ -27,21 +22,25 @@ body.landing {
 
 #login {
  width:90%;
- margin:32px auto;
- border:1px solid #a1a1a1;
- border-radius:5px;
- background:#fff;
- box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+ margin:1.5em auto 2em;
+ text-align:left;
+}
+
+#login label {
+ font-weight: bold;
+ font-size:0.85em;
+ margin: 0.65em 0;
+ display:block;
 }
 
 #login input {
- border-radius:0;
+ display:block;
  width:100%;
- border:0;
- margin:0;
+ border:1px solid #a1a1a1;
+ border-radius:5px;
+ background:#fff;
+ box-shadow: 1px 1px 1px rgba(0,0,0,0.1);
  padding:8px;
- background:none;
- box-shadow:none;
  -webkit-appearance: none;
 }
 
@@ -57,22 +56,29 @@ body.landing form > input {
  border:0;
  height: 34px;
  width:90%;
- margin: 16px auto 28px;
+ margin: 16px auto 20px;
  color:#fff;
  font-weight:600;
  box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
 }
 
-body.landing p {
+body.landing h1 {
+ font-size: 1.6em;
+ margin: 1em 15px;
+}
+
+body.landing > p {
  width:90%;
  margin:15px auto;
+ text-align: center;
 }
 
 body.landing menu {
  list-style-type:none;
+ display:block;
  margin:20px auto;
  padding:0;
- width:90%
+ text-align:center;
 }
 
 body.landing li {
@@ -571,4 +577,8 @@ h2 {
  font-size: 1.6em;
  vertical-align: middle;
  font-weight:normal;
+}
+
+.fineprint {
+ font-size: 0.8em;
 }

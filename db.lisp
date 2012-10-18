@@ -2,10 +2,11 @@
 
 (defvar *db* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
 (defvar *db-top* 0)
-(defvar *db-log*)
+(defvar *db-top-lock* (make-mutex :name "db top"))
+(defvar *db-log* nil)
 (defvar *db-log-lock* (make-mutex :name "db log"))
 
-(defvar *geo-index* (make-hash-table :test :synchronized t :size 500 :rehash-size 1.25))
+(defvar *geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *stem-index*)
 (defvar *metaphone-index*)
 (defvar *email-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
@@ -75,13 +76,17 @@
 ; }}}
 
 (defun load-tokens ()
-  (with-mutex (*make-token-lock*)
-    (setf *auth-tokens*
-          (append *auth-tokens*
-                  (with-open-file (in (s+ +db-path+ "tokens") :if-does-not-exist nil)
-                    (when in
-                      (with-standard-io-syntax
-                        (read in))))))))
+  (with-open-file (in (s+ +db-path+ "tokens") :if-does-not-exist nil)
+    (when in
+      (with-standard-io-syntax
+        (with-locked-hash-table (*auth-tokens*)
+          ;(clrhash *auth-tokens*)
+          (loop
+            (handler-case
+              (let ((item (read in)))
+                (setf (gethash (car item) *auth-tokens*) (cdr item)))
+              (end-of-file (e) (declare (ignore e)) (return)))))))))
+
 
 (defun save-tokens ()
   (with-open-file (out (s+ +db-path+ "tokens-tmp")
@@ -91,36 +96,6 @@
       (prin1 *auth-tokens* out))
     (fsync out))
   (rename-file (s+ +db-path+ "tokens-tmp") "tokens"))
-
-(defun load-user (username)
-  (with-open-file (in (s+ +db-path+ "users/" username) :if-does-not-exist nil)
-    (when in
-      (with-standard-io-syntax
-        (read in)))))
-
-(defun load-users ()
-  (setf *email-to-username* (make-hash-table :test 'equalp))
-
-  ; this could remove tmp files currently in use
-  (dolist (tmpfile (directory (s+ +db-path+ "users/*-tmp")))
-    (delete-file tmpfile))
-
-  (dolist (file (directory (s+ +db-path+ "users/*")))
-    (with-open-file (in file)
-      (with-standard-io-syntax
-        (let ((user (read in)))
-          (awhen (getf user :email)
-            (setf (gethash it *email-to-username*) (pathname-name file))))))))
-
-(defun save-user (username data)
-  (with-open-file (out (s+ +db-path+ "users/" username "-tmp")
-                       :direction :output
-                       :if-exists :supersede)
-    (with-standard-io-syntax
-      (prin1 data out))
-    (fsync out))
-  (rename-file (s+ +db-path+ "users/" username "-tmp") username))
-
 
 (defun save-db ()
   (with-mutex (*db-log-lock*)
@@ -191,6 +166,12 @@
   (with-locked-hash-table (*db*)
     (setf (gethash id *db*) data)))
 
+(defun insert-db (data)
+  (let ((id (with-mutex (*db-top-lock*) (incf *db-top*))))
+    (update-db id data)
+    (index-item id data)
+    id))
+
 (defun remove-from-db (id)
   (with-mutex (*db-log-lock*)
     (with-standard-io-syntax
@@ -202,6 +183,4 @@
 
 (defun index-item (id data)
   (case (getf data :type)
-    (:person
-      (setf (gethash (getf data :email) *email-index*) id)
-      (setf (gethash (getf data :username) *username-index*) id))))
+    (:person (index-person id data))))

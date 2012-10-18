@@ -1,5 +1,7 @@
 (in-package :kindista)
 
+(declaim (optimize (speed 0) (safety 3) (debug 3)))
+
 (setf (cl-who:html-mode) :sgml)
 
 ;;; routing and acceptor {{{
@@ -86,7 +88,7 @@
 (defvar *user* nil) ; current user
 
 (defun run ()
-  (load-users)
+  (load-db)
   (load-tokens)
   (start *acceptor*))
 
@@ -123,8 +125,8 @@
       (setf (getf user :pass) (new-password password))
       (save-user username user))))
 
-(defun password-match-p (username password)
-  (let ((crypted-password (getf (load-user username) :pass)))
+(defun password-match-p (id password)
+  (let ((crypted-password (getf (db id) :pass)))
     (if crypted-password
       (password= password crypted-password)
       nil)))
@@ -159,19 +161,19 @@
 (defun make-token (id)
   (with-mutex (*make-token-lock*)
     (do (token)
-      ((not (assoc (setf token (random-password 30)) *auth-tokens* :test #'string=))
+      ((not (gethash (setf token (random-password 30)) *auth-tokens*))
       (prog1 token
-        (setf *auth-tokens* (acons token (list id (get-universal-time)) *auth-tokens*)))))))
+        (setf (gethash token *auth-tokens*) (list id (get-universal-time))))))))
 
 (defun check-token (token)
-  (let ((value (assoc token *auth-tokens* :test #'string=)))
-    (when (and value (< (get-universal-time) (+ (caddr value) 2592000)))
-      (cadr value))))
+  (let ((value (gethash token *auth-tokens*)))
+    (when (and value (< (get-universal-time) (+ (cadr value) 2592000)))
+      (car value))))
 
 (defun delete-token-cookie ()
   (awhen (cookie-in "token")
-    (awhen (assoc it *auth-tokens* :test #'string=)
-      (setf (caddr it) 0))
+    (awhen (gethash it *auth-tokens*)
+      (setf (cadr it) 0))
     (set-cookie "token" :value ""
                 :http-only t
                 :expires 0
@@ -264,8 +266,8 @@
                    (:table
                      (:tr
                        (:td :rowspan "2"
-                        (:img :src "/media/eamon.jpg"))
-                       (:td (:a :href "/people/eamon" "Eamon Walker")))
+                        (:img :src (format nil "/media/avatar/~A.jpg" *user*)))
+                       (:td (:a :href (s+ "/people/" (username-or-id)) (str (getf (db *user*) :name)))))
                      (:tr
                        (:td (:a :href "/logout" "Log out"))))
 
@@ -279,7 +281,7 @@
                    (:p :id "copyright"
                      "Kindista &copy; 2012"
                      (:br)
-                     "Programmed in " (:a :href "http://www.gigamonkeys.com/book/introduction-why-lisp.html" "Common Lisp")) 
+                     "Programmed in Common Lisp")
 
                    (:a :href "#top"
                        "Back to the top")
@@ -304,13 +306,15 @@
                      (:div :id "login"
                        (awhen (get-parameter "next")
                          (htm (:input :type "hidden" :name "next" :value it)))
-                       (:input :type "text" :name "username" :placeholder "Username or email")
-                       (:input :type "password" :name "password" :placeholder "Password"))
+                       (:label :for "username" "Username or email")
+                       (:input :type "text" :name "username")
+                       (:label :for "password" "Password")
+                       (:input :type "password" :name "password"))
                      (:input :type "submit" :value "Log in"))
-                   (:p (:a :href "/password/reset" "Forgot your password?"))
+                   (:p (:a :href "/reset" "Forgot your password?"))
                    (:p "New to Kindista?"
                     (:br)
-                    (:a :href "/account/create" "Sign up for an account"))
+                    (:a :href "/signup" "Create an account"))
                    (:menu :id "footer"
                      (:li (:a :href "/help" "Help"))
                      (:li (:a :href "/about" "About"))
@@ -321,27 +325,113 @@
                    " ")
                  :class "landing")))))
 
+(defun signup-page (&key error name email password)
+  (header-page
+    "Sign up"
+    nil
+    (html
+      (:h1 "Create an account")
+      (when error
+        (htm (:p :class "error" (str error))))
+      (:form :method "POST" :action "/signup"
+        (:div :id "login"
+          (:label :for "name" "Full name")
+          (:input :type "text" :name "name" :value name)
+          (:label :for "email" "Email")
+          (:input :type "email" :name "email" :value email)
+          (:label :for "name" "Password")
+          (:input :type "password" :name "password" :value password))
+        (:input :type "submit" :value "Sign up"))
+
+      (:p "Have an account? " (:a :href "/" "Sign in"))
+
+      (:p :class "fineprint" "By creating an account, you are agreeing to our "
+        (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
+
+      (:menu :id "footer"
+        (:li (:a :href "/help" "Help"))
+        (:li (:a :href "/about" "About"))
+        (:li (:a :href "/blog" "Blog"))
+       )
+      (:br)
+      (:br)
+      " ")
+    :class "landing"))
+
+(defroute "/signup" ()
+  (:get
+    (with-user
+      (if *user*
+        (see-other "/home")
+        (signup-page))))
+  (:post
+    (with-user
+      (if *user*
+        (see-other "/home")
+        (let ((userid (gethash (post-parameter "email") *email-index*)))
+          (cond
+            ((password-match-p userid (post-parameter "password"))
+
+             (set-cookie "token" :value (make-token username)
+                         :http-only t
+                         :expires (+ (get-universal-time) 2592000)
+                         :secure nil)
+             (see-other "/home"))
+
+            (userid
+             (see-other (s+ "/forgot?email=" (post-parameter "email"))))
+
+            ((not (and (< 0 (length (post-parameter "name")))
+                       (< 0 (length (post-parameter "email")))
+                       (< 0 (length (post-parameter "password")))))
+
+             (signup-page :error "All fields are required"
+                          :name (post-parameter "name")
+                          :email (post-parameter "email")
+                          :password (post-parameter "password")))
+
+            ((> 7 (length (post-parameter "password")))
+
+             (signup-page :error "Please use a strong password"
+                          :name (post-parameter "name")
+                          :email (post-parameter "email")))
+
+            ((not (find #\Space (post-parameter "name")))
+
+             (signup-page :error "Please use your full name"
+                          :name (post-parameter "name")
+                          :email (post-parameter "email")
+                          :password (post-parameter "password")))
+
+            (t
+             (let ((id (create-person :name (post-parameter "name")
+                                      :email (post-parameter "email")
+                                      :password (post-parameter "password"))))
+               (set-cookie "token"
+                           :value (make-token id)
+                           :http-only t
+                           :expires (+ (get-universal-time) 2592000)
+                           :secure nil))
+             (see-other "/home"))))))))
+
 (defroute "/logout" ()
   (:get
-    (setf (return-code*) +http-see-other+)
-    (setf (header-out :location) "/")
     (delete-token-cookie)
-    ""))
+    (see-other "/")))
 
 (defroute "/login" ()
   (:get
-    (setf (return-code*) +http-see-other+)
-    (setf (header-out :location) "/")
-    "")
+    (see-other "/"))
   (:post
-    (let ((username (post-parameter "username"))
-          (next (post-parameter "next"))
-          )
-      (when (find #\@ username :test #'equal)
-        (setf username (gethash username *email-to-username*)))
+    (let ((user (post-parameter "username"))
+          (next (post-parameter "next")))
+      (if (find #\@ user :test #'equal)
+        (setf user (gethash user *email-index*))
+        (setf user (gethash user *username-index*)))
       (cond
-        ((password-match-p username (post-parameter "password"))
-         (set-cookie "token" :value (make-token username)
+        ((password-match-p user (post-parameter "password"))
+         (set-cookie "token"
+                     :value (make-token user)
                      :http-only t
                      :expires (+ (get-universal-time) 2592000)
                      :secure nil)
@@ -554,5 +644,12 @@
 
         :selected "people"))))
 
+(defroute "/testimonials/new" ()
+  (:get
+    (require-user
+      (standard-page
+        "New Testimonial"
+        (html "foo")
+        :selected "people"))))
 
 ;;; }}}

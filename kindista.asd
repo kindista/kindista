@@ -22,6 +22,7 @@
                :double-metaphone)
   :components ((:file "package")
                (:file "macros")
+               (:file "db")
                (:file "time")
                (:file "settings")
                (:file "http")))
