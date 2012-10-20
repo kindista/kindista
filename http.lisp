@@ -86,6 +86,7 @@
 ;; special variables
 
 (defvar *user* nil) ; current user
+(defvar *userid* nil) ; current user
 
 (defun run ()
   (load-db)
@@ -147,12 +148,13 @@
   "")
 
 (defmacro with-user (&body body)
-  `(let ((*user* (or *user* (check-token-cookie))))
+  `(let* ((*userid* (or *userid* (check-token-cookie)))
+          (*user* (or *user* (db *userid*))))
      ,@body))
 
 (defmacro require-user (&body body)
   `(with-user
-     (if *user*
+     (if *userid*
        (progn ,@body)
        (authorization-required))))
 
@@ -266,16 +268,18 @@
                    (:table
                      (:tr
                        (:td :rowspan "2"
-                        (:img :src (format nil "/media/avatar/~A.jpg" *user*)))
-                       (:td (:a :href (s+ "/people/" (username-or-id)) (str (getf (db *user*) :name)))))
+                        (:img :src (format nil "/media/avatar/~A.jpg" *userid*)))
+                       (:td (:a :href (s+ "/people/" (username-or-id)) (str (getf *user* :name)))))
                      (:tr
                        (:td (:a :href "/logout" "Log out"))))
 
                    (str (menu '(("Home" "news" "")
-                                ("Inbox" "inbox")
+                                ("Messages" "messages")
                                 ("People" "people")
+                                ("Offers" "offers")
+                                ("Requests" "requests")
                                 ("Events" "events")
-                                ("Resources" "resources"))
+                               )
                               selected))
 
                    (:p :id "copyright"
@@ -469,54 +473,6 @@
       (:input :type "hidden" :name "next" :value next-url)
       (:input :type "submit" :value "Flag"))))
 
-(defun activity-icons (&key url hearts comments)
-  (html
-    (:a :class "icons" :href url
-      (when hearts
-        (htm
-          (:img :alt "love:" :src "/media/icons/heart16.png") 
-          ;(:span :class "unicon" "♥ ")
-          (str hearts))) 
-      (when comments
-        (htm
-          (:img :alt "comments:" :src "/media/icons/comment16.png") 
-          ;(:span :class "unicon" " ✎ ")
-          (str comments))))))
-
-(defun activity-item (&key url content time next-url hearts comments)
-  (html
-    (:div :class "item left resource"
-      (str (timestamp time))
-      (str content)
-      (:div :class "actions"
-        (str (love-button url))
-        " &middot; "
-        (str (comment-button url))
-        " &middot; "
-        (str (flag-button url))
-        (str (activity-icons :hearts hearts :comments comments :url (s+ url "/comments")))))))
-
-(defun offer-activity-item (&key time user-name user-id offer-id next-url hearts comments text)
-  (activity-item :url (s+ "/offers/" offer-id)
-                 :time time
-                 :next-url next-url
-                 :hearts hearts
-                 :comments comments
-                 :content (html
-                            (:a :href (s+ "/people/" user-id) (str user-name))
-                            " posted a new "
-                            (:a :href (s+ "/people/" user-id "/offers#" offer-id) "offer")
-                            (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
-
-(defun joined-activity-item (&key time user-name user-id hearts comments next-url)
-  (activity-item :url (s+ "/people/" user-id)
-                 :time time
-                 :next-url next-url
-                 :hearts hearts
-                 :comments comments
-                 :content (html
-                            (:a :href (s+ "/people/" user-id) (str user-name))
-                            " joined Kindista")))
 
 (defroute "/home" ()
   (:get
@@ -526,63 +482,88 @@
         (html
           (:div :class "activity"
             (:div :class "item"
-              (:h2 "Recent Activity"))
-            (str (offer-activity-item
-              :time (get-universal-time)
-              :user-name "Benjamin Crandall"
-              :user-id "ben"
-              :offer-id "12345"
-              :next-url "/home"
-              :hearts 3
-              :comments 7
-              :text "[google](http://google.com) Saxophone lessons. I am **conservatory trained** (Bachelor of Music in Jazz Saxophone Performance from the CCM at University of Cincinnati). I have been playing for over 20 years, performing professionally in a reggae band (JohnStone Reggae in Washington DC and multiple jazz ensembles (currently StoneCold Jazz in Eugene.)"))
-            (:div :class "item resource"
-              (:div :class "timestamp" "Today at 4:40PM")
-              (:a :href "/people/ben" "Benjamin Crandall") " posted a new "
-              (:a :href "/people/ben/offers#12345" "offer")
-              (:blockquote
-                (:p "Saxophone lessons. I am conservatory trained (Bachelor of Music in Jazz Saxophone Performance from the CCM at University of Cincinnati. I have been playing for over 20 years, performing profession)ally in a reggae band (JohnStone Reggae in Washington DC and multiple )jazz ensembles (currently StoneCold Jazz in Eugene.)"))
-              (:div :class "actions"
-                (:form :method "POST" :action "/offers/12345"
-                  (:input :type "submit" :name "like" :value "Love"))
-                " &middot; "
-                (:form :method "GET" :action "/offers/12345/comments"
-                  (:input :type "submit" :value "Discuss"))
-                " &middot; "
-                (:form :method "GET" :action "/offers/12345/flag"
-                  (:input :type "hidden" :name "next" :value "/home")
-                  (:input :type "submit" :value "Flag"))
-                (:div :class "icons"
-                  (:img :src "/media/icons/comment16.png")
-                  "5"
-                  (:img :src "/media/icons/heart16.png")
-                  "5"
-                 )
+              (:menu :class "horiz"
+                (:strong "compose")
+                (:li (:a :href "/testimonials/compose" "testimonial"))
+                (:li (:a :href "/offers/compose" "offer"))
+                (:li (:a :href "/requests/compose" "request"))
+                (:li (:a :href "/events/compose" "event"))
+                (:li (:a :href "/announcements/compose" "announcement"))
                 )
               )
-            (:div :class "item testimonial"
-              (:div :class "timestamp" "Today at 4:30PM")
-              (:a :href "/people/eamon" "Eamon Walker") " wrote about "
-              (:a :href "/people/ben" "Benjamin Crandall")
-              (:blockquote
-                (:p "Benjamin and I have been friends since last summer, when I first attended
-                     one of his Taiji classes. I had been interested in taking Taiji classes
-                     for a while and was intrigued that Benjamin's classes were being offered
-                     as a gift&mdash;with no up-front or specified fee.")
-                (:p "Kindista is the product of our friendship. Benjamin has believed so strongly
-                     in Kindista that he has supported me in building it with him. Since the
-                     beginning of 2012 he has provided me with housing, and since the Fall of 
-                     2011 has provided me regularly with enough money to cover my basic costs
-                     of living.")))
-            (:div :class "item joined"
-              (:div :class "timestamp" "June 15, 2012")
-              (:a :href "/people/eamon" "Eamon Walker") " joined Kindista")))
+            (str (activity-items))))
          :right (html
                   (:div :class "item"
                     (:h2 "Upcoming Events")
                     (:menu
-                      (:li "10/20 7:00PM " (:a :href "x" "East Eugene Gift Circle"))       
+                      (:li "10/20 7:00PM " (:a :href "x" "East Eugene Gift Circle"))
                       (:li "10/24 7:00PM " (:a :href "x" "West Eugene Gift Circle")))))))))
+
+(defroute "/messages" ()
+  (:get
+    (require-user
+      (standard-page
+        "Messages"
+        (html
+          (:h1 "Messages")
+          (:h2 "Ideas")
+          (:ul
+            (:li "separate pages for message-only inbox and notification-only inbox?")
+            ))
+        :selected "messages"))))
+
+(defroute "/people" ()
+  (:get
+    (require-user
+      (standard-page
+        "People"
+        (html
+          (:h1 "People")
+          (:h2 "Ideas")
+          (:ul
+            (:li "suggested friends")
+            (:li "nearby people, weight given to people w/ mutual friends")
+            ))
+        :selected "people"))))
+
+(defroute "/offers" ()
+  (:get
+    (require-user
+      (standard-page
+        "Offers"
+        (html
+          (:h1 "Offers")
+          (:h2 "Ideas")
+          (:ul
+            ))
+        :selected "offers"))))
+
+(defroute "/requests" ()
+  (:get
+    (require-user
+      (standard-page
+        "Requests"
+        (html
+          (:h1 "Requests")
+          (:h2 "Ideas")
+          (:ul
+            ))
+        :selected "requests"))))
+
+(defroute "/events" ()
+  (:get
+    (require-user
+      (standard-page
+        "Events"
+        (html
+          (:h1 "Events")
+          (:h2 "Ideas")
+          (:ul
+            (:li "create a new event")
+            (:li "upcoming events")
+            (:li "events friends are going to")
+            ))
+        :selected "events"))))
 
 (defroute "/people/<name>" (name)
   (:get
@@ -644,12 +625,139 @@
 
         :selected "people"))))
 
-(defroute "/testimonials/new" ()
+(defun parse-subject-list (subject-list &optional remove)
+  (let ((subjects ()))
+    (dolist (subject (split #\, subject-list))
+      (unless (equalp subject remove)
+        (acond
+          ((scan +number-scanner+ subject)
+           (setf subject (parse-integer subject))
+           (awhen (db subject)
+             (when (or (eq (getf it :type) :person)
+                       (eq (getf it :type) :project))
+               (setf subjects (cons (list subject (getf it :name)) subjects)))))
+          ((gethash subject *username-index*)
+           (setf subjects (cons (list it (getf (db it) :name)) subjects)))
+          ((gethash subject *email-index*)
+           (setf subjects (cons (list it (getf (db it) :name)) subjects)))
+          ((scan-to-strings +email-scanner+ subject)
+           (setf subjects (cons (list it it) subjects))))))
+
+    (remove-duplicates (nreverse subjects) :key #'car)))
+
+(defun testimonial-compose (&key subjects text next)
+  (if subjects
+    (standard-page
+     "Compose a Testimonial"
+     (html
+       (:div :class "item"
+        (:h2 "Compose a Testimonial"))
+       (:div :class "item"
+        (:form :method "post" :action "/testimonials/compose"
+          (:label "About:")
+          (:menu :class "recipients"
+           (unless subjects
+             (htm (:li (:em "nobody yet"))))
+           (dolist (subject subjects)
+             (htm
+               (:li (str (second subject)) (:button :type "submit" :name "remove" :value (first subject) " × ")))))
+          (when subjects
+            (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" (mapcar #'car subjects)))))
+          (when next
+            (htm (:input :type "hidden" :name "next" :value next)))
+
+          (:p (:button :type "submit" :class "add" :name "add" :value "new" "+ Add a person or project"))
+          (:textarea :rows "8" :name "text" (str text))
+          (:p (:input :type "submit" :class "submit" :name "create" :value "Create")
+          (:input :type "submit" :class "cancel" :name "cancel" :value "Cancel")))))
+     :selected "people")
+    (testimonial-add-subject :text text :next next)))
+
+(defun friends-alphabetically (&optional (user *user*))
+  (sort (iter (for friend in (getf user :friends))
+              (collect (list friend (getf (db friend) :name))))
+        #'string-lessp :key #'cadr))
+
+(defun testimonial-add-subject (&key subjects text next results)
+  (standard-page
+    "Add a subject"
+    (html
+      (:div :class "item"
+       (:h2 "Who would you like to add?"))
+      (:div :class "item"
+       (:form :method "post" :action "/testimonials/compose"
+         (:p "Search for a person or project")
+         (:input :type "text" :name "name")
+         (:input :type "submit" :class "submit" :name "search" :value "Search")
+
+         (:menu
+           (if results
+             (htm (:li "results..."))
+             (dolist (friend (friends-alphabetically *user*))
+               (htm (:li (:button :type "submit" :value (car friend) :name "add" (str (cadr friend))))))))
+
+         (:input :type "submit" :class "cancel" :value "Back")
+
+         (when subjects
+           (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" (mapcar #'car subjects)))))
+         (when next
+           (htm (:input :type "hidden" :name "next" :value next)))
+
+         (when text
+           (htm (:input :type "hidden" :name "text" :value text)))
+
+         )))
+    :selected "people"))
+
+(defroute "/testimonials/compose" ()
+  (:get
+    (require-user
+      (testimonial-compose :subjects (parse-subject-list (get-parameter "subject")))))
+  (:post
+    (require-user
+         (print (post-parameter "add")) (terpri)
+      (cond
+        ((post-parameter "cancel")
+         (see-other (or (post-parameter "next") "/home")))
+        ((post-parameter "create")
+         
+         )
+        ((post-parameter "add")
+         (if (string= (post-parameter "add") "new")
+           (testimonial-add-subject :subjects (parse-subject-list (post-parameter "subject"))
+                                    :text (post-parameter "text")
+                                    :next (post-parameter "next"))
+           (testimonial-compose
+             :text (post-parameter "text")
+             :subjects (parse-subject-list
+                         (format nil "~A,~A" (post-parameter "add") (post-parameter "subject"))))))
+
+        ((post-parameter "search")
+         
+         )
+        (t
+         (testimonial-compose
+           :text (post-parameter "text")
+           :subjects (parse-subject-list
+                       (post-parameter "subject")
+                       (post-parameter "remove"))))))))
+
+(defroute "/testimonials/compose/select" ()
   (:get
     (require-user
       (standard-page
-        "New Testimonial"
-        (html "foo")
+        "Select a Subject"
+        (html
+          (:div :class "item"
+           (:h2 "Who are you writing about?"))
+          (:div :class "item"
+           (:p "Search for a person or project")
+           (:form :method "post" :action "/testimonials/compose/select"
+            (:input :type "hidden" :name "subject")
+            (:textarea :rows "8" :name "text")
+            (:input :type "submit" :class "submit" :name "create" :value "Create")
+            (:input :type "submit" :class "cancel" :name "cancel" :value "Cancel")
+            )))
         :selected "people"))))
 
 ;;; }}}

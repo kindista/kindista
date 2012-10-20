@@ -10,9 +10,18 @@
 (defun index-person (id data)
   (setf (gethash (getf data :email) *email-index*) id)
   (setf (gethash (getf data :username) *username-index*) id)
+  (when (getf data :loves)
+    (dolist (item (getf data :loves))
+      (setf (gethash item *love-index*)
+            (cons id (gethash item *love-index*)))))
+  (when (and (getf data :lat) (getf data :long) (getf data :created))
+    (geo-index-append (getf data :lat) (getf data :long) id (getf data :created)))
   ; TODO create activity for creation time
   )
 
-(defun username-or-id ()
-  (or (getf (db *user*) :username)
-      (write-to-string *user*)))
+(defun username-or-id (&optional (id *userid*))
+  (or (getf (db id) :username)
+      (write-to-string id)))
+
+(defun loves (id)
+  (gethash id *love-index*))

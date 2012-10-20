@@ -7,6 +7,8 @@
 (defvar *db-log-lock* (make-mutex :name "db log"))
 
 (defvar *geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *love-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *comment-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *stem-index*)
 (defvar *metaphone-index*)
 (defvar *email-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
@@ -31,6 +33,9 @@
   "The great circle distance between two cities."
   (* 0.621371
      (apply #'dist-rad (mapcar #'deg->rad (list lat1 long1 lat2 long2)))))
+
+(defun person-distance (one &optional (two *user*))
+  (air-distance (getf one :lat) (getf one :long) (getf two :lat) (getf two :long)))
 
 (defun dist-rad (lat1 long1 lat2 long2)
   (let* ((hlat (haversine (- lat2 lat1)))
@@ -69,9 +74,20 @@
                    (setf long (+ long 1024))))
                 (collect (+ (ash lat 10) long))))))))
 
-(defun query-geo-index (index geocode distance)
-  (iter (for code in (geocode-neighbors geocode distance))
-        (appending (gethash code index))))
+(defun geo-index-query (lat long distance &key (index *geo-index*) type)
+  (let ((results (iter (for code in (geocode-neighbors (geocode lat long) distance))
+                       (appending (gethash code index)))))
+    (if type
+      (iter (for item in results)
+            (when (eql type (getf (db (fourth item)) :type))
+              (collect item)))
+      results)))
+
+(defun geo-index-append (lat long id created &key (index *geo-index*))
+  (let ((geocode (geocode lat long)))
+    (setf (gethash geocode index)
+          (cons (list created lat long id)
+                (gethash geocode index)))))
 
 ; }}}
 
@@ -181,6 +197,17 @@
   (with-locked-hash-table (*db*)
     (remhash id *db*)))
 
+(defun clear-indexes ()
+  (dolist (index (list
+                   *geo-index*
+                   *love-index*
+                   *comment-index*
+                   *username-index*
+                   *email-index*))
+    (clrhash index)))
+
 (defun index-item (id data)
   (case (getf data :type)
+    (:comment (index-comment id data))
+    (:offer (index-offer id data))
     (:person (index-person id data))))

@@ -11,6 +11,7 @@ body {
  margin:0;
  background:#f2f2f2;
  width:100%;
+ font-size: 0.84em;
 }
 
 #biglogo {
@@ -292,7 +293,8 @@ body.landing li {
 
 .item menu {
  list-style-type:none;
- margin:0.75em 0 0;
+ /*margin:0.75em 0 0;*/
+ margin:0;
  padding:0;
 }
 
@@ -573,6 +575,11 @@ h2 {
  margin:0;
 }
 
+h3 {
+ font-size: 1.1em;
+ margin:0;
+}
+
 .unicon {
  font-size: 1.6em;
  vertical-align: middle;
@@ -581,4 +588,19 @@ h2 {
 
 .fineprint {
  font-size: 0.8em;
+}
+
+menu.horiz h3 {
+ display: inline;
+}
+
+menu.horiz li {
+ display: inline-block;
+ margin-left:1em;
+}
+
+textarea {
+ border:1px solid #999;
+ border-radius:3px;
+ padding:0.25em;
 }
