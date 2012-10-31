@@ -3,15 +3,13 @@
  -moz-box-sizing: border-box;
  -webkit-box-sizing: border-box;
  -webkit-appearance: none;
- font-family: Verdana, Terminus, "Helvetica Neue", Verdana, Ubuntu, sans-serif;
+ font-family: "Helvetica Neue", Verdana, Ubuntu, sans-serif;
 }
 
 body {
  padding:0;
  margin:0;
  background:#f2f2f2;
- width:100%;
- font-size: 0.84em;
 }
 
 #biglogo {
@@ -25,6 +23,27 @@ body {
  width:90%;
  margin:1.5em auto 2em;
  text-align:left;
+}
+
+#about {
+ text-align: center;
+ width:90%;
+ margin:2em auto;
+ font-style:italic;
+}
+
+#about .big {
+ font-size:1.45em;
+}
+
+#about h2 {
+ font-family: georgia,serif;
+ font-size: 2.25em;
+ font-weight: normal;
+}
+
+#about p, #about p a {
+ font-family: georgia,serif;
 }
 
 #login label {
@@ -49,19 +68,49 @@ body {
  border-bottom:1px solid #a1a1a1;
 }
 
-body.landing form > input {
+#login input[type=submit] {
  display:block;
  -webkit-appearance: none;
  background:#849a7d;
  border-radius:5px;
  border:0;
  height: 34px;
- width:90%;
  margin: 16px auto 20px;
  color:#fff;
  font-weight:600;
  box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
 }
+
+@media (min-width:40em) {
+ #biglogo {
+  margin:2em 0 2em 2em;
+  float:left;
+ }
+
+ body {
+  font-size: 0.85em;
+ }
+
+ #login {
+  background:#fafafa;
+  padding:1em;
+  width:20em;
+  margin:2em;
+  border-radius:3px;
+  float:right;
+ }
+ #about {
+  clear:left;
+  text-align: left;
+  margin:2em;
+  max-width:40em;
+ }
+
+ #about .big {
+  font-size:1.85em;
+ }
+}
+
 
 body.landing h1 {
  font-size: 1.6em;
@@ -74,22 +123,8 @@ body.landing > p {
  text-align: center;
 }
 
-body.landing menu {
- list-style-type:none;
- display:block;
- margin:20px auto;
- padding:0;
- text-align:center;
-}
-
-body.landing li {
- display:inline;
- margin:0 20px;
-}
-
 #header {
- width:100%;
- height:46px;
+ height:3em;
  background:#eaeaea;
  /*background:#eee;*/
 }
@@ -101,9 +136,10 @@ body.landing li {
 }
 
 #header > a > img {
- width:135px;
- height:26px;
- margin: 10px 0 0 8px;
+ /*width:135px;
+ height:26px;*/
+ height:1.75em;
+ margin: 0.65em;
 }
 
 #header div {
@@ -113,47 +149,41 @@ body.landing li {
  right:0;
 }
 
-@media (min-width:52em) {
+@media (min-width:47em) {
  #header div {
   display:none;
  }
 }
 
 #header div img {
- margin:8px 8px 8px 2px;
- width:30px;
- height:30px;
+ margin:0.5em 0.6em 0.5em 0.2em;
+ width:2em;
+ height:2em;
 }
 
 #search {
  display:block;
- padding:0.5em;
- margin-top:6px;
+ padding:1em 0.5em;
+ background:#eee;
+}
+
+#body {
+ margin-top: 0.6em;
 }
 
 @media (min-width:45em) {
- body {
-  margin-top:55px;
- }
-
- #header {
-  position:fixed;
-  top:0;
-  left:0;
-  z-index:9;
- }
-
  #search {
-  position:fixed;
-  top:-1px;
-  right:38px;
-  width:400px;
-  padding:0 0.5em;
+  position:absolute;
+  top:0;
+  right:3.5em;
+  width:30em;
+  padding:0;
   z-index:10;
+  background:none;
  }
 }
 
-@media (min-width:52em) {
+@media (min-width:47em) {
  #search {
   right:0;
  }
@@ -164,10 +194,10 @@ body.landing li {
 }
 
 #search input {
- padding:6px 8px;
+ padding:0.5em;
  border:0/*1px solid #aaa*/;
  border-radius:3px;
- height:32px;
+ font-size: 1em;
  background:#fafafa;
 }
 
@@ -179,7 +209,7 @@ body.landing li {
 }
 
 #menu {
- background:#f2f2f2;
+ background:#eee;
 }
 
 #copyright {
@@ -197,12 +227,23 @@ body.landing li {
  background:#ddd;
 }
 
-@media (min-width:52em) {
+@media (min-width:47em) {
  #menu {
   display:block;
   position:absolute;
   left:0;
-  top:46px;
+  top:3em;
+  padding-top: 1em;
+  margin-left:0;
+  width:16em;
+  background:#eee;
+ }
+
+ body:not(.landing) > a:first-child {
+  display:block;
+  position:fixed;
+  left:0;
+  top:3em;
   bottom:0;
   padding-top: 1em;
   margin-left:0;
@@ -223,7 +264,7 @@ body.landing li {
  }
 
  #full .profile {
-  margin-top: 4.5em;
+  margin-top: 1.5em;
  }
 
  #body {
@@ -233,7 +274,6 @@ body.landing li {
 }
 
 #menu > table {
- width:100%;
  margin:0 0.5em;
 }
 
@@ -252,12 +292,12 @@ body.landing li {
 
 #menu menu {
  margin:0;
- padding:10px 0 0 0;
+ padding:0.8em 0 0 0;
  list-style-type:none;
 }
 
 #menu li {
- padding:6px 12px;
+ padding:0.5em 1em;
  font-size: 1em;
  font-weight: bold;
 }
@@ -267,12 +307,10 @@ body.landing li {
 }
 
 #menu li img {
- margin:0 10px 0 0;
+ width:1.25em;
+ height:1.25em;
+ margin:0 0.625em 0 0;
  vertical-align:middle;
-}
-
-#body {
- margin-top: 0.6em;
 }
 
 .activity {
@@ -288,6 +326,10 @@ body.landing li {
 }
 
 .item h3 {
+ margin:1.5em 0 0.5em;
+}
+
+.item h3:first-child {
  margin:0 0 0.5em;
 }
 
@@ -329,14 +371,14 @@ body.landing li {
  }
 }
 
-.activity blockquote {
+.item blockquote {
  position:relative;
  margin:12px 24px;
  padding:0;
  font-size:0.95em;
 }
 
-.activity blockquote:before {
+.item blockquote:before {
  content:"“";
  font-size:2em;
  position:absolute;
@@ -345,7 +387,7 @@ body.landing li {
  color:#ddd;
 }
 
-.activity blockquote:after {
+.item blockquote:after {
  content:"”";
  font-size:2em;
  position:absolute;
@@ -354,7 +396,7 @@ body.landing li {
  color:#ddd;
 }
 
-.activity .actions {
+.item .actions {
  position:relative;
  border-top:1px solid #dfdfdf;
  margin:0 3px;
@@ -362,7 +404,7 @@ body.landing li {
  color:#aaa;
 }
 
-.activity .icons {
+.item .icons {
  position:absolute;
  right:0;
  top:0.5em;
@@ -371,7 +413,7 @@ body.landing li {
  font-size:0.9em;
 }
 
-.activity .icons img {
+.item .icons img {
  width:16px;
  height:16px;
  vertical-align:middle;
@@ -382,7 +424,8 @@ body.landing li {
  display:inline;
 }
 
-.actions > form input {
+.actions > form input, button.text {
+ cursor:pointer;
  margin:0;
  padding:0;
  border:0;
@@ -390,6 +433,10 @@ body.landing li {
  color:#5c8a2f;
  font-size:0.9em;
  font-weight:bold;
+}
+
+button.text.large {
+ font-size:1.1em;
 }
 
 .basics > form input {
@@ -403,7 +450,7 @@ body.landing li {
  font-weight:bold;
 }
 
-.activity .timestamp {
+.item .timestamp {
  color:#666;
  font-style:italic;
  font-size:0.8em;
@@ -411,7 +458,7 @@ body.landing li {
  margin: 0 0 0.5em;
 }
 
-.activity a {
+.item a {
  font-weight: bold;
 }
 
@@ -490,7 +537,7 @@ body.landing li {
 
 }
 
-@media (min-width:28em) and (max-width:48em) {
+@media (min-width:28em) and (max-width:47em) {
  .profile img {
   width:150px;
   height:150px;
@@ -553,6 +600,7 @@ menu.bar li a {
   text-align:center;
  }
 }
+
 
 input[type=submit] {
  cursor:pointer;

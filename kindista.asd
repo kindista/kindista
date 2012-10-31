@@ -4,31 +4,32 @@
   :serial t
   :depends-on (:alexandria
                :anaphora
-               :bordeaux-threads
-               :ironclad
                :cl-gd
-               :cl-json
+               :cl-markdown
                :cl-ppcre
                :cl-smtp
                :cl-who
-               :cl-markdown
+               :css-lite
+               :double-metaphone
                :drakma
                :flexi-streams
-               :stem
                :hunchentoot
-               :levenshtein
+               :ironclad
                :iterate
-               :css-lite
-               :double-metaphone)
+               :levenshtein
+               :stem)
   :components ((:file "package")
-               (:file "macros")
+               (:file "helpers")
                (:file "scanners")
                (:file "db")
+               (:file "http")
                (:file "people")
                (:file "activity")
+               (:file "timeline")
+               (:file "testimonials")
                (:file "resources")
                (:file "comments")
                (:file "time")
                (:file "settings")
-               (:file "http")))
+               (:file "routes")))
 

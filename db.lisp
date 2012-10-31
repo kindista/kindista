@@ -9,8 +9,9 @@
 (defvar *geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *love-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *comment-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *testimonial-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *stem-index*)
-(defvar *metaphone-index*)
+(defvar *metaphone-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 (defvar *email-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 (defvar *username-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 
@@ -75,19 +76,67 @@
                 (collect (+ (ash lat 10) long))))))))
 
 (defun geo-index-query (lat long distance &key (index *geo-index*) type)
-  (let ((results (iter (for code in (geocode-neighbors (geocode lat long) distance))
-                       (appending (gethash code index)))))
+  (let ((results (delete-duplicates
+                   (iter (for code in (geocode-neighbors (geocode lat long) distance))
+                         (appending (gethash code index)))
+                   :key #'fourth)))
     (if type
       (iter (for item in results)
             (when (eql type (getf (db (fourth item)) :type))
               (collect item)))
       results)))
 
-(defun geo-index-append (lat long id created &key (index *geo-index*))
+(defun geo-index-insert (lat long id created &key (index *geo-index*))
   (let ((geocode (geocode lat long)))
-    (setf (gethash geocode index)
-          (cons (list created lat long id)
-                (gethash geocode index)))))
+    (with-locked-hash-table (index)
+      (setf (gethash geocode index)
+            (cons (list created lat long id)
+                  (gethash geocode index))))))
+
+; }}}
+
+; {{{ metaphone
+
+(defun simple-cartesian-product (set list)
+  (loop for elm in set
+        nconc (loop for set in list
+                    collect (cons elm set))))
+
+(defun cartesian-product (list-of-sets)
+  (reduce #'simple-cartesian-product list-of-sets
+          :from-end t
+          :initial-value '(())))
+
+(defun name-to-metaphone-codes (name)
+  (iter (for word in (split " " name))
+        (collect (multiple-value-list (double-metaphone word)))))
+
+(defun metaphone-index-insert (index name id)
+  (with-locked-hash-table (index)
+    (iter (for code in (delete-duplicates
+                         (iter (for word in (split " " name))
+                               (nunioning
+                                 (iter (for i from 1 to (length word))
+                                       (nunioning
+                                         (flatten
+                                           (name-to-metaphone-codes (subseq word 0 i)))
+                                         test #'string=))
+                                 test #'string=))
+                         :test #'string=))
+
+          (unless (string= code "")
+            (let ((list (gethash code index)))
+              (unless (member id list)
+                (setf (gethash code index) (cons id list))))))))
+
+(defun metaphone-index-query (index name)
+  (when (< 0 (length name))
+    (delete-duplicates
+      (iter (for codes in (cartesian-product (name-to-metaphone-codes name)))
+            (reducing (iter (for code in codes)
+                            (unless (string= code "")
+                              (nconcing (gethash code index))))
+                      by #'intersection)))))
 
 ; }}}
 
@@ -202,6 +251,7 @@
                    *geo-index*
                    *love-index*
                    *comment-index*
+                   *metaphone-index*
                    *username-index*
                    *email-index*))
     (clrhash index)))
@@ -209,5 +259,12 @@
 (defun index-item (id data)
   (case (getf data :type)
     (:comment (index-comment id data))
+    (:testimonial (index-testimonial id data))
     (:offer (index-offer id data))
     (:person (index-person id data))))
+
+(defun friends-alphabetically (&optional (user *user*))
+  (sort (iter (for friend in (getf user :friends))
+              (collect (list friend (getf (db friend) :name))))
+        #'string-lessp :key #'cadr))
+

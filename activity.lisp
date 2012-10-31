@@ -2,6 +2,28 @@
 
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
 
+(defun timestamp (time)
+  (html (:h3 :class "timestamp" :data-time time (str (humanize-universal-time time)))))
+
+(defun love-button (url &optional next-url)
+  (html
+    (:form :method "POST" :action url
+      (when next-url
+        (htm (:input :type "hidden" :name "next" :value next-url)))
+      (:input :type "submit" :name "love" :value "Love"))))
+
+(defun comment-button (url)
+  (html
+    (:form :method "GET" :action url
+      (:input :type "submit" :value "Discuss"))))
+
+(defun flag-button (url &optional next-url)
+  (html
+    (:form :method "GET" :action (s+ url "/flag")
+      (:input :type "hidden" :name "next" :value next-url)
+      (:input :type "submit" :value "Flag"))))
+
+
 (defun activity-icons (&key url hearts comments)
   (html
     (:a :class "icons" :href url
@@ -22,12 +44,16 @@
       (str (timestamp time))
       (str content)
       (:div :class "actions"
-        (str (love-button url))
+        (str (love-button url next-url))
         " &middot; "
         (str (comment-button url))
         " &middot; "
         (str (flag-button url))
-        (str (activity-icons :hearts hearts :comments comments :url (s+ url "/comments")))))))
+        (str (activity-icons :hearts hearts :comments comments :url url))))))
+
+(defun person-link (id)
+  (html
+    (:a :href (format nil "/people/~A" id) (str (getf (db id) :name)))))
 
 (defun offer-activity-item (&key time user-name user-id offer-id next-url hearts comments text)
   (activity-item :url (s+ "/offers/" offer-id)
@@ -39,6 +65,22 @@
                             (:a :href (s+ "/people/" user-id) (str user-name))
                             " posted a new "
                             (:a :href (s+ "/people/" user-id "/offers#" offer-id) "offer")
+                            (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
+
+(defun testimonial-activity-item (&key time id next-url text)
+  (activity-item :url (strcat "/testimonials/" id)
+                 :time time
+                 :next-url next-url
+                 :hearts (length (loves id))
+                 :comments (length (comments id))
+                 :content (html
+                            (str (person-link (getf (db id) :author)))
+                            " wrote a "
+                            (:a :href (strcat "/testimonials/" id) "testimonial")
+                            " about "
+                            (fmt "~{~A~^, ~}"
+                                 (iter (for subject in (getf (db id) :subjects))
+                                       (collect (person-link subject))))
                             (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
 
 (defun joined-activity-item (&key time user-name user-id)
@@ -54,6 +96,10 @@
     (html
       (dolist (item activity)
         (case (getf (db (fourth item)) :type)
+          (:testimonial (str (testimonial-activity-item :time (first item)
+                                                        :id (fourth item)
+                                                        :next-url next-url
+                                                        :text (getf (db (fourth item)) :text))))
           (:person (str (joined-activity-item :time (first item)
                                               :user-id (username-or-id (fourth item))
                                               :user-name (getf (db (fourth item)) :name))))
@@ -66,8 +112,4 @@
                                         :next-url next-url
                                         :hearts (length (loves (fourth item)))
                                         :comments (length (comments (fourth item)))
-                                        :text (getf (db (fourth item)) :text)))))
-          )
-        )
-      
-      )))
+                                        :text (getf (db (fourth item)) :text))))))))))
