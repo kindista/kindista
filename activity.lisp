@@ -5,12 +5,14 @@
 (defun timestamp (time)
   (html (:h3 :class "timestamp" :data-time time (str (humanize-universal-time time)))))
 
-(defun love-button (url &optional next-url)
+(defun love-button (id url &optional next-url)
   (html
     (:form :method "POST" :action url
       (when next-url
         (htm (:input :type "hidden" :name "next" :value next-url)))
-      (:input :type "submit" :name "love" :value "Love"))))
+      (if (member *userid* (gethash id *love-index*))
+        (htm (:input :type "submit" :name "unlove" :value "Loved"))
+        (htm (:input :type "submit" :name "love" :value "Love"))))))
 
 (defun comment-button (url)
   (html
@@ -38,13 +40,13 @@
           ;(:span :class "unicon" " ✎ ")
           (str comments))))))
 
-(defun activity-item (&key url content time next-url hearts comments)
+(defun activity-item (&key id url content time next-url hearts comments)
   (html
     (:div :class "item"
       (str (timestamp time))
       (str content)
       (:div :class "actions"
-        (str (love-button url next-url))
+        (str (love-button id url next-url))
         " &middot; "
         (str (comment-button url))
         " &middot; "
@@ -56,7 +58,8 @@
     (:a :href (format nil "/people/~A" id) (str (getf (db id) :name)))))
 
 (defun offer-activity-item (&key time user-name user-id offer-id next-url hearts comments text)
-  (activity-item :url (s+ "/offers/" offer-id)
+  (activity-item :id offer-id
+                 :url (s+ "/offers/" offer-id)
                  :time time
                  :next-url next-url
                  :hearts hearts
@@ -68,7 +71,8 @@
                             (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
 
 (defun testimonial-activity-item (&key time id next-url text)
-  (activity-item :url (strcat "/testimonials/" id)
+  (activity-item :id id
+                 :url (strcat "/testimonials/" id)
                  :time time
                  :next-url next-url
                  :hearts (length (loves id))

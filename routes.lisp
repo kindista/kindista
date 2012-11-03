@@ -5,12 +5,15 @@
     (with-user
       (if *user*
         (see-other "/home")
-        (base-page nil
+        (base-page "Welcome"
                  (html
                    (:img :id "biglogo" :src "/media/biglogo.png")
                    (:form :method "POST" :action "/login" :id "login"
                      (awhen (get-parameter "retry")
-                       (htm (:p :class "error" "The username or password was incorrect.")))
+                       (htm (:p :class "error" "The email/username or password was incorrect.")
+                            (unless (string= it "")
+                                (htm (:p "Would you like to "
+                                         (:a :href (s+ "/signup?email=" it) "create an account") "?")))))
                      (awhen (get-parameter "next")
                        (htm (:input :type "hidden" :name "next" :value it)))
                      (:label :for "username" "Username or email")
@@ -33,40 +36,39 @@
                       (:a :href "/about" "About") " &middot; "
                       (:a :href "/blog" "Blog")
                       " &middot; Programmed in Common Lisp"))
-                 :class "landing")))))
+                 :class "landing login")))))
 
 (defun signup-page (&key error name email password)
   (header-page
     "Sign up"
     nil
     (html
-      (:h1 "Create an account")
-      (when error
-        (htm (:p :class "error" (str error))))
-      (:form :method "POST" :action "/signup"
-        (:div :id "login"
-          (:label :for "name" "Full name")
-          (:input :type "text" :name "name" :value name)
-          (:label :for "email" "Email")
-          (:input :type "email" :name "email" :value email)
-          (:label :for "name" "Password")
-          (:input :type "password" :name "password" :value password))
-        (:input :type "submit" :value "Sign up"))
+      (:form :method "POST" :action "/signup" :id "signup"
+        (:h2 "Create an account")
+        (when error
+          (htm (:p :class "error" (str error))))
+        (:label :for "name" "Full name")
+        (:input :type "text" :name "name" :value name)
+        (:label :for "email" "Email")
+        (:input :type "email" :name "email" :value (or email (get-parameter "email")))
+        (:label :for "name" "Password")
+        (:input :type "password" :name "password" :value password)
+        (:input :type "submit" :value "Sign up")
 
       (:p "Have an account? " (:a :href "/" "Sign in"))
 
       (:p :class "fineprint" "By creating an account, you are agreeing to our "
-        (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
+        (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))) 
 
-      (:menu :id "footer"
-        (:li (:a :href "/help" "Help"))
-        (:li (:a :href "/about" "About"))
-        (:li (:a :href "/blog" "Blog"))
-       )
+      (:p "Kindista &copy; 2012 &middot; "
+          (:a :href "/help" "Help") " &middot; "
+          (:a :href "/about" "About") " &middot; "
+          (:a :href "/blog" "Blog")
+          " &middot; Programmed in Common Lisp")
       (:br)
       (:br)
       " ")
-    :class "landing"))
+    :class "landing signup"))
 
 (defroute "/signup" ()
   (:get
@@ -151,6 +153,13 @@
                                         next
                                         "/home"))
          "")
+        ((scan +email-scanner+ (post-parameter "username"))
+         (setf (return-code*) +http-see-other+)
+         (setf (header-out :location) (if (and (< 0 (length next))
+                                               (equal #\/ (elt next 0)))
+                                        (s+ "/?retry=" (post-parameter "username") "&next=" (url-encode next))
+                                        (s+ "/?retry=" (post-parameter "username"))))
+         "")
         (t
          (setf (return-code*) +http-see-other+)
          (setf (header-out :location) (if (and (< 0 (length next))
@@ -162,28 +171,88 @@
 (defroute "/home" ()
   (:get
     (require-user
-      (standard-page
-        "Home"
-        (html
-          (:div :class "activity"
-            (:div :class "item"
-              (:menu :class "horiz"
-                (:strong "create")
-                (:li (:a :href "/testimonials/compose" "testimonial"))
-                (:li (:a :href "/offers/compose" "offer"))
-                (:li (:a :href "/requests/compose" "request"))
-                (:li (:a :href "/events/compose" "event"))
-                (:li (:a :href "/announcements/compose" "announcement"))
-                )
-              )
-            (str (activity-items))))
-        :selected "news"
-        :right (html
-                 (:div :class "item"
-                   (:h2 "Upcoming Events")
-                   (:menu
-                     (:li "10/20 7:00PM " (:a :href "x" "East Eugene Gift Circle"))
-                     (:li "10/24 7:00PM " (:a :href "x" "West Eugene Gift Circle")))))))))
+      (cond
+        ((getf *user* :location)
+         (standard-page
+           "Home"
+           (html
+             (:div :class "activity"
+               (:div :class "item"
+                 (:menu :class "horiz"
+                   (:strong "create")
+                   (:li (:a :href "/testimonials/compose" "testimonial"))
+                   (:li (:a :href "/offers/compose" "offer"))
+                   (:li (:a :href "/requests/compose" "request"))
+                   (:li (:a :href "/events/compose" "event"))
+                   (:li (:a :href "/announcements/compose" "announcement"))
+                   )
+                 )
+               (str (activity-items))))
+           :selected "home"
+           :right (html
+                    (:div :class "item"
+                      (:h2 "Upcoming Events")
+                      (:menu
+                        (:li "10/20 7:00PM " (:a :href "x" "East Eugene Gift Circle"))
+                        (:li "10/24 7:00PM " (:a :href "x" "West Eugene Gift Circle")))))))
+        ((and (getf *user* :lat)
+              (getf *user* :long))
+
+         (standard-page
+           "Welcome"
+           (html
+             (:div :class "item"
+               (:div :class "setup"
+                 (:h2 "Confirm your location")
+                 (:p "We will never share your exact location with anyone else.
+                      If you would like to know more about how we use the information you share with us,
+                      please read our " (:a :href "/privacy" "privacy policy") ".")
+                 (str (static-google-map :size "280x150" :zoom 12 :lat (getf *user* :lat) :long (getf *user* :long)))
+                 (:p
+                   (:small
+                     "Enter a full street address and click \"Next\". We'll show you a map to confirm the location."))
+                 (:form :method "post" :action "/settings"
+                   (:input :type "hidden" :name "next" :value "/home")
+                   (:input :type "text" :name "address" :placeholder "1600 Pennsylvania Avenue NW, Washington, DC")
+                   (:input :type "submit" :value "Next")))))
+           :selected "home"))
+        (t
+         (standard-page
+           "Welcome"
+           (html
+             (:div :class "item"
+               (:div :class "setup"
+                 (:h2 "Welcome to Kindista!")
+                 (:p "Kindista is a social network for " (:strong "building and supporting real community") ".
+                      We use your location to help you find " (:strong "local people, resources, and events") ".
+                      To get started, we need to know where you call home.")
+                 (:p "We will never share your exact location with anyone else.
+                      If you would like to know more about how we use the information you share with us,
+                      please read our " (:a :href "/privacy" "privacy policy") ".")
+                 (:h2 "Where do you call home?")
+                 (:p 
+                   (:small
+                     "Enter a full street address and click \"Next\". We'll show you a map to confirm the location."))
+                 (:form :method "post" :action "/settings"
+                   (:input :type "hidden" :name "next" :value "/home")
+                   (:input :type "text" :name "address" :placeholder "1600 Pennsylvania Avenue NW, Washington, DC")
+                   (:input :type "submit" :value "Next")))))
+           :selected "home"))))))
+
+(defroute "/settings" ()
+  (:post
+    (require-user
+      (cond
+        ((post-parameter "address")
+         (multiple-value-bind (lat long address city state country)
+             (geocode-address (post-parameter "address"))
+           (declare (ignore city state country))
+           (modify-db *userid* :lat lat :long long :address address)
+           (see-other (or (post-parameter "next") "/home"))))
+        (t
+         (flash "Sorry, couldn't make sense of that request to update your settings.")
+         (see-other "/home"))))))
+
 
 (defroute "/messages" ()
   (:get

@@ -10,13 +10,14 @@ body {
  position:fixed;
  top:0;
  left:0;
+ right:0;
  z-index:9;
  margin-left:0;
 }
 
 #search {
  position:fixed;
- top:-3px;
+ top:3px;
  right:0;
  width:400px;
  padding:0 0.5em;

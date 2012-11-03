@@ -141,6 +141,7 @@
 ; }}}
 
 (defun load-tokens ()
+  (declare (optimize (speed 0) (safety 3) (debug 3)))
   (with-open-file (in (s+ +db-path+ "tokens") :if-does-not-exist nil)
     (when in
       (with-standard-io-syntax
@@ -158,7 +159,10 @@
                        :direction :output
                        :if-exists :supersede)
     (with-standard-io-syntax
-      (prin1 *auth-tokens* out))
+      (with-locked-hash-table (*auth-tokens*)
+        (iter (for (key value) in-hashtable *auth-tokens*)
+              (prin1 (cons key value) out)
+              (fresh-line out))))
     (fsync out))
   (rename-file (s+ +db-path+ "tokens-tmp") "tokens"))
 
@@ -171,11 +175,9 @@
         (prin1 (get-universal-time) out)
         (fresh-line out)
         (with-locked-hash-table (*db*)
-          (maphash #'(lambda (key value)
-                       (prin1 (cons key value) out)
-                       (fresh-line out)
-                       )
-                   *db*)))
+          (iter (for (key value) in-hashtable *db*)
+                (prin1 (cons key value) out)
+                (fresh-line out))))
       (fsync out))
     (rename-file (s+ +db-path+ "db-tmp") "db")
     (when *db-log*
@@ -230,6 +232,15 @@
     (fsync *db-log*))
   (with-locked-hash-table (*db*)
     (setf (gethash id *db*) data)))
+
+(defun modify-db (id &rest items)
+  (with-locked-hash-table (*db*)
+    (let ((data (db id)))
+      (do
+        ((item items (cddr item)))
+        ((not (and (car item) (symbolp (car item)))))
+        (setf (getf data (car item)) (cadr item)))
+      (update-db id data))))
 
 (defun insert-db (data)
   (let ((id (with-mutex (*db-top-lock*) (incf *db-top*))))

@@ -3,7 +3,11 @@
  -moz-box-sizing: border-box;
  -webkit-box-sizing: border-box;
  -webkit-appearance: none;
- font-family: "Helvetica Neue", Verdana, Ubuntu, sans-serif;
+ font-family: Verdana, "Helvetica Neue", Verdana, Ubuntu, sans-serif;
+}
+
+html {
+ overflow-y: scroll;
 }
 
 body {
@@ -12,17 +16,66 @@ body {
  background:#f2f2f2;
 }
 
+input[type=submit] {
+ cursor:pointer;
+}
+
+img {
+ border:0;
+}
+
+img.map {
+ max-width:100%;
+}
+
+li {
+ list-style-type: none;
+}
+
+hr {
+ display: none;
+}
+
+h2 {
+ font-size: 1.2em;
+ margin:0;
+}
+
+h3 {
+ font-size: 1.1em;
+ margin:0;
+}
+
+.unicon {
+ font-size: 1.6em;
+ vertical-align: middle;
+ font-weight:normal;
+}
+
+.fineprint {
+ font-size: 0.8em;
+}
+
+menu.horiz h3 {
+ display: inline;
+}
+
+menu.horiz li {
+ display: inline-block;
+ margin-left:1em;
+}
+
+textarea {
+ border:1px solid #999;
+ border-radius:3px;
+ padding:0.25em;
+}
+
 #biglogo {
  display:block;
  width:226px;
  height:43px;
  margin:31px auto 33px;
-}
-
-#login {
- width:90%;
- margin:1.5em auto 2em;
- text-align:left;
 }
 
 #about {
@@ -46,14 +99,20 @@ body {
  font-family: georgia,serif;
 }
 
-#login label {
+.landing form {
+ width:90%;
+ margin:1.5em auto 2em;
+ text-align:left;
+}
+
+.landing form label {
  font-weight: bold;
  font-size:0.85em;
  margin: 0.65em 0;
  display:block;
 }
 
-#login input {
+.landing form input {
  display:block;
  width:100%;
  border:1px solid #a1a1a1;
@@ -64,11 +123,11 @@ body {
  -webkit-appearance: none;
 }
 
-#login input:first-child {
+.landing form input:first-child {
  border-bottom:1px solid #a1a1a1;
 }
 
-#login input[type=submit] {
+.landing form input[type=submit] {
  display:block;
  -webkit-appearance: none;
  background:#849a7d;
@@ -81,6 +140,18 @@ body {
  box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
 }
 
+.signup h2 {
+ margin-bottom:1em;
+}
+
+#flash {
+ clear:left;
+ background:#f7dada;
+ margin:0.6em;
+ padding:0.6em;
+ border-radius:0.3em;
+}
+
 @media (min-width:40em) {
  #biglogo {
   margin:2em 0 2em 2em;
@@ -91,13 +162,20 @@ body {
   font-size: 0.85em;
  }
 
- #login {
+ .login form {
   background:#fafafa;
   padding:1em;
   width:20em;
   margin:2em;
   border-radius:3px;
   float:right;
+ }
+ .signup form {
+  background:#fafafa;
+  padding:1em;
+  width:20em;
+  margin:2em auto;
+  border-radius:3px;
  }
  #about {
   clear:left;
@@ -111,12 +189,6 @@ body {
  }
 }
 
-
-body.landing h1 {
- font-size: 1.6em;
- margin: 1em 15px;
-}
-
 body.landing > p {
  width:90%;
  margin:15px auto;
@@ -126,7 +198,7 @@ body.landing > p {
 #header {
  height:3em;
  background:#eaeaea;
- /*background:#eee;*/
+ background:#eee;
 }
 
 #header h1 {
@@ -261,6 +333,10 @@ body.landing > p {
 
  #full {
   margin-left:16em;
+ }
+
+ #flash {
+  margin-left:16.6em;
  }
 
  #full .profile {
@@ -601,54 +677,15 @@ menu.bar li a {
  }
 }
 
-
-input[type=submit] {
- cursor:pointer;
+.setup {
+ max-width: 40em;
 }
 
-img {
- border:0;
+.setup p {
+ line-height:1.5em;
 }
 
-li {
- list-style-type: none;
-}
-
-hr {
- display: none;
-}
-
-h2 {
- font-size: 1.2em;
- margin:0;
-}
-
-h3 {
- font-size: 1.1em;
- margin:0;
-}
-
-.unicon {
- font-size: 1.6em;
- vertical-align: middle;
- font-weight:normal;
-}
-
-.fineprint {
- font-size: 0.8em;
-}
-
-menu.horiz h3 {
- display: inline;
-}
-
-menu.horiz li {
- display: inline-block;
- margin-left:1em;
-}
-
-textarea {
- border:1px solid #999;
- border-radius:3px;
- padding:0.25em;
+.setup input[type=text] {
+ width:35em;
+ max-width: 100%;
 }

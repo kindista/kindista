@@ -29,7 +29,9 @@
                (:file "testimonials")
                (:file "resources")
                (:file "comments")
+               (:file "love")
                (:file "time")
+               (:file "geocode")
                (:file "settings")
                (:file "routes")))
 
