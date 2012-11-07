@@ -217,6 +217,12 @@
                                (cadr item)
                                (or (caddr item) (cadr item))
                                (string= selected (cadr item))))))))
+(defun welcome-bar (content)
+  (html
+    (:div :class "welcome item"
+      (:form :method "post" :action "/settings"
+        (:button :class "corner" :type "submit" :name "help" :value "0" "[ hide help text ]"))
+      (str content))))
 
 (defun base-page (title body &key class)
   (html

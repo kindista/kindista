@@ -8,7 +8,7 @@
                   :alexandria
                   :anaphora-basic
                   :hunchentoot
-                  :cl-json
+                  :json
                   :cl-ppcre
                   :iterate)
             (:import-from :drakma :http-request)

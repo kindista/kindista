@@ -8,7 +8,11 @@
 
 (defvar *geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *love-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *followers-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *activity-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *comment-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *request-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *offer-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *testimonial-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *stem-index*)
 (defvar *metaphone-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
@@ -232,15 +236,6 @@
     (fsync *db-log*))
   (with-locked-hash-table (*db*)
     (setf (gethash id *db*) data)))
-
-(defun modify-db (id &rest items)
-  (with-locked-hash-table (*db*)
-    (let ((data (db id)))
-      (do
-        ((item items (cddr item)))
-        ((not (and (car item) (symbolp (car item)))))
-        (setf (getf data (car item)) (cadr item)))
-      (update-db id data))))
 
 (defun insert-db (data)
   (let ((id (with-mutex (*db-top-lock*) (incf *db-top*))))

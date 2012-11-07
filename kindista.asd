@@ -5,6 +5,7 @@
   :depends-on (:alexandria
                :anaphora
                :cl-gd
+               :cl-json
                :cl-markdown
                :cl-ppcre
                :cl-smtp
@@ -27,6 +28,7 @@
                (:file "activity")
                (:file "timeline")
                (:file "testimonials")
+               (:file "requests")
                (:file "resources")
                (:file "comments")
                (:file "love")

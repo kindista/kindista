@@ -17,7 +17,7 @@
                      (awhen (get-parameter "next")
                        (htm (:input :type "hidden" :name "next" :value it)))
                      (:label :for "username" "Username or email")
-                     (:input :type "text" :name "username")
+                     (:input :type "text" :name "username" :value (get-parameter "retry"))
                      (:label :for "password" "Password")
                      (:input :type "password" :name "password")
                      (:input :type "submit" :value "Log in")
@@ -189,12 +189,31 @@
                  )
                (str (activity-items))))
            :selected "home"
+           :top (when (getf *user* :help)
+                  (welcome-bar
+                    (html
+                      (:h2 "Getting started")
+                      (:p "We're so happy to have you join us! Here are some things you can do to get started:")
+                      (:ul
+                        (unless (getf *user* :avatar)
+                          (htm (:li (:a :href "/avatar" "Upload a picture") " so that other people can recognize you.")))
+                        (:li (:a :href "/testimonials/compose" "Write a testimonial") " about someone who has affected your life.")
+                        (:li (:a :href "/connections/new" "Make a connection") " to say that you know someone.")
+                        (:li (:a :href "/requests/compose" "Post a request") " to the community for something you need.")
+                        )
+                      (:p "On this page you can see what's going on around you and with people you have made
+                           a connection with. Use the menu "
+                          (:span :class "menu-button" " (click the button on the header) ")
+                          (:span :class "menu-showing" " on the left ")
+                          " to explore the site."))))
            :right (html
                     (:div :class "item"
                       (:h2 "Upcoming Events")
                       (:menu
-                        (:li "10/20 7:00PM " (:a :href "x" "East Eugene Gift Circle"))
-                        (:li "10/24 7:00PM " (:a :href "x" "West Eugene Gift Circle")))))))
+                        (:li (:strong "Thursday, November 23"))
+                        (:li "7:00PM " (:a :href "x" "East Eugene Gift Circle"))
+                        (:li (:strong "Thursday, November 30"))
+                        (:li "7:00PM " (:a :href "x" "West Eugene Gift Circle")))))))
         ((and (getf *user* :lat)
               (getf *user* :long))
 
@@ -203,18 +222,16 @@
            (html
              (:div :class "item"
                (:div :class "setup"
-                 (:h2 "Confirm your location")
+                 (:h2 "Verify your location")
                  (:p "We will never share your exact location with anyone else.
                       If you would like to know more about how we use the information you share with us,
                       please read our " (:a :href "/privacy" "privacy policy") ".")
                  (str (static-google-map :size "280x150" :zoom 12 :lat (getf *user* :lat) :long (getf *user* :long)))
-                 (:p
-                   (:small
-                     "Enter a full street address and click \"Next\". We'll show you a map to confirm the location."))
+
                  (:form :method "post" :action "/settings"
-                   (:input :type "hidden" :name "next" :value "/home")
-                   (:input :type "text" :name "address" :placeholder "1600 Pennsylvania Avenue NW, Washington, DC")
-                   (:input :type "submit" :value "Next")))))
+                   (:h3 "Is this location correct?")
+                   (:button :class "yes" :type "submit" :name "confirm-location" :value "1" "Yes, this is correct")
+                   (:button :class "no" :type "submit" :name "reset-location" :value "1" "No, go back")))))
            :selected "home"))
         (t
          (standard-page
@@ -232,7 +249,7 @@
                  (:h2 "Where do you call home?")
                  (:p 
                    (:small
-                     "Enter a full street address and click \"Next\". We'll show you a map to confirm the location."))
+                     "Enter a street address and click \"Next\". We'll show you a map to confirm the location."))
                  (:form :method "post" :action "/settings"
                    (:input :type "hidden" :name "next" :value "/home")
                    (:input :type "text" :name "address" :placeholder "1600 Pennsylvania Avenue NW, Washington, DC")
@@ -249,6 +266,20 @@
            (declare (ignore city state country))
            (modify-db *userid* :lat lat :long long :address address)
            (see-other (or (post-parameter "next") "/home"))))
+        ((post-parameter "reset-location")
+         (modify-db *userid* :lat nil :long nil :address nil :location nil)
+         (see-other (or (post-parameter "next") "/home")))
+        ((equalp (post-parameter "help") "0")
+         (modify-db *userid* :help nil)
+         (see-other (or (referer) "/home")))
+        ((equalp (post-parameter "help") "1")
+         (modify-db *userid* :help t)
+         (see-other (or (referer) "/home")))
+        ((and (post-parameter "confirm-location")
+              (getf *user* :lat)
+              (getf *user* :long))
+         (modify-db *userid* :location t)
+         (see-other (or (post-parameter "next") "/home")))
         (t
          (flash "Sorry, couldn't make sense of that request to update your settings.")
          (see-other "/home"))))))
@@ -320,62 +351,3 @@
             ))
         :selected "events"))))
 
-(defroute "/people/<name>" (name)
-  (:get
-    (require-user
-      (standard-page
-        "Home"
-        (html
-          (:div :class "profile"
-            (:div :class "activity"
-              (str (offer-activity-item
-                :time (get-universal-time)
-                :user-name "Benjamin Crandall"
-                :user-id "ben"
-                :offer-id "12345"
-                :next-url "/home"
-                :hearts 3
-                :comments 7
-                :text "[google](http://google.com) Saxophone lessons. I am **conservatory trained** (Bachelor of Music in Jazz Saxophone Performance from the CCM at University of Cincinnati). I have been playing for over 20 years, performing professionally in a reggae band (JohnStone Reggae in Washington DC and multiple jazz ensembles (currently StoneCold Jazz in Eugene.)"))
-              (str (offer-activity-item
-                :time (get-universal-time)
-                :user-name "Benjamin Crandall"
-                :user-id "ben"
-                :offer-id "12345"
-                :next-url "/home"
-                :hearts 3
-                :comments 7
-                :text "[google](http://google.com) Saxophone lessons. I am **conservatory trained** (Bachelor of Music in Jazz Saxophone Performance from the CCM at University of Cincinnati). I have been playing for over 20 years, performing professionally in a reggae band (JohnStone Reggae in Washington DC and multiple jazz ensembles (currently StoneCold Jazz in Eugene.)")))
-            ))
-        :top (html
-               (:div :class "profile"
-               (:img :src "/media/oldeamon.jpg") 
-               (:div :class "basics"
-                 (:h1 "Eamon Walker")
-                 (:p :class "city" "Eugene, OR")
-               (:form :method "GET" :action "/people/eamon/message"
-                 (:input :type "submit" :value "Send a message")) 
-               (:form :method "POST" :action "/friends"
-                 (:input :type "hidden" :name "add" :value "eamon")
-                 (:input :type "hidden" :name "next" :value "/people/eamon")
-                 (:input :type "submit" :value "Add as friend")))
-               (:p :class "bio" "Kindista co-creator. I am committed to living fully in gift, which means that I don't charge for anything. If you appreciate what I do, please support me! xxxxxx")
-
-               (:menu :class "bar"
-                 (:h3 :class "label" "Profile Menu")
-                 (:li :class "selected" "Activity")
-                 (:li (:a :href "/people/eamon/resources" "Resources"))
-                 (:li (:a :href "/people/eamon/testimonials" "Testimonials"))
-                 (:li (:a :href "/people/eamon/blog" "Blog"))
-                 (:li :class "notonly" (:a :href "/people/eamon/friends" "Mutual Friends")))))
-        :right (html
-                 (:div :class "item people"
-                  (:h3 "Mutual Friends")
-                  (:ul
-                    (:li (:a :href "/people/eamon" "Eamon Walker"))
-                    (:li (:a :href "/people/eamon" "Eamon Walker"))
-                    (:li (:a :href "/people/eamon" "Eamon Walker"))
-                    (:li (:a :href "/people/eamon" "Eamon Walker"))
-                    (:li (:a :href "/people/eamon/friends" "and xx more")))))
-
-        :selected "people"))))

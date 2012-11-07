@@ -42,7 +42,7 @@
 
 (defun activity-item (&key id url content time next-url hearts comments)
   (html
-    (:div :class "item"
+    (:div :class "item" :id id
       (str (timestamp time))
       (str content)
       (:div :class "actions"
@@ -66,8 +66,21 @@
                  :comments comments
                  :content (html
                             (:a :href (s+ "/people/" user-id) (str user-name))
-                            " posted a new "
+                            " posted a "
                             (:a :href (s+ "/people/" user-id "/offers#" offer-id) "offer")
+                            (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
+
+(defun request-activity-item (&key time user-name user-id request-id next-url hearts comments text)
+  (activity-item :id request-id
+                 :url (s+ "/request/" request-id)
+                 :time time
+                 :next-url next-url
+                 :hearts hearts
+                 :comments comments
+                 :content (html
+                            (:a :href (s+ "/people/" user-id) (str user-name))
+                            " posted a "
+                            (:a :href (s+ "/people/" user-id "/requests#" request-id) "request")
                             (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
 
 (defun testimonial-activity-item (&key time id next-url text)
@@ -116,4 +129,14 @@
                                         :next-url next-url
                                         :hearts (length (loves (fourth item)))
                                         :comments (length (comments (fourth item)))
-                                        :text (getf (db (fourth item)) :text))))))))))
+                                        :text (getf (db (fourth item)) :text)))))
+          (:request
+            (let ((userid (getf (db (fourth item)) :by)))
+              (str (request-activity-item :time (first item)
+                                          :request-id (write-to-string (fourth item))
+                                          :user-name (getf (db userid) :name)
+                                          :user-id (username-or-id userid)
+                                          :next-url next-url
+                                          :hearts (length (loves (fourth item)))
+                                          :comments (length (comments (fourth item)))
+                                          :text (getf (db (fourth item)) :text))))))))))
