@@ -30,3 +30,5 @@
     `(with-html-output-to-string (,sym)
        ,@body)))
 
+(defmacro asetf (place value)
+  `(anaphora::symbolic setf ,place ,value))

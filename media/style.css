@@ -20,6 +20,10 @@ input[type=submit] {
  cursor:pointer;
 }
 
+a:hover {
+ text-decoration:underline;
+}
+
 img {
  border:0;
 }
@@ -713,7 +717,7 @@ menu.bar li a {
 .welcome {
  font-size: 0.9em;
  margin-top:0.6em;
- background:#ecda7e;
+ background:#f7f5b7;
 }
 
 .welcome button {
@@ -760,3 +764,18 @@ button.no {
  font-weight:bold;
 }
 
+.categories h2 {
+ margin:0.6em;
+}
+
+.category {
+ vertical-align:top;
+ margin:0 0.6em 1em 0.6em;
+}
+
+@media (min-width:40em) {
+ .category {
+  display:inline-block;
+  width:15em;
+ }
+}

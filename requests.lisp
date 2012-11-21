@@ -77,11 +77,103 @@
       (aif (db id)
         (cond
           ((and (post-parameter "love")
-                (member (getf it :type) '(:testimonial :offer :request)))
+                (member (getf it :type) '(:gratitude :offer :request)))
            (love id)
            (see-other (or (post-parameter "next") (referer))))
           ((and (post-parameter "unlove")
-                (member (getf it :type) '(:testimonial :offer :request)))
+                (member (getf it :type) '(:gratitude :offer :request)))
            (unlove id)
            (see-other (or (post-parameter "next") (referer)))))
         (standard-page "Not found" "not found")))))
+
+(defroute "/requests" ()
+  (:get
+    (require-user
+      (standard-page
+        "Requests"
+        (html
+          (:div :class "categories"
+            (:h2 "browse categories")
+            (:div :class "category"
+              (:h3 "activities")
+              (:a :href "/categories/classes" "classes") ", "
+              (:a :href "/categories/groups" "groups") ", "
+              (:a :href "/categories/recreation" "recreation") ", "
+              (:a :href "/categories/fitness" "fitness") ", "
+              (:a :href "/categories/performances" "performances"))
+            (:div :class "category"
+              (:h3 "caregiving")
+              (:a :href "/" "children") ", "
+              (:a :href "/" "elders") ", "
+              (:a :href "/" "medical") ", "
+              (:a :href "/" "alternative") ", "
+              (:a :href "/" "counseling") ", "
+              (:a :href "/" "physical therapy"))
+            (:div :class "category"
+              (:h3 "animals")
+              (:a :href "/" "pet sitting") ", "
+              (:a :href "/" "health") ", "
+              (:a :href "/" "food") ", "
+              (:a :href "/" "supplies") ", "
+              (:a :href "/" "other"))
+            (:div :class "category"
+              (:h3 "clothing")
+              (:a :href "/" "women's") ", "
+              (:a :href "/" "men's") ", "
+              (:a :href "/" "children's") ", "
+              (:a :href "/" "services"))
+            (:div :class "category"
+              (:h3 "media services")
+              (:a :href "/" "audio") ", "
+              (:a :href "/" "video") ", "
+              (:a :href "/" "photography") ", "
+              (:a :href "/" "print") ", "
+              (:a :href "/" "web"))
+            (:div :class "category"
+              (:h3 "supplies")
+              (:a :href "/categories/household" "household") ", "
+              (:a :href "/categories/office" "office") ", "
+              (:a :href "/categories/beauty" "beauty") ", "
+              (:a :href "/categories/crafts" "crafts"))
+            (:div :class "category"
+              (:h3 "expertise")
+              (:a :href "/categories/design" "design") ", "
+              (:a :href "/categories/legal" "legal/mediation") ", "
+              (:a :href "/categories/financial" "financial") ", "
+              (:a :href "/categories/computer" "computer") ", "
+              (:a :href "/categories/communication" "communication"))
+            (:div :class "category"
+              (:h3 "volunteering")
+              (:a :href "/categories/classes" "event") ", "
+              (:a :href "/categories/recreation" "short-term") ", "
+              (:a :href "/categories/fitness" "long-term"))
+            (:div :class "category"
+              (:h3 "transportation")
+              (:a :href "/categories/rides" "rides") ", "
+              (:a :href "/categories/bike" "bicycle") ", "
+              (:a :href "/categories/cars" "automotive") ", "
+              (:a :href "/categories/train" "train") ", "
+              (:a :href "/categories/air" "air"))
+            (:div :class "category"
+              (:h3 "electronics")
+              (:a :href "/categories/computer" "computer") ", "
+              (:a :href "/categories/mobile" "mobile") ", "
+              (:a :href "/categories/entertainment" "entertainment") ", "
+              (:a :href "/categories/other" "other"))
+            (:div :class "category"
+              (:h3 "tools/equipment")
+              (:a :href "/categories/kitchen" "kitchen") ", "
+              (:a :href "/categories/games" "games") ", "
+              (:a :href "/categories/garden" "farm/garden") ", "
+              (:a :href "/categories/marine" "marine"))
+            (:div :class "category"
+              (:h3 "food") 
+              (:a :href "/" "meals") ", "
+              (:a :href "/" "produce") ", "
+              (:a :href "/" "staples") ", "
+              (:a :href "/" "preparation") ", "
+              (:a :href "/" "misc")) 
+            )
+          (:ul
+            ))
+        :selected "requests"))))

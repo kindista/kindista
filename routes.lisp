@@ -179,11 +179,11 @@
              (:div :class "activity"
                (:div :class "item"
                  (:menu :class "horiz"
-                   (:strong "create")
-                   (:li (:a :href "/testimonials/compose" "testimonial"))
+                   (:strong "share")
+                   (:li (:a :href "/gratitude/compose" "gratitude"))
                    (:li (:a :href "/offers/compose" "offer"))
                    (:li (:a :href "/requests/compose" "request"))
-                   (:li (:a :href "/events/compose" "event"))
+                   ;(:li (:a :href "/events/compose" "event"))
                    (:li (:a :href "/announcements/compose" "announcement"))
                    )
                  )
@@ -197,8 +197,8 @@
                       (:ul
                         (unless (getf *user* :avatar)
                           (htm (:li (:a :href "/avatar" "Upload a picture") " so that other people can recognize you.")))
-                        (:li (:a :href "/testimonials/compose" "Write a testimonial") " about someone who has affected your life.")
-                        (:li (:a :href "/connections/new" "Make a connection") " to say that you know someone.")
+                        (:li (:a :href "/gratitude/compose" "Express gratitude") " for someone who has affected your life.")
+                        (:li (:a :href "/people/connect" "Make a connection") " to say that you know someone.")
                         (:li (:a :href "/requests/compose" "Post a request") " to the community for something you need.")
                         )
                       (:p "On this page you can see what's going on around you and with people you have made
@@ -209,6 +209,13 @@
            :right (html
                     (:div :class "item"
                       (:h2 "Upcoming Events")
+                      (:menu
+                        (:li (:strong "Thursday, November 23"))
+                        (:li "7:00PM " (:a :href "x" "East Eugene Gift Circle"))
+                        (:li (:strong "Thursday, November 30"))
+                        (:li "7:00PM " (:a :href "x" "West Eugene Gift Circle"))))   
+                    (:div :class "item"
+                      (:h2 "People you may know")
                       (:menu
                         (:li (:strong "Thursday, November 23"))
                         (:li "7:00PM " (:a :href "x" "East Eugene Gift Circle"))
@@ -323,18 +330,6 @@
           (:ul
             ))
         :selected "offers"))))
-
-(defroute "/requests" ()
-  (:get
-    (require-user
-      (standard-page
-        "Requests"
-        (html
-          (:h1 "Requests")
-          (:h2 "Ideas")
-          (:ul
-            ))
-        :selected "requests"))))
 
 (defroute "/events" ()
   (:get

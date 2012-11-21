@@ -5,6 +5,6 @@
 (defun timeline-insert (userid time objectid)
   "insert objectid at time into userid's timeline and sort"
 
-  (setf (gethash userid *timeline-index*)
-        (sort (cons (cons objectid time) (gethash userid *timeline-index*))
-              #'> :key #'cdr)))
+  (asetf (gethash userid *timeline-index*)
+         (sort (cons (cons objectid time) it)
+               #'> :key #'cdr)))

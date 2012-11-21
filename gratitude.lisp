@@ -1,27 +1,30 @@
 (in-package :kindista)
 
-(defun create-testimonial (&key author subjects text)
-  (insert-db `(:type :testimonial
+(defun create-gratitude (&key author subjects text)
+  (insert-db `(:type :gratitude
                :author ,author
                :subjects ,subjects
                :text ,text
                :created ,(get-universal-time))))
 
-(defun index-testimonial-for-user (userid testimonialid created)
-  (timeline-insert userid created testimonialid)
-  (let ((user (db userid)))
+(defun index-gratitude (id data)
+  (timeline-insert (getf data :author) (getf data :created) id)
+
+  (let ((user (db (getf data :author))))
     (geo-index-insert (getf user :lat)
                       (getf user :long)
-                      testimonialid
-                      created)))
+                      id
+                      (getf data :created)))
 
-(defun index-testimonial (id data)
-  (index-testimonial-for-user (getf data :author) id (getf data :created))
-
-  (with-locked-hash-table (*testimonial-index*)
+  (with-locked-hash-table (*gratitude-index*)
     (dolist (subject (getf data :subjects))
-      (index-testimonial-for-user subject id (getf data :created))
-      (push id (gethash subject *testimonial-index*)))))
+      (timeline-insert subject (getf data :created) id)
+      (let ((user (db subject)))
+        (geo-index-insert (getf user :lat)
+                          (getf user :long)
+                          id
+                          (getf data :created)))
+      (push id (gethash subject *gratitude-index*)))))
 
 (defun parse-subject-list (subject-list &key remove)
   (delete-duplicates
@@ -39,15 +42,15 @@
               ((gethash subject *email-index*)
                (collect it at beginning)))))))
 
-(defun testimonial-compose (&key subjects text next)
+(defun gratitude-compose (&key subjects text next)
   (if subjects
     (standard-page
-     "Compose a Testimonial"
+     "Express gratitude"
      (html
        (:div :class "item"
-        (:h2 "Compose a Testimonial"))
+        (:h2 "Express gratitude"))
        (:div :class "item"
-        (:form :method "post" :action "/testimonials/compose" :class "recipients"
+        (:form :method "post" :action "/gratitude/compose" :class "recipients"
           (:label "About:")
           (:menu :class "recipients"
            (unless subjects
@@ -65,16 +68,16 @@
           (:p  (:input :type "submit" :class "cancel" :name "cancel" :value "Cancel")
           (:input :type "submit" :class "submit" :name "create" :value "Create")))))
      :selected "people")
-    (testimonial-add-subject :text text :next next)))
+    (gratitude-add-subject :text text :next next)))
 
-(defun testimonial-add-subject (&key subjects text next (results 'none))
+(defun gratitude-add-subject (&key subjects text next (results 'none))
   (standard-page
-    "Compose a Testimonial"
+    "Express gratitude"
     (html
       (:div :class "item"
        (:h2 "Who would you like to write about?")
        (:h3 "Search for a person or project")
-       (:form :method "post" :action "/testimonials/compose"
+       (:form :method "post" :action "/gratitude/compose"
          (:input :type "text" :name "name")
          (:input :type "submit" :class "submit" :name "search" :value "Search")
 
@@ -105,10 +108,10 @@
          )))
     :selected "people"))
 
-(defroute "/testimonials/compose" ()
+(defroute "/gratitude/compose" ()
   (:get
     (require-user
-      (testimonial-compose :subjects (parse-subject-list (get-parameter "subject")))))
+      (gratitude-compose :subjects (parse-subject-list (get-parameter "subject")))))
   (:post
     (require-user
       (cond
@@ -118,8 +121,8 @@
          (let ((subjects (parse-subject-list (post-parameter "subject") :remove (write-to-string *userid*))))
            (cond
              ((and subjects (post-parameter "text"))
-              (see-other (format nil "/testimonials/~A"
-                                 (create-testimonial :author *userid*
+              (see-other (format nil "/gratitude/~A"
+                                 (create-gratitude :author *userid*
                                                    :subjects subjects
                                                    :text (post-parameter "text")))))
              (subjects
@@ -130,28 +133,28 @@
               "totally blank"))))
         ((post-parameter "add")
          (if (string= (post-parameter "add") "new")
-           (testimonial-add-subject :subjects (parse-subject-list (post-parameter "subject"))
-                                    :text (post-parameter "text")
-                                    :next (post-parameter "next"))
-           (testimonial-compose
+           (gratitude-add-subject :subjects (parse-subject-list (post-parameter "subject"))
+                                  :text (post-parameter "text")
+                                  :next (post-parameter "next"))
+           (gratitude-compose
              :text (post-parameter "text")
              :subjects (parse-subject-list
                          (format nil "~A,~A" (post-parameter "add") (post-parameter "subject"))))))
 
         ((post-parameter "search")
-         (testimonial-add-subject :subjects (parse-subject-list (post-parameter "subject"))
-                                  :text (post-parameter "text")
-                                  :next (post-parameter "next")
-                                  :results (iter (for id in (metaphone-index-query *metaphone-index* (post-parameter "name")))
+         (gratitude-add-subject :subjects (parse-subject-list (post-parameter "subject"))
+                                :text (post-parameter "text")
+                                :next (post-parameter "next")
+                                :results (iter (for id in (metaphone-index-query *metaphone-index* (post-parameter "name")))
                                                  (collect (list id (getf (db id) :name))))))
         (t
-         (testimonial-compose
+         (gratitude-compose
            :text (post-parameter "text")
            :subjects (parse-subject-list
                        (post-parameter "subject")
                        :remove (post-parameter "remove"))))))))
 
-(defroute "/testimonials/<int:id>" (id)
+(defroute "/gratitude/<int:id>" (id)
   (:get
     (setf id (parse-integer id))
     (aif (db id)
@@ -159,10 +162,10 @@
         (standard-page
           "First few words... | Kindista"
           (html
-            (str (testimonial-activity-item :time (getf it :created)
-                                            :id id
-                                            :next-url (script-name*)
-                                            :text (getf it :text))))))
+            (str (gratitude-activity-item :time (getf it :created)
+                                          :id id
+                                          :next-url (script-name*)
+                                          :text (getf it :text))))))
       (standard-page "Not found" "not found")))
   (:post
     (require-user
@@ -170,11 +173,11 @@
       (aif (db id)
         (cond
           ((and (post-parameter "love")
-                (member (getf it :type) '(:testimonial :offer :request)))
+                (member (getf it :type) '(:gratitude :offer :request)))
            (love id)
            (see-other (or (post-parameter "next") (referer))))
           ((and (post-parameter "unlove")
-                (member (getf it :type) '(:testimonial :offer :request)))
+                (member (getf it :type) '(:gratitude :offer :request)))
            (unlove id)
            (see-other (or (post-parameter "next") (referer)))))
         (standard-page "Not found" "not found")))))

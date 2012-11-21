@@ -140,6 +140,12 @@
        (progn ,@body)
        (authorization-required))))
 
+(defmacro require-admin (&body body)
+  `(with-user
+     (if (getf *user* :admin)
+       (progn ,@body)
+       (not-found))))
+
 ;; tokens
 
 (defun make-token (id)
@@ -212,16 +218,17 @@
 (defun menu (items &optional selected)
   (html
     (:menu
-      (loop for item in items
-            do (str (menu-item (car item)
-                               (cadr item)
-                               (or (caddr item) (cadr item))
-                               (string= selected (cadr item))))))))
+      (iter (for item in items) 
+            (when item
+              (str (menu-item (car item)
+                              (cadr item)
+                              (or (caddr item) (cadr item))
+                              (string= selected (cadr item)))))))))
 (defun welcome-bar (content)
   (html
     (:div :class "welcome item"
       (:form :method "post" :action "/settings"
-        (:button :class "corner" :type "submit" :name "help" :value "0" "[ hide help text ]"))
+        (:button :class "corner" :type "submit" :name "help" :value "0" "[ hide this help text ]"))
       (str content))))
 
 (defun base-page (title body &key class)
@@ -287,13 +294,14 @@
                      (:tr
                        (:td (:a :href "/logout" "Log out"))))
 
-                   (str (menu '(("Home" "home" "")
-                                ("Messages" "messages")
-                                ("People" "people")
-                                ("Offers" "offers")
-                                ("Requests" "requests")
-                                ("Events" "events")
-                               )
+                   (str (menu (list '("Home" "home" "")
+                                    '("Messages" "messages")
+                                    '("People" "people")
+                                    '("Offers" "offers")
+                                    '("Requests" "requests")
+                                    ;("Events" "events") 
+                                    (when (getf *user* :admin)
+                                      '("Admin" "admin")))
                               selected))
 
                    (:p :id "copyright"

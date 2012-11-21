@@ -1,5 +1,7 @@
 (in-package :kindista)
 
+(declaim (optimize (speed 0) (safety 3) (debug 3)))
+
 (defvar *db* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
 (defvar *db-top* 0)
 (defvar *db-top-lock* (make-mutex :name "db top"))
@@ -8,12 +10,8 @@
 
 (defvar *geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *love-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *followers-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *activity-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *comment-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *request-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *offer-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *testimonial-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *gratitude-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *stem-index*)
 (defvar *metaphone-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 (defvar *email-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
@@ -69,14 +67,14 @@
                 (for long from (- longcode distance) to (+ longcode distance))
                 (cond
                   ((> lat 1023)
-                   (setf lat(- lat 1024)))
+                   (asetf lat(- it 1024)))
                   ((< lat 0)
-                   (setf lat (+ lat 1024))))
+                   (asetf lat (+ it 1024))))
                 (cond
                   ((> long 1023)
-                   (setf long (- long 1024)))
+                   (asetf long (- it 1024)))
                   ((< long 0)
-                   (setf long (+ long 1024))))
+                   (asetf long (+ it 1024))))
                 (collect (+ (ash lat 10) long))))))))
 
 (defun geo-index-query (lat long distance &key (index *geo-index*) type)
@@ -93,9 +91,8 @@
 (defun geo-index-insert (lat long id created &key (index *geo-index*))
   (let ((geocode (geocode lat long)))
     (with-locked-hash-table (index)
-      (setf (gethash geocode index)
-            (cons (list created lat long id)
-                  (gethash geocode index))))))
+      (asetf (gethash geocode index)
+             (cons (list created lat long id) it)))))
 
 ; }}}
 
@@ -206,7 +203,7 @@
               (loop
                 (handler-case
                   (let ((item (read in)))
-                    (setf *db-top* (max (car item) *db-top*))
+                    (asetf *db-top* (max (car item) it))
                     (setf (gethash (car item) *db*) (cdr item))
                     (index-item (car item) (cdr item)))
                   (end-of-file (e) (declare (ignore e)) (return))))))))
@@ -237,6 +234,15 @@
   (with-locked-hash-table (*db*)
     (setf (gethash id *db*) data)))
 
+(defun modify-db (id &rest items)
+  (with-locked-hash-table (*db*)
+    (let ((data (db id)))
+      (do
+        ((item items (cddr item)))
+        ((not (and (car item) (symbolp (car item)))))
+        (setf (getf data (car item)) (cadr item)))
+      (update-db id data))))
+
 (defun insert-db (data)
   (let ((id (with-mutex (*db-top-lock*) (incf *db-top*))))
     (update-db id data)
@@ -257,6 +263,7 @@
                    *geo-index*
                    *love-index*
                    *comment-index*
+                   *timeline-index*
                    *metaphone-index*
                    *username-index*
                    *email-index*))
@@ -265,7 +272,7 @@
 (defun index-item (id data)
   (case (getf data :type)
     (:comment (index-comment id data))
-    (:testimonial (index-testimonial id data))
+    (:gratitude (index-gratitude id data))
     (:offer (index-offer id data))
     (:person (index-person id data))))
 
