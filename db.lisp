@@ -219,7 +219,10 @@
                     (when (>= (first item) latest)
                       (if (eq (third item) nil)
                         (remhash (second item) *db*)
-                        (setf (gethash (second item) *db*) (cddr item)))))
+                        (progn
+                          (asetf *db-top* (max (second item) it))
+                          (setf (gethash (second item) *db*) (cddr item))
+                          (index-item (second item) (cddr item))))))
                   (end-of-file (e) (declare (ignore e)) (return)))))))))
     (setf *db-log* (open (s+ +db-path+ "db-log") :if-exists :append :if-does-not-exist :create :direction :output))))
 
