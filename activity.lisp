@@ -80,7 +80,7 @@
                  :content (html
                             (:a :href (s+ "/people/" user-id) (str user-name))
                             " posted a "
-                            (:a :href (s+ "/people/" user-id "/requests#" request-id) "request")
+                            (:a :href (s+ "/requests/" request-id) "request")
                             (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
 
 (defun gratitude-activity-item (&key time id next-url text)
@@ -112,6 +112,7 @@
                                    (or (getf user :distance) 50))))
     (html
       (dolist (item activity)
+        (print item) (terpri)
         (case (getf (db (fourth item)) :type)
           (:gratitude (str (gratitude-activity-item :time (first item)
                                                     :id (fourth item)

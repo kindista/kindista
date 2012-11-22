@@ -24,6 +24,8 @@
                (:file "scanners")
                (:file "db")
                (:file "http")
+               (:file "tags")
+               (:file "search")
                (:file "people")
                (:file "activity")
                (:file "timeline")

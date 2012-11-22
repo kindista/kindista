@@ -1,9 +1,11 @@
 (in-package :kindista)
 
-(defun create-request (&key (by ruserid*) text)
+(defun create-request (&key (by *userid*) text tags expires)
   (insert-db (list :type :request
                          :by by
                          :text text
+                         :tags tags
+                         :expires (+ (get-universal-time) (* expires 86400))
                          :created (get-universal-time))))
 
 (defun index-request (id data)
@@ -16,6 +18,13 @@
                     (or (getf data :long)
                         (getf (db (getf data :by)) :long))
                     id
+                    (getf data :tags)
+                    :index *resource-geo-index*) 
+  (geo-index-insert (or (getf data :lat)
+                        (getf (db (getf data :by)) :lat))
+                    (or (getf data :long)
+                        (getf (db (getf data :by)) :long))
+                    id
                     (getf data :created)))
 
 (defun request-compose (&key text)
@@ -23,15 +32,64 @@
    "Post a request"
    (html
      (:div :class "item"
-      (:h2 "Post a request"))
-     (:div :class "item"
-      (:form :method "post" :action "/requets/post"
-        (:textarea :rows "8" :name "text" (str text))
+      (:h2 "Post a request")
+      (:form :method "post" :action "/requests/new"
+        (:textarea :cols "40" :rows "8" :name "text" (str text))
+        (:p (:label :for "expires" "expires in: ")
+            (:select :name "expires"
+              (:option :value "7" "one week")
+              (:option :value "14" "two weeks")
+              (:option :value "30" "one month")
+              (:option :value "90" "three months") 
+              (:option :value "180" "six months"))) 
         (:p  (:button :class "no" :type "submit" :class "cancel" :name "cancel" "Cancel")
-        (:button :class "yes" :type "submit" :class "submit" :name "create" "Create")))))
+        (:button :class "yes" :type "submit" :class "submit" :name "next" "Next")))))
    :selected "people"))
 
-(defroute "/requests/compose" ()
+(defun request-compose-next (&key text expires error tags)
+  ; show the list of top-level tags
+  ; show recommended tags
+  ; show preview
+  ; cancel button
+  ; edit (back) button
+  ; create button
+  (let ((suggested (or tags (get-tag-suggestions text))))
+    (standard-page
+     "Post a request"
+     (html
+       (:div :class "item"
+        (:h2 "Post a request")
+        (when error
+          (htm
+            (:p :class "error" (str error))))
+        (:form :method "post" :action "/requests/new"
+          (:input :type "hidden" :name "text" :value text)
+          (:input :type "hidden" :name "expires" :value expires)
+          (:p (str text))
+          (:h2 "select at least one top-level tag")
+          (dolist (tag *top-tags*)
+            (htm (:div :class "tag"
+                   (:input :type "checkbox"
+                           :name "tag"
+                           :value tag
+                           :checked (when (member tag suggested :test #'string=)
+                                      ""))
+                   (:span (str tag)))))
+          (:h2 "extra tags")
+          (:input :type "text" :name "tags" :size 40 :placeholder "e.g. produce, bicycle, tai-chi")
+          (:p (:button :class "no" :type "submit" :class "cancel" :name "back" "Back")
+              (:button :class "yes" :type "submit" :class "submit" :name "create" "Create")))))
+     :selected "people")))
+
+; author
+; creation date
+; edited date
+; text
+; expiration date
+; tags (at least 1)
+; privacy ('all 'friends or listname)
+
+(defroute "/requests/new" ()
   (:get
     (require-user
       (request-compose)))
@@ -40,20 +98,37 @@
       (cond
         ((post-parameter "cancel")
          (see-other (or (post-parameter "next") "/home")))
-        ((post-parameter "create")
-         (let ((subjects (parse-subject-list (post-parameter "subject") :remove (write-to-string *userid*))))
-           (cond
-             ((post-parameter "text")
-              (see-other (format nil "/requests/~A"
-                                     (create-request :text (post-parameter "text")))))
-             (t
-              "totally blank"))))
+        ((post-parameter "back")
+         (request-compose :text (post-parameter "text")))
+        ((and (post-parameter "next")
+              (post-parameter "text")
+              (post-parameter "expires"))
+          (request-compose-next :text (post-parameter "text")
+                                :expires (post-parameter "expires")))
+        ((and (post-parameter "create")
+              (post-parameter "text")
+              (scan +number-scanner+ (post-parameter "expires")))
+
+         (let ((tags (iter (for pair in (post-parameters*))
+                           (when (and (string= (car pair) "tag")
+                                      (scan *tag-scanner* (cdr pair)))
+                             (collect (cdr pair))))))
+           (iter (for tag in (tags-from-string (post-parameter "tags")))
+                 (setf tags (cons tag tags)))
+           
+           (if (intersection tags *top-tags* :test #'string=)
+             (see-other (format nil "/requests/~A"
+                                    (create-request :text (post-parameter "text")
+                                                    :tags tags
+                                                    :expires (parse-integer
+                                                               (post-parameter "expires")))))
+             (request-compose-next :text (post-parameter "text")
+                                   :expires (post-parameter "expires")
+                                   :tags tags
+                                   :error "You must select at least one top-level tag."))))
         (t
          (request-compose
-           :text (post-parameter "text")
-           :subjects (parse-subject-list
-                       (post-parameter "subject")
-                       :remove (post-parameter "remove"))))))))
+           :text (post-parameter "text")))))))
 
 (defroute "/requests/<int:id>" (id)
   (:get
@@ -64,12 +139,13 @@
           "First few words... | Kindista"
           (html
             (str (request-activity-item :time (getf it :created)
-                                        :request-id id
+                                        :request-id (write-to-string id)
                                         :user-name (getf (db (getf it :by)) :name)
                                         :user-id (username-or-id (getf it :by))
                                         :hearts (length (loves id))
                                         :comments (length (comments id))
-                                        :text (getf it :text))))))
+                                        :text (getf it :text))))
+          :selected "requests"))
       (standard-page "Not found" "not found")))
   (:post
     (require-user
@@ -94,86 +170,15 @@
         (html
           (:div :class "categories"
             (:h2 "browse categories")
-            (:div :class "category"
-              (:h3 "activities")
-              (:a :href "/categories/classes" "classes") ", "
-              (:a :href "/categories/groups" "groups") ", "
-              (:a :href "/categories/recreation" "recreation") ", "
-              (:a :href "/categories/fitness" "fitness") ", "
-              (:a :href "/categories/performances" "performances"))
-            (:div :class "category"
-              (:h3 "caregiving")
-              (:a :href "/" "children") ", "
-              (:a :href "/" "elders") ", "
-              (:a :href "/" "medical") ", "
-              (:a :href "/" "alternative") ", "
-              (:a :href "/" "counseling") ", "
-              (:a :href "/" "physical therapy"))
-            (:div :class "category"
-              (:h3 "animals")
-              (:a :href "/" "pet sitting") ", "
-              (:a :href "/" "health") ", "
-              (:a :href "/" "food") ", "
-              (:a :href "/" "supplies") ", "
-              (:a :href "/" "other"))
-            (:div :class "category"
-              (:h3 "clothing")
-              (:a :href "/" "women's") ", "
-              (:a :href "/" "men's") ", "
-              (:a :href "/" "children's") ", "
-              (:a :href "/" "services"))
-            (:div :class "category"
-              (:h3 "media services")
-              (:a :href "/" "audio") ", "
-              (:a :href "/" "video") ", "
-              (:a :href "/" "photography") ", "
-              (:a :href "/" "print") ", "
-              (:a :href "/" "web"))
-            (:div :class "category"
-              (:h3 "supplies")
-              (:a :href "/categories/household" "household") ", "
-              (:a :href "/categories/office" "office") ", "
-              (:a :href "/categories/beauty" "beauty") ", "
-              (:a :href "/categories/crafts" "crafts"))
-            (:div :class "category"
-              (:h3 "expertise")
-              (:a :href "/categories/design" "design") ", "
-              (:a :href "/categories/legal" "legal/mediation") ", "
-              (:a :href "/categories/financial" "financial") ", "
-              (:a :href "/categories/computer" "computer") ", "
-              (:a :href "/categories/communication" "communication"))
-            (:div :class "category"
-              (:h3 "volunteering")
-              (:a :href "/categories/classes" "event") ", "
-              (:a :href "/categories/recreation" "short-term") ", "
-              (:a :href "/categories/fitness" "long-term"))
-            (:div :class "category"
-              (:h3 "transportation")
-              (:a :href "/categories/rides" "rides") ", "
-              (:a :href "/categories/bike" "bicycle") ", "
-              (:a :href "/categories/cars" "automotive") ", "
-              (:a :href "/categories/train" "train") ", "
-              (:a :href "/categories/air" "air"))
-            (:div :class "category"
-              (:h3 "electronics")
-              (:a :href "/categories/computer" "computer") ", "
-              (:a :href "/categories/mobile" "mobile") ", "
-              (:a :href "/categories/entertainment" "entertainment") ", "
-              (:a :href "/categories/other" "other"))
-            (:div :class "category"
-              (:h3 "tools/equipment")
-              (:a :href "/categories/kitchen" "kitchen") ", "
-              (:a :href "/categories/games" "games") ", "
-              (:a :href "/categories/garden" "farm/garden") ", "
-              (:a :href "/categories/marine" "marine"))
-            (:div :class "category"
-              (:h3 "food") 
-              (:a :href "/" "meals") ", "
-              (:a :href "/" "produce") ", "
-              (:a :href "/" "staples") ", "
-              (:a :href "/" "preparation") ", "
-              (:a :href "/" "misc")) 
-            )
-          (:ul
-            ))
+            (dolist (tag (nearby-top-tags))
+              (htm
+                (:div :class "category"
+                 (:h3 (:a :href (s+ "/tag/" (first tag)) (str (s+ (first tag) " (" (write-to-string (second tag)) ")"))))
+                 (iter (for subtag in (third tag))
+                       (for i downfrom (length (third tag)))
+                       (htm
+                         (:a :href (s+ "/tag/" (first tag) "/" (first subtag))
+                             (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
+                         (unless (= i 1)
+                           (str ", ")))))))))
         :selected "requests"))))

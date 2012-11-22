@@ -30,3 +30,64 @@
 
 (defun loves (id)
   (gethash id *love-index*))
+
+(defroute "/people/<name>" (name)
+  (:get
+    (require-user
+      (standard-page
+        "Home"
+        (html
+          (:div :class "profile"
+            (:div :class "activity"
+              (str (offer-activity-item
+                :time (get-universal-time)
+                :user-name "Benjamin Crandall"
+                :user-id "ben"
+                :offer-id "12345"
+                :next-url "/home"
+                :hearts 3
+                :comments 7
+                :text "[google](http://google.com) Saxophone lessons. I am **conservatory trained** (Bachelor of Music in Jazz Saxophone Performance from the CCM at University of Cincinnati). I have been playing for over 20 years, performing professionally in a reggae band (JohnStone Reggae in Washington DC and multiple jazz ensembles (currently StoneCold Jazz in Eugene.)"))
+              (str (offer-activity-item
+                :time (get-universal-time)
+                :user-name "Benjamin Crandall"
+                :user-id "ben"
+                :offer-id "12345"
+                :next-url "/home"
+                :hearts 3
+                :comments 7
+                :text "[google](http://google.com) Saxophone lessons. I am **conservatory trained** (Bachelor of Music in Jazz Saxophone Performance from the CCM at University of Cincinnati). I have been playing for over 20 years, performing professionally in a reggae band (JohnStone Reggae in Washington DC and multiple jazz ensembles (currently StoneCold Jazz in Eugene.)")))
+            ))
+        :top (html
+               (:div :class "profile"
+               (:img :src "/media/oldeamon.jpg") 
+               (:div :class "basics"
+                 (:h1 "Eamon Walker")
+                 (:p :class "city" "Eugene, OR")
+               (:form :method "GET" :action "/people/eamon/message"
+                 (:input :type "submit" :value "Send a message")) 
+               (:form :method "POST" :action "/friends"
+                 (:input :type "hidden" :name "add" :value "eamon")
+                 (:input :type "hidden" :name "next" :value "/people/eamon")
+                 (:input :type "submit" :value "Add as friend")))
+               (:p :class "bio" "Kindista co-creator. I am committed to living fully in gift, which means that I don't charge for anything. If you appreciate what I do, please support me! xxxxxx")
+
+               (:menu :class "bar"
+                 (:h3 :class "label" "Profile Menu")
+                 (:li :class "selected" "Activity")
+                 (:li (:a :href "/people/eamon/resources" "Resources"))
+                 (:li (:a :href "/people/eamon/testimonials" "Testimonials"))
+                 (:li (:a :href "/people/eamon/blog" "Blog"))
+                 (:li :class "notonly" (:a :href "/people/eamon/friends" "Mutual Friends")))))
+        :right (html
+                 (:div :class "item people"
+                  (:h3 "Mutual Friends")
+                  (:ul
+                    (:li (:a :href "/people/eamon" "Eamon Walker"))
+                    (:li (:a :href "/people/eamon" "Eamon Walker"))
+                    (:li (:a :href "/people/eamon" "Eamon Walker"))
+                    (:li (:a :href "/people/eamon" "Eamon Walker"))
+                    (:li (:a :href "/people/eamon/friends" "and xx more")))))
+
+        :selected "people"))))
+

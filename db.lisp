@@ -9,7 +9,9 @@
 (defvar *db-log-lock* (make-mutex :name "db log"))
 
 (defvar *geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *resource-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *love-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *request-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *comment-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *gratitude-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *stem-index*)
@@ -274,10 +276,11 @@
     (:comment (index-comment id data))
     (:gratitude (index-gratitude id data))
     (:offer (index-offer id data))
+    (:request (index-request id data))
     (:person (index-person id data))))
 
 (defun friends-alphabetically (&optional (user *user*))
-  (sort (iter (for friend in (getf user :friends))
+  (sort (iter (for friend in (getf user :following))
               (collect (list friend (getf (db friend) :name))))
         #'string-lessp :key #'cadr))
 

@@ -180,11 +180,11 @@
                (:div :class "item"
                  (:menu :class "horiz"
                    (:strong "share")
-                   (:li (:a :href "/gratitude/compose" "gratitude"))
-                   (:li (:a :href "/offers/compose" "offer"))
-                   (:li (:a :href "/requests/compose" "request"))
-                   ;(:li (:a :href "/events/compose" "event"))
-                   (:li (:a :href "/announcements/compose" "announcement"))
+                   (:li (:a :href "/gratitude/new" "gratitude"))
+                   (:li (:a :href "/offers/new" "offer"))
+                   (:li (:a :href "/requests/new" "request"))
+                   ;(:li (:a :href "/events/new" "event"))
+                   (:li (:a :href "/announcements/new" "announcement"))
                    )
                  )
                (str (activity-items))))
