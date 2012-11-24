@@ -107,12 +107,12 @@
       (:a :href (s+ "/people/" user-id) (str user-name)) " joined Kindista")))
 
 (defun activity-items (&key (user *user*) (offset 0) (count 10) next-url)
-  (let ((activity (geo-index-query (getf user :lat)
+  (let ((activity (geo-index-query *activity-geo-index*
+                                   (getf user :lat)
                                    (getf user :long)
                                    (or (getf user :distance) 50))))
     (html
       (dolist (item activity)
-        (print item) (terpri)
         (case (getf (db (fourth item)) :type)
           (:gratitude (str (gratitude-activity-item :time (first item)
                                                     :id (fourth item)

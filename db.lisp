@@ -8,8 +8,9 @@
 (defvar *db-log* nil)
 (defvar *db-log-lock* (make-mutex :name "db log"))
 
-(defvar *geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *resource-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *activity-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *offer-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *request-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *love-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *request-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *comment-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
@@ -79,22 +80,24 @@
                    (asetf long (+ it 1024))))
                 (collect (+ (ash lat 10) long))))))))
 
-(defun geo-index-query (lat long distance &key (index *geo-index*) type)
-  (let ((results (delete-duplicates
-                   (iter (for code in (geocode-neighbors (geocode lat long) distance))
-                         (appending (gethash code index)))
-                   :key #'fourth)))
-    (if type
-      (iter (for item in results)
-            (when (eql type (getf (db (fourth item)) :type))
-              (collect item)))
-      results)))
+(defun geo-index-query (index lat long distance)
+  (iter (for item in (delete-duplicates
+                       (iter (for code in (geocode-neighbors (geocode lat long) distance))
+                             (appending (gethash code index)))
+                       :key #'fourth))
+        (when (<= (air-distance lat long (second item) (third item)) distance)
+          (collect item))))
+          
 
-(defun geo-index-insert (lat long id created &key (index *geo-index*))
+(defun activity-geo-index-insert (lat long id created)
+  (let ((geocode (geocode lat long)))
+    (with-locked-hash-table (*activity-geo-index*)
+      (push (list created lat long id) (gethash geocode *activity-geo-index*)))))
+
+(defun resource-geo-index-insert (index lat long id created tags)
   (let ((geocode (geocode lat long)))
     (with-locked-hash-table (index)
-      (asetf (gethash geocode index)
-             (cons (list created lat long id) it)))))
+      (push (list created lat long id tags) (gethash geocode index)))))
 
 ; }}}
 

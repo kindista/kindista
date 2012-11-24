@@ -11,19 +11,19 @@
   (timeline-insert (getf data :author) (getf data :created) id)
 
   (let ((user (db (getf data :author))))
-    (geo-index-insert (getf user :lat)
-                      (getf user :long)
-                      id
-                      (getf data :created)))
+    (activity-geo-index-insert (getf user :lat)
+                               (getf user :long)
+                               id
+                               (getf data :created)))
 
   (with-locked-hash-table (*gratitude-index*)
     (dolist (subject (getf data :subjects))
       (timeline-insert subject (getf data :created) id)
       (let ((user (db subject)))
-        (geo-index-insert (getf user :lat)
-                          (getf user :long)
-                          id
-                          (getf data :created)))
+        (activity-geo-index-insert (getf user :lat)
+                                   (getf user :long)
+                                   id
+                                   (getf data :created)))
       (push id (gethash subject *gratitude-index*)))))
 
 (defun parse-subject-list (subject-list &key remove)

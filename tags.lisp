@@ -39,6 +39,9 @@
                            "transportation"
                           ))
 
+(defun top-tag-p (tag)
+  (member tag *top-tags* :test #'string=))
+
 (defvar *forbidden-tags* (make-hash-table :size 750 :test 'equalp))
 
 (defun add-forbidden-tags (&rest tags)
@@ -518,6 +521,7 @@
     ("massag" ("health" "service"))
     ("reiki" ("health"))
     ("book" ("book"))
+    ("engin" ("transportation" "parts" "automobile"))
     ("bike" ("transportation" "bicycle"))
     ("bicycl" ("transportation" "bicycle"))
     ("pant" ("clothing"))
@@ -544,61 +548,4 @@
 
 (defun tags-from-string (string)
   (remove-forbidden-tags (all-tags-from-string string)))
-
-(defun intersection-string= (list1 list2)
-  (intersection list1 list2 :test #'string=))
-
-(defun nearby-tags (&key base (user *user*))
-  (let ((nearby (geo-index-query (getf user :lat)
-                                 (getf user :long)
-                                 (or (getf user :distance) 50)
-                                 :index *resource-geo-index*)))
-    (let ((tags (make-hash-table :test 'equalp)))
-      (dolist (item nearby)
-        (dolist (tag (car item))
-          (push (fourth item) (gethash tag tags))))
-
-      (when base
-        ; get each base tag's list of items
-        ; get intersection of those lists
-        ; remove base tags from hashtable
-        ; set all remaining tags lists to be intersection of tag list and previous intersection
-        (let ((base-items (iter (for tag in base)
-                                (reducing (gethash tag tags) by #'intersection-string=)
-                                (remhash tag tags))))
-          (iter (for (tag tag-items) in-hashtable tags)
-                (setf (gethash tag tags)
-                      (intersection tag-items base-items)))))
-
-
-      ; for each tag, number of contents + ordered list of subtags (up to 4)
-      
-      (iter (for (tag tag-items) in-hashtable tags)
-            (collect (list tag
-                           (length tag-items)
-                           (when (cdr tag-items)
-                             (let ((subtags (sort
-                                              (iter (for (subtag subtag-items) in-hashtable tags)
-                                                    (unless (string= tag subtag)
-                                                      (awhen (intersection tag-items subtag-items)
-                                                        (collect (cons subtag (length it))))))
-                                              #'> :key #'cdr)))
-                               (subseq subtags 0 (min (length subtags) 4))))))))))
-
-(defun top-tag-p (tag)
-  (member tag *top-tags* :test #'string=))
-
-(defun nearby-top-tags (&key (count 11) (more t) base (user *user*))
-  (let* ((tags (sort (remove-if-not #'top-tag-p (nearby-tags :base base :user user) :key #'first) #'> :key #'second))
-         (top-tags (subseq tags 0 (min count (length tags))))) 
-    (cond
-      ((and more (> (length tags) (+ count 1)))
-       (nconc top-tags
-              (list "more"
-                    (reduce #'+ (subseq tags count) :key #'second))
-                    (subseq tags count (min (+ count 4) (length tags)))))
-      ((and more (= (length tags) (+ count 1)))
-       (setf top-tags tags)))
-    top-tags))
-
 

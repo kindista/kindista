@@ -6,9 +6,15 @@
 
 (defvar *flashes* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 
-(defun flash (message &optional (id *userid*))
+(defun flash (message &key (id *userid*) error)
   (with-locked-hash-table (*flashes*)
-    (push message (gethash id *flashes*))))
+    (push
+      (format nil
+              (if error
+                "<div class=\"flash err\">~a</div>"
+                "<div class=\"flash\">~a</div>")
+              message)
+      (gethash id *flashes*))))
 
 (defun flashes (&optional (id *userid*))
   (with-locked-hash-table (*flashes*)
@@ -17,7 +23,7 @@
       (setf (gethash id *flashes*) nil))))
 
 (defun not-found ()
-  (flash "<strong>The page you asked for could not be found :-( Here's the home page instead.</strong>")
+  (flash "The page you asked for could not be found :-( Here's the home page instead." :error t)
   (see-other "/"))
 
 ;;; routing and acceptor {{{
@@ -185,8 +191,9 @@
           (progn
             (apply (cdr rule) (coerce results 'list)))))))
   (with-user
-    (when *userid*
-      (not-found))))
+    (if *userid*
+      (not-found)
+      "not found")))
 
 #|(defmethod acceptor-status-message ((acceptor k-acceptor)
                                     http-status-code
@@ -263,11 +270,8 @@
                    " "
                    (:a :href "#menu" (:img :alt "Menu" :src "/media/icons/menu.png"))))
                (html
-                 (awhen (flashes)
-                   (htm
-                     (:menu :id "flash"
-                       (dolist (message it)
-                         (htm (:li (str message)))))))
+                 (dolist (flash (flashes))
+                   (str flash))
                  (when top
                    (htm
                      (:div :id "full"

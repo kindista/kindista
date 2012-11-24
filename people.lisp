@@ -4,6 +4,7 @@
   (insert-db `(:type :person
                :name ,name
                :email ,email
+               :help t
                :pass ,(new-password password)
                :created ,(get-universal-time))))
 
@@ -20,7 +21,7 @@
               (cons id (gethash item *love-index*))))))
 
   (when (and (getf data :lat) (getf data :long) (getf data :created))
-    (geo-index-insert (getf data :lat) (getf data :long) id (getf data :created)))
+    (activity-geo-index-insert (getf data :lat) (getf data :long) id (getf data :created)))
 
   (timeline-insert id (getf data :created) id))
 

@@ -12,8 +12,8 @@
                      (awhen (get-parameter "retry")
                        (htm (:p :class "error" "The email/username or password was incorrect.")
                             (unless (string= it "")
-                                (htm (:p "Would you like to "
-                                         (:a :href (s+ "/signup?email=" it) "create an account") "?")))))
+                                (htm (:p (:a :href (s+ "/signup?email=" it)
+                                             "Would you like to create an account?"))))))
                      (awhen (get-parameter "next")
                        (htm (:input :type "hidden" :name "next" :value it)))
                      (:label :for "username" "Username or email")
@@ -197,9 +197,9 @@
                       (:ul
                         (unless (getf *user* :avatar)
                           (htm (:li (:a :href "/avatar" "Upload a picture") " so that other people can recognize you.")))
-                        (:li (:a :href "/gratitude/compose" "Express gratitude") " for someone who has affected your life.")
-                        (:li (:a :href "/people/connect" "Make a connection") " to say that you know someone.")
-                        (:li (:a :href "/requests/compose" "Post a request") " to the community for something you need.")
+                        (:li (:a :href "/gratitude/new" "Express gratitude") " for someone who has affected your life.")
+                        (:li (:a :href "/people/new" "Make a connection") " to say that you know someone.")
+                        (:li (:a :href "/requests/new" "Post a request") " to the community for something you need.")
                         )
                       (:p "On this page you can see what's going on around you and with people you have made
                            a connection with. Use the menu "
@@ -275,6 +275,10 @@
            (see-other (or (post-parameter "next") "/home"))))
         ((post-parameter "reset-location")
          (modify-db *userid* :lat nil :long nil :address nil :location nil)
+         (see-other (or (post-parameter "next") "/home")))
+        ((scan +number-scanner+ (post-parameter "distance"))
+         (modify-db *userid* :distance (parse-integer (post-parameter "distance")))
+         (flash "Your search distance has been changed!")
          (see-other (or (post-parameter "next") "/home")))
         ((equalp (post-parameter "help") "0")
          (modify-db *userid* :help nil)

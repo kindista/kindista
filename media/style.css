@@ -2,7 +2,6 @@
  box-sizing: border-box;
  -moz-box-sizing: border-box;
  -webkit-box-sizing: border-box;
- -webkit-appearance: none;
  font-family: Verdana, "Helvetica Neue", Verdana, Ubuntu, sans-serif;
 }
 
@@ -50,6 +49,11 @@ h3 {
  margin:0;
 }
 
+h4 {
+ font-size: 0.9em;
+ margin:0;
+}
+
 .unicon {
  font-size: 1.6em;
  vertical-align: middle;
@@ -73,6 +77,7 @@ textarea {
  border:1px solid #999;
  border-radius:3px;
  padding:0.25em;
+ font-size: 1em;
 }
 
 #biglogo {
@@ -148,12 +153,17 @@ textarea {
  margin-bottom:1em;
 }
 
-#flash {
+.flash {
+ font-weight: bold;
  clear:left;
- background:#f7dada;
  margin:0.6em;
  padding:0.6em;
  border-radius:0.3em;
+ background: #daeec6;
+}
+
+.flash.err {
+ background:#f7dada;
 }
 
 @media (min-width:40em) {
@@ -350,7 +360,7 @@ body.landing > p {
   margin-left:16em;
  }
 
- #flash {
+ .flash {
   margin-left:16.6em;
  }
 
@@ -408,17 +418,40 @@ body.landing > p {
  clear:left;
 }
 
-.item {
- clear:left;
+.white, .item {
  background:#fcfcfc;
  margin:0 0.6em 0.6em;
- padding:0.6em;
  border-radius:0.3em;
 }
 
-.item > h2 {
- margin-bottom: 0.75em;
+.item {
+ clear:left;
+ padding:0.4em 0.6em;
 }
+
+.item.reverse {
+ background: #87a767;
+}
+
+.item.reverse * {
+ color: #fff;
+}
+
+.item > p {
+ margin:1em 0 0 0;
+}
+
+.item > form {
+ margin:0.5em 0 0 0;
+}
+
+.item textarea {
+ width:100%;
+}
+
+/*.item > h2 {
+ margin-bottom: 0.75em;
+}*/
 
 .item > h3 {
  margin:1.5em 0 0.5em;
@@ -431,8 +464,12 @@ body.landing > p {
 .item menu {
  list-style-type:none;
  /*margin:0.75em 0 0;*/
- margin:0;
+ margin:1em 0 0 0;
  padding:0;
+}
+
+.item :first-child {
+ margin-top:0;
 }
 
 .item menu li {
@@ -553,7 +590,7 @@ button.text.large {
  margin: 0 0 0.5em;
 }
 
-.item a {
+.activity .item a {
  font-weight: bold;
 }
 
@@ -741,9 +778,10 @@ menu.bar li a {
 
 button {
  cursor:pointer;
+ border-radius:3px;
 }
 
-button:hover {
+.actions input[type=submit]:hover, button:hover {
  text-decoration:underline;
 }
 
@@ -756,40 +794,79 @@ button.yes {
  margin-right:1em;
 }
 
+button.yes:first-child {
+ margin-left:0.4em;
+}
+
+button.yes:last-child {
+ margin-right:0;
+}
+
 button.no {
  border:0;
  padding:0.5em;
  background: #900;
  color: #fff;
  font-weight:bold;
+ margin-right:1em;
 }
 
-.categories h2 {
- margin:0.6em;
+button.red {
+ border:0;
+ padding:0;
+ margin:0;
+ color: #900;
+ background: none;
+ font-weight:bold;
 }
 
 .category {
- vertical-align:top;
- margin:0 0.6em 1em 0.6em;
+ margin-top:0.5em;
 }
 
 .category a {
  white-space: nowrap;
 }
 
-@media (min-width:40em) {
- .category {
-  display:inline-block;
-  width:15em;
- }
-}
-
 div.tag {
  display: inline-block;
  width: 11em;
- margin-bottom: 1em;
+ margin: 0.5em 0;
 }
 
 div.tag input:checked + span {
  font-weight: bold;
+}
+
+ul.keywords {
+ padding-left: 1em;
+ margin:0;
+}
+
+ul.keywords li a:first-child {
+ font-weight:bold;
+ font-size:0.8em;
+}
+
+p.right {
+ text-align:right;
+}
+
+p.right {
+ text-align:right;
+}
+
+table.post {
+ margin:0;
+ padding:0;
+ border-collapse: collapse;
+}
+
+table.post td {
+ vertical-align:bottom;
+ border:0;
+}
+
+form.post-next h2 {
+ margin: 0.75em 0;
 }
