@@ -251,7 +251,7 @@
         (str "<!--[if lt IE 9]>")
         (:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
         (str "<![endif]-->"))
-      (:body :class class :onload "if(!location.hash){window.scrollTo(0,0);}"
+      (:body :class class :onload "if(!location.hash){window.scrollTo(0,0);};document.body.className+=\" js\";"
         (:a :name "top")
         (str body)))))
 

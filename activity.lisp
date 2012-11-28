@@ -2,8 +2,8 @@
 
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
 
-(defun timestamp (time)
-  (html (:h3 :class "timestamp" :data-time time (str (humanize-universal-time time)))))
+(defun timestamp (time &optional type)
+  (html (:h3 :class "timestamp" :data-time time (when type (htm (str type) " ")) (str (humanize-universal-time time)))))
 
 (defun love-button (id url &optional next-url)
   (html
@@ -40,10 +40,10 @@
           ;(:span :class "unicon" " ✎ ")
           (str comments))))))
 
-(defun activity-item (&key id url content time next-url hearts comments)
+(defun activity-item (&key id url content time next-url hearts comments type)
   (html
     (:div :class "item" :id id
-      (str (timestamp time))
+      (str (timestamp time type))
       (str content)
       (:div :class "actions"
         (str (love-button id url next-url))
@@ -70,17 +70,20 @@
                             (:a :href (s+ "/people/" user-id "/offers#" offer-id) "offer")
                             (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
 
-(defun request-activity-item (&key time user-name user-id request-id next-url hearts comments text)
+(defun request-activity-item (&key time user-name user-id request-id next-url hearts comments text what)
   (activity-item :id request-id
                  :url (s+ "/request/" request-id)
                  :time time
                  :next-url next-url
                  :hearts hearts
+                 :type (unless what "requested")
                  :comments comments
                  :content (html
                             (:a :href (s+ "/people/" user-id) (str user-name))
-                            " posted a "
-                            (:a :href (s+ "/requests/" request-id) "request")
+                            (when what
+                              (htm
+                                " posted a "
+                                (:a :href (s+ "/requests/" request-id) "request")))
                             (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
 
 (defun gratitude-activity-item (&key time id next-url text)
@@ -137,6 +140,7 @@
                                           :request-id (write-to-string (fourth item))
                                           :user-name (getf (db userid) :name)
                                           :user-id (username-or-id userid)
+                                          :what t
                                           :next-url next-url
                                           :hearts (length (loves (fourth item)))
                                           :comments (length (comments (fourth item)))

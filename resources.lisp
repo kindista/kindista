@@ -49,7 +49,7 @@
       (values (iter (for (tag tag-items) in-hashtable tags)
                     (collect (list tag
                                    (length tag-items)
-                                   (when t; (cdr tag-items)
+                                   (when (cdr tag-items)
                                      (let* ((subtags (sort
                                                        (iter (for (subtag subtag-items) in-hashtable tags)
                                                              (unless (string= tag subtag)

@@ -173,7 +173,7 @@
 (defroute "/requests" ()
   (:get
     (require-user
-      (let ((base (iter (for tag in (split "&" (query-string*)))
+      (let ((base (iter (for tag in (split "&" (get-parameter "q")))
                         (when (scan *tag-scanner* tag)
                           (collect tag)))))
         (multiple-value-bind (tags items)
@@ -191,6 +191,20 @@
                          (:td (:textarea :cols "1000" :rows "4" :name "text"))
                          (:td
                            (:button :class "yes" :type "submit" :class "submit" :name "next" "Post"))))))))
+             (:form :class "item" :method "post" :action "/settings"
+               (:strong "show results within ")
+               (:input :type "hidden" :name "next" :value (format nil "/requests~a~{~a~^&~}" (if base "?" "") base))
+               (let ((distance (rdist)))
+                 (htm
+                   (:select :name "rdist" :onchange "this.form.submit()"
+                     (:option :value "1" :selected (when (eql distance 1) "") "1 mile")
+                     (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
+                     (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
+                     (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
+                     (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
+                     (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
+               " "
+               (:input :type "submit" :class "no-js" :value "apply"))
              (:div :class "activity"
                (dolist (item items)
                  (let* ((request (db item))
@@ -198,10 +212,15 @@
                    (str (request-activity-item :time (getf request :created)
                                                :request-id (write-to-string item)
                                                :user-name (getf user :name)
-                                               :user-id (write-to-string (getf request :by))
+                                               :user-id (username-or-id (getf request :by))
                                                :hearts (length (loves item))
                                                :comments (length (comments item))
-                                               :text (getf request :text)))))))
+                                               :text (getf request :text)))))
+               (when (and (> 100 (rdist))
+                          (> 10 (length items)))
+                 (htm
+                   (:div :class "item"
+                     (:em "Increasing your search distance may yield more results."))))))
            :top (when (getf *user* :help)
                   (welcome-bar
                     (html
@@ -216,18 +235,6 @@
                           (:span :class "menu-showing" "bar")
                           " at the top of the screen.")))))
           :right (html
-                   (:form :class "item" :method "post" :action "/settings"
-                     (:h2 "change search distance")
-                     (:input :type "hidden" :name "next" :value (script-name*))
-                     (let ((distance (getf *user* :distance)))
-                       (htm
-                         (:select :name "distance"
-                           (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
-                           (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
-                           (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
-                           (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
-                           (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
-                     (:input :type "submit" :value "Change"))
                    (:div :class "item"
                      (:h2 "browse by keyword")
                      (when base

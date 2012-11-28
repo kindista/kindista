@@ -187,6 +187,19 @@
                    (:li (:a :href "/announcements/new" "announcement"))
                    )
                  )
+             (:form :class "item" :method "post" :action "/settings"
+               (:strong "show activity within ")
+               (:input :type "hidden" :name "next" :value "/home")
+               (let ((distance (user-distance)))
+                 (htm
+                   (:select :name "distance" :onchange "this.form.submit()"
+                     (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
+                     (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
+                     (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
+                     (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
+                     (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
+               " "
+               (:input :type "submit" :class "no-js" :value "apply"))
                (str (activity-items))))
            :selected "home"
            :top (when (getf *user* :help)
@@ -207,13 +220,13 @@
                           (:span :class "menu-showing" " on the left ")
                           " to explore the site."))))
            :right (html
-                    (:div :class "item"
-                      (:h2 "Upcoming Events")
-                      (:menu
-                        (:li (:strong "Thursday, November 23"))
-                        (:li "7:00PM " (:a :href "x" "East Eugene Gift Circle"))
-                        (:li (:strong "Thursday, November 30"))
-                        (:li "7:00PM " (:a :href "x" "West Eugene Gift Circle"))))   
+;                    (:div :class "item"
+;                      (:h2 "Upcoming Events")
+;                      (:menu
+;                        (:li (:strong "Thursday, November 23"))
+;                        (:li "7:00PM " (:a :href "x" "East Eugene Gift Circle"))
+;                        (:li (:strong "Thursday, November 30"))
+;                        (:li "7:00PM " (:a :href "x" "West Eugene Gift Circle"))))   
                     (:div :class "item"
                       (:h2 "People you may know")
                       (:menu
@@ -273,24 +286,35 @@
            (declare (ignore city state country))
            (modify-db *userid* :lat lat :long long :address address)
            (see-other (or (post-parameter "next") "/home"))))
+
         ((post-parameter "reset-location")
          (modify-db *userid* :lat nil :long nil :address nil :location nil)
          (see-other (or (post-parameter "next") "/home")))
+
+        ((scan +number-scanner+ (post-parameter "rdist"))
+         (modify-db *userid* :rdist (parse-integer (post-parameter "rdist")))
+         (flash "Your search distance for offers and requests has been changed!")
+         (see-other (or (post-parameter "next") "/requests")))
+
         ((scan +number-scanner+ (post-parameter "distance"))
          (modify-db *userid* :distance (parse-integer (post-parameter "distance")))
-         (flash "Your search distance has been changed!")
+         (flash (format nil "Now showing activity within ~a miles." (post-parameter "distance")))
          (see-other (or (post-parameter "next") "/home")))
+
         ((equalp (post-parameter "help") "0")
          (modify-db *userid* :help nil)
          (see-other (or (referer) "/home")))
+
         ((equalp (post-parameter "help") "1")
          (modify-db *userid* :help t)
          (see-other (or (referer) "/home")))
+
         ((and (post-parameter "confirm-location")
               (getf *user* :lat)
               (getf *user* :long))
          (modify-db *userid* :location t)
          (see-other (or (post-parameter "next") "/home")))
+
         (t
          (flash "Sorry, couldn't make sense of that request to update your settings.")
          (see-other "/home"))))))

@@ -290,3 +290,8 @@
               (collect (list friend (getf (db friend) :name))))
         #'string-lessp :key #'cadr))
 
+(defun user-distance (&optional (user *user*))
+  (or (getf user :distance) 10))
+
+(defun rdist (&optional (user *user*))
+  (or (getf user :rdist) 10))

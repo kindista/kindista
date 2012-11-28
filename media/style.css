@@ -15,6 +15,10 @@ body {
  background:#f2f2f2;
 }
 
+body.js .no-js {
+ display:none;
+}
+
 input[type=submit] {
  cursor:pointer;
 }
@@ -426,7 +430,7 @@ body.landing > p {
 
 .item {
  clear:left;
- padding:0.4em 0.6em;
+ padding:0.6em;
 }
 
 .item.reverse {
@@ -505,28 +509,28 @@ body.landing > p {
 
 .item blockquote {
  position:relative;
- margin:12px 24px;
+ font-size: 0.8em;
+ margin:1em 0;
  padding:0;
- font-size:0.95em;
 }
 
+/*
 .item blockquote:before {
  content:"“";
- font-size:2em;
  position:absolute;
  top:-0.35em;
- left:-0.5em;
- color:#ddd;
+ left:-0.75em;
+ color:#bbb;
 }
 
 .item blockquote:after {
  content:"”";
- font-size:2em;
  position:absolute;
  bottom:-0.75em;
- right:-0.5em;
- color:#ddd;
+ right:-1em;
+ color:#bbb;
 }
+*/
 
 .item .actions {
  position:relative;
@@ -541,7 +545,6 @@ body.landing > p {
  right:0;
  top:0.5em;
  color:#5c8a2f;
- font-weight:bold;
  font-size:0.9em;
 }
 
@@ -563,8 +566,7 @@ body.landing > p {
  border:0;
  background:none;
  color:#5c8a2f;
- font-size:0.9em;
- font-weight:bold;
+ font-size:0.8em;
 }
 
 button.text.large {
@@ -588,6 +590,7 @@ button.text.large {
  font-size:0.8em;
  font-weight:normal;
  margin: 0 0 0.5em;
+ float: right;
 }
 
 .activity .item a {
