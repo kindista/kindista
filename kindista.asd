@@ -20,6 +20,7 @@
                :levenshtein
                :stem)
   :components ((:file "package")
+               (:file "settings")
                (:file "helpers")
                (:file "scanners")
                (:file "db")
@@ -37,6 +38,5 @@
                (:file "admin")
                (:file "time")
                (:file "geocode")
-               (:file "settings")
                (:file "routes")))
 

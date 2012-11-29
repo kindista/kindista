@@ -2,8 +2,16 @@
 
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
 
-(defun timestamp (time &optional type)
-  (html (:h3 :class "timestamp" :data-time time (when type (htm (str type) " ")) (str (humanize-universal-time time)))))
+(defun timestamp (time &key type url)
+  (let ((inner (html
+                 (when type
+                   (htm (str type) " "))
+                 (str (humanize-universal-time time)))))
+    (html
+      (:h3 :class "timestamp" :data-time time :data-type type
+        (if url
+          (htm (:a :href url (str inner)))
+          (str inner))))))
 
 (defun love-button (id url &optional next-url)
   (html
@@ -43,12 +51,14 @@
 (defun activity-item (&key id url content time next-url hearts comments type)
   (html
     (:div :class "item" :id id
-      (str (timestamp time type))
+      (str (timestamp time :type type :url url))
       (str content)
       (:div :class "actions"
         (str (love-button id url next-url))
-        " &middot; "
-        (str (comment-button url))
+        (when comments
+          (htm
+            " &middot; "
+            (str (comment-button url))))
         " &middot; "
         (str (flag-button url))
         (str (activity-icons :hearts hearts :comments comments :url url))))))
@@ -57,33 +67,31 @@
   (html
     (:a :href (format nil "/people/~A" id) (str (getf (db id) :name)))))
 
-(defun offer-activity-item (&key time user-name user-id offer-id next-url hearts comments text)
+(defun offer-activity-item (&key time user-name user-id offer-id next-url hearts text)
   (activity-item :id offer-id
-                 :url (s+ "/offers/" offer-id)
+                 :url (strcat "/offers/" offer-id)
                  :time time
                  :next-url next-url
                  :hearts hearts
-                 :comments comments
                  :content (html
-                            (:a :href (s+ "/people/" user-id) (str user-name))
+                            (:a :href (strcat "/people/" user-id) (str user-name))
                             " posted a "
-                            (:a :href (s+ "/people/" user-id "/offers#" offer-id) "offer")
+                            (:a :href (strcat "/people/" user-id "/offers#" offer-id) "offer")
                             (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
 
-(defun request-activity-item (&key time user-name user-id request-id next-url hearts comments text what)
+(defun request-activity-item (&key time user-name user-id request-id next-url hearts text what)
   (activity-item :id request-id
-                 :url (s+ "/request/" request-id)
+                 :url (strcat "/requests/" request-id)
                  :time time
                  :next-url next-url
                  :hearts hearts
                  :type (unless what "requested")
-                 :comments comments
                  :content (html
-                            (:a :href (s+ "/people/" user-id) (str user-name))
+                            (:a :href (strcat "/people/" user-id) (str user-name))
                             (when what
                               (htm
                                 " posted a "
-                                (:a :href (s+ "/requests/" request-id) "request")))
+                                (:a :href (strcat "/requests/" request-id) "request")))
                             (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
 
 (defun gratitude-activity-item (&key time id next-url text)
@@ -109,39 +117,67 @@
       (str (timestamp time))
       (:a :href (s+ "/people/" user-id) (str user-name)) " joined Kindista")))
 
-(defun activity-items (&key (user *user*) (offset 0) (count 10) next-url)
-  (let ((activity (geo-index-query *activity-geo-index*
-                                   (getf user :lat)
-                                   (getf user :long)
-                                   (or (getf user :distance) 50))))
+(defun activity-items (&key (user *user*) (page 0) (count 20) next-url)
+  (let ((items (sort (geo-index-query *activity-geo-index*
+                                      (getf user :lat)
+                                      (getf user :long)
+                                      (or (getf user :distance) 50))
+                     #'< :key #'activity-rank))
+        (start (* page 20)))
     (html
-      (dolist (item activity)
-        (case (getf (db (fourth item)) :type)
-          (:gratitude (str (gratitude-activity-item :time (first item)
-                                                    :id (fourth item)
-                                                    :next-url next-url
-                                                    :text (getf (db (fourth item)) :text))))
-          (:person (str (joined-activity-item :time (first item)
-                                              :user-id (username-or-id (fourth item))
-                                              :user-name (getf (db (fourth item)) :name))))
-          (:offer
-            (let ((userid (getf (db (fourth item)) :by)))
-              (str (offer-activity-item :time (first item)
-                                        :offer-id (write-to-string (fourth item))
-                                        :user-name (getf (db userid) :name)
-                                        :user-id (username-or-id userid)
-                                        :next-url next-url
-                                        :hearts (length (loves (fourth item)))
-                                        :comments (length (comments (fourth item)))
-                                        :text (getf (db (fourth item)) :text)))))
-          (:request
-            (let ((userid (getf (db (fourth item)) :by)))
-              (str (request-activity-item :time (first item)
-                                          :request-id (write-to-string (fourth item))
-                                          :user-name (getf (db userid) :name)
-                                          :user-id (username-or-id userid)
-                                          :what t
-                                          :next-url next-url
-                                          :hearts (length (loves (fourth item)))
-                                          :comments (length (comments (fourth item)))
-                                          :text (getf (db (fourth item)) :text))))))))))
+      (iter (for i from 0 to (+ start count))
+            (cond
+              ((< i start)
+               (setf items (cdr items)))
+
+              ((and (>= i start) items)
+               (let* ((item (car items)))
+                 (case (getf (db (fourth item)) :type)
+                   (:gratitude (str (gratitude-activity-item :time (first item)
+                                                             :id (fourth item)
+                                                             :next-url next-url
+                                                             :text (getf (db (fourth item)) :text))))
+                   (:person (str (joined-activity-item :time (first item)
+                                                       :user-id (username-or-id (fourth item))
+                                                       :user-name (getf (db (fourth item)) :name))))
+                   (:offer
+                     (let ((userid (getf (db (fourth item)) :by)))
+                       (str (offer-activity-item :time (first item)
+                                                 :offer-id (fourth item)
+                                                 :user-name (getf (db userid) :name)
+                                                 :user-id (username-or-id userid)
+                                                 :next-url next-url
+                                                 :hearts (length (loves (fourth item)))
+                                                 ;:comments (length (comments (fourth item)))
+                                                 :text (getf (db (fourth item)) :text)))))
+                   (:request
+                     (let ((userid (getf (db (fourth item)) :by)))
+                       (str (request-activity-item :time (first item)
+                                                   :request-id (fourth item)
+                                                   :user-name (getf (db userid) :name)
+                                                   :user-id (username-or-id userid)
+                                                   :what t
+                                                   :next-url next-url
+                                                   :hearts (length (loves (fourth item)))
+                                                   ;:comments (length (comments (fourth item)))
+                                                   :text (getf (db (fourth item)) :text)))))))
+               (setf items (cdr items)))
+
+              (t
+               (when (< (rdist) 100)
+                 (htm
+                   (:div :class "item small"
+                    (:em "Increasing the ")(:strong "show activity within")(:em " distance may yield more results."))))
+               (finish)))
+
+            (finally
+              (when (or (> page 0) (cdr items))
+                (htm
+                  (:div :class "item"
+                   (when (> page 0)
+                     (htm
+                       (:a :href (strcat "/home?p=" (- page 1)) "< previous page")))
+                   "&nbsp;"
+                   (when (cdr items)
+                     (htm
+                       (:a :style "float: right;" :href (strcat "/home?p=" (+ page 1)) "next page >")))))))))))

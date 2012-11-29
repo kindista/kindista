@@ -32,3 +32,41 @@
 
 (defmacro asetf (place value)
   `(anaphora::symbolic setf ,place ,value))
+
+(defun sublist (list &optional start length)
+  (when start
+    (dotimes (i start)
+      (setf list (cdr list))))
+  (if length
+    (when list
+      (iter (for i from 1 to length)
+            (collect (car list))
+            (if (cdr list)
+              (setf list (cdr list))
+              (finish))))
+    (copy-list list)))
+
+(defun intersection-fourth (list1 list2)
+  (intersection list1 list2 :key #'fourth))
+
+(defun activity-rank (item)
+  ; is it from a friend?
+  ; how many people like it
+  ; how recent
+  ; how close is it?
+  
+  (let ((friends (getf *user* :following))
+        (age (- (get-universal-time) (first item)))
+        (distance (air-distance (getf *user* :lat) (getf *user* :long)
+                                (second item) (third item))))
+    (round (- age
+             (/ 120000 (log (+ distance 4)))
+             (if (intersection friends (fifth item)) 86400 0)
+             (* (length (loves (fourth item))) 100000)))))
+
+(defun resource-rank (item)
+  (let ((age (- (get-universal-time) (first item)))
+        (loves (max 1 (length (loves (fourth item))))))
+    (* (/ 50 (log (+ (/ age 86400) 6)))
+       (expt loves 0.3))))
+

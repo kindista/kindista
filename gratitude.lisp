@@ -8,23 +8,28 @@
                :created ,(get-universal-time))))
 
 (defun index-gratitude (id data)
-  (timeline-insert (getf data :author) (getf data :created) id)
+  (let* ((author (db (getf data :author)))
+         (people (cons (getf data :author) (getf data :subjects)))
+         (created (getf data :created)))
+    
+    (timeline-insert (getf data :author) created id)
 
-  (let ((user (db (getf data :author))))
-    (activity-geo-index-insert (getf user :lat)
-                               (getf user :long)
+    (activity-geo-index-insert (getf author :lat)
+                               (getf author :long)
                                id
-                               (getf data :created)))
+                               created
+                               people)
 
-  (with-locked-hash-table (*gratitude-index*)
-    (dolist (subject (getf data :subjects))
-      (timeline-insert subject (getf data :created) id)
-      (let ((user (db subject)))
-        (activity-geo-index-insert (getf user :lat)
-                                   (getf user :long)
-                                   id
-                                   (getf data :created)))
-      (push id (gethash subject *gratitude-index*)))))
+    (with-locked-hash-table (*gratitude-index*)
+      (dolist (subject (getf data :subjects))
+        (timeline-insert subject created id)
+        (let ((user (db subject)))
+          (activity-geo-index-insert (getf user :lat)
+                                     (getf user :long)
+                                     id
+                                     created
+                                     people))
+        (push id (gethash subject *gratitude-index*))))))
 
 (defun parse-subject-list (subject-list &key remove)
   (delete-duplicates

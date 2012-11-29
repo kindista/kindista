@@ -25,3 +25,7 @@
     (let* ((loves (gethash id *love-index*)))
       (when (member userid loves)
         (setf (gethash id *love-index*) (remove userid loves))))))
+
+(defun loves (id)
+  (gethash id *love-index*))
+

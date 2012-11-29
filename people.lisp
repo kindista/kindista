@@ -17,20 +17,21 @@
   (when (getf data :loves)
     (with-locked-hash-table (*love-index*)
       (dolist (item (getf data :loves))
-        (setf (gethash item *love-index*)
-              (cons id (gethash item *love-index*))))))
+        (unless (member id (gethash item *love-index*))
+          (push id (gethash item *love-index*))))))
 
   (when (and (getf data :lat) (getf data :long) (getf data :created))
-    (activity-geo-index-insert (getf data :lat) (getf data :long) id (getf data :created)))
+    (activity-geo-index-insert (getf data :lat)
+                               (getf data :long)
+                               id
+                               (getf data :created)
+                               (list id)))
 
   (timeline-insert id (getf data :created) id))
 
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)
       (write-to-string id)))
-
-(defun loves (id)
-  (gethash id *love-index*))
 
 (defroute "/people/<name>" (name)
   (:get

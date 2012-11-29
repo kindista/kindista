@@ -677,8 +677,69 @@
                                                                         (string-downcase text)
                                                                         " ")
                                                " "))))
-    (iter (for word in words)
-          (unless (stop-word-p word)
-            (collect (stem word))))))
+    (remove-duplicates (iter (for word in words)
+                         (unless (stop-word-p word)
+                           (collect (stem word))))
+                       :test #'string=)))
   ; replace non-words with spaces
   ; split on spaces
+
+(defun search-resources (type text &key (distance 10))
+  ; get all requests within distance
+  ; for each stem get matching requests
+  ; return intersection
+  
+  (mapcar #'fourth
+          (sort
+            (intersection-fourth
+              (iter (for stem in (stem-text text))
+                    (reducing (gethash stem
+                                       (case type
+                                         ('offer *offer-stem-index*)
+                                         (t *request-stem-index*)))
+                              by #'intersection-fourth))
+              (geo-index-query (case type
+                                 ('offer *offer-geo-index*)
+                                 (t *request-geo-index*))
+                               (getf *user* :lat)
+                               (getf *user* :long)
+                               distance))
+            #'> :key #'resource-rank)))
+
+(defun search-site (text &key type (distance 10))
+
+  )
+
+(defroute "/search" ()
+  (:get
+    (require-user
+      (standard-page
+        "Search"
+        (let ((requests (search-resources 'request (get-parameter "q")))
+              (offers (search-resources 'offer (get-parameter "q")))
+              (people (metaphone-index-query *metaphone-index* (get-parameter "q"))))
+          (html
+            (:h1 "search results")
+            (:div :class "activity"
+              (when requests
+                (htm
+                  (:h2 "requests")
+                  (dolist (item requests)
+                    (let ((request (db item)))
+                      (htm
+                        (str (request-activity-item :time (getf request :created)
+                                                    :request-id item
+                                                    :user-name (getf (db (getf request :by)) :name)
+                                                    :user-id (username-or-id (getf request :by))
+                                                    :hearts (length (loves item))
+                                                    :text (getf request :text))))))))
+              (when offers
+                (htm
+                  (:h2 "offers")
+                  (:p (fmt "~a" offers))))
+              (when people
+                (htm
+                  (:h2 "people")
+                  (:p (fmt "~a" people)))))))
+        :selected nil))))
+  

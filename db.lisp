@@ -9,13 +9,15 @@
 (defvar *db-log-lock* (make-mutex :name "db log"))
 
 (defvar *activity-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *offer-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *offer-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *request-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *love-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *offer-stem-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 (defvar *request-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *request-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *request-stem-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
+(defvar *love-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *comment-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *gratitude-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *stem-index*)
 (defvar *metaphone-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 (defvar *email-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 (defvar *username-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
@@ -61,26 +63,27 @@
   (floor (* (/ (+ 180 long) 360) (ash 1 10)))))
 
 (defun geocode-neighbors (geocode distance)
+  (setf distance (min 10 distance))
   (let* ((latcode (ash geocode -10))
          (longcode (- geocode (ash latcode 10))))
-    (flatten
-      (iter (for lat from (- latcode distance) to (+ latcode distance))
-            (collect
-              (iter
-                (for long from (- longcode distance) to (+ longcode distance))
-                (cond
-                  ((> lat 1023)
-                   (asetf lat(- it 1024)))
-                  ((< lat 0)
-                   (asetf lat (+ it 1024))))
-                (cond
-                  ((> long 1023)
-                   (asetf long (- it 1024)))
-                  ((< long 0)
-                   (asetf long (+ it 1024))))
-                (collect (+ (ash lat 10) long))))))))
+    (iter (for lat from (- latcode distance) to (+ latcode distance))
+          (nconcing
+            (iter
+              (for long from (- longcode distance) to (+ longcode distance))
+              (cond
+                ((> lat 1023)
+                 (asetf lat(- it 1024)))
+                ((< lat 0)
+                 (asetf lat (+ it 1024))))
+              (cond
+                ((> long 1023)
+                 (asetf long (- it 1024)))
+                ((< long 0)
+                 (asetf long (+ it 1024))))
+              (collect (+ (ash lat 10) long) at beginning))))))
 
 (defun geo-index-query (index lat long distance)
+  (setf distance (min 10 (ceiling (/ distance 12.4274))))
   (iter (for item in (delete-duplicates
                        (iter (for code in (geocode-neighbors (geocode lat long) distance))
                              (appending (gethash code index)))
@@ -89,10 +92,10 @@
           (collect item))))
           
 
-(defun activity-geo-index-insert (lat long id created)
+(defun activity-geo-index-insert (lat long id created people)
   (let ((geocode (geocode lat long)))
     (with-locked-hash-table (*activity-geo-index*)
-      (push (list created lat long id) (gethash geocode *activity-geo-index*)))))
+      (push (list created lat long id people) (gethash geocode *activity-geo-index*)))))
 
 (defun resource-geo-index-insert (index lat long id created tags)
   (let ((geocode (geocode lat long)))
@@ -209,8 +212,7 @@
                 (handler-case
                   (let ((item (read in)))
                     (asetf *db-top* (max (car item) it))
-                    (setf (gethash (car item) *db*) (cdr item))
-                    (index-item (car item) (cdr item)))
+                    (setf (gethash (car item) *db*) (cdr item)))
                   (end-of-file (e) (declare (ignore e)) (return))))))))
       (with-open-file (in (s+ +db-path+ "db-log") :if-does-not-exist nil)
         (when in
@@ -224,10 +226,11 @@
                         (remhash (second item) *db*)
                         (progn
                           (asetf *db-top* (max (second item) it))
-                          (setf (gethash (second item) *db*) (cddr item))
-                          (index-item (second item) (cddr item))))))
+                          (setf (gethash (second item) *db*) (cddr item))))))
                   (end-of-file (e) (declare (ignore e)) (return)))))))))
-    (setf *db-log* (open (s+ +db-path+ "db-log") :if-exists :append :if-does-not-exist :create :direction :output))))
+    (setf *db-log* (open (s+ +db-path+ "db-log") :if-exists :append :if-does-not-exist :create :direction :output)))
+  (clear-indexes)
+  (maphash #'index-item *db*))
 
 
 (defun db (id)
@@ -268,7 +271,12 @@
 
 (defun clear-indexes ()
   (dolist (index (list
-                   *geo-index*
+                   *request-index*
+                   *request-geo-index*
+                   *request-stem-index*
+                   *offer-index*
+                   *offer-geo-index*
+                   *offer-stem-index*
                    *love-index*
                    *comment-index*
                    *timeline-index*

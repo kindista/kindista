@@ -7,12 +7,35 @@
                              :created (get-universal-time))))
 
 (defun index-offer (id data)
-  (timeline-insert (getf data :author) (getf data :created) id)
-  (when (and (getf data :lat) (getf data :long) (getf data :created))
-    (activity-geo-index-insert (getf data :lat) (getf data :long) id (getf data :created))))
+  (let* ((by (getf data :by))
+         (lat (or (getf data :lat) (getf (db by) :lat)))
+         (long (or (getf data :long) (getf (db by) :long))))
 
-(defun intersection-fourth (list1 list2)
-  (intersection list1 list2 :key #'fourth))
+    (timeline-insert (getf data :author) (getf data :created) id)
+    
+    (with-locked-hash-table (*offer-index*)
+      (setf (gethash by *offer-index*)
+            (push id (gethash by *offer-index*))))
+
+    (with-locked-hash-table (*offer-stem-index*)
+      (dolist (stem (stem-text (getf data :text)))
+        (push (list (getf data :created)
+                    lat
+                    long
+                    id)
+              (gethash stem *offer-stem-index*))))
+
+    (resource-geo-index-insert *offer-geo-index*
+                               lat
+                               long
+                               id
+                               (getf data :created)
+                               (getf data :tags))
+    (activity-geo-index-insert lat
+                               long
+                               id
+                               (getf data :created)
+                               (list by))))
 
 (defun nearby-resources (index &key base (user *user*) (subtag-count 4))
   (let ((nearby (geo-index-query index
@@ -40,8 +63,7 @@
                     (setf (gethash tag tags) new-items)
                     (remhash tag tags)))))
         
-        (setf items (iter (for item in nearby)
-                          (collect item))))
+        (setf items nearby))
               
 
       ; for each tag, number of contents + ordered list of subtags (up to 4)
@@ -68,12 +90,15 @@
                                          (sort top-subtags #'string< :key #'car)))))))
                                                      
 
-              (mapcar #'fourth (sort items #'> :key #'first))))))
+              (mapcar #'fourth (sort items #'> :key #'resource-rank))))))
 
 (defun nearby-resources-top-tags (index &key (count 9) (more t) base (user *user*) (subtag-count 4))
   (multiple-value-bind (nearby items)
       (nearby-resources index :base base :user user :subtag-count subtag-count)
-    (let* ((tags (sort (remove-if-not #'top-tag-p nearby :key #'first) #'> :key #'second))
+    (let* ((tags (sort (if base
+                         nearby
+                         (remove-if-not #'top-tag-p nearby :key #'first))
+                       #'> :key #'second))
            (top-tags (subseq tags 0 (min count (length tags))))) 
       (cond
         ((and more (> (length tags) (+ count 1)))
