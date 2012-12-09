@@ -48,7 +48,6 @@
                 :offer-id "12345"
                 :next-url "/home"
                 :hearts 3
-                :comments 7
                 :text "[google](http://google.com) Saxophone lessons. I am **conservatory trained** (Bachelor of Music in Jazz Saxophone Performance from the CCM at University of Cincinnati). I have been playing for over 20 years, performing professionally in a reggae band (JohnStone Reggae in Washington DC and multiple jazz ensembles (currently StoneCold Jazz in Eugene.)"))
               (str (offer-activity-item
                 :time (get-universal-time)
@@ -57,7 +56,6 @@
                 :offer-id "12345"
                 :next-url "/home"
                 :hearts 3
-                :comments 7
                 :text "[google](http://google.com) Saxophone lessons. I am **conservatory trained** (Bachelor of Music in Jazz Saxophone Performance from the CCM at University of Cincinnati). I have been playing for over 20 years, performing professionally in a reggae band (JohnStone Reggae in Washington DC and multiple jazz ensembles (currently StoneCold Jazz in Eugene.)")))
             ))
         :top (html
@@ -93,3 +91,64 @@
 
         :selected "people"))))
 
+
+(defroute "/people" ()
+  (:get
+    (require-user
+      (standard-page
+        "People"
+        (html
+          (:h2 "Favorites") ; or "Connections" if only a few
+          (:div :class "person-row"
+            (:div :class "person-tile"
+              (:img :src "/media/oldeamon.jpg")
+              (:p (:a :href "/people/root" "Nicholas E. Walker")) 
+              (:p (:a :href "/people/root/mutual" "39 mutual connections")))
+            (:div :class "person-tile"
+              (:img :src "/media/oldeamon.jpg")
+              (:p (:a :href "/people/root" "Nicholas E. Walker")) 
+              (:p (:a :href "/people/root/mutual" "39 mutual connections"))) 
+            (:div :class "person-tile"
+              (:img :src "/media/oldeamon.jpg")
+              (:p (:a :href "/people/root" "Nicholas E. Walker")) 
+              (:p (:a :href "/people/root/mutual" "39 mutual connections"))) 
+            (:div :class "person-tile"
+              (:img :src "/media/oldeamon.jpg")
+              (:p :class "name" (:a :href "/people/root" "Nicholas E. Walker")) 
+              (:p :class "mutual" (:a :href "/people/root/mutual" "39 mutual connections"))) 
+            (:div :class "person-tile"
+              (:img :src "/media/oldeamon.jpg")
+              (:p (:a :href "/people/root" "Nicholas E. Walker")) 
+              (:p (:a :href "/people/root/mutual" "39 mutual connections"))) 
+            (:div :class "person-tile"
+              (:img :src "/media/oldeamon.jpg")
+              (:p (:a :href "/people/root" "Nicholas E. Walker")) 
+              (:p (:a :href "/people/root/mutual" "39 mutual connections")))) 
+            (:h2 "Nearby")
+            (:div :class "person-tile"
+              (:img :src "/media/oldeamon.jpg")
+              (:p (:a :href "/people/root" "Nicholas E. Walker")))
+            (:div :class "person-tile"
+              (:img :src "/media/oldeamon.jpg")
+              (:p (:a :href "/people/root" "Nicholas E. Walker")))
+            (:div :class "person-tile"
+              (:img :src "/media/oldeamon.jpg")
+              (:p (:a :href "/people/root" "Nicholas E. Walker")))
+            (:div :class "person-tile"
+              (:img :src "/media/oldeamon.jpg")
+              (:p (:a :href "/people/root" "Nicholas E. Walker")))
+          (:h2 "People you may know")
+          (:div :class "person-tile"
+            (:img :src "/media/oldeamon.jpg")
+            (:p (:a :href "/people/root" "Nicholas E. Walker")))
+          (:div :class "person-tile"
+            (:img :src "/media/oldeamon.jpg")
+            (:p (:a :href "/people/root" "Nicholas E. Walker")))
+          (:div :class "person-tile"
+            (:img :src "/media/oldeamon.jpg")
+            (:p (:a :href "/people/root" "Nicholas E. Walker")))
+          (:div :class "person-tile"
+            (:img :src "/media/oldeamon.jpg")
+            (:p (:a :href "/people/root" "Nicholas E. Walker")))
+          )
+        :selected "people"))))

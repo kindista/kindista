@@ -209,7 +209,7 @@
 (defun page-header (&optional extra)
   (html
     (:div :id "header"
-     (:a :href "/" (:img :src "/media/logo.png" :alt "kindista"))
+     (:a :id "logo" :href "/" (:img :id "symbol" :src "/media/biglogo.png" :alt "kindista"))
      ;(:h1 "kindista")
      (when extra
        (str extra)))))
@@ -233,7 +233,7 @@
                               (string= selected (cadr item)))))))))
 (defun welcome-bar (content)
   (html
-    (:div :class "welcome item"
+    (:div :class "welcome"
       (:form :method "post" :action "/settings"
         (:button :class "corner" :type "submit" :name "help" :value "0" "[ hide this help text ]"))
       (str content))))
@@ -253,6 +253,8 @@
         (str "<![endif]-->"))
       (:body :class class :onload "if(!location.hash){window.scrollTo(0,0);};document.body.className+=\" js\";"
         (:a :name "top")
+        (:div :id "fund"
+         (:img :src "/fundbar.png"))
         (str body)))))
 
 (defun header-page (title header-extra body &key class)
@@ -276,18 +278,23 @@
                    (htm
                      (:div :id "full"
                       (str top))))
+                 (when right
+                   (htm
+                     (:div :id "right"
+                      (str right))))
                  (:div :id "body"
-                   (when right
-                     (htm
-                       (:div :id "right"
-                        (str right))))
                    (str body))
 
-                 (:form :action "/search" :method "POST" :id "search"
+                 (:form :action "/search" :method "GET" :id "search"
                    (:table
                     (:tr
-                      (:td (:input :type "text" :name "q"))
-                      (:td (:input :type "submit" :value "Search")))))
+                      (:td 
+                           (:strong "Search ")
+                           (:select :name "scope"
+                             (:option "All" :selected t)
+                             (:option "Requests"))
+                           (:input :type "text" :name "q"))
+                      (:td (:input :type "submit" :value "Go")))))
 
                  (:div :id "menu"
                    (:table
@@ -298,8 +305,8 @@
                      (:tr
                        (:td (:a :href "/logout" "Log out"))))
 
-                   (str (menu (list '("Home" "home" "")
-                                    '("Messages" "messages")
+                   (str (menu (list '("Bulletin Board" "home" "")
+                                    '("Personal Mail" "mail")
                                     '("People" "people")
                                     '("Offers" "offers")
                                     '("Requests" "requests")
@@ -313,7 +320,7 @@
                      (:br)
                      "Programmed in Common Lisp")
 
-                   (:a :href "#top"
+                   (:a :class "dark" :href "#top"
                        "Back to the top")
                    )
                  )

@@ -164,7 +164,7 @@
                (setf items (cdr items)))
 
               (t
-               (when (< (rdist) 100)
+               (when (< (user-distance) 100)
                  (htm
                    (:div :class "item small"
                     (:em "Increasing the ")(:strong "show activity within")(:em " distance may yield more results."))))

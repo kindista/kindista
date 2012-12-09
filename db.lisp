@@ -142,10 +142,10 @@
   (when (< 0 (length name))
     (delete-duplicates
       (iter (for codes in (cartesian-product (name-to-metaphone-codes name)))
-            (reducing (iter (for code in codes)
+            (nconcing (iter (for code in codes)
                             (unless (string= code "")
-                              (nconcing (gethash code index))))
-                      by #'intersection)))))
+                              (reducing (gethash code index)
+                                        by #'intersection))))))))
 
 ; }}}
 

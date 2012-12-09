@@ -177,18 +177,18 @@
            "Home"
            (html
              (:div :class "activity"
-               (:div :class "item"
-                 (:menu :class "horiz"
-                   (:strong "share")
-                   (:li (:a :href "/gratitude/new" "gratitude"))
-                   (:li (:a :href "/offers/new" "offer"))
-                   (:li (:a :href "/requests/new" "request"))
-                   ;(:li (:a :href "/events/new" "event"))
-                   (:li (:a :href "/announcements/new" "announcement"))
-                   )
+               (:menu :class "horiz"
+                 (:strong "actions")
+                 (:li (:a :href "/gratitude/new" "express gratitude"))
+                 (:li (:a :href "/offers/new" "make offer")
+                      " / "
+                      (:a :href "/requests/new" "request"))
+                 ;(:li (:a :href "/events/new" "event"))
+                 (:li (:a :href "/announcements/new" "post announcement"))
                  )
+                 
              (:form :class "item" :method "post" :action "/settings"
-               (:strong "show activity within ")
+               (:strong :style "font-size: 1.2em;" "showing activity within ")
                (:input :type "hidden" :name "next" :value "/home")
                (let ((distance (user-distance)))
                  (htm
@@ -200,7 +200,10 @@
                      (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
                " "
                (:input :type "submit" :class "no-js" :value "apply"))
-               (str (activity-items))))
+               (let ((page (if (scan +number-scanner+ (get-parameter "p"))
+                            (parse-integer (get-parameter "p"))
+                            0)))
+                (str (activity-items :page page)))))
            :selected "home"
            :top (when (getf *user* :help)
                   (welcome-bar
@@ -227,6 +230,26 @@
 ;                        (:li "7:00PM " (:a :href "x" "East Eugene Gift Circle"))
 ;                        (:li (:strong "Thursday, November 30"))
 ;                        (:li "7:00PM " (:a :href "x" "West Eugene Gift Circle"))))   
+                    #|
+                    (:div :style "padding-bottom: 1em;
+                                  border-bottom: 1px solid #ddd;
+                                  margin-bottom: 1em;"
+                      (:div :style "font-size: 2.5em; font-weight: bold" "2,000")
+                      (:div :style "font-size: 1em; font-weight: bold" "monthly donations")
+                      (:div :style "font-size: 2.5em; font-weight: bold" "$999,999")
+                      (:div :style "font-size: 1em; font-weight: bold" "per month of $99,999,999 " (:a :href "/donate" "goal"))
+                      (:button :style "font-size: 1.5em;
+                                       font-weight: bold;
+                                       background: #375497;
+                                       color: #fff;
+                                       border: 0;
+                                       border-radius: 4px;
+                                       margin-top: 0.5em;
+                                       padding: 0.25em 0.6em" "Donate to Kindista")
+                      (:div :style "font-size: 0.9em; margin-top: 1em;" (:a :href "#" "How does Kindista use the money?"))
+                      )
+                      |#
+                      
                     (:div :class "item"
                       (:h2 "People you may know")
                       (:menu
@@ -333,20 +356,6 @@
             ))
         :selected "messages"))))
 
-(defroute "/people" ()
-  (:get
-    (require-user
-      (standard-page
-        "People"
-        (html
-          (:h1 "People")
-          (:h2 "Ideas")
-          (:ul
-            (:li "suggested friends")
-            (:li "nearby people, weight given to people w/ mutual friends")
-            ))
-        :selected "people"))))
-
 (defroute "/offers" ()
   (:get
     (require-user
@@ -374,3 +383,28 @@
             ))
         :selected "events"))))
 
+
+(defun percent ()
+  95/100)
+
+(defroute "/fundbar.png" ()
+  (:get
+    (setf (content-type*) "image/png")
+    (let ((out (send-headers)))
+      (vecto:with-canvas (:width 320 :height 34)
+        (vecto:set-font (vecto:get-font "/usr/share/fonts/TTF/Ubuntu-B.ttf")
+                        12)
+        (vecto:set-rgb-fill 255/255 255/255 255/255)
+        (vecto:draw-string 0 20 "$99,999/$999,999 monthly goal")
+        (vecto:draw-string 245 20 "Donate Now")
+        (vecto:set-rgb-fill 55/255 84/255 151/255)
+        (vecto:set-rgb-fill 90/255 90/255 90/255)
+        (vecto:set-rgb-stroke 130/255 130/255 130/255)
+        (vecto:set-line-width 2)
+        (vecto:rounded-rectangle 3 3 316 12 6 6)
+        (vecto:fill-and-stroke)
+        (vecto:rounded-rectangle 2 2 (* 320 (max 4/100 (percent))) 14 7 7)
+        (vecto:set-rgb-fill 55/255 84/255 151/255)
+        (vecto:set-rgb-stroke 96/255 119/255 171/255)
+        (vecto:fill-and-stroke)
+        (vecto:save-png-stream out)))))

@@ -11,6 +11,7 @@
                :cl-smtp
                :cl-who
                :css-lite
+               :vecto
                :double-metaphone
                :drakma
                :flexi-streams

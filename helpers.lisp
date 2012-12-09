@@ -49,6 +49,9 @@
 (defun intersection-fourth (list1 list2)
   (intersection list1 list2 :key #'fourth))
 
+(defun string-intersection (list1 list2)
+  (intersection list1 list2 :test #'string=))
+
 (defun activity-rank (item)
   ; is it from a friend?
   ; how many people like it
