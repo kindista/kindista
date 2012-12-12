@@ -65,7 +65,7 @@
 
 (defun person-link (id)
   (html
-    (:a :href (format nil "/people/~A" id) (str (getf (db id) :name)))))
+    (:a :href (strcat "/people/" (username-or-id id)) (str (getf (db id) :name)))))
 
 (defun offer-activity-item (&key time user-name user-id offer-id next-url hearts text)
   (activity-item :id offer-id

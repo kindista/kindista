@@ -27,6 +27,9 @@
                     id)
               (gethash stem *request-stem-index*))))
 
+    (with-locked-hash-table (*activity-person-index*)
+      (push (cons (getf data :created) id) (gethash by *activity-person-index*)))
+
     (resource-geo-index-insert *request-geo-index*
                                lat
                                long

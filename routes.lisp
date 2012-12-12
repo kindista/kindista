@@ -7,7 +7,7 @@
         (see-other "/home")
         (base-page "Welcome"
                  (html
-                   (:img :id "biglogo" :src "/media/biglogo.png")
+                   (:img :id "logo" :src "/media/logo.png")
                    (:form :method "POST" :action "/login" :id "login"
                      (awhen (get-parameter "retry")
                        (htm (:p :class "error" "The email/username or password was incorrect.")
@@ -26,7 +26,7 @@
                       (:br)
                       (:a :href "/signup" "Create an account")))
                    (:div :id "about"
-                    (:h2 "Co-creating a more beautiful world.")
+                    (:h2 "Uncovering a wealth of human connection.")
                     (:p :class "big"
                       "Kindista is a new social network for seeing and appreciating the
                        creative potential in all people and supporting each other
@@ -250,13 +250,12 @@
                       )
                       |#
                       
-                    (:div :class "item"
-                      (:h2 "People you may know")
-                      (:menu
-                        (:li (:strong "Thursday, November 23"))
-                        (:li "7:00PM " (:a :href "x" "East Eugene Gift Circle"))
-                        (:li (:strong "Thursday, November 30"))
-                        (:li "7:00PM " (:a :href "x" "West Eugene Gift Circle")))))))
+                    (:h2 "People you may know")
+                    (:menu
+                      (dolist (data (suggested-people))
+                        (htm
+                          (:li (:a :href (strcat "/people/" (username-or-id (cdr data)))
+                                   (str (getf (db (cdr data)) :name))))))))))
         ((and (getf *user* :lat)
               (getf *user* :long))
 
@@ -300,6 +299,8 @@
            :selected "home"))))))
 
 (defroute "/settings" ()
+  (:get
+    ":-)")
   (:post
     (require-user
       (cond

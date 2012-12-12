@@ -1,6 +1,6 @@
 (in-package :kindista)
 
-(declaim (optimize (speed 0) (safety 3) (debug 3)))
+;(declaim (optimize (speed 0) (safety 3) (debug 3)))
 
 (setf (cl-who:html-mode) :sgml)
 
@@ -209,7 +209,7 @@
 (defun page-header (&optional extra)
   (html
     (:div :id "header"
-     (:a :id "logo" :href "/" (:img :id "symbol" :src "/media/biglogo.png" :alt "kindista"))
+     (:a :id "logo" :href "/" (:img :id "symbol" :src "/media/logo.png" :alt "kindista"))
      ;(:h1 "kindista")
      (when extra
        (str extra)))))
@@ -286,15 +286,12 @@
                    (str body))
 
                  (:form :action "/search" :method "GET" :id "search"
-                   (:table
-                    (:tr
-                      (:td 
-                           (:strong "Search ")
-                           (:select :name "scope"
-                             (:option "All" :selected t)
-                             (:option "Requests"))
-                           (:input :type "text" :name "q"))
-                      (:td (:input :type "submit" :value "Go")))))
+                   (:strong "Search ")
+                   (:select :name "scope"
+                     (:option "All" :selected t)
+                     (:option "Requests"))
+                   (:input :type "text" :name "q")
+                   (:input :type "submit" :value "Go"))
 
                  (:div :id "menu"
                    (:table
@@ -303,10 +300,13 @@
                         (:img :src (format nil "/media/avatar/~A.jpg" *userid*)))
                        (:td (:a :href (s+ "/people/" (username-or-id)) (str (getf *user* :name)))))
                      (:tr
-                       (:td (:a :href "/logout" "Log out"))))
+                       (:td
+                         (:a :href "/settings" "Settings")
+                         " &nbsp;&middot;&nbsp; "
+                         (:a :href "/logout" "Log out"))))
 
-                   (str (menu (list '("Bulletin Board" "home" "")
-                                    '("Personal Mail" "mail")
+                   (str (menu (list '("Recent Activity" "home" "")
+                                    '("Messages" "mail")
                                     '("People" "people")
                                     '("Offers" "offers")
                                     '("Requests" "requests")

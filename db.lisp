@@ -9,12 +9,15 @@
 (defvar *db-log-lock* (make-mutex :name "db log"))
 
 (defvar *activity-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *activity-person-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *offer-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *offer-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *offer-stem-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 (defvar *request-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *request-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *request-stem-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
+(defvar *people-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *followers-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *love-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *comment-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *gratitude-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
@@ -82,15 +85,22 @@
                  (asetf long (+ it 1024))))
               (collect (+ (ash lat 10) long) at beginning))))))
 
-(defun geo-index-query (index lat long distance)
+(defun geo-index-query (index lat long distance &key with-distance)
   (setf distance (min 10 (ceiling (/ distance 12.4274))))
   (iter (for item in (delete-duplicates
                        (iter (for code in (geocode-neighbors (geocode lat long) distance))
                              (appending (gethash code index)))
                        :key #'fourth))
-        (when (<= (air-distance lat long (second item) (third item)) distance)
-          (collect item))))
+        (let ((item-distance (air-distance lat long (second item) (third item))))
+          (when (<= item-distance distance)
+            (if with-distance
+              (collect (cons item-distance item))
+              (collect item))))))
           
+(defun people-geo-index-insert (lat long id created)
+  (let ((geocode (geocode lat long)))
+    (with-locked-hash-table (*people-geo-index*)
+      (push (list created lat long id) (gethash geocode *people-geo-index*)))))
 
 (defun activity-geo-index-insert (lat long id created people)
   (let ((geocode (geocode lat long)))
@@ -271,6 +281,8 @@
 
 (defun clear-indexes ()
   (dolist (index (list
+                   *activity-geo-index*
+                   *activity-person-index*
                    *request-index*
                    *request-geo-index*
                    *request-stem-index*
@@ -279,6 +291,8 @@
                    *offer-stem-index*
                    *love-index*
                    *comment-index*
+                   *people-geo-index*
+                   *followers-index*
                    *timeline-index*
                    *metaphone-index*
                    *username-index*
