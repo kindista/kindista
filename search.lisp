@@ -711,6 +711,10 @@
   )
 
 (defroute "/search" ()
+  ; get the scope
+  ; if all, search everything and make headers for types with a match
+  ; if scoped, just search the scope
+ 
   (:get
     (require-user
       (standard-page
@@ -727,6 +731,18 @@
                   (dolist (item requests)
                     (let ((request (db item)))
                       (htm
+                        (:p (:a :href (strcat "/requests/" item) (str (getf request :text)))
+                            (:br)
+                            "posted by " (:a :href (strcat "/people/" (username-or-id (getf request :by)))
+                                             (str (getf (db (getf request :by)) :name)))
+                            " " (str (inline-timestamp (getf request :created)))
+                            (:br)
+                            (dolist (tag (getf request :tags))
+                              (htm
+                                "#"
+                                (:a :href (strcat "/requests?q=" tag) (str tag))
+                                " "))
+                         )
                         (str (request-activity-item :time (getf request :created)
                                                     :request-id item
                                                     :user-name (getf (db (getf request :by)) :name)
@@ -738,8 +754,21 @@
                   (:h2 "offers")
                   (:p (fmt "~a" offers))))
               (when people
-                (htm
-                  (:h2 "people")
-                  (:p (fmt "~a" people)))))))
+                (let ((friends (getf *user* :following)))
+                  (htm
+                    (:h2 "people")
+                    (dolist (id people)
+                      (htm
+                        (:p (:a :href (strcat "/people/" (username-or-id id)) (str (getf (db id) :name)))
+                            (:br)
+                            (if (member id friends)
+                              (htm
+                                (:em "friends"))
+                              (acase (length (mutual-connections id))
+                                (0 (str "no mutual connections"))
+                                (1 (str "1 mutual connection"))
+                                (t (str (strcat it " mutual connections")))))))
+                    )
+                  ))))))
         :selected nil))))
   

@@ -27,6 +27,10 @@ a:hover {
  text-decoration:underline;
 }
 
+h1:first-child {
+ margin-top: 0;
+}
+
 img {
  border:0;
 }
@@ -317,6 +321,7 @@ body.landing > p {
 }
 
 #search select {
+ margin:0;
  font-size: 1em;
  color:#000;
  border:0;
@@ -328,16 +333,9 @@ body.landing > p {
 }
 
 #search input[type=text] {
- -webkit-border-top-right-radius: 3px;
- -webkit-border-bottom-right-radius: 03px;
- -moz-border-radius-topright: 3px;
- -moz-border-radius-bottomright: 3px;
+ margin:0;
  border-top-right-radius: 3px;
  border-bottom-right-radius: 3px;
- -webkit-border-top-left-radius: 3px;
- -webkit-border-bottom-left-radius: 3px;
- -moz-border-radius-topleft: 3px;
- -moz-border-radius-bottomleft: 3px;
  border-top-left-radius: 3px;
  border-bottom-left-radius: 3px;
  margin: 0.5em;
@@ -347,7 +345,7 @@ body.landing > p {
  #search {
   position:absolute;
   top:9.2em;
-  left:16.8em;
+  left:17em;
   width:40em;
   padding:0;
   z-index:10;
@@ -523,10 +521,13 @@ body.landing > p {
 }
 
 #menu li img {
- width:1.5em;
- height:1.5em;
  margin:0 0.625em 0 0;
  vertical-align:middle;
+}
+
+.icon {
+ width:1.5em;
+ height:1.5em;
 }
 
 .activity {
@@ -724,13 +725,17 @@ button.text.large {
 
 .basics > form input {
  margin:0.45em 0.65em 0.55em 0;
- padding:0.35em 0.5em;
- background:#5c8a2f;
+ padding:0.5em;
+ background:#375497;
  border:0;
  border-radius:4px;
  color:#fff;
- font-size:0.9em;
  font-weight:bold;
+}
+
+.basics > form input.cancel {
+ background:#ddd;
+ color: #000;
 }
 
 .item .timestamp {
@@ -758,13 +763,13 @@ img.bigavatar {
  border:0.5em solid #fff;
  box-shadow:2px 2px 3px #c0c0c0;
  margin: 0 1em 1em 0;
- width:200px;
- height:200px;
+ width:10em;
+ height:10em;
  float:left;
 }
 
 .basics h1 {
- font-size: 1.3em;
+ font-size: 1.8em;
  font-weight:normal;
  margin: 0.85em 0 0.25em;
 }
@@ -979,6 +984,20 @@ button.no {
  margin-right:1em;
 }
 
+a.cancel, button.cancel {
+ border-radius:3px;
+ border:0;
+ padding:0.5em;
+ background: #ccc;
+ color: #000;
+ font-weight:bold;
+ margin-right:1em;
+}
+
+a.cancel {
+ padding: 0.55em;
+}
+
 button.red {
  border:0;
  padding:0;
@@ -1011,9 +1030,12 @@ ul.keywords {
  margin:0;
 }
 
+ul.keywords li {
+ margin:0.5em 0;
+}
+
 ul.keywords li a:first-child {
  font-weight:bold;
- font-size:0.8em;
 }
 
 p.right {
@@ -1062,4 +1084,27 @@ form.post-next h2 {
 
 .person-tile p a {
  font-weight: bold;
+}
+
+.bio .icon {
+ margin-left: 0.5em;
+ opacity: 0.6;
+}
+
+.bio .icon:hover {
+ opacity: 1.0;
+}
+
+.bio .empty {
+ font-style: italic;
+ color: #888;
+}
+
+.bio-section {
+ margin-top: 1em;
+}
+
+.bio-section textarea {
+ width: 40em;
+ margin: 1em 0;
 }

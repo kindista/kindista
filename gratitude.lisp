@@ -113,7 +113,7 @@
          )))
     :selected "people"))
 
-(defroute "/gratitude/compose" ()
+(defroute "/gratitude/new" ()
   (:get
     (require-user
       (gratitude-compose :subjects (parse-subject-list (get-parameter "subject")))))

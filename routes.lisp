@@ -298,12 +298,61 @@
                    (:input :type "submit" :value "Next")))))
            :selected "home"))))))
 
+(defroute "/friends" ()
+  (:get
+    ":-)")
+  (:post
+    (require-user
+      (let ((friends (getf *user* :following)))
+        (cond
+          ((scan +number-scanner+ (post-parameter "add"))
+           (let ((id (parse-integer (post-parameter "add"))))
+             (unless (member id friends)
+               (modify-db *userid* :following (cons id friends))))
+           (see-other (or (post-parameter "next") "/home")))
+
+          ((scan +number-scanner+ (post-parameter "remove"))
+           (let ((id (parse-integer (post-parameter "remove"))))
+             (when (member id friends)
+               (modify-db *userid* :following (remove id friends))))
+           (see-other (or (post-parameter "next") "/home")))
+
+          (t
+           (flash "Sorry, couldn't make sense of that request.")
+           (see-other "/home")))))))
+
 (defroute "/settings" ()
   (:get
     ":-)")
   (:post
     (require-user
       (cond
+        ((post-parameter "bio-doing")
+         (unless (getf *user* :bio)
+           (modify-db *userid* :bio t))
+         (modify-db *userid* :bio-doing (post-parameter "bio-doing"))
+         (see-other (or (post-parameter "next") "/home")))
+        ((post-parameter "bio-summary")
+         (unless (getf *user* :bio)
+           (modify-db *userid* :bio t))
+         (modify-db *userid* :bio-summary (post-parameter "bio-summary"))
+         (see-other (or (post-parameter "next") "/home")))
+        ((post-parameter "bio-into")
+         (unless (getf *user* :bio)
+           (modify-db *userid* :bio t))
+         (modify-db *userid* :bio-into (post-parameter "bio-into"))
+         (see-other (or (post-parameter "next") "/home")))
+        ((post-parameter "bio-contact")
+         (unless (getf *user* :bio)
+           (modify-db *userid* :bio t))
+         (modify-db *userid* :bio-contact (post-parameter "bio-contact"))
+         (see-other (or (post-parameter "next") "/home")))
+        ((post-parameter "bio-skills")
+         (unless (getf *user* :bio)
+           (modify-db *userid* :bio t))
+         (modify-db *userid* :bio-skills (post-parameter "bio-skills"))
+         (see-other (or (post-parameter "next") "/home")))
+
         ((post-parameter "address")
          (multiple-value-bind (lat long address city state country)
              (geocode-address (post-parameter "address"))

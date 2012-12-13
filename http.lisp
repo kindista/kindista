@@ -6,6 +6,8 @@
 
 (defvar *flashes* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 
+(defvar *base-url* "/")
+
 (defun flash (message &key (id *userid*) error)
   (with-locked-hash-table (*flashes*)
     (push
@@ -288,8 +290,9 @@
                  (:form :action "/search" :method "GET" :id "search"
                    (:strong "Search ")
                    (:select :name "scope"
-                     (:option "All" :selected t)
-                     (:option "Requests"))
+                     (:option :value "all" "All" :selected t)
+                     (:option :value "requests" "Requests") 
+                     (:option :value "people" "People"))
                    (:input :type "text" :name "q")
                    (:input :type "submit" :value "Go"))
 

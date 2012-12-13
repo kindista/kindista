@@ -73,3 +73,13 @@
     (* (/ 50 (log (+ (/ age 86400) 6)))
        (expt loves 0.3))))
 
+(defun inline-timestamp (time &key type url)
+  (let ((inner (html
+                 (when type
+                   (htm (str type) " "))
+                 (str (humanize-universal-time time)))))
+    (html
+      (:span :class "timestamp" :data-time time :data-type type
+        (if url
+          (htm (:a :href url (str inner)))
+          (str inner))))))
