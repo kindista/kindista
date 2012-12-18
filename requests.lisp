@@ -1,11 +1,10 @@
 (in-package :kindista)
 
-(defun create-request (&key (by *userid*) text tags expires)
+(defun create-request (&key (by *userid*) text tags)
   (insert-db (list :type :request
                          :by by
                          :text text
                          :tags tags
-                         :expires (+ (get-universal-time) (* expires 86400))
                          :created (get-universal-time))))
 
 (defun index-request (id data)
@@ -46,7 +45,7 @@
         (:button :class "yes" :type "submit" :class "submit" :name "next" "Next")))))
    :selected "people"))
 
-(defun request-compose-next (&key text expires error tags)
+(defun request-compose-next (&key text error tags existing-url)
   ; show the list of top-level tags
   ; show recommended tags
   ; show preview
@@ -55,26 +54,18 @@
   ; create button
   (let ((suggested (or tags (get-tag-suggestions text))))
     (standard-page
-     "Post a request"
+     (if existing-url "Edit your request" "Post a request")
      (html
        (:div :class "item"
         (:h2 "Preview your request")
         (when error
           (htm
             (:p :class "error" (str error))))
-        (:form :method "post" :action "/requests/new" :class "post-next"
+        (:form :method "post" :action (or existing-url "/requests/new") :class "post-next"
           (:input :type "hidden" :name "text" :value text)
-          (:p (str text)
+          (:p (esc text)
               " "
               (:button :class "red" :type "submit" :class "cancel" :name "back" "edit")) 
-          (:h2 "select an expiration date")
-          (:p (:label :for "expires" "expires in: ")
-              (:select :name "expires"
-                (:option :value "7" :selected (when (eql expires 7) t) "one week")
-                (:option :value "14" :selected (when (eql expires 14) t)"two weeks")
-                (:option :value "30" :selected (when (eql expires 30) t)"one month")
-                (:option :value "90" :selected (when (eql expires 90) t)"three months") 
-                (:option :value "180" :selected (when (eql expires 180) t)"six months"))) 
           (:h2 "select at least one keyword")
           (dolist (tag *top-tags*)
             (htm (:div :class "tag"
@@ -97,7 +88,6 @@
 ; creation date
 ; edited date
 ; text
-; expiration date
 ; tags (at least 1)
 ; privacy ('all 'friends or listname)
 
@@ -119,8 +109,7 @@
           (request-compose-next :text (post-parameter "text")))
 
         ((and (post-parameter "create")
-              (post-parameter "text")
-              (scan +number-scanner+ (post-parameter "expires")))
+              (post-parameter "text")) 
 
          (let ((tags (iter (for pair in (post-parameters*))
                            (when (and (string= (car pair) "tag")
@@ -132,11 +121,9 @@
            (if (intersection tags *top-tags* :test #'string=)
              (see-other (format nil "/requests/~A"
                                     (create-request :text (post-parameter "text")
-                                                    :tags tags
-                                                    :expires (parse-integer
-                                                               (post-parameter "expires")))))
+                                                    :tags tags)))
+
              (request-compose-next :text (post-parameter "text")
-                                   :expires (post-parameter "expires")
                                    :tags tags
                                    :error "You must select at least one keyword"))))
         (t
@@ -155,7 +142,7 @@
               (str (request-activity-item :time (getf it :created)
                                           :request-id id
                                           :user-name (getf (db (getf it :by)) :name)
-                                          :user-id (username-or-id (getf it :by))
+                                          :user-id (getf it :by)
                                           :hearts (length (loves id))
                                           ;:comments (length (comments id))
                                           :text (getf it :text)))))
@@ -243,7 +230,7 @@
                                                                                (or (getf request :long)
                                                                                    (getf user :long)))
                                                        :user-name (getf user :name)
-                                                       :user-id (username-or-id (getf request :by))
+                                                       :user-id (getf request :by)
                                                        :hearts (length (loves item))
                                                        :text (getf request :text))))
                          (setf items (cdr items)))

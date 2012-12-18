@@ -933,6 +933,7 @@ menu.bar li a {
  font-size: 0.9em;
  background:#f7f5b7;
  padding: 1em;
+ margin-top: 1em;
  box-shadow: 1px 1px 1px rgba(0,0,0,0.1);
 }
 

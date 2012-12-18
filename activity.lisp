@@ -33,6 +33,11 @@
       (:input :type "hidden" :name "next" :value next-url)
       (:input :type "submit" :value "Flag"))))
 
+(defun edit-button (url)
+  (html
+    (:form :method "GET" :action (s+ url "/edit")
+      (:input :type "submit" :value "Edit"))))
+
 
 (defun activity-icons (&key url hearts comments)
   (html
@@ -48,7 +53,7 @@
           ;(:span :class "unicon" " ✎ ")
           (str comments))))))
 
-(defun activity-item (&key id url content time next-url hearts comments type distance)
+(defun activity-item (&key id url content time next-url hearts comments type distance edit user-id)
   (html
     (:div :class "item" :id id
       (str (timestamp time :type type :url url))
@@ -58,21 +63,28 @@
             "within " (str (distance-string distance)))))
       (str content)
       (:div :class "actions"
+        (when edit
+          (htm
+            (str (edit-button url))  
+            " &middot; "))
         (str (love-button id url next-url))
         (when comments
           (htm
             " &middot; "
             (str (comment-button url))))
-        " &middot; "
-        (str (flag-button url))
+        (unless (eql user-id *userid*)
+          (htm
+            " &middot; "
+            (str (flag-button url))))
         (str (activity-icons :hearts hearts :comments comments :url url))))))
 
 (defun person-link (id)
   (html
-    (:a :href (strcat "/people/" (username-or-id id)) (str (getf (db id) :name)))))
+    (:a :href (s+ "/people/" (username-or-id id)) (str (getf (db id) :name)))))
 
 (defun offer-activity-item (&key time user-name user-id offer-id next-url hearts text distance)
   (activity-item :id offer-id
+                 :user-id user-id
                  :url (strcat "/offers/" offer-id)
                  :time time
                  :distance distance
@@ -86,42 +98,45 @@
 
 (defun request-activity-item (&key time user-name user-id request-id next-url hearts text what distance)
   (activity-item :id request-id
+                 :user-id user-id
                  :url (strcat "/requests/" request-id)
                  :time time
                  :distance distance
                  :next-url next-url
+                 :edit (when (eql user-id *userid*) t)
                  :hearts hearts
                  :type (unless what "requested")
                  :content (html
-                            (:a :href (strcat "/people/" user-id) (str user-name))
+                            (str (person-link user-id))
                             (when what
                               (htm
                                 " posted a "
                                 (:a :href (strcat "/requests/" request-id) "request")))
-                            (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
+                            (:blockquote (cl-who:esc text)))))
 
-(defun gratitude-activity-item (&key time id next-url text)
+(defun gratitude-activity-item (&key time id next-url text user-id)
   (activity-item :id id
+                 :user-id user-id
                  :url (strcat "/gratitude/" id)
                  :time time
                  :next-url next-url
                  :hearts (length (loves id))
                  :comments (length (comments id))
                  :content (html
-                            (str (person-link (getf (db id) :author)))
+                            (str (person-link user-id))
                             " shared "
                             (:a :href (strcat "/gratitude/" id) "gratitude")
                             " for "
                             (fmt "~{~A~^, ~}"
                                  (iter (for subject in (getf (db id) :subjects))
                                        (collect (person-link subject))))
-                            (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
+                            (:blockquote (cl-who:esc text)))))
 
 (defun joined-activity-item (&key time user-name user-id)
   (html
     (:div :class "item"
       (str (timestamp time))
-      (:a :href (s+ "/people/" user-id) (str user-name)) " joined Kindista")))
+      (str (person-link user-id)) " joined Kindista")))
 
 (defun activity-items (&key (user *user*) (page 0) (count 20) next-url)
   (let ((items (sort (geo-index-query *activity-geo-index*
@@ -141,19 +156,20 @@
                  (case (result-type item)
                    (:gratitude
                      (str (gratitude-activity-item :time (result-created item)
+                                                   :user-id (first (result-people item))
                                                    :id (result-id item)
                                                    :next-url next-url
                                                    :text (getf (db (result-id item)) :text))))
                    (:person
                      (str (joined-activity-item :time (result-created item)
-                                                :user-id (username-or-id (result-id item))
+                                                :user-id (first (result-people item))
                                                 :user-name (getf (db (result-id item)) :name))))
                    (:offer
                      (let ((userid (first (result-people item))))
                        (str (offer-activity-item :time (result-created item)
                                                  :offer-id (result-id item)
                                                  :user-name (getf (db userid) :name)
-                                                 :user-id (username-or-id userid)
+                                                 :user-id userid
                                                  :next-url next-url
                                                  :hearts (length (loves (result-id item)))
                                                  :text (getf (db (result-id item)) :text)))))
@@ -162,7 +178,7 @@
                        (str (request-activity-item :time (result-created item)
                                                    :request-id (result-id item)
                                                    :user-name (getf (db userid) :name)
-                                                   :user-id (username-or-id userid)
+                                                   :user-id userid
                                                    :what t
                                                    :next-url next-url
                                                    :hearts (length (loves (result-id item)))
