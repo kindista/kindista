@@ -223,7 +223,7 @@ body.landing > p {
 }
 
 #fund {
- background:#bcbcbc url(walker_fund.jpg);
+ background:#eee;/* url(walker_fund.jpg);*/
  background-position: top right;
  background-size: 48em 9em;
  background-repeat: no-repeat;
@@ -544,6 +544,10 @@ body.landing > p {
  border-bottom: 1px solid #ccc;
 }
 
+.item p:last-child {
+ margin-bottom:0;
+}
+
 .item:first-child {
  margin: 0 0 1em;
 }
@@ -632,7 +636,8 @@ body.landing > p {
   width:21em;
   z-index:2;
  }
- #full, .flash {
+
+ body.right #full, body.right .flash {
   margin-right: 22em;
  }
 
@@ -738,21 +743,22 @@ button.text.large {
  color: #000;
 }
 
-.item .timestamp {
+.item .timestamp, .item .distance {
  color:#666;
  font-style:italic;
  font-size:0.8em;
  font-weight:normal;
  margin: 0 0 0.5em;
  float: right;
+ clear: right;
 }
 
-.activity .item .timestamp a {
+.item .timestamp a {
  font-weight: normal;
  color:#666;
 }
 
-.activity .item a {
+.item a {
  font-weight: bold;
 }
 
@@ -1070,10 +1076,13 @@ form.post-next h2 {
  display: inline-block;
  vertical-align: top;
  width: 11em;
- height: 20em;
  padding: 1em 1em 1em 0;
  margin: 0.25em 0 3em;
+}
+
+.people .person-tile {
  border-top: 1px solid #aaa;
+ height: 20em;
 }
 
 .person-tile img {
@@ -1107,4 +1116,15 @@ form.post-next h2 {
 .bio-section textarea {
  width: 40em;
  margin: 1em 0;
+}
+
+.search h2 {
+ padding: 0.25em;
+ margin: 0 -0.25em;
+ background: #eee;
+ border-bottom: 2px solid #aaa;
+}
+
+.search h2 a:visited {
+ color: #375497;
 }

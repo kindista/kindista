@@ -250,23 +250,24 @@
         (:meta :name "HandheldFriendly" :content "True")
         ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
         (:link :rel "stylesheet" :href "/media/style.css")
-        (str "<!--[if lt IE 9]>")
-        (:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
-        (str "<![endif]-->"))
+        ;(str "<!--[if lt IE 9]>")
+        ;(:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
+        ;(str "<![endif]-->")
+        )
       (:body :class class :onload "if(!location.hash){window.scrollTo(0,0);};document.body.className+=\" js\";"
         (:a :name "top")
-        (:div :id "fund"
-         (:img :src "/fundbar.png"))
         (str body)))))
 
 (defun header-page (title header-extra body &key class)
   (base-page title
              (html
+               (:div :id "fund"
+                )
                (str (page-header header-extra))
                (str body))
              :class class))
 
-(defun standard-page (title body &key selected top right)
+(defun standard-page (title body &key selected top right search search-scope class)
   (header-page title
                (html
                  (:div
@@ -290,10 +291,14 @@
                  (:form :action "/search" :method "GET" :id "search"
                    (:strong "Search ")
                    (:select :name "scope"
-                     (:option :value "all" "All" :selected t)
-                     (:option :value "requests" "Requests") 
-                     (:option :value "people" "People"))
-                   (:input :type "text" :name "q")
+                     (:option :value "all" :selected (when (or (not search-scope)
+                                                                     (string= search-scope "all"))
+                                                             "selected") "All")
+                     (:option :value "requests" :selected (when (equalp search-scope "requests")
+                                                                       "selected") "Requests")
+                     (:option :value "people" :selected (when (equalp search-scope "offers")
+                                                                   "selected") "People"))
+                   (:input :type "text" :name "q" :value search)
                    (:input :type "submit" :value "Go"))
 
                  (:div :id "menu"
@@ -327,7 +332,10 @@
                        "Back to the top")
                    )
                  )
-               :class (when right "right")))
+               :class (cond
+                        ((and right class) (s+ "right " class))
+                        (right "right")
+                        (class class))))
 
 
 (defun run ()

@@ -9,76 +9,76 @@
                :created ,(get-universal-time))))
 
 (defun index-person (id data)
-  (setf (gethash (getf data :email) *email-index*) id)
-  (setf (gethash (getf data :username) *username-index*) id)
+  (let ((result (make-result :id id
+                             :latitude (getf data :lat)
+                             :longitude (getf data :long)
+                             :type :person
+                             :people (list id)
+                             :created (getf data :created))))
 
-  (metaphone-index-insert *metaphone-index* (getf data :name) id)
+    (setf (gethash (getf data :email) *email-index*) id)
+    (setf (gethash (getf data :username) *username-index*) id)
 
-  (awhen (getf data :following)
-    (with-locked-hash-table (*followers-index*)
-      (dolist (person it)
-        (push id (gethash person *followers-index*)))))
+    (awhen (getf data :following)
+      (with-locked-hash-table (*followers-index*)
+        (dolist (person it)
+          (push id (gethash person *followers-index*)))))
 
-  (when (getf data :loves)
-    (with-locked-hash-table (*love-index*)
-      (dolist (item (getf data :loves))
-        (unless (member id (gethash item *love-index*))
-          (push id (gethash item *love-index*))))))
+    (when (getf data :loves)
+      (with-locked-hash-table (*love-index*)
+        (dolist (item (getf data :loves))
+          (unless (member id (gethash item *love-index*))
+            (push id (gethash item *love-index*))))))
 
-  (with-locked-hash-table (*activity-person-index*)
-    (push (cons (getf data :created) id) (gethash id *activity-person-index*)))
+    (with-locked-hash-table (*activity-person-index*)
+      (push result (gethash id *activity-person-index*)))
 
-  (when (and (getf data :lat) (getf data :long) (getf data :created))
-    (people-geo-index-insert (getf data :lat) (getf data :long) id (getf data :created))
-    (activity-geo-index-insert (getf data :lat)
-                               (getf data :long)
-                               id
-                               (getf data :created)
-                               (list id)))
+    (when (and (getf data :lat) (getf data :long) (getf data :created))
+      (metaphone-index-insert *metaphone-index* (getf data :name) result)
+      (geo-index-insert *people-geo-index* result)
+      (geo-index-insert *activity-geo-index* result))
 
-  (timeline-insert id (getf data :created) id))
+  (timeline-insert id result))) 
 
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)
       (write-to-string id)))
 
 (defun profile-activity-items (&key (userid *userid*) (page 0) (count 20) next-url type)
-  (let ((items (sort (gethash userid *activity-person-index*) #'> :key #'car))
+  (let ((items (sort (gethash userid *activity-person-index*) #'> :key #'result-created))
         (start (* page 20)))
     (html
       (iter (for i from 0 to (+ start count))
             (if (and (>= i start) items)
               (let* ((item (car items))
-                     (obj (db (cdr item)))
+                     (obj (db (result-id item)))
                      (userid (getf obj :by)))
-                (when (or (not type) (eql type (getf obj :type)))
-                  (case (getf obj :type)
-                    (:gratitude (str (gratitude-activity-item :time (first item)
-                                                              :id (cdr item)
+                (when (or (not type) (eql type (result-type item)))
+                  (case (result-type item)
+                    (:gratitude (str (gratitude-activity-item :time (result-created item)
+                                                              :id (result-id item)
                                                               :next-url next-url
-                                                              :text (getf (db (cdr item)) :text))))
-                    (:person (str (joined-activity-item :time (first item)
-                                                        :user-id (username-or-id (cdr item))
-                                                        :user-name (getf (db (cdr item)) :name))))
+                                                              :text (getf obj :text))))
+                    (:person (str (joined-activity-item :time (result-created item)
+                                                        :user-id (username-or-id (result-id item))
+                                                        :user-name (getf obj :name))))
                     (:offer
-                      (str (offer-activity-item :time (first item)
-                                                :offer-id (cdr item)
+                      (str (offer-activity-item :time (result-created item)
+                                                :offer-id (result-id item)
                                                 :user-name (getf (db userid) :name)
                                                 :user-id (username-or-id userid)
                                                 :next-url next-url
-                                                :hearts (length (loves (cdr item)))
-                                                ;:comments (length (comments (cdr item)))
-                                                :text (getf (db (cdr item)) :text))))
+                                                :hearts (length (loves (result-id item)))
+                                                :text (getf obj :text))))
                     (:request
-                      (str (request-activity-item :time (first item)
-                                                  :request-id (cdr item)
+                      (str (request-activity-item :time (result-created item)
+                                                  :request-id (result-id item)
                                                   :user-name (getf (db userid) :name)
                                                   :user-id (username-or-id userid)
                                                   :what t
                                                   :next-url next-url
-                                                  :hearts (length (loves (cdr item)))
-                                                  ;:comments (length (comments (cdr item)))
-                                                  :text (getf (db (cdr item)) :text)))))))
+                                                  :hearts (length (loves (result-id item)))
+                                                  :text (getf obj :text)))))))
               (finish))
 
             (setf items (cdr items))
@@ -302,16 +302,16 @@
 
 
 (defun nearby-people (&optional (userid *userid*))
-  (let ((user (db userid)))
-    (sublist (remove userid
-                     (sort (geo-index-query *people-geo-index*
-                                            (getf user :lat)
-                                            (getf user :long)
-                                            25
-                                            :with-distance t)
-                           #'< :key #'first)
-                     :key #'fifth)
-             0 10)))
+  (let* ((user (db userid))
+         (lat (getf user :lat))
+         (long (getf user :long)))
+    (labels ((distance (result)
+               (air-distance lat long (result-latitude result) (result-longitude result))))
+      (sublist (remove userid
+                 (sort (geo-index-query *people-geo-index* lat long 25)
+                       #'< :key #'distance)
+                 :key #'result-id)
+             0 10))))
 
 (defun mutual-connections (one &optional (two *userid*))
   (intersection (gethash one *followers-index*)
@@ -332,17 +332,21 @@
               (collect (cons (length (mutual-connections person userid)) person)))))
     #'> :key #'first))
 
-(defun person-tile (id &key distance)
-  (html
-    (:div :class "person-tile"
-      (:img :src (strcat "/media/avatars/" id ".jpg"))
-      (:p (:a :href (strcat "/people/" (username-or-id id))
-           (str (getf (db id) :name))))   
-      ; distance
-      (:p (acase (length (mutual-connections id))
-            (0 (str "no mutual connections"))
-            (1 (str "1 mutual connection"))
-            (t (str (strcat it " mutual connections"))))))))
+(defun person-tile (id &key distance show-city)
+  (let ((data (db id)))
+    (html
+      (:div :class "person-tile"
+        (:img :src (strcat "/media/avatars/" id ".jpg"))
+        (:p (:a :href (strcat "/people/" (username-or-id id))
+             (str (getf data :name))))   
+        ; distance
+        (when show-city
+          (htm
+            (:p :class "city" (str (getf data :city)))))
+        (acase (length (mutual-connections id))
+          (0)
+          (1 (htm (:p "1 mutual connection")))
+          (t (htm (:p (str (strcat it " mutual connections"))))))))))
 
 (defroute "/people" ()
   (:get
@@ -354,9 +358,10 @@
           (:h2 "Nearby")
           (:div :class "person-row"
             (dolist (data (nearby-people))
-              (str (person-tile (fifth data)))))
+              (str (person-tile (result-id data)))))
           (:h2 "People you may know")
           (:div :class "person-row"
             (dolist (data (suggested-people))
               (str (person-tile (cdr data))))))
-        :selected "people"))))
+        :selected "people"
+        :class "people"))))

@@ -5,7 +5,7 @@
     (with-user
       (if *user*
         (see-other "/home")
-        (base-page "Welcome"
+        (standard-page "Welcome"
                  (html
                    (:img :id "logo" :src "/media/logo.png")
                    (:form :method "POST" :action "/login" :id "login"
@@ -36,7 +36,7 @@
                       (:a :href "/about" "About") " &middot; "
                       (:a :href "/blog" "Blog")
                       " &middot; Programmed in Common Lisp"))
-                 :class "landing login")))))
+                      )))))
 
 (defun signup-page (&key error name email password)
   (header-page
@@ -354,10 +354,9 @@
          (see-other (or (post-parameter "next") "/home")))
 
         ((post-parameter "address")
-         (multiple-value-bind (lat long address city state country)
+         (multiple-value-bind (lat long address city state)
              (geocode-address (post-parameter "address"))
-           (declare (ignore city state country))
-           (modify-db *userid* :lat lat :long long :address address)
+           (modify-db *userid* :lat lat :long long :address address :city (format nil "~a, ~a" city state))
            (see-other (or (post-parameter "next") "/home"))))
 
         ((post-parameter "reset-location")
@@ -367,6 +366,11 @@
         ((scan +number-scanner+ (post-parameter "rdist"))
          (modify-db *userid* :rdist (parse-integer (post-parameter "rdist")))
          (flash "Your search distance for offers and requests has been changed!")
+         (see-other (or (post-parameter "next") "/requests")))
+
+        ((scan +number-scanner+ (post-parameter "sdist"))
+         (modify-db *userid* :rdist (parse-integer (post-parameter "sdist")))
+         (flash "Your default search distance has been changed!")
          (see-other (or (post-parameter "next") "/requests")))
 
         ((scan +number-scanner+ (post-parameter "distance"))

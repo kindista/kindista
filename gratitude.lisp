@@ -9,26 +9,28 @@
 
 (defun index-gratitude (id data)
   (let* ((author (db (getf data :author)))
-         (people (cons (getf data :author) (getf data :subjects)))
-         (created (getf data :created)))
+         (created (getf data :created))
+         (subjects (getf data :subjects))
+         (people (cons (getf data :author) subjects))
+         (result (make-result :latitude (getf author :lat)
+                              :longitude (getf author :long)
+                              :people people
+                              :created created
+                              :id id)))
     
-    (timeline-insert (getf data :author) created id)
+    (timeline-insert (getf data :author) result)
 
-    (activity-geo-index-insert (getf author :lat)
-                               (getf author :long)
-                               id
-                               created
-                               people)
+    (geo-index-insert *activity-geo-index* result)
 
     (with-locked-hash-table (*gratitude-index*)
-      (dolist (subject (getf data :subjects))
-        (timeline-insert subject created id)
+      (dolist (subject subjects)
+        (timeline-insert subject result)
         (let ((user (db subject)))
-          (activity-geo-index-insert (getf user :lat)
-                                     (getf user :long)
-                                     id
-                                     created
-                                     people))
+          (geo-index-insert *activity-geo-index* (make-result :latitude (getf user :lat)
+                                                              :longitude (getf user :long)
+                                                              :people people
+                                                              :id id
+                                                              :created created)))
         (push id (gethash subject *gratitude-index*))))))
 
 (defun parse-subject-list (subject-list &key remove)

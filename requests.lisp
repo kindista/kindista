@@ -10,10 +10,15 @@
 
 (defun index-request (id data)
   (let* ((by (getf data :by))
-         (lat (or (getf data :lat) (getf (db by) :lat)))
-         (long (or (getf data :long) (getf (db by) :long))))
+         (result (make-result :latitude (or (getf data :lat) (getf (db (getf data :by)) :lat))
+                              :longitude (or (getf data :long) (getf (db (getf data :by)) :long))
+                              :id id
+                              :type :request
+                              :people (list by)
+                              :created (getf data :created)
+                              :tags (getf data :tags))))
 
-    (timeline-insert (getf data :author) (getf data :created) id)
+    (timeline-insert (getf data :author) result)
     
     (with-locked-hash-table (*request-index*)
       (setf (gethash by *request-index*)
@@ -21,26 +26,13 @@
 
     (with-locked-hash-table (*request-stem-index*)
       (dolist (stem (stem-text (getf data :text)))
-        (push (list (getf data :created)
-                    lat
-                    long
-                    id)
-              (gethash stem *request-stem-index*))))
+        (push result (gethash stem *request-stem-index*))))
 
     (with-locked-hash-table (*activity-person-index*)
-      (push (cons (getf data :created) id) (gethash by *activity-person-index*)))
+      (push result (gethash by *activity-person-index*)))
 
-    (resource-geo-index-insert *request-geo-index*
-                               lat
-                               long
-                               id
-                               (getf data :created)
-                               (getf data :tags))
-    (activity-geo-index-insert lat
-                               long
-                               id
-                               (getf data :created)
-                               (list by))))
+    (geo-index-insert *request-geo-index* result)
+    (geo-index-insert *activity-geo-index* result)))
 
 (defun request-compose (&key text)
   (standard-page
@@ -190,18 +182,20 @@
       (let* ((page (if (scan +number-scanner+ (get-parameter "p"))
                      (parse-integer (get-parameter "p"))
                      0))
-             (base (iter (for tag in (split " " (get-parameter "q")))
+             (q (get-parameter "q"))
+             (base (iter (for tag in (split " " (get-parameter "kw")))
                          (when (scan *tag-scanner* tag)
                            (collect tag))))
              (start (* page 20)))
+        (when (string= q "") (setf q nil))
         (multiple-value-bind (tags items)
-            (nearby-resources-top-tags *request-geo-index* :base base)
+            (nearby-resources-top-tags 'request :base base :q q)
           (standard-page
            "Requests"
             (html
               (:div :class "activity"
                 (:div :class "item"
-                  (unless base
+                  (unless (or base q)
                     (htm
                       (:h4 "post a request") 
                       (:form :method "post" :action "/requests/new"
@@ -212,14 +206,14 @@
                               (:button :class "yes" :type "submit" :class "submit" :name "next" "Post")))))))
 
                   (:form :method "post" :action "/settings"
-                    (when base
+                    (when (or base q)
                       (htm
                         (:p :style "float: right;" (:a :href "/requests" "show all requests"))))
                     (:strong :class "small" "show results within ")
-                    (:input :type "hidden" :name "next" :value (format nil "/requests~a~{~a~^+~}" (if base "?q=" "") base))
-                    (let ((distance (rdist)))
+                    (:input :type "hidden" :name "next" :value (url-compose "/requests" "q" q "kw" base))
+                    (let ((distance (user-rdist)))
                       (htm
-                        (:select :name "rdist" :onchange "this.form.submit()"
+                        (:select :name "rdist" :onchange "this.form.submit();"
                           (:option :value "1" :selected (when (eql distance 1) "") "1 mile")
                           (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
                           (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
@@ -227,7 +221,10 @@
                           (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
                           (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
                     " "
-                    (:input :type "submit" :class "no-js" :value "apply")))
+                    (:input :type "submit" :class "no-js" :value "apply")
+                    (when q
+                      (htm
+                        (:p (:strong :class "small" "showing requests matching \"") (str q) (:strong "\"")) ))))
                 (iter (for i from 0 to (+ start 20))
                       (cond
                         ((< i start)
@@ -239,15 +236,20 @@
                                 (user (db (getf request :by))))
                            (str (request-activity-item :time (getf request :created)
                                                        :request-id item
+                                                       :distance (air-distance (getf *user* :lat)
+                                                                               (getf *user* :long)
+                                                                               (or (getf request :lat)
+                                                                                   (getf user :lat))
+                                                                               (or (getf request :long)
+                                                                                   (getf user :long)))
                                                        :user-name (getf user :name)
                                                        :user-id (username-or-id (getf request :by))
                                                        :hearts (length (loves item))
-                                                       ;:comments (length (comments item))
                                                        :text (getf request :text))))
                          (setf items (cdr items)))
 
                         (t
-                         (when (< (rdist) 100)
+                         (when (< (user-rdist) 100)
                            (htm
                              (:div :class "item small"
                               (:em "Increasing the ")(:strong "show results within")(:em " distance may yield more results."))))
@@ -259,11 +261,11 @@
                             (:div :class "item"
                              (when (> page 0)
                                (htm
-                                 (:a :href (format nil "/requests?p=~a~a~{~a~^+~}" (- page 1) (if base "&q=" "") base) "< previous page")))
+                                 (:a :href (url-compose "/requests" "p" (- page 1) "kw" base) "< previous page")))
                              "&nbsp;"
                              (when (cdr items)
                                (htm
-                                 (:a :style "float: right;" :href (format nil "/requests?p=~a~a~{~a~^+~}" (+ page 1) (if base "&q=" "") base) "next page >"))))))))))
+                                 (:a :style "float: right;" :href (url-compose "/requests" "p" (+ page 1) "kw" base) "next page >")         )))))))))
         :top (when (getf *user* :help)
                (welcome-bar
                  (html
@@ -277,59 +279,63 @@
                        (:span :class "menu-button" "button")
                        (:span :class "menu-showing" "bar")
                        " at the top of the screen.")))))
-          :right (html
-                   (:h3 "browse by keyword")
-                   (when base
-                     (htm
-                       (:p (:strong "keywords selected: ")) 
-                       (:ul :class "keywords"
-                         (dolist (tag base)
-                           (htm
-                             (:li
-                               (:a :href (format nil "?q=~a" tag) (str tag)) 
-                               " "
-                               (:a :href (format nil "?q=~{~a~^+~}" (remove tag base :test #'string=))
-                                   "[x]")      
-                               ))))))
-                   (dolist (tag tags)
-                     (if (string= (first tag) "etc")
-                       (htm
-                         (:div :class "category"
-                          (:h3 (:a :href "/requests/all" 
-                                   (str (s+ "etc (" (write-to-string (second tag)) ")"))))
-                          (iter (for subtag in (third tag))
-                                (for i downfrom (length (third tag)))
-                                (htm
-                                  (:a :href (if (string= (first subtag) "more")
-                                              "/requests/all"
-                                              (format nil "?q=~{~a+~}~a" base (first subtag)))
-                                      (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
-                                  (unless (= i 1)
-                                    (str ", "))))))
-                       (htm
-                         (:div :class "category"
-                          (:h3 (:a :href (format nil "?q=~{~a+~}~a" base (first tag))
-                                   (str (s+ (first tag) " (" (write-to-string (second tag)) ")"))))
-                          (iter (for subtag in (third tag))
-                                (for i downfrom (length (third tag)))
-                                (htm
-                                  (:a :href (if (string= (first subtag) "more")
-                                              (format nil "?q=~{~a+~}~a" base (first tag))
-                                              (format nil "?q=~{~a+~}~a+~a" base (first tag) (first subtag)))
-                                      (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
-                                  (unless (= i 1)
-                                    (str ", "))))))))
-                   (unless base
+        :search q
+        :search-scope (if q "requests" "all")
+        :right (html
+                 (:h3 "browse by keyword")
+                 (when base
+                   (htm
+                     (:p (:strong "keywords selected: ")) 
+                     (:ul :class "keywords"
+                       (dolist (tag base)
+                         (htm
+                           (:li
+                             (:a :href (url-compose "/requests" "kw" tag "q" q) (str tag)) 
+                             " "
+                             (:a :href (url-compose "/requests" "kw" (remove tag base :test #'string=) "q" q)
+                                 "[x]")      
+                             ))))))
+                 (dolist (tag tags)
+                   (if (string= (first tag) "etc")
                      (htm
                        (:div :class "category"
-                        (:h3 (:a :href "/requests/all" "show all keywords"))))))
-         :selected "requests"))))))
+                        (:h3 (:a :href "/requests/all" 
+                                 (str (s+ "etc (" (write-to-string (second tag)) ")"))))
+                        (iter (for subtag in (third tag))
+                              (for i downfrom (length (third tag)))
+                              (htm
+                                (:a :href (if (string= (first subtag) "more")
+                                            "/requests/all"
+                                            (url-compose "" "kw" (format nil "~{~a+~}~a" base (first subtag)) "q" q) )
+                                    (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
+                                (unless (= i 1)
+                                  (str ", "))))))
+                     (htm
+                       (:div :class "category"
+                        (:h3 (:a :href (url-compose "" "kw" (format nil "~{~a+~}~a" base (first tag)) "q" q)
+                                 (str (s+ (first tag) " (" (write-to-string (second tag)) ")"))))
+                        (iter (for subtag in (third tag))
+                              (for i downfrom (length (third tag)))
+                              (htm
+                                (:a :href (url-compose "" "kw"
+                                                       (if (string= (first subtag) "more")
+                                                         (format nil "~{~a+~}~a" base (first tag))
+                                                         (format nil "~{~a+~}~a+~a" base (first tag) (first subtag)))
+                                                       "q" q)
+                                    (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
+                                (unless (= i 1)
+                                  (str ", "))))))))
+                 (unless base
+                   (htm
+                     (:div :class "category"
+                      (:h3 (:a :href "/requests/all" "show all keywords"))))))
+       :selected "requests"))))))
 
 
 (defroute "/requests/all" ()
 (:get
   (require-user
-    (let ((base (iter (for tag in (split " " (get-parameter "q")))
+    (let ((base (iter (for tag in (split " " (get-parameter "kw")))
                       (when (scan *tag-scanner* tag)
                         (collect tag)))))
       (multiple-value-bind (tags items)
@@ -358,20 +364,20 @@
                        (dolist (tag base)
                          (htm
                            (:li
-                             (:a :href (format nil "/requests?q=~{~a~^+~}" (remove tag base :test #'string=))
+                             (:a :href (format nil "/requests?kw=~{~a~^+~}" (remove tag base :test #'string=))
                                  "[x]")      
                              " "
-                             (:a :href (format nil "/requests?q=~a" tag) (str tag)) 
+                             (:a :href (format nil "/requests?kw=~a" tag) (str tag)) 
                              ))))))
                  (dolist (tag tags)
                    (htm
                      (:div :class "category"
-                      (:h3 (:a :href (format nil "/requests?q=~{~a+~}~a" base (first tag))
+                      (:h3 (:a :href (format nil "/requests?kw=~{~a+~}~a" base (first tag))
                                (str (s+ (first tag) " (" (write-to-string (second tag)) ")"))))
                       (iter (for subtag in (third tag))
                             (for i downfrom (length (third tag)))
                             (htm
-                              (:a :href (format nil "/requests?q=~{~a+~}~a+~a" base (first tag) (first subtag))
+                              (:a :href (format nil "/requests?kw=~{~a+~}~a+~a" base (first tag) (first subtag))
                                   (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
                               (unless (= i 1)
                                 (str ", ")))))))))

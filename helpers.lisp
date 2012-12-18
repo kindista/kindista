@@ -59,17 +59,17 @@
   ; how close is it?
   
   (let ((friends (getf *user* :following))
-        (age (- (get-universal-time) (first item)))
+        (age (- (get-universal-time) (or (result-created item) r)))
         (distance (air-distance (getf *user* :lat) (getf *user* :long)
-                                (second item) (third item))))
+                                (result-latitude item) (result-longitude item))))
     (round (- age
              (/ 120000 (log (+ distance 4)))
-             (if (intersection friends (fifth item)) 86400 0)
-             (* (length (loves (fourth item))) 100000)))))
+             (if (intersection friends (result-people item)) 86400 0)
+             (* (length (loves (result-id item))) 100000)))))
 
 (defun resource-rank (item)
-  (let ((age (- (get-universal-time) (first item)))
-        (loves (max 1 (length (loves (fourth item))))))
+  (let ((age (- (get-universal-time) (or (result-created item) 0)))
+        (loves (max 1 (length (loves (result-id item))))))
     (* (/ 50 (log (+ (/ age 86400) 6)))
        (expt loves 0.3))))
 
@@ -83,3 +83,25 @@
         (if url
           (htm (:a :href url (str inner)))
           (str inner))))))
+
+(defun url-compose (base &rest params)
+  (do ((param-strings ()))
+      ((not params) (format nil "~a~a~{~a~^&~}" base (if param-strings "?" "") param-strings))
+      (when (cadr params)
+        (push (if (consp (cadr params))
+                (format nil "~a=~{~a~^+~}" (car params) (cadr params))
+                (format nil "~a=~a" (car params) (cadr params)))
+              param-strings))
+      (setf params (cddr params))))
+
+(defun distance-string (miles)
+  (let ((distance (/ (round miles 0.5) 2)))
+    (cond
+      ((<= distance 1/2)
+       "1/2 mile")
+      ((eql distance 1)
+       "1 mile")
+      ((typep distance 'ratio)
+       (format nil "~1$ miles" (coerce distance 'float)))    
+      (t
+       (format nil "~d miles" distance)))))

@@ -48,10 +48,14 @@
           ;(:span :class "unicon" " ✎ ")
           (str comments))))))
 
-(defun activity-item (&key id url content time next-url hearts comments type)
+(defun activity-item (&key id url content time next-url hearts comments type distance)
   (html
     (:div :class "item" :id id
       (str (timestamp time :type type :url url))
+      (when distance
+        (htm
+          (:div :class "distance"
+            "within " (str (distance-string distance)))))
       (str content)
       (:div :class "actions"
         (str (love-button id url next-url))
@@ -67,10 +71,11 @@
   (html
     (:a :href (strcat "/people/" (username-or-id id)) (str (getf (db id) :name)))))
 
-(defun offer-activity-item (&key time user-name user-id offer-id next-url hearts text)
+(defun offer-activity-item (&key time user-name user-id offer-id next-url hearts text distance)
   (activity-item :id offer-id
                  :url (strcat "/offers/" offer-id)
                  :time time
+                 :distance distance
                  :next-url next-url
                  :hearts hearts
                  :content (html
@@ -79,10 +84,11 @@
                             (:a :href (strcat "/people/" user-id "/offers#" offer-id) "offer")
                             (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
 
-(defun request-activity-item (&key time user-name user-id request-id next-url hearts text what)
+(defun request-activity-item (&key time user-name user-id request-id next-url hearts text what distance)
   (activity-item :id request-id
                  :url (strcat "/requests/" request-id)
                  :time time
+                 :distance distance
                  :next-url next-url
                  :hearts hearts
                  :type (unless what "requested")
@@ -132,35 +138,35 @@
 
               ((and (>= i start) items)
                (let* ((item (car items)))
-                 (case (getf (db (fourth item)) :type)
-                   (:gratitude (str (gratitude-activity-item :time (first item)
-                                                             :id (fourth item)
-                                                             :next-url next-url
-                                                             :text (getf (db (fourth item)) :text))))
-                   (:person (str (joined-activity-item :time (first item)
-                                                       :user-id (username-or-id (fourth item))
-                                                       :user-name (getf (db (fourth item)) :name))))
+                 (case (result-type item)
+                   (:gratitude
+                     (str (gratitude-activity-item :time (result-created item)
+                                                   :id (result-id item)
+                                                   :next-url next-url
+                                                   :text (getf (db (result-id item)) :text))))
+                   (:person
+                     (str (joined-activity-item :time (result-created item)
+                                                :user-id (username-or-id (result-id item))
+                                                :user-name (getf (db (result-id item)) :name))))
                    (:offer
-                     (let ((userid (getf (db (fourth item)) :by)))
-                       (str (offer-activity-item :time (first item)
-                                                 :offer-id (fourth item)
+                     (let ((userid (first (result-people item))))
+                       (str (offer-activity-item :time (result-created item)
+                                                 :offer-id (result-id item)
                                                  :user-name (getf (db userid) :name)
                                                  :user-id (username-or-id userid)
                                                  :next-url next-url
-                                                 :hearts (length (loves (fourth item)))
-                                                 ;:comments (length (comments (fourth item)))
-                                                 :text (getf (db (fourth item)) :text)))))
+                                                 :hearts (length (loves (result-id item)))
+                                                 :text (getf (db (result-id item)) :text)))))
                    (:request
-                     (let ((userid (getf (db (fourth item)) :by)))
-                       (str (request-activity-item :time (first item)
-                                                   :request-id (fourth item)
+                     (let ((userid (first (result-people item))))
+                       (str (request-activity-item :time (result-created item)
+                                                   :request-id (result-id item)
                                                    :user-name (getf (db userid) :name)
                                                    :user-id (username-or-id userid)
                                                    :what t
                                                    :next-url next-url
-                                                   :hearts (length (loves (fourth item)))
-                                                   ;:comments (length (comments (fourth item)))
-                                                   :text (getf (db (fourth item)) :text)))))))
+                                                   :hearts (length (loves (result-id item)))
+                                                   :text (getf (db (result-id item)) :text)))))))
                (setf items (cdr items)))
 
               (t

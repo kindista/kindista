@@ -689,15 +689,13 @@
   ; for each stem get matching requests
   ; return intersection
   
-  (mapcar #'fourth
+  (mapcar #'result-id
           (sort
-            (intersection-fourth
-              (iter (for stem in (stem-text text))
-                    (reducing (gethash stem
-                                       (case type
-                                         ('offer *offer-stem-index*)
-                                         (t *request-stem-index*)))
-                              by #'intersection-fourth))
+            (result-id-intersection
+              (stem-index-query (case type
+                                  ('offer *offer-stem-index*)
+                                  (t *request-stem-index*))
+                                text)
               (geo-index-query (case type
                                  ('offer *offer-geo-index*)
                                  (t *request-geo-index*))
@@ -706,69 +704,195 @@
                                distance))
             #'> :key #'resource-rank)))
 
-(defun search-site (text &key type (distance 10))
+(defun person-search-rank (id &key (userid *userid*))
+  (let* ((mutuals (mutual-connections id userid))
+         (user (db userid))
+         (friend (member id (getf user :following)))
+         (distance (person-distance (db id) user)))
 
+    (+ mutuals
+       
+       )
+    
+    )
+  
   )
 
+(defun search-people (query &key (userid *userid*))
+  (let* ((people (metaphone-index-query *metaphone-index* query))
+         (user (db userid))
+         (lat (getf user :lat))
+         (long (getf user :long))
+         (following (getf user :following)))
+    (labels ((person-rank (result)
+               (let* ((id (result-id result))
+                      (mutuals (length (mutual-connections id userid)))
+                      (friend (member id following))
+                      (distance (air-distance lat long (result-latitude result) (result-longitude result))))
+                 (+ (* 9 mutuals)
+                    (/ 50 (log (+ 4 distance) 10))
+                    (if friend 100 0)
+                    (* -12 (levenshtein:distance query (getf (db id) :name)))))))
+      (mapcar #'result-id
+              (sort people; (remove userid people :key #'result-id)
+                    #'> :key #'person-rank)))))
+
+(defun request-results-html (request-list)
+  (html
+    (dolist (item request-list)
+      (let* ((request (db item))
+             (user (db (getf request :by))))
+        (str (request-activity-item :time (getf request :created)
+                                    :request-id item
+                                    :distance (air-distance (getf *user* :lat)
+                                                            (getf *user* :long)
+                                                            (or (getf request :lat)
+                                                                (getf user :lat))
+                                                            (or (getf request :long)
+                                                                (getf user :long)))
+                                    :user-name (getf user :name)
+                                    :user-id (username-or-id (getf request :by))
+                                    :hearts (length (loves item))
+                                    :text (getf request :text)))))))
+
+(defun offer-results-html (offer-list)
+  (html
+    (dolist (item offer-list)
+      (let* ((offer (db item))
+             (user (db (getf offer :by))))
+        (str (offer-activity-item :time (getf offer :created)
+                                  :offer-id item
+                                  :distance (air-distance (getf *user* :lat)
+                                                          (getf *user* :long)
+                                                          (or (getf offer :lat)
+                                                              (getf user :lat))
+                                                          (or (getf offer :long)
+                                                              (getf user :long)))
+                                  :user-name (getf user :name)
+                                  :user-id (username-or-id (getf offer :by))
+                                  :hearts (length (loves item))
+                                  :text (getf offer :text)))))))
+
+(defun people-results-html (person-list)
+  (html
+    (:div :class "person-row"
+      (dolist (person person-list)
+        (str (person-tile person :show-city t))))))
+
+(defun search-nearby-people (query &key (userid *userid*) (distance 10))
+  (let* ((user (db userid))
+         (lat (getf user :lat))
+         (long (getf user :long)))
+    (labels ((result-distance (result)
+               (air-distance lat long (result-latitude result) (result-longitude result))))
+      (sort
+        (remove userid
+          (result-id-intersection
+            (geo-index-query *people-geo-index* lat long distance)
+            (metaphone-index-query *metaphone-index* query))
+          :key #'result-id)
+        #'< :key #'result-distance))))
+
 (defroute "/search" ()
-  ; get the scope
-  ; if all, search everything and make headers for types with a match
-  ; if scoped, just search the scope
- 
   (:get
     (require-user
-      (standard-page
-        "Search"
-        (let ((requests (search-resources 'request (get-parameter "q")))
-              (offers (search-resources 'offer (get-parameter "q")))
-              (people (metaphone-index-query *metaphone-index* (get-parameter "q"))))
+      (let ((scope (or (get-parameter "scope") "all"))
+            (q (get-parameter "q")))
+
+        (standard-page
+          "Search"
           (html
-            (:h1 "search results")
-            (:div :class "activity"
-              (when requests
-                (htm
-                  (:h2 "requests")
-                  (dolist (item requests)
-                    (let ((request (db item)))
-                      (htm
-                        (:p (:a :href (strcat "/requests/" item) (str (getf request :text)))
-                            (:br)
-                            "posted by " (:a :href (strcat "/people/" (username-or-id (getf request :by)))
-                                             (str (getf (db (getf request :by)) :name)))
-                            " " (str (inline-timestamp (getf request :created)))
-                            (:br)
-                            (dolist (tag (getf request :tags))
-                              (htm
-                                "#"
-                                (:a :href (strcat "/requests?q=" tag) (str tag))
-                                " "))
-                         )
-                        (str (request-activity-item :time (getf request :created)
-                                                    :request-id item
-                                                    :user-name (getf (db (getf request :by)) :name)
-                                                    :user-id (username-or-id (getf request :by))
-                                                    :hearts (length (loves item))
-                                                    :text (getf request :text))))))))
-              (when offers
-                (htm
-                  (:h2 "offers")
-                  (:p (fmt "~a" offers))))
-              (when people
-                (let ((friends (getf *user* :following)))
-                  (htm
-                    (:h2 "people")
-                    (dolist (id people)
-                      (htm
-                        (:p (:a :href (strcat "/people/" (username-or-id id)) (str (getf (db id) :name)))
-                            (:br)
-                            (if (member id friends)
-                              (htm
-                                (:em "friends"))
-                              (acase (length (mutual-connections id))
-                                (0 (str "no mutual connections"))
-                                (1 (str "1 mutual connection"))
-                                (t (str (strcat it " mutual connections")))))))
-                    )
-                  ))))))
-        :selected nil))))
-  
+            (:h1 (str (s+ "Search results for \"" q "\"")))
+
+            (cond
+              ((string= scope "requests")
+               (see-other (s+ "/requests?q=" (url-encode q))))
+
+              ((string= scope "offers")
+               (let ((offers (search-resources 'offer q :distance (user-rdist))))
+                 (htm
+                   (:p "Searching offers. Would you like to "
+                       (:a :href (s+ "/search?q=" (url-encode q)) "search everything")
+                       "?")
+                   (if offers
+                     (htm
+                       (:p "results"))
+                     (htm
+                       (:p "no results"))))))
+
+              ((string= scope "people")
+               (let ((people (search-people q)))
+                 (htm
+                   (:p "Searching for people. Would you like to "
+                       (:a :href (s+ "/search?q=" (url-encode q)) "search everything")
+                       "?")
+                   (if people
+                     (htm
+                       (:p "results"))
+                     (htm
+                       (:p "no results"))))))
+              
+              (t ; all
+               (let ((requests (search-resources 'request q :distance (user-rdist)))
+                     (offers (search-resources 'offer q :distance (user-rdist)))
+                     (people (search-people q)))
+
+                 (if (or requests offers people)
+                   (progn
+                     (when people
+                       (htm
+                         (:h2 (:a :href "/people" "People"))
+                         (str (people-results-html (sublist people 0 5)))
+                         (when (> (length people) 5)
+                           (htm
+                             "more")))) 
+                     (when requests
+                       (htm
+                         (:h2 (:a :href "/requests" "Requests")
+                           " "
+                           (:form :method "post" :action "/settings" :style "float:right;"
+                             (:strong :class "small" "show results within ")
+                             (:input :type "hidden" :name "next" :value (request-uri*))
+                             (let ((distance (user-rdist)))
+                               (htm
+                                 (:select :name "rdist" :onchange "this.form.submit();"
+                                   (:option :value "1" :selected (when (eql distance 1) "") "1 mile")
+                                   (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
+                                   (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
+                                   (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
+                                   (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
+                                   (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
+                             " "
+                             (:input :type "submit" :class "no-js" :value "apply")))
+                         (str (request-results-html (sublist requests 0 5)))
+                         (when (> (length requests) 5)
+                           (htm
+                             (:div :class "more-results"
+                               (:a :href (s+ "/requests?q=" (url-encode q)) (fmt "see ~d more requests" (- (length requests) 5))))))))
+                     (when offers
+                       (htm
+                         (:h2 (:a :href "/offers" "Offers")
+                           " "
+                           (:form :method "post" :action "/settings" :style "float:right;"
+                             (:strong :class "small" "show results within ")
+                             (:input :type "hidden" :name "next" :value (request-uri*))
+                             (let ((distance (user-rdist)))
+                               (htm
+                                 (:select :name "rdist" :onchange "this.form.submit();"
+                                   (:option :value "1" :selected (when (eql distance 1) "") "1 mile")
+                                   (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
+                                   (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
+                                   (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
+                                   (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
+                                   (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
+                             " "
+                             (:input :type "submit" :class "no-js" :value "apply")))
+                         (str (offer-results-html (sublist offers 0 5)))
+                         (when (> (length offers) 5)
+                           (htm
+                             (:div :class "more-results"
+                               (:a :href (s+ "/offers?q=" (url-encode q)) (fmt "see ~d more offers" (- (length offers) 5)))))))))
+                   (htm
+                     (:p "no results :-(")))))))
+          :search q
+          :class "search")))))

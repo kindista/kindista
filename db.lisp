@@ -33,6 +33,12 @@
 (defvar *make-token-lock* (make-mutex :name "make auth token"))
 
 
+(defstruct result
+  latitude longitude created tags people id type)
+
+(defun result-id-intersection (list1 list2)
+  (intersection list1 list2 :key #'result-id))
+
 (defun fsync (stream)
   (finish-output stream)
   (sb-posix:fsync (sb-posix:file-descriptor stream)))
@@ -85,33 +91,24 @@
                  (asetf long (+ it 1024))))
               (collect (+ (ash lat 10) long) at beginning))))))
 
-(defun geo-index-query (index lat long distance &key with-distance)
+(defun geo-index-query (index lat long distance)
   (setf distance (min 10 (ceiling (/ distance 12.4274))))
   (iter (for item in (delete-duplicates
                        (iter (for code in (geocode-neighbors (geocode lat long) distance))
                              (appending (gethash code index)))
-                       :key #'fourth))
-        (let ((item-distance (air-distance lat long (second item) (third item))))
+                       :key #'result-id))
+        (let ((item-distance (air-distance lat long (result-latitude item) (result-longitude item))))
           (when (<= item-distance distance)
-            (if with-distance
-              (collect (cons item-distance item))
-              (collect item))))))
+            (collect item at beginning)))))
+
+(defun geo-index-insert (index item)
+  (with-locked-hash-table (index)
+    (push item (gethash (geocode (result-latitude item) (result-longitude item)) index))))
+
+(defun stem-index-query (index query)
+  (iter (for stem in (stem-text query))
+        (reducing (gethash stem index) by #'result-id-intersection)))
           
-(defun people-geo-index-insert (lat long id created)
-  (let ((geocode (geocode lat long)))
-    (with-locked-hash-table (*people-geo-index*)
-      (push (list created lat long id) (gethash geocode *people-geo-index*)))))
-
-(defun activity-geo-index-insert (lat long id created people)
-  (let ((geocode (geocode lat long)))
-    (with-locked-hash-table (*activity-geo-index*)
-      (push (list created lat long id people) (gethash geocode *activity-geo-index*)))))
-
-(defun resource-geo-index-insert (index lat long id created tags)
-  (let ((geocode (geocode lat long)))
-    (with-locked-hash-table (index)
-      (push (list created lat long id tags) (gethash geocode index)))))
-
 ; }}}
 
 ; {{{ metaphone
@@ -315,5 +312,5 @@
 (defun user-distance (&optional (user *user*))
   (or (getf user :distance) 10))
 
-(defun rdist (&optional (user *user*))
+(defun user-rdist (&optional (user *user*))
   (or (getf user :rdist) 10))
