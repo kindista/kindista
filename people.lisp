@@ -31,21 +31,20 @@
             (push id (gethash item *love-index*))))))
 
     (with-locked-hash-table (*activity-person-index*)
-      (push result (gethash id *activity-person-index*)))
+      (asetf (gethash id *activity-person-index*)
+             (sort (push result it) #'> :key #'result-created)))
 
     (when (and (getf data :lat) (getf data :long) (getf data :created))
       (metaphone-index-insert *metaphone-index* (getf data :name) result)
       (geo-index-insert *people-geo-index* result)
-      (geo-index-insert *activity-geo-index* result))
-
-  (timeline-insert id result))) 
+      (geo-index-insert *activity-geo-index* result))))
 
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)
       (write-to-string id)))
 
 (defun profile-activity-items (&key (userid *userid*) (page 0) (count 20) next-url type)
-  (let ((items (sort (gethash userid *activity-person-index*) #'> :key #'result-created))
+  (let ((items (gethash userid *activity-person-index*))
         (start (* page 20)))
     (html
       (iter (for i from 0 to (+ start count))

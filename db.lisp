@@ -7,6 +7,7 @@
 (defvar *db-top-lock* (make-mutex :name "db top"))
 (defvar *db-log* nil)
 (defvar *db-log-lock* (make-mutex :name "db log"))
+(defvar *db-results* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
 
 (defvar *activity-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *activity-person-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
@@ -26,6 +27,7 @@
 (defvar *username-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 
 (defvar *auth-tokens* (make-hash-table :test 'equal :synchronized t :size 200 :rehash-size 1.25))
+
 
 ;; locks
 
@@ -104,6 +106,11 @@
 (defun geo-index-insert (index item)
   (with-locked-hash-table (index)
     (push item (gethash (geocode (result-latitude item) (result-longitude item)) index))))
+
+(defun geo-index-remove (index item)
+  (with-locked-hash-table (index)
+    (asetf (gethash (geocode (result-latitude item) (result-longitude item)) index)
+           (remove item it))))
 
 (defun stem-index-query (index query)
   (iter (for stem in (stem-text query))

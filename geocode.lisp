@@ -16,17 +16,29 @@
          (location (cdr (assoc :location (cdr (assoc :geometry results)))))
          city
          country
-         state)
+         number
+         street
+         state
+         zip)
 
     (iter (for component in (cdr (assoc :address--components results)))
-          (until (and city state country))
+          (until (and city state country number street zip))
           (let ((types (cdr (assoc :types component))))
             (cond
+              ((member "street_number" types :test #'string=)
+               (setf number (cdr (assoc :short--name component))))
+
+              ((member "route" types :test #'string=)
+               (setf street (cdr (assoc :short--name component))))
+
               ((member "country" types :test #'string=)
                (setf country (cdr (assoc :short--name component))))
 
               ((member "administrative_area_level_1" types :test #'string=)
                (setf state (cdr (assoc :short--name component))))
+
+              ((member "postal_code" types :test #'string=)
+               (setf zip (cdr (assoc :short--name component))))
 
               ((member "locality" types :test #'string=)
                (setf city (cdr (assoc :long--name component)))))))
@@ -37,7 +49,9 @@
             (cdr (assoc :formatted--address results))
             city
             state
-            country)))
+            country
+            (format nil "~a ~a" number street)
+            zip)))
 
 (defun static-google-map (&key (size "400x400") lat long (marker t) (zoom 13) (scale 2))
   (strcat "<img src=\"http://maps.googleapis.com/maps/api/staticmap?size="

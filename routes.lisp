@@ -354,9 +354,10 @@
          (see-other (or (post-parameter "next") "/home")))
 
         ((post-parameter "address")
-         (multiple-value-bind (lat long address city state)
+         (multiple-value-bind (lat long address city state country street zip)
              (geocode-address (post-parameter "address"))
-           (modify-db *userid* :lat lat :long long :address address :city (format nil "~a, ~a" city state))
+           (declare (ignore country))
+           (modify-db *userid* :lat lat :long long :address address :city city :state state :street street :zip zip)
            (see-other (or (post-parameter "next") "/home"))))
 
         ((post-parameter "reset-location")
@@ -462,3 +463,121 @@
         (vecto:set-rgb-stroke 96/255 119/255 171/255)
         (vecto:fill-and-stroke)
         (vecto:save-png-stream out)))))
+
+(defun donate-monthly-1 ()
+  (html
+    (:form :id "donate" :method "post" :action "/donate"
+      (:input :type "hidden" :name "type" :value "monthly")
+      (:h2 "Sign up to make a monthly contribution")
+      (:button :type "submit" :name "amount" :value "5" "$5")
+      (:button :type "submit" :name "amount" :value "10" "$10")
+      (:button :type "submit" :name "amount" :value "20" "$20")
+      (:button :type "submit" :name "amount" :value "35" "$35")
+      (:button :type "submit" :name "amount" :value "50" "$50")
+      (:button :type "submit" :name "amount" :value "100" "$100")
+      (:button :type "submit" :name "amount" :value "250" "$250")
+      (:button :type "submit" :name "amount" :value "other" "Other")
+
+      (:h3 (:a :href "/donate/once" "Or, make a one-time donation"))
+
+      (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
+      (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") "."))))
+
+(defun donate-once-1 ()
+  (html
+    (:form :id "donate" :method "post" :action "/donate"
+      (:input :type "hidden" :name "type" :value "once")
+      (:h2 "Make a one-time donation supporting Kindista")
+      (:button :type "submit" :name "amount" :value "10" "$10")
+      (:button :type "submit" :name "amount" :value "20" "$20")
+      (:button :type "submit" :name "amount" :value "25" "$25")
+      (:button :type "submit" :name "amount" :value "35" "$35")
+      (:button :type "submit" :name "amount" :value "50" "$50")
+      (:button :type "submit" :name "amount" :value "100" "$100")
+      (:button :type "submit" :name "amount" :value "250" "$250")
+      (:button :type "submit" :name "amount" :value "other" "Other")
+
+      (:h3 (:a :href "/donate/once" "Or, make a one-time donation"))
+
+      (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
+      (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") "."))))
+
+(defun donate-dialog-2 ()
+  (with-user
+    (let ((name (split " " (getf *user* :name))))
+      (html
+        (:form :id "donate" :method "post" :action "/donate"
+          (:input :type "hidden" :name "amount" :value (post-parameter "amount"))
+          (:input :type "hidden" :name "type" :value (post-parameter "type"))
+          (:h2 "Step 2/4")
+          (:h3 "Billing address")
+          (:ul
+            (:li :class "half"
+              (:label :for "first" "*First name")
+              (:input :name "first" :type "text" :value (first name)))
+            (:li :class "half"
+              (:label :for "last" "*Last name")
+              (:input :name "last" :type "text" :value (first (last name))))
+            (:li :class "full"
+              (:label :for "address" "*Address")
+              (:input :name "address" :type "text" :value (getf *user* :street)))
+            (:li :class "half"
+              (:label :for "city" "*City")
+              (:input :name "city" :type "text" :value (getf *user* :city)))
+            (:li :class "quarter"
+              (:label :for "state" "*State")
+              (:select :name "state" (str (state-options (getf *user* :state)))))
+            (:li :class "quarter"
+              (:label :for "zip" "*Zip")
+              (:input :name "zip" :type "text" :value (getf *user* :zip)))
+            (:li :class "half"
+              (:label :for "email" "*Email")
+              (:input :name "email" :type "text" :value (getf *user* :email)))
+            (:li :class "half"
+              (:label :for "phone" "*Phone number")
+              (:input :name "phone" :type "text")))
+          (:button :class "nav" :type "submit" "Next >")
+
+          (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
+          (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") "."))))))
+    
+(defun donate-page (dialog)
+  (base-page
+    "Donate"
+    (html
+      (:img :src "/media/biglogo.png")
+      (str dialog)
+      (:div :id "letter"
+        (:h2 "From Kindista co-founder Benjamin Crandall")
+        (:p "Google might have close to a million servers. Yahoo has something like 12,000 staff. We have about 800 servers and 150 employees.")
+        (:p "Wikipedia is the #5 site on the web and serves 482 million different people every month – with billions of page views.")
+        (:p "Commerce is fine. Advertising is not evil. But it doesn't belong here. Not in Wikipedia.")
+        (:p "Wikipedia is something special. It is like a library or a public park. It is like a temple for the mind. It is a place we can all go to think, to learn, to share our knowledge with others.")
+        (:p "When I founded Wikipedia, I could have made it into a for-profit company with advertising banners, but I decided to do something different. We’ve worked hard over the years to keep it lean and tight. We fulfill our mission, and leave waste to others.")
+        (:p "If everyone reading this donated $5, we would only have to fundraise for one day a year. But not everyone can or will donate. And that's fine. Each year just enough people decide to give.")
+        (:p "This year, please consider making a donation of $5, $20, $50 or whatever you can to protect and sustain Wikipedia.")
+        (:p "Thanks,")
+        (:p (:strong "Jimmy Wales"))
+        (:p "Wikipedia Founder")))
+    :class "donate"))
+
+
+(defroute "/donate" ()
+  (:get
+    (base-page
+      "Donate"
+      (donate-page (donate-dialog-1))))
+  (:post
+    (base-page
+      "Donate"
+      (donate-page (donate-dialog-2)))))
+
+(defroute "/donate/once" ()
+  (:get
+    (base-page
+      "Donate"
+      (donate-page (donate-dialog-1))))
+  (:post
+    (base-page
+      "Donate"
+      (donate-page (donate-dialog-2)))))

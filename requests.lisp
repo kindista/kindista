@@ -14,36 +14,113 @@
                               :id id
                               :type :request
                               :people (list by)
-                              :created (getf data :created)
+                              :created (or (getf data :edited) (getf data :created))
                               :tags (getf data :tags))))
 
-    (timeline-insert (getf data :author) result)
+    (with-locked-hash-table (*db-results*)
+      (setf (gethash id *db-results*) result))
+
+    ;(timeline-insert (getf data :author) result)
     
     (with-locked-hash-table (*request-index*)
-      (setf (gethash by *request-index*)
-            (push id (gethash by *request-index*))))
+      (push id (gethash by *request-index*)))
 
-    (with-locked-hash-table (*request-stem-index*)
-      (dolist (stem (stem-text (getf data :text)))
-        (push result (gethash stem *request-stem-index*))))
+    (let ((stems (stem-text (getf data :text))))
+      (with-locked-hash-table (*request-stem-index*)
+        (dolist (stem stems)
+          (push result (gethash stem *request-stem-index*)))))
 
     (with-locked-hash-table (*activity-person-index*)
-      (push result (gethash by *activity-person-index*)))
+      (asetf (gethash id *activity-person-index*)
+             (sort (push result it) #'> :key #'result-created)))
 
     (geo-index-insert *request-geo-index* result)
     (geo-index-insert *activity-geo-index* result)))
 
-(defun request-compose (&key text)
+(defun modify-request (id &key text tags latitude longitude)
+  (let ((result (gethash id *db-results*))
+        (data (db id))
+        (now (get-universal-time)))
+
+    (when text
+      (let* ((oldstems (stem-text (getf data :text)))
+             (newstems (stem-text text))
+             (common (intersection oldstems newstems :test #'string=)))
+
+        (flet ((commonp (stem)
+                 (member stem common :test #'string=)))
+
+          (setf oldstems (delete-if #'commonp oldstems))
+          (setf newstems (delete-if #'commonp newstems))
+          
+          (with-locked-hash-table (*request-stem-index*)
+            (dolist (stem oldstems)
+              (asetf (gethash stem *request-stem-index*)
+                     (remove result it))) 
+
+            (dolist (stem newstems)
+              (push result (gethash stem *request-stem-index*)))))))
+
+    (unless (equal tags (getf data :tags))
+      (setf (result-tags result) tags))
+
+    (when (and latitude
+               longitude
+               (or (not (eql latitude (getf data :lat)))
+                   (not (eql longitude (getf data :long)))))
+
+      (geo-index-remove *request-geo-index* result)
+      (geo-index-remove *activity-geo-index* result)
+      (setf (result-latitude result) latitude)
+      (setf (result-longitude result) longitude)
+      (geo-index-insert *request-geo-index* result)
+      (geo-index-insert *activity-geo-index* result))
+
+    (setf (result-created result) now)
+    
+    (with-locked-hash-table (*activity-person-index*)
+      (asetf (gethash id *activity-person-index*)
+             (sort it #'> :key #'result-created)))
+    
+    (modify-db id :text text :tags tags :lat latitude :long longitude :edited now)))
+
+(defun delete-request (id)
+  (let ((result (gethash id *db-results*))
+        (data (db id)))
+
+    (with-locked-hash-table (*db-results*)
+      (remhash id *db-results*))
+    
+    (with-locked-hash-table (*request-index*)
+      (asetf (gethash (getf data :by) *request-index*)
+             (remove id it)))
+
+    (let ((stems (stem-text (getf data :text))))
+      (with-locked-hash-table (*request-stem-index*)
+        (dolist (stem stems)
+          (asetf (gethash stem *request-stem-index*)
+                 (remove result it)))))
+
+    (with-locked-hash-table (*activity-person-index*)
+      (asetf (gethash id *activity-person-index*)
+             (remove result it)))
+
+    (geo-index-remove *request-geo-index* result)
+    (geo-index-remove *activity-geo-index* result)
+
+    (remove-from-db id)))
+
+(defun request-compose (&key text existing-url)
   (standard-page
-   "Post a request"
+   (if existing-url "Edit your request" "Post a request")
    (html
      (:div :class "item"
-      (:h2 "Post a request")
-      (:form :method "post" :action "/requests/new"
+      (:h2 (str (if existing-url "Edit your request" "Post a request")))
+      (:form :method "post" :action (or existing-url "/requests/new")
         (:textarea :cols "40" :rows "8" :name "text" (str text))
         (:p  (:button :class "no" :type "submit" :class "cancel" :name "cancel" "Cancel")
         (:button :class "yes" :type "submit" :class "submit" :name "next" "Next")))))
-   :selected "people"))
+   :selected "requests"))
 
 (defun request-compose-next (&key text error tags existing-url)
   ; show the list of top-level tags
@@ -63,7 +140,7 @@
             (:p :class "error" (str error))))
         (:form :method "post" :action (or existing-url "/requests/new") :class "post-next"
           (:input :type "hidden" :name "text" :value text)
-          (:p (esc text)
+          (:p (cl-who:esc text)
               " "
               (:button :class "red" :type "submit" :class "cancel" :name "back" "edit")) 
           (:h2 "select at least one keyword")
@@ -81,8 +158,8 @@
                  :placeholder "e.g. produce, bicycle, tai-chi"
                  :value (format nil "~{~a~^,~^ ~}" suggested)
                  )
-          (:p (:button :class "yes" :type "submit" :class "submit" :name "create" "Post request")))))
-     :selected "people")))
+          (:p (:button :class "yes" :type "submit" :class "submit" :name "create" (str (if existing-url "Save request" "Post request")))))))
+     :selected "requests")))
 
 ; author
 ; creation date
@@ -139,13 +216,7 @@
           "First few words... | Kindista"
           (html
             (:div :class "activity"
-              (str (request-activity-item :time (getf it :created)
-                                          :request-id id
-                                          :user-name (getf (db (getf it :by)) :name)
-                                          :user-id (getf it :by)
-                                          :hearts (length (loves id))
-                                          ;:comments (length (comments id))
-                                          :text (getf it :text)))))
+              (str (request-activity-item (gethash id *db-results*) :show-distance t))))
           :selected "requests"))
       (standard-page "Not found" "not found")))
   (:post
@@ -162,6 +233,68 @@
            (unlove id)
            (see-other (or (post-parameter "next") (referer)))))
         (standard-page "Not found" "not found")))))
+
+(defroute "/requests/<int:id>/edit" (id)
+  (:get
+    (require-user
+      (let* ((request (db (parse-integer id))))
+        (require-test ((eql *userid* (getf request :by))
+                     "You can only edit your own requests.")
+          (request-compose-next :text (getf request :text)
+                                :tags (getf request :tags)
+                                :existing-url (s+ "/requests/" id "/edit"))))))
+  (:post
+    (require-user
+      (let* ((request (db (parse-integer id))))
+        (require-test ((eql *userid* (getf request :by))
+                     "You can only edit your own requests.")
+          (cond
+            ((post-parameter "delete")
+             (confirm-delete :url (s+ "/requests/" id "/edit")
+                             :type "request"
+                             :text (getf request :text)
+                             :next-url (referer)))
+
+            ((post-parameter "really-delete")
+             (delete-request (parse-integer id))
+             (flash "Your request has been deleted!")
+             (see-other (or (post-parameter "next") "/home")))
+
+            ((post-parameter "back")
+             (request-compose :text (getf request :text)
+                              :existing-url (s+ "/requests/" id "/edit")  ))
+
+            ((and (post-parameter "next")
+                  (post-parameter "text"))
+
+             (request-compose-next :text (post-parameter "text")
+                                   :tags (getf request :tags)
+                                   :existing-url (s+ "/requests/" id "/edit")))
+
+            ((and (post-parameter "create")
+                  (post-parameter "text")) 
+
+             (let ((tags (iter (for pair in (post-parameters*))
+                               (when (and (string= (car pair) "tag")
+                                          (scan *tag-scanner* (cdr pair)))
+                                 (collect (cdr pair))))))
+               (iter (for tag in (tags-from-string (post-parameter "tags")))
+                     (setf tags (cons tag tags)))
+               
+               (if (intersection tags *top-tags* :test #'string=)
+                 (progn
+                   (modify-request (parse-integer id) :text (post-parameter "text")
+                                                      :tags tags)
+                                                                       
+                   (see-other (s+ "/requests/" id)))
+
+                 (request-compose-next :text (post-parameter "text")
+                                       :tags tags
+                                       :error "You must select at least one keyword"))))
+            (t
+             (request-compose-next :text (getf request :text)
+                                   :tags (getf request :tags)
+                                   :existing-url (s+ "/requests/" id "/edit")))))))))
 
 (defroute "/requests" ()
   (:get
@@ -215,25 +348,10 @@
                 (iter (for i from 0 to (+ start 20))
                       (cond
                         ((< i start)
-                         (setf items (cdr items)))
+                         (pop items))
 
                         ((and (>= i start) items)
-                         (let* ((item (car items))
-                                (request (db item))
-                                (user (db (getf request :by))))
-                           (str (request-activity-item :time (getf request :created)
-                                                       :request-id item
-                                                       :distance (air-distance (getf *user* :lat)
-                                                                               (getf *user* :long)
-                                                                               (or (getf request :lat)
-                                                                                   (getf user :lat))
-                                                                               (or (getf request :long)
-                                                                                   (getf user :long)))
-                                                       :user-name (getf user :name)
-                                                       :user-id (getf request :by)
-                                                       :hearts (length (loves item))
-                                                       :text (getf request :text))))
-                         (setf items (cdr items)))
+                         (str (request-activity-item (pop items) :show-distance t)))
 
                         (t
                          (when (< (user-rdist) 100)

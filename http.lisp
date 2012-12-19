@@ -148,6 +148,15 @@
        (progn ,@body)
        (authorization-required))))
 
+(defmacro require-test ((test &optional message) &body body)
+  `(if ,test
+     (progn ,@body)
+     ,(if message
+        `(progn
+           (flash ,message)
+           (see-other "/")) 
+        `(see-other "/"))))
+
 (defmacro require-admin (&body body)
   `(with-user
      (if (getf *user* :admin)
@@ -237,7 +246,7 @@
   (html
     (:div :class "welcome"
       (:form :method "post" :action "/settings"
-        (:button :class "corner" :type "submit" :name "help" :value "0" "[ hide this help text ]"))
+        (:button :class "corner" :type "submit" :name "help" :value "0" "[ hide help text ]"))
       (str content))))
 
 (defun base-page (title body &key class)
@@ -255,17 +264,21 @@
         ;(str "<![endif]-->")
         )
       (:body :class class :onload "if(!location.hash){window.scrollTo(0,0);};document.body.className+=\" js\";"
-        (:a :name "top")
         (str body)))))
 
 (defun header-page (title header-extra body &key class)
   (base-page title
              (html
+               (:a :id "top")
                (:div :id "fund"
-                )
+                 (:a :href "/donate"
+                  "Kindista is non-profit, but we have costs like any top site: servers, power, rent, programs, staff and legal help. To protect our independence, we'll never run ads. We take no government funds. We run on membership donations averaging about $30 per month. If everyone reading this gave $5, we could do something awesome."
+                  (:br)
+                  (:br)
+                  "Please help us forget fundraising and get back to improving Kindista."))
                (str (page-header header-extra))
                (str body))
-             :class class))
+             :class (if class (s+ class " fund") "fund")))
 
 (defun standard-page (title body &key selected top right search search-scope class)
   (header-page title
@@ -336,6 +349,20 @@
                         ((and right class) (s+ "right " class))
                         (right "right")
                         (class class))))
+
+(defun confirm-delete (&key url next-url (type "item") class text)
+  (standard-page
+    "Confirm Delete"
+    (html
+      (:h1 "Are you sure you want to delete this " (str type) "?")
+      (when text
+        (htm (:p (cl-who:esc text))))
+      (:form :method "post" :action url
+        (when next-url
+          (htm (:input :type "hidden" :name "next" :value next-url)))
+        (:button :class "yes" :type "submit" :class "submit" :name "really-delete" "Yes")      
+        (:a :href next-url "No, I didn't mean it!")))
+    :class class))
 
 
 (defun run ()

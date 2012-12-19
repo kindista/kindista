@@ -100,7 +100,7 @@
                                                      (reduce #'+ (subseq subtags (- subtag-count 1)) :key #'cdr))))
                                          (sort top-subtags #'string< :key #'car)))))))
                                                      
-              (mapcar #'result-id items)))))
+              items))))
 
 (defun nearby-resources-top-tags (type &key (count 9) (more t) base (user *user*) (subtag-count 4) q)
   (multiple-value-bind (nearby items)

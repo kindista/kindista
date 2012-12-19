@@ -38,6 +38,11 @@
     (:form :method "GET" :action (s+ url "/edit")
       (:input :type "submit" :value "Edit"))))
 
+(defun delete-button (url)
+  (html
+    (:form :method "POST" :action (s+ url "/edit")
+      (:input :type "submit" :name "delete" :value "Delete"))))
+
 
 (defun activity-icons (&key url hearts comments)
   (html
@@ -63,11 +68,13 @@
             "within " (str (distance-string distance)))))
       (str content)
       (:div :class "actions"
+        (str (love-button id url next-url))
         (when edit
           (htm
+            " &middot; "  
             (str (edit-button url))  
-            " &middot; "))
-        (str (love-button id url next-url))
+            " &middot; "  
+            (str (delete-button url))))
         (when comments
           (htm
             " &middot; "
@@ -96,7 +103,31 @@
                             (:a :href (strcat "/people/" user-id "/offers#" offer-id) "offer")
                             (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
 
-(defun request-activity-item (&key time user-name user-id request-id next-url hearts text what distance)
+(defun request-activity-item (result &key show-distance show-what next-url)
+  (let ((user-id (first (result-people result)))
+        (data (db (result-id result))))
+    (activity-item :id (result-id result)
+                   :user-id user-id
+                   :url (strcat "/requests/" (result-id result))
+                   :time (result-created result)
+                   :distance (when show-distance
+                               (air-distance (result-latitude result)
+                                             (result-longitude result)
+                                             (getf *user* :lat)
+                                             (getf *user* :long)))
+                   :next-url next-url
+                   :edit (when (eql user-id *userid*) t)
+                   :hearts (length (loves (result-id result)))
+                   :type (unless show-what (if (getf data :edited) "edited" "requested"))
+                   :content (html
+                              (str (person-link user-id))
+                              (when show-what
+                                (htm
+                                  (str (if (getf data :edited) " edited a " " posted a "))
+                                  (:a :href (format nil "/requests/~d" (result-id result)) "request")))
+                              (:blockquote (cl-who:esc (getf data :text)))))))
+
+(defun request-activity-item-- (&key time user-name user-id request-id next-url hearts text what distance)
   (activity-item :id request-id
                  :user-id user-id
                  :url (strcat "/requests/" request-id)
@@ -175,14 +206,7 @@
                                                  :text (getf (db (result-id item)) :text)))))
                    (:request
                      (let ((userid (first (result-people item))))
-                       (str (request-activity-item :time (result-created item)
-                                                   :request-id (result-id item)
-                                                   :user-name (getf (db userid) :name)
-                                                   :user-id userid
-                                                   :what t
-                                                   :next-url next-url
-                                                   :hearts (length (loves (result-id item)))
-                                                   :text (getf (db (result-id item)) :text)))))))
+                       (str (request-activity-item item :show-what t :next-url next-url))))))
                (setf items (cdr items)))
 
               (t
