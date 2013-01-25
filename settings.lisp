@@ -6,3 +6,5 @@
 (define-constant +mail-server+ "localhost" :test #'string=)
 
 
+(setf stripe:*default-api-key* "sk_test_j8V6OYQsrVoEPBNvsdSqgbJI")
+

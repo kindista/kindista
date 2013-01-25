@@ -265,13 +265,10 @@ body.landing > p {
 
 @media (min-width:47em) {
  #logo {
-  top: -9em;
-  left:-16em;
-  width:16em;
+  width:8em;
   display: block;
  }
  #header {
-  margin-left: 16em;
   height:2.9em;
  }
 }
@@ -282,7 +279,7 @@ body.landing > p {
  position: relative;
  /*width:135px;
  height:26px;*/
- width:11em;
+ width:8em;
  margin: 0.5em 0.75em 0.3em;
 }
 
@@ -304,8 +301,8 @@ body.landing > p {
   display:none;
  }
  #symbol {
-  margin: 1.5em;
-  width:13em;
+  margin: 0.5em 1em;
+  width:10em;
  }
  #search strong {
   margin-right: 0.6em;
@@ -343,7 +340,7 @@ body.landing > p {
 @media (min-width:47em) {
  #search {
   position:absolute;
-  top:9.2em;
+  top:0.25em;
   left:17em;
   width:40em;
   padding:0;
@@ -430,7 +427,7 @@ body.landing > p {
   display:block;
   position:absolute;
   left:0;
-  top:4.5em;
+  top:2.3em;
   margin-left:0;
   width:16em;
   z-index:6;
@@ -629,7 +626,7 @@ body.landing > p {
  #right {
   position: absolute;
   right: 0;
-  top: 12em;
+  top: 3em;
   background: #ffffff;
   padding: 0 1em 4em;
   margin: 1em 0;
@@ -869,7 +866,7 @@ a:visited {
 .error {
  font-weight:bold;
  color:#a00;
- font-size:0.9em;
+ /*font-size:0.9em;*/
 }
 
 h3.label {
@@ -1182,6 +1179,12 @@ body.donate {
  font-size: 1.75em;
  width: 4em;
  margin: 0 0.25em 0.4em 0;
+ white-space: nowrap;
+}
+
+#donate button[disabled] {
+ background: -moz-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #c5c5c5;
+ border: 2px solid #e2e2e2;
 }
 
 #donate button.nav {

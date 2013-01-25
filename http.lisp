@@ -85,6 +85,8 @@
 
 ;; special variables
 
+(defvar *token* nil) ; current token (session)
+(defvar *donate-info* nil) ; current donation page data
 (defvar *user* nil) ; current user
 (defvar *userid* nil) ; current user
 
@@ -123,12 +125,12 @@
       nil)))
 
 (defun check-token-cookie ()
-  (let ((token (cookie-in "token")))
-    (when token
-      (let ((userid (check-token token)))
-        (when (and (not userid) token)
+  (let ((token-id (cookie-in "token")))
+    (when token-id
+      (let ((token (check-token token-id)))
+        (when (and (not token) token-id)
           (delete-token-cookie))
-        userid))))
+        token))))
 
 (defun authorization-required ()
   (setf (return-code*) +http-see-other+)
@@ -137,10 +139,27 @@
                                  (s+ "/?next=" (script-name*))))
   "")
 
-(defmacro with-user (&body body)
-  `(let* ((*userid* (or *userid* (check-token-cookie)))
-          (*user* (or *user* (db *userid*))))
+(defmacro with-token (&body body)
+  `(let ((*token* (or *token* (check-token-cookie) (start-token))))
      ,@body))
+
+(defmacro with-user (&body body)
+  `(with-token
+    (let* ((*userid* (or *userid* (token-userid *token*)))
+           (*user* (or *user* (db *userid*))))
+       ,@body)))
+
+(defmacro with-donate-info (&body body)
+  `(with-user
+     (let ((*donate-info* (or (token-donate-info *token*)
+                              (setf (token-donate-info *token*)
+                                    (make-donate-info :address (getf *user* :street)
+                                                      :city (getf *user* :city)
+                                                      :state (getf *user* :state)
+                                                      :email (getf *user* :email)
+                                                      :zip (getf *user* :zip)
+                                                      :name (getf *user* :name))))))
+       ,@body)))
 
 (defmacro require-user (&body body)
   `(with-user
@@ -165,22 +184,28 @@
 
 ;; tokens
 
-(defun make-token (id)
-  (with-mutex (*make-token-lock*)
+(defun start-token ()
+  (with-locked-hash-table (*tokens*)
     (do (token)
-      ((not (gethash (setf token (random-password 30)) *auth-tokens*))
-      (prog1 token
-        (setf (gethash token *auth-tokens*) (list id (get-universal-time))))))))
+      ((not (gethash (setf token (random-password 30)) *tokens*))
+      (prog1
+        (setf (gethash token *tokens*)
+              (make-token :created (get-universal-time)))
+        (set-cookie "token" :value token
+                            :http-only t
+                            :expires (+ (get-universal-time) 2592000)
+                            :secure nil))))))
 
-(defun check-token (token)
-  (let ((value (gethash token *auth-tokens*)))
-    (when (and value (< (get-universal-time) (+ (cadr value) 2592000)))
-      (car value))))
+(defun check-token (cookie-value)
+  (let ((token (gethash cookie-value *tokens*)))
+    (if (and token (< (get-universal-time) (+ (token-created token) 2592000)))
+      token
+      (progn (remhash cookie-value *tokens*) nil))))
 
 (defun delete-token-cookie ()
   (awhen (cookie-in "token")
-    (awhen (gethash it *auth-tokens*)
-      (setf (cadr it) 0))
+    (awhen (gethash it *tokens*)
+      (remhash it *tokens*))
     (set-cookie "token" :value ""
                 :http-only t
                 :expires 0
@@ -255,6 +280,7 @@
     (:html
       (:head
         (:title (if title (str (s+ title " | Kindista")) "Kindista"))
+        (:meta :charset "utf-8")
         (:meta :name "viewport" :content "width=device-width,initial-scale=1.0,maximum-scale=1.0")
         (:meta :name "HandheldFriendly" :content "True")
         ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
@@ -270,12 +296,6 @@
   (base-page title
              (html
                (:a :id "top")
-               (:div :id "fund"
-                 (:a :href "/donate"
-                  "Kindista is non-profit, but we have costs like any top site: servers, power, rent, programs, staff and legal help. To protect our independence, we'll never run ads. We take no government funds. We run on membership donations averaging about $30 per month. If everyone reading this gave $5, we could do something awesome."
-                  (:br)
-                  (:br)
-                  "Please help us forget fundraising and get back to improving Kindista."))
                (str (page-header header-extra))
                (str body))
              :class (if class (s+ class " fund") "fund")))
@@ -326,8 +346,8 @@
                          " &nbsp;&middot;&nbsp; "
                          (:a :href "/logout" "Log out"))))
 
-                   (str (menu (list '("Recent Activity" "home" "")
-                                    '("Messages" "mail")
+                   (str (menu (list '("Recent Activity" "home")
+                                    '("Messages" "mail" "messages")
                                     '("People" "people")
                                     '("Offers" "offers")
                                     '("Requests" "requests")
@@ -337,9 +357,9 @@
                               selected))
 
                    (:p :id "copyright"
-                     "Kindista &copy; 2012"
+                     "Kindista &copy; 2012-2013"
                      (:br)
-                     "Programmed in Common Lisp")
+                     "Built with Common Lisp")
 
                    (:a :class "dark" :href "#top"
                        "Back to the top")

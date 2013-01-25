@@ -26,14 +26,74 @@
 (defvar *email-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 (defvar *username-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 
-(defvar *auth-tokens* (make-hash-table :test 'equal :synchronized t :size 200 :rehash-size 1.25))
+;(defvar *auth-tokens* (make-hash-table :test 'equal :synchronized t :size 200 :rehash-size 1.25))
+(defvar *tokens* (make-hash-table :test 'equal :synchronized t :size 200 :rehash-size 1.25))
 
+(defstruct token
+  userid created donate-info)
 
-;; locks
+(defstruct donate-info
+  amount type name address city state zip email phone token)
 
-(defvar *make-user-lock* (make-mutex :name "make user"))
-(defvar *make-token-lock* (make-mutex :name "make auth token"))
+(defun donate-info-amount* (&optional (donate-info *donate-info*))
+  (donate-info-amount donate-info))
 
+(defun donate-info-type* (&optional (donate-info *donate-info*))
+  (donate-info-type donate-info))
+
+(defun donate-info-name* (&optional (donate-info *donate-info*))
+  (donate-info-name donate-info))
+
+(defun donate-info-address* (&optional (donate-info *donate-info*))
+  (donate-info-address donate-info))
+
+(defun donate-info-city* (&optional (donate-info *donate-info*))
+  (donate-info-city donate-info))
+
+(defun donate-info-state* (&optional (donate-info *donate-info*))
+  (donate-info-state donate-info))
+
+(defun donate-info-zip* (&optional (donate-info *donate-info*))
+  (donate-info-zip donate-info))
+
+(defun donate-info-email* (&optional (donate-info *donate-info*))
+  (donate-info-email donate-info))
+
+(defun donate-info-phone* (&optional (donate-info *donate-info*))
+  (donate-info-phone donate-info))
+
+(defun donate-info-token* (&optional (donate-info *donate-info*))
+  (donate-info-token donate-info))
+
+(defun (setf donate-info-amount*) (new-value &optional (donate-info *donate-info*))
+  (setf (donate-info-amount donate-info) new-value))
+
+(defun (setf donate-info-type*) (new-value &optional (donate-info *donate-info*))
+  (setf (donate-info-type donate-info) new-value))
+
+(defun (setf donate-info-name*) (new-value &optional (donate-info *donate-info*))
+  (setf (donate-info-name donate-info) new-value))
+
+(defun (setf donate-info-address*) (new-value &optional (donate-info *donate-info*))
+  (setf (donate-info-address donate-info) new-value))
+
+(defun (setf donate-info-city*) (new-value &optional (donate-info *donate-info*))
+  (setf (donate-info-city donate-info) new-value))
+
+(defun (setf donate-info-state*) (new-value &optional (donate-info *donate-info*))
+  (setf (donate-info-state donate-info) new-value))
+
+(defun (setf donate-info-zip*) (new-value &optional (donate-info *donate-info*))
+  (setf (donate-info-zip donate-info) new-value))
+
+(defun (setf donate-info-email*) (new-value &optional (donate-info *donate-info*))
+  (setf (donate-info-email donate-info) new-value))
+
+(defun (setf donate-info-phone*) (new-value &optional (donate-info *donate-info*))
+  (setf (donate-info-phone donate-info) new-value))
+
+(defun (setf donate-info-token*) (new-value &optional (donate-info *donate-info*))
+  (setf (donate-info-token donate-info) new-value))
 
 (defstruct result
   latitude longitude created tags people id type)
@@ -164,16 +224,15 @@
 ; }}}
 
 (defun load-tokens ()
-  (declare (optimize (speed 0) (safety 3) (debug 3)))
   (with-open-file (in (s+ +db-path+ "tokens") :if-does-not-exist nil)
     (when in
       (with-standard-io-syntax
-        (with-locked-hash-table (*auth-tokens*)
-          ;(clrhash *auth-tokens*)
+        (with-locked-hash-table (*tokens*)
+          ;(clrhash *tokens*)
           (loop
             (handler-case
               (let ((item (read in)))
-                (setf (gethash (car item) *auth-tokens*) (cdr item)))
+                (setf (gethash (car item) *tokens*) (cdr item)))
               (end-of-file (e) (declare (ignore e)) (return)))))))))
 
 
@@ -182,8 +241,8 @@
                        :direction :output
                        :if-exists :supersede)
     (with-standard-io-syntax
-      (with-locked-hash-table (*auth-tokens*)
-        (iter (for (key value) in-hashtable *auth-tokens*)
+      (with-locked-hash-table (*tokens*)
+        (iter (for (key value) in-hashtable *tokens*)
               (prin1 (cons key value) out)
               (fresh-line out))))
     (fsync out))
