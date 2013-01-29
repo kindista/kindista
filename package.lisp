@@ -10,9 +10,11 @@
                   :alexandria
                   :anaphora-basic
                   :hunchentoot
-                  :json
                   :cl-ppcre
                   :iterate)
+            (:import-from :parenscript :ps :ps-inline :@ :f :create)
+            (:import-from :ps-dom1-symbols :document :get-element-by-id :submit :set-attribute
+                                           :remove-attribute)
             (:import-from :drakma :http-request)
             (:import-from :double-metaphone :double-metaphone)
             (:import-from :cl-markdown :markdown)

@@ -59,8 +59,8 @@
   ; how close is it?
   
   (let ((friends (getf *user* :following))
-        (age (- (get-universal-time) (or (result-created item) r)))
-        (distance (air-distance (getf *user* :lat) (getf *user* :long)
+        (age (- (get-universal-time) (or (result-created item) 0)))
+        (distance (air-distance *latitude* *longitude*
                                 (result-latitude item) (result-longitude item))))
     (round (- age
              (/ 120000 (log (+ distance 4)))
@@ -117,3 +117,6 @@
     (dolist (state '("AL" "AK" "AZ" "AR" "CA" "CO" "CT" "DE" "DC" "FL" "GA" "HI" "ID" "IL" "IN" "IA" "KS" "KY" "LA" "ME" "MD" "MA" "MI" "MN" "MS" "MO" "MT" "NE" "NV" "NH" "NJ" "NM" "NY" "NC" "ND" "OH" "OK" "OR" "PA" "RI" "SC" "SD" "TN" "TX" "UT" "VT" "VA" "WA" "WV" "WI" "WY"))
       (htm
         (:option :value state :selected (if (equalp selected state) "selected" nil) (str state))))))
+
+(defun empty-string-p (string)
+  (or (not string) (string= string "")))

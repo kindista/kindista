@@ -1,74 +1,70 @@
 (in-package :kindista)
 
-(defroute "/" ()
+(defroute "/" () 
   (:get
-    (with-user
-      (if *user*
-        (see-other "/home")
-        (standard-page "Welcome"
-                 (html
-                   (:img :id "logo" :src "/media/logo.png")
-                   (:form :method "POST" :action "/login" :id "login"
-                     (awhen (get-parameter "retry")
-                       (htm (:p :class "error" "The email/username or password was incorrect.")
-                            (unless (string= it "")
-                                (htm (:p (:a :href (s+ "/signup?email=" it)
-                                             "Would you like to create an account?"))))))
-                     (awhen (get-parameter "next")
-                       (htm (:input :type "hidden" :name "next" :value it)))
-                     (:label :for "username" "Username or email")
-                     (:input :type "text" :name "username" :value (get-parameter "retry"))
-                     (:label :for "password" "Password")
-                     (:input :type "password" :name "password")
-                     (:input :type "submit" :value "Log in")
-                     (:p (:a :href "/reset" "Forgot your password?"))
-                     (:p "New to Kindista?"
-                      (:br)
-                      (:a :href "/signup" "Create an account")))
-                   (:div :id "about"
-                    (:h2 "Uncovering a wealth of human connection.")
-                    (:p :class "big"
-                      "Kindista is a new social network for seeing and appreciating the
-                       creative potential in all people and supporting each other
-                       in building the more beautiful world our hearts know is possible."))
-                  (:p "Kindista &copy; 2012 &middot; "
-                      (:a :href "/help" "Help") " &middot; "
-                      (:a :href "/about" "About") " &middot; "
-                      (:a :href "/blog" "Blog")
-                      " &middot; Programmed in Common Lisp"))
-                      )))))
+    (see-other "/home"))) 
+;    (with-user
+;      (if *user*
+;        (base-page "Welcome"
+;                 (html
+;                   (:img :id "logo" :src "/media/logo.png")
+;                   (:form :method "POST" :action "/login" :id "login"
+;                     (awhen (get-parameter "retry")
+;                       (htm (:p :class "error" "The email/username or password was incorrect.")
+;                            (unless (string= it "")
+;                                (htm (:p (:a :href (s+ "/signup?email=" it)
+;                                             "Would you like to create an account?"))))))
+;                     (awhen (get-parameter "next")
+;                       (htm (:input :type "hidden" :name "next" :value it)))
+;                     (:label :for "username" "Username or email")
+;                     (:input :type "text" :name "username" :value (get-parameter "retry"))
+;                     (:label :for "password" "Password")
+;                     (:input :type "password" :name "password")
+;                     (:input :type "submit" :value "Log in")
+;                     (:p (:a :href "/reset" "Forgot your password?"))
+;                     (:p "New to Kindista?"
+;                      (:br)
+;                      (:a :href "/signup" "Create an account")))
+;                   (:div :id "about"
+;                    (:h2 "Uncovering a wealth of human connection.")
+;                    (:p :class "big"
+;                      "Kindista is a new social network for seeing and appreciating the
+;                       creative potential in all people and supporting each other
+;                       in building the more beautiful world our hearts know is possible."))
+;                  (:p "Kindista &copy; 2012 &middot; "
+;                      (:a :href "/help" "Help") " &middot; "
+;                      (:a :href "/about" "About") " &middot; "
+;                      (:a :href "/blog" "Blog")
+;                      " &middot; Programmed in Common Lisp"))
+;                      ))))
 
 (defun signup-page (&key error name email password)
-  (header-page
+  (standard-page
     "Sign up"
-    nil
     (html
       (:form :method "POST" :action "/signup" :id "signup"
-        (:h2 "Create an account")
+        (:h2 "Create an account") 
         (when error
-          (htm (:p :class "error" (str error))))
-        (:label :for "name" "Full name")
-        (:input :type "text" :name "name" :value name)
-        (:label :for "email" "Email")
-        (:input :type "email" :name "email" :value (or email (get-parameter "email")))
-        (:label :for "name" "Password")
-        (:input :type "password" :name "password" :value password)
-        (:input :type "submit" :value "Sign up")
+          (htm (:p :class "error" (str error)))) 
+        (:label :for "name" "Full name") 
+        (:input :type "text" :name "name" :value name) 
+        (:label :for "email" "Email") 
+        (:input :type "email" :name "email" :value (or email (get-parameter "email"))) 
+        (:label :for "name" "Password") 
+        (:input :type "password" :name "password" :value password) 
+        (:input :type "submit" :value "Sign up") 
 
-      (:p "Have an account? " (:a :href "/" "Sign in"))
+        (:p "Have an account? " (:a :href "/login" "Log in")) 
 
-      (:p :class "fineprint" "By creating an account, you are agreeing to our "
-        (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))) 
-
-      (:p "Kindista &copy; 2012 &middot; "
-          (:a :href "/help" "Help") " &middot; "
-          (:a :href "/about" "About") " &middot; "
-          (:a :href "/blog" "Blog")
-          " &middot; Programmed in Common Lisp")
-      (:br)
-      (:br)
-      " ")
-    :class "landing signup"))
+        (:p :class "fineprint" "By creating an account, you are agreeing to our "
+          (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))))
+    :top (when (get-parameter "action")
+           (welcome-bar
+             (html
+               "If you want to do more than browse and search Kindista, you'll need to "
+               (:a :href "/signup" "create an account") ". Or, " (:a :href "/login" "log in")
+               " if you've already got one!")
+             nil))))
 
 (defroute "/signup" ()
   (:get
@@ -84,10 +80,8 @@
           (cond
             ((password-match-p userid (post-parameter "password"))
 
-             (set-cookie "token" :value (make-token username)
-                         :http-only t
-                         :expires (+ (get-universal-time) 2592000)
-                         :secure nil)
+             (setf (token-userid *token*) username)
+
              (see-other "/home"))
 
             (userid
@@ -116,14 +110,9 @@
                           :password (post-parameter "password")))
 
             (t
-             (let ((id (create-person :name (post-parameter "name")
-                                      :email (post-parameter "email")
-                                      :password (post-parameter "password"))))
-               (set-cookie "token"
-                           :value (make-token id)
-                           :http-only t
-                           :expires (+ (get-universal-time) 2592000)
-                           :secure nil))
+             (setf (token-userid *token*) (create-person :name (post-parameter "name")
+                                                         :email (post-parameter "email")
+                                                         :password (post-parameter "password")))
              (see-other "/home"))))))))
 
 (defroute "/logout" ()
@@ -133,170 +122,61 @@
 
 (defroute "/login" ()
   (:get
-    (see-other "/"))
+    (with-user
+      (if *user*
+        (see-other "/home")
+        (standard-page
+          "Login"
+          (html
+            (:form :method "POST" :action "/login" :id "login"
+              (awhen (get-parameter "retry")
+                (htm (:p :class "error" "The email/username or password was incorrect.")
+                     (unless (string= it "")
+                         (htm (:p (:a :href (s+ "/signup?email=" it)
+                                      "Would you like to create an account?"))))))
+              (awhen (get-parameter "next")
+                (htm (:input :type "hidden" :name "next" :value it)))
+              (:label :for "username" "Username or email")
+              (:input :type "text" :name "username" :value (get-parameter "retry"))
+              (:label :for "password" "Password")
+              (:input :type "password" :name "password")
+              (:input :type "submit" :value "Log in")
+              (:p (:a :href "/reset" "Forgot your password?"))
+              (:p "New to Kindista?"
+               (:br)
+               (:a :href "/signup" "Create an account"))))))))
+
   (:post
-    (let ((user (post-parameter "username"))
-          (next (post-parameter "next")))
-      (if (find #\@ user :test #'equal)
-        (setf user (gethash user *email-index*))
-        (setf user (gethash user *username-index*)))
-      (cond
-        ((password-match-p user (post-parameter "password"))
-         (set-cookie "token"
-                     :value (make-token user)
-                     :http-only t
-                     :expires (+ (get-universal-time) 2592000)
-                     :secure nil)
-         (setf (return-code*) +http-see-other+)
-         (setf (header-out :location) (if (and (< 0 (length next))
-                                               (equal #\/ (elt next 0)))
-                                        next
-                                        "/home"))
-         "")
-        ((scan +email-scanner+ (post-parameter "username"))
-         (setf (return-code*) +http-see-other+)
-         (setf (header-out :location) (if (and (< 0 (length next))
-                                               (equal #\/ (elt next 0)))
-                                        (s+ "/?retry=" (post-parameter "username") "&next=" (url-encode next))
-                                        (s+ "/?retry=" (post-parameter "username"))))
-         "")
-        (t
-         (setf (return-code*) +http-see-other+)
-         (setf (header-out :location) (if (and (< 0 (length next))
-                                               (equal #\/ (elt next 0)))
-                                        (s+ "/?retry&next=" (url-encode next))
-                                        "/?retry"))
-         "")))))
+    (with-token
+      (let ((user (post-parameter "username"))
+            (next (post-parameter "next")))
+        (if (find #\@ user :test #'equal)
+          (setf user (gethash user *email-index*))
+          (setf user (gethash user *username-index*)))
+        (cond
+          ((password-match-p user (post-parameter "password"))
+           (setf (token-userid *token*) user)
+           (setf (return-code*) +http-see-other+)
+           (setf (header-out :location) (if (and (< 0 (length next))
+                                                 (equal #\/ (elt next 0)))
+                                          next
+                                          "/home"))
+           "")
+          ((scan +email-scanner+ (post-parameter "username"))
+           (setf (return-code*) +http-see-other+)
+           (setf (header-out :location) (if (and (< 0 (length next))
+                                                 (equal #\/ (elt next 0)))
+                                          (s+ "/?retry=" (post-parameter "username") "&next=" (url-encode next))
+                                          (s+ "/?retry=" (post-parameter "username"))))
+           "")
+          (t
+           (setf (return-code*) +http-see-other+)
+           (setf (header-out :location) (if (and (< 0 (length next))
+                                                 (equal #\/ (elt next 0)))
+                                          (s+ "/?retry&next=" (url-encode next))
+                                          "/?retry"))
+           ""))))))
 
-(defroute "/home" ()
-  (:get
-    (require-user
-      (cond
-        ((getf *user* :location)
-         (standard-page
-           "Home"
-           (html
-             (:div :class "activity"
-               (:menu :class "horiz"
-                 (:strong "actions")
-                 (:li (:a :href "/gratitude/new" "express gratitude"))
-                 (:li (:a :href "/offers/new" "make offer")
-                      " / "
-                      (:a :href "/requests/new" "request"))
-                 ;(:li (:a :href "/events/new" "event"))
-                 (:li (:a :href "/announcements/new" "post announcement"))
-                 )
-                 
-             (:form :class "item" :method "post" :action "/settings"
-               (:strong :style "font-size: 1.2em;" "showing activity within ")
-               (:input :type "hidden" :name "next" :value "/home")
-               (let ((distance (user-distance)))
-                 (htm
-                   (:select :name "distance" :onchange "this.form.submit()"
-                     (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
-                     (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
-                     (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
-                     (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
-                     (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
-               " "
-               (:input :type "submit" :class "no-js" :value "apply"))
-               (let ((page (if (scan +number-scanner+ (get-parameter "p"))
-                            (parse-integer (get-parameter "p"))
-                            0)))
-                (str (activity-items :page page)))))
-           :selected "home"
-           :top (when (getf *user* :help)
-                  (welcome-bar
-                    (html
-                      (:h2 "Getting started")
-                      (:p "We're so happy to have you join us! Here are some things you can do to get started:")
-                      (:ul
-                        (unless (getf *user* :avatar)
-                          (htm (:li (:a :href "/avatar" "Upload a picture") " so that other people can recognize you.")))
-                        (:li (:a :href "/gratitude/new" "Express gratitude") " for someone who has affected your life.")
-                        (:li (:a :href "/people/new" "Make a connection") " to say that you know someone.")
-                        (:li (:a :href "/requests/new" "Post a request") " to the community for something you need.")
-                        )
-                      (:p "On this page you can see what's going on around you and with people you have made
-                           a connection with. Use the menu "
-                          (:span :class "menu-button" " (click the button on the header) ")
-                          (:span :class "menu-showing" " on the left ")
-                          " to explore the site."))))
-           :right (html
-;                    (:div :class "item"
-;                      (:h2 "Upcoming Events")
-;                      (:menu
-;                        (:li (:strong "Thursday, November 23"))
-;                        (:li "7:00PM " (:a :href "x" "East Eugene Gift Circle"))
-;                        (:li (:strong "Thursday, November 30"))
-;                        (:li "7:00PM " (:a :href "x" "West Eugene Gift Circle"))))   
-                    #|
-                    (:div :style "padding-bottom: 1em;
-                                  border-bottom: 1px solid #ddd;
-                                  margin-bottom: 1em;"
-                      (:div :style "font-size: 2.5em; font-weight: bold" "2,000")
-                      (:div :style "font-size: 1em; font-weight: bold" "monthly donations")
-                      (:div :style "font-size: 2.5em; font-weight: bold" "$999,999")
-                      (:div :style "font-size: 1em; font-weight: bold" "per month of $99,999,999 " (:a :href "/donate" "goal"))
-                      (:button :style "font-size: 1.5em;
-                                       font-weight: bold;
-                                       background: #375497;
-                                       color: #fff;
-                                       border: 0;
-                                       border-radius: 4px;
-                                       margin-top: 0.5em;
-                                       padding: 0.25em 0.6em" "Donate to Kindista")
-                      (:div :style "font-size: 0.9em; margin-top: 1em;" (:a :href "#" "How does Kindista use the money?"))
-                      )
-                      |#
-                      
-                    (:h2 "People you may know")
-                    (:menu
-                      (dolist (data (suggested-people))
-                        (htm
-                          (:li (:a :href (strcat "/people/" (username-or-id (cdr data)))
-                                   (str (getf (db (cdr data)) :name))))))))))
-        ((and (getf *user* :lat)
-              (getf *user* :long))
-
-         (standard-page
-           "Welcome"
-           (html
-             (:div :class "item"
-               (:div :class "setup"
-                 (:h2 "Verify your location")
-                 (:p "We will never share your exact location with anyone else.
-                      If you would like to know more about how we use the information you share with us,
-                      please read our " (:a :href "/privacy" "privacy policy") ".")
-                 (str (static-google-map :size "280x150" :zoom 12 :lat (getf *user* :lat) :long (getf *user* :long)))
-
-                 (:form :method "post" :action "/settings"
-                   (:h3 "Is this location correct?")
-                   (:button :class "yes" :type "submit" :name "confirm-location" :value "1" "Yes, this is correct")
-                   (:button :class "no" :type "submit" :name "reset-location" :value "1" "No, go back")))))
-           :selected "home"))
-        (t
-         (standard-page
-           "Welcome"
-           (html
-             (:div :class "item"
-               (:div :class "setup"
-                 (:h2 "Welcome to Kindista!")
-                 (:p "Kindista is a social network for " (:strong "building and supporting real community") ".
-                      We use your location to help you find " (:strong "local people, resources, and events") ".
-                      To get started, we need to know where you call home.")
-                 (:p "We will never share your exact location with anyone else.
-                      If you would like to know more about how we use the information you share with us,
-                      please read our " (:a :href "/privacy" "privacy policy") ".")
-                 (:h2 "Where do you call home?")
-                 (:p 
-                   (:small
-                     "Enter a street address and click \"Next\". We'll show you a map to confirm the location."))
-                 (:form :method "post" :action "/settings"
-                   (:input :type "hidden" :name "next" :value "/home")
-                   (:input :type "text" :name "address" :placeholder "1600 Pennsylvania Avenue NW, Washington, DC")
-                   (:input :type "submit" :value "Next")))))
-           :selected "home"))))))
 
 (defroute "/friends" ()
   (:get
@@ -497,49 +377,196 @@
       (:button :type "submit" :name "amount" :value "250" "$250")
       (:button :type "submit" :name "amount" :value "other" "Other")
 
-      (:h3 (:a :href "/donate/once" "Or, make a one-time donation"))
+      (:h3 (:a :href "/donate" "Or, make a monthly donation"))
 
       (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
       (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") "."))))
 
-(defun donate-dialog-2 ()
-  (with-user
-    (let ((name (split " " (getf *user* :name))))
-      (html
-        (:form :id "donate" :method "post" :action "/donate"
-          (:input :type "hidden" :name "amount" :value (post-parameter "amount"))
-          (:input :type "hidden" :name "type" :value (post-parameter "type"))
-          (:h2 "Step 2/4")
-          (:h3 "Billing address")
-          (:ul
-            (:li :class "half"
-              (:label :for "first" "*First name")
-              (:input :name "first" :type "text" :value (first name)))
-            (:li :class "half"
-              (:label :for "last" "*Last name")
-              (:input :name "last" :type "text" :value (first (last name))))
-            (:li :class "full"
-              (:label :for "address" "*Address")
-              (:input :name "address" :type "text" :value (getf *user* :street)))
-            (:li :class "half"
-              (:label :for "city" "*City")
-              (:input :name "city" :type "text" :value (getf *user* :city)))
-            (:li :class "quarter"
-              (:label :for "state" "*State")
-              (:select :name "state" (str (state-options (getf *user* :state)))))
-            (:li :class "quarter"
-              (:label :for "zip" "*Zip")
-              (:input :name "zip" :type "text" :value (getf *user* :zip)))
-            (:li :class "half"
-              (:label :for "email" "*Email")
-              (:input :name "email" :type "text" :value (getf *user* :email)))
-            (:li :class "half"
-              (:label :for "phone" "*Phone number")
-              (:input :name "phone" :type "text")))
-          (:button :class "nav" :type "submit" "Next >")
+(defun donate-dialog-2 (&optional show-error)
+  (with-donate-info
+    (html
+      (:form :id "donate" :method "post" :action "/donate"
+        (:h2 "Step 2/4")
+        (:h3 "Billing address")
+        (:ul
+          (:li :class "full"
+            (:label :class (when (and show-error
+                                      (empty-string-p (donate-info-name*)))
+                             "error")
+                    :for "name" "*Name on card")
+            (:input :name "name" :type "text" :value (donate-info-name*)))
+          (:li :class "full"
+            (:label :class (when (and show-error
+                                      (empty-string-p (donate-info-address*)))
+                             "error")
+                    :for "address" "*Address")
+            (:input :name "address" :type "text" :value (donate-info-address*)))
+          (:li :class "half"
+            (:label :class (when (and show-error
+                                      (empty-string-p (donate-info-city*)))
+                             "error")
+                    :for "city" "*City")
+            (:input :name "city" :type "text" :value (donate-info-city*)))
+          (:li :class "quarter"
+            (:label :class (when (and show-error
+                                      (empty-string-p (donate-info-state*)))
+                             "error")
+                    :for "state" "*State")
+            (:select :name "state" (str (state-options (donate-info-state*)))))
+          (:li :class "quarter"
+            (:label :class (when (and show-error
+                                      (empty-string-p (donate-info-zip*)))
+                             "error")
+                    :for "zip" "*Zip")
+            (:input :name "zip" :type "text" :value (donate-info-zip*)))
+          (:li :class "half"
+            (:label :class (when (and show-error
+                                      (empty-string-p (donate-info-email*)))
+                             "error")
+                    :for "email" "*Email")
+            (:input :name "email" :type "text" :value (donate-info-email*)))
+          (:li :class "half"
+            (:label :class (when (and show-error
+                                      (empty-string-p (donate-info-phone*)))
+                             "error")
+                    :for "phone" "*Phone")
+            (:input :name "phone" :type "text" :value (donate-info-phone*))))
+        (:button :class "nav" :type "submit" "Next >")
 
-          (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
-          (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") "."))))))
+        (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
+        (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")))))
+
+(defun donate-dialog-3 (&key show-error show-amount)
+  (with-donate-info
+    (html
+      (:script :type "text/javascript" :src "https://js.stripe.com/v1/")
+      (:script :type "text/javascript"
+        (str (ps
+               (defvar *processing* nil)
+               (defun tokenize (form)
+                 (unless *processing*
+                   (setf *processing* t)
+                   (dolist (element ((@ document get-elements-by-tag-name) "label"))
+                     ((@ element set-attribute) "class" ""))
+                   ((@ *stripe set-publishable-key) "pk_test_ffSdkWiT4zyspRyxsM8tb0tI")
+                   ((@ *stripe create-token)
+                    (create
+                      :number (@ ((@ document get-element-by-id) "ccn") value)
+                      :cvc (@ ((@ document get-element-by-id) "cvc") value)
+                      :exp_month (@ ((@ document get-element-by-id) "ccm") value)
+                      :exp_year (@ ((@ document get-element-by-id) "ccy") value)
+                      :name (ps:lisp (donate-info-name*))
+                      :address_city (ps:lisp (donate-info-city*))
+                      :address_line1 (ps:lisp (donate-info-address*))
+                      :address_state (ps:lisp (donate-info-state*))
+                      :address_zip (ps:lisp (donate-info-zip*)))
+                    (lambda (status response)
+                      ((@ console log) response)
+                      (cond
+                        ((@ response :error)
+                         (setf *processing* nil)
+                         (cond
+                           ((or (eq (@ response :error :code) "invalid_number")
+                                (eq (@ response :error :code) "incorrect_number"))
+                            ((@ ((@ document get-element-by-id) "lccn") set-attribute) "class" "error"))
+                           ((eq (@ response :error :code) "invalid_cvc")
+                            ((@ ((@ document get-element-by-id) "lcvc") set-attribute) "class" "error"))
+                           ((eq (@ response :error :code) "invalid_expiry_month")
+                            ((@ ((@ document get-element-by-id) "lccm") set-attribute) "class" "error") 
+                            ((@ ((@ document get-element-by-id) "lccy") set-attribute) "class" "error"))
+                           ((eq (@ response :error :code) "invalid_expiry_year")
+                            ((@ ((@ document get-element-by-id) "lccm") set-attribute) "class" "error")
+                            ((@ ((@ document get-element-by-id) "lccy") set-attribute) "class" "error"))
+                           (t (alert "unknown error!"))))
+                        (t (setf (@ ((@ document get-element-by-id) "cctoken") value)
+                                 (@ response :id))
+                           ((@ form submit)))))))
+                 f))))
+      (:form :id "donate" :method "post" :action "/donate" :onsubmit "return tokenize(this);"
+        (:h2 "Step 3/4")
+        (:h3 "Credit card info")
+        (:input :id "cctoken" :name "token" :type "hidden")
+        (:ul
+          (when (or (not (donate-info-amount*)) show-amount)
+            (htm
+              (:li :class "full"
+                (:label :class (when (and show-error
+                                          (not (donate-info-amount*)))
+                                 "error")
+                        :for "amount" "*Donation amount")
+                (:input :name "amount" :type "text" :value (donate-info-amount*))))) 
+          (:li :class "full"
+            (:label :class (when (and show-error
+                                      (empty-string-p (donate-info-token*)))
+                             "error")
+                    :id "lccn"
+                    "*Card number")
+            (:input :id "ccn" :type "text"))
+          (:li :class "quarter"
+            (:label :class (when (and show-error
+                                      (empty-string-p (donate-info-token*)))
+                             "error")
+                    :id "lcvc"
+                    "*CVC " (:a :href "http://en.wikipedia.org/wiki/Card_security_code" :target "_blank" "(?)"))
+            (:input :id "cvc" :type "text")
+           
+           )
+          (:li :class "half"
+            (:label :class (when (and show-error
+                                      (empty-string-p (donate-info-token*)))
+                             "error")
+                    :id "lccm"
+                    "*Exp month")
+            (:select :id "ccm"
+              (:option :value "01" "01")
+              (:option :value "02" "02")
+              (:option :value "03" "03")
+              (:option :value "04" "04")
+              (:option :value "05" "05")
+              (:option :value "06" "06")
+              (:option :value "07" "07")
+              (:option :value "08" "08")
+              (:option :value "09" "09")
+              (:option :value "10" "10")
+              (:option :value "11" "11")
+              (:option :value "12" "12")))
+          (:li :class "quarter"
+            (:label :class (when (and show-error
+                                      (empty-string-p (donate-info-token*)))
+                             "error")
+                    :id "lccy"
+                    "*Exp year")
+            (:select :id "ccy"
+              (:option :value "2012" "2012")
+              (:option :value "2013" "2013")
+              (:option :value "2014" "2014")
+              (:option :value "2015" "2015")
+              (:option :value "2016" "2016")
+              (:option :value "2017" "2017")
+              (:option :value "2018" "2018")
+              (:option :value "2019" "2019")
+              (:option :value "2020" "2020")
+              (:option :value "2021" "2021")
+              (:option :value "2022" "2022"))))
+
+        (:button :id "ccnext" :class "nav" :type "submit" "Next >")
+
+        (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
+        (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")))))
+
+(defun donate-dialog-4 ()
+  (html
+    (:form :id "donate" :method "post" :action "/donate"
+      (:h2 "Step 4/4")
+      (:h3 "Confirm donation")
+
+      (:p (:strong "Donation amount:") " $" (str (donate-info-amount*)))
+      (:p (:strong "Donation type:") " " (str (donate-info-type*)))
+
+      (:button :name "confirm" :class "nav" :type "submit" "Donate >")
+
+      (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
+      (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") "."))))
     
 (defun donate-page (dialog)
   (base-page
@@ -566,18 +593,173 @@
   (:get
     (base-page
       "Donate"
-      (donate-page (donate-dialog-1))))
+      (donate-page (donate-monthly-1))))
   (:post
-    (base-page
-      "Donate"
-      (donate-page (donate-dialog-2)))))
+    (let ((amount (post-parameter "amount"))
+          (type (post-parameter "type"))
+          (name (post-parameter "name"))
+          (address (post-parameter "address"))
+          (city (post-parameter "city"))
+          (state (post-parameter "state"))
+          (zip (post-parameter "zip"))
+          (email (post-parameter "email"))
+          (phone (post-parameter "phone"))
+          (token (post-parameter "token")) 
+          (confirm (post-parameter "confirm")))
+
+      (with-donate-info
+          (cond
+            ((and type
+                  (or (string= type "monthly")
+                      (string= type "once")))
+
+             (setf (donate-info-amount*)
+                   (if (and amount (scan +number-scanner+ amount))
+                     (parse-integer amount)
+                     nil))
+
+             (setf (donate-info-type*) type)
+             (see-other "/donate/2"))
+
+            ((and (or (string= (donate-info-type*) "monthly")
+                      (string= (donate-info-type*) "once"))
+                  name
+                  address
+                  city
+                  state
+                  zip
+                  email
+                  phone)
+
+             (setf (donate-info-name*) name)
+             (setf (donate-info-address*) address)
+             (setf (donate-info-city*) city)
+             (setf (donate-info-state*) state)
+             (setf (donate-info-zip*) zip)
+             (setf (donate-info-email*) email)
+             (setf (donate-info-phone*) phone)
+
+             (if (and (not (string= name ""))
+                      (not (string= address ""))
+                      (not (string= city ""))
+                      (not (string= state ""))
+                      (scan +email-scanner+ email)
+                      (scan +phone-scanner+ phone))
+               (see-other "/donate/3")
+               (donate-page (donate-dialog-2 t))))
+
+            ((not (empty-string-p token))
+              (unless (donate-info-amount*)
+                (if (and amount (scan +number-scanner+ amount))
+                  (setf (donate-info-amount*) (parse-integer amount)) 
+                  (donate-page (donate-dialog-3 :show-error t :show-amount t))))
+              (setf (donate-info-token*) token)
+              (see-other "/donate/4"))
+
+            ((and confirm
+                  (donate-info-type*)
+                  (donate-info-name*)
+                  (donate-info-address*)
+                  (donate-info-city*)
+                  (donate-info-state*)
+                  (donate-info-zip*)
+                  (donate-info-email*)
+                  (donate-info-phone*) 
+                  (donate-info-amount*) 
+                  (not (empty-string-p (donate-info-token*))))
+
+             (handler-case
+               (cond
+                 ((string= (donate-info-type*) "once")
+
+                  (stripe:create-charge :card (donate-info-token*)
+                                        :amount (* 100 (donate-info-amount*))
+                                        :currency "USD"
+                                        :description (donate-info-email*))
+
+                  "yay!")
+                 
+                 ((string= (donate-info-type*) "monthly")
+
+                  (aif (getf *user* :custid)
+                    (progn
+                      (stripe:update-subscription it
+                        :plan (make-donation-plan (* 100 (donate-info-amount*)))
+                        :prorate nil
+                        :card (donate-info-token*))
+                      "yay updated!")
+                    (let ((customer (stripe:create-customer
+                                      :card (donate-info-token*)
+                                      :email (donate-info-email*)
+                                      :plan (make-donation-plan (* 100 (donate-info-amount*))))))
+
+                      (acond
+                        ((stripe:sstruct-get customer :id)
+                         (modify-db *userid* :custid it)
+                         "yay new monthly!")
+
+                        (t "oh no something bad :-("))))))
+               (stripe::stripe-error (err)
+                 (let ((code (stripe:sstruct-get (stripe::stripe-error-reply err) :error :code)))
+                   (cond
+                     ((string= code "card_declined")
+                      "Your card was declined")
+
+                     ((string= code "processing_error")
+                      "Our payment processor encountered an error while processing your card.")
+
+                     ((string= code "invalid_cvc")
+                      "The CVC provided was incorrect.")
+
+                     (t "An error occurred while processing your card."))))))
+
+            (t (see-other "/donate")))))))
+
+(defroute "/donate/2" ()
+  (:get
+    (with-donate-info
+      (if (and (donate-info-type*))
+        (base-page
+          "Donate"
+          (donate-page (donate-dialog-2)))
+        (see-other "/donate")))))
+
+(defroute "/donate/3" ()
+  (:get
+    (with-donate-info
+      (if (and (donate-info-type*)
+               (donate-info-name*)
+               (donate-info-address*)
+               (donate-info-city*)
+               (donate-info-state*)
+               (donate-info-zip*)
+               (donate-info-email*)
+               (donate-info-phone*))
+        (base-page
+          "Donate"
+          (donate-page (donate-dialog-3)))
+        (see-other "/donate")))))
+
+(defroute "/donate/4" ()
+  (:get
+    (with-donate-info
+      (if (and (donate-info-type*)
+               (donate-info-name*)
+               (donate-info-address*)
+               (donate-info-city*)
+               (donate-info-state*)
+               (donate-info-zip*)
+               (donate-info-email*)
+               (donate-info-phone*) 
+               (donate-info-amount*) 
+               (not (empty-string-p (donate-info-token*))))
+        (base-page
+          "Donate"
+          (donate-page (donate-dialog-4)))
+        (see-other "/donate")))))
 
 (defroute "/donate/once" ()
   (:get
     (base-page
       "Donate"
-      (donate-page (donate-dialog-1))))
-  (:post
-    (base-page
-      "Donate"
-      (donate-page (donate-dialog-2)))))
+      (donate-page (donate-once-1)))))

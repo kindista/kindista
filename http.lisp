@@ -8,7 +8,7 @@
 
 (defvar *base-url* "/")
 
-(defun flash (message &key (id *userid*) error)
+(defun flash (message &key error)
   (with-locked-hash-table (*flashes*)
     (push
       (format nil
@@ -16,16 +16,16 @@
                 "<div class=\"flash err\">~a</div>"
                 "<div class=\"flash\">~a</div>")
               message)
-      (gethash id *flashes*))))
+      (gethash *token* *flashes*))))
 
-(defun flashes (&optional (id *userid*))
+(defun flashes ()
   (with-locked-hash-table (*flashes*)
     (prog1
-      (gethash id *flashes*)
-      (setf (gethash id *flashes*) nil))))
+      (gethash *token* *flashes*)
+      (remhash *token* *flashes*))))
 
 (defun not-found ()
-  (flash "The page you asked for could not be found :-( Here's the home page instead." :error t)
+  (flash "The page you requested could not be found. Here's the home page instead." :error t)
   (see-other "/"))
 
 ;;; routing and acceptor {{{
@@ -85,8 +85,12 @@
 
 ;; special variables
 
+(defvar *token* nil) ; current token (session)
+(defvar *donate-info* nil) ; current donation page data
 (defvar *user* nil) ; current user
 (defvar *userid* nil) ; current user
+(defvar *latitude* 0.0)
+(defvar *longitude* 0.0)
 
 (defun random-password (length)
   (declare (type fixnum length))
@@ -123,30 +127,45 @@
       nil)))
 
 (defun check-token-cookie ()
-  (let ((token (cookie-in "token")))
-    (when token
-      (let ((userid (check-token token)))
-        (when (and (not userid) token)
+  (let ((token-id (cookie-in "token")))
+    (when token-id
+      (let ((token (check-token token-id)))
+        (when (and (not token) token-id)
           (delete-token-cookie))
-        userid))))
+        token))))
 
-(defun authorization-required ()
-  (setf (return-code*) +http-see-other+)
-  (setf (header-out :location) (if (string= (script-name*) "/")
-                                 "/"
-                                 (s+ "/?next=" (script-name*))))
-  "")
+(defmacro with-token (&body body)
+  `(let ((*token* (or *token* (check-token-cookie) (start-token))))
+     ,@body))
 
 (defmacro with-user (&body body)
-  `(let* ((*userid* (or *userid* (check-token-cookie)))
-          (*user* (or *user* (db *userid*))))
+  `(with-token
+    (let* ((*userid* (or *userid* (token-userid *token*)))
+           (*user* (or *user* (db *userid*))))
+       ,@body)))
+
+(defmacro with-location (&body body)
+  `(let ((*latitude* (or (getf *user* :lat) 44.028297))
+         (*longitude* (or (getf *user* :long) -123.076065)))
      ,@body))
+
+(defmacro with-donate-info (&body body)
+  `(with-user
+     (let ((*donate-info* (or (token-donate-info *token*)
+                              (setf (token-donate-info *token*)
+                                    (make-donate-info :address (getf *user* :street)
+                                                      :city (getf *user* :city)
+                                                      :state (getf *user* :state)
+                                                      :email (getf *user* :email)
+                                                      :zip (getf *user* :zip)
+                                                      :name (getf *user* :name))))))
+       ,@body)))
 
 (defmacro require-user (&body body)
   `(with-user
      (if *userid*
        (progn ,@body)
-       (authorization-required))))
+       (see-other "/signup?action=true"))))
 
 (defmacro require-test ((test &optional message) &body body)
   `(if ,test
@@ -165,22 +184,28 @@
 
 ;; tokens
 
-(defun make-token (id)
-  (with-mutex (*make-token-lock*)
+(defun start-token ()
+  (with-locked-hash-table (*tokens*)
     (do (token)
-      ((not (gethash (setf token (random-password 30)) *auth-tokens*))
-      (prog1 token
-        (setf (gethash token *auth-tokens*) (list id (get-universal-time))))))))
+      ((not (gethash (setf token (random-password 30)) *tokens*))
+      (prog1
+        (setf (gethash token *tokens*)
+              (make-token :created (get-universal-time)))
+        (set-cookie "token" :value token
+                            :http-only t
+                            :expires (+ (get-universal-time) 2592000)
+                            :secure nil))))))
 
-(defun check-token (token)
-  (let ((value (gethash token *auth-tokens*)))
-    (when (and value (< (get-universal-time) (+ (cadr value) 2592000)))
-      (car value))))
+(defun check-token (cookie-value)
+  (let ((token (gethash cookie-value *tokens*)))
+    (if (and token (< (get-universal-time) (+ (token-created token) 2592000)))
+      token
+      (progn (remhash cookie-value *tokens*) nil))))
 
 (defun delete-token-cookie ()
   (awhen (cookie-in "token")
-    (awhen (gethash it *auth-tokens*)
-      (setf (cadr it) 0))
+    (awhen (gethash it *tokens*)
+      (remhash it *tokens*))
     (set-cookie "token" :value ""
                 :http-only t
                 :expires 0
@@ -194,17 +219,15 @@
 (defclass k-acceptor (acceptor) ())
 
 (defmethod acceptor-dispatch-request ((acceptor k-acceptor) request)
-  (dolist (rule *routes*)
-    (multiple-value-bind (match results)
-        (scan-to-strings (car rule) (script-name*))
-      (when match
-        (return-from acceptor-dispatch-request
-          (progn
-            (apply (cdr rule) (coerce results 'list)))))))
-  (with-user
-    (if *userid*
-      (not-found)
-      "not found")))
+  (with-token
+    (dolist (rule *routes*)
+      (multiple-value-bind (match results)
+          (scan-to-strings (car rule) (script-name*))
+        (when match
+          (return-from acceptor-dispatch-request
+            (progn
+              (apply (cdr rule) (coerce results 'list)))))))
+    (not-found)))
 
 #|(defmethod acceptor-status-message ((acceptor k-acceptor)
                                     http-status-code
@@ -242,11 +265,13 @@
                               (cadr item)
                               (or (caddr item) (cadr item))
                               (string= selected (cadr item)))))))))
-(defun welcome-bar (content)
+(defun welcome-bar (content &optional (hide t))
   (html
     (:div :class "welcome"
-      (:form :method "post" :action "/settings"
-        (:button :class "corner" :type "submit" :name "help" :value "0" "[ hide help text ]"))
+      (when hide
+        (htm
+          (:form :method "post" :action "/settings"
+            (:button :class "corner" :type "submit" :name "help" :value "0" "[ hide help text ]"))))
       (str content))))
 
 (defun base-page (title body &key class)
@@ -255,6 +280,7 @@
     (:html
       (:head
         (:title (if title (str (s+ title " | Kindista")) "Kindista"))
+        (:meta :charset "utf-8")
         (:meta :name "viewport" :content "width=device-width,initial-scale=1.0,maximum-scale=1.0")
         (:meta :name "HandheldFriendly" :content "True")
         ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
@@ -270,15 +296,9 @@
   (base-page title
              (html
                (:a :id "top")
-               (:div :id "fund"
-                 (:a :href "/donate"
-                  "Kindista is non-profit, but we have costs like any top site: servers, power, rent, programs, staff and legal help. To protect our independence, we'll never run ads. We take no government funds. We run on membership donations averaging about $30 per month. If everyone reading this gave $5, we could do something awesome."
-                  (:br)
-                  (:br)
-                  "Please help us forget fundraising and get back to improving Kindista."))
                (str (page-header header-extra))
                (str body))
-             :class (if class (s+ class " fund") "fund")))
+             :class class))
 
 (defun standard-page (title body &key selected top right search search-scope class)
   (header-page title
@@ -315,31 +335,48 @@
                    (:input :type "submit" :value "Go"))
 
                  (:div :id "menu"
-                   (:table
-                     (:tr
-                       (:td :rowspan "2"
-                        (:img :src (format nil "/media/avatar/~A.jpg" *userid*)))
-                       (:td (:a :href (s+ "/people/" (username-or-id)) (str (getf *user* :name)))))
-                     (:tr
-                       (:td
-                         (:a :href "/settings" "Settings")
-                         " &nbsp;&middot;&nbsp; "
-                         (:a :href "/logout" "Log out"))))
+                   (if *user*
+                     (htm
+                       (:table
+                         (:tr
+                           (:td :rowspan "2"
+                            (:img :src (format nil "/media/avatar/~A.jpg" *userid*)))
+                           (:td (:a :href (s+ "/people/" (username-or-id)) (str (getf *user* :name)))))
+                         (:tr
+                           (:td
+                             (:a :href "/settings" "Settings")
+                             " &nbsp;&middot;&nbsp; "
+                             (:a :href "/logout" "Log out")))))
+                     (htm
+                       (:table
+                         (:tr
+                           (:td :rowspan "2"
+                            (:img :src (format nil "/media/avatar/guest.jpg")))
+                           (:td "Welcome, Guest!"))
+                         (:tr
+                           (:td
+                             (:a :href "/login" "Log in")
+                             " &nbsp;&middot;&nbsp; "
+                             (:a :href "/signup" "Sign up")))) 
+                       )
+                     )
 
-                   (str (menu (list '("Recent Activity" "home" "")
-                                    '("Messages" "mail")
+                   (str (menu (list '("Recent Activity" "home")
+                                    (when *user*
+                                      '("Messages" "mail" "messages")) 
                                     '("People" "people")
                                     '("Offers" "offers")
                                     '("Requests" "requests")
+                                    '("Feedback &amp; Support" "support")
                                     ;("Events" "events") 
                                     (when (getf *user* :admin)
                                       '("Admin" "admin")))
                               selected))
 
                    (:p :id "copyright"
-                     "Kindista &copy; 2012"
+                     "Kindista &copy; 2012-2013"
                      (:br)
-                     "Programmed in Common Lisp")
+                     "Built with Common Lisp")
 
                    (:a :class "dark" :href "#top"
                        "Back to the top")

@@ -252,7 +252,7 @@
 
 (defroute "/people/<id>" (id)
   (:get
-    (require-user
+    (with-user
       (ensuring-userid (id "/people/~a")
         (let ((editing (get-parameter "edit"))
               (bio (getf (db id) :bio)))
@@ -294,7 +294,7 @@
 
 (defroute "/people/<id>/activity" (id)
   (:get
-    (require-user
+    (with-user
       (ensuring-userid (id "/people/~a/activity")
         (profile-activity-html id)))))
 
@@ -312,13 +312,11 @@
 
 
 (defun nearby-people (&optional (userid *userid*))
-  (let* ((user (db userid))
-         (lat (getf user :lat))
-         (long (getf user :long)))
+  (let* ((user (db userid)))
     (labels ((distance (result)
-               (air-distance lat long (result-latitude result) (result-longitude result))))
+               (air-distance *latitude* *longitude* (result-latitude result) (result-longitude result))))
       (sublist (remove userid
-                 (sort (geo-index-query *people-geo-index* lat long 25)
+                 (sort (geo-index-query *people-geo-index* *latitude* *longitude* 25)
                        #'< :key #'distance)
                  :key #'result-id)
              0 10))))
@@ -346,7 +344,7 @@
   (let ((data (db id)))
     (html
       (:div :class "person-tile"
-        (:img :src (strcat "/media/avatars/" id ".jpg"))
+        (:img :src (strcat "/media/avatar/" id ".jpg"))
         (:p (:a :href (strcat "/people/" (username-or-id id))
              (str (getf data :name))))   
         ; distance
@@ -360,18 +358,19 @@
 
 (defroute "/people" ()
   (:get
-    (require-user
+    (with-user
       (standard-page
         "People"
         (html
           ; favorites / connections?
-          (:h2 "Nearby")
+          (:h2 "People near you")
           (:div :class "person-row"
-            (dolist (data (nearby-people))
-              (str (person-tile (result-id data)))))
-          (:h2 "People you may know")
-          (:div :class "person-row"
-            (dolist (data (suggested-people))
-              (str (person-tile (cdr data))))))
-        :selected "people"
-        :class "people"))))
+            (with-location
+              (dolist (data (nearby-people))
+                (str (person-tile (result-id data))))))
+          (when *user*
+            (:h2 "People you may know") 
+            (:div :class "person-row"
+              (dolist (data (suggested-people))
+                (str (person-tile (cdr data)))))))
+        :selected "people"))))

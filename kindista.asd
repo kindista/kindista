@@ -10,6 +10,8 @@
                :cl-ppcre
                :cl-smtp
                :cl-who
+               :cl-stripe
+               :parenscript
                :css-lite
                :vecto
                :double-metaphone
@@ -25,6 +27,7 @@
                (:file "helpers")
                (:file "scanners")
                (:file "db")
+               (:file "donations")
                (:file "http")
                (:file "tags")
                (:file "search")
@@ -39,5 +42,6 @@
                (:file "admin")
                (:file "time")
                (:file "geocode")
+               (:file "home")
                (:file "routes")))
 
