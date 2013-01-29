@@ -205,12 +205,13 @@
      (:div :class "basics"
        (:h1 (str (getf user :name)))
        (:p :class "city" "Eugene, OR")
-     (:form :method "GET" :action (strcat *base-url* "/message")
-       (:input :type "submit" :value "Send a message")) 
-     (:form :method "POST" :action "/friends"
-       (:input :type "hidden" :name (if is-friend "remove" "add") :value userid)
-       (:input :type "hidden" :name "next" :value *base-url*)
-       (:input :class (when is-friend "cancel") :type "submit" :value (if is-friend "Remove friend" "Add as friend")))))))
+     (unless (eql userid *userid*)
+       (:form :method "GET" :action (strcat *base-url* "/message")
+         (:input :type "submit" :value "Send a message")) 
+       (:form :method "POST" :action "/friends"
+         (:input :type "hidden" :name (if is-friend "remove" "add") :value userid)
+         (:input :type "hidden" :name "next" :value *base-url*)
+         (:input :class (when is-friend "cancel") :type "submit" :value (if is-friend "Remove friend" "Add as friend"))))))))
 
 (defun profile-activity-html (userid &key type)
   (let* ((user (db userid))
@@ -260,7 +261,7 @@
 
 (defroute "/people/<id>" (id)
   (:get
-    (require-user
+    (with-user
       (ensuring-userid (id "/people/~a")
         (let ((editing (get-parameter "edit")))
           (cond
@@ -289,7 +290,7 @@
 
 (defroute "/people/<id>/activity" (id)
   (:get
-    (require-user
+    (with-user
       (ensuring-userid (id "/people/~a/activity")
         (profile-activity-html id)))))
 
@@ -301,13 +302,11 @@
 
 
 (defun nearby-people (&optional (userid *userid*))
-  (let* ((user (db userid))
-         (lat (getf user :lat))
-         (long (getf user :long)))
+  (let* ((user (db userid)))
     (labels ((distance (result)
-               (air-distance lat long (result-latitude result) (result-longitude result))))
+               (air-distance *latitude* *longitude* (result-latitude result) (result-longitude result))))
       (sublist (remove userid
-                 (sort (geo-index-query *people-geo-index* lat long 25)
+                 (sort (geo-index-query *people-geo-index* *latitude* *longitude* 25)
                        #'< :key #'distance)
                  :key #'result-id)
              0 10))))
@@ -335,7 +334,7 @@
   (let ((data (db id)))
     (html
       (:div :class "person-tile"
-        (:img :src (strcat "/media/avatars/" id ".jpg"))
+        (:img :src (strcat "/media/avatar/" id ".jpg"))
         (:p (:a :href (strcat "/people/" (username-or-id id))
              (str (getf data :name))))   
         ; distance
@@ -349,18 +348,19 @@
 
 (defroute "/people" ()
   (:get
-    (require-user
+    (with-user
       (standard-page
         "People"
         (html
           ; favorites / connections?
-          (:h2 "Nearby")
+          (:h2 "People near you")
           (:div :class "person-row"
-            (dolist (data (nearby-people))
-              (str (person-tile (result-id data)))))
-          (:h2 "People you may know")
-          (:div :class "person-row"
-            (dolist (data (suggested-people))
-              (str (person-tile (cdr data))))))
-        :selected "people"
-        :class "people"))))
+            (with-location
+              (dolist (data (nearby-people))
+                (str (person-tile (result-id data))))))
+          (when *user*
+            (:h2 "People you may know") 
+            (:div :class "person-row"
+              (dolist (data (suggested-people))
+                (str (person-tile (cdr data)))))))
+        :selected "people"))))

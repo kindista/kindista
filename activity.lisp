@@ -113,8 +113,8 @@
                    :distance (when show-distance
                                (air-distance (result-latitude result)
                                              (result-longitude result)
-                                             (getf *user* :lat)
-                                             (getf *user* :long)))
+                                             *latitude*
+                                             *longitude*))
                    :next-url next-url
                    :edit (when (eql user-id *userid*) t)
                    :hearts (length (loves (result-id result)))
@@ -170,60 +170,61 @@
       (str (person-link user-id)) " joined Kindista")))
 
 (defun activity-items (&key (user *user*) (page 0) (count 20) next-url)
-  (let ((items (sort (geo-index-query *activity-geo-index*
-                                      (getf user :lat)
-                                      (getf user :long)
-                                      (or (getf user :distance) 50))
-                     #'< :key #'activity-rank))
-        (start (* page 20)))
-    (html
-      (iter (for i from 0 to (+ start count))
-            (cond
-              ((< i start)
-               (setf items (cdr items)))
+  (with-location
+    (let ((items (sort (geo-index-query *activity-geo-index*
+                                        *latitude*
+                                        *longitude*
+                                        (or (getf user :distance) 50))
+                       #'< :key #'activity-rank))
+          (start (* page 20)))
+      (html
+        (iter (for i from 0 to (+ start count))
+              (cond
+                ((< i start)
+                 (setf items (cdr items)))
 
-              ((and (>= i start) items)
-               (let* ((item (car items)))
-                 (case (result-type item)
-                   (:gratitude
-                     (str (gratitude-activity-item :time (result-created item)
-                                                   :user-id (first (result-people item))
-                                                   :id (result-id item)
+                ((and (>= i start) items)
+                 (let* ((item (car items)))
+                   (case (result-type item)
+                     (:gratitude
+                       (str (gratitude-activity-item :time (result-created item)
+                                                     :user-id (first (result-people item))
+                                                     :id (result-id item)
+                                                     :next-url next-url
+                                                     :text (getf (db (result-id item)) :text))))
+                     (:person
+                       (str (joined-activity-item :time (result-created item)
+                                                  :user-id (first (result-people item))
+                                                  :user-name (getf (db (result-id item)) :name))))
+                     (:offer
+                       (let ((userid (first (result-people item))))
+                         (str (offer-activity-item :time (result-created item)
+                                                   :offer-id (result-id item)
+                                                   :user-name (getf (db userid) :name)
+                                                   :user-id userid
                                                    :next-url next-url
-                                                   :text (getf (db (result-id item)) :text))))
-                   (:person
-                     (str (joined-activity-item :time (result-created item)
-                                                :user-id (first (result-people item))
-                                                :user-name (getf (db (result-id item)) :name))))
-                   (:offer
-                     (let ((userid (first (result-people item))))
-                       (str (offer-activity-item :time (result-created item)
-                                                 :offer-id (result-id item)
-                                                 :user-name (getf (db userid) :name)
-                                                 :user-id userid
-                                                 :next-url next-url
-                                                 :hearts (length (loves (result-id item)))
-                                                 :text (getf (db (result-id item)) :text)))))
-                   (:request
-                     (let ((userid (first (result-people item))))
-                       (str (request-activity-item item :show-what t :next-url next-url))))))
-               (setf items (cdr items)))
+                                                   :hearts (length (loves (result-id item)))
+                                                   :text (getf (db (result-id item)) :text)))))
+                     (:request
+                       (let ((userid (first (result-people item))))
+                         (str (request-activity-item item :show-what t :next-url next-url))))))
+                 (setf items (cdr items)))
 
-              (t
-               (when (< (user-distance) 100)
-                 (htm
-                   (:div :class "item small"
-                    (:em "Increasing the ")(:strong "show activity within")(:em " distance may yield more results."))))
-               (finish)))
+                (t
+                 (when (< (user-distance) 100)
+                   (htm
+                     (:div :class "item small"
+                      (:em "Increasing the ")(:strong "show activity within")(:em " distance may yield more results."))))
+                 (finish)))
 
-            (finally
-              (when (or (> page 0) (cdr items))
-                (htm
-                  (:div :class "item"
-                   (when (> page 0)
-                     (htm
-                       (:a :href (strcat "/home?p=" (- page 1)) "< previous page")))
-                   "&nbsp;"
-                   (when (cdr items)
-                     (htm
-                       (:a :style "float: right;" :href (strcat "/home?p=" (+ page 1)) "next page >")))))))))))
+              (finally
+                (when (or (> page 0) (cdr items))
+                  (htm
+                    (:div :class "item"
+                     (when (> page 0)
+                       (htm
+                         (:a :href (strcat "/home?p=" (- page 1)) "< previous page")))
+                     "&nbsp;"
+                     (when (cdr items)
+                       (htm
+                         (:a :style "float: right;" :href (strcat "/home?p=" (+ page 1)) "next page >"))))))))))))

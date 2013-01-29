@@ -8,7 +8,7 @@
 
 (defvar *base-url* "/")
 
-(defun flash (message &key (id *userid*) error)
+(defun flash (message &key error)
   (with-locked-hash-table (*flashes*)
     (push
       (format nil
@@ -16,16 +16,16 @@
                 "<div class=\"flash err\">~a</div>"
                 "<div class=\"flash\">~a</div>")
               message)
-      (gethash id *flashes*))))
+      (gethash *token* *flashes*))))
 
-(defun flashes (&optional (id *userid*))
+(defun flashes ()
   (with-locked-hash-table (*flashes*)
     (prog1
-      (gethash id *flashes*)
-      (setf (gethash id *flashes*) nil))))
+      (gethash *token* *flashes*)
+      (remhash *token* *flashes*))))
 
 (defun not-found ()
-  (flash "The page you asked for could not be found :-( Here's the home page instead." :error t)
+  (flash "The page you requested could not be found. Here's the home page instead." :error t)
   (see-other "/"))
 
 ;;; routing and acceptor {{{
@@ -89,6 +89,8 @@
 (defvar *donate-info* nil) ; current donation page data
 (defvar *user* nil) ; current user
 (defvar *userid* nil) ; current user
+(defvar *latitude* 0.0)
+(defvar *longitude* 0.0)
 
 (defun random-password (length)
   (declare (type fixnum length))
@@ -132,13 +134,6 @@
           (delete-token-cookie))
         token))))
 
-(defun authorization-required ()
-  (setf (return-code*) +http-see-other+)
-  (setf (header-out :location) (if (string= (script-name*) "/")
-                                 "/"
-                                 (s+ "/?next=" (script-name*))))
-  "")
-
 (defmacro with-token (&body body)
   `(let ((*token* (or *token* (check-token-cookie) (start-token))))
      ,@body))
@@ -148,6 +143,11 @@
     (let* ((*userid* (or *userid* (token-userid *token*)))
            (*user* (or *user* (db *userid*))))
        ,@body)))
+
+(defmacro with-location (&body body)
+  `(let ((*latitude* (or (getf *user* :lat) 44.028297))
+         (*longitude* (or (getf *user* :long) -123.076065)))
+     ,@body))
 
 (defmacro with-donate-info (&body body)
   `(with-user
@@ -165,7 +165,7 @@
   `(with-user
      (if *userid*
        (progn ,@body)
-       (authorization-required))))
+       (see-other "/signup?action=true"))))
 
 (defmacro require-test ((test &optional message) &body body)
   `(if ,test
@@ -219,17 +219,15 @@
 (defclass k-acceptor (acceptor) ())
 
 (defmethod acceptor-dispatch-request ((acceptor k-acceptor) request)
-  (dolist (rule *routes*)
-    (multiple-value-bind (match results)
-        (scan-to-strings (car rule) (script-name*))
-      (when match
-        (return-from acceptor-dispatch-request
-          (progn
-            (apply (cdr rule) (coerce results 'list)))))))
-  (with-user
-    (if *userid*
-      (not-found)
-      "not found")))
+  (with-token
+    (dolist (rule *routes*)
+      (multiple-value-bind (match results)
+          (scan-to-strings (car rule) (script-name*))
+        (when match
+          (return-from acceptor-dispatch-request
+            (progn
+              (apply (cdr rule) (coerce results 'list)))))))
+    (not-found)))
 
 #|(defmethod acceptor-status-message ((acceptor k-acceptor)
                                     http-status-code
@@ -267,11 +265,13 @@
                               (cadr item)
                               (or (caddr item) (cadr item))
                               (string= selected (cadr item)))))))))
-(defun welcome-bar (content)
+(defun welcome-bar (content &optional (hide t))
   (html
     (:div :class "welcome"
-      (:form :method "post" :action "/settings"
-        (:button :class "corner" :type "submit" :name "help" :value "0" "[ hide help text ]"))
+      (when hide
+        (htm
+          (:form :method "post" :action "/settings"
+            (:button :class "corner" :type "submit" :name "help" :value "0" "[ hide help text ]"))))
       (str content))))
 
 (defun base-page (title body &key class)
@@ -298,7 +298,7 @@
                (:a :id "top")
                (str (page-header header-extra))
                (str body))
-             :class (if class (s+ class " fund") "fund")))
+             :class class))
 
 (defun standard-page (title body &key selected top right search search-scope class)
   (header-page title
@@ -335,22 +335,39 @@
                    (:input :type "submit" :value "Go"))
 
                  (:div :id "menu"
-                   (:table
-                     (:tr
-                       (:td :rowspan "2"
-                        (:img :src (format nil "/media/avatar/~A.jpg" *userid*)))
-                       (:td (:a :href (s+ "/people/" (username-or-id)) (str (getf *user* :name)))))
-                     (:tr
-                       (:td
-                         (:a :href "/settings" "Settings")
-                         " &nbsp;&middot;&nbsp; "
-                         (:a :href "/logout" "Log out"))))
+                   (if *user*
+                     (htm
+                       (:table
+                         (:tr
+                           (:td :rowspan "2"
+                            (:img :src (format nil "/media/avatar/~A.jpg" *userid*)))
+                           (:td (:a :href (s+ "/people/" (username-or-id)) (str (getf *user* :name)))))
+                         (:tr
+                           (:td
+                             (:a :href "/settings" "Settings")
+                             " &nbsp;&middot;&nbsp; "
+                             (:a :href "/logout" "Log out")))))
+                     (htm
+                       (:table
+                         (:tr
+                           (:td :rowspan "2"
+                            (:img :src (format nil "/media/avatar/guest.jpg")))
+                           (:td "Welcome, Guest!"))
+                         (:tr
+                           (:td
+                             (:a :href "/login" "Log in")
+                             " &nbsp;&middot;&nbsp; "
+                             (:a :href "/signup" "Sign up")))) 
+                       )
+                     )
 
                    (str (menu (list '("Recent Activity" "home")
-                                    '("Messages" "mail" "messages")
+                                    (when *user*
+                                      '("Messages" "mail" "messages")) 
                                     '("People" "people")
                                     '("Offers" "offers")
                                     '("Requests" "requests")
+                                    '("Feedback &amp; Support" "support")
                                     ;("Events" "events") 
                                     (when (getf *user* :admin)
                                       '("Admin" "admin")))

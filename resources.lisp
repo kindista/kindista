@@ -32,79 +32,80 @@
     (geo-index-insert *request-geo-index* result)
     (geo-index-insert *activity-geo-index* result)))
 
-(defun nearby-resources (type &key base (user *user*) (subtag-count 4) (distance 50) q)
-  (let ((nearby (sort
-                  (if q
-                    (result-id-intersection
+(defun nearby-resources (type &key base (subtag-count 4) (distance 50) q)
+  (with-location
+    (let ((nearby (sort
+                    (if q
+                      (result-id-intersection
+                        (geo-index-query (case type
+                                           ('offer *offer-geo-index*)
+                                           (t *request-geo-index*))
+                                         *latitude*
+                                         *longitude*
+                                         distance)
+                        (stem-index-query (case type
+                                           ('offer *offer-stem-index*)
+                                           (t *request-stem-index*))
+                                          q))
                       (geo-index-query (case type
                                          ('offer *offer-geo-index*)
                                          (t *request-geo-index*))
-                                       (getf user :lat)
-                                       (getf user :long)
-                                       distance)
-                      (stem-index-query (case type
-                                         ('offer *offer-stem-index*)
-                                         (t *request-stem-index*))
-                                        q))
-                    (geo-index-query (case type
-                                       ('offer *offer-geo-index*)
-                                       (t *request-geo-index*))
-                                     (getf user :lat)
-                                     (getf user :long)
-                                     distance)) 
-                  #'> :key #'resource-rank))
-        (items nil))
-    (let ((tags (make-hash-table :test 'equalp)))
-      (dolist (item nearby)
-        (dolist (tag (result-tags item))
-          (push item (gethash tag tags))))
+                                         *latitude*
+                                         *longitude*
+                                       distance)) 
+                    #'> :key #'resource-rank))
+          (items nil))
+      (let ((tags (make-hash-table :test 'equalp)))
+        (dolist (item nearby)
+          (dolist (tag (result-tags item))
+            (push item (gethash tag tags))))
 
-      (if base
-        ; get each base tag's list of items
-        ; get intersection of those lists
-        ; remove base tags from hashtable
-        ; set all remaining tags lists to be intersection of tag list and previous intersection
-        (progn
-          (setf items (iter (for tag in base)
-                            (reducing (gethash tag tags) by #'result-id-intersection)
-                            (remhash tag tags))) 
-          (iter (for (tag tag-items) in-hashtable tags)
-                (let ((new-items (intersection tag-items items :key #'result-id)))
-                  (if new-items
-                    (setf (gethash tag tags) new-items)
-                    (remhash tag tags)))))
+        (if base
+          ; get each base tag's list of items
+          ; get intersection of those lists
+          ; remove base tags from hashtable
+          ; set all remaining tags lists to be intersection of tag list and previous intersection
+          (progn
+            (setf items (iter (for tag in base)
+                              (reducing (gethash tag tags) by #'result-id-intersection)
+                              (remhash tag tags))) 
+            (iter (for (tag tag-items) in-hashtable tags)
+                  (let ((new-items (intersection tag-items items :key #'result-id)))
+                    (if new-items
+                      (setf (gethash tag tags) new-items)
+                      (remhash tag tags)))))
+          
+          (setf items nearby))
+                
+
+        ; for each tag, number of contents + ordered list of subtags (up to 4)
         
-        (setf items nearby))
-              
+        (values (iter (for (tag tag-items) in-hashtable tags)
+                      (collect (list tag
+                                     (length tag-items)
+                                     (when (cdr tag-items)
+                                       (let* ((subtags (sort
+                                                         (iter (for (subtag subtag-items) in-hashtable tags)
+                                                               (unless (string= tag subtag)
+                                                                 (awhen (intersection tag-items subtag-items :key #'result-id)
+                                                                   (collect (cons subtag (length it))))))
+                                                         #'> :key #'cdr))
+                                              (top-subtags (subseq subtags 0
+                                                                   (min (length subtags) subtag-count))))
+                                         (if (< subtag-count (length subtags))
+                                           (append (sort (subseq top-subtags 0 (- subtag-count 1))
+                                                         #'string< :key #'car)
+                                                   (list
+                                                     (cons
+                                                       "more"
+                                                       (reduce #'+ (subseq subtags (- subtag-count 1)) :key #'cdr))))
+                                           (sort top-subtags #'string< :key #'car)))))))
+                                                       
+                items)))))
 
-      ; for each tag, number of contents + ordered list of subtags (up to 4)
-      
-      (values (iter (for (tag tag-items) in-hashtable tags)
-                    (collect (list tag
-                                   (length tag-items)
-                                   (when (cdr tag-items)
-                                     (let* ((subtags (sort
-                                                       (iter (for (subtag subtag-items) in-hashtable tags)
-                                                             (unless (string= tag subtag)
-                                                               (awhen (intersection tag-items subtag-items :key #'result-id)
-                                                                 (collect (cons subtag (length it))))))
-                                                       #'> :key #'cdr))
-                                            (top-subtags (subseq subtags 0
-                                                                 (min (length subtags) subtag-count))))
-                                       (if (< subtag-count (length subtags))
-                                         (append (sort (subseq top-subtags 0 (- subtag-count 1))
-                                                       #'string< :key #'car)
-                                                 (list
-                                                   (cons
-                                                     "more"
-                                                     (reduce #'+ (subseq subtags (- subtag-count 1)) :key #'cdr))))
-                                         (sort top-subtags #'string< :key #'car)))))))
-                                                     
-              items))))
-
-(defun nearby-resources-top-tags (type &key (count 9) (more t) base (user *user*) (subtag-count 4) q)
+(defun nearby-resources-top-tags (type &key (count 9) (more t) base (subtag-count 4) q)
   (multiple-value-bind (nearby items)
-      (nearby-resources type :base base :user user :subtag-count subtag-count :q q)
+      (nearby-resources type :base base :subtag-count subtag-count :q q)
     (let* ((tags (sort (if base
                          nearby
                          (remove-if-not #'top-tag-p nearby :key #'first))

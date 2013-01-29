@@ -376,7 +376,7 @@
         #'string-lessp :key #'cadr))
 
 (defun user-distance (&optional (user *user*))
-  (or (getf user :distance) 10))
+  (or (getf user :distance) 25))
 
 (defun user-rdist (&optional (user *user*))
-  (or (getf user :rdist) 10))
+  (or (getf user :rdist) 25))

@@ -42,5 +42,6 @@
                (:file "admin")
                (:file "time")
                (:file "geocode")
+               (:file "home")
                (:file "routes")))
 

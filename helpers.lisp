@@ -59,8 +59,8 @@
   ; how close is it?
   
   (let ((friends (getf *user* :following))
-        (age (- (get-universal-time) (or (result-created item) r)))
-        (distance (air-distance (getf *user* :lat) (getf *user* :long)
+        (age (- (get-universal-time) (or (result-created item) 0)))
+        (distance (air-distance *latitude* *longitude*
                                 (result-latitude item) (result-longitude item))))
     (round (- age
              (/ 120000 (log (+ distance 4)))
