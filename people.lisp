@@ -47,73 +47,63 @@
   (let ((items (gethash userid *activity-person-index*))
         (start (* page 20)))
     (html
-      (iter (for i from 0 to (+ start count))
-            (if (and (>= i start) items)
-              (let* ((item (car items))
-                     (obj (db (result-id item)))
-                     (userid (getf obj :by)))
-                (when (or (not type) (eql type (result-type item)))
-                  (case (result-type item)
-                    (:gratitude (str (gratitude-activity-item :time (result-created item)
-                                                              :id (result-id item)
-                                                              :next-url next-url
-                                                              :text (getf obj :text))))
-                    (:person (str (joined-activity-item :time (result-created item)
-                                                        :user-id (username-or-id (result-id item))
-                                                        :user-name (getf obj :name))))
-                    (:offer
-                      (str (offer-activity-item :time (result-created item)
-                                                :offer-id (result-id item)
-                                                :user-name (getf (db userid) :name)
-                                                :user-id (username-or-id userid)
-                                                :next-url next-url
-                                                :hearts (length (loves (result-id item)))
-                                                :text (getf obj :text))))
-                    (:request
-                      (str (request-activity-item :time (result-created item)
-                                                  :request-id (result-id item)
-                                                  :user-name (getf (db userid) :name)
-                                                  :user-id (username-or-id userid)
-                                                  :what t
-                                                  :next-url next-url
-                                                  :hearts (length (loves (result-id item)))
-                                                  :text (getf obj :text)))))))
-              (finish))
+      (iter 
+        (for i from 0 to (+ start count))
+          (if (and (>= i start) items)
+            (let ((item (car items)))
+              (when (or (not type) (eql type (result-type item)))
+                (case (result-type item)
+                  (:gratitude 
+                    (str (gratitude-activity-item item
+                                                  :next-url next-url)))
+                  (:person 
+                    (str (joined-activity-item item)))
+                  (:offer
+                    (str (offer-activity-item item
+                                              :show-what (unless (eql type :offer) t)
+                                              :next-url next-url)))   
+                  (:request
+                    (str (request-activity-item item
+                                                :show-what (unless (eql type :request) t)
+                                                :next-url next-url))))))
+            (finish))
 
-            (setf items (cdr items))
+          (setf items (cdr items))
 
-            (finally
-              (when (or (> page 0) (cdr items))
-                (htm
-                  (:div :class "item"
-                   (when (> page 0)
-                     (htm
-                       (:a :href (strcat "/home?p=" (- page 1)) "< previous page")))
-                   "&nbsp;"
-                   (when (cdr items)
-                     (htm
-                       (:a :style "float: right;" :href (strcat "/home?p=" (+ page 1)) "next page >")))))))))))
+          (finally
+            (when (or (> page 0) (cdr items))
+              (htm
+                (:div :class "item"
+                 (when (> page 0)
+                   (htm
+                     (:a :href (strcat "/home?p=" (- page 1)) "< previous page")))
+                 "&nbsp;"
+                 (when (cdr items)
+                   (htm
+                     (:a :style "float: right;" :href (strcat "/home?p=" (+ page 1)) "next page >")))))))))))
 
-(defun profile-tabs-html (userid &key type)
-  (let ((strid (username-or-id userid))
-        (bio (getf (db userid) :bio)))
+(defun profile-tabs-html (userid &key tab)
+  (let* ((bio (getf (db userid) :bio))
+         (self (eql userid *userid*))
+         (show-bio-tab (or bio self)))
     (html
       (:menu :class "bar"
         (:h3 :class "label" "Profile Menu")
-        (when bio
-          (if (not type)
+        (when show-bio-tab
+          (if (and self (eql tab :about))
             (htm (:li :class "selected" "About"))
-            (htm (:li (:a :href *base-url* "About")))))
-        (if (eql type :activity)
+            (htm (:li (:a :href (strcat *base-url* "/about") "About")))))
+
+        (if (eql tab :activity)
           (htm (:li :class "selected" "Activity"))
-          (htm (:li (:a :href (if bio (strcat *base-url* "/activity") *base-url*) "Activity"))))
-        (if (eql type :gratitude)
+          (htm (:li (:a :href (strcat *base-url* "/activity") "Activity"))))
+        (if (eql tab :gratitude)
           (htm (:li :class "selected" "Reputation"))
           (htm (:li (:a :href (strcat *base-url* "/reputation") "Reputation"))))  
-        (if (eql type :offer)
+        (if (eql tab :offer)
           (htm (:li :class "selected" "Offers"))
           (htm (:li (:a :href (strcat *base-url* "/offers") "Offers"))))
-        (if (eql type :request)
+        (if (eql tab :request)
           (htm (:li :class "selected" "Requests"))
           (htm (:li (:a :href (strcat *base-url* "/requests") "Requests"))))))))
 
@@ -159,7 +149,7 @@
       (standard-page
         (getf (db userid) :name)
         (html
-          (str (profile-tabs-html userid))
+          (str (profile-tabs-html userid :tab :about))
           (if (or (eql userid *userid*) (getf user :bio))
             (htm
               (:div :class "bio"
@@ -205,12 +195,14 @@
      (:div :class "basics"
        (:h1 (str (getf user :name)))
        (:p :class "city" "Eugene, OR")
-     (:form :method "GET" :action (strcat *base-url* "/message")
-       (:input :type "submit" :value "Send a message")) 
-     (:form :method "POST" :action "/friends"
-       (:input :type "hidden" :name (if is-friend "remove" "add") :value userid)
-       (:input :type "hidden" :name "next" :value *base-url*)
-       (:input :class (when is-friend "cancel") :type "submit" :value (if is-friend "Remove friend" "Add as friend")))))))
+     (unless (eql userid *userid*)
+       (htm 
+         (:form :method "GET" :action (strcat *base-url* "/message")
+           (:input :type "submit" :value "Send a message")) 
+         (:form :method "POST" :action "/friends"
+           (:input :type "hidden" :name (if is-friend "remove" "add") :value userid)
+           (:input :type "hidden" :name "next" :value *base-url*)
+           (:input :class (when is-friend "cancel") :type "submit" :value (if is-friend "Remove friend" "Add as friend")))))))))
 
 (defun profile-activity-html (userid &key type)
   (let* ((user (db userid))
@@ -221,7 +213,7 @@
         "Home"
 
         (html
-          (str (profile-tabs-html userid :type (or type :activity)))
+          (str (profile-tabs-html userid :tab (or type :activity)))
           (:div :class "activity"
             (str (profile-activity-items :userid userid :type type))))
 
@@ -262,13 +254,20 @@
   (:get
     (require-user
       (ensuring-userid (id "/people/~a")
-        (let ((editing (get-parameter "edit")))
+        (let ((editing (get-parameter "edit"))
+              (bio (getf (db id) :bio)))
           (cond
-            ((or (not editing)
-                 (not (eql id *userid*)))
-             (if (getf (db id) :bio)
-               (profile-bio-html id)
-               (profile-activity-html id)))
+           ;((or (not editing)
+           ;     (not (eql id *userid*)))
+           ; (if (getf (db id) :bio)
+           ;   (profile-bio-html id)
+           ;   (profile-activity-html id)))
+
+            ((not (eql id *userid*))
+             (profile-activity-html id))
+
+            ((not editing)
+             (profile-bio-html id))
 
             ((string= editing "doing")
              (profile-bio-html id :editing 'doing))
@@ -287,11 +286,23 @@
             
             (t (not-found))))))))
 
+(defroute "/people/<id>/about" (id)
+  (:get
+    (require-user
+      (ensuring-userid (id "/people/~a/about")
+        (profile-bio-html id)))))
+
 (defroute "/people/<id>/activity" (id)
   (:get
     (require-user
       (ensuring-userid (id "/people/~a/activity")
         (profile-activity-html id)))))
+
+(defroute "/people/<id>/offers" (id)
+  (:get
+    (require-user
+      (ensuring-userid (id "/people/~a/offers")
+        (profile-activity-html id :type :offer)))))
 
 (defroute "/people/<id>/requests" (id)
   (:get

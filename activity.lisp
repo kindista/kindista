@@ -89,7 +89,7 @@
   (html
     (:a :href (s+ "/people/" (username-or-id id)) (str (getf (db id) :name)))))
 
-(defun offer-activity-item (&key time user-name user-id offer-id next-url hearts text distance)
+(defun offer-activity-item-- (&key time user-name user-id offer-id next-url hearts text distance)
   (activity-item :id offer-id
                  :user-id user-id
                  :url (strcat "/offers/" offer-id)
@@ -102,6 +102,58 @@
                             " posted a "
                             (:a :href (strcat "/people/" user-id "/offers#" offer-id) "offer")
                             (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
+
+(defun gratitude-activity-item (result &key next-url)
+  (let* ((user-id (first (result-people result)))
+         (item-id (result-id result))
+         (data (db item-id)))
+    (activity-item :id item-id
+                   :user-id user-id
+                   :url (strcat "/gratitude/" item-id)
+                   :time (result-created result)
+                   :next-url next-url
+                   :edit (when (eql user-id *userid*) t)
+                   :hearts (length (loves item-id))
+                   :comments (length (comments item-id))
+                   :content (html
+                              (str (person-link user-id))
+                              (str (if (getf data :editied) "edited" " shared "))
+                              (:a :href (strcat "/gratitude/" id) "gratitude")
+                              " for "
+                              (fmt "~{~A~^, ~}"
+                                   (iter (for subject in (getf data :subjects))
+                                         (collect (person-link subject))))
+                              (:blockquote (cl-who:esc (getf data :text)))))))
+
+(defun joined-activity-item (result)
+  (html
+    (:div :class "item"
+      (str (timestamp (result-created result)))
+      (str (person-link (result-people result))) " joined Kindista")))
+
+(defun offer-activity-item (result &key show-distance show-what next-url)
+  (let ((user-id (first (result-people result)))
+        (data (db (result-id result))))
+    (activity-item :id (result-id result)
+                   :user-id user-id
+                   :url (strcat "/offers/" (result-id result))
+                   :time (result-created result)
+                   :distance (when show-distance
+                               (air-distance (result-latitude result)
+                                             (result-longitude result)
+                                             (getf *user* :lat)
+                                             (getf *user* :long)))
+                   :next-url next-url
+                   :edit (when (eql user-id *userid*) t)
+                   :hearts (length (loves (result-id result)))
+                   :type (unless show-what (if (getf data :edited) "edited" "offered"))
+                   :content (html
+                              (str (person-link user-id))
+                              (when show-what
+                                (htm
+                                  (str (if (getf data :edited) " edited a " " posted a "))
+                                  (:a :href (format nil "/offers/~d" (result-id result)) "offer")))
+                              (:blockquote (cl-who:esc (getf data :text)))))))
 
 (defun request-activity-item (result &key show-distance show-what next-url)
   (let ((user-id (first (result-people result)))
@@ -145,7 +197,7 @@
                                 (:a :href (strcat "/requests/" request-id) "request")))
                             (:blockquote (cl-who:esc text)))))
 
-(defun gratitude-activity-item (&key time id next-url text user-id)
+(defun gratitude-activity-item-- (&key time id next-url text user-id)
   (activity-item :id id
                  :user-id user-id
                  :url (strcat "/gratitude/" id)
@@ -163,7 +215,7 @@
                                        (collect (person-link subject))))
                             (:blockquote (cl-who:esc text)))))
 
-(defun joined-activity-item (&key time user-name user-id)
+(defun joined-activity-item-- (&key time user-name user-id)
   (html
     (:div :class "item"
       (str (timestamp time))
