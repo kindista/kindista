@@ -179,47 +179,6 @@
                                   (:a :href (format nil "/requests/~d" (result-id result)) "request")))
                               (:blockquote (cl-who:esc (getf data :text)))))))
 
-(defun request-activity-item-- (&key time user-name user-id request-id next-url hearts text what distance)
-  (activity-item :id request-id
-                 :user-id user-id
-                 :url (strcat "/requests/" request-id)
-                 :time time
-                 :distance distance
-                 :next-url next-url
-                 :edit (when (eql user-id *userid*) t)
-                 :hearts hearts
-                 :type (unless what "requested")
-                 :content (html
-                            (str (person-link user-id))
-                            (when what
-                              (htm
-                                " posted a "
-                                (:a :href (strcat "/requests/" request-id) "request")))
-                            (:blockquote (cl-who:esc text)))))
-
-(defun gratitude-activity-item-- (&key time id next-url text user-id)
-  (activity-item :id id
-                 :user-id user-id
-                 :url (strcat "/gratitude/" id)
-                 :time time
-                 :next-url next-url
-                 :hearts (length (loves id))
-                 :comments (length (comments id))
-                 :content (html
-                            (str (person-link user-id))
-                            " shared "
-                            (:a :href (strcat "/gratitude/" id) "gratitude")
-                            " for "
-                            (fmt "~{~A~^, ~}"
-                                 (iter (for subject in (getf (db id) :subjects))
-                                       (collect (person-link subject))))
-                            (:blockquote (cl-who:esc text)))))
-
-(defun joined-activity-item-- (&key time user-name user-id)
-  (html
-    (:div :class "item"
-      (str (timestamp time))
-      (str (person-link user-id)) " joined Kindista")))
 
 (defun activity-items (&key (user *user*) (page 0) (count 20) next-url)
   (with-location
@@ -239,27 +198,13 @@
                  (let* ((item (car items)))
                    (case (result-type item)
                      (:gratitude
-                       (str (gratitude-activity-item :time (result-created item)
-                                                     :user-id (first (result-people item))
-                                                     :id (result-id item)
-                                                     :next-url next-url
-                                                     :text (getf (db (result-id item)) :text))))
+                       (str (gratitude-activity-item item :next-url next-url)))
                      (:person
-                       (str (joined-activity-item :time (result-created item)
-                                                  :user-id (first (result-people item))
-                                                  :user-name (getf (db (result-id item)) :name))))
+                       (str (joined-activity-item item)))
                      (:offer
-                       (let ((userid (first (result-people item))))
-                         (str (offer-activity-item :time (result-created item)
-                                                   :offer-id (result-id item)
-                                                   :user-name (getf (db userid) :name)
-                                                   :user-id userid
-                                                   :next-url next-url
-                                                   :hearts (length (loves (result-id item)))
-                                                   :text (getf (db (result-id item)) :text)))))
+                       (str (offer-activity-item item :next-url next-url)))
                      (:request
-                       (let ((userid (first (result-people item))))
-                         (str (request-activity-item item :show-what t :next-url next-url))))))
+                       (str (request-activity-item item :show-what t :next-url next-url)))))
                  (setf items (cdr items)))
 
                 (t
