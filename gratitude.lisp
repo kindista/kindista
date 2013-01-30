@@ -64,7 +64,7 @@
 
     (with-locked-hash-table (*activity-person-index*)
       (dolist (person people)
-        (asetf (gethash id *activity-person-index*)
+        (asetf (gethash person *activity-person-index*)
                (remove result it))))
 
     (geo-index-remove *activity-geo-index* result)
