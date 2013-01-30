@@ -831,13 +831,21 @@ button.text.large {
  font-weight: 500;
 }
 
+.item h3 a {
+ font-weight: bold;
+}
+
+.item p a {
+ font-weight: normal;
+}
+
 img.bigavatar {
  -moz-transform:rotate(-2deg);
  -webkit-transform:rotate(-2deg);
  -o-transform:rotate(-2deg);
  border:0.5em solid #fff;
  box-shadow:2px 2px 3px #c0c0c0;
- margin: 0 1em 1em 0;
+ margin: 0 1em 1em;
  width:10em;
  height:10em;
  float:left;

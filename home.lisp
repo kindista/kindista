@@ -100,19 +100,17 @@
                             (:a :href "/reset" "Forgot your password?")))))
 
                     (:div :class "item"
-                      (:h3 "Help us grow!") 
-                      (:p "We are a tiny non-profit, and we rely on your contributions to pay our bills and fund improvements. Will you " (:a :href "/donate" "make a tax-deductable donation") " and help us grow?")) 
+                      (:h3 (:a :href "/donate" "Help us grow!"))
+                      (:p "We are a tiny non-profit, and we rely on your contributions to pay our bills and fund improvements. Will you " (:a :href "/donate" "make a tax-deductable donation") " and help us grow? Learn more about " (:a :href "/plan" "what we are doing") ".")) 
                     
                     (when *user*
                       (htm
                         (:div :class "item right only"
-                          (:h3 "Invite your friends")
-                          (:p "Kindista is invitation-only. As a Kindista member, you can invite people you know to join.")
-                          (:br)
-                          (:textarea :name "invites"))))
+                          (:h3 (:a :href "/invite" "Invite your friends"))
+                          (:p "Kindista is invitation-only. As a Kindista member, you can invite people you know to join. " (:a :href "/faq/" "How does this work?")))))
 
                     (:div :class "item right only"
-                      (:h3 "Upcoming Events")
+                      (:h3 "Upcoming " (:a :href "/events" "Events"))
                       (:menu
                         (:li (:strong "Thursday, November 23"))
                         (:li "7:00PM " (:a :href "x" "East Eugene Gift Circle"))
