@@ -187,7 +187,8 @@
                        :editable editable))))
             (htm (:h3 "This person hasn't written anything here."))))
         :right (when editing (html (:h2 "Style guide")))
-        :top (profile-top-html userid)))))
+        :top (profile-top-html userid)
+        :selected "people"))))
 
 (defun profile-top-html (userid)
   (let ((user (db userid))
