@@ -9,6 +9,7 @@
 (defvar *db-log-lock* (make-mutex :name "db log"))
 (defvar *db-results* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
 
+(defvar *geo-index-index* (make-hash-table :test 'equal :synchronized t :size 500 :rehash-size 1.25))
 (defvar *activity-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *activity-person-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *offer-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
@@ -164,13 +165,19 @@
             (collect item at beginning)))))
 
 (defun geo-index-insert (index item)
-  (with-locked-hash-table (index)
-    (push item (gethash (geocode (result-latitude item) (result-longitude item)) index))))
+  (let ((geocode (geocode (result-latitude item) (result-longitude item))))
+    (with-locked-hash-table (*geo-index-index*)
+      (push geocode (gethash (cons index item) *geo-index-index*))) 
+    (with-locked-hash-table (index)
+      (push item (gethash (geocode (result-latitude item) (result-longitude item)) index)))))
 
 (defun geo-index-remove (index item)
-  (with-locked-hash-table (index)
-    (asetf (gethash (geocode (result-latitude item) (result-longitude item)) index)
-           (remove item it))))
+  (with-locked-hash-table (*geo-index-index*)
+    (with-locked-hash-table (index)
+      (dolist (geocode (delete-duplicates (gethash (cons index item) *geo-index-index*))) 
+        (asetf (gethash geocode index)
+               (remove item it))))
+    (remhash (cons index item) *geo-index-index*)))
 
 (defun stem-index-query (index query)
   (iter (for stem in (stem-text query))
