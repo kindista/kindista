@@ -76,7 +76,8 @@
      (if existing-url "Edit your statement of gratitude" "Express gratitude")
      (html
        (:div :class "item"
-        (:h2 "Express gratitude"))
+        (:h2 (str (if existing-url "Edit your statement of gratitude"
+                                   "Express gratitude")))
        (:div :class "item"
         (:form :method "post" 
                :action (or existing-url "/gratitude/new") 
@@ -96,7 +97,7 @@
           (:p (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or project"))
           (:textarea :rows "8" :name "text" (str text))
           (:p  (:input :type "submit" :class "cancel" :name "cancel" :value "Cancel")
-          (:input :type "submit" :class "submit" :name "create" :value "Create")))))
+          (:input :type "submit" :class "submit" :name "create" :value "Create"))))))
      :selected "people")
     (gratitude-add-subject :text text :next next)))
 
@@ -236,8 +237,11 @@
             ((post-parameter "really-delete")
              (delete-gratitude (parse-integer id))
              (flash "Your statement of gratitude has been deleted!")
-             
+             (see-other (or (post-parameter "next") "/home")))
 
+            (t
+             (gratitude-compose :subjects (getf gratitude :subjects)
+                                :text (getf gratitude :text)
+                                :existing-url (s+ "/gratitude/" id "/edit")))
+))))))
 
-
-)
