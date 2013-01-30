@@ -253,6 +253,7 @@
 (defroute "/people/<id>" (id)
   (:get
     (with-user
+      (pprint *user*) (terpri)
       (ensuring-userid (id "/people/~a")
         (let ((editing (get-parameter "edit"))
               (bio (getf (db id) :bio)))

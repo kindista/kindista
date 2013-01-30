@@ -278,19 +278,6 @@
          (see-other "/home"))))))
 
 
-(defroute "/messages" ()
-  (:get
-    (require-user
-      (standard-page
-        "Messages"
-        (html
-          (:h1 "Messages")
-          (:h2 "Ideas")
-          (:ul
-            (:li "separate pages for message-only inbox and notification-only inbox?")
-            ))
-        :selected "messages"))))
-
 (defroute "/offers" ()
   (:get
     (require-user

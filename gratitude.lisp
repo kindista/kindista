@@ -16,6 +16,7 @@
                               :longitude (getf author :long)
                               :people people
                               :created created
+                              :type :gratitude
                               :id id)))
     
     (timeline-insert (getf data :author) result)
@@ -25,6 +26,7 @@
     (with-locked-hash-table (*gratitude-index*)
       (dolist (subject subjects)
         (timeline-insert subject result)
+
         (let ((user (db subject)))
           (geo-index-insert *activity-geo-index* (make-result :latitude (getf user :lat)
                                                               :longitude (getf user :long)
@@ -57,7 +59,7 @@
        (:div :class "item"
         (:h2 "Express gratitude"))
        (:div :class "item"
-        (:form :method "post" :action "/gratitude/compose" :class "recipients"
+        (:form :method "post" :action "/gratitude/new" :class "recipients"
           (:label "About:")
           (:menu :class "recipients"
            (unless subjects
@@ -84,7 +86,7 @@
       (:div :class "item"
        (:h2 "Who would you like to write about?")
        (:h3 "Search for a person or project")
-       (:form :method "post" :action "/gratitude/compose"
+       (:form :method "post" :action "/gratitude/new"
          (:input :type "text" :name "name")
          (:input :type "submit" :class "submit" :name "search" :value "Search")
 
@@ -152,8 +154,9 @@
          (gratitude-add-subject :subjects (parse-subject-list (post-parameter "subject"))
                                 :text (post-parameter "text")
                                 :next (post-parameter "next")
-                                :results (iter (for id in (metaphone-index-query *metaphone-index* (post-parameter "name")))
-                                                 (collect (list id (getf (db id) :name))))))
+                                :results (iter (for result in (metaphone-index-query *metaphone-index* (post-parameter "name")))
+                                               (let ((id (result-id result)))
+                                                 (collect (list id (getf (db id) :name)))))))
         (t
          (gratitude-compose
            :text (post-parameter "text")
@@ -169,10 +172,10 @@
         (standard-page
           "First few words... | Kindista"
           (html
-            (str (gratitude-activity-item :time (getf it :created)
-                                          :id id
-                                          :next-url (script-name*)
-                                          :text (getf it :text))))))
+            (str (gratitude-activity-item (make-result :id id
+                                                       :created (getf it :created)
+                                                       :people (cons (getf it :author) (getf it :subjects)))
+                                          :next-url (script-name*))))))
       (standard-page "Not found" "not found")))
   (:post
     (require-user

@@ -193,6 +193,7 @@
               (make-token :created (get-universal-time)))
         (set-cookie "token" :value token
                             :http-only t
+                            :path "/"
                             :expires (+ (get-universal-time) 2592000)
                             :secure nil))))))
 
@@ -243,7 +244,7 @@
 (defun page-header (&optional extra)
   (html
     (:div :id "header"
-     (:a :id "logo" :href "/" (:img :id "symbol" :src "/media/logo.png" :alt "kindista"))
+     (:a :id "logo" :href "/home" (:img :id "symbol" :src "/media/logo.png" :alt "kindista"))
      ;(:h1 "kindista")
      (when extra
        (str extra)))))

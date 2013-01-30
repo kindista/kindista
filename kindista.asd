@@ -37,6 +37,7 @@
                (:file "gratitude")
                (:file "requests")
                (:file "resources")
+               (:file "messages")
                (:file "comments")
                (:file "love")
                (:file "admin")
