@@ -104,7 +104,7 @@
                    :content (html
                               (str (person-link user-id))
                               (str (if (getf data :editied) "edited" " shared "))
-                              (:a :href (strcat "/gratitude/" id) "gratitude")
+                              (:a :href (strcat "/gratitude/" item-id) "gratitude")
                               " for "
                               (fmt "~{~A~^, ~}"
                                    (iter (for subject in (getf data :subjects))
@@ -115,7 +115,7 @@
   (html
     (:div :class "item"
       (str (timestamp (result-created result)))
-      (str (person-link (result-people result))) " joined Kindista")))
+      (str (person-link (first (result-people result)))) " joined Kindista")))
 
 (defun offer-activity-item (result &key show-distance show-what next-url)
   (let ((user-id (first (result-people result)))

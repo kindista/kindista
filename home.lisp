@@ -87,11 +87,31 @@
                       )
                       |#
 
+                    (unless *user*
+                      (htm
+                        (:div :class "item"
+                          (:h3 "Log in")
+                          (:form :method "POST" :action "/login" :id "login"
+                            (:label :for "username" "Username or email")
+                            (:input :type "text" :name "username" :value (get-parameter "retry"))
+                            (:label :for "password" "Password")
+                            (:input :type "password" :name "password")
+                            (:input :type "submit" :value "Log in")
+                            (:a :href "/reset" "Forgot your password?")))))
+
                     (:div :class "item"
                       (:h3 "Help us grow!") 
                       (:p "We are a tiny non-profit, and we rely on your contributions to pay our bills and fund improvements. Will you " (:a :href "/donate" "make a tax-deductable donation") " and help us grow?")) 
                     
-                    (:div :class "item"
+                    (when *user*
+                      (htm
+                        (:div :class "item right only"
+                          (:h3 "Invite your friends")
+                          (:p "Kindista is invitation-only. As a Kindista member, you can invite people you know to join.")
+                          (:br)
+                          (:textarea :name "invites"))))
+
+                    (:div :class "item right only"
                       (:h3 "Upcoming Events")
                       (:menu
                         (:li (:strong "Thursday, November 23"))
