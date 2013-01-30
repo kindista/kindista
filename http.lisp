@@ -363,13 +363,12 @@
                      )
 
                    (str (menu (list '("Recent Activity" "home")
-                                    (when *user*
-                                      '("Messages" "mail" "messages")) 
                                     '("People" "people")
+                                    '("Discussions" "discuss") 
+                                    '("Events" "events") 
                                     '("Offers" "offers")
                                     '("Requests" "requests")
                                     '("Feedback &amp; Support" "support")
-                                    ;("Events" "events") 
                                     (when (getf *user* :admin)
                                       '("Admin" "admin")))
                               selected))
