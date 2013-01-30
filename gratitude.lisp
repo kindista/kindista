@@ -19,21 +19,23 @@
                               :type :gratitude
                               :id id)))
     
-    (timeline-insert (getf data :author) result)
+    (with-locked-hash-table (*db-results*)
+      (setf (gethash id *db-results*) result))
 
     (geo-index-insert *activity-geo-index* result)
 
-    (with-locked-hash-table (*gratitude-index*)
-      (dolist (subject subjects)
-        (timeline-insert subject result)
+    (with-locked-hash-table (*activity-person-index*)
+      (dolist (person people)
+        (asetf (gethash person *activity-person-index*)
+               (sort (push result it) #'> :key #'result-created))))
 
-        (let ((user (db subject)))
-          (geo-index-insert *activity-geo-index* (make-result :latitude (getf user :lat)
-                                                              :longitude (getf user :long)
-                                                              :people people
-                                                              :id id
-                                                              :created created)))
-        (push id (gethash subject *gratitude-index*))))))
+    (dolist (subject subjects)
+      (let ((user (db subject)))
+        (geo-index-insert *activity-geo-index* (make-result :latitude (getf user :lat)
+                                                            :longitude (getf user :long)
+                                                            :people people
+                                                            :id id
+                                                            :created created))))))
 
 (defun parse-subject-list (subject-list &key remove)
   (delete-duplicates
@@ -51,15 +53,34 @@
               ((gethash subject *email-index*)
                (collect it at beginning)))))))
 
-(defun gratitude-compose (&key subjects text next)
+
+(defun delete-gratitude (id)
+  (let* ((result (gethash id *db-results*))
+         (data (db id))
+         (people (cons (getf data :author) (getf data :subjects))))
+
+    (with-locked-hash-table (*db-results*)
+      (remhash id *db-results*))
+
+    (with-locked-hash-table (*activity-person-index*)
+      (dolist (person people)
+        (asetf (gethash id *activity-person-index*)
+               (remove result it))))
+
+    (geo-index-remove *activity-geo-index* result)
+    (remove-from-db id)))
+
+(defun gratitude-compose (&key subjects text next existing-url)
   (if subjects
     (standard-page
-     "Express gratitude"
+     (if existing-url "Edit your statement of gratitude" "Express gratitude")
      (html
        (:div :class "item"
         (:h2 "Express gratitude"))
        (:div :class "item"
-        (:form :method "post" :action "/gratitude/new" :class "recipients"
+        (:form :method "post" 
+               :action (or existing-url "/gratitude/new") 
+               :class "recipients"
           (:label "About:")
           (:menu :class "recipients"
            (unless subjects
@@ -191,3 +212,32 @@
            (unlove id)
            (see-other (or (post-parameter "next") (referer)))))
         (standard-page "Not found" "not found")))))
+
+(defroute "/gratitude/<int:id>/edit" (id)
+  (:get
+    (require-user
+      (let* ((gratitude (db (parse-integer id))))
+        (require-test ((eql *userid* (getf gratitude :author))
+                       "You can only edit gratitudes you have written.")
+          (gratitude-compose :subjects (getf gratitude :subjects)
+                             :text (getf gratitude :text)
+                             :existing-url (s+ "/gratitude/" id "/edit"))))))
+  (:post
+    (require-user
+      (let* ((gratitude (db (parse-integer id))))
+        (require-test ((eql *userid* (getf gratitude :author))
+                       "You can only edit gratitudes you have written.")
+          (cond
+            ((post-parameter "delete")
+             (confirm-delete :url (s+ "/gratitude/" id "/edit")
+                             :type "gratitude"
+                             :text (getf gratitude :text)
+                             :next-url(referer)))
+            ((post-parameter "really-delete")
+             (delete-gratitude (parse-integer id))
+             (flash "Your statement of gratitude has been deleted!")
+             
+
+
+
+)

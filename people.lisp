@@ -54,8 +54,10 @@
               (when (or (not type) (eql type (result-type item)))
                 (case (result-type item)
                   (:gratitude 
-                    (str (gratitude-activity-item item
-                                                  :next-url next-url)))
+                    (str (unless (and (eql type :gratitude) 
+                                      (eql userid (first (result-people item))))
+                           (gratitude-activity-item item
+                                                    :next-url next-url))))
                   (:person 
                     (str (joined-activity-item item)))
                   (:offer
