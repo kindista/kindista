@@ -89,20 +89,6 @@
   (html
     (:a :href (s+ "/people/" (username-or-id id)) (str (getf (db id) :name)))))
 
-(defun offer-activity-item-- (&key time user-name user-id offer-id next-url hearts text distance)
-  (activity-item :id offer-id
-                 :user-id user-id
-                 :url (strcat "/offers/" offer-id)
-                 :time time
-                 :distance distance
-                 :next-url next-url
-                 :hearts hearts
-                 :content (html
-                            (:a :href (strcat "/people/" user-id) (str user-name))
-                            " posted a "
-                            (:a :href (strcat "/people/" user-id "/offers#" offer-id) "offer")
-                            (:blockquote (str (second (multiple-value-list (markdown text :stream nil))))))))
-
 (defun gratitude-activity-item (result &key next-url)
   (let* ((user-id (first (result-people result)))
          (item-id (result-id result))

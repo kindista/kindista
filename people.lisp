@@ -298,6 +298,12 @@
       (ensuring-userid (id "/people/~a/activity")
         (profile-activity-html id)))))
 
+(defroute "/people/<id>/reputation" (id)
+  (:get
+    (require-user
+      (ensuring-userid (id "/people/~a/reputation")
+        (profile-activity-html id :type :gratitude)))))
+
 (defroute "/people/<id>/offers" (id)
   (:get
     (require-user
@@ -368,9 +374,10 @@
             (with-location
               (dolist (data (nearby-people))
                 (str (person-tile (result-id data))))))
-          (when *user*
-            (:h2 "People you may know") 
-            (:div :class "person-row"
-              (dolist (data (suggested-people))
-                (str (person-tile (cdr data)))))))
-        :selected "people"))))
+          (when *user* 
+            (htm
+              (:h2 "People you may know") 
+              (:div :class "person-row"
+                (dolist (data (suggested-people))
+                  (str (person-tile (cdr data))))))))
+          :selected "people"))))

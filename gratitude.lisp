@@ -57,7 +57,7 @@
        (:div :class "item"
         (:h2 "Express gratitude"))
        (:div :class "item"
-        (:form :method "post" :action "/gratitude/compose" :class "recipients"
+        (:form :method "post" :action "/gratitude/new" :class "recipients"
           (:label "About:")
           (:menu :class "recipients"
            (unless subjects
@@ -84,7 +84,7 @@
       (:div :class "item"
        (:h2 "Who would you like to write about?")
        (:h3 "Search for a person or project")
-       (:form :method "post" :action "/gratitude/compose"
+       (:form :method "post" :action "/gratitude/new"
          (:input :type "text" :name "name")
          (:input :type "submit" :class "submit" :name "search" :value "Search")
 
