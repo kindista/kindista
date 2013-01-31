@@ -53,6 +53,11 @@
               ((gethash subject *email-index*)
                (collect it at beginning)))))))
 
+(defun modify-gratitude (id text)
+  (let ((result (gethash id *db-results*))
+        (now (get-universal-time)))
+    (setf (result-created result) now)
+    (modify-db id :text text :edited now)))
 
 (defun delete-gratitude (id)
   (let* ((result (gethash id *db-results*))
@@ -64,7 +69,7 @@
 
     (with-locked-hash-table (*activity-person-index*)
       (dolist (person people)
-        (asetf (gethash id *activity-person-index*)
+        (asetf (gethash person *activity-person-index*)
                (remove result it))))
 
     (geo-index-remove *activity-geo-index* result)
@@ -88,16 +93,24 @@
              (htm (:li (:em "nobody yet"))))
            (dolist (subject subjects)
              (htm
-               (:li (str (getf (db subject) :name)) (:button :class "text large" :type "submit" :name "remove" :value subject " ⨯ ")))))
+               (:li 
+                 (str (getf (db subject) :name)) 
+                 (unless existing-url 
+                   (htm 
+                     (:button :class "text large" :type "submit" :name "remove" :value subject " ⨯ ")))))))
           (when subjects
             (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" subjects))))
           (when next
             (htm (:input :type "hidden" :name "next" :value next)))
-
-          (:p (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or project"))
+          (unless existing-url 
+            (htm 
+              (:p (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or project"))))
           (:textarea :rows "8" :name "text" (str text))
-          (:p  (:input :type "submit" :class "cancel" :name "cancel" :value "Cancel")
-          (:input :type "submit" :class "submit" :name "create" :value "Create"))))))
+          (:p  
+            (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
+            (:button :class "yes" :type "submit" 
+                     :name "create" 
+                     (str (if existing-url "Save" "Create"))))))))
      :selected "people")
     (gratitude-add-subject :text text :next next)))
 
@@ -122,9 +135,9 @@
            (progn
              (htm
                (:h3 "Search results")
-               (:menu
-                 (dolist (result results)
-                   (htm (:li (:button :class "text" :type "submit" :value (car result) :name "add" (str (cadr result))))))))))
+               (:div :class "person-row"
+                 (dolist (person results)
+                   (htm (:button :type "submit" :value person :name "add" (str (person-tile person :show-city t)))))))))
 
          (:input :type "submit" :class "cancel" :value "Back")
 
@@ -176,9 +189,7 @@
          (gratitude-add-subject :subjects (parse-subject-list (post-parameter "subject"))
                                 :text (post-parameter "text")
                                 :next (post-parameter "next")
-                                :results (iter (for result in (metaphone-index-query *metaphone-index* (post-parameter "name")))
-                                               (let ((id (result-id result)))
-                                                 (collect (list id (getf (db id) :name)))))))
+                                :results (search-people (post-parameter "name"))))
         (t
          (gratitude-compose
            :text (post-parameter "text")
@@ -227,7 +238,7 @@
     (require-user
       (let* ((gratitude (db (parse-integer id))))
         (require-test ((eql *userid* (getf gratitude :author))
-                       "You can only edit gratitudes you have written.")
+                       "You can only edit statements of gratitude that you have written.")
           (cond
             ((post-parameter "delete")
              (confirm-delete :url (s+ "/gratitude/" id "/edit")
@@ -238,6 +249,16 @@
              (delete-gratitude (parse-integer id))
              (flash "Your statement of gratitude has been deleted!")
              (see-other (or (post-parameter "next") "/home")))
+
+            ((post-parameter "cancel")
+             (see-other (or (post-parameter "next") "/home")))
+
+            ((post-parameter "create")
+               (if (post-parameter "text")
+                 (progn
+                   (modify-gratitude (parse-integer id) (post-parameter "text"))
+                   (see-other (s+ "/gratitude/" id)))
+                 "no text"))
 
             (t
              (gratitude-compose :subjects (getf gratitude :subjects)
