@@ -688,35 +688,27 @@
   ; get all requests within distance
   ; for each stem get matching requests
   ; return intersection
-  
-  (mapcar #'result-id
-          (sort
-            (result-id-intersection
-              (stem-index-query (case type
-                                  ('offer *offer-stem-index*)
-                                  (t *request-stem-index*))
-                                text)
-              (geo-index-query (case type
-                                 ('offer *offer-geo-index*)
-                                 (t *request-geo-index*))
-                               (getf *user* :lat)
-                               (getf *user* :long)
-                               distance))
-            #'> :key #'resource-rank)))
+  (sort
+    (result-id-intersection
+      (stem-index-query (case type
+                          ('offer *offer-stem-index*)
+                          (t *request-stem-index*))
+                        text)
+      (geo-index-query (case type
+                         ('offer *offer-geo-index*)
+                         (t *request-geo-index*))
+                       (getf *user* :lat)
+                       (getf *user* :long)
+                       distance))
+    #'> :key #'resource-rank))
 
-(defun person-search-rank (id &key (userid *userid*))
-  (let* ((mutuals (mutual-connections id userid))
-         (user (db userid))
-         (friend (member id (getf user :following)))
-         (distance (person-distance (db id) user)))
-
-    (+ mutuals
-       
-       )
-    
-    )
-  
-  )
+;(defun person-search-rank (id &key (userid *userid*))
+;  (let* ((mutuals (mutual-connections id userid))
+;         (user (db userid))
+;         (friend (member id (getf user :following)))
+;         (distance (person-distance (db id) user)))
+;
+;    (+ mutuals ) ) )
 
 (defun search-people (query &key (userid *userid*))
   (let* ((people (metaphone-index-query *metaphone-index* query))
@@ -740,38 +732,13 @@
 (defun request-results-html (request-list)
   (html
     (dolist (item request-list)
-      (let* ((request (db item))
-             (user (db (getf request :by))))
-        (str (request-activity-item :time (getf request :created)
-                                    :request-id item
-                                    :distance (air-distance (getf *user* :lat)
-                                                            (getf *user* :long)
-                                                            (or (getf request :lat)
-                                                                (getf user :lat))
-                                                            (or (getf request :long)
-                                                                (getf user :long)))
-                                    :user-name (getf user :name)
-                                    :user-id (username-or-id (getf request :by))
-                                    :hearts (length (loves item))
-                                    :text (getf request :text)))))))
+      (str (request-activity-item item)))))
 
 (defun offer-results-html (offer-list)
   (html
     (dolist (item offer-list)
-      (let* ((offer (db item))
-             (user (db (getf offer :by))))
-        (str (offer-activity-item :time (getf offer :created)
-                                  :offer-id item
-                                  :distance (air-distance (getf *user* :lat)
-                                                          (getf *user* :long)
-                                                          (or (getf offer :lat)
-                                                              (getf user :lat))
-                                                          (or (getf offer :long)
-                                                              (getf user :long)))
-                                  :user-name (getf user :name)
-                                  :user-id (username-or-id (getf offer :by))
-                                  :hearts (length (loves item))
-                                  :text (getf offer :text)))))))
+      (str (offer-activity-item item)))))
+
 
 (defun people-results-html (person-list)
   (html
@@ -828,7 +795,10 @@
                        "?")
                    (if people
                      (htm
-                       (:p "results"))
+                       (str (people-results-html (sublist people 0 5)))
+                       (when (> (length people) 5)
+                         (htm
+                           "more"))) 
                      (htm
                        (:p "no results"))))))
               
@@ -891,7 +861,8 @@
                          (when (> (length offers) 5)
                            (htm
                              (:div :class "more-results"
-                               (:a :href (s+ "/offers?q=" (url-encode q)) (fmt "see ~d more offers" (- (length offers) 5)))))))))
+                               (:a :href (s+ "/offers?q=" (url-encode q)) (fmt "see ~d more offers" (- (length offers) 5))))))))
+                               )
                    (htm
                      (:p "no results :-(")))))))
           :search q

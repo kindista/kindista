@@ -214,9 +214,18 @@
     (require-user
       (standard-page
         "Home"
-
         (html
           (str (profile-tabs-html userid :tab (or type :activity)))
+          (when (and (eql type :request) (eql userid *userid*))
+            (htm
+              (:div :class "item"
+                (:h4 "post a request") 
+                (:form :method "post" :action "/requests/new"
+                  (:table :class "post"
+                    (:tr
+                      (:td (:textarea :cols "1000" :rows "4" :name "text"))
+                      (:td
+                        (:button :class "yes" :type "submit" :class "submit" :name "next" "Post"))))))))
           (:div :class "activity"
             (str (profile-activity-items :userid userid :type type))))
 
