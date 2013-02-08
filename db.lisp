@@ -373,8 +373,7 @@
   (case (getf data :type)
     (:comment (index-comment id data))
     (:gratitude (index-gratitude id data))
-    (:offer (index-offer id data))
-    (:request (index-request id data))
+    ((or :offer :request) (index-resource id data))
     (:person (index-person id data))))
 
 (defun friends-alphabetically (&optional (user *user*))

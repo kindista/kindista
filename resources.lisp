@@ -1,36 +1,147 @@
 (in-package :kindista)
 
-(defun create-offer (&key by text)
-  (insert-db (list :type :offer
-                             :by by
-                             :text text
-                             :created (get-universal-time))))
+(defun create-resource (&key (by *userid*) type text tags)
+  (insert-db (list :type type
+                    :by by
+                    :text text
+                    :tags tags
+                    :created (get-universal-time))))
 
-(defun index-offer (id data)
+(defun index-resource (id data)
   (let* ((by (getf data :by))
-         (result (make-result :latitude (getf data :lat)
-                              :longitude (getf data :long)
+         (type (getf data :type))
+         (result (make-result :latitude (or (getf data :lat) (getf (db (getf data :by)) :lat))
+                              :longitude (or (getf data :long) (getf (db (getf data :by)) :long))
                               :id id
-                              :type :offer
+                              :type type
                               :people (list by)
-                              :created (getf data :created)
+                              :created (or (getf data :edited) (getf data :created))
                               :tags (getf data :tags))))
 
-    (timeline-insert (getf data :author) result)
-    
-    (with-locked-hash-table (*request-index*)
-      (setf (gethash by *request-index*)
-            (push id (gethash by *request-index*))))
+    (with-locked-hash-table (*db-results*)
+      (setf (gethash id *db-results*) result))
 
-    (with-locked-hash-table (*request-stem-index*)
-      (dolist (stem (stem-text (getf data :text)))
-        (push result (gethash stem *request-stem-index*))))
+    (if (eq type :offer)
+      (with-locked-hash-table (*offer-index*)
+        (push id (gethash by *offer-index*)))
+      (with-locked-hash-table (*request-index*)
+        (push id (gethash by *request-index*))))
+
+    (let ((stems (stem-text (getf data :text))))
+      (if (eq type :offer)
+        (with-locked-hash-table (*offer-stem-index*)
+          (dolist (stem stems)
+            (push result (gethash stem *offer-stem-index*)))) 
+        (with-locked-hash-table (*request-stem-index*)
+          (dolist (stem stems)
+            (push result (gethash stem *request-stem-index*))))))
 
     (with-locked-hash-table (*activity-person-index*)
-      (push result (gethash by *activity-person-index*)))
+      (asetf (gethash by *activity-person-index*)
+             (sort (push result it) #'> :key #'result-created)))
 
-    (geo-index-insert *request-geo-index* result)
+    (if (eq type :offer)
+      (geo-index-insert *offer-geo-index* result)
+      (geo-index-insert *request-geo-index* result))
     (geo-index-insert *activity-geo-index* result)))
+
+(defun modify-resource (id &key text tags latitude longitude)
+  (let* ((result (gethash id *db-results*))
+         (type (result-type result))
+         (data (db id))
+         (now (get-universal-time)))
+
+    (when text
+      (let* ((oldstems (stem-text (getf data :text)))
+             (newstems (stem-text text))
+             (common (intersection oldstems newstems :test #'string=)))
+
+        (flet ((commonp (stem)
+                 (member stem common :test #'string=)))
+
+          (setf oldstems (delete-if #'commonp oldstems))
+          (setf newstems (delete-if #'commonp newstems))
+          
+          (when (eq type :offer)          
+            (with-locked-hash-table (*offer-stem-index*)
+              (dolist (stem oldstems)
+                (asetf (gethash stem *offer-stem-index*)
+                       (remove result it))))
+              (dolist (stem newstems)
+                (push result (gethash stem *offer-stem-index*))))
+
+          (when (eq type :request)          
+            (with-locked-hash-table (*request-stem-index*)
+              (dolist (stem oldstems)
+                (asetf (gethash stem *request-stem-index*)
+                       (remove result it))))
+              (dolist (stem newstems)
+                (push result (gethash stem *request-stem-index*)))))))
+
+    (unless (equal tags (getf data :tags))
+      (setf (result-tags result) tags))
+
+    (when (and latitude
+               longitude
+               (or (not (eql latitude (getf data :lat)))
+                   (not (eql longitude (getf data :long)))))
+
+      (if (eq type :offer)          
+        (geo-index-remove *offer-geo-index* result)  
+        (geo-index-remove *request-geo-index* result))
+      (geo-index-remove *activity-geo-index* result)
+      (setf (result-latitude result) latitude)
+      (setf (result-longitude result) longitude)
+      (if (eq type :offer)          
+        (geo-index-insert *offer-geo-index* result)  
+        (geo-index-insert *request-geo-index* result))
+      (geo-index-insert *activity-geo-index* result))
+
+    (setf (result-created result) now)
+    
+    (with-locked-hash-table (*activity-person-index*)
+      (asetf (gethash id *activity-person-index*)
+             (sort it #'> :key #'result-created)))
+    
+    (modify-db id :text text :tags tags :lat latitude :long longitude :edited now)))
+
+(defun delete-resource (id)
+  (let* ((result (gethash id *db-results*))
+         (type (result-type result))
+         (data (db id)))
+
+    (when (eq type :offer)
+      (with-locked-hash-table (*offer-index*)
+        (asetf (gethash (getf data :by) *offer-index*)
+               (remove id it)))
+      (let ((stems (stem-text (getf data :text))))
+        (with-locked-hash-table (*offer-stem-index*)
+          (dolist (stem stems)
+            (asetf (gethash stem *offer-stem-index*)
+                   (remove result it)))))
+      (geo-index-remove *offer-geo-index* result))
+
+    (when (eq type :request)
+      (with-locked-hash-table (*request-index*)
+        (asetf (gethash (getf data :by) *request-index*)
+               (remove id it)))
+      (let ((stems (stem-text (getf data :text))))
+        (with-locked-hash-table (*request-stem-index*)
+          (dolist (stem stems)
+            (asetf (gethash stem *request-stem-index*)
+                   (remove result it)))))
+      (geo-index-remove *request-geo-index* result))
+
+    (with-locked-hash-table (*activity-person-index*)
+      (asetf (gethash (getf data :by) *activity-person-index*)
+             (remove result it)))
+
+    (geo-index-remove *activity-geo-index* result)
+
+    (with-locked-hash-table (*db-results*)
+      (remhash id *db-results*))
+    
+    (remove-from-db id)))
 
 (defun nearby-resources (type &key base (subtag-count 4) (distance 50) q)
   (with-location

@@ -1,115 +1,5 @@
 (in-package :kindista)
 
-(defun create-request (&key (by *userid*) text tags)
-  (insert-db (list :type :request
-                         :by by
-                         :text text
-                         :tags tags
-                         :created (get-universal-time))))
-
-(defun index-request (id data)
-  (let* ((by (getf data :by))
-         (result (make-result :latitude (or (getf data :lat) (getf (db (getf data :by)) :lat))
-                              :longitude (or (getf data :long) (getf (db (getf data :by)) :long))
-                              :id id
-                              :type :request
-                              :people (list by)
-                              :created (or (getf data :edited) (getf data :created))
-                              :tags (getf data :tags))))
-
-    (with-locked-hash-table (*db-results*)
-      (setf (gethash id *db-results*) result))
-
-    ;(timeline-insert (getf data :author) result)
-    
-    (with-locked-hash-table (*request-index*)
-      (push id (gethash by *request-index*)))
-
-    (let ((stems (stem-text (getf data :text))))
-      (with-locked-hash-table (*request-stem-index*)
-        (dolist (stem stems)
-          (push result (gethash stem *request-stem-index*)))))
-
-    (with-locked-hash-table (*activity-person-index*)
-      (asetf (gethash by *activity-person-index*)
-             (sort (push result it) #'> :key #'result-created)))
-
-    (geo-index-insert *request-geo-index* result)
-    (geo-index-insert *activity-geo-index* result)))
-
-(defun modify-request (id &key text tags latitude longitude)
-  (let ((result (gethash id *db-results*))
-        (data (db id))
-        (now (get-universal-time)))
-
-    (when text
-      (let* ((oldstems (stem-text (getf data :text)))
-             (newstems (stem-text text))
-             (common (intersection oldstems newstems :test #'string=)))
-
-        (flet ((commonp (stem)
-                 (member stem common :test #'string=)))
-
-          (setf oldstems (delete-if #'commonp oldstems))
-          (setf newstems (delete-if #'commonp newstems))
-          
-          (with-locked-hash-table (*request-stem-index*)
-            (dolist (stem oldstems)
-              (asetf (gethash stem *request-stem-index*)
-                     (remove result it))) 
-
-            (dolist (stem newstems)
-              (push result (gethash stem *request-stem-index*)))))))
-
-    (unless (equal tags (getf data :tags))
-      (setf (result-tags result) tags))
-
-    (when (and latitude
-               longitude
-               (or (not (eql latitude (getf data :lat)))
-                   (not (eql longitude (getf data :long)))))
-
-      (geo-index-remove *request-geo-index* result)
-      (geo-index-remove *activity-geo-index* result)
-      (setf (result-latitude result) latitude)
-      (setf (result-longitude result) longitude)
-      (geo-index-insert *request-geo-index* result)
-      (geo-index-insert *activity-geo-index* result))
-
-    (setf (result-created result) now)
-    
-    (with-locked-hash-table (*activity-person-index*)
-      (asetf (gethash id *activity-person-index*)
-             (sort it #'> :key #'result-created)))
-    
-    (modify-db id :text text :tags tags :lat latitude :long longitude :edited now)))
-
-(defun delete-request (id)
-  (let ((result (gethash id *db-results*))
-        (data (db id)))
-
-    (with-locked-hash-table (*db-results*)
-      (remhash id *db-results*))
-    
-    (with-locked-hash-table (*request-index*)
-      (asetf (gethash (getf data :by) *request-index*)
-             (remove id it)))
-
-    (let ((stems (stem-text (getf data :text))))
-      (with-locked-hash-table (*request-stem-index*)
-        (dolist (stem stems)
-          (asetf (gethash stem *request-stem-index*)
-                 (remove result it)))))
-
-    (with-locked-hash-table (*activity-person-index*)
-      (asetf (gethash (getf data :by) *activity-person-index*)
-             (remove result it)))
-
-    (geo-index-remove *request-geo-index* result)
-    (geo-index-remove *activity-geo-index* result)
-
-    (remove-from-db id)))
-
 (defun request-compose (&key text existing-url)
   (standard-page
    (if existing-url "Edit your request" "Post a request")
@@ -197,8 +87,9 @@
            
            (if (intersection tags *top-tags* :test #'string=)
              (see-other (format nil "/requests/~A"
-                                    (create-request :text (post-parameter "text")
-                                                    :tags tags)))
+                                    (create-resource :text (post-parameter "text")
+                                                     :type :request
+                                                     :tags tags)))
 
              (request-compose-next :text (post-parameter "text")
                                    :tags tags
@@ -256,7 +147,7 @@
                              :next-url (referer)))
 
             ((post-parameter "really-delete")
-             (delete-request (parse-integer id))
+             (delete-resource (parse-integer id))
              (flash "Your request has been deleted!")
              (see-other (or (post-parameter "next") "/home")))
 
@@ -283,8 +174,8 @@
                
                (if (intersection tags *top-tags* :test #'string=)
                  (progn
-                   (modify-request (parse-integer id) :text (post-parameter "text")
-                                                      :tags tags)
+                   (modify-resource (parse-integer id) :text (post-parameter "text")
+                                                       :tags tags)
                                                                        
                    (see-other (s+ "/requests/" id)))
 
