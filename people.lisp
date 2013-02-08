@@ -226,6 +226,18 @@
                       (:td (:textarea :cols "1000" :rows "4" :name "text"))
                       (:td
                         (:button :class "yes" :type "submit" :class "submit" :name "next" "Post"))))))))
+          (when (and (eql type :gratitude) (not (eql userid *userid*))
+            (htm
+              (:div :class "item"
+               (:h4 "Do you have gratitude to share about " (str (getf user :name)) "?")
+               (:form :method "post" :action "/gratitude/new"
+                 (:input :type "hidden" :name "subject" :value userid)
+                 (:input :type "hidden" :name "next" :value (strcat *base-url* "/reputation"))
+                 (:table :class "post"
+                  (:tr
+                    (:td (:textarea :cols "1000" :rows "4" :name "text"))
+                    (:td
+                      (:button :class "yes" :type "submit" :class "submit" :name "create" "Post")))))))))
           (:div :class "activity"
             (str (profile-activity-items :userid userid :type type))))
 

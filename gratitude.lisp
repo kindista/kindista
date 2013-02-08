@@ -147,7 +147,7 @@
            (htm (:input :type "hidden" :name "next" :value next)))
 
          (when text
-           (htm (:input :type "hidden" :name "text" :value text)))
+           (htm (:input :type "hidden" :name "text" :value (escape-for-html text))))
 
          )))
     :selected "people"))
@@ -165,7 +165,8 @@
          (let ((subjects (parse-subject-list (post-parameter "subject") :remove (write-to-string *userid*))))
            (cond
              ((and subjects (post-parameter "text"))
-              (see-other (format nil "/gratitude/~A"
+              (see-other (format nil (or (post-parameter "next") 
+                                         "/gratitude/~A")
                                  (create-gratitude :author *userid*
                                                    :subjects subjects
                                                    :text (post-parameter "text")))))

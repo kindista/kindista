@@ -102,7 +102,7 @@
                  (remove result it)))))
 
     (with-locked-hash-table (*activity-person-index*)
-      (asetf (gethash id *activity-person-index*)
+      (asetf (gethash (getf data :by) *activity-person-index*)
              (remove result it)))
 
     (geo-index-remove *request-geo-index* result)
@@ -139,7 +139,7 @@
           (htm
             (:p :class "error" (str error))))
         (:form :method "post" :action (or existing-url "/requests/new") :class "post-next"
-          (:input :type "hidden" :name "text" :value text)
+          (:input :type "hidden" :name "text" :value (escape-for-html text))
           (:p (cl-who:esc text)
               " "
               (:button :class "red" :type "submit" :class "cancel" :name "back" "edit")) 
