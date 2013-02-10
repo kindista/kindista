@@ -60,9 +60,9 @@
                                                     :next-url next-url))))
                   (:person 
                     (str (joined-activity-item item)))
-                  (:offer
-                    (str (offer-activity-item item
-                                              :show-what (unless (eql type :offer) t)
+                  (:resource
+                    (str (resource-activity-item item
+                                              :show-what (unless (eql type :resource) t)
                                               :next-url next-url)))   
                   (:request
                     (str (request-activity-item item
@@ -102,9 +102,9 @@
         (if (eql tab :gratitude)
           (htm (:li :class "selected" "Reputation"))
           (htm (:li (:a :href (strcat *base-url* "/reputation") "Reputation"))))  
-        (if (eql tab :offer)
-          (htm (:li :class "selected" "Offers"))
-          (htm (:li (:a :href (strcat *base-url* "/offers") "Offers"))))
+        (if (eql tab :resource)
+          (htm (:li :class "selected" "Resources"))
+          (htm (:li (:a :href (strcat *base-url* "/resources") "Resources"))))
         (if (eql tab :request)
           (htm (:li :class "selected" "Requests"))
           (htm (:li (:a :href (strcat *base-url* "/requests") "Requests"))))))))
@@ -328,11 +328,11 @@
       (ensuring-userid (id "/people/~a/reputation")
         (profile-activity-html id :type :gratitude)))))
 
-(defroute "/people/<id>/offers" (id)
+(defroute "/people/<id>/resources" (id)
   (:get
     (require-user
-      (ensuring-userid (id "/people/~a/offers")
-        (profile-activity-html id :type :offer)))))
+      (ensuring-userid (id "/people/~a/resources")
+        (profile-activity-html id :type :resource)))))
 
 (defroute "/people/<id>/requests" (id)
   (:get

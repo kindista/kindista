@@ -12,9 +12,8 @@
                (:menu :class "horiz"
                  (:strong "actions")
                  (:li (:a :href "/gratitude/new" "express gratitude"))
-                 (:li (:a :href "/offers/new" "make offer")
-                      " / "
-                      (:a :href "/requests/new" "request"))
+                 (:li (:a :href "/resource/new" "offer a resource"))
+                 (:li (:a :href "/requests/new" "make a request"))
                  ;(:li (:a :href "/events/new" "event"))
                  (:li (:a :href "/announcements/new" "post announcement"))
                  )

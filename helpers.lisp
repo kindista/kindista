@@ -67,7 +67,7 @@
              (if (intersection friends (result-people item)) 86400 0)
              (* (length (loves (result-id item))) 100000)))))
 
-(defun resource-rank (item)
+(defun inventory-rank (item)
   (let ((age (- (get-universal-time) (or (result-created item) 0)))
         (loves (max 1 (length (loves (result-id item))))))
     (* (/ 50 (log (+ (/ age 86400) 6)))

@@ -12,9 +12,9 @@
 (defvar *geo-index-index* (make-hash-table :test 'equal :synchronized t :size 500 :rehash-size 1.25))
 (defvar *activity-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *activity-person-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *offer-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *offer-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *offer-stem-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
+(defvar *resource-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *resource-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *resource-stem-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 (defvar *request-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *request-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *request-stem-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
@@ -356,9 +356,9 @@
                    *request-index*
                    *request-geo-index*
                    *request-stem-index*
-                   *offer-index*
-                   *offer-geo-index*
-                   *offer-stem-index*
+                   *resource-index*
+                   *resource-geo-index*
+                   *resource-stem-index*
                    *love-index*
                    *comment-index*
                    *people-geo-index*
@@ -373,7 +373,7 @@
   (case (getf data :type)
     (:comment (index-comment id data))
     (:gratitude (index-gratitude id data))
-    ((or :offer :request) (index-resource id data))
+    ((or :resource :request) (index-inventory-item id data))
     (:person (index-person id data))))
 
 (defun friends-alphabetically (&optional (user *user*))

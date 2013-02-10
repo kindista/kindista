@@ -1,67 +1,9 @@
 (in-package :kindista)
 
-(defun request-compose (&key text existing-url)
-  (standard-page
-   (if existing-url "Edit your request" "Post a request")
-   (html
-     (:div :class "item"
-      (:h2 (str (if existing-url "Edit your request" "Post a request")))
-      (:form :method "post" :action (or existing-url "/requests/new")
-        (:textarea :cols "40" :rows "8" :name "text" (str text))
-        (:p  (:button :class "no" :type "submit" :class "cancel" :name "cancel" "Cancel")
-        (:button :class "yes" :type "submit" :class "submit" :name "next" "Next")))))
-   :selected "requests"))
-
-(defun request-compose-next (&key text error tags existing-url)
-  ; show the list of top-level tags
-  ; show recommended tags
-  ; show preview
-  ; cancel button
-  ; edit (back) button
-  ; create button
-  (let ((suggested (or tags (get-tag-suggestions text))))
-    (standard-page
-     (if existing-url "Edit your request" "Post a request")
-     (html
-       (:div :class "item"
-        (:h2 "Preview your request")
-        (when error
-          (htm
-            (:p :class "error" (str error))))
-        (:form :method "post" :action (or existing-url "/requests/new") :class "post-next"
-          (:input :type "hidden" :name "text" :value (escape-for-html text))
-          (:p (cl-who:esc text)
-              " "
-              (:button :class "red" :type "submit" :class "cancel" :name "back" "edit")) 
-          (:h2 "select at least one keyword")
-          (dolist (tag *top-tags*)
-            (htm (:div :class "tag"
-                   (:input :type "checkbox"
-                           :name "tag"
-                           :value tag
-                           :checked (when (member tag suggested :test #'string=)
-                                      (setf suggested (remove tag suggested :test #'string=))
-                                      ""))
-                   (:span (str tag)))))
-          (:h2 "additional keywords (optional)")
-          (:input :type "text" :name "tags" :size 40
-                 :placeholder "e.g. produce, bicycle, tai-chi"
-                 :value (format nil "~{~a~^,~^ ~}" suggested)
-                 )
-          (:p (:button :class "yes" :type "submit" :class "submit" :name "create" (str (if existing-url "Save request" "Post request")))))))
-     :selected "requests")))
-
-; author
-; creation date
-; edited date
-; text
-; tags (at least 1)
-; privacy ('all 'friends or listname)
-
 (defroute "/requests/new" ()
   (:get
     (require-user
-      (request-compose)))
+      (enter-inventory-text :request)))
   (:post
     (require-user
       (cond
@@ -69,11 +11,12 @@
          (see-other (or (post-parameter "next") "/home")))
 
         ((post-parameter "back")
-         (request-compose :text (post-parameter "text")))
+         (enter-inventory-text :request :text (post-parameter "text")))
 
         ((and (post-parameter "next")
               (post-parameter "text"))
-          (request-compose-next :text (post-parameter "text")))
+          (enter-inventory-tags :type :request
+                                 :text (post-parameter "text")))
 
         ((and (post-parameter "create")
               (post-parameter "text")) 
@@ -86,16 +29,18 @@
                  (setf tags (cons tag tags)))
            
            (if (intersection tags *top-tags* :test #'string=)
-             (see-other (format nil "/requests/~A"
-                                    (create-resource :text (post-parameter "text")
-                                                     :type :request
-                                                     :tags tags)))
+             (see-other 
+               (format nil "/requests/~A"
+                 (create-inventory-item :type :request 
+                                        :text (post-parameter "text") :tags tags)))
 
-             (request-compose-next :text (post-parameter "text")
-                                   :tags tags
-                                   :error "You must select at least one keyword"))))
+             (enter-inventory-tags :type :request
+                                    :text (post-parameter "text")
+                                    :tags tags
+                                    :error "You must select at least one keyword"))))
         (t
-         (request-compose
+         (enter-inventory-text
+           :type :request
            :text (post-parameter "text")))))))
 
 (defroute "/requests/<int:id>" (id)
@@ -116,11 +61,11 @@
       (aif (db id)
         (cond
           ((and (post-parameter "love")
-                (member (getf it :type) '(:gratitude :offer :request)))
+                (member (getf it :type) '(:gratitude :resource :request)))
            (love id)
            (see-other (or (post-parameter "next") (referer))))
           ((and (post-parameter "unlove")
-                (member (getf it :type) '(:gratitude :offer :request)))
+                (member (getf it :type) '(:gratitude :resource :request)))
            (unlove id)
            (see-other (or (post-parameter "next") (referer)))))
         (standard-page "Not found" "not found")))))
@@ -131,9 +76,10 @@
       (let* ((request (db (parse-integer id))))
         (require-test ((eql *userid* (getf request :by))
                      "You can only edit your own requests.")
-          (request-compose-next :text (getf request :text)
-                                :tags (getf request :tags)
-                                :existing-url (s+ "/requests/" id "/edit"))))))
+          (enter-inventory-tags :type :request
+                                 :text (getf request :text)
+                                 :tags (getf request :tags)
+                                 :existing-url (s+ "/requests/" id "/edit"))))))
   (:post
     (require-user
       (let* ((request (db (parse-integer id))))
@@ -147,20 +93,22 @@
                              :next-url (referer)))
 
             ((post-parameter "really-delete")
-             (delete-resource (parse-integer id))
+             (delete-inventory-item (parse-integer id))
              (flash "Your request has been deleted!")
              (see-other (or (post-parameter "next") "/home")))
 
             ((post-parameter "back")
-             (request-compose :text (getf request :text)
-                              :existing-url (s+ "/requests/" id "/edit")  ))
+             (enter-inventory-text :text (getf request :text)
+                               :type :request
+                               :existing-url (s+ "/requests/" id "/edit")  ))
 
             ((and (post-parameter "next")
                   (post-parameter "text"))
 
-             (request-compose-next :text (post-parameter "text")
-                                   :tags (getf request :tags)
-                                   :existing-url (s+ "/requests/" id "/edit")))
+             (enter-inventory-tags :type :request
+                                    :text (post-parameter "text")
+                                    :tags (getf request :tags)
+                                    :existing-url (s+ "/requests/" id "/edit")))
 
             ((and (post-parameter "create")
                   (post-parameter "text")) 
@@ -174,18 +122,20 @@
                
                (if (intersection tags *top-tags* :test #'string=)
                  (progn
-                   (modify-resource (parse-integer id) :text (post-parameter "text")
+                   (modify-inventory-item (parse-integer id) :text (post-parameter "text")
                                                        :tags tags)
                                                                        
                    (see-other (s+ "/requests/" id)))
 
-                 (request-compose-next :text (post-parameter "text")
+                 (enter-inventory-tags :type :request
+                                       :text (post-parameter "text")
                                        :tags tags
                                        :error "You must select at least one keyword"))))
             (t
-             (request-compose-next :text (getf request :text)
-                                   :tags (getf request :tags)
-                                   :existing-url (s+ "/requests/" id "/edit")))))))))
+             (enter-inventory-tags :type :request
+                                    :text (getf request :text)
+                                    :tags (getf request :tags)
+                                    :existing-url (s+ "/requests/" id "/edit")))))))))
 
 (defroute "/requests" ()
   (:get
@@ -201,7 +151,7 @@
                (start (* page 20)))
           (when (string= q "") (setf q nil))
           (multiple-value-bind (tags items)
-              (nearby-resources-top-tags 'request :base base :q q)
+              (nearby-inventory-top-tags :request :base base :q q)
             (standard-page
              "Requests"
               (html
@@ -336,7 +286,7 @@
                       (when (scan *tag-scanner* tag)
                         (collect tag)))))
       (multiple-value-bind (tags items)
-          (nearby-resources-top-tags *request-geo-index* :count 10000 :subtag-count 10)
+          (nearby-inventory-top-tags *request-geo-index* :count 10000 :subtag-count 10)
         (standard-page
          "Requests"
          (html

@@ -684,23 +684,23 @@
   ; replace non-words with spaces
   ; split on spaces
 
-(defun search-resources (type text &key (distance 10))
+(defun search-inventorys (type text &key (distance 10))
   ; get all requests within distance
   ; for each stem get matching requests
   ; return intersection
   (sort
     (result-id-intersection
       (stem-index-query (case type
-                          ('offer *offer-stem-index*)
+                          ('resource *resource-stem-index*)
                           (t *request-stem-index*))
                         text)
       (geo-index-query (case type
-                         ('offer *offer-geo-index*)
+                         ('resource *resource-geo-index*)
                          (t *request-geo-index*))
                        (getf *user* :lat)
                        (getf *user* :long)
                        distance))
-    #'> :key #'resource-rank))
+    #'> :key #'inventory-rank))
 
 ;(defun person-search-rank (id &key (userid *userid*))
 ;  (let* ((mutuals (mutual-connections id userid))
@@ -734,10 +734,10 @@
     (dolist (item request-list)
       (str (request-activity-item item)))))
 
-(defun offer-results-html (offer-list)
+(defun resource-results-html (resource-list)
   (html
-    (dolist (item offer-list)
-      (str (offer-activity-item item)))))
+    (dolist (item resource-list)
+      (str (resource-activity-item item)))))
 
 
 (defun people-results-html (person-list)
@@ -775,13 +775,13 @@
               ((string= scope "requests")
                (see-other (s+ "/requests?q=" (url-encode q))))
 
-              ((string= scope "offers")
-               (let ((offers (search-resources 'offer q :distance (user-rdist))))
+              ((string= scope "resources")
+               (let ((resources (search-inventorys 'resource q :distance (user-rdist))))
                  (htm
-                   (:p "Searching offers. Would you like to "
+                   (:p "Searching resources. Would you like to "
                        (:a :href (s+ "/search?q=" (url-encode q)) "search everything")
                        "?")
-                   (if offers
+                   (if resources
                      (htm
                        (:p "results"))
                      (htm
@@ -803,11 +803,11 @@
                        (:p "no results"))))))
               
               (t ; all
-               (let ((requests (search-resources 'request q :distance (user-rdist)))
-                     (offers (search-resources 'offer q :distance (user-rdist)))
+               (let ((requests (search-inventorys 'request q :distance (user-rdist)))
+                     (resources (search-inventorys 'resource q :distance (user-rdist)))
                      (people (search-people q)))
 
-                 (if (or requests offers people)
+                 (if (or requests resources people)
                    (progn
                      (when people
                        (htm
@@ -839,9 +839,9 @@
                            (htm
                              (:div :class "more-results"
                                (:a :href (s+ "/requests?q=" (url-encode q)) (fmt "see ~d more requests" (- (length requests) 5))))))))
-                     (when offers
+                     (when resources
                        (htm
-                         (:h2 (:a :href "/offers" "Offers")
+                         (:h2 (:a :href "/resources" "Resources")
                            " "
                            (:form :method "post" :action "/settings" :style "float:right;"
                              (:strong :class "small" "show results within ")
@@ -857,11 +857,11 @@
                                    (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
                              " "
                              (:input :type "submit" :class "no-js" :value "apply")))
-                         (str (offer-results-html (sublist offers 0 5)))
-                         (when (> (length offers) 5)
+                         (str (resource-results-html (sublist resources 0 5)))
+                         (when (> (length resources) 5)
                            (htm
                              (:div :class "more-results"
-                               (:a :href (s+ "/offers?q=" (url-encode q)) (fmt "see ~d more offers" (- (length offers) 5))))))))
+                               (:a :href (s+ "/resources?q=" (url-encode q)) (fmt "see ~d more resources" (- (length resources) 5))))))))
                                )
                    (htm
                      (:p "no results :-(")))))))

@@ -117,12 +117,12 @@
       (str (timestamp (result-created result)))
       (str (person-link (first (result-people result)))) " joined Kindista")))
 
-(defun offer-activity-item (result &key show-distance show-what next-url)
+(defun resource-activity-item (result &key show-distance show-what next-url)
   (let ((user-id (first (result-people result)))
         (data (db (result-id result))))
     (activity-item :id (result-id result)
                    :user-id user-id
-                   :url (strcat "/offers/" (result-id result))
+                   :url (strcat "/resources/" (result-id result))
                    :time (result-created result)
                    :distance (when show-distance
                                (air-distance (result-latitude result)
@@ -132,13 +132,13 @@
                    :next-url next-url
                    :edit (when (eql user-id *userid*) t)
                    :hearts (length (loves (result-id result)))
-                   :type (unless show-what (if (getf data :edited) "edited" "offered"))
+                   :type (unless show-what (if (getf data :edited) "edited" "posted"))
                    :content (html
                               (str (person-link user-id))
                               (when show-what
                                 (htm
                                   (str (if (getf data :edited) " edited a " " posted a "))
-                                  (:a :href (format nil "/offers/~d" (result-id result)) "offer")))
+                                  (:a :href (format nil "/resources/~d" (result-id result)) "resource")))
                               (:blockquote (cl-who:esc (getf data :text)))))))
 
 (defun request-activity-item (result &key show-distance show-what next-url)
@@ -187,8 +187,8 @@
                        (str (gratitude-activity-item item :next-url next-url)))
                      (:person
                        (str (joined-activity-item item)))
-                     (:offer
-                       (str (offer-activity-item item :next-url next-url)))
+                     (:resource
+                       (str (resource-activity-item item :next-url next-url)))
                      (:request
                        (str (request-activity-item item :show-what t :next-url next-url)))))
                  (setf items (cdr items)))

@@ -246,7 +246,7 @@
 
         ((scan +number-scanner+ (post-parameter "rdist"))
          (modify-db *userid* :rdist (parse-integer (post-parameter "rdist")))
-         (flash "Your search distance for offers and requests has been changed!")
+         (flash "Your search distance for resources and requests has been changed!")
          (see-other (or (post-parameter "next") "/requests")))
 
         ((scan +number-scanner+ (post-parameter "sdist"))
@@ -278,17 +278,17 @@
          (see-other "/home"))))))
 
 
-(defroute "/offers" ()
+(defroute "/resources" ()
   (:get
     (require-user
       (standard-page
-        "Offers"
+        "Resources"
         (html
-          (:h1 "Offers")
+          (:h1 "Resources")
           (:h2 "Ideas")
           (:ul
             ))
-        :selected "offers"))))
+        :selected "resources"))))
 
 (defroute "/events" ()
   (:get
