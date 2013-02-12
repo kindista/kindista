@@ -117,36 +117,12 @@
       (str (timestamp (result-created result)))
       (str (person-link (first (result-people result)))) " joined Kindista")))
 
-(defun resource-activity-item (result &key show-distance show-what next-url)
+(defun inventory-activity-item (type result &key show-distance show-what next-url)
   (let ((user-id (first (result-people result)))
         (data (db (result-id result))))
     (activity-item :id (result-id result)
                    :user-id user-id
-                   :url (strcat "/resources/" (result-id result))
-                   :time (result-created result)
-                   :distance (when show-distance
-                               (air-distance (result-latitude result)
-                                             (result-longitude result)
-                                             (getf *user* :lat)
-                                             (getf *user* :long)))
-                   :next-url next-url
-                   :edit (when (eql user-id *userid*) t)
-                   :hearts (length (loves (result-id result)))
-                   :type (unless show-what (if (getf data :edited) "edited" "posted"))
-                   :content (html
-                              (str (person-link user-id))
-                              (when show-what
-                                (htm
-                                  (str (if (getf data :edited) " edited a " " posted a "))
-                                  (:a :href (format nil "/resources/~d" (result-id result)) "resource")))
-                              (:blockquote (cl-who:esc (getf data :text)))))))
-
-(defun request-activity-item (result &key show-distance show-what next-url)
-  (let ((user-id (first (result-people result)))
-        (data (db (result-id result))))
-    (activity-item :id (result-id result)
-                   :user-id user-id
-                   :url (strcat "/requests/" (result-id result))
+                   :url (strcat "/" type "s/" (result-id result))
                    :time (result-created result)
                    :distance (when show-distance
                                (air-distance (result-latitude result)
@@ -156,15 +132,16 @@
                    :next-url next-url
                    :edit (when (eql user-id *userid*) t)
                    :hearts (length (loves (result-id result)))
-                   :type (unless show-what (if (getf data :edited) "edited" "requested"))
+                   :type (unless show-what (cond ((getf data :edited) "edited")
+                                                 ((string= type "request") "requested")
+                                                 ((string= type "resource") "posted")))
                    :content (html
                               (str (person-link user-id))
                               (when show-what
                                 (htm
                                   (str (if (getf data :edited) " edited a " " posted a "))
-                                  (:a :href (format nil "/requests/~d" (result-id result)) "request")))
+                                  (:a :href (format nil (s+ "/" type "s/~d") (result-id result)) type)))
                               (:blockquote (cl-who:esc (getf data :text)))))))
-
 
 (defun activity-items (&key (user *user*) (page 0) (count 20) next-url)
   (with-location
@@ -188,9 +165,9 @@
                      (:person
                        (str (joined-activity-item item)))
                      (:resource
-                       (str (resource-activity-item item :next-url next-url)))
+                       (str (inventory-activity-item "resource" item :show-what t :next-url next-url)))
                      (:request
-                       (str (request-activity-item item :show-what t :next-url next-url)))))
+                       (str (inventory-activity-item "request" item :show-what t :next-url next-url)))))
                  (setf items (cdr items)))
 
                 (t

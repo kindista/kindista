@@ -684,7 +684,24 @@
   ; replace non-words with spaces
   ; split on spaces
 
-(defun search-inventorys (type text &key (distance 10))
+(defun rdist-selection-html (next-url &key text style)
+  (html 
+    (:form :method "post" :action "/settings" :style style
+      (:strong :class "small" (str text))
+      (:input :type "hidden" :name "next" :value next-url)
+      (let ((distance (user-rdist)))
+        (htm
+          (:select :name "rdist" :onchange "this.form.submit();"
+            (:option :value "1" :selected (when (eql distance 1) "") "1 mile")
+            (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
+            (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
+            (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
+            (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
+            (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
+      " "
+      (:input :type "submit" :class "no-js" :value "apply"))))
+
+(defun search-inventory (type text &key (distance 10))
   ; get all requests within distance
   ; for each stem get matching requests
   ; return intersection
@@ -732,13 +749,12 @@
 (defun request-results-html (request-list)
   (html
     (dolist (item request-list)
-      (str (request-activity-item item)))))
+      (str (inventory-activity-item "request" item)))))
 
 (defun resource-results-html (resource-list)
   (html
     (dolist (item resource-list)
-      (str (resource-activity-item item)))))
-
+      (str (inventory-activity-item "resource" item)))))
 
 (defun people-results-html (person-list)
   (html
@@ -776,7 +792,7 @@
                (see-other (s+ "/requests?q=" (url-encode q))))
 
               ((string= scope "resources")
-               (let ((resources (search-inventorys 'resource q :distance (user-rdist))))
+               (let ((resources (search-inventory 'resource q :distance (user-rdist))))
                  (htm
                    (:p "Searching resources. Would you like to "
                        (:a :href (s+ "/search?q=" (url-encode q)) "search everything")
@@ -803,8 +819,8 @@
                        (:p "no results"))))))
               
               (t ; all
-               (let ((requests (search-inventorys 'request q :distance (user-rdist)))
-                     (resources (search-inventorys 'resource q :distance (user-rdist)))
+               (let ((requests (search-inventory 'request q :distance (user-rdist)))
+                     (resources (search-inventory 'resource q :distance (user-rdist)))
                      (people (search-people q)))
 
                  (if (or requests resources people)
@@ -820,20 +836,9 @@
                        (htm
                          (:h2 (:a :href "/requests" "Requests")
                            " "
-                           (:form :method "post" :action "/settings" :style "float:right;"
-                             (:strong :class "small" "show results within ")
-                             (:input :type "hidden" :name "next" :value (request-uri*))
-                             (let ((distance (user-rdist)))
-                               (htm
-                                 (:select :name "rdist" :onchange "this.form.submit();"
-                                   (:option :value "1" :selected (when (eql distance 1) "") "1 mile")
-                                   (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
-                                   (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
-                                   (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
-                                   (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
-                                   (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
-                             " "
-                             (:input :type "submit" :class "no-js" :value "apply")))
+                           (str (rdist-selection-html (request-uri*)
+                                                      :style "float:right;"
+                                                      :text "show results within ")))
                          (str (request-results-html (sublist requests 0 5)))
                          (when (> (length requests) 5)
                            (htm
@@ -843,20 +848,9 @@
                        (htm
                          (:h2 (:a :href "/resources" "Resources")
                            " "
-                           (:form :method "post" :action "/settings" :style "float:right;"
-                             (:strong :class "small" "show results within ")
-                             (:input :type "hidden" :name "next" :value (request-uri*))
-                             (let ((distance (user-rdist)))
-                               (htm
-                                 (:select :name "rdist" :onchange "this.form.submit();"
-                                   (:option :value "1" :selected (when (eql distance 1) "") "1 mile")
-                                   (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
-                                   (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
-                                   (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
-                                   (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
-                                   (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
-                             " "
-                             (:input :type "submit" :class "no-js" :value "apply")))
+                           (str (rdist-selection-html (request-uri*)
+                                                      :style "float:right;"
+                                                      :text "show results within ")))
                          (str (resource-results-html (sublist resources 0 5)))
                          (when (> (length resources) 5)
                            (htm

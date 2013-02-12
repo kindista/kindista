@@ -61,11 +61,11 @@
                   (:person 
                     (str (joined-activity-item item)))
                   (:resource
-                    (str (resource-activity-item item
+                    (str (inventory-activity-item "resource" item
                                               :show-what (unless (eql type :resource) t)
                                               :next-url next-url)))   
                   (:request
-                    (str (request-activity-item item
+                    (str (inventory-activity-item "request" item
                                                 :show-what (unless (eql type :request) t)
                                                 :next-url next-url))))))
             (finish))
@@ -217,15 +217,7 @@
         (html
           (str (profile-tabs-html userid :tab (or type :activity)))
           (when (and (eql type :request) (eql userid *userid*))
-            (htm
-              (:div :class "item"
-                (:h4 "post a request") 
-                (:form :method "post" :action "/requests/new"
-                  (:table :class "post"
-                    (:tr
-                      (:td (:textarea :cols "1000" :rows "4" :name "text"))
-                      (:td
-                        (:button :class "yes" :type "submit" :class "submit" :name "next" "Post"))))))))
+            (simple-inventory-entry-html "request"))
           (when (and (eql type :gratitude) (not (eql userid *userid*))
             (htm
               (:div :class "item"
