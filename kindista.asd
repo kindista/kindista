@@ -36,6 +36,7 @@
                (:file "timeline")
                (:file "gratitude")
                (:file "requests")
+               (:file "resources")
                (:file "inventory")
                (:file "messages")
                (:file "comments")

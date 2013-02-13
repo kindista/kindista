@@ -21,7 +21,7 @@
                             :action "/requests/new"
                             :selected "requests")))
   (:post
-    (post-new-inventory-item "request" :url (s+ "/requests/new"))))
+    (post-new-inventory-item "request" :url "/requests/new")))
 
 (defroute "/requests/<int:id>" (id)
   (:get
@@ -88,59 +88,12 @@
                                             :items items 
                                             :start start 
                                             :page page)
-          :top (when (getf *user* :help)
-                 (requests-help-text))
-          :search q
-          :search-scope (if q "requests" "all")
-          :right (html
-                   (:h3 "browse by keyword")
-                   (when base
-                     (htm
-                       (:p (:strong "keywords selected: ")) 
-                       (:ul :class "keywords"
-                         (dolist (tag base)
-                           (htm
-                             (:li
-                               (:a :href (url-compose "/requests" "kw" tag "q" q) (str tag)) 
-                               " "
-                               (:a :href (url-compose "/requests" "kw" (remove tag base :test #'string=) "q" q)
-                                   "[x]")      
-                               ))))))
-                   (dolist (tag tags)
-                     (if (string= (first tag) "etc")
-                       (htm
-                         (:div :class "category"
-                          (:h3 (:a :href "/requests/all" 
-                                   (str (s+ "etc (" (write-to-string (second tag)) ")"))))
-                          (iter (for subtag in (third tag))
-                                (for i downfrom (length (third tag)))
-                                (htm
-                                  (:a :href (if (string= (first subtag) "more")
-                                              "/requests/all"
-                                              (url-compose "" "kw" (format nil "~{~a+~}~a" base (first subtag)) "q" q) )
-                                      (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
-                                  (unless (= i 1)
-                                    (str ", "))))))
-                       (htm
-                         (:div :class "category"
-                          (:h3 (:a :href (url-compose "" "kw" (format nil "~{~a+~}~a" base (first tag)) "q" q)
-                                   (str (s+ (first tag) " (" (write-to-string (second tag)) ")"))))
-                          (iter (for subtag in (third tag))
-                                (for i downfrom (length (third tag)))
-                                (htm
-                                  (:a :href (url-compose "" "kw"
-                                                         (if (string= (first subtag) "more")
-                                                           (format nil "~{~a+~}~a" base (first tag))
-                                                           (format nil "~{~a+~}~a+~a" base (first tag) (first subtag)))
-                                                         "q" q)
-                                      (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
-                                  (unless (= i 1)
-                                    (str ", "))))))))
-                   (unless base
-                     (htm
-                       (:div :class "category"
-                        (:h3 (:a :href "/requests/all" "show all keywords"))))))
-         :selected "requests")))))))
+            :top (when (getf *user* :help)
+                   (requests-help-text))
+            :search q
+            :search-scope (if q "requests" "all")
+            :right (browse-inventory-tags "request" :q q :base base :tags tags)
+            :selected "requests")))))))
 
 
 (defroute "/requests/all" ()
@@ -153,36 +106,7 @@
           (nearby-inventory-top-tags *request-geo-index* :count 10000 :subtag-count 10)
         (standard-page
          "Requests"
-         (html
-           (unless base
-             (simple-inventory-entry-html "request"))
-           (:div :class "item"
-             (:h2 "browse by keyword")
-             (when base
-               (htm
-                 (:p (:a :href "/requests" "show all requests"))   
-                 (:p (:strong "keywords selected: ")) 
-                 (:ul :class "keywords"
-                   (dolist (tag base)
-                     (htm
-                       (:li
-                         (:a :href (format nil "/requests?kw=~{~a~^+~}" (remove tag base :test #'string=))
-                             "[x]")      
-                         " "
-                         (:a :href (format nil "/requests?kw=~a" tag) (str tag)) 
-                         ))))))
-             (dolist (tag tags)
-               (htm
-                 (:div :class "category"
-                  (:h3 (:a :href (format nil "/requests?kw=~{~a+~}~a" base (first tag))
-                           (str (s+ (first tag) " (" (write-to-string (second tag)) ")"))))
-                  (iter (for subtag in (third tag))
-                        (for i downfrom (length (third tag)))
-                        (htm
-                          (:a :href (format nil "/requests?kw=~{~a+~}~a+~a" base (first tag) (first subtag))
-                              (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
-                          (unless (= i 1)
-                            (str ", ")))))))))
+           (browse-all-inventory-tags "request" :base base :tags tags)
            :top (when (getf *user* :help)
                  (requests-help-text))
            :selected "requests"))))))

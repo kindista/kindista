@@ -328,6 +328,8 @@
                      (:option :value "all" :selected (when (or (not search-scope)
                                                                      (string= search-scope "all"))
                                                              "selected") "All")
+                     (:option :value "resources" :selected (when (equalp search-scope "resources")
+                                                                       "selected") "Resources")
                      (:option :value "requests" :selected (when (equalp search-scope "requests")
                                                                        "selected") "Requests")
                      (:option :value "people" :selected (when (equalp search-scope "people")

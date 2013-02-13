@@ -143,16 +143,6 @@
     
     (remove-from-db id)))
 
-(defun simple-inventory-entry-html (type)
-  (html 
-    (:h4 (str (s+ "post a " type))
-     (:form :method "post" :action (s+ "/" type "s/all") 
-       (:table :class "post"
-         (:tr
-           (:td (:textarea :cols "1000" :rows "4" :name "text"))
-           (:td
-             (:button :class "yes" :type "submit" :class "submit" :name "next" "Post"))))))))
-
 (defun post-new-inventory-item (type &key url)
   (require-user
     (cond
@@ -270,6 +260,16 @@
                                   :button-text (s+ "Save " type)
                                   :selected (s+ type "s"))))))))
 
+(defun simple-inventory-entry-html (type)
+  (html 
+    (:h4 (str (s+ "post a " type))) 
+    (:form :method "post" :action (s+ "/" type "s/new") 
+      (:table :class "post"
+        (:tr
+          (:td (:textarea :cols "150" :rows "4" :name "text"))
+          (:td
+            (:button :class "yes" :type "submit" :class "submit" :name "next" "Post")))))))
+
 (defun enter-inventory-text (&key title text action selected)
   (standard-page title
     (html
@@ -334,26 +334,23 @@
 ; tags (at least 1)
 ; privacy ('all 'friends or listname)
 
-;(defun post-new-inventory-item ( 
-
-
 (defun nearby-inventory-items (type &key base (subtag-count 4) (distance 50) q)
   (with-location
     (let ((nearby (sort
                     (if q
                       (result-id-intersection
                         (geo-index-query (case type
-                                           ('resource *resource-geo-index*)
+                                           (:resource *resource-geo-index*)
                                            (t *request-geo-index*))
                                          *latitude*
                                          *longitude*
                                          distance)
                         (stem-index-query (case type
-                                           ('resource *resource-stem-index*)
+                                           (:resource *resource-stem-index*)
                                            (t *request-stem-index*))
                                           q))
                       (geo-index-query (case type
-                                         ('resource *resource-geo-index*)
+                                         (:resource *resource-geo-index*)
                                          (t *request-geo-index*))
                                          *latitude*
                                          *longitude*
@@ -440,53 +437,139 @@
          (values (sort top-tags #'string< :key #'first) items))))))
 
 (defun inventory-body-html (type &key base q items start page)
-   (html
-     (:div :class "activity"
-       (:div :class "item"
-         (unless (or (not *user*) base q)
-           (str (simple-inventory-entry-html type))))
-       (:span
-         (when q
-           (htm
-             (:span (:strong :class "small" (str (s+ "showing " type "s matching \"")) (str q) (:strong "\""))))
-         (str (rdist-selection-html (url-compose (s+ "/" type "s") "q" q "kw" base)
-                                    :style "display:inline;"
-                                    :text (if q " within "
-                                                "showing results within ")))
-         (when (or base q)
-           (htm
-             (:span :style "float: right;" (:a :href (str (s+ "/" type "s")) 
-                                                     (str (s+"show all " type "s"))))))))
-       (iter (for i from 0 to (+ start 20))
-             (cond
-               ((< i start)
-                (pop items))
+  (html
+    (let ((base-url (s+ "/" type "s")))
+      (htm
+        (:div :class "activity"
+          (:div :class "item"
+            (unless (or (not *user*) base q)
+              (str (simple-inventory-entry-html type))))
+          (:span
+            (when q
+              (htm
+                (:span (:strong :class "small" (str (s+ "showing " type "s matching \"")) (str q) (:strong "\"")))))
+            (str (rdist-selection-html (url-compose base-url "q" q "kw" base)
+                                       :style "display:inline;"
+                                       :text (if q " within "
+                                                   "showing results within ")))
+            (when (or base q)
+              (htm
+                (:span :style "float: right;" (:a :href (str base-url) 
+                                                        (str (s+"show all " type "s")))))))
+          (iter (for i from 0 to (+ start 20))
+                (cond
+                  ((< i start)
+                   (pop items))
 
-               ((and (>= i start) items)
-                (str (inventory-activity-item type
-                                              (pop items) 
-                                              :show-distance t)))
-               (t
-                (when (< (user-rdist) 100)
-                  (htm
-                    (:div :class "item small"
-                     (:em "Increasing the ")(:strong "show results within")(:em " distance may yield more results."))))
-                (finish)))
+                  ((and (>= i start) items)
+                   (str (inventory-activity-item type
+                                                 (pop items) 
+                                                 :show-distance t)))
+                  (t
+                   (when (< (user-rdist) 100)
+                     (htm
+                       (:div :class "item small"
+                        (:em "Increasing the ")(:strong "show results within")(:em " distance may yield more results."))))
+                   (finish)))
 
-             (finally
-               (when (or (> page 0) (cdr items))
-                 (htm
-                   (:div :class "item"
-                    (when (> page 0)
-                      (htm
-                        (:a :href (url-compose (s+ "/" type "s") "p" (- page 1) "kw" base) "< previous page")))
-                    "&nbsp;"
-                    (when (cdr items)
-                      (htm
-                        (:a :style "float: right;" 
-                            :href (url-compose (s+ "/" type "s") "p" (+ page 1) "kw" base) 
-                            "next page >")))))))))))
+                (finally
+                  (when (or (> page 0) (cdr items))
+                    (htm
+                      (:div :class "item"
+                       (when (> page 0)
+                         (htm
+                           (:a :href (url-compose base-url "p" (- page 1) "kw" base) "< previous page")))
+                       "&nbsp;"
+                       (when (cdr items)
+                         (htm
+                           (:a :style "float: right;" 
+                               :href (url-compose base-url "p" (+ page 1) "kw" base) 
+                               "next page >")))))))))))))
 
-(defun browse-inventory-tags (type &key q base)
-  
-  )
+(defun browse-inventory-tags (type &key q base tags)
+  (let ((base-url (s+ "/" type "s")))
+    (html
+      (:h3 "browse by keyword")
+      (when base
+        (htm
+          (:p (:strong "keywords selected: ")) 
+          (:ul :class "keywords"
+            (dolist (tag base)
+              (htm
+                (:li
+                  (:a :href (url-compose base-url "kw" tag "q" q) (str tag)) 
+                  " "
+                  (:a :href (url-compose base-url "kw" (remove tag base :test #'string=) "q" q)
+                      "[x]")      
+                  ))))))
+      (dolist (tag tags)
+        (if (string= (first tag) "etc")
+          (htm
+            (:div :class "category"
+             (:h3 (:a :href (str (s+ base-url "/all"))
+                      (str (s+ "etc (" (write-to-string (second tag)) ")"))))
+             (iter (for subtag in (third tag))
+                   (for i downfrom (length (third tag)))
+                   (htm
+                     (:a :href (if (string= (first subtag) "more")
+                                 (str (s+ base-url "/all"))
+                                 (url-compose "" "kw" (format nil "~{~a+~}~a" base (first subtag)) "q" q) )
+                         (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
+                     (unless (= i 1)
+                       (str ", "))))))
+          (htm
+            (:div :class "category"
+             (:h3 (:a :href (url-compose "" "kw" (format nil "~{~a+~}~a" base (first tag)) "q" q)
+                      (str (s+ (first tag) " (" (write-to-string (second tag)) ")"))))
+             (iter (for subtag in (third tag))
+                   (for i downfrom (length (third tag)))
+                   (htm
+                     (:a :href (url-compose "" "kw"
+                                            (if (string= (first subtag) "more")
+                                              (format nil "~{~a+~}~a" base (first tag))
+                                              (format nil "~{~a+~}~a+~a" base (first tag) (first subtag)))
+                                            "q" q)
+                         (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
+                     (unless (= i 1)
+                       (str ", "))))))))
+      (unless base
+        (htm
+          (:div :class "category"
+           (:h3 (:a :href (str (s+ base-url "/all")) "show all keywords"))))))))
+
+(defun browse-all-inventory-tags (type &key base tags)
+  (html
+    (unless base
+      (str (simple-inventory-entry-html type)))
+    (let ((base-url (s+ "/" type "s")))
+      (htm
+        (:div :class "item"
+        (:h2 "browse by keyword")
+        (when base
+          (htm
+            (:p (:a :href (str base-url) (str (s+ "show all " type "s"))))
+            (:p (:strong "keywords selected: ")) 
+            (:ul :class "keywords"
+              (dolist (tag base)
+                (htm
+                  (:li
+                    (:a :href (format nil (s+ base-url "?kw=~{~a~^+~}") (remove tag base :test #'string=))
+                        "[x]")
+                    " "
+                    (:a :href (format nil (s+ base-url "?kw=~a") tag) (str tag)) 
+                    ))))))
+        (dolist (tag tags)
+          (htm
+            (:div :class "category"
+             (:h3 (:a :href (format nil (s+ base-url "?kw=~{~a+~}~a") base (first tag))
+                      (str (s+ (first tag) " (" (write-to-string (second tag)) ")"))))
+             (iter (for subtag in (third tag))
+                   (for i downfrom (length (third tag)))
+                   (if (string= (car subtag) "more")
+                     (htm
+                       (:a :href (format nil (s+ base-url "?kw=~{~a+~}~a") base (first tag)) (str (strcat "more (" (second tag) ")"))))
+                     (htm
+                     (:a :href (format nil (s+ base-url "?kw=~{~a+~}~a+~a") base (first tag) (first subtag))
+                         (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
+                     (unless (= i 1)
+                       (str ", ")))))))))))))

@@ -217,7 +217,9 @@
         (html
           (str (profile-tabs-html userid :tab (or type :activity)))
           (when (and (eql type :request) (eql userid *userid*))
-            (simple-inventory-entry-html "request"))
+            (htm (str (simple-inventory-entry-html "request"))))
+          (when (and (eql type :resource) (eql userid *userid*)))
+            (htm (str (simple-inventory-entry-html "resource")))
           (when (and (eql type :gratitude) (not (eql userid *userid*))
             (htm
               (:div :class "item"

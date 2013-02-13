@@ -277,19 +277,6 @@
          (flash "Sorry, couldn't make sense of that request to update your settings.")
          (see-other "/home"))))))
 
-
-(defroute "/resources" ()
-  (:get
-    (require-user
-      (standard-page
-        "Resources"
-        (html
-          (:h1 "Resources")
-          (:h2 "Ideas")
-          (:ul
-            ))
-        :selected "resources"))))
-
 (defroute "/events" ()
   (:get
     (require-user
@@ -304,7 +291,6 @@
             (:li "events friends are going to")
             ))
         :selected "events"))))
-
 
 (defun percent ()
   95/100)

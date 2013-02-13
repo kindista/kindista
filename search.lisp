@@ -792,16 +792,7 @@
                (see-other (s+ "/requests?q=" (url-encode q))))
 
               ((string= scope "resources")
-               (let ((resources (search-inventory 'resource q :distance (user-rdist))))
-                 (htm
-                   (:p "Searching resources. Would you like to "
-                       (:a :href (s+ "/search?q=" (url-encode q)) "search everything")
-                       "?")
-                   (if resources
-                     (htm
-                       (:p "results"))
-                     (htm
-                       (:p "no results"))))))
+               (see-other (s+ "/resources?q=" (url-encode q))) )
 
               ((string= scope "people")
                (let ((people (search-people q)))

@@ -140,7 +140,7 @@
                               (when show-what
                                 (htm
                                   (str (if (getf data :edited) " edited a " " posted a "))
-                                  (:a :href (format nil (s+ "/" type "s/~d") (result-id result)) type)))
+                                  (:a :href (str (format nil (s+ "/" type "s/~d") (result-id result))) (str type))))
                               (:blockquote (cl-who:esc (getf data :text)))))))
 
 (defun activity-items (&key (user *user*) (page 0) (count 20) next-url)
