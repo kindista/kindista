@@ -1,0 +1,148 @@
+#  add this line to your ~/.vimrc:
+# 
+#  autocmd BufEnter,BufNew *.notes set smartindent foldmethod=indent tw=0 sts=4 ts=4 sw=4
+#
+
+User Interface
+    [X] unified visual framework for several closely-related tools
+    [X] made user interface "responsive" (adaptible to mobile phones, tablets, and large monitors)
+    [X] JavaScript is no longer essential
+
+Changes
+    [X] recent activity list (recent changes)
+        [X] include new/edited gratitude
+        [X] include new/edited resources
+        [X] include new/edited requests
+        [X] include new/edited announcements
+
+Inventory
+    [X] tag system
+        [X] top-level tags are automatically calculated for display as categories
+        [X] browing inventory items by single tags and tag combinations
+
+Resources
+
+Requests
+
+Database
+    [X] implemented porter stemming full-text search index
+    [X] implemented geohash search index
+
+Donations
+    [ ] Write thank you email
+    [ ] set :donated flag on donator's account on donation
+
+Invitations
+    - Fixed resource
+    [ ] create 2 new invitations for a new user on creation
+    [ ] create 2 new invitations for a user after first request
+    [ ] create 2 new invitations for a user after first resource
+    [ ] create 4 new invitations for a user after first gratitude
+    [ ] create 8 new invitations for a user after completing profile
+    [ ] invitations are stored by codes (preallocated)
+    [ ] enabling/validating an invitation sets the :valid-until field to a future date
+    [ ] expire initations when :valid-until is in the past
+    [ ] modify signup form to require an invite code
+
+Metrics
+    [ ] metric recording system
+        [ ] define metric recording system requirements
+            [ ] track
+                [ ] event type
+                [ ] timestamp
+                [ ] text
+                [ ] user
+                [ ] IP
+        [ ] create metric struct
+        [ ] create metric log
+        [ ] create function to append to metric log
+
+    - donations
+    - Daily signups
+    - Weekly signups
+    - Daily logins
+
+Feedback
+    - Collect comments
+    - Index of active topics
+        - Bug fixes
+        - New features
+
+Acknowledgements
+    - Create activity view for acknowledgements
+
+Notifications
+    - Emailing
+
+Importing -- depends on Acknowledgements
+    - Add tags to K1 offers and requests
+    - Import K1 offers and requests
+    - Import K1 acknowledgements
+    - Import K1 users
+
+Follow-up
+    - Newsletter to existing users
+    - Automated message from one of us to new signups
+    - Invitation a few days later to complete more steps and let person know what has been happening
+
+Flagging
+    - What happens when something gets flagged?
+    - What happens when something gets flagged multiple times?
+        - How many flags does it take?
+
+Discussions
+    - Person-to-person messages
+    - Comments
+
+Settings
+    - contact preferences
+    - basic information
+        - name
+        - location
+        - aliases
+            [ ] index aliases as well as names
+
+################# MAYBE ############################
+
+Groups
+    - unified projects and communities
+    - profile page
+    - activity
+    - discussions
+    - membership
+    - moderation
+
+Discussions
+    - Group conversations
+
+################# LAUNCH ############################
+
+Invitations
+    - Show who invited a person to Kindista
+
+Profile page
+    - Titles (Member, Administrator, Moderator, Facilitator, etc.)
+
+Events
+    - Calendar
+
+Donations
+    - A/B metrics on ask text
+
+Metrics
+    - New data (new messages, resources, etc.)
+    - User followthrough on signup
+    - donations
+        - donation followthrough
+
+Voting
+    [ ] keep track of vote ages
+    [ ] implement sorting algorithm to account for vote ages
+
+Tool Sharing
+
+Facebook App
+    - A Kindista user installs the Facebook App
+    - user's Facebook friends are invited request an invitation to Kindista
+
+Mobile App / Wrapper
