@@ -37,8 +37,10 @@ Invitations
     [ ] create 2 new invitations for a new user on creation
     [ ] create 2 new invitations for a user after first request
     [ ] create 2 new invitations for a user after first resource
-    [ ] create 4 new invitations for a user after first gratitude
+    [ ] create 2 new invitations for a user after first gratitude given
+    [ ] create 2 new invitations for a user after first gratitude received
     [ ] create 8 new invitations for a user after completing profile
+    [ ] user gets an invitation credited back to their account when one of their invitees: completes profile, posts a resource, and gives gratitude
     [ ] invitations are stored by codes (preallocated)
     [ ] enabling/validating an invitation sets the :valid-until field to a future date
     [ ] expire initations when :valid-until is in the past
@@ -69,7 +71,7 @@ Feedback
         - New features
 
 Acknowledgements
-    - Create activity view for acknowledgements
+    - Create activity view for acknowledgements (K1 gifts)
 
 Notifications
     - Emailing
@@ -87,6 +89,11 @@ Follow-up
 
 Flagging
     - What happens when something gets flagged?
+      - Log the id of the flagger, of the item that is flagged.
+      - Flagger indicates why it was flagged (inappropriate, inaccurate, unclear, etc) and has a text field to giver further info.
+      - Flagger can choose whether or not to be anonymous to the flagged user.
+      - Flagged user gets a notification detailing what needs to be changed on profile, with the ability to respond to the flagger and/or appeal to us.
+      - When item is edited, the flagger gets a notification that the item has been edited and that they need to review the item to mark it resolved.
     - What happens when something gets flagged multiple times?
         - How many flags does it take?
 
@@ -146,3 +153,5 @@ Facebook App
     - user's Facebook friends are invited request an invitation to Kindista
 
 Mobile App / Wrapper
+
+Awards for users (badges)
