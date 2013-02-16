@@ -370,15 +370,11 @@
                                     '("Events" "events") 
                                     '("Resources" "resources")
                                     '("Requests" "requests")
-                                    '("Feedback &amp; Support" "support")
+                                    '("About" "about")
+                                    '("Help" "help")
                                     (when (getf *user* :admin)
                                       '("Admin" "admin")))
                               selected))
-
-                   (:p :id "copyright"
-                     "Kindista &copy; 2012-2013"
-                     (:br)
-                     "Built with Common Lisp")
 
                    (:a :class "dark" :href "#top"
                        "Back to the top")
