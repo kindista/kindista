@@ -106,7 +106,7 @@
                       (when (scan *tag-scanner* tag)
                         (collect tag)))))
       (multiple-value-bind (tags items)
-          (nearby-inventory-top-tags *resource-geo-index* :count 10000 :subtag-count 10)
+          (nearby-inventory-top-tags :resource :count 10000 :subtag-count 10)
         (standard-page
          "resources"
            (browse-all-inventory-tags "resource" :base base :tags tags)
