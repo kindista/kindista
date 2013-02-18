@@ -102,10 +102,6 @@
 (defun result-id-intersection (list1 list2)
   (intersection list1 list2 :key #'result-id))
 
-(defun fsync (stream)
-  (finish-output stream)
-  (sb-posix:fsync (sb-posix:file-descriptor stream)))
-
 ;;; {{{ geo stuff
 (define-constant earth-radius 6372.8) ; km
 

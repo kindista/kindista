@@ -6,6 +6,10 @@
 (defmacro s+ (&rest strings)
   `(concatenate 'string ,@strings))
 
+(defun fsync (stream)
+  (finish-output stream)
+  (sb-posix:fsync (sb-posix:file-descriptor stream)))
+
 (defmacro with-file-lock ((path &key interval) &body body)
   "Get an exclusive lock on a file. If lock cannot be obtained, keep
    trying after waiting a while"
