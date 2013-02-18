@@ -4,36 +4,22 @@
 #
 
 User Interface
-    [X] unified visual framework for several closely-related tools
-    [X] made user interface "responsive" (adaptible to mobile phones, tablets, and large monitors)
-    [X] JavaScript is no longer essential
-
-Changes
-    [X] recent activity list (recent changes)
-        [X] include new/edited gratitude
-        [X] include new/edited resources
-        [X] include new/edited requests
-        [X] include new/edited announcements
-
-Inventory
-    [X] tag system
-        [X] top-level tags are automatically calculated for display as categories
-        [X] browing inventory items by single tags and tag combinations
+    [ ] remove references to "my" "your" "me" "you" etc.
 
 Resources
 
 Requests
 
 Database
-    [X] implemented porter stemming full-text search index
-    [X] implemented geohash search index
 
 Donations
     [ ] Write thank you email
     [ ] set :donated flag on donator's account on donation
 
 Invitations
-    - Fixed resource
+    # A limited resource
+    [ ] change site text wording to indicate that accounts require invitations
+    [ ] modify account creation workflow to require invitation
     [ ] create 2 new invitations for a new user on creation
     [ ] create 2 new invitations for a user after first request
     [ ] create 2 new invitations for a user after first resource
@@ -46,16 +32,27 @@ Invitations
     [ ] expire initations when :valid-until is in the past
     [ ] modify signup form to require an invite code
 
+Admin Interface
+
+People
+    [ ] redesign People page
+        [ ] make new more textual layout for person-tile
+        [ ] add a "Looking for someone?" wizard/helper form to the top of the page
+        [ ] add a "Nearby groups"
+    [ ] write meaningful essay questions for the "About" page on profiles
+        - "What do you really want?"
+        - "What are you learning?"
+        - "How do you spend a typical weekday?"
+
 Metrics
-    [ ] metric recording system
+    [ ] metric logging system
         [ ] define metric recording system requirements
-            [ ] track
-                [ ] event type
-                [ ] timestamp
-                [ ] text
-                [ ] user
-                [ ] IP
         [ ] create metric struct
+            [ ] event type
+            [ ] timestamp
+            [ ] text
+            [ ] user
+            [ ] IP
         [ ] create metric log
         [ ] create function to append to metric log
 
@@ -63,6 +60,14 @@ Metrics
     - Daily signups
     - Weekly signups
     - Daily logins
+
+Task Queue
+    # For follow-up and background actions that do not take place inside a request
+    [ ] create task queue
+        [ ] create task runner thread loop
+
+Renew SSL
+    [ ] renew SSL certificate for kindista.org
 
 Feedback
     - Collect comments
@@ -155,3 +160,26 @@ Facebook App
 Mobile App / Wrapper
 
 Awards for users (badges)
+
+#### DONE ####
+
+User Interface
+    [X] unified visual framework for several closely-related tools
+    [X] made user interface "responsive" (adaptible to mobile phones, tablets, and large monitors)
+    [X] JavaScript is no longer essential
+
+Changes
+    [X] recent activity list (recent changes)
+        [X] include new/edited gratitude
+        [X] include new/edited resources
+        [X] include new/edited requests
+        [X] include new/edited announcements
+
+Inventory
+    [X] tag system
+        [X] top-level tags are automatically calculated for display as categories
+        [X] browing inventory items by single tags and tag combinations
+
+Database
+    [X] implemented porter stemming full-text search index
+    [X] implemented geohash search index
