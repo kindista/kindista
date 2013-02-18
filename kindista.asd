@@ -36,10 +36,14 @@
                :ironclad
                :iterate
                :levenshtein
+               :sb-ext
+               :sb-concurrency
+               :sb-thread
                :stem)
   :components ((:file "package")
                (:file "settings")
                (:file "helpers")
+               (:file "signals")
                (:file "scanners")
                (:file "db")
                (:file "metrics")
