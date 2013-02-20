@@ -26,6 +26,9 @@ Requests
 
 Database
 
+Geolocation
+    [ ] localize Kindista based on IP address of guest
+
 Donations
     [ ] Write thank you email
     [ ] set :donated flag on donator's account on donation
