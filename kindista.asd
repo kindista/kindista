@@ -27,6 +27,7 @@
                (:file "helpers")
                (:file "scanners")
                (:file "db")
+               (:file "metrics")
                (:file "donations")
                (:file "http")
                (:file "tags")

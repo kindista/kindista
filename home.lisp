@@ -99,17 +99,18 @@
                             (:a :href "/reset" "Forgot your password?")))))
 
                     (:div :class "item"
-                      (:h3 (:a :href "/donate" "Help us grow!"))
-                      (:p "We are a tiny non-profit, and we rely on your contributions to pay our bills and fund improvements. Will you " (:a :href "/donate" "make a tax-deductable donation") " and help us grow? Learn more about " (:a :href "/plan" "what we are doing") ".")) 
+                      (:h3 (:a :href "/donate" "Help!"))
+                      (:p "Time is running out! Uncle Sam is growing old, and Kindista needs to grow big and strong before he's gone!")
+                      (:p "Will you help Kindista grow stronger by " (:a :href "/group/kindista/requests" "answering a request") " or " (:a :href "/donate" "making a generous donation") "?"))
                     
                     (when *user*
                       (htm
                         (:div :class "item right only"
-                          (:h3 (:a :href "/invite" "Invite your friends"))
+                          (:h3 (:a :href "/invite" "Invite friends"))
                           (:p "Kindista is invitation-only. As a Kindista member, you can invite people you know to join. " (:a :href "/faq/" "How does this work?")))))
 
                     (:div :class "item right only"
-                      (:h3 "Upcoming " (:a :href "/events" "Events"))
+                      (:h3 (:a :href "/events" "Events") " happening nearby")
                       (:menu
                         (:li (:strong "Thursday, November 23"))
                         (:li "7:00PM " (:a :href "x" "East Eugene Gift Circle"))
