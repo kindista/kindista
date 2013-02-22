@@ -142,8 +142,8 @@ Metrics
     - donations
         - donation followthrough
 
-Voting
-    [ ] keep track of vote ages
+Voting (loves)
+    [ ] keep track of vote ages (loves)
     [ ] implement sorting algorithm to account for vote ages
 
 Tool Sharing
