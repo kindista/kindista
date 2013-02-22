@@ -17,18 +17,9 @@
 
 (in-package :kindista)
 
-(defroute "/admin" ()
-  (:get
-    (require-admin
-      (standard-page
-        "Events"
-        (html
-          (:h1 "Admin")
-          (:h2 "Ideas")
-          (:ul
-            (:li "create a new event")
-            (:li "upcoming events")
-            (:li "events friends are going to")
-            ))
-        :selected "admin"))))
+(define-constant +db-path+ "/srv/kindista/data/" :test #'string=)
+(define-constant +avatar-path+ "/srv/kindista/media/avatars/"; <- trailing slash
+                 :test #'string=)
+(define-constant +mail-server+ "localhost" :test #'string=)
+
 

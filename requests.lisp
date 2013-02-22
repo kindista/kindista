@@ -1,3 +1,20 @@
+; Copyright 2013 CommonGoods Network, Inc.
+;
+; This file is part of Kindista.
+;
+; Kindista is free software: you can redistribute it and/or modify
+; it under the terms of the GNU Affero General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; Kindista is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU Affero General Public License for more details.
+;
+; You should have received a copy of the GNU Affero General Public License
+; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
+
 (in-package :kindista)
 
 (defun requests-help-text ()
@@ -103,7 +120,7 @@
                       (when (scan *tag-scanner* tag)
                         (collect tag)))))
       (multiple-value-bind (tags items)
-          (nearby-inventory-top-tags *request-geo-index* :count 10000 :subtag-count 10)
+          (nearby-inventory-top-tags :request :count 10000 :subtag-count 10)
         (standard-page
          "Requests"
            (browse-all-inventory-tags "request" :base base :tags tags)
