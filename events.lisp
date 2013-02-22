@@ -1,23 +1,9 @@
-(defpackage :kindista.events
-  (:use :cl)
-  (:nicknames :k.ev)
-  (:import-from :sb-ext :with-locked-hash-table)
-  (:import-from :sb-thread :make-thread :join-thread)
-  (:import-from :sb-concurrency :make-mailbox :receive-message :send-message)
-  (:import-from :hunchentoot :header-in*)
-  (:import-from :kindista :*userid*)
-  (:export :*event*
-           :event
-           :add-event-handler
-           :start-event-handler
-           :page-view))
-
-(in-package :kindista.events)
+(in-package :kindista)
 
 (defvar *event*) ; used as a dynamic variable for event handlers
-(defvar *thread* nil)
-(defvar *mailbox* (make-mailbox :name "event reader"))
-(defvar *handlers* (make-hash-table :synchronized t :size 100 :test 'eq))
+(defvar *event-thread* nil)
+(defvar *event-mailbox* (make-mailbox :name "event reader"))
+(defvar *event-handlers* (make-hash-table :synchronized t :size 100 :test 'eq))
 
 (defstruct event
   (type :info :type symbol)
@@ -27,17 +13,18 @@
   (ip "" :type string))
 
 (defun event (type text &key (time (get-universal-time))
-                             (userid *userid*)
-                             (ip (header-in* :x-forwarded-for)))
-  (send-message *mailbox* (make-event :type type
-                                      :time time
-                                      :text text
-                                      :userid userid
-                                      :ip ip)))
+                             (userid (or *userid* -1))
+                             (ip (or (header-in* :x-real-ip) "")))
+  (pprint (headers-in*)) (terpri)
+  (send-message *event-mailbox* (make-event :type type
+                                            :time time
+                                            :text text
+                                            :userid userid
+                                            :ip ip)))
 
 (defun add-event-handler (event thunk)
-  (with-locked-hash-table (*handlers*)
-    (push thunk (gethash event *handlers*))))
+  (with-locked-hash-table (*event-handlers*)
+    (push thunk (gethash event *event-handlers*))))
 
 (defun test-handler ()
   (pprint *event*)
@@ -45,20 +32,20 @@
 
 (defun thread-loop ()
   (loop
-    (let ((*event* (receive-message *mailbox*)))
+    (let ((*event* (receive-message *event-mailbox*)))
       (if (eq *event* 'exit)
         (return)
         (progn
-          (dolist (handler (gethash (event-type *event*) *handlers*))
+          (dolist (handler (gethash (event-type *event*) *event-handlers*))
             (funcall handler)) 
-          (dolist (handler (gethash :all *handlers*))
+          (dolist (handler (gethash :all *event-handlers*))
             (funcall handler)))))))
 
 (defun start-event-thread ()
-  (or *thread* (setf *thread* (make-thread #'thread-loop))))
+  (or *event-thread* (setf *event-thread* (make-thread #'thread-loop))))
 
 (defun stop-event-thread ()
-  (when *thread*
-    (send-message *mailbox* 'exit)
-    (join-thread *thread*) 
-    (setf *thread* nil)))
+  (when *event-thread*
+    (send-message *event-mailbox* 'exit)
+    (join-thread *event-thread*) 
+    (setf *event-thread* nil)))

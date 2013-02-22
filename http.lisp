@@ -193,12 +193,6 @@
            (see-other "/")) 
         `(see-other "/"))))
 
-(defmacro require-admin (&body body)
-  `(with-user
-     (if (getf *user* :admin)
-       (progn ,@body)
-       (not-found))))
-
 ;; tokens
 
 (defun start-token ()
@@ -256,7 +250,9 @@
   nil)|#
 
 (defvar *acceptor* (make-instance 'k-acceptor
-                                  :port 5000))
+                                  :port 5000
+                                  :access-log-destination nil
+                                  :message-log-destination nil))
 
 (defun page-header (&optional extra)
   (html
@@ -415,10 +411,4 @@
         (:button :class "yes" :type "submit" :class "submit" :name "really-delete" "Yes")      
         (:a :href next-url "No, I didn't mean it!")))
     :class class))
-
-
-(defun run ()
-  (load-db)
-  (load-tokens)
-  (start *acceptor*))
 

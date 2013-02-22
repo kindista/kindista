@@ -134,6 +134,7 @@
 
 (defroute "/logout" ()
   (:get
+    (event :logout "")
     (delete-token-cookie)
     (see-other "/")))
 
@@ -178,6 +179,7 @@
                                                  (equal #\/ (elt next 0)))
                                           next
                                           "/home"))
+           (event :login "")
            "")
           ((scan +email-scanner+ (post-parameter "username"))
            (setf (return-code*) +http-see-other+)
@@ -192,6 +194,7 @@
                                                  (equal #\/ (elt next 0)))
                                           (s+ "/?retry&next=" (url-encode next))
                                           "/?retry"))
+           (event :auth-failure "")
            ""))))))
 
 

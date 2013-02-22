@@ -22,6 +22,7 @@
     (with-user
       (cond
         ((or (getf *user* :location) (not *user*))
+         (event :home "")
          (standard-page
            "Home"
            (html
@@ -116,9 +117,9 @@
                             (:a :href "/reset" "Forgot your password?")))))
 
                     (:div :class "item"
-                      (:h3 (:a :href "/donate" "Help!"))
-                      (:p "Time is running out! Uncle Sam is growing old, and Kindista needs to grow big and strong before he's gone!")
-                      (:p "Will you help Kindista grow stronger by " (:a :href "/group/kindista/requests" "answering a request") " or " (:a :href "/donate" "making a generous donation") "?"))
+                      (:h3 (:a :href "/donate" "Time is running out!"))
+                      (:p "Uncle Sam is growing old, and Kindista needs to grow big and strong before he's gone!")
+                      (:p "Will you help Kindista grow strong by " (:a :href "/group/kindista/requests" "answering a request") " or " (:a :href "/donate" "making a donation") "?"))
                     
                     (when *user*
                       (htm
@@ -146,6 +147,7 @@
         ((and (getf *user* :lat)
               (getf *user* :long))
 
+         (event :home-verify-location "")
          (standard-page
            "Welcome"
            (html
@@ -163,6 +165,7 @@
                    (:button :class "no" :type "submit" :name "reset-location" :value "1" "No, go back")))))
            :selected "home"))
         (t
+         (event :home-setup "")
          (standard-page
            "Welcome"
            (html

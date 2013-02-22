@@ -36,14 +36,12 @@
                :ironclad
                :iterate
                :levenshtein
-               :sb-ext
                :sb-concurrency
-               :sb-thread
                :stem)
   :components ((:file "package")
                (:file "settings")
                (:file "helpers")
-               (:file "signals")
+               (:file "events")
                (:file "scanners")
                (:file "db")
                (:file "metrics")
@@ -65,5 +63,7 @@
                (:file "time")
                (:file "geocode")
                (:file "home")
-               (:file "routes")))
+               (:file "routes")
+               (:file "main")
+               (:file "log")))
 

@@ -17,9 +17,16 @@
 
 (in-package :kindista)
 
+(defmacro require-admin (&body body)
+  `(with-user
+     (if (getf *user* :admin)
+       (progn ,@body)
+       (not-found))))
+
 (defroute "/admin" ()
   (:get
     (require-admin
+      (event :admin-page "")
       (standard-page
         "Events"
         (html

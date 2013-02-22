@@ -61,17 +61,19 @@ People
         - "What are you learning?"
         - "How do you spend a typical weekday?"
 
+Events
+    [X] event structure
+        - event type
+        - timestamp
+        - text
+        - user
+        - IP
+    [X] event handler table
+    [X] event handling thread
+
 Metrics
-    [ ] metric logging system
-        [ ] define metric recording system requirements
-        [ ] create metric struct
-            [ ] event type
-            [ ] timestamp
-            [ ] text
-            [ ] user
-            [ ] IP
-        [ ] create metric log
-        [ ] create function to append to metric log
+    [X] metric logging function
+    [X] enable metric log on (run)
 
     - donations
     - Daily signups
