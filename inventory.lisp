@@ -280,13 +280,14 @@
 
 (defun simple-inventory-entry-html (type)
   (html 
-    (:h4 (str (s+ "post a " type))) 
-    (:form :method "post" :action (s+ "/" type "s/new") 
-      (:table :class "post"
-        (:tr
-          (:td (:textarea :cols "150" :rows "4" :name "text"))
-          (:td
-            (:button :class "yes" :type "submit" :class "submit" :name "next" "Post")))))))
+    (:div :class "item"
+      (:h4 (str (s+ "post a " type))) 
+      (:form :method "post" :action (s+ "/" type "s/new") 
+        (:table :class "post"
+          (:tr
+            (:td (:textarea :cols "150" :rows "4" :name "text"))
+            (:td
+              (:button :class "yes" :type "submit" :class "submit" :name "next" "Post"))))))))
 
 (defun enter-inventory-text (&key title text action selected)
   (standard-page title
