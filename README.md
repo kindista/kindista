@@ -28,6 +28,9 @@ We also recommend that you install [slimv](http://kovisoft.bitbucket.org/tutoria
 
 You will need to copy the settings.lisp.example file to "settings.lisp" and replace "/srv" in the +db-path+ and +avatar-path+ constants to the name of the directory where you put your copy of Kindista.
 
+All of Kindista's dependencies are listed in the [kinidista.asd](http://https://github.com/kindista/kindista/blob/master/kindista.asd) file.
+We recommend using [quicklisp](http://www.quicklisp.org/beta/) to load Kindista and its packages in your slime or slimv [REPL](http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop).
+
 Create a symbolic link from somewhere on your Quicklisp load-path to the directory containing kindista.asd.
 
 Kindista does not serve static media. You will need to configure your webserver (e.g. nginx) as follows:
@@ -78,9 +81,6 @@ And add a line to your /etc/hosts file:
 
     # kindista development
     127.0.0.1 kindista.local
-
-All of Kindista's dependencies are listed in the [kinidista.asd](http://https://github.com/kindista/kindista/blob/master/kindista.asd) file.
-We recommend using [quicklisp](http://www.quicklisp.org/beta/) to load Kindista and its packages in your slime or slimv [REPL](http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop).
 
 After you've completed the above steps, open one of the Kindista lisp files and fire up slime or slimv (type ",c" to start slimv).
 
