@@ -439,7 +439,7 @@ body.landing > p {
  #search {
   position:absolute;
   top:0.25em;
-  right:0.35em;
+  left:6em;
   width:40em;
   padding:0;
   z-index:10;
