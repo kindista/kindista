@@ -144,8 +144,13 @@ menu.horiz h3 {
  display: inline;
 }
 
+menu.horiz strong {
+ float: left;
+ margin-bottom: 2em;
+}
+
 .activity menu.horiz {
- margin:0;
+ margin: 0 0 1.25em 0;
  padding:0;
  line-height: 2em;
 }
@@ -247,20 +252,16 @@ textarea {
  background:#f7dada;
 }
 
+.flash p {
+ font-weight: normal;
+}
+
 @media (min-width:40em) {
  #biglogo {
   margin:2em 0 2em 2em;
   float:left;
  }
 
- .login form {
-  background:#fafafa;
-  padding:1em;
-  width:20em;
-  margin:2em;
-  border-radius:3px;
-  float:right;
- }
  .signup form {
   background:#fafafa;
   padding:1em;
@@ -436,11 +437,15 @@ body.landing > p {
  #search {
   position:absolute;
   top:0.25em;
-  left:17em;
+  right:0.35em;
   width:40em;
   padding:0;
   z-index:10;
+  text-align: right;
   background:none;
+ }
+ #search strong {
+  display: none;
  }
  #search select {
   background: #f6f6f6;
@@ -644,6 +649,23 @@ body.landing > p {
 .item:last-child {
  padding-bottom: 0;
  border-bottom:none;
+}
+
+.login.item {
+}
+
+#login label, #login input {
+ display: block;
+}
+
+#login a {
+ margin-left: 4em;
+ font-size: 0.8em;
+}
+
+#login input[type=submit] {
+ display: inline;
+ margin-top: 0.6em;
 }
 
 .small {
@@ -1034,9 +1056,7 @@ menu.bar li a {
 
 .welcome {
  font-size: 0.9em;
- background:#f7f5b7;
- padding: 1em;
- box-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+ padding: 1em 1em 0 1em;
 }
 
 .welcome button {

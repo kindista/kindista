@@ -17,24 +17,25 @@
 
 (in-package :kindista)
 
-(defvar *timeline-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defmacro require-admin (&body body)
+  `(with-user
+     (if (getf *user* :admin)
+       (progn ,@body)
+       (not-found))))
 
-(defun timeline-insert (userid result)
-  "insert objectid at time into userid's timeline and sort"
+(defroute "/admin" ()
+  (:get
+    (require-admin
+      (notice :admin-page "")
+      (standard-page
+        "Events"
+        (html
+          (:h1 "Admin")
+          (:h2 "Ideas")
+          (:ul
+            (:li "create a new event")
+            (:li "upcoming events")
+            (:li "events friends are going to")
+            ))
+        :selected "admin"))))
 
-  (with-locked-hash-table (*timeline-index*)
-    (asetf (gethash userid *timeline-index*)
-           (sort (cons result it)
-                 #'> :key #'result-created))))
-
-(defun sort-timeline (userid)
-  (with-locked-hash-table (*timeline-index*)
-    (asetf (gethash userid *timeline-index*)
-           (sort it #'> :key #'result-created))))
-
-(defun timeline-remove (userid result)
-  "insert objectid at time into userid's timeline and sort"
-
-  (with-locked-hash-table (*timeline-index*)
-    (asetf (gethash userid *timeline-index*)
-           (remove result it))))

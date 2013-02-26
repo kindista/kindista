@@ -33,7 +33,7 @@
                               :id id
                               :type type
                               :people (list by)
-                              :created (or (getf data :edited) (getf data :created))
+                              :time (or (getf data :edited) (getf data :created))
                               :tags (getf data :tags))))
 
     (with-locked-hash-table (*db-results*)
@@ -56,7 +56,7 @@
 
     (with-locked-hash-table (*activity-person-index*)
       (asetf (gethash by *activity-person-index*)
-             (sort (push result it) #'> :key #'result-created)))
+             (sort (push result it) #'> :key #'result-time)))
 
     (if (eq type :resource)
       (geo-index-insert *resource-geo-index* result)
@@ -115,11 +115,11 @@
         (geo-index-insert *request-geo-index* result))
       (geo-index-insert *activity-geo-index* result))
 
-    (setf (result-created result) now)
+    (setf (result-time result) now)
     
     (with-locked-hash-table (*activity-person-index*)
       (asetf (gethash id *activity-person-index*)
-             (sort it #'> :key #'result-created)))
+             (sort it #'> :key #'result-time)))
     
     (modify-db id :text text :tags tags :lat latitude :long longitude :edited now)))
 

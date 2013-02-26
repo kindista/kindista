@@ -26,6 +26,9 @@ Requests
 
 Database
 
+Geolocation
+    [ ] localize Kindista based on IP address of guest
+
 Donations
     [ ] Write thank you email
     [ ] set :donated flag on donator's account on donation
@@ -58,17 +61,19 @@ People
         - "What are you learning?"
         - "How do you spend a typical weekday?"
 
+Notices (async system)
+    [X] event structure
+        - event type
+        - timestamp
+        - text
+        - user
+        - IP
+    [X] event handler table
+    [X] event handling thread
+
 Metrics
-    [ ] metric logging system
-        [ ] define metric recording system requirements
-        [ ] create metric struct
-            [ ] event type
-            [ ] timestamp
-            [ ] text
-            [ ] user
-            [ ] IP
-        [ ] create metric log
-        [ ] create function to append to metric log
+    [X] metric logging function
+    [X] enable metric log on (run)
 
     - donations
     - Daily signups
@@ -83,7 +88,8 @@ Task Queue
 Renew SSL
     [ ] renew SSL certificate for kindista.org
 
-Feedback
+Help and Feedback
+  [ ] index page written
     - Collect comments
     - Index of active topics
         - Bug fixes
@@ -127,6 +133,9 @@ Settings
         - location
         - aliases
             [ ] index aliases as well as names
+
+Writing
+  [ ] About page
 
 ################# MAYBE ############################
 

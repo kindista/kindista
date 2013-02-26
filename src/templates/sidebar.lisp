@@ -17,18 +17,16 @@
 
 (in-package :kindista)
 
-(defroute "/admin" ()
-  (:get
-    (require-admin
-      (standard-page
-        "Events"
-        (html
-          (:h1 "Admin")
-          (:h2 "Ideas")
-          (:ul
-            (:li "create a new event")
-            (:li "upcoming events")
-            (:li "events friends are going to")
-            ))
-        :selected "admin"))))
+(defun donate-sidebar ()
+  (html
+    (:div :class "item"
+      (:h3 (:a :href "/donate" "Help spread the sharing!"))
+      (:p "Help Kindista grow big and strong by responding to our " (:a :href "/group/kindista/requests" "requests") " or " (:a :href "/donate" "making a donation") "?"))))
 
+(defun invite-sidebar ()
+  (with-user
+    (when *user*
+      (html
+        (:div :class "item right only"
+          (:h3 (:a :href "/invite" "Invite friends"))
+          (:p "Kindista is invitation-only. As a Kindista member, you can invite people you know to join. " (:a :href "/faq/" "How does this work?")))))))

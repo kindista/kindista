@@ -26,24 +26,6 @@
 (defvar *db-log-lock* (make-mutex :name "db log"))
 (defvar *db-results* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
 
-(defvar *geo-index-index* (make-hash-table :test 'equal :synchronized t :size 500 :rehash-size 1.25))
-(defvar *activity-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *activity-person-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *resource-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *resource-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *resource-stem-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
-(defvar *request-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *request-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *request-stem-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
-(defvar *people-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *followers-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *love-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *comment-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *gratitude-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
-(defvar *metaphone-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
-(defvar *email-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
-(defvar *username-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
-
 ;(defvar *auth-tokens* (make-hash-table :test 'equal :synchronized t :size 200 :rehash-size 1.25))
 (defvar *tokens* (make-hash-table :test 'equal :synchronized t :size 200 :rehash-size 1.25))
 
@@ -114,7 +96,7 @@
   (setf (donate-info-token donate-info) new-value))
 
 (defstruct result
-  latitude longitude created tags people id type)
+  latitude longitude time tags people id type)
 
 (defun result-id-intersection (list1 list2)
   (intersection list1 list2 :key #'result-id))

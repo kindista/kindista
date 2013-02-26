@@ -32,5 +32,7 @@
             (:import-from :double-metaphone :double-metaphone)
             (:import-from :cl-markdown :markdown)
             (:import-from :cl-who :with-html-output-to-string :str :htm :fmt)
-            (:export :run-server :stop-server))
+            (:import-from :sb-concurrency :mailbox :receive-message :send-message :make-mailbox)
+            (:shadow :quit)
+            (:export :run-server :stop-server :*userid* :load-db :save-db :load-tokens :save-tokens :+db-path+ :fsync))
 
