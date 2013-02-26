@@ -148,13 +148,13 @@ menu.horiz strong {
  float: left;
 }
 
-.activity menu.horiz {
+menu.horiz {
  margin: 0;
  padding:0;
  line-height: 2em;
 }
 
-.activity menu.horiz li {
+menu.horiz li {
  display: inline-block;
  margin-left:1em;
 }
@@ -902,6 +902,7 @@ button.text.large {
 .card .timestamp, .item .distance {
  font-size: 0.8em;
  margin-top: 1.6em;
+ font-weight: normal;
  float: right;
  /*margin-left: 10.7em;*/
 }

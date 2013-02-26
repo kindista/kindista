@@ -52,12 +52,15 @@
                              (:module templates
                               :serial t
                               :components ((:file "sidebar")
+                                           (:file "timestamp")
+                                           (:file "card")
                                            (:file "person-card")))
                              (:module features
                               :serial t
                               :components ((:file "about")
                                            (:file "admin")
                                            (:file "comments")
+                                           (:file "discussions")
                                            (:file "donate")
                                            (:file "events")
                                            (:file "gratitude")
@@ -65,7 +68,6 @@
                                            (:file "help")
                                            (:file "home")
                                            (:file "love")
-                                           (:file "messages")
                                            (:file "people")
                                            (:file "requests")
                                            (:file "resources")
