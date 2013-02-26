@@ -462,15 +462,16 @@
         (:div :class "activity"
           (:div :class "item"
             (unless (or (not *user*) base q)
-              (str (simple-inventory-entry-html type))))
-          (:span
+              (str (simple-inventory-entry-html type)))
+            
             (when q
               (htm
                 (:span (:strong :class "small" (str (s+ "showing " type "s matching \"")) (str q) (:strong "\"")))))
             (str (rdist-selection-html (url-compose base-url "q" q "kw" base)
                                        :style "display:inline;"
                                        :text (if q " within "
-                                                   "showing results within ")))
+                                                   "showing results within "))))
+          (:span
             (when (or base q)
               (htm
                 (:span :style "float: right;" (:a :href (str base-url) 

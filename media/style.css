@@ -146,11 +146,10 @@ menu.horiz h3 {
 
 menu.horiz strong {
  float: left;
- margin-bottom: 2em;
 }
 
 .activity menu.horiz {
- margin: 0 0 1.25em 0;
+ margin: 0;
  padding:0;
  line-height: 2em;
 }
@@ -384,13 +383,17 @@ body.landing > p {
 #search select {
  margin:0;
  font-size: 1em;
- color:#000;
+ color:#666;
  border:0;
  background:none;
 }
 
 #body {
  padding: 0 1em;
+}
+
+#body > h2 {
+ margin-bottom: 1.1em;
 }
 
 #search input[type=text] {
@@ -424,10 +427,9 @@ body.landing > p {
  border-top-left-radius: 3px;
  border-bottom-left-radius: 3px;
  font-weight:bold;
- color:#000;
+ color:#666;
  /*background:#375497;*/
- background:#5c8a2f;
- color: #fff;
+ background:#eee;
  margin-left:0.2em;
  border: 1px solid #999;
  border-left: none;
@@ -451,7 +453,6 @@ body.landing > p {
   background: #f6f6f6;
   border:1px solid #999;
   border-right: 1px solid #ccc;
-  font-weight: bold;
   padding: 0.5em;
   -webkit-border-top-left-radius: 3px;
   -webkit-border-bottom-left-radius: 3px;
@@ -558,7 +559,7 @@ body.landing > p {
   width:16em;
   background:#f9f9f9;
   z-index:1;
-  box-shadow: 0 0 1px rgba(0,0,0,0.4);
+  box-shadow: 0 0 1px rgba(0,0,0,0.3);
  }
 
  #menu > a.dark {
@@ -648,7 +649,47 @@ body.landing > p {
 
 .item:last-child {
  padding-bottom: 0;
- border-bottom:none;
+ border-bottom: 0;
+}
+
+.card {
+ position: relative;
+ /*background: #FDF8E9;
+ border-right: 1px solid #ECE3CB;*/
+ border-bottom: 1px solid #eee;
+ clear: both;
+ padding: 0 0 1.25em 0;
+ margin: 1em 0;
+ overflow: hidden;
+}
+
+.card > img {
+ display: block;
+ float: left;
+ width: 7em;
+ height: 7em;
+ margin-right: 1.25em;
+ clear: left;
+}
+
+.card p {
+ /*margin-left: 8.5em;*/
+}
+
+.card p:last-child {
+ margin-bottom: 0;
+}
+
+.card h3 {
+ font-size: 1em;
+ margin-top: 0.8em;
+ /*margin-left: 8.5em;*/
+}
+
+.card .distance {
+ font-size: 0.85em;
+ /*margin-left: 10em;*/
+ font-style: italic;
 }
 
 .login.item {
@@ -758,7 +799,7 @@ body.landing > p {
 
 }
 
-@media (max-width:62em) {
+@media (max-width:56em) {
  .item.right.only {
   display:none;
  }
@@ -788,11 +829,18 @@ body.landing > p {
 }
 */
 
-.item .actions {
+.card .actions {
+ clear: left;
+ /*margin-top: 2em;
  position:relative;
  /*border-top:1px solid #dfdfdf;
  padding-top:5px;*/
  color:#aaa;
+ text-align: right;
+}
+
+.card a {
+ font-weight: bold;
 }
 
 button::-moz-focus-inner,
@@ -801,20 +849,19 @@ input::-moz-focus-inner {
  border:0;
 }
 
-.item .icons {
+.card .icons {
  position:absolute;
- right:0;
- top:0;
+ left: 0;
  /*color:#375497;*/
  color:#5c8a2f;
  font-size:0.9em;
 }
 
-.item .icons img {
- width:16px;
- height:16px;
+.card .icons img {
+ width:1em;
+ height:1em;
  vertical-align:middle;
- margin:0 5px 0 12px;
+ margin:0 0.5em 0 0;
 }
 
 .actions > form, .basics > form {
@@ -852,14 +899,15 @@ button.text.large {
  color: #000;
 }
 
-.item .timestamp, .item .distance {
- color:#666;
- font-style:italic;
- font-size:0.8em;
- font-weight:normal;
- margin: 0 0 0.5em;
+.card .timestamp, .item .distance {
+ font-size: 0.8em;
+ margin-top: 1.6em;
  float: right;
- clear: right;
+ /*margin-left: 10.7em;*/
+}
+
+.card h3.timestamp a {
+ font-weight: normal;
 }
 
 .item .timestamp a {
@@ -1191,33 +1239,46 @@ form.post-next h2 {
  margin: 0.75em 0;
 }
 
-.person-row {
- height:20em;
- overflow:hidden;
-}
-
-.person-tile {
- display: inline-block;
- vertical-align: top;
- width: 11em;
- padding: 1em 1em 1em 0;
- margin: 0.25em 0 3em;
-}
-
-.people .person-tile {
- border-top: 1px solid #aaa;
- height: 20em;
-}
-
-.person-tile img {
- width: 10em;
- height: 10em;
+.person-list img {
  display: block;
+ float: left;
+ width: 5em;
+ height: 5em;
+ clear: left;
+ margin: 2em 0;
 }
 
-.person-tile p a {
- font-weight: bold;
+.person-list p {
+ margin-left: 5em;
 }
+
+.person-card {
+ background: #FDF6E3;
+ border: 1px solid #ECE3CB;
+ clear: both;
+ padding: 1em 1em 0.5em 1em;
+ margin: 1em 0;
+ overflow: hidden;
+}
+
+.person-card img {
+ display: block;
+ float: left;
+ width: 7em;
+ height: 7em;
+ clear: left;
+}
+
+.person-card p {
+ margin-left: 8.5em;
+}
+
+.person-card h3 {
+ font-size: 1em;
+ margin-top: 0.8em;
+ margin-left: 8.5em;
+}
+
 
 .bio .icon {
  margin-left: 0.5em;

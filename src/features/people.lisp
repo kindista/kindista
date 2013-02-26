@@ -381,21 +381,9 @@
               (collect (cons (length (mutual-connections person userid)) person)))))
     #'> :key #'first))
 
-(defun person-tile (id &key distance show-city)
-  (let ((data (db id)))
-    (html
-      (:div :class "person-tile"
-        (:img :src (strcat "/media/avatar/" id ".jpg"))
-        (:p (:a :href (strcat "/people/" (username-or-id id))
-             (str (getf data :name))))   
-        ; distance
-        (when show-city
-          (htm
-            (:p :class "city" (str (getf data :city)))))
-        (acase (length (mutual-connections id))
-          (0)
-          (1 (htm (:p "1 mutual connection")))
-          (t (htm (:p (str (strcat it " mutual connections"))))))))))
+(defroute "/people/" ()
+  (:get
+    (moved-permanently "/people")))
 
 (defroute "/people" ()
   (:get
@@ -404,15 +392,21 @@
         "People"
         (html
           ; favorites / connections?
-          (:h2 "People near you")
-          (:div :class "person-row"
-            (with-location
-              (dolist (data (nearby-people))
-                (str (person-tile (result-id data))))))
+          (:h2 "Connect with people who live nearby")
+          (with-location
+            (dolist (data (nearby-people))
+              (let* ((id (result-id data))
+                     (person (db id)))
+                (str (person-card id (getf person :name))))))
           (when *user* 
             (htm
-              (:h2 "People you may know") 
-              (:div :class "person-row"
-                (dolist (data (suggested-people))
-                  (str (person-tile (cdr data))))))))
-          :selected "people"))))
+              (:h2 "People with mutual friends") 
+              (dolist (data (suggested-people))
+                (let* ((id (cdr data))
+                       (person (db id)))
+                  ; (car data) is the number of mutual friends
+                  (str (person-card id (getf person :name))))))))
+        :selected "people"
+        :right (html
+                 (str (donate-sidebar))
+                 (str (invite-sidebar)))))))
