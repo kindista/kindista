@@ -131,9 +131,9 @@
 
 (defun joined-activity-item (result)
   (html
-    (:div :class "item"
-      (str (timestamp (result-time result)))
-      (str (person-link (first (result-people result)))) " joined Kindista")))
+    (:div :class "card"
+      (str (h3-timestamp (result-time result)))
+      (:p (str (person-link (first (result-people result)))) " joined Kindista"))))
 
 (defun inventory-activity-item (type result &key show-distance show-what next-url)
   (let ((user-id (first (result-people result)))

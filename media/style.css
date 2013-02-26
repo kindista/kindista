@@ -659,7 +659,7 @@ body.landing > p {
  border-bottom: 1px solid #eee;
  clear: both;
  padding: 0 0 1.25em 0;
- margin: 1em 0;
+ margin: 0.5em 0;
  overflow: hidden;
 }
 
@@ -668,7 +668,7 @@ body.landing > p {
  float: left;
  width: 7em;
  height: 7em;
- margin-right: 1.25em;
+ margin: 1em 1.75em 0.5em 1em;
  clear: left;
 }
 
@@ -682,7 +682,7 @@ body.landing > p {
 
 .card h3 {
  font-size: 1em;
- margin-top: 0.8em;
+ margin-top: 1.6em;
  /*margin-left: 8.5em;*/
 }
 
