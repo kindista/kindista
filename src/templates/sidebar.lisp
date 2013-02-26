@@ -17,24 +17,16 @@
 
 (in-package :kindista)
 
-(defvar *timeline-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defun donate-sidebar ()
+  (html
+    (:div :class "item"
+      (:h3 (:a :href "/donate" "Help spread the sharing!"))
+      (:p "Help Kindista grow big and strong by responding to our " (:a :href "/group/kindista/requests" "requests") " or " (:a :href "/donate" "making a donation") "?"))))
 
-(defun timeline-insert (userid result)
-  "insert objectid at time into userid's timeline and sort"
-
-  (with-locked-hash-table (*timeline-index*)
-    (asetf (gethash userid *timeline-index*)
-           (sort (cons result it)
-                 #'> :key #'result-created))))
-
-(defun sort-timeline (userid)
-  (with-locked-hash-table (*timeline-index*)
-    (asetf (gethash userid *timeline-index*)
-           (sort it #'> :key #'result-created))))
-
-(defun timeline-remove (userid result)
-  "insert objectid at time into userid's timeline and sort"
-
-  (with-locked-hash-table (*timeline-index*)
-    (asetf (gethash userid *timeline-index*)
-           (remove result it))))
+(defun invite-sidebar ()
+  (with-user
+    (when *user*
+      (html
+        (:div :class "item right only"
+          (:h3 (:a :href "/invite" "Invite friends"))
+          (:p "Kindista is invitation-only. As a Kindista member, you can invite people you know to join. " (:a :href "/faq/" "How does this work?")))))))

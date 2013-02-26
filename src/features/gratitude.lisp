@@ -32,7 +32,7 @@
          (result (make-result :latitude (getf author :lat)
                               :longitude (getf author :long)
                               :people people
-                              :created created
+                              :time created
                               :type :gratitude
                               :id id)))
     
@@ -44,7 +44,7 @@
     (with-locked-hash-table (*activity-person-index*)
       (dolist (person people)
         (asetf (gethash person *activity-person-index*)
-               (sort (push result it) #'> :key #'result-created))))
+               (sort (push result it) #'> :key #'result-time))))
 
     (dolist (subject subjects)
       (let ((user (db subject)))
@@ -52,7 +52,7 @@
                                                             :longitude (getf user :long)
                                                             :people people
                                                             :id id
-                                                            :created created))))))
+                                                            :time created))))))
 
 (defun parse-subject-list (subject-list &key remove)
   (delete-duplicates
@@ -73,7 +73,7 @@
 (defun modify-gratitude (id text)
   (let ((result (gethash id *db-results*))
         (now (get-universal-time)))
-    (setf (result-created result) now)
+    (setf (result-time result) now)
     (modify-db id :text text :edited now)))
 
 (defun delete-gratitude (id)
@@ -224,7 +224,7 @@
           "First few words... | Kindista"
           (html
             (str (gratitude-activity-item (make-result :id id
-                                                       :created (getf it :created)
+                                                       :time (getf it :created)
                                                        :people (cons (getf it :author) (getf it :subjects)))
                                           :next-url (script-name*))))))
       (standard-page "Not found" "not found")))

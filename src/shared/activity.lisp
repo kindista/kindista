@@ -113,7 +113,7 @@
     (activity-item :id item-id
                    :user-id user-id
                    :url (strcat "/gratitude/" item-id)
-                   :time (result-created result)
+                   :time (result-time result)
                    :next-url next-url
                    :edit (when (eql user-id *userid*) t)
                    :hearts (length (loves item-id))
@@ -131,7 +131,7 @@
 (defun joined-activity-item (result)
   (html
     (:div :class "item"
-      (str (timestamp (result-created result)))
+      (str (timestamp (result-time result)))
       (str (person-link (first (result-people result)))) " joined Kindista")))
 
 (defun inventory-activity-item (type result &key show-distance show-what next-url)
@@ -140,7 +140,7 @@
     (activity-item :id (result-id result)
                    :user-id user-id
                    :url (strcat "/" type "s/" (result-id result))
-                   :time (result-created result)
+                   :time (result-time result)
                    :distance (when show-distance
                                (air-distance (result-latitude result)
                                              (result-longitude result)

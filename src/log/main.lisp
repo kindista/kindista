@@ -6,11 +6,11 @@
                             :if-does-not-exist :create
                             :direction :output)) 
 
-(defun log-event ()
+(defun log-notice ()
   (with-mutex (*log-lock*)
     (with-standard-io-syntax
       ; probably need an error handler in here in case the log gets moved
-      (prin1 *event* *log-stream*)
+      (prin1 *notice* *log-stream*)
       (fresh-line *log-stream*))
     (fsync *log-stream*)))
 

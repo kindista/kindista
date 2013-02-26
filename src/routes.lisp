@@ -134,7 +134,7 @@
 
 (defroute "/logout" ()
   (:get
-    (event :logout "")
+    (notice :logout "")
     (delete-token-cookie)
     (see-other "/")))
 
@@ -179,22 +179,13 @@
                                                  (equal #\/ (elt next 0)))
                                           next
                                           "/home"))
-           (event :login "")
-           "")
-          ((scan +email-scanner+ (post-parameter "username"))
-           (setf (return-code*) +http-see-other+)
-           (setf (header-out :location) (if (and (< 0 (length next))
-                                                 (equal #\/ (elt next 0)))
-                                          (s+ "/?retry=" (post-parameter "username") "&next=" (url-encode next))
-                                          (s+ "/?retry=" (post-parameter "username"))))
+           (notice :login "")
            "")
           (t
            (setf (return-code*) +http-see-other+)
-           (setf (header-out :location) (if (and (< 0 (length next))
-                                                 (equal #\/ (elt next 0)))
-                                          (s+ "/?retry&next=" (url-encode next))
-                                          "/?retry"))
-           (event :auth-failure "")
+           (setf (header-out :location) "/home")
+           (flash "<p>The email or password you entered was not recognized.</p><p>Please try again.</p><p>If you would like to join Kindista please request an invitation from someone you know.</p>" :error t)
+           (notice :auth-failure "")
            ""))))))
 
 

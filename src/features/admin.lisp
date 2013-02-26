@@ -26,7 +26,7 @@
 (defroute "/admin" ()
   (:get
     (require-admin
-      (event :admin-page "")
+      (notice :admin-page "")
       (standard-page
         "Events"
         (html

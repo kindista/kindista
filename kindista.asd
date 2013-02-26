@@ -16,10 +16,14 @@
 ;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
 (asdf:defsystem #:kindista
+  :name "Kindista"
+  :description "A social network for local sharing"
+  :license "GNU Affero General Public License Version 3 (see file COPYING)"
+  :maintainer "Nicholas E. Walker"
   :serial t
   :depends-on (:alexandria
                :anaphora
-               :cl-gd
+               ;:cl-gd
                :cl-json
                :cl-markdown
                :cl-ppcre
@@ -27,7 +31,7 @@
                :cl-who
                :cl-stripe
                :parenscript
-               :css-lite
+               ;:css-lite
                :vecto
                :double-metaphone
                :drakma
@@ -38,32 +42,50 @@
                :levenshtein
                :sb-concurrency
                :stem)
-  :components ((:file "package")
-               (:file "settings")
-               (:file "helpers")
-               (:file "events")
-               (:file "scanners")
-               (:file "db")
-               (:file "metrics")
-               (:file "donations")
-               (:file "http")
-               (:file "tags")
-               (:file "search")
-               (:file "people")
-               (:file "activity")
-               (:file "timeline")
-               (:file "gratitude")
-               (:file "requests")
-               (:file "resources")
-               (:file "inventory")
-               (:file "messages")
-               (:file "comments")
-               (:file "love")
-               (:file "admin")
-               (:file "time")
-               (:file "geocode")
-               (:file "home")
-               (:file "routes")
-               (:file "main")
-               (:file "log")))
+  :components ((:file "settings")
+               (:module src
+                :serial t
+                :components ((:file "package")
+                             (:file "helpers")
+                             (:module db
+                              :serial t
+                              :components ((:file "indexes")
+                                           (:file "main")))
+                             (:module log
+                              :serial t
+                              :components ((:file "main")
+                                           (:file "events")))
+                             (:module http
+                              :serial t
+                              :components ( (:file "main")))
+                             (:module shared
+                              :serial t
+                              :components ((:file "inventory")
+                                           (:file "activity")
+                                           (:file "geo")
+                                           (:file "tags")
+                                           (:file "timeline")
+                                           (:file "time")))
+                             (:module templates
+                              :serial t
+                              :components ((:file "sidebar")))
+                             (:module features
+                              :serial t
+                              :components ((:file "about")
+                                           (:file "admin")
+                                           (:file "comments")
+                                           (:file "donate")
+                                           (:file "events")
+                                           (:file "gratitude")
+                                           (:file "groups")
+                                           (:file "help")
+                                           (:file "home")
+                                           (:file "love")
+                                           (:file "messages")
+                                           (:file "people")
+                                           (:file "requests")
+                                           (:file "resources")
+                                           (:file "search")))
+                             (:file "routes")
+                             (:file "main")))))
 

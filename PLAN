@@ -61,7 +61,7 @@ People
         - "What are you learning?"
         - "How do you spend a typical weekday?"
 
-Events
+Notices (async system)
     [X] event structure
         - event type
         - timestamp
@@ -88,7 +88,8 @@ Task Queue
 Renew SSL
     [ ] renew SSL certificate for kindista.org
 
-Feedback
+Help and Feedback
+  [ ] index page written
     - Collect comments
     - Index of active topics
         - Bug fixes
@@ -132,6 +133,9 @@ Settings
         - location
         - aliases
             [ ] index aliases as well as names
+
+Writing
+  [ ] About page
 
 ################# MAYBE ############################
 

@@ -31,7 +31,7 @@
                              :longitude (getf data :long)
                              :type :person
                              :people (list id)
-                             :created (getf data :created))))
+                             :time (getf data :created))))
 
     (setf (gethash (getf data :email) *email-index*) id)
     (setf (gethash (getf data :username) *username-index*) id)
@@ -49,7 +49,7 @@
 
     (with-locked-hash-table (*activity-person-index*)
       (asetf (gethash id *activity-person-index*)
-             (sort (push result it) #'> :key #'result-created)))
+             (sort (push result it) #'> :key #'result-time)))
 
     (when (and (getf data :lat) (getf data :long) (getf data :created))
       (metaphone-index-insert *metaphone-index* (getf data :name) result)

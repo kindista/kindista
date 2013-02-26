@@ -22,7 +22,7 @@
     (with-user
       (cond
         ((or (getf *user* :location) (not *user*))
-         (event :home "")
+         (notice :home "")
          (standard-page
            "Home"
            (html
@@ -33,7 +33,7 @@
                  (:li (:a :href "/resource/new" "offer a resource"))
                  (:li (:a :href "/requests/new" "make a request"))
                  ;(:li (:a :href "/events/new" "event"))
-                 (:li (:a :href "/announcements/new" "post announcement"))
+                 ;(:li (:a :href "/announcements/new" "post announcement"))
                  )
                  
              (:form :class "item" :method "post" :action "/settings"
@@ -60,11 +60,16 @@
                    (welcome-bar
                      (html
                        (:h2 "Welcome to Kindista!")
-                       (:p "On this page you can see what's going on around you and with people you have made
-                            a connection with. Use the menu "
+                       (:p "On this page you can see what's going on around you and with the people 
+                            you connect with. Use the menu "
                            (:span :class "menu-button" " (click the button on the header) ")
                            (:span :class "menu-showing" " on the left ")
-                           " to explore the site."))
+                           " to explore the site.")
+                       (:p "We've guessed your location as "
+                        (:strong "Eugene, OR")
+                           " based on your IP address. When you log in you can change your location.")
+                       (:p "Many activities on Kindista require the creation of an account. An account represents your true identity in the world. To create a Kindista account, you will need an invitation from an existing Kindista member. By browsing the site you may find people near you to ask for an invitation.")
+                       (:p "You can find us on " (:a :href "http://freenode.net/" "Freenode") " " (:a :href "http://en.wikipedia.org/wiki/Internet_Relay_Chat" "IRC") " in #kindista. Source code is available on " (:a :href "http://github.com/kindista/kindista" "GitHub") "."))
                      nil))
                   ((getf *user* :help)
                    (welcome-bar
@@ -104,36 +109,38 @@
                       )
                       |#
 
+                    (str (donate-sidebar))
+                    
                     (unless *user*
                       (htm
-                        (:div :class "item"
+                        (:div :class "login item"
                           (:h3 "Log in")
                           (:form :method "POST" :action "/login" :id "login"
-                            (:label :for "username" "Username or email")
+                            (:label :for "username" "Email")
                             (:input :type "text" :name "username" :value (get-parameter "retry"))
                             (:label :for "password" "Password")
                             (:input :type "password" :name "password")
                             (:input :type "submit" :value "Log in")
                             (:a :href "/reset" "Forgot your password?")))))
 
-                    (:div :class "item"
-                      (:h3 (:a :href "/donate" "Time is running out!"))
-                      (:p "Uncle Sam is growing old, and Kindista needs to grow big and strong before he's gone!")
-                      (:p "Will you help Kindista grow strong by " (:a :href "/group/kindista/requests" "answering a request") " or " (:a :href "/donate" "making a donation") "?"))
-                    
-                    (when *user*
-                      (htm
-                        (:div :class "item right only"
-                          (:h3 (:a :href "/invite" "Invite friends"))
-                          (:p "Kindista is invitation-only. As a Kindista member, you can invite people you know to join. " (:a :href "/faq/" "How does this work?")))))
+                    (str (invite-sidebar))
 
+                    #|
                     (:div :class "item right only"
                       (:h3 (:a :href "/events" "Events") " happening nearby")
+                      ;; TODO lookup the user's timezone by lat/long
+                      ;; 
                       (:menu
-                        (:li (:strong "Thursday, November 23"))
-                        (:li "7:00PM " (:a :href "x" "East Eugene Gift Circle"))
-                        (:li (:strong "Thursday, November 30"))
-                        (:li "7:00PM " (:a :href "x" "West Eugene Gift Circle"))))   
+                        (let ((lastday nil))
+                          (dolist (event (upcoming-events :count 6))
+                            (let ((item (db (result-id event))))
+                              (htm
+                                (:li (:strong (getf item :title)))
+                                (:li
+                                 "7:00PM "
+                                 (:a :href (strcat "/events/" (result-id event))
+                                     "East Eugene Gift Circle"))))))))
+                    |#
 
                     (when *user*
                       (htm
@@ -147,7 +154,7 @@
         ((and (getf *user* :lat)
               (getf *user* :long))
 
-         (event :home-verify-location "")
+         (notice :home-verify-location "")
          (standard-page
            "Welcome"
            (html
@@ -165,7 +172,7 @@
                    (:button :class "no" :type "submit" :name "reset-location" :value "1" "No, go back")))))
            :selected "home"))
         (t
-         (event :home-setup "")
+         (notice :home-setup "")
          (standard-page
            "Welcome"
            (html

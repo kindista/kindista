@@ -348,7 +348,7 @@
                      (:option :value "people" :selected (when (equalp search-scope "people")
                                                                    "selected") "People"))
                    (:input :type "text" :name "q" :value search)
-                   (:input :type "submit" :value "Go"))
+                   (:input :type "submit" :value "Search"))
 
                  (:div :id "menu"
                    (if *user*
@@ -363,26 +363,14 @@
                              (:a :href "/settings" "Settings")
                              " &nbsp;&middot;&nbsp; "
                              (:a :href "/logout" "Log out")))))
-                     (htm
-                       (:table
-                         (:tr
-                           (:td :rowspan "2"
-                            (:img :src (format nil "/media/avatar/guest.jpg")))
-                           (:td "Welcome, Guest!"))
-                         (:tr
-                           (:td
-                             (:a :href "/login" "Log in")
-                             " &nbsp;&middot;&nbsp; "
-                             (:a :href "/signup" "Sign up")))) 
-                       )
                      )
 
-                   (str (menu (list '("Recent Activity" "home")
+                   (str (menu (list '("Recent Changes" "home")
+                                    '("Requests" "requests")
                                     '("People" "people")
                                     '("Discussions" "discuss") 
-                                    '("Events" "events") 
+                                    ;'("Events" "events") 
                                     '("Resources" "resources")
-                                    '("Requests" "requests")
                                     '("About" "about")
                                     '("Help" "help")
                                     (when (getf *user* :admin)

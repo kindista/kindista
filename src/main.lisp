@@ -1,17 +1,17 @@
 (in-package :kindista)
 
 (defun run ()
-  (add-event-handler :all #'log-event)
+  (add-notice-handler :all #'log-notice)
   (load-db)
   (load-tokens)
   (start *acceptor*)
-  (start-event-thread))
+  (start-notice-thread))
 
 (defun end ()
   (save-db)
   (save-tokens)
   (stop *acceptor*)
-  (stop-event-thread))
+  (stop-notice-thread))
 
 (defun quit ()
   (end)
