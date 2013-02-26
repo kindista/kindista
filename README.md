@@ -22,9 +22,14 @@ Please check out [the plan](https://github.com/kindista/kindista/blob/master/PLA
 
 This document assumes that you have a running Common Lisp development environment. 
 
-We recommend that you first install [slimv](http://kovisoft.bitbucket.org/tutorial.html) (for [vim](http://www.vim.org) users) or [slime](http://common-lisp.net/project/slime/) (for [Emacs](http://www.gnu.org/software/emacs/) users).
+Kindista has dependencies on a few [Steel Bank Common Lisp](http://www.sbcl.org) libraries so you will have to be running SBCL as your lisp implementation for Kindista to work.
+
+We also recommend that you install [slimv](http://kovisoft.bitbucket.org/tutorial.html) (for [vim](http://www.vim.org) users) or [slime](http://common-lisp.net/project/slime/) (for [Emacs](http://www.gnu.org/software/emacs/) users) before trying to get Kindista up and running.
 
 You will need to copy the settings.lisp.example file to "settings.lisp" and replace "/srv" in the +db-path+ and +avatar-path+ constants to the name of the directory where you put your copy of Kindista.
+
+All of Kindista's dependencies are listed in the [kinidista.asd](http://https://github.com/kindista/kindista/blob/master/kindista.asd) file.
+We recommend using [quicklisp](http://www.quicklisp.org/beta/) to load Kindista and its packages in your slime or slimv [REPL](http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop).
 
 Create a symbolic link from somewhere on your Quicklisp load-path to the directory containing kindista.asd.
 
@@ -76,9 +81,6 @@ And add a line to your /etc/hosts file:
 
     # kindista development
     127.0.0.1 kindista.local
-
-All of Kindista's dependencies are listed in the [kinidista.asd](http://https://github.com/kindista/kindista/blob/master/kindista.asd) file.
-We recommend using [quicklisp](http://www.quicklisp.org/beta/) to load Kindista and its packages in your slime or slimv [REPL](http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop).
 
 After you've completed the above steps, open one of the Kindista lisp files and fire up slime or slimv (type ",c" to start slimv).
 
