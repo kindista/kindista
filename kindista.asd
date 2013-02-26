@@ -73,5 +73,9 @@
                                            (:file "resources")
                                            (:file "search")))
                              (:file "routes")
-                             (:file "main")))))
-
+                             (:file "main")
+                             (:module email
+                                      :serial t
+                                      :components ((:file "base")
+                                                   (:file "gratitude-notification")
+                                                   (:file "email-handlers")))))))
