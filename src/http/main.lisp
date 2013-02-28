@@ -228,6 +228,11 @@
   (setf (header-out :location) url)
   "")
 
+(defun moved-permanently (url)
+  (setf (return-code*) +http-moved-permanently+)
+  (setf (header-out :location) url)
+  "")
+
 (defclass k-acceptor (acceptor) ())
 
 (defmethod acceptor-dispatch-request ((acceptor k-acceptor) request)

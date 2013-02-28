@@ -109,7 +109,9 @@
                    (requests-help-text))
             :search q
             :search-scope (if q "requests" "all")
-            :right (browse-inventory-tags "request" :q q :base base :tags tags)
+            :right (html
+                     (str (donate-sidebar))
+                     (str (browse-inventory-tags "request" :q q :base base :tags tags)))
             :selected "requests")))))))
 
 

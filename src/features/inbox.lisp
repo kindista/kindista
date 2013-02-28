@@ -15,35 +15,83 @@
 ;;; You should have received a copy of the GNU Affero General Public License
 ;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
+;;; TODO
+;;;
+;;; show a dummy inbox to guests
+;;; with a welcome message from Kindista
+
 (in-package :kindista)
 
+(defvar *new-message-index* (make-hash-table :test 'equal :synchronized t :size 500 :rehash-size 1.25))
 
-(defun create-inventory-item (&key type (by *userid*) text tags)
-  (insert-db (list :type type
-                   :by by
-                   :text text
-                   :tags tags
-                   :created (get-universal-time))))
+(defun new-message-card (uri time from-id &key (from-name (getf (db from-id) :name)))
+  (card
+    (html
+      (str (h3-timestamp time))
+      (:p (:a :href uri "A new message") " from " (:a :href (s+ "/people/" (username-or-id from-id)) (str from-name)))
+      (:div :class "actions"
+        (str (card-button "Hide" (s+ uri "/hide") :method "POST"))
+        " &middot; "
+        (str (card-button "Block" (s+ "/people/" (username-or-id from-id) "/block")))
+        " &middot; "
+        (str (card-button "Report" (s+ "/people/" (username-or-id from-id) "/report")))))))
 
-(defun index-inventory-item (id data)
+
+(defroute "/inbox" ()
+  (:get
+    (with-user
+      (standard-page
+
+        "Inbox"
+
+        (html
+          (when *user*
+            (str (card
+                   (menu-horiz "actions"
+                               (html (:a :href "/messages/new" "send a message"))
+                               (html (:a :href "/messages" "view old messages"))))))
+
+          ;; get a list of unread, unhidden messages
+          (str (new-message-card  "/message/1" 3570897552 0)))
+
+        :right (html
+                 (str (donate-sidebar))
+                 (when *user* (str (invite-sidebar))))
+
+
+        :selected "inbox"))))
+
+(defun create-inbox-item (to from message-id time)
+  (acond
+    ((gethash (cons to from) *inbox-item-index*)
+     (modify-db it :time time :uri (strcat "/discuss/private/" from) :many t))
+
+    (t
+      (setf (gethash (cons to from) *inbox-item-index*)
+            (insert-db (list :type :inbox-item
+                             :to to
+                             :from from
+                             :uri (strcat "/message/" message-id)
+                             :time time
+                             ))))))
+
+(defun create-message (&key to (from *userid*) text)
+  (let* ((time (get-universal-time))
+         (id (insert-db (list :type :message
+                              :from from
+                              :to to
+                              :text text
+                              :created time))))
+    (dolist (recipient to)
+      (create-inbox-item recipient from id time))))
+
+(defun index-message (id data)
   (let* ((by (getf data :by))
          (type (getf data :type))
-         (result (make-result :latitude (or (getf data :lat) (getf (db (getf data :by)) :lat))
-                              :longitude (or (getf data :long) (getf (db (getf data :by)) :long))
-                              :id id
-                              :type type
-                              :people (list by)
-                              :time (or (getf data :edited) (getf data :created))
-                              :tags (getf data :tags))))
+         )
 
-    (with-locked-hash-table (*db-results*)
-      (setf (gethash id *db-results*) result))
-
-    (if (eq type :resource)
-      (with-locked-hash-table (*resource-index*)
-        (push id (gethash by *resource-index*)))
-      (with-locked-hash-table (*request-index*)
-        (push id (gethash by *request-index*))))
+    (with-locked-hash-table (*discussion-index*)
+      (push (gethash (list :pair (getf data :to) (getf data :from)) *discussion-index*) id))
 
     (let ((stems (stem-text (getf data :text))))
       (if (eq type :resource)

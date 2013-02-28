@@ -77,14 +77,16 @@
 
 (defun activity-item (&key id url content time next-url hearts comments type distance edit user-id)
   (html
-    (:div :class "item" :id id
+    (:div :class "card" :id id
+      ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
       (str (timestamp time :type type :url url))
       (when distance
         (htm
-          (:div :class "distance"
+          (:p :class "distance"
             "within " (str (distance-string distance)))))
       (str content)
       (:div :class "actions"
+        (str (activity-icons :hearts hearts :comments comments :url url))    
         (str (love-button id url next-url))
         (when edit
           (htm
@@ -99,8 +101,7 @@
         (unless (eql user-id *userid*)
           (htm
             " &middot; "
-            (str (flag-button url))))
-        (str (activity-icons :hearts hearts :comments comments :url url))))))
+            (str (flag-button url))))))))
 
 (defun person-link (id)
   (html
@@ -119,20 +120,20 @@
                    :hearts (length (loves item-id))
                    :comments (length (comments item-id))
                    :content (html
-                              (str (person-link user-id))
-                              (str (if (getf data :editied) "edited" " shared "))
-                              (:a :href (strcat "/gratitude/" item-id) "gratitude")
-                              " for "
-                              (fmt "~{~A~^, ~}"
-                                   (iter (for subject in (getf data :subjects))
-                                         (collect (person-link subject))))
+                              (:p (str (person-link user-id))
+                                  (str (if (getf data :editied) "edited" " shared ")) 
+                                  (:a :href (strcat "/gratitude/" item-id) "gratitude") 
+                                  " for "
+                                  (fmt "~{~A~^, ~}"
+                                      (iter (for subject in (getf data :subjects))
+                                            (collect (person-link subject)))))
                               (:blockquote (cl-who:esc (getf data :text)))))))
 
 (defun joined-activity-item (result)
   (html
-    (:div :class "item"
-      (str (timestamp (result-time result)))
-      (str (person-link (first (result-people result)))) " joined Kindista")))
+    (:div :class "card"
+      (str (h3-timestamp (result-time result)))
+      (:p (str (person-link (first (result-people result)))) " joined Kindista"))))
 
 (defun inventory-activity-item (type result &key show-distance show-what next-url)
   (let ((user-id (first (result-people result)))
@@ -141,24 +142,31 @@
                    :user-id user-id
                    :url (strcat "/" type "s/" (result-id result))
                    :time (result-time result)
-                   :distance (when show-distance
-                               (air-distance (result-latitude result)
-                                             (result-longitude result)
-                                             *latitude*
-                                             *longitude*))
                    :next-url next-url
                    :edit (when (eql user-id *userid*) t)
                    :hearts (length (loves (result-id result)))
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")
-                                                 ((string= type "resource") "posted")))
+                                                 ((string= type "resource") "offered")))
                    :content (html
-                              (str (person-link user-id))
-                              (when show-what
-                                (htm
+                              (:p
+                                (str (person-link user-id))
+                                (when show-what
                                   (str (if (getf data :edited) " edited a " " posted a "))
-                                  (:a :href (str (format nil (s+ "/" type "s/~d") (result-id result))) (str type))))
-                              (:blockquote (cl-who:esc (getf data :text)))))))
+                                  (htm (:a :href (str (format nil (s+ "/" type "s/~d")
+                                                              (result-id result)))
+                                           (str type))))
+                                (when show-distance
+                                  (htm (:small
+                                    " (within "
+                                    (str
+                                      (distance-string
+                                        (air-distance (result-latitude result)
+                                                      (result-longitude result)
+                                                      *latitude*
+                                                      *longitude*)))
+                                    ")")))) 
+                              (:p (cl-who:esc (getf data :text)))))))
 
 (defun activity-items (&key (user *user*) (page 0) (count 20) next-url)
   (with-location

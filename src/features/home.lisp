@@ -17,6 +17,10 @@
 
 (in-package :kindista)
 
+(defroute "/home/" ()
+  (:get
+    (see-other "/home")))
+
 (defroute "/home" ()
   (:get
     (with-user
@@ -145,7 +149,7 @@
                     (when *user*
                       (htm
                         (:div :class "item right only"
-                          (:h3 "People you may know")
+                          (:h3 (:a :href "/people" "People") " with mutual friends")
                           (:menu
                             (dolist (data (suggested-people))
                               (htm
