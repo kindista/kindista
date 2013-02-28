@@ -371,15 +371,12 @@
                      )
 
                    (str (menu (list '("Recent Changes" "home")
+                                    '("Inbox" "inbox") 
                                     '("Requests" "requests")
                                     '("People" "people")
-                                    '("Discussions" "discuss") 
-                                    ;'("Events" "events") 
                                     '("Resources" "resources")
                                     '("About" "about")
-                                    '("Help" "help")
-                                    (when (getf *user* :admin)
-                                      '("Admin" "admin")))
+                                    '("Help and Feedback" "help"))
                               selected))
 
                    (:a :class "dark" :href "#top"
