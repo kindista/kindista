@@ -663,6 +663,10 @@ body.landing > p {
  overflow: hidden;
 }
 
+.card:last-child {
+ border-bottom: none;
+}
+
 .card > img {
  display: block;
  float: left;
@@ -878,7 +882,11 @@ input::-moz-focus-inner {
  width:1em;
  height:1em;
  vertical-align:middle;
- margin:0 0.5em 0 0;
+ margin:0 0.5em 0 0.75em;
+}
+
+.card .icons img:first-child {
+ margin-left: 0;
 }
 
 .actions > form, .basics > form {

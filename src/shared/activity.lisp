@@ -127,7 +127,7 @@
                                   (fmt "~{~A~^, ~}"
                                       (iter (for subject in (getf data :subjects))
                                             (collect (person-link subject)))))
-                              (:blockquote (cl-who:esc (getf data :text)))))))
+                              (:p (cl-who:esc (getf data :text)))))))
 
 (defun joined-activity-item (result)
   (html
