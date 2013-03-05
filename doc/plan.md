@@ -52,8 +52,8 @@ Invitations
 Admin Interface
 
 People
-    [ ] redesign People page
-        [ ] make new more textual layout for person-tile
+    [X] redesign People page
+        [X] make new more textual layout for person-tile
         [ ] add a "Looking for someone?" wizard/helper form to the top of the page
         [ ] add a "Nearby groups"
     [ ] write meaningful essay questions for the "About" page on profiles
@@ -82,11 +82,11 @@ Metrics
 
 Task Queue
     # For follow-up and background actions that do not take place inside a request
-    [ ] create task queue
-        [ ] create task runner thread loop
+    [X] create task queue
+        [X] create task runner thread loop
 
 Renew SSL
-    [ ] renew SSL certificate for kindista.org
+    [X] renew SSL certificate for kindista.org
 
 Help and Feedback
   [ ] index page written
