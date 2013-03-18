@@ -67,6 +67,7 @@
                                            (:file "groups")
                                            (:file "help")
                                            (:file "home")
+                                           (:file "legacy")
                                            (:file "love")
                                            (:file "messages")
                                            (:file "people")
