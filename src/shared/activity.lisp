@@ -121,9 +121,30 @@
                    :comments (length (comments item-id))
                    :content (html
                               (:p (str (person-link user-id))
-                                  (str (if (getf data :editied) "edited" " shared ")) 
+                                  (str (if (getf data :editied) " edited " " shared ")) 
                                   (:a :href (strcat "/gratitude/" item-id) "gratitude") 
                                   " for "
+                                  (fmt "~{~A~^, ~}"
+                                      (iter (for subject in (getf data :subjects))
+                                            (collect (person-link subject)))))
+                              (:p (cl-who:esc (getf data :text)))))))
+
+(defun gift-activity-item (result &key next-url)
+  (let* ((user-id (first (result-people result)))
+         (item-id (result-id result))
+         (data (db item-id)))
+    (activity-item :id item-id
+                   :user-id user-id
+                   :url (strcat "/gift/" item-id)
+                   :time (result-time result)
+                   :next-url next-url
+                   :hearts (length (loves item-id))
+                   :comments (length (comments item-id))
+                   :content (html
+                              (:p (str (person-link user-id))
+                                  " gave a "
+                                  (:a :href (strcat "/gift/" item-id) "gift") 
+                                  " to "
                                   (fmt "~{~A~^, ~}"
                                       (iter (for subject in (getf data :subjects))
                                             (collect (person-link subject)))))
@@ -187,6 +208,8 @@
                    (case (result-type item)
                      (:gratitude
                        (str (gratitude-activity-item item :next-url next-url)))
+                     (:gift
+                       (str (gift-activity-item item :next-url next-url)))
                      (:person
                        (str (joined-activity-item item)))
                      (:resource
