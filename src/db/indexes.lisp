@@ -21,6 +21,7 @@
 (defvar *activity-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *event-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *activity-person-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *person-invitation-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *resource-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *resource-geo-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *resource-stem-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))

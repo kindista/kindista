@@ -80,6 +80,11 @@
 (defun string-intersection (list1 list2)
   (intersection list1 list2 :test #'string=))
 
+(defun emails-from-string (string)
+  (iter (for email in (split " " (ppcre:regex-replace-all "," (string-downcase string) " ")))
+        (when (ppcre:scan +email-scanner+ email)
+          (collect email))))
+
 (defun activity-rank (item)
   ; is it from a friend?
   ; how many people like it

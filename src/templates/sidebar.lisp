@@ -26,7 +26,13 @@
 (defun invite-sidebar ()
   (with-user
     (when *user*
-      (html
-        (:div :class "item right only"
-          (:h3 (:a :href "/invite" "Invite friends"))
-          (:p "Kindista is invitation-only. As a Kindista member, you can invite people you know to join. " (:a :href "/faq/" "How does this work?")))))))
+      (let ((invitations (available-invitation-count *userid*)))
+        (html
+          (:div :class "item right only"
+            (:h3 (:a :href "/invite" "Invite friends"))
+            (:p "Kindista is invitation-only. As a Kindista member, you can invite people you know to join. ") 
+            (:p "You currently have " (:strong (str invitations)) " available invitations.") 
+            (when (> invitations 0) 
+              (htm (:a :class "anchor-button" :href "/invite" "Invite Friends"))) 
+            (:a :href "/faq/" "How does this work?")))))))
+

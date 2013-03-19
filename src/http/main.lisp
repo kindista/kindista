@@ -182,7 +182,7 @@
   `(with-user
      (if *userid*
        (progn ,@body)
-       (see-other "/signup?action=true"))))
+       (see-other "/home"))))
 
 (defmacro require-test ((test &optional message) &body body)
   `(if ,test
@@ -222,6 +222,12 @@
                 :http-only t
                 :expires 0
                 :secure nil)))
+
+(defun reset-token-cookie ()
+  (awhen (cookie-in "token")
+    (awhen (gethash it *tokens*)
+      (remhash it *tokens*))
+    (start-token))) 
 
 (defun see-other (url)
   (setf (return-code*) +http-see-other+)
@@ -284,6 +290,7 @@
                               (cadr item)
                               (or (caddr item) (cadr item))
                               (string= selected (cadr item)))))))))
+
 (defun welcome-bar (content &optional (hide t))
   (html
     (:div :class "welcome"
@@ -370,12 +377,12 @@
                              (:a :href "/logout" "Log out")))))
                      )
 
-                   (str (menu (list '("Recent Changes" "home")
+                   (str (menu (list '("Activity" "home")
+                                    '("Resources" "resources")
                                     '("Requests" "requests")
                                     '("People" "people")
                                     '("Discussions" "discuss") 
                                     ;'("Events" "events") 
-                                    '("Resources" "resources")
                                     '("About" "about")
                                     '("Help" "help")
                                     (when (getf *user* :admin)

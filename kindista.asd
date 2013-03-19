@@ -61,6 +61,7 @@
                                            (:file "admin")
                                            (:file "comments")
                                            (:file "discussions")
+                                           (:file "invitations")
                                            (:file "donate")
                                            (:file "events")
                                            (:file "gratitude")
@@ -71,11 +72,13 @@
                                            (:file "people")
                                            (:file "requests")
                                            (:file "resources")
+                                           (:file "signup")
                                            (:file "search")))
                              (:file "routes")
                              (:file "main")
                              (:module email
                                       :serial t
                                       :components ((:file "base")
+                                                   (:file "invitation")
                                                    (:file "gratitude-notification")
                                                    (:file "email-handlers")))))))

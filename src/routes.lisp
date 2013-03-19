@@ -55,82 +55,9 @@
 ;                      " &middot; Programmed in Common Lisp"))
 ;                      ))))
 
-(defun signup-page (&key error name email password)
-  (standard-page
-    "Sign up"
-    (html
-      (:form :method "POST" :action "/signup" :id "signup"
-        (:h2 "Create an account") 
-        (when error
-          (htm (:p :class "error" (str error)))) 
-        (:label :for "name" "Full name") 
-        (:input :type "text" :name "name" :value name) 
-        (:label :for "email" "Email") 
-        (:input :type "email" :name "email" :value (or email (get-parameter "email"))) 
-        (:label :for "name" "Password") 
-        (:input :type "password" :name "password" :value password) 
-        (:input :type "submit" :value "Sign up") 
-
-        (:p "Have an account? " (:a :href "/login" "Log in")) 
-
-        (:p :class "fineprint" "By creating an account, you are agreeing to our "
-          (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))))
-    :top (when (get-parameter "action")
-           (welcome-bar
-             (html
-               "If you want to do more than browse and search Kindista, you'll need to "
-               (:a :href "/signup" "create an account") ". Or, " (:a :href "/login" "log in")
-               " if you've already got one!")
-             nil))))
-
 (defroute "/signup" ()
-  (:get
-    (with-user
-      (if *user*
-        (see-other "/home")
-        (signup-page))))
-  (:post
-    (with-user
-      (if *user*
-        (see-other "/home")
-        (let ((userid (gethash (post-parameter "email") *email-index*)))
-          (cond
-            ((password-match-p userid (post-parameter "password"))
-
-             (setf (token-userid *token*) username)
-
-             (see-other "/home"))
-
-            (userid
-             (see-other (s+ "/forgot?email=" (post-parameter "email"))))
-
-            ((not (and (< 0 (length (post-parameter "name")))
-                       (< 0 (length (post-parameter "email")))
-                       (< 0 (length (post-parameter "password")))))
-
-             (signup-page :error "All fields are required"
-                          :name (post-parameter "name")
-                          :email (post-parameter "email")
-                          :password (post-parameter "password")))
-
-            ((> 7 (length (post-parameter "password")))
-
-             (signup-page :error "Please use a strong password"
-                          :name (post-parameter "name")
-                          :email (post-parameter "email")))
-
-            ((not (find #\Space (post-parameter "name")))
-
-             (signup-page :error "Please use your full name"
-                          :name (post-parameter "name")
-                          :email (post-parameter "email")
-                          :password (post-parameter "password")))
-
-            (t
-             (setf (token-userid *token*) (create-person :name (post-parameter "name")
-                                                         :email (post-parameter "email")
-                                                         :password (post-parameter "password")))
-             (see-other "/home"))))))))
+  (:get (get-signup))
+  (:post (post-signup)))
 
 (defroute "/logout" ()
   (:get
@@ -188,6 +115,11 @@
            (notice :auth-failure "")
            ""))))))
 
+(defroute "/invite" ()
+  (:get
+    (require-user (get-invite-page)))
+  (:post
+    (require-user (post-invite-page))))
 
 (defroute "/friends" ()
   (:get
