@@ -824,14 +824,13 @@ body.landing > p {
  }
 }
 
-.item blockquote {
+.card blockquote {
  position:relative;
  margin:1em 0;
  padding:0;
 }
 
-/*
-.item blockquote:before {
+.card blockquote:before {
  content:"“";
  position:absolute;
  top:-0.35em;
@@ -839,14 +838,13 @@ body.landing > p {
  color:#bbb;
 }
 
-.item blockquote:after {
+.card blockquote:after {
  content:"”";
  position:absolute;
  bottom:-0.75em;
  right:-1em;
  color:#bbb;
 }
-*/
 
 .card .actions {
  clear: left;
