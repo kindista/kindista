@@ -28,7 +28,7 @@ sender
 "Please click on this link or copy and paste it into your browser"
 " to RSVP: 
 "
-(url-compose (s+ +hostname+ "/signup")
+(url-compose (s+ +base-url+ "/signup")
              "id" invitation-id
              "email" to)
 
@@ -75,10 +75,10 @@ You will then have the option to join Kindista, or decline the "
           "Please click on this link or copy and paste it into your browser"
           " to RSVP: "
           (:br)
-          (:a :href (url-compose (s+ +hostname+ "/signup")
+          (:a :href (url-compose (s+ +base-url+ "/signup")
                                  "id" invitation-id
                                  "email" to)
-                    (str (url-compose (s+ +hostname+ "/signup")
+                    (str (url-compose (s+ +base-url+ "/signup")
                                       "id" invitation-id
                                       "email" to))))
 
