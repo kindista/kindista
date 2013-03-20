@@ -17,10 +17,11 @@
 
 (in-package :kindista)
 
-(defun create-person (&key name email password)
+(defun create-person (&key name email password host)
   (insert-db `(:type :person
                :name ,name
                :email ,email
+               :host ,host
                :help t
                :pass ,(new-password password)
                :created ,(get-universal-time))))
@@ -214,7 +215,7 @@
      (:img :class "bigavatar" :src (strcat "/media/avatar/" userid ".jpg"))
      (:div :class "basics"
        (:h1 (str (getf user :name)))
-       (:p :class "city" "Eugene, OR")
+       (:p :class "city" (str (getf *user* :city)))
      (unless (eql userid *userid*)
        (htm 
          (:form :method "GET" :action (strcat *base-url* "/message")

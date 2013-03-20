@@ -34,7 +34,7 @@
                (:menu :class "horiz"
                  (:strong "actions")
                  (:li (:a :href "/gratitude/new" "express gratitude"))
-                 (:li (:a :href "/resource/new" "offer a resource"))
+                 (:li (:a :href "/resources/new" "offer a resource"))
                  (:li (:a :href "/requests/new" "make a request"))
                  ;(:li (:a :href "/events/new" "event"))
                  ;(:li (:a :href "/announcements/new" "post announcement"))
@@ -147,14 +147,16 @@
                     |#
 
                     (when *user*
-                      (htm
-                        (:div :class "item right only"
-                          (:h3 (:a :href "/people" "People") " with mutual friends")
-                          (:menu
-                            (dolist (data (suggested-people))
-                              (htm
-                                (:li (:a :href (strcat "/people/" (username-or-id (cdr data)))
-                                         (str (getf (db (cdr data)) :name)))))))))))))
+                      (let (people (suggested-people))
+                        (when people
+                          (htm
+                            (:div :class "item right only"
+                              (:h3 (:a :href "/people" "People") " with mutual friends")
+                              (:menu
+                                (dolist (data (suggested-people))
+                                  (htm
+                                    (:li (:a :href (strcat "/people/" (username-or-id (cdr data)))
+                                             (str (getf (db (cdr data)) :name)))))))))))))))
         ((and (getf *user* :lat)
               (getf *user* :long))
 

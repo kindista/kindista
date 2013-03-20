@@ -262,7 +262,7 @@
              (confirm-delete :url (s+ "/gratitude/" id "/edit")
                              :type "gratitude"
                              :text (getf gratitude :text)
-                             :next-url(referer)))
+                             :next-url (referer)))
             ((post-parameter "really-delete")
              (delete-gratitude (parse-integer id))
              (flash "Your statement of gratitude has been deleted!")

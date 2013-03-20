@@ -19,10 +19,14 @@
 
 
 (defun person-card (id name &rest items)
-  (html
-    (:div :class "card"
-      (:img :src (strcat "/media/avatar/" id ".jpg"))
-      (:h3 (:a :href (strcat "/people/" (username-or-id id))
-             (str name)))
-      (:p "Something about this person.")
-      (:p "Another thing about this person."))))
+  (let ((mutuals (mutual-connections id)))
+    (html
+      (:div :class "card"
+        (:img :src (strcat "/media/avatar/" id ".jpg"))
+        (:h3 (:a :href (strcat "/people/" (username-or-id id))
+               (str name)))
+        (:p "Lives in " (str (getf *user* :city)))    
+        (when mutuals
+          (htm (:p (:a :href (strcat "/people/" id "/connections" ) 
+                   (str (strcat (length mutuals) " mutual connection")) 
+                   (str (when (> (length mutuals) 1) "s"))))))))))

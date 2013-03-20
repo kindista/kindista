@@ -19,16 +19,12 @@
 
 (declaim (optimize (speed 0) (safety 3) (debug 3)))
 
-(defun timestamp (time &key type url)
-  (let ((inner (html
-                 (when type
-                   (htm (str type) " "))
-                 (str (humanize-universal-time time)))))
-    (html
-      (:h3 :class "timestamp" :data-time time :data-type type
-        (if url
-          (htm (:a :href url (str inner)))
-          (str inner))))))
+(defun timestamp (time &key type)
+  (html
+    (:h3 :class "timestamp" :data-time time :data-type type
+       (when type
+         (htm (str type) " "))
+       (str (humanize-universal-time time)))))
 
 (defun love-button (id url &optional next-url)
   (html
@@ -68,18 +64,18 @@
         (htm
           (:img :alt "love:" :src "/media/icons/heart16.png") 
           ;(:span :class "unicon" "♥ ")
-          (str hearts))) 
+          (:span (str hearts)))) 
       (when comments
         (htm
           (:img :alt "comments:" :src "/media/icons/comment16.png") 
           ;(:span :class "unicon" " ✎ ")
-          (str comments))))))
+          (:span (str comments)))))))
 
 (defun activity-item (&key id url content time next-url hearts comments type distance edit user-id)
   (html
     (:div :class "card" :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
-      (str (timestamp time :type type :url url))
+      (str (timestamp time :type type))
       (when distance
         (htm
           (:p :class "distance"
@@ -153,7 +149,7 @@
 (defun joined-activity-item (result)
   (html
     (:div :class "card"
-      (str (h3-timestamp (result-time result)))
+      (str (timestamp (result-time result)))
       (:p (str (person-link (first (result-people result)))) " joined Kindista"))))
 
 (defun inventory-activity-item (type result &key show-distance show-what next-url)

@@ -293,7 +293,9 @@
   (standard-page title
     (html
       (:div :class "item"
-         (htm (:h2 title))
+         (:h2 (if (equal selected "resources")
+                (str "Please describe the resource you are offering")
+                (str "Please describe your request")))
          (:form :method "post" :action action
            (:textarea :cols "40" :rows "8" :name "text" (str text))
            (:p  (:button :class "no" :type "submit" :class "cancel" :name "cancel" "Cancel")

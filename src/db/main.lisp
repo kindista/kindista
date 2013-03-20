@@ -361,12 +361,14 @@
                    *timeline-index*
                    *metaphone-index*
                    *username-index*
+                   *person-invitation-index*
                    *email-index*))
     (clrhash index)))
 
 (defun index-item (id data)
   (case (getf data :type)
     (:comment (index-comment id data))
+    (:invitation (index-invitation id data))
     (:gratitude (index-gratitude id data))
     ((or :resource :request) (index-inventory-item id data))
     (:person (index-person id data))))

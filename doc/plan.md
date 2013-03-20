@@ -22,6 +22,10 @@ User Interface
 
 Resources
 
+Timezones
+    [ ] store timezone for each user.
+    [ ] add timezone support in shared/time.lisp 
+
 Requests
 
 Database
@@ -36,18 +40,15 @@ Donations
 Invitations
     # A limited resource
     [ ] change site text wording to indicate that accounts require invitations
-    [ ] modify account creation workflow to require invitation
-    [ ] create 2 new invitations for a new user on creation
-    [ ] create 2 new invitations for a user after first request
-    [ ] create 2 new invitations for a user after first resource
-    [ ] create 2 new invitations for a user after first gratitude given
-    [ ] create 2 new invitations for a user after first gratitude received
-    [ ] create 8 new invitations for a user after completing profile
-    [ ] user gets an invitation credited back to their account when one of their invitees: completes profile, posts a resource, and gives gratitude
-    [ ] invitations are stored by codes (preallocated)
-    [ ] enabling/validating an invitation sets the :valid-until field to a future date
-    [ ] expire initations when :valid-until is in the past
-    [ ] modify signup form to require an invite code
+    [X] modify account creation workflow to require invitation
+    [X] create 10 new invitations for a new user on creation
+    [X] add expiration date and invitation IDs to invitation emails
+    [X] allow invitees to decline invitations on the signup page
+    [X] display the invitation number on the signup page
+    [ ] notify Kindista administrators when someone is down to their last invitation, so we can give them more if we want to
+    [X] enabling/validating an invitation sets the :valid-until field to a future date
+    [X] expire initations when :valid-until is in the past
+    [X] modify signup form to require an invite code
 
 Admin Interface
 
