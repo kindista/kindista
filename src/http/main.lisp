@@ -182,7 +182,7 @@
   `(with-user
      (if *userid*
        (progn ,@body)
-       (see-other "/"))))
+       (see-other "/home"))))
 
 (defmacro require-test ((test &optional message) &body body)
   `(if ,test

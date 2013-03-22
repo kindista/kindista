@@ -23,7 +23,7 @@
 
 (defroute "/home" ()
   (:get
-    (require-user
+    (with-user
       (cond
         ((or (getf *user* :location) (not *user*))
          (notice :home "")

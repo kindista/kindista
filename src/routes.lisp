@@ -19,10 +19,41 @@
 
 (defroute "/" () 
   (:get
-    (with-user
-      (if *user*
-        (see-other "/home")   
-        (root-page)))))
+    (see-other "/home"))) 
+;    (with-user
+;      (if *user*
+;        (base-page "Welcome"
+;                 (html
+;                   (:img :id "logo" :src "/media/logo.png")
+;                   (:form :method "POST" :action "/login" :id "login"
+;                     (awhen (get-parameter "retry")
+;                       (htm (:p :class "error" "The email/username or password was incorrect.")
+;                            (unless (string= it "")
+;                                (htm (:p (:a :href (s+ "/signup?email=" it)
+;                                             "Would you like to create an account?"))))))
+;                     (awhen (get-parameter "next")
+;                       (htm (:input :type "hidden" :name "next" :value it)))
+;                     (:label :for "username" "Username or email")
+;                     (:input :type "text" :name "username" :value (get-parameter "retry"))
+;                     (:label :for "password" "Password")
+;                     (:input :type "password" :name "password")
+;                     (:input :type "submit" :value "Log in")
+;                     (:p (:a :href "/reset" "Forgot your password?"))
+;                     (:p "New to Kindista?"
+;                      (:br)
+;                      (:a :href "/signup" "Create an account")))
+;                   (:div :id "about"
+;                    (:h2 "Uncovering a wealth of human connection.")
+;                    (:p :class "big"
+;                      "Kindista is a new social network for seeing and appreciating the
+;                       creative potential in all people and supporting each other
+;                       in building the more beautiful world our hearts know is possible."))
+;                  (:p "Kindista &copy; 2012 &middot; "
+;                      (:a :href "/help" "Help") " &middot; "
+;                      (:a :href "/about" "About") " &middot; "
+;                      (:a :href "/blog" "Blog")
+;                      " &middot; Programmed in Common Lisp"))
+;                      ))))
 
 (defroute "/signup" ()
   (:get (get-signup))
