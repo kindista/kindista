@@ -19,11 +19,11 @@
 
 (defroute "/home/" ()
   (:get
-    (see-other "/home")))
+    (moved-permanently "/home")))
 
 (defroute "/home" ()
   (:get
-    (with-user
+    (require-user
       (cond
         ((or (getf *user* :location) (not *user*))
          (notice :home "")

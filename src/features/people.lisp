@@ -215,7 +215,7 @@
      (:img :class "bigavatar" :src (strcat "/media/avatar/" userid ".jpg"))
      (:div :class "basics"
        (:h1 (str (getf user :name)))
-       (:p :class "city" (str (getf *user* :city)))
+       (:p :class "city" (str (getf *user* :city)) ", " (str (getf *user* :state)))
      (unless (eql userid *userid*)
        (htm 
          (:form :method "GET" :action (strcat *base-url* "/message")

@@ -19,41 +19,10 @@
 
 (defroute "/" () 
   (:get
-    (see-other "/home"))) 
-;    (with-user
-;      (if *user*
-;        (base-page "Welcome"
-;                 (html
-;                   (:img :id "logo" :src "/media/logo.png")
-;                   (:form :method "POST" :action "/login" :id "login"
-;                     (awhen (get-parameter "retry")
-;                       (htm (:p :class "error" "The email/username or password was incorrect.")
-;                            (unless (string= it "")
-;                                (htm (:p (:a :href (s+ "/signup?email=" it)
-;                                             "Would you like to create an account?"))))))
-;                     (awhen (get-parameter "next")
-;                       (htm (:input :type "hidden" :name "next" :value it)))
-;                     (:label :for "username" "Username or email")
-;                     (:input :type "text" :name "username" :value (get-parameter "retry"))
-;                     (:label :for "password" "Password")
-;                     (:input :type "password" :name "password")
-;                     (:input :type "submit" :value "Log in")
-;                     (:p (:a :href "/reset" "Forgot your password?"))
-;                     (:p "New to Kindista?"
-;                      (:br)
-;                      (:a :href "/signup" "Create an account")))
-;                   (:div :id "about"
-;                    (:h2 "Uncovering a wealth of human connection.")
-;                    (:p :class "big"
-;                      "Kindista is a new social network for seeing and appreciating the
-;                       creative potential in all people and supporting each other
-;                       in building the more beautiful world our hearts know is possible."))
-;                  (:p "Kindista &copy; 2012 &middot; "
-;                      (:a :href "/help" "Help") " &middot; "
-;                      (:a :href "/about" "About") " &middot; "
-;                      (:a :href "/blog" "Blog")
-;                      " &middot; Programmed in Common Lisp"))
-;                      ))))
+    (with-user
+      (if *user*
+        (see-other "/home")   
+        (root-page)))))
 
 (defroute "/signup" ()
   (:get (get-signup))
@@ -116,10 +85,8 @@
            ""))))))
 
 (defroute "/invite" ()
-  (:get
-    (require-user (get-invite-page)))
-  (:post
-    (require-user (post-invite-page))))
+  (:get (require-user (get-invite-page)))
+  (:post (require-user (post-invite-page))))
 
 (defroute "/friends" ()
   (:get
@@ -145,80 +112,8 @@
            (see-other "/home")))))))
 
 (defroute "/settings" ()
-  (:get
-    ":-)")
-  (:post
-    (require-user
-      (cond
-        ((post-parameter "bio-doing")
-         (unless (getf *user* :bio)
-           (modify-db *userid* :bio t))
-         (modify-db *userid* :bio-doing (post-parameter "bio-doing"))
-         (see-other (or (post-parameter "next") "/home")))
-        ((post-parameter "bio-summary")
-         (unless (getf *user* :bio)
-           (modify-db *userid* :bio t))
-         (modify-db *userid* :bio-summary (post-parameter "bio-summary"))
-         (see-other (or (post-parameter "next") "/home")))
-        ((post-parameter "bio-into")
-         (unless (getf *user* :bio)
-           (modify-db *userid* :bio t))
-         (modify-db *userid* :bio-into (post-parameter "bio-into"))
-         (see-other (or (post-parameter "next") "/home")))
-        ((post-parameter "bio-contact")
-         (unless (getf *user* :bio)
-           (modify-db *userid* :bio t))
-         (modify-db *userid* :bio-contact (post-parameter "bio-contact"))
-         (see-other (or (post-parameter "next") "/home")))
-        ((post-parameter "bio-skills")
-         (unless (getf *user* :bio)
-           (modify-db *userid* :bio t))
-         (modify-db *userid* :bio-skills (post-parameter "bio-skills"))
-         (see-other (or (post-parameter "next") "/home")))
-
-        ((post-parameter "address")
-         (multiple-value-bind (lat long address city state country street zip)
-             (geocode-address (post-parameter "address"))
-           (declare (ignore country))
-           (modify-db *userid* :lat lat :long long :address address :city city :state state :street street :zip zip)
-           (see-other (or (post-parameter "next") "/home"))))
-
-        ((post-parameter "reset-location")
-         (modify-db *userid* :lat nil :long nil :address nil :location nil)
-         (see-other (or (post-parameter "next") "/home")))
-
-        ((scan +number-scanner+ (post-parameter "rdist"))
-         (modify-db *userid* :rdist (parse-integer (post-parameter "rdist")))
-         (flash "Your search distance for resources and requests has been changed!")
-         (see-other (or (post-parameter "next") "/requests")))
-
-        ((scan +number-scanner+ (post-parameter "sdist"))
-         (modify-db *userid* :rdist (parse-integer (post-parameter "sdist")))
-         (flash "Your default search distance has been changed!")
-         (see-other (or (post-parameter "next") "/requests")))
-
-        ((scan +number-scanner+ (post-parameter "distance"))
-         (modify-db *userid* :distance (parse-integer (post-parameter "distance")))
-         (flash (format nil "Now showing activity within ~a miles." (post-parameter "distance")))
-         (see-other (or (post-parameter "next") "/home")))
-
-        ((equalp (post-parameter "help") "0")
-         (modify-db *userid* :help nil)
-         (see-other (or (referer) "/home")))
-
-        ((equalp (post-parameter "help") "1")
-         (modify-db *userid* :help t)
-         (see-other (or (referer) "/home")))
-
-        ((and (post-parameter "confirm-location")
-              (getf *user* :lat)
-              (getf *user* :long))
-         (modify-db *userid* :location t)
-         (see-other (or (post-parameter "next") "/home")))
-
-        (t
-         (flash "Sorry, couldn't make sense of that request to update your settings.")
-         (see-other "/home"))))))
+  (:get (require-user (get-settings)))
+  (:post (require-user (post-settings))))
 
 (defroute "/events" ()
   (:get

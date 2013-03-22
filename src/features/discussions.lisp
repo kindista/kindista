@@ -41,7 +41,7 @@
         (html
           (:h1 "Discussions") 
             (str (menu-horiz "actions"
-                             (html (a :href "/message/new" "send a message"))))
+                             (html (:a :href "/message/new" "send a message"))))
 
             ; get a list of unread, unhidden messages
             (str (new-message-card  "/message/123" 3570897552 1))
