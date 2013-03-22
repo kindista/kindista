@@ -223,7 +223,7 @@
          (:form :method "POST" :action "/friends"
            (:input :type "hidden" :name (if is-friend "remove" "add") :value userid)
            (:input :type "hidden" :name "next" :value *base-url*)
-           (:input :class (when is-friend "cancel") :type "submit" :value (if is-friend "Remove friend" "Add as friend")))))))))
+           (:input :class (when is-friend "cancel") :type "submit" :value (if is-friend "Remove from contacts" "Add to contacts")))))))))
 
 (defun profile-activity-html (userid &key type)
   (let* ((user (db userid))

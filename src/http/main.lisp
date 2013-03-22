@@ -229,6 +229,12 @@
       (remhash it *tokens*))
     (start-token))) 
 
+(defun markdown-file (path)
+  (multiple-value-bind (doc text)
+      (markdown (pathname path) :stream nil)
+    (declare (ignore doc))
+    text))
+
 (defun see-other (url)
   (setf (return-code*) +http-see-other+)
   (setf (header-out :location) url)
@@ -383,11 +389,17 @@
                                     '("People" "people")
                                     '("Discussions" "discuss") 
                                     ;'("Events" "events") 
-                                    '("About" "about")
-                                    '("Help" "help")
+                                    '("Help & Feedback" "help")
                                     (when (getf *user* :admin)
                                       '("Admin" "admin")))
                               selected))
+
+                   (:div :id "fine-print-links"
+                    (:a :href "/about" "about")
+                    " &middot; "
+                    (:a :href "/terms" "terms")
+                    " &middot; "
+                    (:a :href "/privacy" "privacy"))
 
                    (:a :class "dark" :href "#top"
                        "Back to the top")

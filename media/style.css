@@ -639,6 +639,19 @@ body.landing > p {
  vertical-align:middle;
 }
 
+#fine-print-links {
+ color: #999;
+ width: 100%;
+ margin-top: .5em;
+ text-align: center;
+}
+
+#fine-print-links a {
+ color: #999;
+ display: inline-block;
+ padding: .3em;
+}
+
 .icon {
  width:1.5em;
  height:1.5em;
@@ -1479,4 +1492,67 @@ body.donate {
  display: block;
  margin-bottom: 0.25em;
  font-weight: bold;
+}
+
+.legal {
+ max-width: 800px;
+ width: 100%;
+ line-height: 1.4em;
+ margin: 0 1em 0 1em;
+ padding-right: .8em;
+ font-size: 1em;
+}
+
+.legal li {
+ list-style-type: inherit;
+}
+
+.legal ol {
+ list-style-type: decimal;
+ padding-left: 1.5em;
+}
+
+.legal li > ol {
+ padding-left: 1.5em;
+}
+
+.legal ul {
+ list-style-type: disc;
+ padding-left: 1.2em;
+}
+
+.legal p, .legal li {
+ margin-top: 10px;
+}
+
+#privacy ol {
+ list-style-type: lower-alpha;
+}
+
+#privacy li > ul {
+ list-style-type: none;
+}
+
+#privacy ol > li {
+ margin-top: 0;
+ padding-bottom: .5em;
+}
+
+.faqs li {
+ list-style-type: disc;
+ padding-bottom: .35em;
+}
+
+.faqs p {
+ margin-top: .6em;
+}
+
+#questions li {
+ list-style-type: none;
+ padding-bottom: .35em;
+}
+
+#questions ul {
+ padding-left: 1em;
+ margin-top: .25em;
 }

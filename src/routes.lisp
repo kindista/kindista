@@ -220,6 +220,26 @@
          (flash "Sorry, couldn't make sense of that request to update your settings.")
          (see-other "/home"))))))
 
+(defroute "/help" () 
+  (:get 
+    (with-user
+      (get-help-page))))
+
+(defroute "/help/faqs" ()
+  (:get
+    (with-user
+      (get-faqs-page))))
+
+(defroute "/terms" ()
+  (:get
+    (with-user
+      (terms-html))))
+
+(defroute "/privacy" ()
+  (:get
+    (with-user
+      (privacy-html))))
+
 (defroute "/events" ()
   (:get
     (require-user

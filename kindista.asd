@@ -70,10 +70,12 @@
                                            (:file "home")
                                            (:file "love")
                                            (:file "people")
+                                           (:file "privacy")
                                            (:file "requests")
                                            (:file "resources")
                                            (:file "signup")
-                                           (:file "search")))
+                                           (:file "search")
+                                           (:file "terms")))
                              (:file "routes")
                              (:file "main")
                              (:module email
