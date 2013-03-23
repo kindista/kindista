@@ -25,7 +25,7 @@
         (:img :src (strcat "/media/avatar/" id ".jpg"))
         (:h3 (:a :href (strcat "/people/" (username-or-id id))
                (str name)))
-        (:p "Lives in " (str (getf *user* :city)))    
+        (:p "Lives in " (str (getf *user* :city)) ", " (str (getf *user* :state)))    
         (when mutuals
           (htm (:p (:a :href (strcat "/people/" id "/connections" ) 
                    (str (strcat (length mutuals) " mutual connection")) 

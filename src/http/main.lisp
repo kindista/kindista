@@ -311,7 +311,7 @@
     "<!DOCTYPE html>"
     (:html
       (:head
-        (:title (if title (str (s+ title " | Kindista")) "Kindista"))
+        (:title (str (if title (s+ title " | Kindista") "Kindista")))
         (:meta :charset "utf-8")
         (:meta :name "viewport" :content "width=device-width,initial-scale=1.0,maximum-scale=1.0")
         (:meta :name "HandheldFriendly" :content "True")
@@ -387,7 +387,7 @@
                                     '("Resources" "resources")
                                     '("Requests" "requests")
                                     '("People" "people")
-                                    '("Discussions" "discuss") 
+                                    '("Discussions" "discuss")
                                     ;'("Events" "events") 
                                     '("Help & Feedback" "help")
                                     (when (getf *user* :admin)
@@ -402,9 +402,7 @@
                     (:a :href "/privacy" "privacy"))
 
                    (:a :class "dark" :href "#top"
-                       "Back to the top")
-                   )
-                 )
+                       "Back to the top")))
                :class (cond
                         ((and right class) (s+ "right " class))
                         (right "right")
