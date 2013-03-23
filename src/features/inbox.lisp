@@ -15,6 +15,11 @@
 ;;; You should have received a copy of the GNU Affero General Public License
 ;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
+;;; TODO
+;;;
+;;; show a dummy inbox to guests
+;;; with a welcome message from Kindista
+
 (in-package :kindista)
 
 (defvar *new-message-index* (make-hash-table :test 'equal :synchronized t :size 500 :rehash-size 1.25))
@@ -31,30 +36,30 @@
         " &middot; "
         (str (card-button "Report" (s+ "/people/" (username-or-id from-id) "/report")))))))
 
-(defroute "/discuss" ()
+
+(defroute "/inbox" ()
   (:get
-    (require-user
+    (with-user
       (standard-page
 
-        "Discussions"
+        "Inbox"
 
         (html
-          (:h1 "Discussions") 
-            (str (menu-horiz "actions"
-                             (html (:a :href "/message/new" "send a message"))))
+          (when *user*
+            (str (card
+                   (menu-horiz "actions"
+                               (html (:a :href "/messages/new" "send a message"))
+                               (html (:a :href "/messages" "view old messages"))))))
 
-            ; get a list of unread, unhidden messages
-            (str (new-message-card  "/message/123" 3570897552 1))
-            (str (new-message-card  "/message/123" 3570897552 1))
-            (str (new-message-card  "/message/123" 3570897552 1))
-            (str (new-message-card  "/message/123" 3570897552 1)))
+          ;; get a list of unread, unhidden messages
+          (str (new-message-card  "/message/1" 3570897552 0)))
 
         :right (html
-                 (:div :class "item"
-                  (:a :href "/messages/new" "compose a message")))
+                 (str (donate-sidebar))
+                 (when *user* (str (invite-sidebar))))
 
 
-        :selected "discuss"))))
+        :selected "inbox"))))
 
 (defun create-inbox-item (to from message-id time)
   (acond

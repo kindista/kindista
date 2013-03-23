@@ -17,58 +17,27 @@
 
 (in-package :kindista)
 
-(defvar *new-message-index* (make-hash-table :test 'equal :synchronized t :size 500 :rehash-size 1.25))
-
-(defun new-message-card (uri time from-id &key (from-name (getf (db from-id) :name)))
-  (card
-    (html
-      (str (h3-timestamp time))
-      (:p (:a :href uri "A new message") " from " (:a :href (s+ "/people/" (username-or-id from-id)) (str from-name)))
-      (:div :class "actions"
-        (str (card-button "Hide" (s+ uri "/hide") :method "POST"))
-        " &middot; "
-        (str (card-button "Block" (s+ "/people/" (username-or-id from-id) "/block")))
-        " &middot; "
-        (str (card-button "Report" (s+ "/people/" (username-or-id from-id) "/report")))))))
-
-(defroute "/discuss" ()
+(defroute "/messages" ()
   (:get
     (require-user
       (standard-page
 
-        "Discussions"
+        "Messages"
 
         (html
-          (:h1 "Discussions") 
-            (str (menu-horiz "actions"
-                             (html (:a :href "/message/new" "send a message"))))
+          (str (menu-horiz "actions"
+                           (html (:a :href "/messages/new" "send a message"))))
 
-            ; get a list of unread, unhidden messages
-            (str (new-message-card  "/message/123" 3570897552 1))
-            (str (new-message-card  "/message/123" 3570897552 1))
-            (str (new-message-card  "/message/123" 3570897552 1))
-            (str (new-message-card  "/message/123" 3570897552 1)))
+          ;; get a list of people we have had conversations with
+
+          (str (new-message-card  "/message/1" 3570897552 0)))
 
         :right (html
-                 (:div :class "item"
-                  (:a :href "/messages/new" "compose a message")))
+                 (str (donate-sidebar))
+                 (str (invite-sidebar)))
 
 
-        :selected "discuss"))))
-
-(defun create-inbox-item (to from message-id time)
-  (acond
-    ((gethash (cons to from) *inbox-item-index*)
-     (modify-db it :time time :uri (strcat "/discuss/private/" from) :many t))
-
-    (t
-      (setf (gethash (cons to from) *inbox-item-index*)
-            (insert-db (list :type :inbox-item
-                             :to to
-                             :from from
-                             :uri (strcat "/message/" message-id)
-                             :time time
-                             ))))))
+        :selected "inbox"))))
 
 (defun create-message (&key to (from *userid*) text)
   (let* ((time (get-universal-time))
@@ -81,8 +50,8 @@
       (create-inbox-item recipient from id time))))
 
 (defun index-message (id data)
-  (let* ((by (getf data :by))
-         (type (getf data :type))
+  (let* ((from (getf data :from))
+         (to (getf data :to))
          )
 
     (with-locked-hash-table (*discussion-index*)
@@ -106,67 +75,14 @@
       (geo-index-insert *request-geo-index* result))
     (geo-index-insert *activity-geo-index* result)))
 
-(defun modify-inventory-item (id &key text tags latitude longitude)
+(defun modify-message (id &key text)
   (let* ((result (gethash id *db-results*))
-         (type (result-type result))
          (data (db id))
          (now (get-universal-time)))
 
-    (when text
-      (let* ((oldstems (stem-text (getf data :text)))
-             (newstems (stem-text text))
-             (common (intersection oldstems newstems :test #'string=)))
+    (setf (result-time result) now)))
 
-        (flet ((commonp (stem)
-                 (member stem common :test #'string=)))
-
-          (setf oldstems (delete-if #'commonp oldstems))
-          (setf newstems (delete-if #'commonp newstems))
-          
-          (when (eq type :resource)          
-            (with-locked-hash-table (*resource-stem-index*)
-              (dolist (stem oldstems)
-                (asetf (gethash stem *resource-stem-index*)
-                       (remove result it))))
-              (dolist (stem newstems)
-                (push result (gethash stem *resource-stem-index*))))
-
-          (when (eq type :request)          
-            (with-locked-hash-table (*request-stem-index*)
-              (dolist (stem oldstems)
-                (asetf (gethash stem *request-stem-index*)
-                       (remove result it))))
-              (dolist (stem newstems)
-                (push result (gethash stem *request-stem-index*)))))))
-
-    (unless (equal tags (getf data :tags))
-      (setf (result-tags result) tags))
-
-    (when (and latitude
-               longitude
-               (or (not (eql latitude (getf data :lat)))
-                   (not (eql longitude (getf data :long)))))
-
-      (if (eq type :resource)          
-        (geo-index-remove *resource-geo-index* result)  
-        (geo-index-remove *request-geo-index* result))
-      (geo-index-remove *activity-geo-index* result)
-      (setf (result-latitude result) latitude)
-      (setf (result-longitude result) longitude)
-      (if (eq type :resource)          
-        (geo-index-insert *resource-geo-index* result)  
-        (geo-index-insert *request-geo-index* result))
-      (geo-index-insert *activity-geo-index* result))
-
-    (setf (result-time result) now)
-    
-    (with-locked-hash-table (*activity-person-index*)
-      (asetf (gethash id *activity-person-index*)
-             (sort it #'> :key #'result-time)))
-    
-    (modify-db id :text text :tags tags :lat latitude :long longitude :edited now)))
-
-(defun delete-inventory-item (id)
+(defun delete-message (id)
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id)))

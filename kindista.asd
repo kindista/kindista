@@ -53,6 +53,7 @@
                               :serial t
                               :components ((:file "sidebar")
                                            (:file "timestamp")
+                                           (:file "menu-horiz")
                                            (:file "card")
                                            (:file "person-card")))
                              (:module features
@@ -68,10 +69,14 @@
                                            (:file "groups")
                                            (:file "help")
                                            (:file "home")
+                                           (:file "legacy")
                                            (:file "love")
+                                           (:file "messages")
                                            (:file "people")
                                            (:file "requests")
                                            (:file "resources")
+                                           (:file "root")
+                                           (:file "settings")
                                            (:file "signup")
                                            (:file "search")))
                              (:file "routes")

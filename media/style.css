@@ -682,6 +682,10 @@ body.landing > p {
  overflow: hidden;
 }
 
+.card:last-child {
+ border-bottom: none;
+}
+
 .card > img {
  display: block;
  float: left;
@@ -709,6 +713,23 @@ body.landing > p {
  font-size: 0.85em;
  /*margin-left: 10em;*/
  font-style: italic;
+}
+
+.login.item {
+}
+
+#login label, #login input {
+ display: block;
+}
+
+#login a {
+ margin-left: 4em;
+ font-size: 0.8em;
+}
+
+#login input[type=submit] {
+ display: inline;
+ margin-top: 0.6em;
 }
 
 .login.item {
@@ -878,7 +899,11 @@ input::-moz-focus-inner {
  width:1em;
  height:1em;
  vertical-align:middle;
- margin:0 0.5em 0 0;
+ margin:0 0.5em 0 0.75em;
+}
+
+.card .icons img:first-child {
+ margin-left: 0;
 }
 
 .card .icons span {

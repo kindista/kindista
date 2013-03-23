@@ -19,7 +19,7 @@
 
 (defroute "/home/" ()
   (:get
-    (see-other "/home")))
+    (moved-permanently "/home")))
 
 (defroute "/home" ()
   (:get
