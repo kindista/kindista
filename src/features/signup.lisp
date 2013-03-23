@@ -70,7 +70,7 @@
   (standard-page
     "Decline Invitation"
     (html
-      (:h1 "Are you sure you want to decline your invitation from " (str (getf (db host) :name)) "?")
+      (:h2 "Are you sure you want to decline your invitation from " (str (getf (db host) :name)) "?")
       (:form :method "post" :action "/signup"
         (:input :type "hidden" :name "invitation-id" :value id)
         (:input :type "hidden" :name "invitation-email" :value email)

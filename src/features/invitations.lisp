@@ -84,9 +84,12 @@
               " invitation" (str pluralize)
               " available at this time."
            (:br)
-           "You may enter multiple email addresses, separated by comas:")
+           "If you have multiple invitations available, "
+           "you may enter multiple email addresses, separated by comas:")
           (:textarea :rows "3" :name "bulk-emails" :placeholder "Enter email addresses here..." (str (when emails emails)))
-          (:p "Include a message for your recipients: (optional)")
+          (:p "Include a message for your recipient"
+              (str pluralize) 
+              ": (optional)")
           (:textarea :rows "6" :name "text" :placeholder "Enter your message here..." (str (when text text)))
           (:p 
             (:button :class "no" :type "submit" :class "cancel" :name "cancel" "Cancel") 
@@ -94,15 +97,16 @@
 
 (defun confirm-invitations (&key text emails bulk-emails next-url)
   (standard-page "Confirm invitation"
-    (let ((pluralize (when (> (length emails) 1) "s")))
+    (let* ((count (length emails))
+           (pluralize (when (> count 1) "s")))
       (html
         (:div :class "item"
           (:form :method "post" :action "/invite"
             (:input :type "hidden" :name "next-url" :value next-url)
             (:input :type "hidden" :name "text" :value text)
             (:input :type "hidden" :name "bulk-emails" :value bulk-emails)
-            (:h2 "Review your invitation")
-            (:h3 "Recipient" (str pluralize) ":")
+            (:h2 "Review your invitation" (str pluralize))
+            (:h3 (str (strcat count " ")) "Recipient" (str pluralize) ":")
             (dolist (email emails)
               (htm (str email)
                    (:br)))
@@ -119,9 +123,9 @@
 (defun get-invite-page ()
   (with-user
     (let* ((available-count (available-invitation-count *userid*))
-           (pluralize (when (> available-count 1) "s")))
+           (pluralize (unless (= available-count 1) "s")))
     (cond 
-      (available-count
+      ((> available-count 0) 
         (invite-page :available-count available-count
                      :pluralize pluralize))
       (t
@@ -135,6 +139,12 @@
            (emails (remove-duplicates 
                      (emails-from-string (post-parameter "bulk-emails"))
                      :test #'string=))
+           (member-emails (iter (for email in emails) 
+                                (awhen (gethash email *email-index*)
+                                  (collect email))))
+           (new-emails (set-difference emails
+                                       member-emails
+                                       :test #'string=))
            (pluralize (when (> available-count 1) "s")))
     (cond
       ((not (> available-count 0))
@@ -145,7 +155,9 @@
        (see-other next-url))
 
       ((and (post-parameter "review")
-            (not emails))
+            (not new-emails))
+       (dolist (email member-emails)
+         (flash (strcat email " is already a Kindista member!") :error t)) 
        (flash "You must enter at least 1 valid email address." :error t)
        (invite-page :text (post-parameter "text")
                     :emails (post-parameter "bulk-emails")
@@ -154,7 +166,7 @@
                     :next-url next-url))
 
       ((and (post-parameter "review")
-            (> (length emails) available-count))
+            (> (length new-emails) available-count))
        (flash (strcat "You have entered too many email addresses. You only have " 
                       available-count 
                       " invitation" pluralize
@@ -167,8 +179,10 @@
                     :next-url next-url))
 
       ((post-parameter "review")
+       (dolist (email member-emails)
+         (flash (strcat email " is already a Kindista member!") :error t)) 
        (confirm-invitations :text (post-parameter "text")
-                            :emails emails 
+                            :emails new-emails 
                             :bulk-emails (post-parameter "bulk-emails")
                             :next-url next-url))
 
@@ -180,10 +194,10 @@
                     :next-url next-url))
 
       ((post-parameter "confirm")
-       (dolist (email emails)
+       (dolist (email new-emails)
          (send-invitation email :text (post-parameter "text")))
-       (if (> (length emails) 1)
+       (if (> (length new-emails) 1)
          (flash "Your invitations have been sent.")
-         (flash "your invitaion has been sent."))
+         (flash "Your invitaion has been sent."))
        (see-other (post-parameter "next-url")))))))
 
