@@ -176,7 +176,7 @@ and participate in the community, we will give you more invitations.
 
 By default we will add your invitees to your contacts list (and
 you to their list) when they join. You can add or remove 
-someone from your connections at any time by visiting their profile page.
+someone from your contacts at any time by visiting their profile page.
 
 <a id="can-i-trust-someone-on-kindista"></a>
 

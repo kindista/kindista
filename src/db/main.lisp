@@ -373,9 +373,9 @@
     ((or :resource :request) (index-inventory-item id data))
     (:person (index-person id data))))
 
-(defun friends-alphabetically (&optional (user *user*))
-  (sort (iter (for friend in (getf user :following))
-              (collect (list friend (getf (db friend) :name))))
+(defun contacts-alphabetically (&optional (user *user*))
+  (sort (iter (for contact in (getf user :following))
+              (collect (list contact (getf (db contact) :name))))
         #'string-lessp :key #'cadr))
 
 (defun user-distance (&optional (user *user*))

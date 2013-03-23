@@ -119,23 +119,23 @@
   (:get (require-user (get-invite-page)))
   (:post (require-user (post-invite-page))))
 
-(defroute "/friends" ()
+(defroute "/contacts" ()
   (:get
     ":-)")
   (:post
     (require-user
-      (let ((friends (getf *user* :following)))
+      (let ((contacts (getf *user* :following)))
         (cond
           ((scan +number-scanner+ (post-parameter "add"))
            (let ((id (parse-integer (post-parameter "add"))))
-             (unless (member id friends)
-               (modify-db *userid* :following (cons id friends))))
+             (unless (member id contacts)
+               (modify-db *userid* :following (cons id contacts))))
            (see-other (or (post-parameter "next") "/home")))
 
           ((scan +number-scanner+ (post-parameter "remove"))
            (let ((id (parse-integer (post-parameter "remove"))))
-             (when (member id friends)
-               (modify-db *userid* :following (remove id friends))))
+             (when (member id contacts)
+               (modify-db *userid* :following (remove id contacts))))
            (see-other (or (post-parameter "next") "/home")))
 
           (t

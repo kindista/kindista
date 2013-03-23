@@ -151,7 +151,7 @@
                         (when people
                           (htm
                             (:div :class "item right only"
-                              (:h3 (:a :href "/people" "People") " with mutual friends")
+                              (:h3 (:a :href "/people" "People") " with mutual connections")
                               (:menu
                                 (dolist (data (suggested-people))
                                   (htm

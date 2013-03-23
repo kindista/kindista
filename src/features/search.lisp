@@ -739,7 +739,7 @@
 ;(defun person-search-rank (id &key (userid *userid*))
 ;  (let* ((mutuals (mutual-connections id userid))
 ;         (user (db userid))
-;         (friend (member id (getf user :following)))
+;         (contact (member id (getf user :following)))
 ;         (distance (person-distance (db id) user)))
 ;
 ;    (+ mutuals ) ) )
@@ -753,11 +753,11 @@
     (labels ((person-rank (result)
                (let* ((id (result-id result))
                       (mutuals (length (mutual-connections id userid)))
-                      (friend (member id following))
+                      (contact (member id following))
                       (distance (air-distance lat long (result-latitude result) (result-longitude result))))
                  (+ (* 9 mutuals)
                     (/ 50 (log (+ 4 distance) 10))
-                    (if friend 100 0)
+                    (if contact 100 0)
                     (* -12 (levenshtein:distance query (getf (db id) :name)))))))
       (mapcar #'result-id
               (sort people; (remove userid people :key #'result-id)

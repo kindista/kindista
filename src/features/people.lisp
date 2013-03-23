@@ -210,7 +210,7 @@
 
 (defun profile-top-html (userid)
   (let ((user (db userid))
-        (is-friend (member userid (getf *user* :following))))
+        (is-contact (member userid (getf *user* :following))))
     (html
      (:img :class "bigavatar" :src (strcat "/media/avatar/" userid ".jpg"))
      (:div :class "basics"
@@ -220,10 +220,10 @@
        (htm 
          (:form :method "GET" :action (strcat *base-url* "/message")
            (:input :type "submit" :value "Send a message")) 
-         (:form :method "POST" :action "/friends"
-           (:input :type "hidden" :name (if is-friend "remove" "add") :value userid)
+         (:form :method "POST" :action "/contacts"
+           (:input :type "hidden" :name (if is-contact "remove" "add") :value userid)
            (:input :type "hidden" :name "next" :value *base-url*)
-           (:input :class (when is-friend "cancel") :type "submit" :value (if is-friend "Remove from contacts" "Add to contacts")))))))))
+           (:input :class (when is-contact "cancel") :type "submit" :value (if is-contact "Remove from contacts" "Add to contacts")))))))))
 
 (defun profile-activity-html (userid &key type)
   (let* ((user (db userid))
@@ -259,7 +259,7 @@
                  (when (and mutuals (not (eql userid *userid*)))
                    (html
                      (:div :class "item people"
-                      (:h3 "Mutual Friends")
+                      (:h3 "Mutual Connections")
                       (:ul
                         (dolist (id (mutual-connections userid))
                           (htm (:li (:a :href (strcat "/people/" (username-or-id id))
@@ -369,7 +369,7 @@
 
 (defun suggested-people (&optional (userid *userid*))
   ; get nearby people
-  ; get friends of friends
+  ; get contacts of contacts
   ; get distance and number of mutuals for each
   (sort
     (let* ((user (db userid))
@@ -401,11 +401,11 @@
                 (str (person-card id (getf person :name))))))
           (when *user* 
             (htm
-              (:h2 "People with mutual friends") 
+              (:h2 "People with mutual connections") 
               (dolist (data (suggested-people))
                 (let* ((id (cdr data))
                        (person (db id)))
-                  ; (car data) is the number of mutual friends
+                  ; (car data) is the number of mutual connections
                   (str (person-card id (getf person :name))))))))
         :selected "people"
         :right (html

@@ -399,7 +399,7 @@
 ; edited date
 ; text
 ; tags (at least 1)
-; privacy ('all 'friends or listname)
+; privacy ('all 'contacts or listname)
 
 (defun nearby-inventory-items (type &key base (subtag-count 4) (distance 50) q)
   (with-location

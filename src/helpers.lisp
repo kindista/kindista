@@ -86,18 +86,18 @@
           (collect email))))
 
 (defun activity-rank (item)
-  ; is it from a friend?
+  ; is it from a contact
   ; how many people like it
   ; how recent
   ; how close is it?
   
-  (let ((friends (getf *user* :following))
+  (let ((contacts (getf *user* :following))
         (age (- (get-universal-time) (or (result-time item) 0)))
         (distance (air-distance *latitude* *longitude*
                                 (result-latitude item) (result-longitude item))))
     (round (- age
              (/ 120000 (log (+ distance 4)))
-             (if (intersection friends (result-people item)) 86400 0)
+             (if (intersection contacts (result-people item)) 86400 0)
              (* (length (loves (result-id item))) 100000)))))
 
 (defun inventory-rank (item)
