@@ -17,15 +17,44 @@
 
 (in-package :kindista)
 
-(defroute "/help" () 
-  (:get
-    (with-user
-      (standard-page
-        "Help and Feedback"
-        (html
-          (:h1 "Help and Feedback"))
-        :selected "help"
-        :right (html
-                 (str (donate-sidebar))
-                 (str (invite-sidebar)))))))
+(defun help-tabs-html (&key tab)
+  (html
+    (:menu :class "bar"
+      (:h3 :class "label" "Profile Menu")
+      (if (eql tab :faqs)
+        (htm (:li :class "selected" "Frequent Questions"))
+        (htm (:li (:a :href "/help/faq-page" "Frequent Questions"))))
+      (if (eql tab :feedback)
+        (htm (:li :class "selected" "Feedback"))
+        (htm (:li (:a :href "/help/feedback" "Feedback"))))
+      )))
+
+(defun faqs-html ()
+  (html
+    (str (help-tabs-html :tab :faqs))
+    (:div :class "legal faqs"
+      (str (markdown-file (s+ +markdown-path+ "faq.md"))))))
+
+(defun get-help-page () 
+  (standard-page
+    "Help and Feedback"
+    (html
+      (:h1 "Help and Feedback")
+      (str (faqs-html)))
+    :selected "help"
+    :right (html
+             (str (donate-sidebar))
+             (str (invite-sidebar)))))
              
+(defun get-faqs-page ()
+  (standard-page 
+    "Frequently Asked Questions" 
+    (html
+      (:h1 "Help and Feedback")
+      (str (faqs-html)))
+    :selected "help"
+    :right (html
+             (str (donate-sidebar))
+             (str (invite-sidebar)))))
+
+

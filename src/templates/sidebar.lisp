@@ -34,5 +34,5 @@
             (:p "You currently have " (:strong (str invitations)) " available invitations.") 
             (when (> invitations 0) 
               (htm (:a :class "anchor-button" :href "/invite" "Invite Friends"))) 
-            (:a :href "/faq/" "How does this work?")))))))
+            (:a :href "/help/faqs#how-do-invitations-work" "How does this work?")))))))
 

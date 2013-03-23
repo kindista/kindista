@@ -90,7 +90,7 @@ Renew SSL
     [X] renew SSL certificate for kindista.org
 
 Help and Feedback
-  [ ] index page written
+    [ ] index page written
     - Collect comments
     - Index of active topics
         - Bug fixes
@@ -136,7 +136,14 @@ Settings
             [ ] index aliases as well as names
 
 Writing
-  [ ] About page
+    [ ] About page
+
+Terms and Privacy
+    [ ] Create UI to get users to agree to new terms upon first login
+    [ ] Proof read terms
+    [ ] Proof read privacy
+    [ ] Change effective dates on Privacy and Terms
+
 
 ################# MAYBE ############################
 

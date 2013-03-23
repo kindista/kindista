@@ -17,10 +17,14 @@
 
 (in-package :kindista)
 
-(define-constant +db-path+ "/srv/kindista/data/" :test #'string=)
-(define-constant +avatar-path+ "/srv/kindista/media/avatars/"; <- trailing slash
-                 :test #'string=)
-(define-constant +markdown-path+ "/srv/kindista/src/markdown/" :test #'string=)
-(define-constant +base-url+ "localhost" :test #'string=)
-(define-constant +mail-server+ "localhost" :test #'string=)
+(defun privacy-html ()
+  (standard-page 
+    "Privacy Policy"
+    (html 
+      (:div :class "legal" :id "privacy"
+        (str (markdown-file (s+ +markdown-path+ "privacy.md")))))  
+    :right (html
+             (str (donate-sidebar))
+             (when *user* (str (invite-sidebar))))))
+
 
