@@ -392,6 +392,7 @@
                                     '("Help & Feedback" "help")
                                     (when (getf *user* :admin)
                                       '("Admin" "admin")))
+                              )
                               selected))
 
                    (:div :id "fine-print-links"

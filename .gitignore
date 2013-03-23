@@ -1,2 +1,2 @@
-settings.lisp
+/src/settings.lisp
 data/*.csv
