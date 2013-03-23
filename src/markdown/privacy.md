@@ -118,12 +118,13 @@ and trust through the Gratitude you share about them.
 That reputation is only valuable for other users if the expressions of  you 
 receive are permanently linked with your identity. 
 
-<u>Since your display name, your primary email address, and your profile 
-picture are part of your searchable Kindista identity, you will not be able 
-to delete your display name, your primary email address, or your profile 
-picture from our servers even if you deactivate your account.</u>
-**This policy protects the credibility of the reputation you develop
-while using the Site.**
+Your display name, your primary email address, and your profile picture are
+part of your searchable identity which is linked to messages you have sent 
+to, and gratitude you have posted about, other users.
+<u>Therefore, you will not be able to delete your display name, your 
+primary email address, or your profile picture from our servers even if you 
+deactivate your account.</u>
+
 
 ## Other sites. 
 

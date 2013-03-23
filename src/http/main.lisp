@@ -369,7 +369,7 @@
                    (:input :type "submit" :value "Search"))
 
                  (:div :id "menu"
-                   (if *user*
+                   (when *user*
                      (htm
                        (:table
                          (:tr
@@ -380,8 +380,7 @@
                            (:td
                              (:a :href "/settings" "Settings")
                              " &nbsp;&middot;&nbsp; "
-                             (:a :href "/logout" "Log out")))))
-                     )
+                             (:a :href "/logout" "Log out"))))))
 
                    (str (menu (list '("Activity" "home")
                                     '("Resources" "resources")
@@ -392,7 +391,7 @@
                                     '("Help & Feedback" "help")
                                     (when (getf *user* :admin)
                                       '("Admin" "admin")))
-                              )
+                              
                               selected))
 
                    (:div :id "fine-print-links"

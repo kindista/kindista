@@ -28,7 +28,7 @@
     (when *user*
       (let ((invitations (available-invitation-count *userid*)))
         (html
-          (:div :class "item right only"
+          (:div :class "item right"
             (:h3 (:a :href "/invite" "Invite friends"))
             (:p "Kindista is invitation-only. As a Kindista member, you can invite people you know to join. ") 
             (:p "You currently have " (:strong (str invitations)) " available invitations.") 
