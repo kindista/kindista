@@ -1,4 +1,4 @@
-# Kindista
+# ![Kindista](http://media.kindista.org/email-logo.png)
 
 Kindista is a social network for local resource sharing. 
 It helps people develop trust, opportunities, and mutual generosity within their real-world communities. 
