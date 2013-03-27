@@ -91,7 +91,7 @@ input[type=submit] {
  cursor:pointer;
 }
 
-a:hover {
+a:hover, a:focus, a:active {
  text-decoration:underline;
 }
 
