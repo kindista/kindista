@@ -216,12 +216,12 @@
 
 (defun metaphone-index-query (index name)
   (when (< 0 (length name))
-    (delete-duplicates
+    (remove-duplicates
       (iter (for codes in (cartesian-product (name-to-metaphone-codes name)))
-            (nconcing (iter (for code in codes)
-                            (unless (string= code "")
-                              (reducing (gethash code index)
-                                        by #'intersection))))))))
+            (appending (iter (for code in codes)
+                             (unless (string= code "")
+                               (reducing (gethash code index)
+                                         by #'intersection))))))))
 
 ; }}}
 
