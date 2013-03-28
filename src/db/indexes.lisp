@@ -33,6 +33,7 @@
 (defvar *love-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *comment-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *gratitude-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
+(defvar *person-alias-index* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 (defvar *metaphone-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 (defvar *email-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))
 (defvar *username-index* (make-hash-table :test 'equalp :synchronized t :size 500 :rehash-size 1.25))

@@ -98,6 +98,9 @@
 (defstruct result
   latitude longitude time tags people id type)
 
+(defstruct alias
+  alias result)
+
 (defun result-id-intersection (list1 list2)
   (intersection list1 list2 :key #'result-id))
 
@@ -196,32 +199,54 @@
   (iter (for word in (split " " name))
         (collect (multiple-value-list (double-metaphone word)))))
 
-(defun metaphone-index-insert (index name id)
-  (with-locked-hash-table (index)
-    (iter (for code in (delete-duplicates
-                         (iter (for word in (split " " name))
-                               (nunioning
-                                 (iter (for i from 1 to (length word))
-                                       (nunioning
-                                         (flatten
-                                           (name-to-metaphone-codes (subseq word 0 i)))
-                                         test #'string=))
-                                 test #'string=))
-                         :test #'string=))
 
-          (unless (string= code "")
-            (let ((list (gethash code index)))
-              (unless (member id list)
-                (setf (gethash code index) (cons id list))))))))
+(defun map-metaphone-codes (function string)
+  (iter (for code in (delete-duplicates
+                       (iter (for word in (split " " string))
+                           (nunioning
+                             (iter (for i from 1 to (length word))
+                                   (nunioning
+                                     (flatten
+                                       (name-to-metaphone-codes (subseq word 0 i)))
+                                     test #'string=))
+                             test #'string=))
+                     :test #'string=))
+        (unless (string= code "")
+          (funcall function code))))
 
-(defun metaphone-index-query (index name)
+(defun metaphone-index-insert (new-names result)
+  (with-locked-hash-table (*person-alias-index*)
+    (with-locked-hash-table (*metaphone-index*)
+      (dolist (alias (gethash (result-id result) *person-alias-index*))
+        (labels ((remove-alias (code)
+                   (asetf (gethash code *metaphone-index*)
+                          (remove alias it))))
+          (map-metaphone-codes #'remove-alias (alias-alias alias))))
+
+      (remhash (result-id result) *person-alias-index*)
+
+      (dolist (name new-names)
+        (let ((alias (make-alias :alias name :result result)))
+          (push alias (gethash (result-id result) *person-alias-index*))
+          (labels ((add-alias (code)
+                     (push alias (gethash code *metaphone-index*))))
+            (map-metaphone-codes #'add-alias name)))))))
+
+(defun metaphone-index-query (name)
   (when (< 0 (length name))
-    (delete-duplicates
-      (iter (for codes in (cartesian-product (name-to-metaphone-codes name)))
-            (nconcing (iter (for code in codes)
-                            (unless (string= code "")
-                              (reducing (gethash code index)
-                                        by #'intersection))))))))
+    (labels ((lev-distance (alias)
+               (levenshtein:distance name (alias-alias alias))))
+      (remove-duplicates
+        (sort
+          (remove-duplicates
+            (iter (for codes in (cartesian-product
+                                  (name-to-metaphone-codes name)))
+                  (appending (iter (for code in codes)
+                                  (unless (string= code "")
+                                    (reducing (gethash code *metaphone-index*)
+                                              by #'intersection))))))
+          #'< :key #'lev-distance)
+        :key #'alias-result))))
 
 ; }}}
 
@@ -359,6 +384,7 @@
                    *people-geo-index*
                    *followers-index*
                    *timeline-index*
+                   *person-alias-index*
                    *metaphone-index*
                    *username-index*
                    *person-invitation-index*

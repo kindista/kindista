@@ -143,28 +143,28 @@
            (see-other "/home")))))))
 
 (defroute "/settings" ()
-  (:get (require-user (get-settings)))
+  (:get (require-user (get-personal-settings)))
+  (:post (require-user (post-settings))))
+
+(defroute "/settings/personal" ()
+  (:get (require-user (get-personal-settings)))
+  (:post (require-user (post-settings))))
+
+(defroute "/settings/communication" ()
+  (:get (require-user (get-communication-settings)))
   (:post (require-user (post-settings))))
 
 (defroute "/help" () 
-  (:get 
-    (with-user
-      (get-help-page))))
+  (:get (with-user (get-help-page))))
 
 (defroute "/help/faqs" ()
-  (:get
-    (with-user
-      (get-faqs-page))))
+  (:get (with-user (get-faqs-page))))
 
 (defroute "/terms" ()
-  (:get
-    (with-user
-      (terms-html))))
+  (:get (with-user (terms-html))))
 
 (defroute "/privacy" ()
-  (:get
-    (with-user
-      (privacy-html))))
+  (:get (with-user (privacy-html))))
 
 (defroute "/events" ()
   (:get

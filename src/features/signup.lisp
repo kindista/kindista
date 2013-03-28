@@ -156,7 +156,8 @@ Please use the correct email address or find someone you know on Kindista and re
                       :name (post-parameter "name")
                       :email (post-parameter "email")))
 
-        ((not (find #\Space (post-parameter "name")))
+        ((not (validate-name (post-parameter "name")))
+
 
          (signup-page :error "Please use your full name"
                       :invitation-id (post-parameter "invitation-id")

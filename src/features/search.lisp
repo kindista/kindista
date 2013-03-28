@@ -745,22 +745,26 @@
 ;    (+ mutuals ) ) )
 
 (defun search-people (query &key (userid *userid*))
-  (let* ((people (metaphone-index-query *metaphone-index* query))
+  (let* ((aliases (metaphone-index-query query))
          (user (db userid))
          (lat (getf user :lat))
          (long (getf user :long))
          (following (getf user :following)))
-    (labels ((person-rank (result)
-               (let* ((id (result-id result))
+    (labels ((person-rank (alias)
+               (let* ((result (alias-result alias))
+                      (id (result-id result))
                       (mutuals (length (mutual-connections id userid)))
                       (contact (member id following))
                       (distance (air-distance lat long (result-latitude result) (result-longitude result))))
                  (+ (* 9 mutuals)
                     (/ 50 (log (+ 4 distance) 10))
                     (if contact 100 0)
-                    (* -12 (levenshtein:distance query (getf (db id) :name)))))))
-      (mapcar #'result-id
-              (sort people; (remove userid people :key #'result-id)
+                    (* -12 (levenshtein:distance query (alias-alias alias))))))
+             (person (alias)
+               (cons (result-id (alias-result alias))
+                     (alias-alias alias))))
+      (mapcar #'person
+              (sort aliases; (remove userid people :key #'result-id)
                     #'> :key #'person-rank)))))
 
 (defun request-results-html (request-list)
@@ -775,9 +779,9 @@
 
 (defun people-results-html (person-list)
   (html
-    (:div :class "person-row"
+    (:div 
       (dolist (person person-list)
-        (str (person-tile person :show-city t))))))
+        (str (person-card (car person) (cdr person)))))))
 
 (defun search-nearby-people (query &key (userid *userid*) (distance 10))
   (let* ((user (db userid))
@@ -789,7 +793,7 @@
         (remove userid
           (result-id-intersection
             (geo-index-query *people-geo-index* lat long distance)
-            (metaphone-index-query *metaphone-index* query))
+            (mapcar #'alias-result (metaphone-index-query query)))
           :key #'result-id)
         #'< :key #'result-distance))))
 

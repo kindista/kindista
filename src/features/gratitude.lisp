@@ -137,7 +137,7 @@
     (html
       (:div :class "item"
        (:h2 "Who would you like to write about?")
-       (:h3 "Search for a person or project")
+       (:h3 "Search for a person")
        (:form :method "post" :action "/gratitude/new"
          (:input :type "text" :name "name")
          (:input :type "submit" :class "submit" :name "search" :value "Search")
@@ -147,14 +147,13 @@
              (htm
                (:h3 "Select one of your contacts")
                (:menu
-                 (dolist (contact (contact-alphabetically *user*))
+                 (dolist (contact (contacts-alphabetically *user*))
                    (htm (:li (:button :class "text" :type "submit" :value (car contact) :name "add" (str (cadr contact)))))))))
            (progn
              (htm
                (:h3 "Search results")
-               (:div :class "person-row"
-                 (dolist (person results)
-                   (htm (:button :type "submit" :value person :name "add" (str (person-tile person :show-city t)))))))))
+               (dolist (person results)
+                 (str (person-button (car person) (cdr person) "add"))))))
 
          (:input :type "submit" :class "cancel" :value "Back")
 

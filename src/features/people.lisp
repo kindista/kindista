@@ -32,7 +32,9 @@
                              :longitude (getf data :long)
                              :type :person
                              :people (list id)
-                             :time (getf data :created))))
+                             :time (getf data :created)))
+        (names (cons (getf data :name)
+                     (getf data :aliases))))
 
     (setf (gethash (getf data :email) *email-index*) id)
     (setf (gethash (getf data :username) *username-index*) id)
@@ -53,9 +55,18 @@
              (sort (push result it) #'> :key #'result-time)))
 
     (when (and (getf data :lat) (getf data :long) (getf data :created))
-      (metaphone-index-insert *metaphone-index* (getf data :name) result)
+      ;people that don't give a location don't get indexed
+      (metaphone-index-insert names result)
       (geo-index-insert *people-geo-index* result)
       (geo-index-insert *activity-geo-index* result))))
+
+(defun index-person-alias (id name result)
+  (let ((alias (make-alias :alias name
+                           :result result)))
+    (with-locked-hash-table (*person-alias-index*)
+      (push alias (gethash id *person-alias-index*)
+             (push alias it)))
+    (metaphone-index-insert *metaphone-index* name result)))
 
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)

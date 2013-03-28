@@ -17,15 +17,36 @@
 
 (in-package :kindista)
 
+(defun person-button (id alias button-name)
+  (let* ((mutuals (mutual-connections id))
+         (person (db id))
+         (name (getf person :name))) 
+    (html
+      (:button :class "card" :value id :name button-name
+        (:img :src (strcat "/media/avatar/" id ".jpg"))
+        (:h3 (str name))
+        (unless (string= name alias)
+          (htm (:p "nickname: " (str alias))))
+        (awhen (getf person :city) 
+          (htm (:p "Lives in " (str it))))    
+        (when mutuals
+          (htm (:p (str (strcat (length mutuals) " mutual connection")) 
+                   (str (when (> (length mutuals) 1) "s")))))))))
 
-(defun person-card (id name &rest items)
-  (let ((mutuals (mutual-connections id)))
+(defun person-card (id alias)
+  (let* ((mutuals (mutual-connections id))
+         (person (db id))
+         (name (getf person :name)))
     (html
       (:div :class "card"
         (:img :src (strcat "/media/avatar/" id ".jpg"))
         (:h3 (:a :href (strcat "/people/" (username-or-id id))
                (str name)))
-        (:p "Lives in " (str (getf *user* :city)) ", " (str (getf *user* :state)))    
+        (unless (string= name alias)
+          (htm (:p "nickname: " (str alias))))
+
+        (awhen (getf person :city) 
+          (htm (:p "Lives in " (str it))))
         (when mutuals
           (htm (:p (:a :href (strcat "/people/" id "/connections" ) 
                    (str (strcat (length mutuals) " mutual connection")) 
