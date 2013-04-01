@@ -113,16 +113,6 @@ Follow-up
     - Automated message from one of us to new signups
     - Invitation a few days later to complete more steps and let person know what has been happening
 
-Flagging
-    - What happens when something gets flagged?
-      - Log the id of the flagger, of the item that is flagged.
-      - Flagger indicates why it was flagged (inappropriate, inaccurate, unclear, etc) and has a text field to giver further info.
-      - Flagger can choose whether or not to be anonymous to the flagged user.
-      - Flagged user gets a notification detailing what needs to be changed on profile, with the ability to respond to the flagger and/or appeal to us.
-      - When item is edited, the flagger gets a notification that the item has been edited and that they need to review the item to mark it resolved.
-    - What happens when something gets flagged multiple times?
-        - How many flags does it take?
-
 Discussions
     - Person-to-person messages
     - Comments
@@ -130,10 +120,23 @@ Discussions
 Settings
     - contact preferences
     - basic information
-        - name
-        - location
-        - aliases
-            [ ] index aliases as well as names
+        - [ ] change avatar
+        - [ ] add/change email addresses
+        - [X] change password
+        - [X] name
+        - [X] location
+        - [X] aliases
+            [X] index aliases as well as names
+    - deactivate account
+       - setf (db userid) :active to nil
+       - delete offers/requests
+       - remove name/aliases from metaphone index and id from geo index
+       - set contact items to nil
+    - activate account
+       - setf :active to t
+       - reindex names and location indexes
+       - set contact items to t
+    - change password with "forgot password link
 
 Writing
     [ ] About page
@@ -157,6 +160,17 @@ Groups
 
 Discussions
     - Group conversations
+
+Flagging
+    - What happens when something gets flagged?
+      - Log the id of the flagger, of the item that is flagged.
+      - Flagger indicates why it was flagged (inappropriate, inaccurate, unclear, etc) and has a text field to giver further info.
+      - Flagger can choose whether or not to be anonymous to the flagged user.
+      - Flagged user gets a notification detailing what needs to be changed on profile, with the ability to respond to the flagger and/or appeal to us.
+      - When item is edited, the flagger gets a notification that the item has been edited and that they need to review the item to mark it resolved.
+    - What happens when something gets flagged multiple times?
+        - How many flags does it take?
+
 
 ################# LAUNCH ############################
 

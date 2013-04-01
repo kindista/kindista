@@ -20,11 +20,14 @@
 (defun create-person (&key name email password host)
   (insert-db `(:type :person
                :name ,name
-               :email ,email
+               :emails ,(list email)
                :host ,host
                :help t
                :pass ,(new-password password)
-               :created ,(get-universal-time))))
+               :created ,(get-universal-time)
+               :notify-gratitude t
+               :notify-message t
+               :notify-kindista t)))
 
 (defun index-person (id data)
   (let ((result (make-result :id id
@@ -36,7 +39,10 @@
         (names (cons (getf data :name)
                      (getf data :aliases))))
 
-    (setf (gethash (getf data :email) *email-index*) id)
+    (awhen (getf data :emails) 
+      (dolist (email it) 
+        (setf (gethash email *email-index*) id)))
+
     (setf (gethash (getf data :username) *username-index*) id)
 
     (awhen (getf data :following)
@@ -59,14 +65,6 @@
       (metaphone-index-insert names result)
       (geo-index-insert *people-geo-index* result)
       (geo-index-insert *activity-geo-index* result))))
-
-(defun index-person-alias (id name result)
-  (let ((alias (make-alias :alias name
-                           :result result)))
-    (with-locked-hash-table (*person-alias-index*)
-      (push alias (gethash id *person-alias-index*)
-             (push alias it)))
-    (metaphone-index-insert *metaphone-index* name result)))
 
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)

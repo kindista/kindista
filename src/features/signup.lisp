@@ -51,7 +51,7 @@
 
           (:span "Have an account? " (:a :href "/login" "Log in")) 
 
-          (:div :id "decline "
+          (:div :id "decline"
             (:p (:strong "Or decline the invitation so " 
                          (str (getf 
                                 (db (getf (db (parse-integer invitation)) :host))

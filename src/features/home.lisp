@@ -161,22 +161,7 @@
               (getf *user* :long))
 
          (notice :home-verify-location "")
-         (standard-page
-           "Welcome"
-           (html
-             (:div :class "item"
-               (:div :class "setup"
-                 (:h2 "Verify your location")
-                 (:p "We will never share your exact location with anyone else.
-                      If you would like to know more about how we use the information you share with us,
-                      please read our " (:a :href "/privacy" "privacy policy") ".")
-                 (str (static-google-map :size "280x150" :zoom 12 :lat (getf *user* :lat) :long (getf *user* :long)))
-
-                 (:form :method "post" :action "/settings"
-                   (:h3 "Is this location correct?")
-                   (:button :class "yes" :type "submit" :name "confirm-location" :value "1" "Yes, this is correct")
-                   (:button :class "no" :type "submit" :name "reset-location" :value "1" "No, go back")))))
-           :selected "home"))
+         (verify-address :next-url "/home"))
         (t
          (notice :home-setup "")
          (standard-page

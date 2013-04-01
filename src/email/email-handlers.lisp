@@ -62,7 +62,7 @@
     (dolist (to to-list)
       (cl-smtp:send-email +mail-server+
                           "Kindista <noreply@kindista.org>"
-                          (getf (db to) :email)
+                          (car (getf (db to) :emails))
                           (s+ (getf (db from) :name) " has posted a statement of gratitude about you")
                           (gratitude-notification-email-text gratitude-id 
                                                              gratitude 

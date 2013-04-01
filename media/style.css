@@ -249,13 +249,17 @@ textarea {
  margin-bottom: 0em;
 }
 
-#decline {
- margin-top: 1.5em;
+#decline p {
+ margin: 1.5em 0 .8em 0em;
 }
 
 #signup button {
  min-width: 5em;
  margin-right: 1.2em;
+}
+
+.confirm-invite p {
+ margin: 1em 0 1em 0;
 }
 
 .flash {
@@ -685,6 +689,11 @@ body.landing > p {
 }
 
 .card {
+ display: block;
+ background: none;
+ border: 0;
+ width: 100%;
+ text-align: left;
  position: relative;
  /*background: #FDF8E9;
  border-right: 1px solid #ECE3CB;*/
@@ -1269,6 +1278,10 @@ button.red {
  font-weight:bold;
 }
 
+a.red {
+ color: #900;
+}
+
 .category {
  margin-top:0.5em;
 }
@@ -1336,34 +1349,6 @@ form.post-next h2 {
  margin-left: 5em;
 }
 
-.person-card {
- background: #FDF6E3;
- border: 1px solid #ECE3CB;
- clear: both;
- padding: 1em 1em 0.5em 1em;
- margin: 1em 0;
- overflow: hidden;
-}
-
-.person-card img {
- display: block;
- float: left;
- width: 7em;
- height: 7em;
- clear: left;
-}
-
-.person-card p {
- margin-left: 8.5em;
-}
-
-.person-card h3 {
- font-size: 1em;
- margin-top: 0.8em;
- margin-left: 8.5em;
-}
-
-
 .bio .icon {
  margin-left: 0.5em;
  opacity: 0.6;
@@ -1385,6 +1370,87 @@ form.post-next h2 {
 .bio-section textarea {
  width: 40em;
  margin: 1em 0;
+}
+
+.submit-settings {
+ float: right;
+ margin-bottom: .8em;
+ position: relative;
+ top: -.5em;
+}
+
+.settings p {
+ margin: 1.1em 0;
+}
+
+.address input[type=text]{
+ width: 20em;
+}
+
+.settings-item .title {
+ width: 6.25em;
+ background: #f2f2f2;
+ font-weight: 500;
+ font-size: 1em;
+ padding: .25em .5em;
+ border-radius: .125em;
+ clear: both;
+ float: left;
+}
+
+.settings-item .content {
+ margin: 0 .5em 1.5em 8em;
+ display: block;
+ position: relative;
+ top: .2em;
+}
+
+
+.settings-item ul, .settings-item p {
+ margin: 0;
+ padding-left: 0;
+ width: 100%;
+}
+
+.settings-item li {
+ margin-bottom: .6em;
+}
+
+.settings-item a {
+ display: block;
+ float: right;
+}
+
+.settings-item li > a {
+ display: inline;
+ float: none;
+}
+
+.settings-item li > button {
+ margin-left: 1em;
+ font: .8em;
+ padding: .3em .5em;
+}
+
+.settings-item span {
+ padding-left: 1.2em;
+}
+
+.settings-item .help-text {
+ color: #777;
+ margin-top: .4em;
+ clear: both;
+}
+
+.settings-item .password label {
+  width: 14em;
+  padding-right: .5em;
+  display: block;
+  margin: .4em 0 .3em 0;
+}
+
+.settings-item .password input[type=password] {
+ width: 20em
 }
 
 .search h2 {

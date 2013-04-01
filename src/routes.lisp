@@ -150,6 +150,10 @@
   (:get (require-user (get-personal-settings)))
   (:post (require-user (post-settings))))
 
+(defroute "/settings/verify-address" ()
+  (:get (require-user (verify-address)))
+  (:post (require-user (post-settings))))
+
 (defroute "/settings/communication" ()
   (:get (require-user (get-communication-settings)))
   (:post (require-user (post-settings))))

@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;; Copyright 2012-2013 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -29,21 +29,20 @@
         (htm (:li :class "selected" "Communication Settings"))
         (htm (:li (:a :href "/settings/communication" "Communication Settings")))))))
 
-(defun settings-item-html (item title body &key help-text editable no-data)
+(defun settings-item-html (base item title body &key help-text editable edit-text)
   (html
     (:div :class "settings-item"
       (:div :class "settings-item title" (str title))
       (:div :class "settings-item content"
         (unless editable 
-          (htm (:a :href (s+ "/settings?edit=" item) (if no-data 
-                                                       (htm "Add " (str title))
-                                                       (htm "Edit")))))
+          (htm (:a :href (s+ base "?edit=" item) 
+                (or (str edit-text) (htm "Edit")))))
         (str body)
-        (:p :class "help-text" (str help-text))))))
+        (:p :class "help-text" (:em (str help-text)))))))
 
-(defun settings-name (editable)
+(defun settings-name (base editable)
   (let ((aliases (getf *user* :aliases)))
-    (settings-item-html "name" "Name"
+    (settings-item-html base "name" "Name"
     (cond 
       (editable
         (html
@@ -77,9 +76,9 @@
     :help-text (s+ "If you are known by multiple names or nicknames, "
                    "enter up to 5 to help people find you. "))))
 
-(defun settings-address (editable)
+(defun settings-address (base editable)
   (let ((address (getf *user* :address)))
-    (settings-item-html "address" "Address"
+    (settings-item-html base "address" "Address"
     (cond 
       (editable
         (html
@@ -95,25 +94,173 @@
           (html (:p (:strong "You have not set your address yet."))))
             ))
     :editable editable 
-    :no-data (not address)
+    :edit-text (unless address "Add address")
     :help-text (s+ "Addresses help people find nearby resources and requests. "
                    "Your address will never be displayed or shared; "
                    "it is used only to calculate distance. "))))
 
-(defun get-personal-settings ()
-  (standard-page
-    "Settings"
+(defun verify-address (&key next-url)
+  (let ((next (or next-url (get-parameter "next")))) 
+    (standard-page
+      "Please verify your location."
+      (html
+        (:div :class "item"
+          (:div :class "setup"
+            (:h2 "Verify your location")
+            (:p "We will never share your exact location with anyone else.
+                 If you would like to know more about how we use the information you share with us,
+                 please read our " (:a :href "/privacy" "privacy policy") ".")
+            (str (static-google-map :size "280x150" :zoom 12 :lat (getf *user* :lat) :long (getf *user* :long)))
+
+            (:form :method "post" :action "/settings"
+              (:h3 "Is this location correct?")
+              (:input :type "hidden" :name "next" :value (str next))
+              (:button :class "yes" 
+                       :type "submit" 
+                       :name "confirm-location" 
+                       :value "1"
+                       "Yes, this is correct")
+              (:button :class "no" 
+                       :type "submit" 
+                       :name "reset-location"
+                       :value "1"
+                       "No, go back"))))))))
+
+(defun settings-password (base)
+  (let ((password (getf *user* :pass)))
+    (settings-item-html base "password" "Password"
+      (html
+        (:form :method "post" :class "password" :action "/settings"
+         (:input :type "hidden" :name "next" :value "/settings/personal")
+         (:div :class "submit-settings"
+           (:button :class "yes" :type "submit" :class "submit" "Change password"))
+         (:div
+           (:label "Current password:")
+           (:input :type "password" 
+                   :name "password" 
+                   :placeholder "verify your current password")) 
+         (:div
+           (:label "New password:")
+           (:input :type "password" 
+                   :name "new-password-1" 
+                   :placeholder "new password: at least 8 characters"))    
+         (:div
+           (:label "Confirm your new password:")
+           (:input :type "password" 
+                   :name "new-password-2" 
+                   :placeholder "please retype your new password"))))    
+
+    :editable t 
+    :help-text (s+ "Minimum of 8 characters. " 
+                   "We strongly recommend using either a mix of upper- and "
+                   "lower-case letters, numbers, and symbols; or a sentance "
+                   "of at least 8 words."))))
+
+(defun settings-emails (base editable)
+  (let* ((emails (getf *user* :email))
+         (alternates (cdr emails)))
+
+    (settings-item-html base "email" "Email"
+      (cond 
+        (editable
+          (html
+            (:form :method "post" :action "/settings"
+              (:input :type "hidden" :name "next" :value "/settings/communication")
+              (:ul 
+                (:li (str (car emails))
+                     (:span (:strong "primary email"))) 
+                (dolist (email alternates)
+                  (htm (:li (str email))))
+                (:li 
+                  (:input :type "text" 
+                          :name "aliases"
+                          :placeholder "new alternate email"
+                          )
+                  (:button :class "yes" :type "submit" :class "submit" :name "submit" "Confirm new email")    
+                  (:a :class "red" :href "/settings/communication" "Cancel"))))))
+        (t
+          (html
+            (:ul
+              (:li (:strong (str (car emails))) 
+                   (:span (str "(primary email)")))
+              (dolist (email alternates)
+                (htm (:li (str email))))) 
+            (:p (:a :href "/settings/communication?edit=email" "add another email address")))))
+
+      :edit-text ""
+      :editable editable 
+      :help-text (s+ "Adding additional email address helps people find you "
+                     "and keeps you from getting invites to Kindista at "
+                     "your other addresses. "
+                     "Kindista will never show your email addresses to anyone. "
+                     "Only your primary email address will receive "
+                     "notifications." ))))
+
+(defun settings-notifications (base)
+  (settings-item-html base "notifications" "Notify me"
     (html
-      (:h2 "Settings")
-      (str (settings-tabs-html "personal"))
-      (str (settings-name (awhen 
-                            (string= (get-parameter "edit") "name") it))) 
-      (str (settings-address (awhen 
-                               (string= (get-parameter "edit") "address") it))) 
-      )))
+      (:form :method "post" :action "/settings"
+        (:input :type "hidden" :name "next" :value "/settings/communication")
+        (:div :class "submit-settings"
+          (:button :class "yes" :type "submit" :class "submit" :name "save-notifications" "Save notification preferences"))
+        (:ul
+          (:li (:input :type "checkbox" 
+                :name "gratitude"
+                :checked (when (getf *user* :notify-gratitude) "checked"))
+               "when someone posts gratitude about me")
+          (:li (:input :type "checkbox" 
+                :name "message"
+                :checked (when (getf *user* :notify-message) "checked"))
+               "when someone sends me a message")
+          (:li (:input :type "checkbox" 
+                :name "kindista"
+                :checked (when (getf *user* :notify-kindista) "checked"))
+               "with updates and information about Kindista"))))
+
+    :editable t))
+
+(defun get-personal-settings ()
+  (let ((base "/settings/personal")) 
+    (standard-page
+      "Settings"
+      (html
+        (:h2 "Settings")
+        (str (settings-tabs-html "personal"))
+        (str (settings-name base 
+                            (awhen 
+                              (string= (get-parameter "edit") "name") it))) 
+        (str (settings-address base 
+                               (awhen 
+                                 (string= (get-parameter "edit") "address") it))) 
+        (str (settings-password base))
+        ))))
+
+(defun get-communication-settings ()
+  (let ((base "/settings/communication")) 
+    (standard-page
+      "Settings"
+
+      (html
+        (:div :class "settings"
+          (:h2 "Settings")
+          (str (settings-tabs-html "communication")) 
+          (:p "We'll email you whenever something happens on Kindista that "
+              "involves you. You can specify which actions you would like "
+              "to be notified about.") 
+          (:p "Notifications will be sent to your primary email address: "
+            (:strong (str (car (getf *user* :email))))) 
+          
+
+          (str (settings-notifications base))
+
+          (str (settings-emails base 
+                                (awhen 
+                                  (string= (get-parameter "edit") "email") it)))
+          
+          )))))
 
 (defun post-settings ()
-
+  
   (awhen (post-parameter "cancel")
     (see-other (or it "/home")))
   
@@ -135,6 +282,44 @@
         (modify-db *userid* :aliases aliases))) 
     (see-other (or (post-parameter "next") "/home")))
   
+  (when (post-parameter "address")
+    (multiple-value-bind (lat long address city state country street zip)
+      (geocode-address (post-parameter "address"))
+      (modify-db *userid* :lat lat :long long :address address :city city :state state :street street :zip zip :country country))
+    (see-other (aif (post-parameter "next") 
+                 (url-compose "/settings/verify-address" "next" it) 
+                 (url-compose "/settings/verify-address" "next" "/home"))))
+
+  (when (post-parameter "reset-location")
+    (modify-db *userid* :lat nil :long nil :address nil :location nil)
+    (see-other (or (post-parameter "next") "/home")))
+
+  (when (post-parameter "password")
+    (cond 
+      ((not (password-match-p *userid* (post-parameter "password")))
+       (flash "The password you entered is incorrect. Please try again." :error t)
+       (see-other (post-parameter "next")))
+      ((< (length (post-parameter "new-password-1")) 8)
+       (flash "Your new password is too short. Please use at least 8 characters." :error t)
+       (see-other (post-parameter "next")))
+      ((not (string= (post-parameter "new-password-1") 
+                     (post-parameter "new-password-2")))
+       (flash "The confirmation text you entered does not match the new password you entered. Please try again." :error t)
+       (see-other (post-parameter "next")))
+      (t
+       (modify-db *userid* :pass (new-password 
+                                       (post-parameter "new-password-1")))
+       (flash "You have successfully changed your password.")
+       (see-other (or (post-parameter "next") "/home")))))
+
+  (when (post-parameter "save-notifications")
+    (pprint (post-parameter "gratitude")) (terpri)
+    (modify-db *userid* :notify-gratitude (when (post-parameter "gratitude") t))
+    (modify-db *userid* :notify-message (when (post-parameter "message") t))
+    (modify-db *userid* :notify-kindista (when (post-parameter "kindista") t))
+    (flash "Your notification preferences have been saved.")
+    (see-other (or (post-parameter "next") "/home")))
+
   (when (post-parameter "bio-doing")
     (unless (getf *user* :bio)
       (modify-db *userid* :bio t))
@@ -162,17 +347,6 @@
     (unless (getf *user* :bio)
       (modify-db *userid* :bio t))
     (modify-db *userid* :bio-skills (post-parameter "bio-skills"))
-    (see-other (or (post-parameter "next") "/home")))
-
-  (when (post-parameter "address")
-    (multiple-value-bind (lat long address city state country street zip)
-        (geocode-address (post-parameter "address"))
-      (declare (ignore country))
-      (modify-db *userid* :lat lat :long long :address address :city city :state state :street street :zip zip)
-      (see-other (or (post-parameter "next") "/home"))))
-
-  (when (post-parameter "reset-location")
-    (modify-db *userid* :lat nil :long nil :address nil :location nil)
     (see-other (or (post-parameter "next") "/home")))
 
   (when (scan +number-scanner+ (post-parameter "rdist"))
