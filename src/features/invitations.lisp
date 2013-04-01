@@ -100,7 +100,7 @@
     (let* ((count (length emails))
            (pluralize (when (> count 1) "s")))
       (html
-        (:div :class "item"
+        (:div :class "item confirm-invite"
           (:form :method "post" :action "/invite"
             (:input :type "hidden" :name "next-url" :value next-url)
             (:input :type "hidden" :name "text" :value text)
@@ -195,7 +195,9 @@
 
       ((post-parameter "confirm")
        (dolist (email new-emails)
-         (send-invitation email :text (post-parameter "text")))
+         (send-invitation email :text (unless 
+                                        (string= (post-parameter "text") "")
+                                        (post-parameter "text"))))
        (if (> (length new-emails) 1)
          (flash "Your invitations have been sent.")
          (flash "Your invitaion has been sent."))

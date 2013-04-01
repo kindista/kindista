@@ -20,11 +20,14 @@
 (defun create-person (&key name email password host)
   (insert-db `(:type :person
                :name ,name
-               :email ,email
+               :emails ,(list email)
                :host ,host
                :help t
                :pass ,(new-password password)
-               :created ,(get-universal-time))))
+               :created ,(get-universal-time)
+               :notify-gratitude t
+               :notify-message t
+               :notify-kindista t)))
 
 (defun index-person (id data)
   (let ((result (make-result :id id
@@ -32,9 +35,14 @@
                              :longitude (getf data :long)
                              :type :person
                              :people (list id)
-                             :time (getf data :created))))
+                             :time (getf data :created)))
+        (names (cons (getf data :name)
+                     (getf data :aliases))))
 
-    (setf (gethash (getf data :email) *email-index*) id)
+    (awhen (getf data :emails) 
+      (dolist (email it) 
+        (setf (gethash email *email-index*) id)))
+
     (setf (gethash (getf data :username) *username-index*) id)
 
     (awhen (getf data :following)
@@ -53,7 +61,8 @@
              (sort (push result it) #'> :key #'result-time)))
 
     (when (and (getf data :lat) (getf data :long) (getf data :created))
-      (metaphone-index-insert *metaphone-index* (getf data :name) result)
+      ;people that don't give a location don't get indexed
+      (metaphone-index-insert names result)
       (geo-index-insert *people-geo-index* result)
       (geo-index-insert *activity-geo-index* result))))
 

@@ -173,7 +173,7 @@
                                     (make-donate-info :address (getf *user* :street)
                                                       :city (getf *user* :city)
                                                       :state (getf *user* :state)
-                                                      :email (getf *user* :email)
+                                                      :email (car (getf *user* :emails))
                                                       :zip (getf *user* :zip)
                                                       :name (getf *user* :name))))))
        ,@body)))
