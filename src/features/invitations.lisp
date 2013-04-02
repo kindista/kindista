@@ -120,8 +120,8 @@
               (:button :class "no" :type "submit" :class "submit" :name "edit" "Edit Invitation") 
               (:button :class "yes" :type "submit" :class "submit" :name "confirm" "Send Invitation"))))))))
 
-(defun get-invite-page ()
-  (with-user
+(defun get-invite ()
+  (require-user
     (let* ((available-count (available-invitation-count *userid*))
            (pluralize (unless (= available-count 1) "s")))
     (cond 
@@ -132,8 +132,8 @@
        (flash "You do not have any available invitations at this time." :error t)
        (see-other "/home"))))))
 
-(defun post-invite-page ()
-  (with-user
+(defun post-invite ()
+  (require-user
     (let* ((next-url (post-parameter "next-url"))
            (available-count (available-invitation-count *userid*))
            (emails (remove-duplicates 

@@ -168,118 +168,117 @@
          )))
     :selected "people"))
 
-(defroute "/gratitude/new" ()
-  (:get
-    (require-user
-      (gratitude-compose :subjects (parse-subject-list (get-parameter "subject")))))
-  (:post
-    (require-user
-      (cond
-        ((post-parameter "cancel")
-         (see-other (or (post-parameter "next") "/home")))
-        ((post-parameter "create")
-         (let ((subjects (parse-subject-list (post-parameter "subject") :remove (write-to-string *userid*))))
-           (cond
-             ((and subjects (post-parameter "text"))
-              (see-other (format nil (or (post-parameter "next") 
-                                         "/gratitude/~A")
-                                 (create-gratitude :author *userid*
-                                                   :subjects subjects
-                                                   :text (post-parameter "text")))))
-             (subjects
-              "no text")
-             ((post-parameter "text")
-              "no subject")
-             (t
-              "totally blank"))))
-        ((post-parameter "add")
-         (if (string= (post-parameter "add") "new")
-           (gratitude-add-subject :subjects (parse-subject-list (post-parameter "subject"))
-                                  :text (post-parameter "text")
-                                  :next (post-parameter "next"))
-           (gratitude-compose
-             :text (post-parameter "text")
-             :subjects (parse-subject-list
-                         (format nil "~A,~A" (post-parameter "add") (post-parameter "subject"))))))
+(defun get-gratitudes-new ()
+  (require-user
+    (gratitude-compose :subjects (parse-subject-list (get-parameter "subject")))))
 
-        ((post-parameter "search")
+(defun post-gratitudes-new ()
+  (require-user
+    (cond
+      ((post-parameter "cancel")
+       (see-other (or (post-parameter "next") "/home")))
+      ((post-parameter "create")
+       (let ((subjects (parse-subject-list (post-parameter "subject") :remove (write-to-string *userid*))))
+         (cond
+           ((and subjects (post-parameter "text"))
+            (see-other (format nil (or (post-parameter "next") 
+                                       "/gratitude/~A")
+                               (create-gratitude :author *userid*
+                                                 :subjects subjects
+                                                 :text (post-parameter "text")))))
+           (subjects
+            "no text")
+           ((post-parameter "text")
+            "no subject")
+           (t
+            "totally blank"))))
+      ((post-parameter "add")
+       (if (string= (post-parameter "add") "new")
          (gratitude-add-subject :subjects (parse-subject-list (post-parameter "subject"))
                                 :text (post-parameter "text")
-                                :next (post-parameter "next")
-                                :results (search-people (post-parameter "name"))))
-        (t
+                                :next (post-parameter "next"))
          (gratitude-compose
            :text (post-parameter "text")
            :subjects (parse-subject-list
-                       (post-parameter "subject")
-                       :remove (post-parameter "remove"))))))))
+                       (format nil "~A,~A" (post-parameter "add") (post-parameter "subject"))))))
 
-(defroute "/gratitude/<int:id>" (id)
-  (:get
-    (setf id (parse-integer id))
+      ((post-parameter "search")
+       (gratitude-add-subject :subjects (parse-subject-list (post-parameter "subject"))
+                              :text (post-parameter "text")
+                              :next (post-parameter "next")
+                              :results (search-people (post-parameter "name"))))
+      (t
+       (gratitude-compose
+         :text (post-parameter "text")
+         :subjects (parse-subject-list
+                     (post-parameter "subject")
+                     :remove (post-parameter "remove")))))))
+
+
+(defun get-gratitude (id)
+  (setf id (parse-integer id))
+  (aif (db id)
+    (require-user
+      (standard-page
+        "First few words... | Kindista"
+        (html
+          (str (gratitude-activity-item (make-result :id id
+                                                     :time (getf it :created)
+                                                     :people (cons (getf it :author) (getf it :subjects)))
+                                        :next-url (script-name*))))))
+    (standard-page "Not found" "not found")))
+
+(defun post-gratitude (id)
+  (require-user
+    (setf id (parse-integer id)) 
     (aif (db id)
-      (require-user
-        (standard-page
-          "First few words... | Kindista"
-          (html
-            (str (gratitude-activity-item (make-result :id id
-                                                       :time (getf it :created)
-                                                       :people (cons (getf it :author) (getf it :subjects)))
-                                          :next-url (script-name*))))))
-      (standard-page "Not found" "not found")))
-  (:post
-    (require-user
-      (setf id (parse-integer id)) 
-      (aif (db id)
+      (cond
+        ((and (post-parameter "love")
+              (member (getf it :type) '(:gratitude :resource :request)))
+         (love id)
+         (see-other (or (post-parameter "next") (referer))))
+        ((and (post-parameter "unlove")
+              (member (getf it :type) '(:gratitude :resource :request)))
+         (unlove id)
+         (see-other (or (post-parameter "next") (referer)))))
+      (standard-page "Not found" "not found"))))
+
+(defun get-gratitude-edit (id)
+  (require-user
+    (let* ((gratitude (db (parse-integer id))))
+      (require-test ((eql *userid* (getf gratitude :author))
+                     "You can only edit gratitudes you have written.")
+        (gratitude-compose :subjects (getf gratitude :subjects)
+                           :text (getf gratitude :text)
+                           :existing-url (s+ "/gratitude/" id "/edit"))))))
+
+(defun post-gratitude-edit (id)
+  (require-user
+    (let* ((gratitude (db (parse-integer id))))
+      (require-test ((eql *userid* (getf gratitude :author))
+                     "You can only edit statements of gratitude that you have written.")
         (cond
-          ((and (post-parameter "love")
-                (member (getf it :type) '(:gratitude :resource :request)))
-           (love id)
-           (see-other (or (post-parameter "next") (referer))))
-          ((and (post-parameter "unlove")
-                (member (getf it :type) '(:gratitude :resource :request)))
-           (unlove id)
-           (see-other (or (post-parameter "next") (referer)))))
-        (standard-page "Not found" "not found")))))
+          ((post-parameter "delete")
+           (confirm-delete :url (s+ "/gratitude/" id "/edit")
+                           :type "gratitude"
+                           :text (getf gratitude :text)
+                           :next-url (referer)))
+          ((post-parameter "really-delete")
+           (delete-gratitude (parse-integer id))
+           (flash "Your statement of gratitude has been deleted!")
+           (see-other (or (post-parameter "next") "/home")))
 
-(defroute "/gratitude/<int:id>/edit" (id)
-  (:get
-    (require-user
-      (let* ((gratitude (db (parse-integer id))))
-        (require-test ((eql *userid* (getf gratitude :author))
-                       "You can only edit gratitudes you have written.")
-          (gratitude-compose :subjects (getf gratitude :subjects)
-                             :text (getf gratitude :text)
-                             :existing-url (s+ "/gratitude/" id "/edit"))))))
-  (:post
-    (require-user
-      (let* ((gratitude (db (parse-integer id))))
-        (require-test ((eql *userid* (getf gratitude :author))
-                       "You can only edit statements of gratitude that you have written.")
-          (cond
-            ((post-parameter "delete")
-             (confirm-delete :url (s+ "/gratitude/" id "/edit")
-                             :type "gratitude"
-                             :text (getf gratitude :text)
-                             :next-url (referer)))
-            ((post-parameter "really-delete")
-             (delete-gratitude (parse-integer id))
-             (flash "Your statement of gratitude has been deleted!")
-             (see-other (or (post-parameter "next") "/home")))
+          ((post-parameter "cancel")
+           (see-other (or (post-parameter "next") "/home")))
 
-            ((post-parameter "cancel")
-             (see-other (or (post-parameter "next") "/home")))
+          ((post-parameter "create")
+             (if (post-parameter "text")
+               (progn
+                 (modify-gratitude (parse-integer id) (post-parameter "text"))
+                 (see-other (s+ "/gratitude/" id)))
+               "no text"))
 
-            ((post-parameter "create")
-               (if (post-parameter "text")
-                 (progn
-                   (modify-gratitude (parse-integer id) (post-parameter "text"))
-                   (see-other (s+ "/gratitude/" id)))
-                 "no text"))
-
-            (t
-             (gratitude-compose :subjects (getf gratitude :subjects)
-                                :text (getf gratitude :text)
-                                :existing-url (s+ "/gratitude/" id "/edit")))
-))))))
-
+          (t
+           (gratitude-compose :subjects (getf gratitude :subjects)
+                              :text (getf gratitude :text)
+                              :existing-url (s+ "/gratitude/" id "/edit"))))))))

@@ -37,29 +37,28 @@
         (str (card-button "Report" (s+ "/people/" (username-or-id from-id) "/report")))))))
 
 
-(defroute "/inbox" ()
-  (:get
-    (with-user
-      (standard-page
+(defun get-inbox ()
+  (with-user
+    (standard-page
 
-        "Inbox"
+      "Inbox"
 
-        (html
-          (when *user*
-            (str (card
-                   (menu-horiz "actions"
-                               (html (:a :href "/messages/new" "send a message"))
-                               (html (:a :href "/messages" "view old messages"))))))
+      (html
+        (when *user*
+          (str (card
+                 (menu-horiz "actions"
+                             (html (:a :href "/messages/new" "send a message"))
+                             (html (:a :href "/messages" "view old messages"))))))
 
-          ;; get a list of unread, unhidden messages
-          (str (new-message-card  "/message/1" 3570897552 0)))
+        ;; get a list of unread, unhidden messages
+        (str (new-message-card  "/message/1" 3570897552 0)))
 
-        :right (html
-                 (str (donate-sidebar))
-                 (when *user* (str (invite-sidebar))))
+      :right (html
+               (str (donate-sidebar))
+               (when *user* (str (invite-sidebar))))
 
 
-        :selected "inbox"))))
+      :selected "inbox")))
 
 (defun create-inbox-item (to from message-id time)
   (acond

@@ -17,15 +17,15 @@
 
 (in-package :kindista)
 
-(defun terms-html ()
+(defun get-terms ()
   (standard-page 
     "Terms of Use"
-    (terms-page)
+    (terms-html)
     :right (html
              (str (donate-sidebar))
              (when *user* (str (invite-sidebar))))))
 
-(defun terms-page ()
+(defun terms-html ()
  (html 
   (:div :class "legal"
    (:h1 "Terms of Use")

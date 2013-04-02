@@ -31,30 +31,29 @@
         " &middot; "
         (str (card-button "Report" (s+ "/people/" (username-or-id from-id) "/report")))))))
 
-(defroute "/discuss" ()
-  (:get
-    (require-user
-      (standard-page
+(defun get-discuss ()
+  (require-user
+    (standard-page
 
-        "Discussions"
+      "Discussions"
 
-        (html
-          (:h1 "Discussions") 
-            (str (menu-horiz "actions"
-                             (html (:a :href "/message/new" "send a message"))))
+      (html
+        (:h1 "Discussions") 
+          (str (menu-horiz "actions"
+                           (html (:a :href "/message/new" "send a message"))))
 
-            ; get a list of unread, unhidden messages
-            (str (new-message-card  "/message/123" 3570897552 1))
-            (str (new-message-card  "/message/123" 3570897552 1))
-            (str (new-message-card  "/message/123" 3570897552 1))
-            (str (new-message-card  "/message/123" 3570897552 1)))
+          ; get a list of unread, unhidden messages
+          (str (new-message-card  "/message/123" 3570897552 1))
+          (str (new-message-card  "/message/123" 3570897552 1))
+          (str (new-message-card  "/message/123" 3570897552 1))
+          (str (new-message-card  "/message/123" 3570897552 1)))
 
-        :right (html
-                 (:div :class "item"
-                  (:a :href "/messages/new" "compose a message")))
+      :right (html
+               (:div :class "item"
+                (:a :href "/messages/new" "compose a message")))
 
 
-        :selected "discuss"))))
+      :selected "discuss")))
 
 (defun create-inbox-item (to from message-id time)
   (acond

@@ -72,36 +72,34 @@
     (remove-from-db id)))
 
 
-(defroute "/gift/<int:id>" (id)
-  (:get
-    (setf id (parse-integer id))
-    (let ((it (db id)))
-      (if (eq (getf it :type) :gift)
-        (require-user
-          (standard-page
-            "First few words... | Kindista"
-            (html
-              (str (gift-activity-item (make-result :id id
-                                                    :time (getf it :created)
-                                                    :people (cons (getf it :giver) (getf it :recipients)))
-                                                    :next-url (script-name*))))))
-        (standard-page "Not found" "not found"))))
+(defun get-gift (id)
+  (setf id (parse-integer id))
+  (let ((it (db id)))
+    (if (eq (getf it :type) :gift)
+      (require-user
+        (standard-page
+          "First few words... | Kindista"
+          (html
+            (str (gift-activity-item (make-result :id id
+                                                  :time (getf it :created)
+                                                  :people (cons (getf it :giver) (getf it :recipients)))
+                                                  :next-url (script-name*))))))
+      (standard-page "Not found" "not found"))))
 
-  (:post
-    (require-user
-      (setf id (parse-integer id)) 
-      (aif (db id)
-        (cond
-          ((and (post-parameter "love")
-                (eq (getf it :type) :gift))
-           (love id)
-           (see-other (or (post-parameter "next") (referer))))
-          ((and (post-parameter "unlove")
-                (eq (getf it :type) :gift))
-           (unlove id)
-           (see-other (or (post-parameter "next") (referer)))))
-        (standard-page "Not found" "not found")))))
-
+(defun post-gift (id)
+  (require-user
+    (setf id (parse-integer id)) 
+    (aif (db id)
+      (cond
+        ((and (post-parameter "love")
+              (eq (getf it :type) :gift))
+         (love id)
+         (see-other (or (post-parameter "next") (referer))))
+        ((and (post-parameter "unlove")
+              (eq (getf it :type) :gift))
+         (unlove id)
+         (see-other (or (post-parameter "next") (referer)))))
+      (standard-page "Not found" "not found"))))
 
 (defun import-gifts (filename)
   (let ((existing ()))

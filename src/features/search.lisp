@@ -797,79 +797,78 @@
           :key #'result-id)
         #'< :key #'result-distance))))
 
-(defroute "/search" ()
-  (:get
-    (require-user
-      (let ((scope (or (get-parameter "scope") "all"))
-            (q (get-parameter "q")))
+(defun get-search ()
+  (require-user
+    (let ((scope (or (get-parameter "scope") "all"))
+          (q (get-parameter "q")))
 
-        (standard-page
-          "Search"
-          (html
-            (:h1 (str (s+ "Search results for \"" q "\"")))
+      (standard-page
+        "Search"
+        (html
+          (:h1 (str (s+ "Search results for \"" q "\"")))
 
-            (cond
-              ((string= scope "requests")
-               (see-other (s+ "/requests?q=" (url-encode q))))
+          (cond
+            ((string= scope "requests")
+             (see-other (s+ "/requests?q=" (url-encode q))))
 
-              ((string= scope "resources")
-               (see-other (s+ "/resources?q=" (url-encode q))) )
+            ((string= scope "resources")
+             (see-other (s+ "/resources?q=" (url-encode q))) )
 
-              ((string= scope "people")
-               (let ((people (search-people q)))
-                 (htm
-                   (:p "Searching for people. Would you like to "
-                       (:a :href (s+ "/search?q=" (url-encode q)) "search everything")
-                       "?")
-                   (if people
+            ((string= scope "people")
+             (let ((people (search-people q)))
+               (htm
+                 (:p "Searching for people. Would you like to "
+                     (:a :href (s+ "/search?q=" (url-encode q)) "search everything")
+                     "?")
+                 (if people
+                   (htm
+                     (str (people-results-html (sublist people 0 5)))
+                     (when (> (length people) 5)
+                       (htm
+                         "more"))) 
+                   (htm
+                     (:p "no results"))))))
+            
+            (t ; all
+             (let ((requests (search-inventory 'request q :distance (user-rdist)))
+                   (resources (search-inventory 'resource q :distance (user-rdist)))
+                   (people (search-people q)))
+
+               (if (or requests resources people)
+                 (progn
+                   (when people
                      (htm
+                       (:h2 (:a :href "/people" "People"))
                        (str (people-results-html (sublist people 0 5)))
                        (when (> (length people) 5)
                          (htm
-                           "more"))) 
+                           "more")))) 
+                   (when requests
                      (htm
-                       (:p "no results"))))))
-              
-              (t ; all
-               (let ((requests (search-inventory 'request q :distance (user-rdist)))
-                     (resources (search-inventory 'resource q :distance (user-rdist)))
-                     (people (search-people q)))
-
-                 (if (or requests resources people)
-                   (progn
-                     (when people
-                       (htm
-                         (:h2 (:a :href "/people" "People"))
-                         (str (people-results-html (sublist people 0 5)))
-                         (when (> (length people) 5)
-                           (htm
-                             "more")))) 
-                     (when requests
-                       (htm
-                         (:h2 (:a :href "/requests" "Requests")
-                           " "
-                           (str (rdist-selection-html (request-uri*)
-                                                      :style "float:right;"
-                                                      :text "show results within ")))
-                         (str (request-results-html (sublist requests 0 5)))
-                         (when (> (length requests) 5)
-                           (htm
-                             (:div :class "more-results"
-                               (:a :href (s+ "/requests?q=" (url-encode q)) (fmt "see ~d more requests" (- (length requests) 5))))))))
-                     (when resources
-                       (htm
-                         (:h2 (:a :href "/resources" "Resources")
-                           " "
-                           (str (rdist-selection-html (request-uri*)
-                                                      :style "float:right;"
-                                                      :text "show results within ")))
-                         (str (resource-results-html (sublist resources 0 5)))
-                         (when (> (length resources) 5)
-                           (htm
-                             (:div :class "more-results"
-                               (:a :href (s+ "/resources?q=" (url-encode q)) (fmt "see ~d more resources" (- (length resources) 5))))))))
-                               )
-                   (htm
-                     (:p "no results :-(")))))))
-          :search q
-          :class "search")))))
+                       (:h2 (:a :href "/requests" "Requests")
+                         " "
+                         (str (rdist-selection-html (request-uri*)
+                                                    :style "float:right;"
+                                                    :text "show results within ")))
+                       (str (request-results-html (sublist requests 0 5)))
+                       (when (> (length requests) 5)
+                         (htm
+                           (:div :class "more-results"
+                             (:a :href (s+ "/requests?q=" (url-encode q)) (fmt "see ~d more requests" (- (length requests) 5))))))))
+                   (when resources
+                     (htm
+                       (:h2 (:a :href "/resources" "Resources")
+                         " "
+                         (str (rdist-selection-html (request-uri*)
+                                                    :style "float:right;"
+                                                    :text "show results within ")))
+                       (str (resource-results-html (sublist resources 0 5)))
+                       (when (> (length resources) 5)
+                         (htm
+                           (:div :class "more-results"
+                             (:a :href (s+ "/resources?q=" (url-encode q)) (fmt "see ~d more resources" (- (length resources) 5))))))))
+                             )
+                 (htm
+                   (:p "no results :-(")))))))
+        :search q
+        :class "search"))))

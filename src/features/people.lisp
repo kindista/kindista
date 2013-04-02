@@ -295,71 +295,65 @@
              (progn ,@body)
              (not-found)))))))
 
-(defroute "/people/<id>" (id)
-  (:get
-    (with-user
-      (ensuring-userid (id "/people/~a")
-        (let ((editing (get-parameter "edit"))
-              (bio (getf (db id) :bio)))
-          (cond
-           ;((or (not editing)
-           ;     (not (eql id *userid*)))
-           ; (if (getf (db id) :bio)
-           ;   (profile-bio-html id)
-           ;   (profile-activity-html id)))
+(defun get-person (id)
+  (with-user
+    (ensuring-userid (id "/people/~a")
+      (let ((editing (get-parameter "edit"))
+            (bio (getf (db id) :bio)))
+        (cond
+         ;((or (not editing)
+         ;     (not (eql id *userid*)))
+         ; (if (getf (db id) :bio)
+         ;   (profile-bio-html id)
+         ;   (profile-activity-html id)))
 
-            ((not (eql id *userid*))
-             (profile-activity-html id))
+          ((not (eql id *userid*))
+           (profile-activity-html id))
 
-            ((not editing)
-             (profile-bio-html id))
+          ((not editing)
+           (profile-bio-html id))
 
-            ((string= editing "doing")
-             (profile-bio-html id :editing 'doing))
+          ((string= editing "doing")
+           (profile-bio-html id :editing 'doing))
 
-            ((string= editing "contact")
-             (profile-bio-html id :editing 'contact))
+          ((string= editing "contact")
+           (profile-bio-html id :editing 'contact))
 
-            ((string= editing "into")
-             (profile-bio-html id :editing 'into))
+          ((string= editing "into")
+           (profile-bio-html id :editing 'into))
 
-            ((string= editing "summary")
-             (profile-bio-html id :editing 'summary))
+          ((string= editing "summary")
+           (profile-bio-html id :editing 'summary))
 
-            ((string= editing "skills")
-             (profile-bio-html id :editing 'skills))
-            
-            (t (not-found))))))))
+          ((string= editing "skills")
+           (profile-bio-html id :editing 'skills))
+          
+          (t (not-found)))))))
 
-(defroute "/people/<id>/about" (id)
-  (:get
-    (require-user
-      (ensuring-userid (id "/people/~a/about")
-        (profile-bio-html id)))))
+(defun get-person-about (id)
+  (require-user
+    (ensuring-userid (id "/people/~a/about")
+      (profile-bio-html id))))
 
-(defroute "/people/<id>/activity" (id)
-  (:get
-    (with-user
-      (ensuring-userid (id "/people/~a/activity")
-        (profile-activity-html id)))))
+(defun get-person-activity (id)
+  (with-user
+    (ensuring-userid (id "/people/~a/activity")
+      (profile-activity-html id))))
 
-(defroute "/people/<id>/reputation" (id)
-  (:get
-    (require-user
-      (ensuring-userid (id "/people/~a/reputation")
-        (profile-activity-html id :type :gratitude)))))
+(defun get-person-reputation (id)
+  (require-user
+    (ensuring-userid (id "/people/~a/reputation")
+      (profile-activity-html id :type :gratitude))))
 
-(defroute "/people/<id>/resources" (id)
-  (:get
-    (require-user
-      (ensuring-userid (id "/people/~a/resources")
-        (profile-activity-html id :type :resource)))))
+(defun get-person-resources (id)
+  (require-user
+    (ensuring-userid (id "/people/~a/resources")
+      (profile-activity-html id :type :resource))))
 
-(defroute "/people/<id>/requests" (id)
-  (:get
-    (require-user
-      (ensuring-userid (id "/people/~a/requests")
-        (profile-activity-html id :type :request)))))
+(defun get-person-requests (id)
+  (require-user
+    (ensuring-userid (id "/people/~a/requests")
+      (profile-activity-html id :type :request))))
 
 
 (defun nearby-people (&optional (userid *userid*))
@@ -391,32 +385,30 @@
               (collect (cons (length (mutual-connections person userid)) person)))))
     #'> :key #'first))
 
-(defroute "/people/" ()
-  (:get
-    (moved-permanently "/people")))
+(defun go-people ()
+  (moved-permanently "/people"))
 
-(defroute "/people" ()
-  (:get
-    (with-user
-      (standard-page
-        "People"
-        (html
-          ; favorites / connections?
-          (:h2 "Connect with people who live nearby")
-          (with-location
-            (dolist (data (nearby-people))
-              (let* ((id (result-id data))
+(defun get-people ()
+  (with-user
+    (standard-page
+      "People"
+      (html
+        ; favorites / connections?
+        (:h2 "Connect with people who live nearby")
+        (with-location
+          (dolist (data (nearby-people))
+            (let* ((id (result-id data))
+                   (person (db id)))
+              (str (person-card id (getf person :name))))))
+        (when *user* 
+          (htm
+            (:h2 "People with mutual connections") 
+            (dolist (data (suggested-people))
+              (let* ((id (cdr data))
                      (person (db id)))
-                (str (person-card id (getf person :name))))))
-          (when *user* 
-            (htm
-              (:h2 "People with mutual connections") 
-              (dolist (data (suggested-people))
-                (let* ((id (cdr data))
-                       (person (db id)))
-                  ; (car data) is the number of mutual connections
-                  (str (person-card id (getf person :name))))))))
-        :selected "people"
-        :right (html
-                 (str (donate-sidebar))
-                 (str (invite-sidebar)))))))
+                ; (car data) is the number of mutual connections
+                (str (person-card id (getf person :name))))))))
+      :selected "people"
+      :right (html
+               (str (donate-sidebar))
+               (str (invite-sidebar))))))

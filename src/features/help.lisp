@@ -35,7 +35,7 @@
     (:div :class "legal faqs"
       (str (markdown-file (s+ +markdown-path+ "faq.md"))))))
 
-(defun get-help-page () 
+(defun get-help () 
   (standard-page
     "Help and Feedback"
     (html
@@ -46,7 +46,7 @@
              (str (donate-sidebar))
              (str (invite-sidebar)))))
              
-(defun get-faqs-page ()
+(defun get-faqs ()
   (standard-page 
     "Frequently Asked Questions" 
     (html

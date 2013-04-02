@@ -17,27 +17,26 @@
 
 (in-package :kindista)
 
-(defroute "/messages" ()
-  (:get
-    (require-user
-      (standard-page
+(defun get-messages ()
+  (require-user
+    (standard-page
 
-        "Messages"
+      "Messages"
 
-        (html
-          (str (menu-horiz "actions"
-                           (html (:a :href "/messages/new" "send a message"))))
+      (html
+        (str (menu-horiz "actions"
+                         (html (:a :href "/messages/new" "send a message"))))
 
-          ;; get a list of people we have had conversations with
+        ;; get a list of people we have had conversations with
 
-          (str (new-message-card  "/message/1" 3570897552 0)))
+        (str (new-message-card  "/message/1" 3570897552 0)))
 
-        :right (html
-                 (str (donate-sidebar))
-                 (str (invite-sidebar)))
+      :right (html
+               (str (donate-sidebar))
+               (str (invite-sidebar)))
 
 
-        :selected "inbox"))))
+      :selected "inbox")))
 
 (defun create-message (&key to (from *userid*) text)
   (let* ((time (get-universal-time))

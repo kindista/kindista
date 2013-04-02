@@ -23,19 +23,16 @@
        (progn ,@body)
        (not-found))))
 
-(defroute "/admin" ()
-  (:get
-    (require-admin
-      (notice :admin-page "")
-      (standard-page
-        "Events"
-        (html
-          (:h1 "Admin")
-          (:h2 "Ideas")
-          (:ul
-            (:li "create a new event")
-            (:li "upcoming events")
-            (:li "events friends are going to")
-            ))
-        :selected "admin"))))
-
+(defun get-admin ()
+  (require-admin
+    (notice :admin-page "")
+    (standard-page
+      "Events"
+      (html
+        (:h1 "Admin")
+        (:h2 "Ideas")
+        (:ul
+          (:li "create a new event")
+          (:li "upcoming events")
+          (:li "events friends are going to")))
+      :selected "admin")))

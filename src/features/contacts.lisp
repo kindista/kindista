@@ -17,14 +17,22 @@
 
 (in-package :kindista)
 
-(defun get-privacy ()
-  (standard-page 
-    "Privacy Policy"
-    (html 
-      (:div :class "legal" :id "privacy"
-        (str (markdown-file (s+ +markdown-path+ "privacy.md")))))  
-    :right (html
-             (str (donate-sidebar))
-             (when *user* (str (invite-sidebar))))))
+(defun post-contacts ()
+  (require-user
+    (let ((contacts (getf *user* :following)))
+      (cond
+        ((scan +number-scanner+ (post-parameter "add"))
+         (let ((id (parse-integer (post-parameter "add"))))
+           (unless (member id contacts)
+             (modify-db *userid* :following (cons id contacts))))
+         (see-other (or (post-parameter "next") "/home")))
 
+        ((scan +number-scanner+ (post-parameter "remove"))
+         (let ((id (parse-integer (post-parameter "remove"))))
+           (when (member id contacts)
+             (modify-db *userid* :following (remove id contacts))))
+         (see-other (or (post-parameter "next") "/home")))
 
+        (t
+         (flash "Sorry, couldn't make sense of that request.")
+         (see-other "/home"))))))

@@ -86,14 +86,11 @@
 
     (create-scanner (s+ "^" newpath "$"))))
 
-(defmacro defroute (path params &body body)
-  `(setf *routes* (cons (cons (make-path-scanner ,path)
-                              (lambda ,params
-                                (case (request-method*)
-                                  ,@body
-                                  (t (setf (return-code*) +http-method-not-allowed+) ""))))
-                        *routes*)))
 
+(defmacro routes (&body routes)
+  `(setf *routes* (list ,@(iter (for route in routes)
+                                (collect `(list (make-path-scanner ,(first route))
+                                                (quote ,(rest route))))))))
 
 ; }}}
 
@@ -254,8 +251,15 @@
           (scan-to-strings (car rule) (script-name*))
         (when match
           (return-from acceptor-dispatch-request
-            (progn
-              (apply (cdr rule) (coerce results 'list)))))))
+            (let ((method (request-method*)))
+              (iter (for rule-method in (cadr rule) by #'cddr)
+                    (for rule-function in (cdadr rule) by #'cddr)
+                    (pprint (list rule-method rule-function)) (Terpri)
+                    (when (eq method rule-method)
+                      (leave (apply (fdefinition rule-function) (coerce results 'list))))
+                    (finally
+                      (setf (return-code*) +http-method-not-allowed+)
+                      "that method is not permitted on this URL")))))))
     (not-found)))
 
 #|(defmethod acceptor-status-message ((acceptor k-acceptor)

@@ -219,7 +219,7 @@
 
     :editable t))
 
-(defun get-personal-settings ()
+(defun get-settings ()
   (let ((base "/settings/personal")) 
     (standard-page
       "Settings"
@@ -235,7 +235,10 @@
         (str (settings-password base))
         ))))
 
-(defun get-communication-settings ()
+(defun go-settings ()
+  (see-other "/settings"))
+
+(defun get-settings-communication ()
   (let ((base "/settings/communication")) 
     (standard-page
       "Settings"
@@ -255,9 +258,7 @@
 
           (str (settings-emails base 
                                 (awhen 
-                                  (string= (get-parameter "edit") "email") it)))
-          
-          )))))
+                                  (string= (get-parameter "edit") "email") it))))))))
 
 (defun post-settings ()
   
