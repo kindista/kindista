@@ -19,11 +19,11 @@
 
 (defun create-invitations (&key (count 1) (host *userid*))
   (iter (for i from 1 to count) 
-        (insert-db (list :type :invitation
-                         :host host
-                         :recipient-email nil
-                         :text nil
-                         :valid-until (get-universal-time)))))
+        (collect (insert-db (list :type :invitation
+                                  :host host
+                                  :recipient-email nil
+                                  :text nil
+                                  :valid-until (get-universal-time))))))
 
 (defun index-invitation (id data)
   (let* ((host (getf (db id) :host)))
@@ -37,16 +37,28 @@
              (remove invitation-id it))) 
     (remove-from-db invitation-id)))
 
-(defun address-invitation (id &key recipient-email text)
+(defun address-invitation (id &key recipient-email text self)
+; self invitations are verifications for alternate email addresses
   (modify-db id :recipient-email recipient-email 
+                :token (random-password 9)
+                :self self
                 :text text
                 :valid-until (+ (get-universal-time) 2592000)))
+
+(defun add-alt-email (invitation-id)
+  (let* ((invitation (db invitation-id))
+         (userid (getf invitation :host))
+         (email (getf invitation :recipient-email)))
+    (amodify-db userid :emails (append it (list email))
+                       :pending-alt-emails (remove invitation-id it))) 
+    (delete-invitation invitation-id))
 
 (defun available-invitations (host)
   (let ((all-invites (gethash host *person-invitation-index*))
         (now (get-universal-time)))
     (iter (for id in all-invites) 
-          (unless (> (getf (db id) :valid-until) now)
+          (unless (or (getf (db id) :self) 
+                      (> (getf (db id) :valid-until) now))
             (collect id)))))
 
 (defun unconfirmed-invitations (host)

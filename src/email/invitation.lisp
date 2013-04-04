@@ -1,12 +1,12 @@
 (in-package :kindista)
 
-(defun invitation-email-text (invitation-id to from expires &key text)
+(defun invitation-email-text (invitation-id token to from &key text)
   (let ((sender (getf (db from) :name)))
     (s+ sender
 " has invited you to join Kindista, the social network for building "
 "community and sharing local resources.
       
-Your invitation number is " (write-to-string invitation-id) ".
+Your invitation code is " (write-to-string token) ".
 This invitation will expire in 30 days. 
 
 " 
@@ -30,7 +30,9 @@ sender
 "
 (url-compose (s+ +base-url+ "/signup")
              "id" invitation-id
-             "email" to)
+             "email" to
+             "token" token
+             "from" sender)
 
 "
 
@@ -41,7 +43,7 @@ You will then have the option to join Kindista, or decline the "
       "-The Kindista Team")))
 
 
-(defun invitation-email-html (invitation-id to from expires &key text)
+(defun invitation-email-html (invitation-id token to from &key text)
   (let ((sender (getf (db from) :name)))
     (html-email-base
       (html
@@ -51,7 +53,7 @@ You will then have the option to join Kindista, or decline the "
           "community and sharing local resources. ")
         
         (:p :style *style-p*
-         "Your invitation number is " (:strong (str (write-to-string invitation-id)) ".")         
+         "Your invitation code is " (:strong (str (write-to-string token)) ".")         
          (:br)
          "This invitation will expire in 30 days.")
 
@@ -77,10 +79,16 @@ You will then have the option to join Kindista, or decline the "
           (:br)
           (:a :href (url-compose (s+ +base-url+ "/signup")
                                  "id" invitation-id
-                                 "email" to)
+                                 "email" to
+                                 "from" sender
+                                 "token" token
+                                 )
                     (str (url-compose (s+ +base-url+ "/signup")
                                       "id" invitation-id
-                                      "email" to))))
+                                      "email" to
+                                      "from" sender
+                                      "token" token
+                                      ))))
 
 
         (:p :style *style-p* 

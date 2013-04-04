@@ -947,6 +947,14 @@ input::-moz-focus-inner {
  font-size:0.8em;
 }
 
+.no-padding {
+ padding: 0;
+}
+
+.inline {
+ display: inline;
+}
+
 button.text.large {
  font-size:1.1em;
 }
@@ -1211,6 +1219,13 @@ button {
  border-radius:3px;
 }
 
+button.simple-link {
+ padding:0;
+ border:0;
+ background-color: transparent;
+ color: #5c8a2f;
+}
+
 .actions input[type=submit]:hover, button:hover {
  text-decoration:underline;
 }
@@ -1246,7 +1261,6 @@ button.link {
  border:0;
  padding:0.5em;
  background-color: transparent;
- color:#5c8a2f;
  font-weight:bold;
  margin-right:1em;
 }
@@ -1280,6 +1294,14 @@ button.red {
 
 a.red {
  color: #900;
+}
+
+.red {
+ color: #900;
+}
+
+.green {
+ color:#5c8a2f;
 }
 
 .category {
@@ -1387,6 +1409,10 @@ form.post-next h2 {
  width: 20em;
 }
 
+.settings-item {
+ max-width: 60em;
+}
+
 .settings-item .title {
  width: 6.25em;
  background: #f2f2f2;
@@ -1416,24 +1442,35 @@ form.post-next h2 {
  margin-bottom: .6em;
 }
 
-.settings-item a {
+.settings-item div > a {
  display: block;
  float: right;
 }
 
 .settings-item li > a {
  display: inline;
+ font-weight: 500;
+ font-size: .9em;
  float: none;
+ margin-left: .8em;
+}
+
+.settings-item li > button.simple-link {
+ margin-left:0;
+ font-weight: 500;
+ font-size: .9em;
+ padding:0;
+}
+
+.settings-item  span {
+ margin: 0 1.1em 0 0;
+ padding: 0;
 }
 
 .settings-item li > button {
  margin-left: 1em;
- font: .8em;
+ font-size: .9em;
  padding: .3em .5em;
-}
-
-.settings-item span {
- padding-left: 1.2em;
 }
 
 .settings-item .help-text {

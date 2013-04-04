@@ -88,4 +88,5 @@
                                       :components ((:file "base")
                                                    (:file "invitation")
                                                    (:file "gratitude-notification")
+                                                   (:file "email-verification")
                                                    (:file "email-handlers")))))))
