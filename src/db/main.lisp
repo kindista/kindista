@@ -354,6 +354,17 @@
         (setf (getf data (car item)) (cadr item)))
       (update-db id data))))
 
+(defmacro amodify-db (id &rest items)
+  (let ((data (gensym)))
+    `(with-locked-hash-table (*db*)
+       (let ((,data (db ,id)))
+         ,@(do
+             ((statements ())
+              (item items (cddr item)))
+             ((not (and (car item) (symbolp (car item)))) statements)
+             (push `(let ((it (getf ,data ,(car item)))) (setf (getf ,data ,(car item)) ,(cadr item))) statements))
+         (update-db ,id ,data)))))
+
 (defun insert-db (data)
   (let ((id (with-mutex (*db-top-lock*) (incf *db-top*))))
     (update-db id data)
