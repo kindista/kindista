@@ -109,9 +109,9 @@ Discussions
 - [ ] Comments
 
 Settings
-- [ ] contact preferences
+- [X] contact preferences
 - [ ] change avatar
-- [ ] add/change email addresses
+- [X] add/change email addresses
 - [X] change password
 - [X] name
 - [X] location
@@ -136,6 +136,7 @@ Terms and Privacy
 - [ ] Proof read terms
 - [ ] Proof read privacy
 - [ ] Change effective dates on Privacy and Terms
+- [ ] turn TOU into a markup file
 
 ### MAYBE
 

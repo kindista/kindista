@@ -149,13 +149,13 @@
     :get get-help)
 
   ("/help/faqs"
-    :get-faqs)
+    :get get-faqs)
 
   ("/terms"
-    :get-terms)
+    :get get-terms)
 
   ("/privacy"
-    :get-privacy)
+    :get get-privacy)
 
   ("/donate"
     :get get-donate
