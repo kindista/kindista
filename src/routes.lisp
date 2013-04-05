@@ -130,11 +130,11 @@
     :get get-messages)
 
   ("/settings"
-    :get get-settings
-    :post post-settings)
+    :post post-settings 
+    :get go-settings)
 
   ("/settings/personal"
-    :get go-settings)
+    :get get-settings)
 
   ("/settings/verify-address"
     :get get-verify-address)

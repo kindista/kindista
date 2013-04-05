@@ -34,52 +34,77 @@
     (:div :class "settings-item"
       (:div :class "settings-item title" (str title))
       (:div :class "settings-item content"
-        (unless editable 
-          (htm (:a :href (s+ base "?edit=" item) 
+        (unless editable
+          (htm (:a :href (s+ base "?edit=" item)
                 (or (str edit-text) (htm "Edit")))))
         (str body)
         (:p :class "help-text" (:em (str help-text)))))))
 
+(defun settings-avatar (base editable)
+  (let ((aliases (getf *user* :aliases)))
+    (settings-item-html
+      base "avatar" "Avatar"
+      (cond
+        (editable
+          (html
+            (:form :method "post" :action "/settings"
+              (:input :type "hidden" :name "next" :value "/settings/personal")
+              (:div :class "submit-settings"
+                (:button :class "no" :type "submit" :class "submit" :name "cancel" "Cancel")
+                (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
+              (:ul
+                (:li (:span (:input :type "text"
+                                    :name "name"
+                                    :value (str (getf *user* :name))))
+                     (:span (:strong "display name")))))))
+        (t
+          (html
+            (:img :src (strcat +avatar-base+ *userid* ".jpg")))))
+
+    :editable editable
+    :help-text (s+ "If you are known by multiple names or nicknames, "
+                   "enter up to 5 to help people find you. "))))
+
 (defun settings-name (base editable)
   (let ((aliases (getf *user* :aliases)))
-    (settings-item-html base "name" "Name"
-    (cond 
-      (editable
-        (html
-          (:form :method "post" :action "/settings"
-           (:input :type "hidden" :name "next" :value "/settings/personal")
-           (:div :class "submit-settings"
-             (:button :class "no" :type "submit" :class "submit" :name "cancel" "Cancel")
-             (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))   
-           (:ul 
-             (:li (:span (:input :type "text" 
-                                 :name "name" 
-                                 :value (str (getf *user* :name))))
-                  (:span (:strong "display name"))) 
-             (iter (for i to 3) 
-                   (htm (:li 
-                          (:span (:input :type "text" 
-                                          :name "aliases"
-                                          :value (awhen (nth i aliases) 
-                                                (str it))))
-                          (:span "nickname")))))
-           )))
-      (t
-        (html
-          (:ul
-            (:li (:span (:strong (str (getf *user* :name)))) 
-                 (when aliases (htm (:span (str "(displayed)")))))
-            (dolist (alias aliases)
-              (htm (:li (:span (str alias)) 
-                        (:span :class "help-text" "(nickname)")))))))) 
-    :editable editable 
+    (settings-item-html
+      base "name" "Name"
+      (cond
+        (editable
+          (html
+            (:form :method "post" :action "/settings"
+              (:input :type "hidden" :name "next" :value "/settings/personal")
+              (:div :class "submit-settings"
+                (:button :class "no" :type "submit" :class "submit" :name "cancel" "Cancel")
+                (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
+              (:ul
+                (:li (:span (:input :type "text"
+                                    :name "name"
+                                    :value (str (getf *user* :name))))
+                     (:span (:strong "display name")))
+                (loop for i to 3
+                      do (htm (:li
+                                (:span (:input :type "text"
+                                                :name "aliases"
+                                                :value (awhen (nth i aliases)
+                                                      (str it))))
+                                (:span "nickname"))))))))
+        (t
+          (html
+            (:ul
+              (:li (:span (:strong (str (getf *user* :name))))
+                   (when aliases (htm (:span (str "(displayed)")))))
+              (dolist (alias aliases)
+                (htm (:li (:span (str alias))
+                          (:span :class "help-text" "(nickname)"))))))))
+    :editable editable
     :help-text (s+ "If you are known by multiple names or nicknames, "
                    "enter up to 5 to help people find you. "))))
 
 (defun settings-address (base editable)
   (let ((address (getf *user* :address)))
     (settings-item-html base "address" "Address"
-    (cond 
+    (cond
       (editable
         (html
           (:form :method "post" :class "address" :action "/settings"
@@ -87,20 +112,20 @@
            (:div :class "submit-settings"
              (:button :class "no" :type "submit" :class "submit" :name "cancel" "Cancel")
              (:button :class "yes" :type "submit" :class "submit" :name "confirm-address" "Submit"))
-           (:input :type "text" :name "address" :value (str address))))) 
+           (:input :type "text" :name "address" :value (str address)))))
       (t
-        (aif address 
+        (aif address
           (html (:p (str it)))
           (html (:p (:strong "You have not set your address yet."))))
             ))
-    :editable editable 
+    :editable editable
     :edit-text (unless address "Add address")
     :help-text (s+ "Addresses help people find nearby resources and requests. "
                    "Your address will never be displayed or shared; "
                    "it is used only to calculate distance. "))))
 
 (defun verify-address (&key next-url)
-  (let ((next (or next-url (get-parameter "next")))) 
+  (let ((next (or next-url (get-parameter "next"))))
     (standard-page
       "Please verify your location."
       (html
@@ -115,13 +140,13 @@
             (:form :method "post" :action "/settings"
               (:h3 "Is this location correct?")
               (:input :type "hidden" :name "next" :value (str next))
-              (:button :class "yes" 
-                       :type "submit" 
-                       :name "confirm-location" 
+              (:button :class "yes"
+                       :type "submit"
+                       :name "confirm-location"
                        :value "1"
                        "Yes, this is correct")
-              (:button :class "no" 
-                       :type "submit" 
+              (:button :class "no"
+                       :type "submit"
                        :name "reset-location"
                        :value "1"
                        "No, go back"))))))))
@@ -136,22 +161,22 @@
            (:button :class "yes" :type "submit" :class "submit" "Change password"))
          (:div
            (:label "Current password:")
-           (:input :type "password" 
-                   :name "password" 
-                   :placeholder "verify your current password")) 
+           (:input :type "password"
+                   :name "password"
+                   :placeholder "verify your current password"))
          (:div
            (:label "New password:")
-           (:input :type "password" 
-                   :name "new-password-1" 
-                   :placeholder "new password: at least 8 characters"))    
+           (:input :type "password"
+                   :name "new-password-1"
+                   :placeholder "new password: at least 8 characters"))   
          (:div
            (:label "Confirm your new password:")
-           (:input :type "password" 
-                   :name "new-password-2" 
-                   :placeholder "please retype your new password"))))    
+           (:input :type "password"
+                   :name "new-password-2"
+                   :placeholder "please retype your new password"))))   
 
-    :editable t 
-    :help-text (s+ "Minimum of 8 characters. " 
+    :editable t
+    :help-text (s+ "Minimum of 8 characters. "
                    "We strongly recommend using either a mix of upper- and "
                    "lower-case letters, numbers, and symbols; or a sentance "
                    "of at least 8 words."))))
@@ -164,9 +189,9 @@
       (html
         (:form :method "post" :action "/settings"
           (:input :type "hidden" :name "next" :value "/settings/communication")
-          (:ul 
+          (:ul
             (:li (:span :class "email-item" (:strong (str (car emails))))
-                 (:span :class "help-text" (:em "primary email"))) 
+                 (:span :class "help-text" (:em "primary email")))
             (dolist (email alternates)
               (htm (:li (:span :class "email-item" (str email))
                         (:button :class "simple-link green"
@@ -182,53 +207,53 @@
                                  "Remove")
                         )))
             (dolist (invite-id pending)
-              (let ((email (getf (db invite-id) :recipient-email))) 
-                (htm 
-                  (:li 
+              (let ((email (getf (db invite-id) :recipient-email)))
+                (htm
+                  (:li
                     (:span :class "email-item" (str email))
-                    (cond 
+                    (cond
                       ((string= email activate)
-                       (htm 
+                       (htm
                          (:span
                            (:input :type "hidden"
                                    :name "invitation-id" :value invite-id)
-                           (:input :type "text" 
-                                   :name "token" 
+                           (:input :type "text"
+                                   :name "token"
                                    :placeholder "please enter your activation code"))
-                         (:button :class "yes" 
+                         (:button :class "yes"
                                   :type "submit"
-                                  :class "submit" 
+                                  :class "submit"
                                   "Activate")
                          (:a :class "red" :href "/settings/communication" "Cancel")))
                       (t
-                       (htm 
+                       (htm
                          (:span :class "red" "(pending)")
                          (:a :href (url-compose "/settings/communication"
                                                 "edit" "email"
                                                 "activate" email)
-                             "Enter code") 
+                             "Enter code")
                          (when (not editable)
-                           (htm 
+                           (htm
                              " | "
                              (:button :type "submit"
                                       :class "simple-link "
                                       :name "resend-code"
-                                      "Resend code"))))))))))) 
+                                      "Resend code")))))))))))
 
           (cond
-            ((not editable) 
-             (htm (:p (:a :href "/settings/communication?edit=email" "add another email address")))) 
-            ((not activate) 
+            ((not editable)
+             (htm (:p (:a :href "/settings/communication?edit=email" "add another email address"))))
+            ((not activate)
               (htm
-                (:li 
-                  (:input :type "text" 
+                (:li
+                  (:input :type "text"
                           :name "new-email"
                           :placeholder "new alternate email")
-                  (:button :class "yes" :type "submit" :class "submit" :name "submit" "Confirm new email")    
+                  (:button :class "yes" :type "submit" :class "submit" :name "submit" "Confirm new email")   
                   (:a :class "red" :href "/settings/communication" "Cancel"))) ))))
 
       :edit-text ""
-      :editable editable 
+      :editable editable
       :help-text (s+ "Adding additional email address helps people find you "
                      "and keeps you from getting invites to Kindista at "
                      "your other addresses. "
@@ -238,9 +263,9 @@
 
 (defun activate-email-address (invitation-id test-token)
   (let* ((invitation (db invitation-id))
-         (true-token (getf invitation :token)) 
-         (email (getf invitation :recipient-email))) 
-    (cond 
+         (true-token (getf invitation :token))
+         (email (getf invitation :recipient-email)))
+    (cond
      ((not (eq (getf invitation :host) *userid*))
       (flash (s+ "It appears that the email address you are trying to "
                  "verify belongs to another user. "
@@ -250,7 +275,7 @@
       (see-other (url-compose "/settings/communication"
                               "edit" "email"
                               "activate" email)))
-     
+    
     ((or (not (eq (getf invitation :type) :invitation))
          (not (string= test-token true-token)))
      (pprint (getf invitation :type))
@@ -266,7 +291,7 @@
                              "activate" email)))
     (t
      (add-alt-email invitation-id)
-     (flash (s+ "You have successfully added " email 
+     (flash (s+ "You have successfully added " email
                 " to your Kindista account."))
      (see-other "/settings/communication")))))
 
@@ -278,15 +303,15 @@
         (:div :class "submit-settings"
           (:button :class "yes" :type "submit" :class "submit" :name "save-notifications" "Save notification preferences"))
         (:ul
-          (:li (:input :type "checkbox" 
+          (:li (:input :type "checkbox"
                 :name "gratitude"
                 :checked (when (getf *user* :notify-gratitude) "checked"))
                "when someone posts gratitude about me")
-          (:li (:input :type "checkbox" 
+          (:li (:input :type "checkbox"
                 :name "message"
                 :checked (when (getf *user* :notify-message) "checked"))
                "when someone sends me a message")
-          (:li (:input :type "checkbox" 
+          (:li (:input :type "checkbox"
                 :name "kindista"
                 :checked (when (getf *user* :notify-kindista) "checked"))
                "with updates and information about Kindista"))))
@@ -294,64 +319,63 @@
     :editable t))
 
 (defun get-settings ()
-  (let ((base "/settings/personal")) 
-    (standard-page
-      "Settings"
-      (html
-        (:h2 "Settings")
-        (str (settings-tabs-html "personal"))
-        (str (settings-name base 
-                            (awhen 
-                              (string= (get-parameter "edit") "name") it))) 
-        (str (settings-address base 
-                               (awhen 
-                                 (string= (get-parameter "edit") "address") it))) 
-        (str (settings-password base))
-        ))))
+  (require-user
+    (let ((base "/settings/personal")
+          (edit (get-parameter "edit")))
+      (standard-page
+        "Settings"
+        (html
+          (:h2 "Settings")
+          (str (settings-tabs-html "personal"))
+          (str (settings-avatar base (string= edit "avatar")))
+          (str (settings-name base (string= edit "name")))
+          (str (settings-address base (string= edit "address")))
+          (str (settings-password base)))))))
 
 (defun go-settings ()
   (see-other "/settings"))
 
-(defun get-communication-settings ()
-  (cond
-    ((and (get-parameter "invitation-id")
-          (get-parameter "token"))
-     (activate-email-address (parse-integer (get-parameter "invitation-id"))
-                             (get-parameter "token")))
-   (t
-    (let ((base "/settings/communication")) 
-      (standard-page
-        "Settings"
-        (html
-          (:div :class "settings"
-            (:h2 "Settings")
-            (str (settings-tabs-html "communication")) 
-            (:p "We'll email you whenever something happens on Kindista that "
-                "involves you. You can specify which actions you would like "
-                "to be notified about.") 
-            (:p "Notifications will be sent to your primary email address: "
-              (:strong (str (car (getf *user* :email))))) 
-            
+(defun get-settings-communication ()
+  (require-user
+    (cond
+      ((and (scan +number-scanner+ (get-parameter "invitation-id"))
+            (get-parameter "token"))
 
-            (str (settings-notifications base))
+       (activate-email-address (parse-integer (get-parameter "invitation-id"))
+                               (get-parameter "token")))
+      (t
+       (let ((base "/settings/communication"))
+         (standard-page
+           "Settings"
+           (html
+             (:div :class "settings"
+               (:h2 "Settings")
+               (str (settings-tabs-html "communication"))
+               (:p "We'll email you whenever something happens on Kindista that "
+                   "involves you. You can specify which actions you would like "
+                   "to be notified about.")
+               (:p "Notifications will be sent to your primary email address: "
+                 (:strong (str (car (getf *user* :emails)))))
 
-            (str (settings-emails base 
-                                  (awhen 
-                                    (string= (get-parameter "edit") "email") it)
-                                  :activate (get-parameter "activate"))))))))))
+
+               (str (settings-notifications base))
+
+               (str (settings-emails base
+                                     (string= (get-parameter "edit") "email")
+                                     :activate (get-parameter "activate")))))))))))
 
 (defun post-settings ()
-  (cond 
+  (acond
     ((post-parameter "cancel")
      (see-other (or (post-parameter "next") "/home")))
-    
+
     ((post-parameter "name")
-     (cond 
+     (cond
        ((validate-name it)
         (unless (equal (getf *user* :name) it)
-          (modify-db *userid* :name it))) 
+          (modify-db *userid* :name it)))
        (t
-         (flash "You must use your true full name (first and last) for your primary name on Kindista.  Single word names are permitted for your nicknames." :error t)) 
+         (flash "You must use your true full name (first and last) for your primary name on Kindista.  Single word names are permitted for your nicknames." :error t))
      (see-other (or (post-parameter "next") "/home"))))
 
     ((post-parameter "aliases")
@@ -360,15 +384,15 @@
                             (when (string= (car pair) "aliases")
                               (collect (cdr pair)))))))
        (unless (equal (getf *user* :aliases) aliases)
-         (modify-db *userid* :aliases aliases))) 
+         (modify-db *userid* :aliases aliases)))
      (see-other (or (post-parameter "next") "/home")))
-    
+
     ((post-parameter "address")
      (multiple-value-bind (lat long address city state country street zip)
        (geocode-address (post-parameter "address"))
        (modify-db *userid* :lat lat :long long :address address :city city :state state :street street :zip zip :country country))
-     (see-other (aif (post-parameter "next") 
-                  (url-compose "/settings/verify-address" "next" it) 
+     (see-other (aif (post-parameter "next")
+                  (url-compose "/settings/verify-address" "next" it)
                   (url-compose "/settings/verify-address" "next" "/home"))))
 
     ((post-parameter "reset-location")
@@ -376,19 +400,19 @@
      (see-other (or (post-parameter "next") "/home")))
 
     ((post-parameter "password")
-     (cond 
+     (cond
        ((not (password-match-p *userid* (post-parameter "password")))
         (flash "The password you entered is incorrect. Please try again." :error t)
         (see-other (post-parameter "next")))
        ((< (length (post-parameter "new-password-1")) 8)
         (flash "Your new password is too short. Please use at least 8 characters." :error t)
         (see-other (post-parameter "next")))
-       ((not (string= (post-parameter "new-password-1") 
+       ((not (string= (post-parameter "new-password-1")
                       (post-parameter "new-password-2")))
         (flash "The confirmation text you entered does not match the new password you entered. Please try again." :error t)
         (see-other (post-parameter "next")))
        (t
-        (modify-db *userid* :pass (new-password 
+        (modify-db *userid* :pass (new-password
                                         (post-parameter "new-password-1")))
         (flash "You have successfully changed your password.")
         (see-other (or (post-parameter "next") "/home")))))
@@ -405,26 +429,26 @@
             (id (gethash new-email *email-index*))
             (emails (getf *user* :emails))
             (confirmation (car (create-invitations)))
-            (pending (awhen (getf *user* :pending-alt-emails) it))) 
-       (cond 
+            (pending (awhen (getf *user* :pending-alt-emails) it)))
+       (cond
          ((equal (car emails) new-email)
           (flash (s+ new-email " is already your primary email address. "
-                     "If you want to use " new-email 
+                     "If you want to use " new-email
                      " as an alternate email address, you must first "
                      "set another email to be your primary email "
                      "address.") :error t)
-          (see-other "/settings/communication?edit=email"))  
+          (see-other "/settings/communication?edit=email")) 
          ((member new-email emails)
-          (see-other "/settings/communication?edit=email"))  
+          (see-other "/settings/communication?edit=email")) 
          (id
-          (flash (s+ "The email address you have submitted, " new-email 
+          (flash (s+ "The email address you have submitted, " new-email
                      ", already belongs to another Kindista member. "
                      "Please contact us if " new-email
                      " is actually your email address.") :error t)
-          (see-other "/settings/communication?edit=email"))  
-         ((not (scan +email-scanner+ new-email)) 
+          (see-other "/settings/communication?edit=email")) 
+         ((not (scan +email-scanner+ new-email))
           (flash (s+ new-email " is not a valid email address. "
-                     "Please try again.") :error t) 
+                     "Please try again.") :error t)
           (see-other "/settings/communication?edit=email"))
          (t
           (address-invitation confirmation
@@ -445,8 +469,8 @@
     ((post-parameter "resend-code")
      (let* ((id (parse-integer (post-parameter "invitation-id")))
             (invitation (db id))
-            (email (getf invitation :recipient-email))) 
-       (cond 
+            (email (getf invitation :recipient-email)))
+       (cond
          ((< (getf invitation :valid-until) (get-universal-time))
           (modify-db id :valid-until (+ (get-universal-time) 2592000))
           (send-email-verification id))
@@ -454,11 +478,11 @@
           (send-email-verification id)))
      (flash (s+ "Your activation code has been resent to " email "."))
      (see-other "/settings/communication")))
-    
+   
     ((post-parameter "make-email-primary")
      (let ((new-primary (post-parameter "make-email-primary")))
-       (amodify-db *userid* :emails 
-                            (cons new-primary 
+       (amodify-db *userid* :emails
+                            (cons new-primary
                                   (remove new-primary it :test #'string=)))
        (flash (s+ new-primary " is now your primary email addrss."))
        (see-other "/settings/communication")))
