@@ -50,8 +50,25 @@
                       (new-email-text email token)
                       :html-message (new-email-html email token)))
 
+(defun send-email-verification (invitation-id)
+  (let* ((invitation (db invitation-id))
+         (token (getf invitation :token))
+         (expires (getf invitation :valid-until))
+         (to (getf invitation :recipient-email)))
+    (cl-smtp:send-email +mail-server+
+                        "Kindista <noreply@kindista.org>"
+                        to
+                        "Please verify your email address."
+                        (email-verification-text invitation-id 
+                                                 to
+                                                 token)
+                        :html-message (email-verification-html invitation-id 
+                                                               to 
+                                                               token))))
+
 (defun send-invitation-email (invitation-id)
   (let* ((invitation (db invitation-id))
+         (token (getf invitation :token))
          (from (getf invitation :host))
          (text (getf invitation :text))
          (expires (getf invitation :valid-until))
@@ -61,14 +78,14 @@
                         to
                         (s+ (getf (db from) :name) " has invited you to join Kindista!")
                         (invitation-email-text invitation-id 
+                                               token 
                                                to
                                                from
-                                               expires 
                                                :text text)
-                        :html-message (invitation-email-html invitation-id 
+                        :html-message (invitation-email-html invitation-id
+                                                             token 
                                                              to 
                                                              from
-                                                             expires    
                                                              :text text)
     )))
 

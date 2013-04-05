@@ -355,6 +355,8 @@
       (update-db id data))))
 
 (defmacro amodify-db (id &rest items)
+"anaphoric macro used to modify the database. 'items' is a list of key/value pairs. the implicitly bound symbol 'it' can be used within the value-form to refer to the current value of key which is to be modified, i.e. it == (getf (db id) :key). 'it' is lexically bound within the context of the key/value pair in which it is invoked."
+
   (let ((data (gensym)))
     `(with-locked-hash-table (*db*)
        (let ((,data (db ,id)))
@@ -362,7 +364,9 @@
              ((statements ())
               (item items (cddr item)))
              ((not (and (car item) (symbolp (car item)))) statements)
-             (push `(let ((it (getf ,data ,(car item)))) (setf (getf ,data ,(car item)) ,(cadr item))) statements))
+             
+             (push `(let ((it (getf ,data ,(car item)))) 
+                      (setf (getf ,data ,(car item)) ,(cadr item))) statements))
          (update-db ,id ,data)))))
 
 (defun insert-db (data)
