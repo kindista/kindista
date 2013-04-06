@@ -1,4 +1,4 @@
-;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2013 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -16,8 +16,6 @@
 ;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :kindista)
-
-(defun get-name-collection ())
 
 (defun settings-tabs-html (tab)
   (html
@@ -211,12 +209,12 @@
                 (htm
                   (:li
                     (:span :class "email-item" (str email))
+                    (:input :type "hidden"
+                            :name "invitation-id" :value invite-id)
                     (cond
                       ((string= email activate)
                        (htm
                          (:span
-                           (:input :type "hidden"
-                                   :name "invitation-id" :value invite-id)
                            (:input :type "text"
                                    :name "token"
                                    :placeholder "please enter your activation code"))
@@ -238,6 +236,7 @@
                              (:button :type "submit"
                                       :class "simple-link "
                                       :name "resend-code"
+                                      :value email
                                       "Resend code")))))))))))
 
           (cond
@@ -333,7 +332,7 @@
           (str (settings-password base)))))))
 
 (defun go-settings ()
-  (see-other "/settings"))
+  (see-other "/settings/personal"))
 
 (defun get-settings-communication ()
   (require-user
@@ -365,189 +364,189 @@
                                      :activate (get-parameter "activate")))))))))))
 
 (defun post-settings ()
-  (acond
-    ((post-parameter "cancel")
-     (see-other (or (post-parameter "next") "/home")))
+  (require-user
+    (acond
+      ((post-parameter "cancel")
+       (see-other (or (post-parameter "next") "/home")))
 
-    ((post-parameter "name")
-     (cond
-       ((validate-name it)
-        (unless (equal (getf *user* :name) it)
-          (modify-db *userid* :name it)))
-       (t
-         (flash "You must use your true full name (first and last) for your primary name on Kindista.  Single word names are permitted for your nicknames." :error t))
-     (see-other (or (post-parameter "next") "/home"))))
-
-    ((post-parameter "aliases")
-     (let ((aliases (iter (for pair in (post-parameters*))
-                          (unless (string= (cdr pair) "")
-                            (when (string= (car pair) "aliases")
-                              (collect (cdr pair)))))))
-       (unless (equal (getf *user* :aliases) aliases)
-         (modify-db *userid* :aliases aliases)))
-     (see-other (or (post-parameter "next") "/home")))
-
-    ((post-parameter "address")
-     (multiple-value-bind (lat long address city state country street zip)
-       (geocode-address (post-parameter "address"))
-       (modify-db *userid* :lat lat :long long :address address :city city :state state :street street :zip zip :country country))
-     (see-other (aif (post-parameter "next")
-                  (url-compose "/settings/verify-address" "next" it)
-                  (url-compose "/settings/verify-address" "next" "/home"))))
-
-    ((post-parameter "reset-location")
-     (modify-db *userid* :lat nil :long nil :address nil :location nil)
-     (see-other (or (post-parameter "next") "/home")))
-
-    ((post-parameter "password")
-     (cond
-       ((not (password-match-p *userid* (post-parameter "password")))
-        (flash "The password you entered is incorrect. Please try again." :error t)
-        (see-other (post-parameter "next")))
-       ((< (length (post-parameter "new-password-1")) 8)
-        (flash "Your new password is too short. Please use at least 8 characters." :error t)
-        (see-other (post-parameter "next")))
-       ((not (string= (post-parameter "new-password-1")
-                      (post-parameter "new-password-2")))
-        (flash "The confirmation text you entered does not match the new password you entered. Please try again." :error t)
-        (see-other (post-parameter "next")))
-       (t
-        (modify-db *userid* :pass (new-password
-                                        (post-parameter "new-password-1")))
-        (flash "You have successfully changed your password.")
-        (see-other (or (post-parameter "next") "/home")))))
-
-    ((post-parameter "save-notifications")
-     (modify-db *userid* :notify-gratitude (when (post-parameter "gratitude") t))
-     (modify-db *userid* :notify-message (when (post-parameter "message") t))
-     (modify-db *userid* :notify-kindista (when (post-parameter "kindista") t))
-     (flash "Your notification preferences have been saved.")
-     (see-other (or (post-parameter "next") "/home")))
-
-    ((post-parameter "new-email")
-     (let* ((new-email (post-parameter "new-email"))
-            (id (gethash new-email *email-index*))
-            (emails (getf *user* :emails))
-            (confirmation (car (create-invitations)))
-            (pending (awhen (getf *user* :pending-alt-emails) it)))
+      ((post-parameter "name")
        (cond
-         ((equal (car emails) new-email)
-          (flash (s+ new-email " is already your primary email address. "
-                     "If you want to use " new-email
-                     " as an alternate email address, you must first "
-                     "set another email to be your primary email "
-                     "address.") :error t)
-          (see-other "/settings/communication?edit=email")) 
-         ((member new-email emails)
-          (see-other "/settings/communication?edit=email")) 
-         (id
-          (flash (s+ "The email address you have submitted, " new-email
-                     ", already belongs to another Kindista member. "
-                     "Please contact us if " new-email
-                     " is actually your email address.") :error t)
-          (see-other "/settings/communication?edit=email")) 
-         ((not (scan +email-scanner+ new-email))
-          (flash (s+ new-email " is not a valid email address. "
-                     "Please try again.") :error t)
-          (see-other "/settings/communication?edit=email"))
+         ((validate-name it)
+          (pprint (post-parameters*))
+          (let ((aliases (remove-duplicates
+                           (loop for (x . y) in (post-parameters*) 
+                                 when (and (string= x "aliases")
+                                           (not (string= y ""))) 
+                                 collect y)
+                           :test #'string=)))
+            (unless (equal (getf *user* :aliases) aliases)
+              (modify-db *userid* :aliases aliases)))
+          (unless (equal (getf *user* :name) it)
+            (modify-db *userid* :name it)))
          (t
-          (address-invitation confirmation
-                              :recipient-email new-email
-                              :self t)
-          (send-email-verification confirmation)
-          (modify-db *userid* :pending-alt-emails (cons confirmation pending))
-          (flash (s+ "A verification email has been sent to " new-email
-                     ". Please click on the link provided in that email "
-                     "to complete the email verification process."))
-          (see-other "/settings/communication")))))
+           (flash "You must use your true full name (first and last) for your primary name on Kindista.  Single word names are permitted for your nicknames." :error t))) 
+       (see-other (or (post-parameter "next") "/home")))
 
-    ((and (post-parameter "invitation-id")
-          (post-parameter "token"))
-     (activate-email-address (parse-integer (post-parameter "invitation-id"))
-                             (post-parameter "token")))
+      ((post-parameter "address")
+       (multiple-value-bind (lat long address city state country street zip)
+         (geocode-address it)
+         (modify-db *userid* :lat lat :long long :address address :city city :state state :street street :zip zip :country country))
+       (see-other (url-compose "/settings/verify-address" 
+                               "next" (or (post-parameter "next" "/home"))))) 
 
-    ((post-parameter "resend-code")
-     (let* ((id (parse-integer (post-parameter "invitation-id")))
-            (invitation (db id))
-            (email (getf invitation :recipient-email)))
+      ((post-parameter "reset-location")
+       (modify-db *userid* :lat nil :long nil :address nil :location nil)
+       (see-other (or (post-parameter "next") "/home")))
+
+      ((post-parameter "password")
        (cond
-         ((< (getf invitation :valid-until) (get-universal-time))
-          (modify-db id :valid-until (+ (get-universal-time) 2592000))
-          (send-email-verification id))
+         ((not (password-match-p *userid* (post-parameter "password")))
+          (flash "The password you entered is incorrect. Please try again." :error t)
+          (see-other (post-parameter "next")))
+         ((< (length (post-parameter "new-password-1")) 8)
+          (flash "Your new password is too short. Please use at least 8 characters." :error t)
+          (see-other (post-parameter "next")))
+         ((not (string= (post-parameter "new-password-1")
+                        (post-parameter "new-password-2")))
+          (flash "The confirmation text you entered does not match the new password you entered. Please try again." :error t)
+          (see-other (post-parameter "next")))
          (t
-          (send-email-verification id)))
-     (flash (s+ "Your activation code has been resent to " email "."))
-     (see-other "/settings/communication")))
-   
-    ((post-parameter "make-email-primary")
-     (let ((new-primary (post-parameter "make-email-primary")))
-       (amodify-db *userid* :emails
-                            (cons new-primary
-                                  (remove new-primary it :test #'string=)))
-       (flash (s+ new-primary " is now your primary email addrss."))
+          (modify-db *userid* :pass (new-password
+                                          (post-parameter "new-password-1")))
+          (flash "You have successfully changed your password.")
+          (see-other (or (post-parameter "next") "/home")))))
+
+      ((post-parameter "save-notifications")
+       (modify-db *userid* :notify-gratitude (when (post-parameter "gratitude") t))
+       (modify-db *userid* :notify-message (when (post-parameter "message") t))
+       (modify-db *userid* :notify-kindista (when (post-parameter "kindista") t))
+       (flash "Your notification preferences have been saved.")
+       (see-other (or (post-parameter "next") "/home")))
+
+      ((post-parameter "new-email")
+       (let* ((new-email (post-parameter "new-email"))
+              (id (gethash new-email *email-index*))
+              (emails (getf *user* :emails))
+              (confirmation (car (create-invitations)))
+              (pending (awhen (getf *user* :pending-alt-emails) it)))
+         (cond
+           ((equal (car emails) new-email)
+            (flash (s+ new-email " is already your primary email address. "
+                       "If you want to use " new-email
+                       " as an alternate email address, you must first "
+                       "set another email to be your primary email "
+                       "address.") :error t)
+            (see-other "/settings/communication?edit=email")) 
+           ((member new-email emails)
+            (see-other "/settings/communication?edit=email")) 
+           (id
+            (flash (s+ "The email address you have submitted, " new-email
+                       ", already belongs to another Kindista member. "
+                       "Please contact us if " new-email
+                       " is actually your email address.") :error t)
+            (see-other "/settings/communication?edit=email")) 
+           ((not (scan +email-scanner+ new-email))
+            (flash (s+ new-email " is not a valid email address. "
+                       "Please try again.") :error t)
+            (see-other "/settings/communication?edit=email"))
+           (t
+            (address-invitation confirmation
+                                :recipient-email new-email
+                                :self t)
+            (send-email-verification confirmation)
+            (modify-db *userid* :pending-alt-emails (cons confirmation pending))
+            (flash (s+ "A verification email has been sent to " new-email
+                       ". Please click on the link provided in that email "
+                       "to complete the email verification process."))
+            (see-other "/settings/communication")))))
+
+      ((and (post-parameter "invitation-id")
+            (post-parameter "token"))
+       (activate-email-address (parse-integer (post-parameter "invitation-id"))
+                               (post-parameter "token")))
+
+      ((post-parameter "resend-code")
+       (let* ((id (parse-integer (post-parameter "invitation-id")))
+              (invitation (db id))
+              (email (getf invitation :recipient-email)))
+         (cond
+           ((< (getf invitation :valid-until) (get-universal-time))
+            (modify-db id :valid-until (+ (get-universal-time) 2592000))
+            (send-email-verification id))
+           (t
+            (send-email-verification id)))
+       (flash (s+ "Your activation code has been resent to " email "."))
        (see-other "/settings/communication")))
+     
+      ((post-parameter "make-email-primary")
+       (let ((new-primary (post-parameter "make-email-primary")))
+         (amodify-db *userid* :emails
+                              (cons new-primary
+                                    (remove new-primary it :test #'string=)))
+         (flash (s+ new-primary " is now your primary email addrss."))
+         (see-other "/settings/communication")))
 
-    ((post-parameter "remove-email")
-     (let ((email (post-parameter "remove-email")))
-       (amodify-db *userid* :emails (remove email it :test #'string=))
-       (remhash email *email-index*)
-       (flash (s+ email " has been removed from your Kindista account."))
-       (see-other "/settings/communication")))
+      ((post-parameter "remove-email")
+       (let ((email (post-parameter "remove-email")))
+         (amodify-db *userid* :emails (remove email it :test #'string=))
+         (remhash email *email-index*)
+         (flash (s+ email " has been removed from your Kindista account."))
+         (see-other "/settings/communication")))
 
-    ((post-parameter "bio-doing")
-     (unless (getf *user* :bio)
-       (modify-db *userid* :bio t))
-     (modify-db *userid* :bio-doing (post-parameter "bio-doing"))
-     (see-other (or (post-parameter "next") "/home")))
+      ((post-parameter "bio-doing")
+       (unless (getf *user* :bio)
+         (modify-db *userid* :bio t))
+       (modify-db *userid* :bio-doing (post-parameter "bio-doing"))
+       (see-other (or (post-parameter "next") "/home")))
 
-    ((post-parameter "bio-summary")
-     (unless (getf *user* :bio)
-       (modify-db *userid* :bio t))
-     (modify-db *userid* :bio-summary (post-parameter "bio-summary"))
-     (see-other (or (post-parameter "next") "/home")))
+      ((post-parameter "bio-summary")
+       (unless (getf *user* :bio)
+         (modify-db *userid* :bio t))
+       (modify-db *userid* :bio-summary (post-parameter "bio-summary"))
+       (see-other (or (post-parameter "next") "/home")))
 
-    ((post-parameter "bio-into")
-     (unless (getf *user* :bio)
-       (modify-db *userid* :bio t))
-     (modify-db *userid* :bio-into (post-parameter "bio-into"))
-     (see-other (or (post-parameter "next") "/home")))
+      ((post-parameter "bio-into")
+       (unless (getf *user* :bio)
+         (modify-db *userid* :bio t))
+       (modify-db *userid* :bio-into (post-parameter "bio-into"))
+       (see-other (or (post-parameter "next") "/home")))
 
-    ((post-parameter "bio-contact")
-     (unless (getf *user* :bio)
-       (modify-db *userid* :bio t)) (modify-db *userid* :bio-contact (post-parameter "bio-contact"))
-     (see-other (or (post-parameter "next") "/home")))
+      ((post-parameter "bio-contact")
+       (unless (getf *user* :bio)
+         (modify-db *userid* :bio t)) (modify-db *userid* :bio-contact (post-parameter "bio-contact"))
+       (see-other (or (post-parameter "next") "/home")))
 
-    ((post-parameter "bio-skills")
-     (unless (getf *user* :bio)
-       (modify-db *userid* :bio t))
-     (modify-db *userid* :bio-skills (post-parameter "bio-skills"))
-     (see-other (or (post-parameter "next") "/home")))
+      ((post-parameter "bio-skills")
+       (unless (getf *user* :bio)
+         (modify-db *userid* :bio t))
+       (modify-db *userid* :bio-skills (post-parameter "bio-skills"))
+       (see-other (or (post-parameter "next") "/home")))
 
-    ((scan +number-scanner+ (post-parameter "rdist"))
-     (modify-db *userid* :rdist (parse-integer (post-parameter "rdist")))
-     (flash "Your search distance for resources and requests has been changed!")
-     (see-other (or (post-parameter "next") "/requests")))
+      ((scan +number-scanner+ (post-parameter "rdist"))
+       (modify-db *userid* :rdist (parse-integer (post-parameter "rdist")))
+       (flash "Your search distance for resources and requests has been changed!")
+       (see-other (or (post-parameter "next") "/requests")))
 
-    ((scan +number-scanner+ (post-parameter "sdist"))
-     (modify-db *userid* :rdist (parse-integer (post-parameter "sdist")))
-     (flash "Your default search distance has been changed!")
-     (see-other (or (post-parameter "next") "/requests")))
+      ((scan +number-scanner+ (post-parameter "sdist"))
+       (modify-db *userid* :rdist (parse-integer (post-parameter "sdist")))
+       (flash "Your default search distance has been changed!")
+       (see-other (or (post-parameter "next") "/requests")))
 
-    ((scan +number-scanner+ (post-parameter "distance"))
-     (modify-db *userid* :distance (parse-integer (post-parameter "distance")))
-     (flash (format nil "Now showing activity within ~a miles." (post-parameter "distance")))
-     (see-other (or (post-parameter "next") "/home")))
+      ((scan +number-scanner+ (post-parameter "distance"))
+       (modify-db *userid* :distance (parse-integer (post-parameter "distance")))
+       (flash (format nil "Now showing activity within ~a miles." (post-parameter "distance")))
+       (see-other (or (post-parameter "next") "/home")))
 
-    ((equalp (post-parameter "help") "0")
-     (modify-db *userid* :help nil)
-     (see-other (or (referer) "/home")))
+      ((equalp (post-parameter "help") "0")
+       (modify-db *userid* :help nil)
+       (see-other (or (referer) "/home")))
 
-    ((equalp (post-parameter "help") "1")
-     (modify-db *userid* :help t)
-     (see-other (or (referer) "/home")))
+      ((equalp (post-parameter "help") "1")
+       (modify-db *userid* :help t)
+       (see-other (or (referer) "/home")))
 
-    ((and (post-parameter "confirm-location")
-          (getf *user* :lat)
-          (getf *user* :long))
-     (modify-db *userid* :location t)
-     (see-other (or (post-parameter "next") "/home")))))
+      ((and (post-parameter "confirm-location")
+            (getf *user* :lat)
+            (getf *user* :long))
+       (modify-db *userid* :location t)
+       (see-other (or (post-parameter "next") "/home"))))))
