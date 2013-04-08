@@ -13,7 +13,6 @@
                :cl-smtp
                :cl-who
                :cl-stripe
-               :parenscript
                ;:css-lite
                :vecto
                :double-metaphone
@@ -23,8 +22,10 @@
                :ironclad
                :iterate
                :levenshtein
+               :paren-files
                :sb-concurrency
-               :stem)
+               :stem
+               :kindista-js)
   :components ((:module src
                 :serial t
                 :components ((:file "package")

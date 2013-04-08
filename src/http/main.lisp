@@ -256,7 +256,7 @@
                     (for rule-function in (cdadr rule) by #'cddr)
                     (pprint (list rule-method rule-function)) (Terpri)
                     (when (eq method rule-method)
-                      (leave (apply (fdefinition rule-function) (coerce results 'list))))
+                      (leave (with-user (apply (fdefinition rule-function) (coerce results 'list)))))
                     (finally
                       (setf (return-code*) +http-method-not-allowed+)
                       "that method is not permitted on this URL")))))))
@@ -321,6 +321,7 @@
         (:meta :name "HandheldFriendly" :content "True")
         ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
         (:link :rel "stylesheet" :href "/media/style.css")
+        (:script :type "text/javascript" :src "/kindista.js")
         ;(str "<!--[if lt IE 9]>")
         ;(:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
         ;(str "<![endif]-->")
@@ -378,7 +379,7 @@
                        (:table
                          (:tr
                            (:td :rowspan "2"
-                            (:img :src (format nil "/media/avatar/~A.jpg" *userid*)))
+                            (:img :src (format nil "/media/avatar/~A.png" *userid*)))
                            (:td (:a :href (s+ "/people/" (username-or-id)) (str (getf *user* :name)))))
                          (:tr
                            (:td

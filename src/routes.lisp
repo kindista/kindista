@@ -21,6 +21,11 @@
   (flash "That page hasn't been implemented yet.")
   (go-home))
 
+(defun get-js ()
+  (setf (ps::ps-package-prefix :kindista-js) "K")
+  (with-output-to-string (s)
+    (paren-files:compile-script-system :kindista-js :output-stream s)))
+
 (routes
   ("/"
     :get go-home)
@@ -182,5 +187,10 @@
     :get go-people) 
 
   ("/home/"
-    :get go-home))
+    :get go-home)
+  
+  ;js
+  
+  ("/kindista.js"
+   :get get-js))
 

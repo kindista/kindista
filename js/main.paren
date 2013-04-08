@@ -1,0 +1,4 @@
+(in-package :kindista-js)
+
+(defun foo ()
+  123)
