@@ -39,29 +39,22 @@
         (:p :class "help-text" (:em (str help-text)))))))
 
 (defun settings-avatar (base editable)
-  (let ((aliases (getf *user* :aliases)))
-    (settings-item-html
-      base "avatar" "Avatar"
-      (cond
-        (editable
-          (html
-            (:form :method "post" :action "/settings"
-              (:input :type "hidden" :name "next" :value "/settings/personal")
-              (:div :class "submit-settings"
-                (:button :class "no" :type "submit" :class "submit" :name "cancel" "Cancel")
-                (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
-              (:ul
-                (:li (:span (:input :type "text"
-                                    :name "name"
-                                    :value (str (getf *user* :name))))
-                     (:span (:strong "display name")))))))
-        (t
-          (html
-            (:img :src (strcat +avatar-base+ *userid* ".jpg")))))
+  (settings-item-html
+    base "avatar" "Avatar"
+    (cond
+      (editable
+        (html
+          (:form :method "post" :action "/settings" :enctype "multipart/form-data"
+            (:input :type "hidden" :name "next" :value "/settings/personal")
+            (:div :class "submit-settings"
+              (:button :class "no" :type "submit" :class "submit" :name "cancel" "Cancel")
+              (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
+            (:input :type "file" :name "avatar"))))
+      (t
+        (html
+          (:img :src (strcat +avatar-base+ *userid* ".jpg")))))
 
-    :editable editable
-    :help-text (s+ "If you are known by multiple names or nicknames, "
-                   "enter up to 5 to help people find you. "))))
+  :editable editable))
 
 (defun settings-name (base editable)
   (let ((aliases (getf *user* :aliases)))
@@ -441,6 +434,26 @@
          (modify-db *userid* :lat lat :long long :address address :city city :state state :street street :zip zip :country country))
        (see-other (url-compose "/settings/verify-address" 
                                "next" (or (post-parameter "next") "/home")))) 
+
+      ((post-parameter "avatar")
+
+       (let ((file (native-namestring (first it))))
+         (let ((r1 (run-program "/usr/bin/convert"
+                                (list
+                                  file
+                                  "-scale"
+                                  "300x300"
+                                  (strcat +avatar-path+ *userid* ".jpg"))))
+               (r2 (run-program "/usr/bin/convert"
+                                (list
+                                  file
+                                  "-scale"
+                                  "100x100"
+                                  (strcat +avatar-path+ *userid* ".png")))))
+           (unless (and (eql 0 (process-exit-code r1))
+                        (eql 0 (process-exit-code r2)))
+             (flash "The image you uploaded could not be processed. Sorry!" :error t))
+           (see-other "/settings/personal"))))
 
       ((post-parameter "reset-location")
        (modify-db *userid* :lat nil :long nil :address nil :location nil)

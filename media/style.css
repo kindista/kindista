@@ -609,8 +609,9 @@ body.landing > p {
 }
 
 #menu table img {
- width:50px;
- height:50px;
+ max-width:50px;
+ max-height:50px;
+ display: block;
 }
 
 #menu > table tr:first-child td:first-child {
@@ -1007,8 +1008,8 @@ img.bigavatar {
  border:0.5em solid #fff;
  box-shadow:2px 2px 3px #c0c0c0;
  margin: 0 1em 1em;
- width:10em;
- height:10em;
+ max-width:14em;
+ max-height:14em;
  float:left;
 }
 
@@ -1210,7 +1211,7 @@ menu.bar li a {
  display:inline-block;
 }
 
-button {
+button, .settings-item .content a {
  cursor:pointer;
  border-radius:3px;
 }
@@ -1226,7 +1227,7 @@ button.simple-link {
  text-decoration:underline;
 }
 
-button.yes {
+button.yes, .settings-item .content a {
  background:#5c8a2f;
  /*background: #375497;*/
  border:0;
@@ -1429,6 +1430,10 @@ form.post-next h2 {
  display: block;
  position: relative;
  top: .2em;
+}
+
+.settings-item .content a {
+ margin-bottom: 0.5em;
 }
 
 
