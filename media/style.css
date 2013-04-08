@@ -947,10 +947,6 @@ input::-moz-focus-inner {
  font-size:0.8em;
 }
 
-.no-padding {
- padding: 0;
-}
-
 .inline {
  display: inline;
 }
@@ -1265,6 +1261,10 @@ button.link {
  margin-right:1em;
 }
 
+button.no-padding {
+ padding: 0;
+}
+
 button.link:hover {
  text-decoration: underline;
 }
@@ -1473,7 +1473,7 @@ form.post-next h2 {
  padding: .3em .5em;
 }
 
-.settings-item .help-text {
+.help-text {
  color: #777;
  margin-top: .4em;
  clear: both;

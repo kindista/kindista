@@ -18,14 +18,15 @@
 (in-package :kindista)
 
 (defun get-terms ()
-  (standard-page 
-    "Terms of Use"
-    (html 
-      (:div :class "legal" :id "terms"
-        (str (markdown-file (s+ +markdown-path+ "terms.md")))))  
-    :right (html
-             (str (donate-sidebar))
-             (when *user* (str (invite-sidebar))))))
+  (with-user 
+    (standard-page 
+      "Terms of Use"
+      (html 
+        (:div :class "legal" :id "terms"
+          (str (markdown-file (s+ +markdown-path+ "terms.md")))))  
+      :right (html
+               (str (donate-sidebar))
+               (when *user* (str (invite-sidebar)))))))
 
 (defun get-lisp-terms ()
   (standard-page 

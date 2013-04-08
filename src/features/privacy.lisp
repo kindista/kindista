@@ -18,13 +18,14 @@
 (in-package :kindista)
 
 (defun get-privacy ()
-  (standard-page 
-    "Privacy Policy"
-    (html 
-      (:div :class "legal" :id "privacy"
-        (str (markdown-file (s+ +markdown-path+ "privacy.md")))))  
-    :right (html
-             (str (donate-sidebar))
-             (when *user* (str (invite-sidebar))))))
+  (with-user
+    (standard-page 
+      "Privacy Policy"
+      (html 
+        (:div :class "legal" :id "privacy"
+          (str (markdown-file (s+ +markdown-path+ "privacy.md")))))  
+      :right (html
+               (str (donate-sidebar))
+               (when *user* (str (invite-sidebar)))))))
 
 

@@ -122,38 +122,39 @@
                    "Your address will never be displayed or shared; "
                    "it is used only to calculate distance. "))))
 
-(defun verify-address (&key next-url)
+(defun get-verify-address (&key next-url)
   (let ((next (or next-url (get-parameter "next"))))
-    (standard-page
-      "Please verify your location."
-      (html
-        (:div :class "item"
-          (:div :class "setup"
-            (:h2 "Verify your location")
-            (:p "We will never share your exact location with anyone else.
-                 If you would like to know more about how we use the information you share with us,
-                 please read our " (:a :href "/privacy" "privacy policy") ".")
-            (str (static-google-map :size "280x150" :zoom 12 :lat (getf *user* :lat) :long (getf *user* :long)))
+    (with-user 
+      (standard-page
+        "Please verify your location."
+        (html
+          (:div :class "item"
+            (:div :class "setup"
+              (:h2 "Verify your location")
+              (:p "We will never share your exact location with anyone else.
+                   If you would like to know more about how we use the information you share with us,
+                   please read our " (:a :href "/privacy" "privacy policy") ".")
+              (str (static-google-map :size "280x150" :zoom 12 :lat (getf *user* :lat) :long (getf *user* :long)))
 
-            (:form :method "post" :action "/settings"
-              (:h3 "Is this location correct?")
-              (:input :type "hidden" :name "next" :value (str next))
-              (:button :class "yes"
-                       :type "submit"
-                       :name "confirm-location"
-                       :value "1"
-                       "Yes, this is correct")
-              (:button :class "no"
-                       :type "submit"
-                       :name "reset-location"
-                       :value "1"
-                       "No, go back"))))))))
+              (:form :method "post" :action "/settings"
+                (:h3 "Is this location correct?")
+                (:input :type "hidden" :name "next" :value (str next))
+                (:button :class "yes"
+                         :type "submit"
+                         :name "confirm-location"
+                         :value "1"
+                         "Yes, this is correct")
+                (:button :class "no"
+                         :type "submit"
+                         :name "reset-location"
+                         :value "1"
+                         "No, go back")))))))))
 
 (defun settings-password (base)
   (let ((password (getf *user* :pass)))
     (settings-item-html base "password" "Password"
       (html
-        (:form :method "post" :class "password" :action "/settings"
+        (:form :method "post" :class "password" :autocomplete "off" :action "/settings"
          (:input :type "hidden" :name "next" :value "/settings/personal")
          (:div :class "submit-settings"
            (:button :class "yes" :type "submit" :class "submit" "Change password"))
@@ -178,6 +179,52 @@
                    "We strongly recommend using either a mix of upper- and "
                    "lower-case letters, numbers, and symbols; or a sentance "
                    "of at least 8 words."))))
+
+(defun settings-deactivate (base)
+  (let ((action (if (eq (getf *user* :active) t)
+                  "deactivate"
+                  "reactivate"))) 
+    (settings-item-html base action (string-capitalize action)
+      (html
+        (:form :method "post" :action "/settings"
+          (:button :class "link no-padding green" 
+                   :name action
+                   :type "submit"
+                   (str (s+ (string-capitalize action) " account")))))
+    :editable t
+    :help-text (s+ "Warning: "
+                   "Deactivating your account will delete all of your current resources "
+                   "and requests, and prevent people from "
+                   "contacting you through Kindista or finding you using the search bar. "
+                   "Deactivating your account will not remove any statements of gratitude "
+                   "you have given or received. "
+                   "You may reactivate your account anytime by logging into Kindista and "
+                   "clicking \"Reactivate account\" on this page."))))
+
+(defun confirm-deactivation ()
+  (standard-page
+    "Confirm Deactivation"
+    (html
+      (:div :class "item"
+        (:h1 "Are you sure you want to deactivate your account?")
+        (:form :method "post" :action "/settings"
+          (:input :type "hidden" :name "next" :value "/settings")
+          (:button :class "yes" 
+                   :type "submit" 
+                   :class "submit" 
+                   :name "confirm-deactivation" 
+                   "Yes, deactivate my Kindista account.")
+          (:a :href "/settings" "No, I didn't mean it!"))
+        (:p :class "settings-item help-text"
+          (:strong "Warning: ")
+          "Deactivating your account will delete all of your current resources " 
+          "and requests, and prevent people from "
+          "contacting you through Kindista or finding you using the search bar. "
+          "Deactivating your account will not remove any statements of gratitude "
+          "you have given or received. "
+          "You may reactivate your account anytime by logging into Kindista and "
+          "clicking \"Reactivate account\" on this page.")))
+    :class "text"))
 
 (defun settings-emails (base editable &key activate)
   (let* ((emails (getf *user* :emails))
@@ -329,7 +376,8 @@
           (str (settings-avatar base (string= edit "avatar")))
           (str (settings-name base (string= edit "name")))
           (str (settings-address base (string= edit "address")))
-          (str (settings-password base)))))))
+          (str (settings-password base))
+          (str (settings-deactivate base)))))))
 
 (defun go-settings ()
   (see-other "/settings/personal"))
@@ -392,7 +440,7 @@
          (geocode-address it)
          (modify-db *userid* :lat lat :long long :address address :city city :state state :street street :zip zip :country country))
        (see-other (url-compose "/settings/verify-address" 
-                               "next" (or (post-parameter "next" "/home"))))) 
+                               "next" (or (post-parameter "next") "/home")))) 
 
       ((post-parameter "reset-location")
        (modify-db *userid* :lat nil :long nil :address nil :location nil)
@@ -415,6 +463,21 @@
                                           (post-parameter "new-password-1")))
           (flash "You have successfully changed your password.")
           (see-other (or (post-parameter "next") "/home")))))
+
+      ((post-parameter "deactivate")
+       (flash "Please confirm your choice to deactivate your account." :error t)
+       (see-other "/deactivate-account"))
+
+      ((post-parameter "confirm-deactivation")
+       (deactivate-person *userid*)
+       (flash "You have deactivated you account. If you change your mind you can reactivate your account on the settings page.")
+
+       (see-other "/settings/personal"))
+
+      ((post-parameter "reactivate")
+       (reactivate-person *userid*)
+       (flash "You have reactivated your Kindista account.")
+       (see-other "/settings/personal"))
 
       ((post-parameter "save-notifications")
        (modify-db *userid* :notify-gratitude (when (post-parameter "gratitude") t))

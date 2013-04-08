@@ -105,19 +105,19 @@
   ("/people"
     :get get-people)
 
-  ("/people/<int:id>"
+  ("/people/<id>"
     :get get-person)
 
-  ("/people/<int:id>/about"
+  ("/people/<id>/about"
     :get get-person-about)
 
-  ("/people/<int:id>/activity"
+  ("/people/<id>/activity"
     :get get-person-activity)
 
-  ("/people/<int:id>/reputation"
+  ("/people/<id>/reputation"
     :get get-person-reputation)
 
-  ("/people/<int:id>/resources"
+  ("/people/<id>/resources"
     :get get-person-resources)
 
   ("/discuss"
@@ -141,6 +141,9 @@
 
   ("/settings/communication"
     :get get-settings-communication)
+
+  ("/deactivate-account"
+    :get confirm-deactivation)
 
   ("/about"
     :get get-about)

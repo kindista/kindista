@@ -22,6 +22,7 @@
                :name ,name
                :emails ,(list email)
                :host ,host
+               :active t
                :help t
                :pass ,(new-password password)
                :created ,(get-universal-time)
@@ -60,11 +61,30 @@
       (asetf (gethash id *activity-person-index*)
              (sort (push result it) #'> :key #'result-time)))
 
-    (when (and (getf data :lat) (getf data :long) (getf data :created))
+    (when (and (getf data :lat) 
+               (getf data :long) 
+               (getf data :created))
+      (pprint (getf data :active))
       ;people that don't give a location don't get indexed
-      (metaphone-index-insert names result)
-      (geo-index-insert *people-geo-index* result)
-      (geo-index-insert *activity-geo-index* result))))
+      (cond 
+        ((getf data :active) 
+         (metaphone-index-insert names result)
+         (geo-index-insert *people-geo-index* result) 
+         (geo-index-insert *activity-geo-index* result))
+      (t
+         (metaphone-index-insert (list nil) result)
+         (geo-index-remove *people-geo-index* result)
+         (geo-index-remove *activity-geo-index* result))))))
+
+(defun deactivate-person (id)
+  (modify-db id :active nil
+                :notify-message nil
+                :notify-gratitude nil))
+
+(defun reactivate-person (id)
+  (modify-db id :active t
+                :notify-message t
+                :notify-gratitude t))
 
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)
