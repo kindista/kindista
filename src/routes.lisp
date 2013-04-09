@@ -125,8 +125,16 @@
   ("/people/<id>/resources"
     :get get-person-resources)
 
-  ("/discuss"
-    :get get-discuss)
+  ("/conversations"
+    :get get-conversations)
+
+  ("/conversations/new"
+    :get get-conversations-new
+    :post post-conversations-new)
+
+  ("/conversations/<int:id>"
+    :get get-conversation 
+    :post post-conversation)
 
   ("/inbox"
     :get get-inbox)

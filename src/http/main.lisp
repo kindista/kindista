@@ -45,6 +45,14 @@
   (flash "The page you requested could not be found. Here's the home page instead." :error t)
   (see-other "/"))
 
+(defun permission-denied ()
+  (flash "The page you requested is private." :error t)
+  (see-other "/"))
+
+(defun login-required ()
+  (flash "Sorry, that page is only available to people who are logged in." :error t)
+  (see-other "/"))
+
 ;;; routing and acceptor {{{
 
 (setf *methods-for-post-parameters* '(:post :put))
@@ -179,7 +187,8 @@
   `(with-user
      (if *userid*
        (progn ,@body)
-       (see-other "/home"))))
+       (login-required))))
+
 
 (defmacro require-test ((test &optional message) &body body)
   `(if ,test
@@ -321,7 +330,7 @@
         (:meta :name "HandheldFriendly" :content "True")
         ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
         (:link :rel "stylesheet" :href "/media/style.css")
-        (:script :type "text/javascript" :src "/kindista.js")
+        ;(:script :type "text/javascript" :src "/kindista.js")
         ;(str "<!--[if lt IE 9]>")
         ;(:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
         ;(str "<![endif]-->")
@@ -391,7 +400,7 @@
                                     '("Resources" "resources")
                                     '("Requests" "requests")
                                     '("People" "people")
-                                    '("Discussions" "discuss")
+                                    '("Conversations" "conversations")
                                     ;'("Events" "events") 
                                     '("Help & Feedback" "help")
                                     (when (getf *user* :admin)

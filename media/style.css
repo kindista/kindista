@@ -709,13 +709,19 @@ body.landing > p {
  border-bottom: none;
 }
 
-.card > img {
- display: block;
+.card > .image {
  float: left;
  width: 7em;
  height: 7em;
  margin: 1em 1.75em 0.5em 1em;
  clear: left;
+}
+
+.card .image img {
+ margin: 0 auto;
+ display: block;
+ max-width: 7em;
+ max-height: 7em;
 }
 
 .card p {

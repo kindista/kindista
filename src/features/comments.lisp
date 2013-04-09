@@ -17,12 +17,16 @@
 
 (in-package :kindista)
 
-(defun create-comment (&key on by text)
-  (insert-db (list :type :comment
-                   :on on
-                   :by by
-                   :text text
-                   :created (get-universal-time))))
+(defun create-comment (&key on (by *userid*) text)
+  (let ((id (insert-db (list :type :comment
+                             :on on
+                             :by by
+                             :text text
+                             :created (get-universal-time)))))
+    (modify-db on :latest-comment id)))
+
+(defun latest-comment (id)
+  (or (getf (db id) :latest-comment) 0))
 
 (defun index-comment (id data)
   (push id (gethash (getf data :on) *comment-index*)))

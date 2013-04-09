@@ -27,20 +27,13 @@ Timezones
 - [ ] add timezone support in shared/time.lisp 
 
 
-Requests
-
-Database
-
-Geolocation
-- [ ] localize Kindista based on IP address of guest
-
 Donations
 - [ ] Write thank you email
 - [ ] set :donated flag on donator's account on donation
 
 Invitations
     # A limited resource
-- [ ] change site text wording to indicate that accounts require invitations
+- [X] change site text wording to indicate that accounts require invitations
 - [X] modify account creation workflow to require invitation
 - [X] create 10 new invitations for a new user on creation
 - [X] add expiration date and invitation IDs to invitation emails
@@ -110,7 +103,7 @@ Discussions
 
 Settings
 - [X] contact preferences
-- [ ] change avatar
+- [X] change avatar
 - [X] add/change email addresses
 - [X] change password
 - [X] name

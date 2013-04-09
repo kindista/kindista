@@ -244,7 +244,7 @@
      (:img :class "bigavatar" :src (strcat "/media/avatar/" userid ".jpg"))
      (:div :class "basics"
        (:h1 (str (getf user :name)))
-       (:p :class "city" (str (getf *user* :city)) ", " (str (getf *user* :state)))
+       (:p :class "city" (str (getf user :city)) ", " (str (getf user :state)))
      (unless (eql userid *userid*)
        (htm 
          (:form :method "GET" :action (strcat *base-url* "/message")
@@ -258,43 +258,42 @@
   (let* ((user (db userid))
          (strid (username-or-id userid))
          (*base-url* (strcat "/people/" strid)))
-    (require-user
-      (standard-page
-        (getf user :name)
-        (html
-          (str (profile-tabs-html userid :tab (or type :activity)))
-          (when (and (eql type :request) (eql userid *userid*))
-            (htm (str (simple-inventory-entry-html "request"))))
-          (when (and (eql type :resource) (eql userid *userid*))
-            (htm (str (simple-inventory-entry-html "resource")))) 
-          (when (and (eql type :gratitude) (not (eql userid *userid*))
-            (htm
-              (:div :class "item"
-               (:h4 "Do you have gratitude to share about " (str (getf user :name)) "?")
-               (:form :method "post" :action "/gratitude/new"
-                 (:input :type "hidden" :name "subject" :value userid)
-                 (:input :type "hidden" :name "next" :value (strcat *base-url* "/reputation"))
-                 (:table :class "post"
-                  (:tr
-                    (:td (:textarea :cols "1000" :rows "4" :name "text"))
-                    (:td
-                      (:button :class "yes" :type "submit" :class "submit" :name "create" "Post")))))))))
-          (:div :class "activity"
-            (str (profile-activity-items :userid userid :type type))))
+    (standard-page
+      (getf user :name)
+      (html
+        (when *user* (str (profile-tabs-html userid :tab (or type :activity))))
+        (when (and (eql type :request) (eql userid *userid*))
+          (htm (str (simple-inventory-entry-html "request"))))
+        (when (and (eql type :resource) (eql userid *userid*))
+          (htm (str (simple-inventory-entry-html "resource")))) 
+        (when (and (eql type :gratitude) (not (eql userid *userid*))
+          (htm
+            (:div :class "item"
+             (:h4 "Do you have gratitude to share about " (str (getf user :name)) "?")
+             (:form :method "post" :action "/gratitude/new"
+               (:input :type "hidden" :name "subject" :value userid)
+               (:input :type "hidden" :name "next" :value (strcat *base-url* "/reputation"))
+               (:table :class "post"
+                (:tr
+                  (:td (:textarea :cols "1000" :rows "4" :name "text"))
+                  (:td
+                    (:button :class "yes" :type "submit" :class "submit" :name "create" "Post")))))))))
+        (:div :class "activity"
+          (str (profile-activity-items :userid userid :type type))))
 
-        :top (profile-top-html userid)
+      :top (profile-top-html userid)
 
-        :right (let ((mutuals (mutual-connections userid)))
-                 (when (and mutuals (not (eql userid *userid*)))
-                   (html
-                     (:div :class "item people"
-                      (:h3 "Mutual Connections")
-                      (:ul
-                        (dolist (id (mutual-connections userid))
-                          (htm (:li (:a :href (strcat "/people/" (username-or-id id))
-                                        (str (getf (db id) :name)))))))))))
+      :right (let ((mutuals (mutual-connections userid)))
+               (when (and mutuals (not (eql userid *userid*)))
+                 (html
+                   (:div :class "item people"
+                    (:h3 "Mutual Connections")
+                    (:ul
+                      (dolist (id (mutual-connections userid))
+                        (htm (:li (:a :href (strcat "/people/" (username-or-id id))
+                                      (str (getf (db id) :name)))))))))))
 
-        :selected "people"))))
+      :selected "people")))
 
 (defmacro ensuring-userid ((user-id base-url) &body body)
   (let ((is-number (gensym))
@@ -316,39 +315,37 @@
              (not-found)))))))
 
 (defun get-person (id)
-  (with-user
-    (ensuring-userid (id "/people/~a")
-      (let ((editing (get-parameter "edit"))
-            (bio (getf (db id) :bio)))
-        (cond
-         ;((or (not editing)
-         ;     (not (eql id *userid*)))
-         ; (if (getf (db id) :bio)
-         ;   (profile-bio-html id)
-         ;   (profile-activity-html id)))
+  (ensuring-userid (id "/people/~a")
+    (let ((editing (get-parameter "edit")))
+      (cond
+       ;((or (not editing)
+       ;     (not (eql id *userid*)))
+       ; (if (getf (db id) :bio)
+       ;   (profile-bio-html id)
+       ;   (profile-activity-html id)))
 
-          ((not (eql id *userid*))
-           (profile-activity-html id))
+        ((not (eql id *userid*))
+         (profile-activity-html id))
 
-          ((not editing)
-           (profile-bio-html id))
+        ((not editing)
+         (profile-bio-html id))
 
-          ((string= editing "doing")
-           (profile-bio-html id :editing 'doing))
+        ((string= editing "doing")
+         (profile-bio-html id :editing 'doing))
 
-          ((string= editing "contact")
-           (profile-bio-html id :editing 'contact))
+        ((string= editing "contact")
+         (profile-bio-html id :editing 'contact))
 
-          ((string= editing "into")
-           (profile-bio-html id :editing 'into))
+        ((string= editing "into")
+         (profile-bio-html id :editing 'into))
 
-          ((string= editing "summary")
-           (profile-bio-html id :editing 'summary))
+        ((string= editing "summary")
+         (profile-bio-html id :editing 'summary))
 
-          ((string= editing "skills")
-           (profile-bio-html id :editing 'skills))
-          
-          (t (not-found)))))))
+        ((string= editing "skills")
+         (profile-bio-html id :editing 'skills))
+        
+        (t (not-found))))))
 
 (defun get-person-about (id)
   (require-user
@@ -356,9 +353,8 @@
       (profile-bio-html id))))
 
 (defun get-person-activity (id)
-  (with-user
-    (ensuring-userid (id "/people/~a/activity")
-      (profile-activity-html id))))
+  (ensuring-userid (id "/people/~a/activity")
+    (profile-activity-html id)))
 
 (defun get-person-reputation (id)
   (require-user

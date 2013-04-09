@@ -333,8 +333,13 @@
   (maphash #'index-item *db*))
 
 
-(defun db (id)
-  (gethash id *db*))
+(defun db (id &optional key)
+  (if key
+    (getf (gethash id *db*) key) 
+    (gethash id *db*)))
+
+(defun created (id)
+  (db id :created))
 
 (defun update-db (id data)
   (with-mutex (*db-log-lock*)
@@ -390,35 +395,14 @@
   (with-locked-hash-table (*db*)
     (remhash id *db*)))
 
-(defun clear-indexes ()
-  (dolist (index (list
-                   *activity-geo-index*
-                   *activity-person-index*
-                   *request-index*
-                   *request-geo-index*
-                   *request-stem-index*
-                   *resource-index*
-                   *resource-geo-index*
-                   *resource-stem-index*
-                   *love-index*
-                   *comment-index*
-                   *people-geo-index*
-                   *followers-index*
-                   *timeline-index*
-                   *person-alias-index*
-                   *metaphone-index*
-                   *username-index*
-                   *person-invitation-index*
-                   *email-index*))
-    (clrhash index)))
-
 (defun index-item (id data)
   (case (getf data :type)
     (:comment (index-comment id data))
     (:invitation (index-invitation id data))
     (:gratitude (index-gratitude id data))
     ((or :resource :request) (index-inventory-item id data))
-    (:person (index-person id data))))
+    (:person (index-person id data))
+    (:conversation (index-conversation id data))))
 
 (defun contacts-alphabetically (&optional (user *user*))
   (sort (iter (for contact in (getf user :following))

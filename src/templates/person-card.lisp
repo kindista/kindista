@@ -39,7 +39,7 @@
          (name (getf person :name)))
     (html
       (:div :class "card"
-        (:img :src (strcat "/media/avatar/" id ".jpg"))
+        (:div :class "image" (:img :src (strcat "/media/avatar/" id ".jpg")))
         (:h3 (:a :href (strcat "/people/" (username-or-id id))
                (str name)))
         (unless (string= name alias)
