@@ -166,57 +166,55 @@
     (remove-from-db id)))
 
 (defun post-new-inventory-item (type &key url)
-  (require-user
-    (require-test ((eq (getf *user* :active) t)
-                   "You must reactivate your account to post resources and requests.")       
-      (cond
-        ((post-parameter "cancel")
-         (see-other (or (post-parameter "next") "/home")))
+  (require-active-user
+    (cond
+      ((post-parameter "cancel")
+       (see-other (or (post-parameter "next") "/home")))
 
-        ((post-parameter "back")
-         (enter-inventory-text :title (s+ "Post a " type)
-                               :text (post-parameter "text")
-                               :action url
-                               :selected (s+ type "s")))
+      ((post-parameter "back")
+       (enter-inventory-text :title (s+ "Post a " type)
+                             :text (post-parameter "text")
+                             :action url
+                             :selected (s+ type "s")))
 
-        ((and (post-parameter "next")
-              (post-parameter "text"))
-          (enter-inventory-tags :title (s+ "Preview your " type)
-                                :text (post-parameter "text")
-                                :action url
-                                :button-text (s+ "Post " type)
-                                :selected (s+ type "s")))
+      ((and (post-parameter "next")
+            (post-parameter "text"))
+        (enter-inventory-tags :title (s+ "Preview your " type)
+                              :text (post-parameter "text")
+                              :action url
+                              :button-text (s+ "Post " type)
+                              :selected (s+ type "s")))
 
-        ((and (post-parameter "create")
-              (post-parameter "text")) 
+      ((and (post-parameter "create")
+            (post-parameter "text")) 
 
-         (let ((tags (iter (for pair in (post-parameters*))
-                           (when (and (string= (car pair) "tag")
-                                      (scan *tag-scanner* (cdr pair)))
-                             (collect (cdr pair))))))
-           (iter (for tag in (tags-from-string (post-parameter "tags")))
-                 (setf tags (cons tag tags)))
-           
-           (if (intersection tags *top-tags* :test #'string=)
-             (see-other 
-               (format nil (s+ "/" type "s/~A")
-                 (create-inventory-item :type (if (string= type "request") :request
-                                                                           :resource)
-                                        :text (post-parameter "text") 
-                                        :tags tags)))
+       (let ((tags (iter (for pair in (post-parameters*))
+                         (when (and (string= (car pair) "tag")
+                                    (scan *tag-scanner* (cdr pair)))
+                           (collect (cdr pair))))))
+         (iter (for tag in (tags-from-string (post-parameter "tags")))
+               (setf tags (cons tag tags)))
+         
+         (if (intersection tags *top-tags* :test #'string=)
+           (see-other 
+             (format nil (s+ "/" type "s/~A")
+               (create-inventory-item :type (if (string= type "request") :request
+                                                                         :resource)
+                                      :text (post-parameter "text") 
+                                      :tags tags)))
 
-             (enter-inventory-tags :title (s+ "Preview your " type)
-                                   :text (post-parameter "text")
-                                   :action url
-                                   :button-text (s+ "Post " type)
-                                   :tags tags
-                                   :error "You must select at least one keyword"
-                                   :selected (s+ type "s")))))
-        (t
-         (enter-inventory-text :title (s+ "Post a " type)
-                               :text (post-parameter "text")
-                               :action url
-                               :selected (s+ type "s")))))))
+           (enter-inventory-tags :title (s+ "Preview your " type)
+                                 :text (post-parameter "text")
+                                 :action url
+                                 :button-text (s+ "Post " type)
+                                 :tags tags
+                                 :error "You must select at least one keyword"
+                                 :selected (s+ type "s")))))
+      (t
+       (enter-inventory-text :title (s+ "Post a " type)
+                             :text (post-parameter "text")
+                             :action url
+                             :selected (s+ type "s"))))))
 
 (defun post-existing-inventory-item (type &key id url)
   (require-user

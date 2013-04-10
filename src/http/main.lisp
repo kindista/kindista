@@ -53,6 +53,10 @@
   (flash "Sorry, that page is only available to people who are logged in." :error t)
   (see-other "/"))
 
+(defun active-status-required ()
+  (flash "Sorry, you must reactivate your account to perform that action." :error t)
+  (see-other "/"))
+
 ;;; routing and acceptor {{{
 
 (setf *methods-for-post-parameters* '(:post :put))
@@ -189,6 +193,13 @@
        (progn ,@body)
        (login-required))))
 
+(defmacro require-active-user (&body body)
+  `(with-user
+     (if *userid*
+       (if (eq (getf *user* :active) t) 
+         (progn ,@body)
+         (active-status-required))
+       (login-required))))
 
 (defmacro require-test ((test &optional message) &body body)
   `(if ,test

@@ -55,16 +55,16 @@
     (standard-page "Not found" "not found")))
 
 (defun post-resource (id)
-  (require-user
+  (require-active-user
     (setf id (parse-integer id)) 
     (aif (db id)
       (cond
         ((and (post-parameter "love")
-              (member (getf it :type) '(:gratitude :resource :resource)))
+              (member (getf it :type) '(:gratitude :resource :request)))
          (love id)
          (see-other (or (post-parameter "next") (referer))))
         ((and (post-parameter "unlove")
-              (member (getf it :type) '(:gratitude :resource :resource)))
+              (member (getf it :type) '(:gratitude :resource :request)))
          (unlove id)
          (see-other (or (post-parameter "next") (referer)))))
       (standard-page "Not found" "not found"))))

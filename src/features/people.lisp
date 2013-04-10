@@ -290,7 +290,9 @@
           (htm (str (simple-inventory-entry-html "request"))))
         (when (and (eql type :resource) (eql userid *userid*))
           (htm (str (simple-inventory-entry-html "resource")))) 
-        (when (and (eql type :gratitude) (not (eql userid *userid*))
+        (when (and (eql type :gratitude)
+                   (not (eql userid *userid*))
+                   (eql (getf user :active) t))
           (htm
             (:div :class "item"
              (:h4 "Do you have gratitude to share about " (str (getf user :name)) "?")
@@ -301,7 +303,7 @@
                 (:tr
                   (:td (:textarea :cols "1000" :rows "4" :name "text"))
                   (:td
-                    (:button :class "yes" :type "submit" :class "submit" :name "create" "Post")))))))))
+                    (:button :class "yes" :type "submit" :class "submit" :name "create" "Post"))))))))
         (:div :class "activity"
           (str (profile-activity-items :userid userid :type type))))
 

@@ -52,7 +52,7 @@
     (standard-page "Not found" "not found")))
 
 (defun post-request (id)
-  (require-user
+  (require-active-user
     (setf id (parse-integer id)) 
     (aif (db id)
       (cond

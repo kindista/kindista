@@ -173,7 +173,7 @@
     (gratitude-compose :subjects (parse-subject-list (get-parameter "subject")))))
 
 (defun post-gratitudes-new ()
-  (require-user
+  (require-active-user
     (cond
       ((post-parameter "cancel")
        (see-other (or (post-parameter "next") "/home")))
@@ -229,7 +229,7 @@
     (standard-page "Not found" "not found")))
 
 (defun post-gratitude (id)
-  (require-user
+  (require-active-user
     (setf id (parse-integer id)) 
     (aif (db id)
       (cond
