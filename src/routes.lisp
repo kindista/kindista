@@ -47,6 +47,10 @@
     :get get-login
     :post post-login)
 
+  ("/reset"
+    :get get-reset-password
+    :post post-reset-password)
+
   ("/invite"
     :get get-invite
     :post post-invite)

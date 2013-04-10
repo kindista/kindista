@@ -85,7 +85,6 @@
     (geo-index-remove *people-geo-index* result)
     (geo-index-remove *activity-geo-index* result)     
     (dolist (request-id (gethash id *request-index*))
-      (pprint request-id) (terpri)
       (delete-inventory-item request-id))
     (dolist (resource-id (gethash id *resource-index*))
       (delete-inventory-item resource-id))
