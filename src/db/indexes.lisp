@@ -21,9 +21,9 @@
 
 (defmacro defindex (name &rest flags)
   `(progn
-     (defvar ,name (make-hash-table :synchronized t ,@flags)
-     (unless (member (quote ,name) *indexes*)
-       (push (quote ,name) *indexes*)))))
+     (defvar ,name (make-hash-table :synchronized t ,@flags))))
+;     (unless (member (quote ,name) *indexes*)
+;       (push (quote ,name) *indexes*)))))
 
 (defun clear-indexes ()
   (dolist (index *indexes*)

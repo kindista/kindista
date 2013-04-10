@@ -125,6 +125,9 @@
   ("/people/<id>/resources"
     :get get-person-resources)
 
+  ("/people/<id>/requests"
+    :get get-person-requests)
+
   ("/conversations"
     :get get-conversations)
 
