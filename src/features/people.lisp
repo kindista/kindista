@@ -40,6 +40,9 @@
         (names (cons (getf data :name)
                      (getf data :aliases))))
 
+    (with-locked-hash-table (*db-results*)
+      (setf (gethash id *db-results*) result))
+
     (awhen (getf data :emails) 
       (dolist (email it) 
         (setf (gethash email *email-index*) id)))
@@ -77,14 +80,30 @@
          (geo-index-remove *activity-geo-index* result))))))
 
 (defun deactivate-person (id)
-  (modify-db id :active nil
-                :notify-message nil
-                :notify-gratitude nil))
+  (let ((result (gethash id *db-results*)))
+    (metaphone-index-insert (list nil) result)
+    (geo-index-remove *people-geo-index* result)
+    (geo-index-remove *activity-geo-index* result)     
+    (dolist (request-id (gethash id *request-index*))
+      (pprint request-id) (terpri)
+      (delete-inventory-item request-id))
+    (dolist (resource-id (gethash id *resource-index*))
+      (delete-inventory-item resource-id))
+    (modify-db id :active nil
+                  :notify-message nil
+                  :notify-gratitude nil)))
 
 (defun reactivate-person (id)
+  (let* ((result (gethash id *db-results*))
+         (data (db id))
+         (names (cons (getf data :name)
+                      (getf data :aliases)))) 
+  (metaphone-index-insert names result)
+  (geo-index-insert *people-geo-index* result) 
+  (geo-index-insert *activity-geo-index* result) 
   (modify-db id :active t
                 :notify-message t
-                :notify-gratitude t))
+                :notify-gratitude t)))
 
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)
@@ -132,8 +151,10 @@
                      (:a :style "float: right;" :href (strcat "/home?p=" (+ page 1)) "next page >")))))))))))
 
 (defun profile-tabs-html (userid &key tab)
-  (let* ((bio (getf (db userid) :bio))
+  (let* ((person (db userid))
+         (bio (getf person :bio))
          (self (eql userid *userid*))
+         (active (getf person :active))
          (show-bio-tab (or bio self)))
     (html
       (:menu :class "bar"
@@ -149,12 +170,13 @@
         (if (eql tab :gratitude)
           (htm (:li :class "selected" "Reputation"))
           (htm (:li (:a :href (strcat *base-url* "/reputation") "Reputation"))))  
-        (if (eql tab :resource)
-          (htm (:li :class "selected" "Resources"))
-          (htm (:li (:a :href (strcat *base-url* "/resources") "Resources"))))
-        (if (eql tab :request)
-          (htm (:li :class "selected" "Requests"))
-          (htm (:li (:a :href (strcat *base-url* "/requests") "Requests"))))))))
+        (when (eq active t) 
+          (if (eql tab :resource)
+            (htm (:li :class "selected" "Resources"))
+            (htm (:li (:a :href (strcat *base-url* "/resources") "Resources"))))
+          (if (eql tab :request)
+            (htm (:li :class "selected" "Requests"))
+            (htm (:li (:a :href (strcat *base-url* "/requests") "Requests")))))))))
 
 (defun profile-bio-section-html (title content &key editing editable section-name)
   (when (string= content "")
@@ -243,7 +265,9 @@
     (html
      (:img :class "bigavatar" :src (strcat "/media/avatar/" userid ".jpg"))
      (:div :class "basics"
-       (:h1 (str (getf user :name)))
+       (:h1 (str (getf user :name))
+            (when (eq (getf user :active) nil)
+              (htm (:span :class "help-text" " (inactive account)"))))
        (:p :class "city" (str (getf user :city)) ", " (str (getf user :state)))
      (unless (eql userid *userid*)
        (htm 
@@ -262,7 +286,7 @@
       (getf user :name)
       (html
         (when *user* (str (profile-tabs-html userid :tab (or type :activity))))
-        (when (and (eql type :request) (eql userid *userid*))
+        (when (and (eql type :request) (eql userid *userid*) )
           (htm (str (simple-inventory-entry-html "request"))))
         (when (and (eql type :resource) (eql userid *userid*))
           (htm (str (simple-inventory-entry-html "resource")))) 

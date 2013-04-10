@@ -365,10 +365,10 @@ Do not use the Site if you are unwilling or unable to be bound by the TOU.")
      termination of your account, or access to the Site, Services and Data, including Your 
      Content.
 
-     ;"You may deactivate your account at anytime on the settings page of your profile. 
-     ;"However, if you deactivate your account, sections 1, 5, 7-13, and 15-23 of the TOU shall continue to apply in full until terminated by CommonGoods. 
-     ;  "If you wish to reactivate your account you may do so by logging in using your primary email address. 
-     ;  "If you reactivate your account, your use of the Site will be bound by the version of the TOU and Privacy Policy current as of the date of your account reactivation.
+     You may deactivate your account at anytime on the settings page of your profile. 
+     However, if you deactivate your account the TOU shall continue to apply in full until terminated by CommonGoods. 
+     If you wish to reactivate your account you may do so by logging in using your primary email address. 
+     If you reactivate your account, your use of the Site will be bound by the version of the TOU and Privacy Policy current as of the date of your account reactivation.
 
 1.  **Ownership.**
     The name "Kindista" and the Kindista logo including the symbol are 
