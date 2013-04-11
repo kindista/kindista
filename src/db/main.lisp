@@ -400,7 +400,7 @@
     (:comment (index-comment id data))
     (:invitation (index-invitation id data))
     (:gratitude (index-gratitude id data))
-    ((or :resource :request) (index-inventory-item id data))
+    ((or :offer :request) (index-inventory-item id data))
     (:person (index-person id data))
     (:conversation (index-conversation id data))))
 

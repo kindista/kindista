@@ -1,5 +1,6 @@
 **Effective June 15, 2012**
 
+
 # Kindista Terms of Use
 
 By using Kindista.org (the "Site"), you agree to these Terms of Use 
@@ -21,17 +22,17 @@ Do not use the Site if you are unwilling or unable to be bound by the TOU.")
         their collective efforts, and to request and receive Gifts collectively 
         to support the Project's contributors and its ongoing activities.
 
-    1.  A "Resource" is an asset that a Member or Project has posted to Kindista
+    1.  An "Offer" is a resource that a Member or Project has posted to Kindista
         with the intention of sharing it with another User or Project as a gift.
-        Users can browse and search for Resources posted on Kindista. 
-        If you post a Resource, other Users may contact you to request your 
-        Resource. 
+        Users can browse and search for Offers posted on Kindista. 
+        If you post an Offer, other Users may contact you to request what you 
+        have offered. 
         It is up to you to decide to whom and under what circumstances you will 
-        share your Resource. 
+        share your Offer. 
         **Resources shared through Kindista must be given or loaned free of 
         charge, without any debt incurred to the recipient.** 
 
-        Resources include, but are not limited to, items, supplies, food, 
+        Shared resources include, but are not limited to, items, supplies, food, 
         materials, tools, equipment, aid, tutoring or instruction, guidance, 
         labor, support, housing, energy, work space, consultation, or art; or 
         the temporary use of tools, equipment, or living or work space.
@@ -48,13 +49,13 @@ Do not use the Site if you are unwilling or unable to be bound by the TOU.")
         another User to fulfill your Request. 
 
     1.  "Content" means text and images, such as:
-        - descriptions of Resources and Requests, 
+        - descriptions of Offers and Requests, 
         - gratitude posted about users ;or projects
         - ,events posted to the calendar, 
         - and announcements posted on Kindista.
           
     1.  "Your Content" means Content that you submit or post to the Site, 
-        including descriptions of Resources and Requests; 
+        including descriptions of Offers and Requests; 
         words of gratitude that you post about other Members; 
         information that you display as part of your account profile; 
         invitations, events, or announcements; 
@@ -87,12 +88,12 @@ Do not use the Site if you are unwilling or unable to be bound by the TOU.")
     1.  **Do not engage in commercial or "for-profit" activities**
         - You may not use Kindista to offer goods or services for 
           sale, rent, or barter.  
-          When sharing a Resource  _you are permitted_  to charge a Resource 
+          When sharing an Offer  _you are permitted_  to charge an Offer 
           recipient for any direct out-of-pocket monetary costs associated 
-          with providing your Resource (e.g. supplies and materials) as well 
+          with providing your resource (e.g. supplies and materials) as well 
           as a portion of your overhead costs (e.g. insurance, utilities, or rent). 
           However, nothing can be posted on the site that requires monetary 
-          exchange beyond covering the actual cost of the Resource or event. 
+          exchange beyond covering the actual cost of the resource or event. 
           _Kindista is not about selling, renting, or trading. It's about sharing._
 
         - Do not collect or record information about Users for commercial purposes.
@@ -155,7 +156,7 @@ Do not use the Site if you are unwilling or unable to be bound by the TOU.")
 
     1.  **You Have Sole Responsibility When Interacting with Other Members.** 
         Kindista provides a platform for members to learn about one 
-        another, arrange the sharing of Resources, organize events and activities, 
+        another, arrange the sharing of resources, organize events and activities, 
         and communicate with one another. 
         Kindista is not a party to, has no involvement or interest 
         in, makes no representations or warranties as to, and has no 
@@ -209,7 +210,7 @@ Do not use the Site if you are unwilling or unable to be bound by the TOU.")
     1.  CommonGoods reserves the right (but has no obligation) to remove 
         or suppress Member Content from Kindista that it deems 
         untrustworthy, inappropriate, or in violation of the TOU or guidelines for 
-        Resources, Requests, comments, reviews, photos, or talk threads. 
+        Offers, Requests, comments, reviews, photos, or talk threads. 
         Such removal or suppression of Member Content shall be at 
         CommonGoods's sole discretion and without notice or liability of 
         any kind.
@@ -231,7 +232,7 @@ Do not use the Site if you are unwilling or unable to be bound by the TOU.")
     ;A "Personal Account" 
     Your account is for personal, 
     non-commercial use only, and may be used (among other things) to 
-    submit or post Resources, Requests, reviews, messages, statements of gratitude, 
+    submit or post Offers, Requests, reviews, messages, statements of gratitude, 
     invitations, commentary, photographs, and other types of User 
     Content. 
     In creating or updating an account 
@@ -421,7 +422,7 @@ Do not use the Site if you are unwilling or unable to be bound by the TOU.")
        AND FUNCTIONALITY OF THE SITE, (2) THE ACCURACY, INTEGRITY, 
        COMPLETENESS, QUALITY, LEGALITY, USEFULNESS, SAFETY, AND IP RIGHTS 
        OF ANY OF THE SITE CONTENT, INCLUDING BUT NOT LIMITED TO THE 
-       ACCURACY OF RESOURCES, REQUESTS, AND STATEMENTS OF GRATITUDE LISTED ON THE SITE, AND 
+       ACCURACY OF OFFERS, REQUESTS, AND STATEMENTS OF GRATITUDE LISTED ON THE SITE, AND 
        (3) THE PRODUCTS AND SERVICES ASSOCIATED WITH THE SITE OR SITE 
        CONTENT, INCLUDING BUT NOT LIMITED TO THE GIFTS GIVEN BY USERS 
        ;AND PROJECTS 

@@ -59,23 +59,23 @@
     :get go-home
     :post post-contacts)
 
-  ("/resources"
-   :get get-resources)
+  ("/offers"
+   :get get-offers)
 
-  ("/resources/all"
-   :get get-resources-all)
+  ("/offers/all"
+   :get get-offers-all)
 
-  ("/resources/new"
-   :get get-resources-new
-   :post post-resources-new)
+  ("/offers/new"
+   :get get-offers-new
+   :post post-offers-new)
    
-  ("/resources/<int:id>"
-    :get get-resource
-    :post post-resource)
+  ("/offers/<int:id>"
+    :get get-offer
+    :post post-offer)
 
-  ("/resources/<int:id>/edit"
-    :get get-resource-edit
-    :post post-resource-edit)
+  ("/offers/<int:id>/edit"
+    :get get-offer-edit
+    :post post-offer-edit)
 
   ("/requests"
    :get get-requests)
@@ -126,8 +126,8 @@
   ("/people/<id>/reputation"
     :get get-person-reputation)
 
-  ("/people/<id>/resources"
-    :get get-person-resources)
+  ("/people/<id>/offers"
+    :get get-person-offers)
 
   ("/people/<id>/requests"
     :get get-person-requests)

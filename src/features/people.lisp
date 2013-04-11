@@ -86,8 +86,8 @@
     (geo-index-remove *activity-geo-index* result)     
     (dolist (request-id (gethash id *request-index*))
       (delete-inventory-item request-id))
-    (dolist (resource-id (gethash id *resource-index*))
-      (delete-inventory-item resource-id))
+    (dolist (offer-id (gethash id *offer-index*))
+      (delete-inventory-item offer-id))
     (modify-db id :active nil
                   :notify-message nil
                   :notify-gratitude nil)))
@@ -125,9 +125,9 @@
                                                     :next-url next-url))))
                   (:person 
                     (str (joined-activity-item item)))
-                  (:resource
-                    (str (inventory-activity-item "resource" item
-                                              :show-what (unless (eql type :resource) t)
+                  (:offer
+                    (str (inventory-activity-item "offer" item
+                                              :show-what (unless (eql type :offer) t)
                                               :next-url next-url)))   
                   (:request
                     (str (inventory-activity-item "request" item
@@ -170,9 +170,9 @@
           (htm (:li :class "selected" "Reputation"))
           (htm (:li (:a :href (strcat *base-url* "/reputation") "Reputation"))))  
         (when (eq active t) 
-          (if (eql tab :resource)
-            (htm (:li :class "selected" "Resources"))
-            (htm (:li (:a :href (strcat *base-url* "/resources") "Resources"))))
+          (if (eql tab :offer)
+            (htm (:li :class "selected" "Offers"))
+            (htm (:li (:a :href (strcat *base-url* "/offers") "Offers"))))
           (if (eql tab :request)
             (htm (:li :class "selected" "Requests"))
             (htm (:li (:a :href (strcat *base-url* "/requests") "Requests")))))))))
@@ -287,8 +287,8 @@
         (when *user* (str (profile-tabs-html userid :tab (or type :activity))))
         (when (and (eql type :request) (eql userid *userid*) )
           (htm (str (simple-inventory-entry-html "request"))))
-        (when (and (eql type :resource) (eql userid *userid*))
-          (htm (str (simple-inventory-entry-html "resource")))) 
+        (when (and (eql type :offer) (eql userid *userid*))
+          (htm (str (simple-inventory-entry-html "offer")))) 
         (when (and (eql type :gratitude)
                    (not (eql userid *userid*))
                    (eql (getf user :active) t))
@@ -386,10 +386,10 @@
     (ensuring-userid (id "/people/~a/reputation")
       (profile-activity-html id :type :gratitude))))
 
-(defun get-person-resources (id)
+(defun get-person-offers (id)
   (require-user
-    (ensuring-userid (id "/people/~a/resources")
-      (profile-activity-html id :type :resource))))
+    (ensuring-userid (id "/people/~a/offers")
+      (profile-activity-html id :type :offer))))
 
 (defun get-person-requests (id)
   (require-user

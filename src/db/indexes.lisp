@@ -46,8 +46,8 @@
 (defindex *request-geo-index*)
 (defindex *request-index*)
 (defindex *request-stem-index* :test 'equalp)
-(defindex *resource-geo-index*)
-(defindex *resource-index*)
-(defindex *resource-stem-index* :test 'equalp)
+(defindex *offer-geo-index*)
+(defindex *offer-index*)
+(defindex *offer-stem-index* :test 'equalp)
 (defindex *username-index* :test 'equalp)
 

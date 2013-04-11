@@ -39,17 +39,17 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (if (eq type :resource)
-      (with-locked-hash-table (*resource-index*)
-        (push id (gethash by *resource-index*)))
+    (if (eq type :offer)
+      (with-locked-hash-table (*offer-index*)
+        (push id (gethash by *offer-index*)))
       (with-locked-hash-table (*request-index*)
         (push id (gethash by *request-index*))))
 
     (let ((stems (stem-text (getf data :text))))
-      (if (eq type :resource)
-        (with-locked-hash-table (*resource-stem-index*)
+      (if (eq type :offer)
+        (with-locked-hash-table (*offer-stem-index*)
           (dolist (stem stems)
-            (push result (gethash stem *resource-stem-index*)))) 
+            (push result (gethash stem *offer-stem-index*)))) 
         (with-locked-hash-table (*request-stem-index*)
           (dolist (stem stems)
             (push result (gethash stem *request-stem-index*))))))
@@ -58,8 +58,8 @@
       (asetf (gethash by *activity-person-index*)
              (sort (push result it) #'> :key #'result-time)))
 
-    (if (eq type :resource)
-      (geo-index-insert *resource-geo-index* result)
+    (if (eq type :offer)
+      (geo-index-insert *offer-geo-index* result)
       (geo-index-insert *request-geo-index* result))
     (geo-index-insert *activity-geo-index* result)))
 
@@ -80,13 +80,13 @@
           (setf oldstems (delete-if #'commonp oldstems))
           (setf newstems (delete-if #'commonp newstems))
           
-          (when (eq type :resource)          
-            (with-locked-hash-table (*resource-stem-index*)
+          (when (eq type :offer)          
+            (with-locked-hash-table (*offer-stem-index*)
               (dolist (stem oldstems)
-                (asetf (gethash stem *resource-stem-index*)
+                (asetf (gethash stem *offer-stem-index*)
                        (remove result it))))
               (dolist (stem newstems)
-                (push result (gethash stem *resource-stem-index*))))
+                (push result (gethash stem *offer-stem-index*))))
 
           (when (eq type :request)          
             (with-locked-hash-table (*request-stem-index*)
@@ -104,14 +104,14 @@
                (or (not (eql latitude (getf data :lat)))
                    (not (eql longitude (getf data :long)))))
 
-      (if (eq type :resource)          
-        (geo-index-remove *resource-geo-index* result)  
+      (if (eq type :offer)          
+        (geo-index-remove *offer-geo-index* result)  
         (geo-index-remove *request-geo-index* result))
       (geo-index-remove *activity-geo-index* result)
       (setf (result-latitude result) latitude)
       (setf (result-longitude result) longitude)
-      (if (eq type :resource)          
-        (geo-index-insert *resource-geo-index* result)  
+      (if (eq type :offer)          
+        (geo-index-insert *offer-geo-index* result)  
         (geo-index-insert *request-geo-index* result))
       (geo-index-insert *activity-geo-index* result))
 
@@ -128,16 +128,16 @@
          (type (result-type result))
          (data (db id)))
 
-    (when (eq type :resource)
-      (with-locked-hash-table (*resource-index*)
-        (asetf (gethash (getf data :by) *resource-index*)
+    (when (eq type :offer)
+      (with-locked-hash-table (*offer-index*)
+        (asetf (gethash (getf data :by) *offer-index*)
                (remove id it)))
       (let ((stems (stem-text (getf data :text))))
-        (with-locked-hash-table (*resource-stem-index*)
+        (with-locked-hash-table (*offer-stem-index*)
           (dolist (stem stems)
-            (asetf (gethash stem *resource-stem-index*)
+            (asetf (gethash stem *offer-stem-index*)
                    (remove result it)))))
-      (geo-index-remove *resource-geo-index* result))
+      (geo-index-remove *offer-geo-index* result))
 
     (when (eq type :request)
       (with-locked-hash-table (*request-index*)
@@ -172,7 +172,7 @@
        (see-other (or (post-parameter "next") "/home")))
 
       ((post-parameter "back")
-       (enter-inventory-text :title (s+ "Post a " type)
+       (enter-inventory-text :type type
                              :text (post-parameter "text")
                              :action url
                              :selected (s+ type "s")))
@@ -199,7 +199,7 @@
            (see-other 
              (format nil (s+ "/" type "s/~A")
                (create-inventory-item :type (if (string= type "request") :request
-                                                                         :resource)
+                                                                         :offer)
                                       :text (post-parameter "text") 
                                       :tags tags)))
 
@@ -211,7 +211,7 @@
                                  :error "You must select at least one keyword"
                                  :selected (s+ type "s")))))
       (t
-       (enter-inventory-text :title (s+ "Post a " type)
+       (enter-inventory-text :type type
                              :text (post-parameter "text")
                              :action url
                              :selected (s+ type "s"))))))
@@ -234,7 +234,7 @@
            (see-other (or (post-parameter "next") "/home")))
 
           ((post-parameter "back")
-           (enter-inventory-text :title (s+ "Edit a " type)
+           (enter-inventory-text :type type
                                  :text (post-parameter "text")
                                  :action url
                                  :selected (s+ type "s")))
@@ -282,10 +282,10 @@
                                   :button-text (s+ "Save " type)
                                   :selected (s+ type "s"))))))))
 
-(defun simple-inventory-entry-html (type)
+(defun simple-inventory-entry-html (preposition type)
   (html 
     (:div :class "item"
-      (:h4 (str (s+ "post a " type))) 
+      (:h4 (str (s+ "post " preposition type))) 
       (:form :method "post" :action (s+ "/" type "s/new") 
         (:table :class "post"
           (:tr
@@ -293,12 +293,15 @@
             (:td
               (:button :class "yes" :type "submit" :class "submit" :name "next" "Post"))))))))
 
-(defun enter-inventory-text (&key title text action selected)
-  (standard-page title
+(defun enter-inventory-text (&key type title text action selected)
+  (standard-page 
+    (or title (if (string= type "offer")
+                  "Post an offer"
+                  "Post a request"))
     (html
       (:div :class "item"
-         (:h2 (if (equal selected "resources")
-                (str "Please describe the resource you are offering")
+         (:h2 (if (string= selected "offers")
+                (str "Please describe your offer")
                 (str "Please describe your request")))
          (:form :method "post" :action action
            (:textarea :cols "40" :rows "8" :name "text" (str text))
@@ -365,17 +368,17 @@
                     (if q
                       (result-id-intersection
                         (geo-index-query (case type
-                                           (:resource *resource-geo-index*)
+                                           (:offer *offer-geo-index*)
                                            (t *request-geo-index*))
                                          *latitude*
                                          *longitude*
                                          distance)
                         (stem-index-query (case type
-                                           (:resource *resource-stem-index*)
+                                           (:offer *offer-stem-index*)
                                            (t *request-stem-index*))
                                           q))
                       (geo-index-query (case type
-                                         (:resource *resource-geo-index*)
+                                         (:offer *offer-geo-index*)
                                          (t *request-geo-index*))
                                          *latitude*
                                          *longitude*
@@ -461,7 +464,7 @@
         (t
          (values (sort top-tags #'string< :key #'first) items))))))
 
-(defun inventory-body-html (type &key base q items start page)
+(defun inventory-body-html (type &key base q items start page preposition)
   (html
     (let ((base-url (s+ "/" type "s")))
       (htm
@@ -471,7 +474,7 @@
                         (eq (getf *user* :active) nil)
                         base
                         q)
-              (str (simple-inventory-entry-html type)))
+              (str (simple-inventory-entry-html preposition type)))
             
             (when q
               (htm

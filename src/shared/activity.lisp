@@ -164,7 +164,7 @@
                    :hearts (length (loves (result-id result)))
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")
-                                                 ((string= type "resource") "offered")))
+                                                 ((string= type "offer") "offered")))
                    :content (html
                               (:p
                                 (str (person-link user-id))
@@ -208,8 +208,8 @@
                        (str (gift-activity-item item :next-url next-url)))
                      (:person
                        (str (joined-activity-item item)))
-                     (:resource
-                       (str (inventory-activity-item "resource" item :show-what t :next-url next-url)))
+                     (:offer
+                       (str (inventory-activity-item "offer" item :show-what t :next-url next-url)))
                      (:request
                        (str (inventory-activity-item "request" item :show-what t :next-url next-url)))))
                  (setf items (cdr items)))

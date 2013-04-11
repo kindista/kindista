@@ -725,11 +725,11 @@
   (sort
     (result-id-intersection
       (stem-index-query (case type
-                          ('resource *resource-stem-index*)
+                          ('offer *offer-stem-index*)
                           (t *request-stem-index*))
                         text)
       (geo-index-query (case type
-                         ('resource *resource-geo-index*)
+                         ('offer *offer-geo-index*)
                          (t *request-geo-index*))
                        (getf *user* :lat)
                        (getf *user* :long)
@@ -772,10 +772,10 @@
     (dolist (item request-list)
       (str (inventory-activity-item "request" item)))))
 
-(defun resource-results-html (resource-list)
+(defun offer-results-html (offer-list)
   (html
-    (dolist (item resource-list)
-      (str (inventory-activity-item "resource" item)))))
+    (dolist (item offer-list)
+      (str (inventory-activity-item "offer" item)))))
 
 (defun people-results-html (person-list)
   (html
@@ -811,8 +811,8 @@
             ((string= scope "requests")
              (see-other (s+ "/requests?q=" (url-encode q))))
 
-            ((string= scope "resources")
-             (see-other (s+ "/resources?q=" (url-encode q))) )
+            ((string= scope "offers")
+             (see-other (s+ "/offers?q=" (url-encode q))) )
 
             ((string= scope "people")
              (let ((people (search-people q)))
@@ -831,10 +831,10 @@
             
             (t ; all
              (let ((requests (search-inventory 'request q :distance (user-rdist)))
-                   (resources (search-inventory 'resource q :distance (user-rdist)))
+                   (offers (search-inventory 'offer q :distance (user-rdist)))
                    (people (search-people q)))
 
-               (if (or requests resources people)
+               (if (or requests offers people)
                  (progn
                    (when people
                      (htm
@@ -855,18 +855,18 @@
                          (htm
                            (:div :class "more-results"
                              (:a :href (s+ "/requests?q=" (url-encode q)) (fmt "see ~d more requests" (- (length requests) 5))))))))
-                   (when resources
+                   (when offers
                      (htm
-                       (:h2 (:a :href "/resources" "Resources")
+                       (:h2 (:a :href "/offers" "Offers")
                          " "
                          (str (rdist-selection-html (request-uri*)
                                                     :style "float:right;"
                                                     :text "show results within ")))
-                       (str (resource-results-html (sublist resources 0 5)))
-                       (when (> (length resources) 5)
+                       (str (offer-results-html (sublist offers 0 5)))
+                       (when (> (length offers) 5)
                          (htm
                            (:div :class "more-results"
-                             (:a :href (s+ "/resources?q=" (url-encode q)) (fmt "see ~d more resources" (- (length resources) 5))))))))
+                             (:a :href (s+ "/offers?q=" (url-encode q)) (fmt "see ~d more offers" (- (length offers) 5))))))))
                              )
                  (htm
                    (:p "no results :-(")))))))

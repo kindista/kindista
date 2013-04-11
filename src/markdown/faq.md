@@ -1,9 +1,9 @@
 
 <div id="questions">
 
-### Resources and Requests
+### Offers and Requests
 - [What kinds of things can be offered and requested on Kindista?](#what-can-i-offer-and-request)
-- [Do I have to give to anyone who requests my resource?](#am-i-obligated-to-give-a-resource)
+- [Do I have to give to anyone who requests my offer?](#am-i-obligated-to-give-an-offer)
 - [Should I request things that I can afford to buy myself?](#can-i-request-things-i-can-afford-to-buy)
 - [Can I use Kindista to barter with other members?](#can-i-barter-on-kindista)
 - [Are resources shared using Kindista taxable?](#are-resources-taxable)
@@ -24,7 +24,7 @@
 - [Will Kindista start selling advertising?](#will-kindista-sell-advertising)
 </div>
   
-## Resources and Requests
+## Offers and Requests
 
 <a id="what-can-i-offer-and-request"></a>
 
@@ -34,7 +34,7 @@ Request anything that might improve your quality of life
 or that you would otherwise have to pay money for.
 Offer anything you think might be useful
 or appreciated by someone else.
-Resources and requests can include food, clothing,
+Offers and requests can include food, clothing,
 tools, materials, tutoring or instruction,
 skills, support, housing, work space, or art.
 You can even offer the temporary use of tools,
@@ -42,12 +42,12 @@ equipment, or living or work space.
 Get creative.  We encourage you to post anything you have
 that is underutilized, or of which you have excess.)
 
-<a id="am-i-obligated-to-give-a-resource"></a>
+<a id="am-i-obligated-to-give-an-offer"></a>
 
-### Do I have to give a resource I've posted to anyone who asks for it?
+### Do I have to give an offer I've posted to anyone who asks for it?
 
 No. We encourage you to be discerning
-in deciding when you will give a resource or fulfill a request.
+in deciding when you will give an offer or fulfill a request.
 When giving is pure, it feels good to both the recipient
 and the giver.
 There is no right or wrong answer on this.
@@ -100,7 +100,7 @@ Kindista is specifically designed to encourage a culture of sharing
 in which we are all able to give freely without having to worry
 about how we are going to get our nees met in return.
 In that spirit, it is a violation of the [Terms of Use](/terms#restrictions)
-to post an resource that requires the recipient to give you
+to post an offer that requires the recipient to give you
 goods or services in return.
 Similarly, it is a violation to post a request in which you offer
 to barter goods or services in return.
@@ -129,7 +129,7 @@ you may want to consult a tax attorney.
 
 Contacts are like people you follow on Twitter or Google+.
 When you add someone to your contacts, 
-their public activity (resources, requests, events, and announcements) 
+their public activity (offers, requests, events, and announcements) 
 will show up in your activity feed,
 and they will get a notification that you have added them.
 If they choose to add you back, 
