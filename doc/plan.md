@@ -110,16 +110,16 @@ Settings
 - [X] location
 - [X] aliases
 - [X] index aliases as well as names
-- [ ] deactivate account
-- [ ] setf (db userid) :active to nil
-- [ ] delete offers/requests
-- [ ] remove name/aliases from metaphone index and id from geo index
-- [ ] set contact items to nil
-- [ ] activate account
-- [ ] setf :active to t
-- [ ] reindex names and location indexes
-- [ ] set contact items to t
-- [ ] change password with "forgot password link
+- [X] deactivate account
+- [X] setf (db userid) :active to nil
+- [X] delete offers/requests
+- [X] remove name/aliases from metaphone index and id from geo index
+- [X] set contact items to nil
+- [X] activate account
+- [X] setf :active to t
+- [X] reindex names and location indexes
+- [X] set contact items to t
+- [X] change password with "forgot password link
 
 Writing
 - [ ] About page
@@ -129,7 +129,7 @@ Terms and Privacy
 - [ ] Proof read terms
 - [ ] Proof read privacy
 - [ ] Change effective dates on Privacy and Terms
-- [ ] turn TOU into a markup file
+- [X] turn TOU into a markup file
 
 ### MAYBE
 
