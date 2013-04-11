@@ -472,8 +472,7 @@
           (flash "The confirmation text you entered does not match the new password you entered. Please try again." :error t)
           (see-other (post-parameter "next")))
          (t
-          (modify-db *userid* :pass (new-password
-                                          (post-parameter "new-password-1")))
+          (modify-db *userid* :pass (new-password (post-parameter "new-password-1")))
           (flash "You have successfully changed your password.")
           (see-other (or (post-parameter "next") "/home")))))
 

@@ -52,13 +52,8 @@
       (cond
         ((password-match-p user (post-parameter "password"))
          (setf (token-userid *token*) user)
-         (setf (return-code*) +http-see-other+)
-         (setf (header-out :location) (if (and (< 0 (length next))
-                                               (equal #\/ (elt next 0)))
-                                        next
-                                        "/home"))
          (notice :login "")
-         "")
+         (see-other (or (post-parameter "next") "/home")))
         (t
          (setf (return-code*) +http-see-other+)
          (setf (header-out :location) "/home")

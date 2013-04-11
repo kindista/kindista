@@ -78,6 +78,7 @@
                                            (:file "people")
                                            (:file "privacy")
                                            (:file "requests")
+                                           (:file "reset-password")
                                            (:file "resources")
                                            (:file "root")
                                            (:file "settings")
@@ -89,7 +90,8 @@
                              (:module email
                                       :serial t
                                       :components ((:file "base")
-                                                   (:file "invitation")
-                                                   (:file "gratitude-notification")
                                                    (:file "email-verification")
-                                                   (:file "email-handlers")))))))
+                                                   (:file "email-handlers")
+                                                   (:file "gratitude-notification")
+                                                   (:file "invitation")
+                                                   (:file "reset-password")))))))

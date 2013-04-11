@@ -66,6 +66,24 @@
                                                                to 
                                                                token))))
 
+(defun send-password-reset (user email)
+  (let* ((name (getf user :name))
+         (token (car (getf user :password-reset-token)))
+         (expiration (humanize-future-time 
+                    (cdr (getf user :password-reset-token)))))
+    (cl-smtp:send-email +mail-server+
+                        "Kindista <noreply@kindista.org>"
+                        email
+                        "Forgotten Password"
+                        (reset-password-text name
+                                             token 
+                                             email
+                                             expiration)
+                        :html-message (reset-password-html name
+                                                           token 
+                                                           email
+                                                           expiration))))
+
 (defun send-invitation-email (invitation-id)
   (let* ((invitation (db invitation-id))
          (token (getf invitation :token))

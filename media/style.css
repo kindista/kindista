@@ -1491,7 +1491,7 @@ form.post-next h2 {
 }
 
 .settings-item .password label {
-  width: 14em;
+  width: 20em;
   padding-right: .5em;
   display: block;
   margin: .4em 0 .3em 0;
@@ -1499,6 +1499,14 @@ form.post-next h2 {
 
 .settings-item .password input[type=password] {
  width: 20em
+}
+
+.settings-item .password input[type=text] {
+ width: 20em
+}
+
+.reset-password button {
+ margin: .7em 0 .7em 0;
 }
 
 .search h2 {
