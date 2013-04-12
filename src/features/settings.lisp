@@ -111,7 +111,7 @@
             ))
     :editable editable
     :edit-text (unless address "Add address")
-    :help-text (s+ "Addresses help people find nearby resources and requests. "
+    :help-text (s+ "Addresses help people find nearby offers and requests. "
                    "Your address will never be displayed or shared; "
                    "it is used only to calculate distance. "))))
 
@@ -186,7 +186,7 @@
                    (str (s+ (string-capitalize action) " account")))))
     :editable t
     :help-text (s+ "Warning: "
-                   "Deactivating your account will delete all of your current resources "
+                   "Deactivating your account will delete all of your current offers "
                    "and requests, and prevent people from "
                    "contacting you through Kindista or finding you using the search bar. "
                    "Deactivating your account will not remove any statements of gratitude "
@@ -210,7 +210,7 @@
           (:a :href "/settings" "No, I didn't mean it!"))
         (:p :class "settings-item help-text"
           (:strong "Warning: ")
-          "Deactivating your account will delete all of your current resources " 
+          "Deactivating your account will delete all of your current offers " 
           "and requests, and prevent people from "
           "contacting you through Kindista or finding you using the search bar. "
           "Deactivating your account will not remove any statements of gratitude "
@@ -472,8 +472,7 @@
           (flash "The confirmation text you entered does not match the new password you entered. Please try again." :error t)
           (see-other (post-parameter "next")))
          (t
-          (modify-db *userid* :pass (new-password
-                                          (post-parameter "new-password-1")))
+          (modify-db *userid* :pass (new-password (post-parameter "new-password-1")))
           (flash "You have successfully changed your password.")
           (see-other (or (post-parameter "next") "/home")))))
 
@@ -600,7 +599,7 @@
 
       ((scan +number-scanner+ (post-parameter "rdist"))
        (modify-db *userid* :rdist (parse-integer (post-parameter "rdist")))
-       (flash "Your search distance for resources and requests has been changed!")
+       (flash "Your search distance for offers and requests has been changed!")
        (see-other (or (post-parameter "next") "/requests")))
 
       ((scan +number-scanner+ (post-parameter "sdist"))

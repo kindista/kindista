@@ -95,7 +95,7 @@
         (:menu :class "horiz"
           (:strong "actions")
           (:li (:a :href "/gratitude/new" "express gratitude"))
-          (:li (:a :href "/resources/new" "offer a resource"))
+          (:li (:a :href "/offers/new" "post an offer"))
           (:li (:a :href "/requests/new" "make a request"))
           ;(:li (:a :href "/events/new" "event"))
           ;(:li (:a :href "/announcements/new" "post announcement"))
@@ -160,7 +160,7 @@
         (:div :class "setup"
           (:h2 "Welcome to Kindista!")
           (:p "Kindista is a social network for " (:strong "building and supporting real community") ".
-               We use your location to help you find " (:strong "local people, resources, and events") ".
+               We use your location to help you find " (:strong "local people, offers, and events") ".
                To get started, we need to know where you call home.")
           (:p "We will never share your exact location with anyone else.
                If you would like to know more about how we use the information you share with us,

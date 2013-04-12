@@ -33,7 +33,7 @@ We may collect the following types of information:
       participants of the conversation.
     - **Other User Content.**
       Other than the information described above, User Content -
-      including Resources, Requests, your profile bio section, expressions 
+      including Offers, Requests, your profile bio section, expressions 
       of gratitude, announcements, and events - is generally viewable by 
       anyone using the site. 
       *Unless we explicitly provide you with a mechanism to restrict who can 
@@ -105,7 +105,7 @@ consent for sharing such information.
 
 Personal information, such as your display name, communications preferences, 
 profile picture, primary email address, city, and state or province can be 
-edited on your settings page. User Content - including Resources,
+edited on your settings page. User Content - including Offers,
 Requests, and statements of Gratitude - can be edited or deleted on
 pages on which that Content is displayed. 
 

@@ -93,10 +93,10 @@
       (push (gethash (list :pair (getf data :to) (getf data :from)) *discussion-index*) id))
 
     (let ((stems (stem-text (getf data :text))))
-      (if (eq type :resource)
-        (with-locked-hash-table (*resource-stem-index*)
+      (if (eq type :offer)
+        (with-locked-hash-table (*offer-stem-index*)
           (dolist (stem stems)
-            (push result (gethash stem *resource-stem-index*)))) 
+            (push result (gethash stem *offer-stem-index*)))) 
         (with-locked-hash-table (*request-stem-index*)
           (dolist (stem stems)
             (push result (gethash stem *request-stem-index*))))))
@@ -105,8 +105,8 @@
       (asetf (gethash by *activity-person-index*)
              (sort (push result it) #'> :key #'result-time)))
 
-    (if (eq type :resource)
-      (geo-index-insert *resource-geo-index* result)
+    (if (eq type :offer)
+      (geo-index-insert *offer-geo-index* result)
       (geo-index-insert *request-geo-index* result))
     (geo-index-insert *activity-geo-index* result)))
 
@@ -127,13 +127,13 @@
           (setf oldstems (delete-if #'commonp oldstems))
           (setf newstems (delete-if #'commonp newstems))
           
-          (when (eq type :resource)          
-            (with-locked-hash-table (*resource-stem-index*)
+          (when (eq type :offer)          
+            (with-locked-hash-table (*offer-stem-index*)
               (dolist (stem oldstems)
-                (asetf (gethash stem *resource-stem-index*)
+                (asetf (gethash stem *offer-stem-index*)
                        (remove result it))))
               (dolist (stem newstems)
-                (push result (gethash stem *resource-stem-index*))))
+                (push result (gethash stem *offer-stem-index*))))
 
           (when (eq type :request)          
             (with-locked-hash-table (*request-stem-index*)
@@ -151,14 +151,14 @@
                (or (not (eql latitude (getf data :lat)))
                    (not (eql longitude (getf data :long)))))
 
-      (if (eq type :resource)          
-        (geo-index-remove *resource-geo-index* result)  
+      (if (eq type :offer)          
+        (geo-index-remove *offer-geo-index* result)  
         (geo-index-remove *request-geo-index* result))
       (geo-index-remove *activity-geo-index* result)
       (setf (result-latitude result) latitude)
       (setf (result-longitude result) longitude)
-      (if (eq type :resource)          
-        (geo-index-insert *resource-geo-index* result)  
+      (if (eq type :offer)          
+        (geo-index-insert *offer-geo-index* result)  
         (geo-index-insert *request-geo-index* result))
       (geo-index-insert *activity-geo-index* result))
 
@@ -175,16 +175,16 @@
          (type (result-type result))
          (data (db id)))
 
-    (when (eq type :resource)
-      (with-locked-hash-table (*resource-index*)
-        (asetf (gethash (getf data :by) *resource-index*)
+    (when (eq type :offer)
+      (with-locked-hash-table (*offer-index*)
+        (asetf (gethash (getf data :by) *offer-index*)
                (remove id it)))
       (let ((stems (stem-text (getf data :text))))
-        (with-locked-hash-table (*resource-stem-index*)
+        (with-locked-hash-table (*offer-stem-index*)
           (dolist (stem stems)
-            (asetf (gethash stem *resource-stem-index*)
+            (asetf (gethash stem *offer-stem-index*)
                    (remove result it)))))
-      (geo-index-remove *resource-geo-index* result))
+      (geo-index-remove *offer-geo-index* result))
 
     (when (eq type :request)
       (with-locked-hash-table (*request-index*)
@@ -242,7 +242,7 @@
            (see-other 
              (format nil (s+ "/" type "s/~A")
                (create-inventory-item :type (if (string= type "request") :request
-                                                                         :resource)
+                                                                         :offer)
                                       :text (post-parameter "text") 
                                       :tags tags)))
 
@@ -406,17 +406,17 @@
                     (if q
                       (result-id-intersection
                         (geo-index-query (case type
-                                           (:resource *resource-geo-index*)
+                                           (:offer *offer-geo-index*)
                                            (t *request-geo-index*))
                                          *latitude*
                                          *longitude*
                                          distance)
                         (stem-index-query (case type
-                                           (:resource *resource-stem-index*)
+                                           (:offer *offer-stem-index*)
                                            (t *request-stem-index*))
                                           q))
                       (geo-index-query (case type
-                                         (:resource *resource-geo-index*)
+                                         (:offer *offer-geo-index*)
                                          (t *request-geo-index*))
                                          *latitude*
                                          *longitude*

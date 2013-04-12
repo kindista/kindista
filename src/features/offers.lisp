@@ -17,29 +17,32 @@
 
 (in-package :kindista)
 
-(defun requests-help-text ()
+;bug list
+;fix top tag display
+ 
+(defun offers-help-text ()
   (welcome-bar
     (html
-      (:h2 "Getting started with requests")
+      (:h2 "Getting started with offers")
       (:p "Here are some things you can do to get started:")
       (:ul
-        (:li (:a :href "/requests/new" "Post a request") " to the community for something you need.")
-        (:li "Browse recently posted requests listed below.")
-        (:li "Find specific requests by selecting keywords from the " (:strong "browse by keyword") " menu.")
-        (:li "Search for requests using the search "
+        (:li (:a :href "/offers/new" "Post an offer") " you have that someone else in the community might be able to use.")
+        (:li "Browse recently posted offers listed below.")
+        (:li "Find specific offers by selecting keywords from the " (:strong "browse by keyword") " menu.")
+        (:li "Search for offers using the search "
           (:span :class "menu-button" "button")
           (:span :class "menu-showing" "bar")
           " at the top of the screen.")))))
 
-(defun get-requests-new ()
+(defun get-offers-new ()
   (require-user
-    (enter-inventory-text :title "Post a request"
-                          :action "/requests/new"
-                          :selected "requests")))
-(defun post-requests-new ()
-  (post-new-inventory-item "request" :url "/requests/new"))
+    (enter-inventory-text :title "Post an offer"
+                          :action "/offers/new"
+                          :selected "offers")))
+(defun post-offers-new ()
+  (post-new-inventory-item "offer" :url "/offers/new"))
 
-(defun get-request (id)
+(defun get-offer (id)
   (setf id (parse-integer id))
   (aif (db id)
     (with-user
@@ -47,11 +50,11 @@
         "First few words... | Kindista"
         (html
           (:div :class "activity"
-            (str (inventory-activity-item "request" (gethash id *db-results*) :show-distance t))))
-        :selected "requests"))
+            (str (inventory-activity-item "offer" (gethash id *db-results*) :show-distance t))))
+        :selected "offers"))
     (standard-page "Not found" "not found")))
 
-(defun post-request (id)
+(defun post-offer (id)
   (require-active-user
     (setf id (parse-integer id)) 
     (aif (db id)
@@ -66,23 +69,23 @@
          (see-other (or (post-parameter "next") (referer)))))
       (standard-page "Not found" "not found"))))
 
-(defun get-request-edit (id)
+
+(defun get-offer-edit (id)
   (require-user
-    (let* ((request (db (parse-integer id))))
-      (require-test ((eql *userid* (getf request :by))
-                   "You can only edit your own requests.")
-        (enter-inventory-tags :title "Edit your request"
-                              :action (s+ "/requests/" id "/edit")
-                              :text (getf request :text)
-                              :tags (getf request :tags)
-                              :button-text "Save request"
-                              :selected "requests")))))
+    (let* ((offer (db (parse-integer id))))
+      (require-test ((eql *userid* (getf offer :by))
+                   "You can only edit offers you have posted.")
+        (enter-inventory-tags :title "Edit your offer"
+                              :action (s+ "/offers/" id "/edit")
+                              :text (getf offer :text)
+                              :tags (getf offer :tags)
+                              :button-text "Save offer"
+                              :selected "offers")))))
+(defun post-offer-edit (id)
+  (post-existing-inventory-item "offer" :id id
+                                           :url (s+ "/offers/" id "/edit")))
 
-(defun post-request-edit (id)
-  (post-existing-inventory-item "request" :id id
-                                          :url (s+ "/requests/" id "/edit")))
-
-(defun get-requests ()
+(defun get-offers ()
   (with-user
     (with-location
       (let* ((page (if (scan +number-scanner+ (get-parameter "p"))
@@ -95,35 +98,33 @@
              (start (* page 20)))
         (when (string= q "") (setf q nil))
         (multiple-value-bind (tags items)
-            (nearby-inventory-top-tags :request :base base :q q)
+            (nearby-inventory-top-tags :offer :base base :q q)
           (standard-page
-           "Requests"
-           (inventory-body-html "request" :preposition "a "
-                                          :base base 
-                                          :q q 
-                                          :items items 
-                                          :start start 
-                                          :page page)
+           "offers"
+           (inventory-body-html "offer" :preposition "an "
+                                        :base base 
+                                        :q q 
+                                        :items items 
+                                        :start start 
+                                        :page page)
           :top (when (getf *user* :help)
-                 (requests-help-text))
+                 (offers-help-text))
           :search q
-          :search-scope (if q "requests" "all")
-          :right (html
-                   (str (donate-sidebar))
-                   (str (browse-inventory-tags "request" :q q :base base :tags tags)))
-          :selected "requests"))))))
+          :search-scope (if q "offers" "all")
+          :right (browse-inventory-tags "offer" :q q :base base :tags tags)
+          :selected "offers"))))))
 
 
-(defun get-requests-all ()
+(defun get-offers-all ()
   (require-user
     (let ((base (iter (for tag in (split " " (get-parameter "kw")))
                       (when (scan *tag-scanner* tag)
                         (collect tag)))))
       (multiple-value-bind (tags items)
-          (nearby-inventory-top-tags :request :count 10000 :subtag-count 10)
+          (nearby-inventory-top-tags :offer :count 10000 :subtag-count 10)
         (standard-page
-         "Requests"
-           (browse-all-inventory-tags "request" :base base :tags tags)
+         "offers"
+           (browse-all-inventory-tags "offer" :base base :tags tags)
            :top (when (getf *user* :help)
-                 (requests-help-text))
-           :selected "requests")))))
+                 (offers-help-text))
+           :selected "offers")))))
