@@ -63,6 +63,7 @@
                                            (:file "admin")
                                            (:file "comments")
                                            (:file "contacts")
+                                           (:file "conversations")
                                            (:file "discussions")
                                            (:file "invitations")
                                            (:file "donate")
