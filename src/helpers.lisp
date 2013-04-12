@@ -110,43 +110,6 @@
     (* (/ 50 (log (+ (/ age 86400) 6)))
        (expt loves 0.3))))
 
-(defun humanize-future-time (time)
-  (let* ((now (get-universal-time))
-         (seconds (- time now)))
-    (cond
-      ((< seconds 60)
-       "in less than a minute")
-      ((< seconds 120)
-       "in about a minute")
-      ((< seconds 3600)
-       (strcat "in " (floor (/ seconds 60)) " minutes"))
-      ((< seconds 7200)
-       "in about an hour")
-      ((< seconds 86400)
-       (strcat "in " (floor (/ seconds 3600)) " hours"))
-      ((< seconds 172800)
-       "tomorrow")
-      ((< seconds 2678400)
-       (strcat "in " (floor (/ seconds 86400)) " days"))
-      ((< seconds 5270400)
-       "next month")
-      ((< seconds 31536000)
-       (strcat "in " (floor (/ seconds 2628000)) " months"))
-      ((< seconds 63072000)
-       "next year")
-      (t
-       (strcat "in " (floor (/ seconds 31536000)) " years")))))
-
-(defun inline-timestamp (time &key type url)
-  (let ((inner (html
-                 (when type
-                   (htm (str type) " "))
-                 (str (humanize-universal-time time)))))
-    (html
-      (:span :class "timestamp" :data-time time :data-type type
-        (if url
-          (htm (:a :href url (str inner)))
-          (str inner))))))
 
 (defun url-compose (base &rest params)
   (do ((param-strings ()))

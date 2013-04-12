@@ -42,14 +42,14 @@
 (defun get-request (id)
   (setf id (parse-integer id))
   (aif (db id)
-    (with-user
+    (with-location
       (standard-page
-        "First few words... | Kindista"
+        "Requests"
         (html
           (:div :class "activity"
             (str (inventory-activity-item "request" (gethash id *db-results*) :show-distance t))))
         :selected "requests"))
-    (standard-page "Not found" "not found")))
+    (not-found)))
 
 (defun post-request (id)
   (require-active-user
@@ -64,7 +64,7 @@
               (member (getf it :type) '(:gratitude :offer :request)))
          (unlove id)
          (see-other (or (post-parameter "next") (referer)))))
-      (standard-page "Not found" "not found"))))
+      (not-found))))
 
 (defun get-request-edit (id)
   (require-user
@@ -83,35 +83,34 @@
                                           :url (s+ "/requests/" id "/edit")))
 
 (defun get-requests ()
-  (with-user
-    (with-location
-      (let* ((page (if (scan +number-scanner+ (get-parameter "p"))
-                     (parse-integer (get-parameter "p"))
-                     0))
-             (q (get-parameter "q"))
-             (base (iter (for tag in (split " " (get-parameter "kw")))
-                         (when (scan *tag-scanner* tag)
-                           (collect tag))))
-             (start (* page 20)))
-        (when (string= q "") (setf q nil))
-        (multiple-value-bind (tags items)
-            (nearby-inventory-top-tags :request :base base :q q)
-          (standard-page
-           "Requests"
-           (inventory-body-html "request" :preposition "a "
-                                          :base base 
-                                          :q q 
-                                          :items items 
-                                          :start start 
-                                          :page page)
-          :top (when (getf *user* :help)
-                 (requests-help-text))
-          :search q
-          :search-scope (if q "requests" "all")
-          :right (html
-                   (str (donate-sidebar))
-                   (str (browse-inventory-tags "request" :q q :base base :tags tags)))
-          :selected "requests"))))))
+  (with-location
+    (let* ((page (if (scan +number-scanner+ (get-parameter "p"))
+                   (parse-integer (get-parameter "p"))
+                   0))
+           (q (get-parameter "q"))
+           (base (iter (for tag in (split " " (get-parameter "kw")))
+                       (when (scan *tag-scanner* tag)
+                         (collect tag))))
+           (start (* page 20)))
+      (when (string= q "") (setf q nil))
+      (multiple-value-bind (tags items)
+          (nearby-inventory-top-tags :request :base base :q q)
+        (standard-page
+         "Requests"
+         (inventory-body-html "request" :preposition "a "
+                                        :base base 
+                                        :q q 
+                                        :items items 
+                                        :start start 
+                                        :page page)
+        :top (when (getf *user* :help)
+               (requests-help-text))
+        :search q
+        :search-scope (if q "requests" "all")
+        :right (html
+                 (str (donate-sidebar))
+                 (str (browse-inventory-tags "request" :q q :base base :tags tags)))
+        :selected "requests")))))
 
 
 (defun get-requests-all ()

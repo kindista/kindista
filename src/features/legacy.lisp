@@ -78,13 +78,13 @@
     (if (eq (getf it :type) :gift)
       (require-user
         (standard-page
-          "First few words... | Kindista"
+          "Gifts"
           (html
             (str (gift-activity-item (make-result :id id
                                                   :time (getf it :created)
                                                   :people (cons (getf it :giver) (getf it :recipients)))
                                                   :next-url (script-name*))))))
-      (standard-page "Not found" "not found"))))
+      (not-found))))
 
 (defun post-gift (id)
   (require-active-user
@@ -99,7 +99,7 @@
               (eq (getf it :type) :gift))
          (unlove id)
          (see-other (or (post-parameter "next") (referer)))))
-      (standard-page "Not found" "not found"))))
+      (not-found))))
 
 (defun import-gifts (filename)
   (let ((existing ()))

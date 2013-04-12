@@ -45,14 +45,14 @@
 (defun get-offer (id)
   (setf id (parse-integer id))
   (aif (db id)
-    (with-user
+    (with-location
       (standard-page
-        "First few words... | Kindista"
+        "Offers"
         (html
           (:div :class "activity"
             (str (inventory-activity-item "offer" (gethash id *db-results*) :show-distance t))))
         :selected "offers"))
-    (standard-page "Not found" "not found")))
+    (not-found)))
 
 (defun post-offer (id)
   (require-active-user
@@ -67,7 +67,7 @@
               (member (getf it :type) '(:gratitude :offer :request)))
          (unlove id)
          (see-other (or (post-parameter "next") (referer)))))
-      (standard-page "Not found" "not found"))))
+      (not-found))))
 
 
 (defun get-offer-edit (id)

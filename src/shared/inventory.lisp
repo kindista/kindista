@@ -521,10 +521,9 @@
 (defun browse-inventory-tags (type &key q base tags)
   (let ((base-url (s+ "/" type "s")))
     (html
-      (:h3 "browse by keyword")
       (when base
         (htm
-          (:p (:strong "keywords selected: ")) 
+          (:p (:strong "categories selected: ")) 
           (:ul :class "keywords"
             (dolist (tag base)
               (htm
@@ -534,6 +533,7 @@
                   (:a :href (url-compose base-url "kw" (remove tag base :test #'string=) "q" q)
                       "[x]")      
                   ))))))
+      (:h3 "filter by category")
       (dolist (tag tags)
         (if (string= (first tag) "etc")
           (htm

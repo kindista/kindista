@@ -220,13 +220,13 @@
   (aif (db id)
     (require-user
       (standard-page
-        "First few words... | Kindista"
+        "Gratitude"
         (html
           (str (gratitude-activity-item (make-result :id id
                                                      :time (getf it :created)
                                                      :people (cons (getf it :author) (getf it :subjects)))
                                         :next-url (script-name*))))))
-    (standard-page "Not found" "not found")))
+    (not-found)))
 
 (defun post-gratitude (id)
   (require-active-user
@@ -241,7 +241,7 @@
               (member (getf it :type) '(:gratitude :offer :request)))
          (unlove id)
          (see-other (or (post-parameter "next") (referer)))))
-      (standard-page "Not found" "not found"))))
+      (not-found))))
 
 (defun get-gratitude-edit (id)
   (require-user

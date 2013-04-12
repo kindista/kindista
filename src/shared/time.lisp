@@ -17,49 +17,58 @@
 
 (in-package :kindista)
 
+(defun humanize-universal-time (then)
+  (let ((delta (- (get-universal-time) then)))
+    (cond
+      ((< delta 60)
+       "just now")
+      ((< delta 120)
+       "a minute ago")
+      ((< delta 3300)
+       (format nil "~a minutes ago" (round (/ delta 60))))
+      ((< delta 5400)
+       "about an hour ago")
+      ((< delta 129600)
+       (format nil "~a hours ago" (round (/ delta 3600))))
+      ((< delta 4320000)
+       (format nil "~a days ago" (round (/ delta 86400))))
+      (t
+       (format nil "~a months ago" (round (/ delta 2492000)))))))
 
-(let ((months (vector nil
-                      "January"
-                      "February"
-                      "March"
-                      "April"
-                      "May"
-                      "June"
-                      "July"
-                      "August"
-                      "September"
-                      "October"
-                      "November"
-                      "December")))
+(defun humanize-future-time (time)
+  (let* ((now (get-universal-time))
+         (seconds (- time now)))
+    (cond
+      ((< seconds 60)
+       "in less than a minute")
+      ((< seconds 120)
+       "in about a minute")
+      ((< seconds 3600)
+       (strcat "in " (floor (/ seconds 60)) " minutes"))
+      ((< seconds 7200)
+       "in about an hour")
+      ((< seconds 86400)
+       (strcat "in " (floor (/ seconds 3600)) " hours"))
+      ((< seconds 172800)
+       "tomorrow")
+      ((< seconds 2678400)
+       (strcat "in " (floor (/ seconds 86400)) " days"))
+      ((< seconds 5270400)
+       "next month")
+      ((< seconds 31536000)
+       (strcat "in " (floor (/ seconds 2628000)) " months"))
+      ((< seconds 63072000)
+       "next year")
+      (t
+       (strcat "in " (floor (/ seconds 31536000)) " years")))))
 
-  (defun humanize-universal-time (then)
-    (let* ((then-date (multiple-value-list (decode-universal-time then)))
-           (now (get-universal-time))
-           (now-date (multiple-value-list (decode-universal-time now))))
-      (if (eql (sixth then-date) (sixth now-date))
-        (let ((delta (- now then)))
-          (cond
-            ((< delta 60)
-             "just now")
-            ((< delta 120)
-             "a minute ago")
-            ((< delta 3300)
-             (format nil "~a minutes ago" (round (/ delta 60))))
-            ((< delta 5400)
-             "about an hour ago")
-            ((< delta 86400)
-             (format nil "~a hours ago" (round (/ delta 3600))))
-            ((< delta 172800)
-             (format nil "yesterday at ~a:~2,'0d" (third then-date) (second then-date)))
-            (t
-             (format nil "~a ~a at ~a:~2,'0d" (elt months (fifth then-date))
-                                              (fourth then-date)
-                                              (third then-date)
-                                              (second then-date)))))
-        (format nil "~a ~a, ~a at ~a:~2,'0d" (elt months (fifth then-date))
-                                             (fourth then-date)
-                                             (sixth then-date)
-                                             (third then-date)
-                                             (second then-date))))))
-
-
+(defun inline-timestamp (time &key type url)
+  (let ((inner (html
+                 (when type
+                   (htm (str type) " "))
+                 (str (humanize-universal-time time)))))
+    (html
+      (:span :class "timestamp" :data-time time :data-type type
+        (if url
+          (htm (:a :href url (str inner)))
+          (str inner))))))
