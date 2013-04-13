@@ -402,6 +402,7 @@
     (:gratitude (index-gratitude id data))
     ((or :offer :request) (index-inventory-item id data))
     (:person (index-person id data))
+    (:contact-n (index-contact-notification id data))
     (:conversation (index-conversation id data))))
 
 (defun contacts-alphabetically (&optional (user *user*))

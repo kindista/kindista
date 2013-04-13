@@ -24,7 +24,8 @@
         ((scan +number-scanner+ (post-parameter "add"))
          (let ((id (parse-integer (post-parameter "add"))))
            (unless (member id contacts)
-             (modify-db *userid* :following (cons id contacts))))
+             (modify-db *userid* :following (cons id contacts))
+             (create-contact-notification :subject *userid* :object id)))
          (see-other (or (post-parameter "next") "/home")))
 
         ((scan +number-scanner+ (post-parameter "remove"))

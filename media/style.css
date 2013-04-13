@@ -412,7 +412,7 @@ body.landing > p {
 }
 
 #body {
- padding: 0 1em;
+ padding: 1em;
 }
 
 #body > h2 {
@@ -644,10 +644,17 @@ body.landing > p {
  vertical-align:middle;
 }
 
+@media (max-width:56em) {
+ #menu {
+  font-size: 1.3em;
+ }
+}
+
+
 #fine-print-links {
  color: #999;
  width: 100%;
- margin-top: .5em;
+ margin: 1em auto;
  text-align: center;
 }
 
@@ -939,11 +946,11 @@ input::-moz-focus-inner {
  margin:0 0.8em 0 0;
 }
 
-.actions > form, .basics > form {
+.actions > form, .basics > form, menu.horiz form {
  display:inline;
 }
 
-.actions > form input, button.text {
+.actions > form input, button.text, menu.horiz form input {
  cursor:pointer;
  margin:0;
  padding:0;
@@ -951,6 +958,10 @@ input::-moz-focus-inner {
  background:none;
  color:#5c8a2f;
  /*color:#375497;*/
+ font-size: 1em;
+}
+
+.actions > form input, button.text {
  font-size:0.8em;
 }
 
@@ -980,14 +991,16 @@ button.text.large {
 
 .card .timestamp, .item .distance {
  font-size: 0.8em;
- margin-top: 1.6em;
+ margin: 1.4em 0 0.5em 1em;
  font-weight: normal;
  float: right;
+ color:#666;
  /*margin-left: 10.7em;*/
 }
 
 .card h3.timestamp a {
  font-weight: normal;
+ color:#666;
 }
 
 .item .timestamp a {
@@ -1699,4 +1712,22 @@ body.donate {
 #questions ul {
  padding-left: 1em;
  margin-top: .25em;
+}
+
+.card .people a {
+ white-space: nowrap;
+}
+
+.card .text span {
+ font-weight: bold;
+ color: #666;
+}
+
+.card .text > a {
+ color: #333;
+ font-weight: normal;
+}
+
+.card .text > a:hover {
+ text-decoration: none;
 }

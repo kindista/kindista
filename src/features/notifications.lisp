@@ -17,24 +17,18 @@
 
 (in-package :kindista)
 
-(defun create-comment (&key on (by *userid*) text)
-  (let* ((now (get-universal-time))
-         (id (insert-db (list :type :comment
-                              :on on
-                              :by by
-                              :text text
-                              :created now))))
+(defun create-contact-notification (&key subject object)
+  (let* ((time (get-universal-time))
+         (id (insert-db (list :type :contact-n
+                              :subject subject
+                              :object object
+                              :time time))))
 
-    (modify-db on :latest-comment id)   
 
-    (when (eq (db on :type) :conversation)
-      (setf (result-time (gethash on *db-results*)) now))))
+    id))
 
-(defun latest-comment (id)
-  (or (getf (db id) :latest-comment) 0))
-
-(defun index-comment (id data)
-  (push id (gethash (getf data :on) *comment-index*)))
-
-(defun comments (id)
-  (gethash id *comment-index*))
+(defun index-contact-notification (id data)
+  (let ((result (make-result :id id
+                             :type :contact-n
+                             :time (getf data :time))))
+    (push result (gethash (getf data :object) *person-notification-index*))))

@@ -99,10 +99,6 @@
             " &middot; "
             (str (flag-button url))))))))
 
-(defun person-link (id)
-  (html
-    (:a :href (s+ "/people/" (username-or-id id)) (str (getf (db id) :name)))))
-
 (defun gratitude-activity-item (result &key next-url)
   (let* ((user-id (first (result-people result)))
          (item-id (result-id result))
@@ -174,6 +170,7 @@
                                                               (result-id result)))
                                            (str type))))
                                 (when show-distance
+                                  (pprint result) (Terpri)
                                   (htm (:small
                                     " (within "
                                     (str

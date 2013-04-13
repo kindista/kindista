@@ -21,9 +21,9 @@
 
 (defmacro defindex (name &rest flags)
   `(progn
+     (unless (member (quote ,name) *indexes*)
+       (push (quote ,name) *indexes*))   
      (defvar ,name (make-hash-table :synchronized t ,@flags))))
-;     (unless (member (quote ,name) *indexes*)
-;       (push (quote ,name) *indexes*)))))
 
 (defun clear-indexes ()
   (dolist (index *indexes*)
@@ -43,6 +43,7 @@
 (defindex *person-alias-index*)
 (defindex *person-conversation-index*)
 (defindex *person-invitation-index*)
+(defindex *person-notification-index*)
 (defindex *request-geo-index*)
 (defindex *request-index*)
 (defindex *request-stem-index* :test 'equalp)

@@ -34,75 +34,17 @@
     id))
 
 (defun index-conversation (id data)
-  (dolist (pair (getf data :people))
-    (push (cons id (cdr pair)) (gethash (car pair) *person-conversation-index*))))
-
-(defun conversation-card (uri time from-id &key (from-name (getf (db from-id) :name)))
-  (card
-    (html
-      (str (h3-timestamp time))
-      (:p (:a :href uri "A new message") " from " (:a :href (s+ "/people/" (username-or-id from-id)) (str from-name)))
-      (:div :class "actions"
-        (str (card-button "Hide" (s+ uri "/hide") :method "POST"))
-        " &middot; "
-        (str (card-button "Block" (s+ "/people/" (username-or-id from-id) "/block")))
-        " &middot; "
-        (str (card-button "Report" (s+ "/people/" (username-or-id from-id) "/report")))))))
-
-(defun conversation-info (pair)
-  (cons (latest-comment (car pair)) pair))
+  (let ((result (make-result :id id
+                             :time (db (getf data :latest-comment) :created)
+                             :people (getf data :people)
+                             :type :conversation)))
+    (setf (gethash id *db-results*) result)
+    (with-locked-hash-table (*person-conversation-index*)
+      (dolist (pair (getf data :people))
+        (push result (gethash (car pair) *person-conversation-index*))))))
 
 (defun get-conversations ()
-  (require-user
-    (standard-page
-
-      "Conversations"
-
-      (html
-        (:h1 "Conversations") 
-          (str (menu-horiz "actions"
-                           (html (:a :href "/conversations/new" "start a new conversation"))))
-
-          (let ((conversations (sort (mapcar #'conversation-info
-                                             (gethash *userid* *person-conversation-index*))
-                                     #'> :key #'first)))
-            (dolist (conversation conversations)
-              (htm
-                (:p (:a :href (strcat "/conversations/" (cadr conversation))
-                     (str (getf (db (cadr conversation)) :subject)))
-                    " latest comment by: " (str (db (db (car conversation) :by) :name))
-                    " at: " (str (db (car conversation) :created))
-                    " id: " (str (car conversation))
-                    " seen?: " (str (if (eql (or (car conversation) 0) (or (cddr conversation) 0)) "yes" "no")))))))
-
-      :right (html
-               (:div :class "item"
-                (:a :href "/conversations/new" "start a new conversation")))
-
-      :selected "conversations")))
-
-(defun get-conversations ()
-  (require-user
-    (standard-page
-
-      "Conversations"
-
-      (html
-        (:h1 "Conversations") 
-          (str (menu-horiz "actions"
-                           (html (:a :href "/conversations/new" "start a new conversation"))))
-
-          ; get a list of unread, unhidden messages
-          (str (new-message-card  "/message/123" 3570897552 1))
-          (str (new-message-card  "/message/123" 3570897552 1))
-          (str (new-message-card  "/message/123" 3570897552 1))
-          (str (new-message-card  "/message/123" 3570897552 1)))
-
-      :right (html
-               (:div :class "item"
-                (:a :href "/conversations/new" "start a new conversation")))
-
-      :selected "conversations")))
+  (see-other "/messages"))
 
 (defun new-conversation (&key people subject text next)
   (if people
@@ -247,51 +189,82 @@
     (setf id (parse-integer id))
     (aif (db id)
       (if (member *userid* (mapcar #'first (getf it :people)))
-        (standard-page
-          (getf it :subject)
-          (html
-            (:p (:a :href "/conversations" "Back to conversations"))
-            (:h2 "Subject: " (str (getf it :subject)))
-            (:h3 "With: " (iter (for id in (mapcar #'first (getf it :people)))
-                                (for i from (length (getf it :people)) downto 0)
-                                (when (eql i 1)
-                                  (htm "and "))  
-                                (htm (:a :href (s+ "/people/" (username-or-id id)) (str (db id :name))))  
-                                (unless (eql i 1)
-                                  (htm ", "))))
+        (let ((latest-seen (cdr (assoc *userid* (getf it :people)))))
+          (standard-page
+            (ellipsis (getf it :subject) 24)
+            (html
+              (str (menu-horiz "actions"
+                               (html (:a :href "/messages" "back to messages"))
+                               (html (:a :href "#reply" "reply"))
+                               (html (:a :href (strcat "/conversations/" id "/leave") "leave conversation"))))
+              (str
+                (card
+                  (html
+                    (:h2 "Subject: " (str (getf it :subject)))
+                    (:p "with " (str (name-list-all (remove *userid* (mapcar #'car (getf it :people)))))))))
 
-            (dolist (comment-id (sort (gethash id *comment-index*)
-                                      #'< :key #'created))
-              (let* ((data (db comment-id))
-                     (by (getf data :by))
-                     (bydata (db by)))
-                (htm
-                  (:p :class (when (>= (or (cdr (assoc id (gethash *userid* *person-conversation-index*))) 0) comment-id) "new") 
-                    (:strong (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
-                    ": "
-                    (str (db comment-id :text))
-                    (:div :class "timestamp"
-                      (str (getf data :created)))))))
+              (dolist (comment-result (sort (gethash id *comment-index*)
+                                        #'< :key #'result-time))
+                (let* ((comment-id (result-id comment-result))
+                       (data (db comment-id))
+                       (by (getf data :by))
+                       (bydata (db by)))
+                  (str
+                    (card
+                      (html
+                        (str (h3-timestamp (getf data :created)))
+                        (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
+                        (:p :class (when (>= (or latest-seen 0) comment-id) "new") 
+                          (str (db comment-id :text))) )))))
 
-            (:form :action (script-name*) :method "post"
-              (:textarea :name "text")
-              (:button :type "submit" "Send")) 
+              (:div :class "item" :id "reply"
+                (:h4 "post a reply") 
+                (:form :method "post" :action (script-name*)
+                  (:table :class "post"
+                    (:tr
+                      (:td (:textarea :cols "150" :rows "4" :name "text"))
+                      (:td
+                        (:button :class "yes" :type "submit" :class "submit" "Send")))))) 
 
-            (with-locked-hash-table (*person-conversation-index*)
-              (setf (cdr (assoc id (gethash *userid* *person-conversation-index*))) (latest-comment id)))
+              (unless (eql (cdr (assoc *userid* (db id :people))) (latest-comment id))
+                (amodify-db id :people (progn (setf (cdr (assoc *userid* it)) (latest-comment id)) it)))
 
-            ; get most recent comment seen
-            ; get comments for 
+              ; get most recent comment seen
+              ; get comments for 
 
-          )
-          :right (html
-                   (:form :action (script-name*) :method "post"
-                     (:input :type "submit" :name "leave" :value "Leave conversation"))))
+            )
+
+            :selected "messages"))
+
         (permission-denied))
       (not-found))))
 
-(defun post-conversation (id)
+(defun get-conversation-leave (id)
   (require-user
+    (setf id (parse-integer id))
+    (aif (db id)
+      (if (member *userid* (mapcar #'first (getf it :people)))
+        (standard-page
+          "Leave conversation"
+          (html
+
+            (:h2 "Are you sure you want to leave this conversation?")
+
+            (:p "You won't be able to re-join the conversation after leaving.")
+
+            (:p (:strong "Subject: ") (str (getf it :subject)))
+
+            (:form :method "post" :action (strcat "/conversations/" id)
+              (:button :class "yes" :type "submit" :class "submit" :name "leave" "Yes")      
+              (:a :href (strcat "/conversations/" id) "No, I didn't mean it!"))) 
+
+          :selected "messages")
+
+        (permission-denied)) 
+      (not-found))))
+
+(defun post-conversation (id)
+  (require-active-user
     (setf id (parse-integer id))
     (aif (db id)
       (if (member *userid* (mapcar #'first (getf it :people)))
@@ -299,9 +272,9 @@
           ((post-parameter "leave")
            (with-locked-hash-table (*person-conversation-index*)
              (asetf (gethash *userid* *person-conversation-index*)
-                    (remove id it :key #'first)))
-           (amodify-db id :people (remove *userid* it))
-           (see-other "/conversations"))
+                    (remove id it :key #'result-id)))
+           (amodify-db id :people (remove *userid* it :key #'car))
+           (see-other "/messages"))
 
           ((post-parameter "text")
            (create-comment :on id :text (post-parameter "text"))

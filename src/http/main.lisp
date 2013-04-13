@@ -379,7 +379,7 @@
                    (str body))
 
                  (:form :action "/search" :method "GET" :id "search"
-                   (:strong "Search ")
+                   ;(:strong "Search ")
                    (:select :name "scope"
                      (:option :value "all" :selected (when (or (not search-scope)
                                                                      (string= search-scope "all"))
@@ -390,7 +390,7 @@
                                                                        "selected") "Requests")
                      (:option :value "people" :selected (when (equalp search-scope "people")
                                                                    "selected") "People"))
-                   (:input :type "text" :name "q" :value search)
+                   (:input :type "text" :size "14" :name "q" :value search)
                    (:input :type "submit" :value "Search"))
 
                  (:div :id "menu"
@@ -408,10 +408,10 @@
                              (:a :href "/logout" "Log out"))))))
 
                    (str (menu (list '("Activity" "home")
+                                    '("Messages" "messages")
                                     '("Offers" "offers")
                                     '("Requests" "requests")
                                     '("People" "people")
-                                    '("Conversations" "conversations")
                                     ;'("Events" "events") 
                                     '("Help & Feedback" "help")
                                     (when (getf *user* :admin)

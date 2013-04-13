@@ -147,3 +147,19 @@
 
 (defun empty-string-p (string)
   (or (not string) (string= string "")))
+
+(defun person-link (id)
+  (html
+    (:a :href (s+ "/people/" (username-or-id id)) (str (getf (db id) :name)))))
+
+(defun name-list (ids)
+  (let ((links (mapcar #'person-link (subseq ids 0 (min 3 (length ids))))))
+    (format nil "~{~A~^, ~}" (cond
+                               ((> (length ids) 4)
+                                (append links (list (strcat "and " (- (length ids) 3) " others")))) 
+                               ((eql (length ids) 4)
+                                (append links (list (person-link (nth 3 ids)))))
+                               (t links)))))
+
+(defun name-list-all (ids)
+  (format nil "~{~A~^, ~}" (mapcar #'person-link ids)))

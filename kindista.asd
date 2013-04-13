@@ -74,6 +74,8 @@
                                            (:file "legacy")
                                            (:file "login")
                                            (:file "love")
+                                           (:file "messages")
+                                           (:file "notifications")
                                            (:file "offers")
                                            (:file "people")
                                            (:file "privacy")

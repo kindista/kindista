@@ -68,7 +68,7 @@
   ("/offers/new"
    :get get-offers-new
    :post post-offers-new)
-   
+
   ("/offers/<int:id>"
     :get get-offer
     :post post-offer)
@@ -86,7 +86,7 @@
   ("/requests/new"
    :get get-requests-new
    :post post-requests-new)
-   
+
   ("/requests/<int:id>"
     :get get-request
     :post post-request)
@@ -98,7 +98,7 @@
   ("/gratitude/new"
    :get get-gratitudes-new
    :post post-gratitudes-new)
-   
+
   ("/gratitude/<int:id>"
     :get get-gratitude
     :post post-gratitude)
@@ -140,17 +140,17 @@
     :post post-conversations-new)
 
   ("/conversations/<int:id>"
-    :get get-conversation 
+    :get get-conversation
     :post post-conversation)
 
-  ("/inbox"
-    :get get-inbox)
+  ("/conversations/<int:id>/leave"
+    :get get-conversation-leave)
 
   ("/messages"
     :get get-messages)
 
   ("/settings"
-    :post post-settings 
+    :post post-settings
     :get go-settings)
 
   ("/settings/personal"
@@ -199,13 +199,13 @@
   ; redirects
 
   ("/people/"
-    :get go-people) 
+    :get go-people)
 
   ("/home/"
     :get go-home)
-  
+
   ;js
-  
+
   ("/kindista.js"
    :get get-js))
 
