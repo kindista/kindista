@@ -67,7 +67,6 @@
     (when (and (getf data :lat) 
                (getf data :long) 
                (getf data :created))
-      (pprint (getf data :active))
       ;people that don't give a location don't get indexed
       (cond 
         ((getf data :active) 
