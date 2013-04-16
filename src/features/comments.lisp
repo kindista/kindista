@@ -28,13 +28,15 @@
     (modify-db on :latest-comment id)   
 
     (when (eq (db on :type) :conversation)
-      (setf (result-time (gethash on *db-results*)) now))))
+      (with-locked-hash-table (*db-results*)
+        (setf (result-time (gethash on *db-results*)) now)))))
 
 (defun latest-comment (id)
   (or (getf (db id) :latest-comment) 0))
 
 (defun index-comment (id data)
-  (push id (gethash (getf data :on) *comment-index*)))
+  (with-locked-hash-table (*comment-index*)
+    (asetf (gethash (getf data :on) *comment-index*) (sort (push id it) #'<))))
 
 (defun comments (id)
   (gethash id *comment-index*))

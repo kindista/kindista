@@ -203,10 +203,8 @@
                     (:h2 "Subject: " (str (getf it :subject)))
                     (:p "with " (str (name-list-all (remove *userid* (mapcar #'car (getf it :people)))))))))
 
-              (dolist (comment-result (sort (gethash id *comment-index*)
-                                        #'< :key #'result-time))
-                (let* ((comment-id (result-id comment-result))
-                       (data (db comment-id))
+              (dolist (comment-id (gethash id *comment-index*))
+                (let* ((data (db comment-id))
                        (by (getf data :by))
                        (bydata (db by)))
                   (str
