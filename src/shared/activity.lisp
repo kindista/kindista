@@ -110,7 +110,7 @@
                    :next-url next-url
                    :edit (when (eql user-id *userid*) t)
                    :hearts (length (loves item-id))
-                   :comments (length (comments item-id))
+                   ;:comments (length (comments item-id))
                    :content (html
                               (:p (str (person-link user-id))
                                   (str (if (getf data :editied) " edited " " shared ")) 
@@ -131,7 +131,7 @@
                    :time (result-time result)
                    :next-url next-url
                    :hearts (length (loves item-id))
-                   :comments (length (comments item-id))
+                   ;:comments (length (comments item-id))
                    :content (html
                               (:p (str (person-link user-id))
                                   " gave a "
