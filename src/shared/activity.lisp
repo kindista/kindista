@@ -131,15 +131,13 @@
                    :time (result-time result)
                    :next-url next-url
                    :hearts (length (loves item-id))
-                   ;:comments (length (comments item-id))
+                   :comments (length (comments item-id))
                    :content (html
                               (:p (str (person-link user-id))
-                                  " gave a "
-                                  (:a :href (strcat "/gift/" item-id) "gift") 
-                                  " to "
-                                  (fmt "~{~A~^, ~}"
-                                      (iter (for subject in (getf data :subjects))
-                                            (collect (person-link subject)))))
+                                  " was "
+                                  (:a :href (strcat "/gifts/" item-id) "acknowledged") 
+                                  " by "
+                                  (str (name-list-all (getf data :recipients))))
                               (:p (cl-who:esc (getf data :text)))))))
 
 (defun joined-activity-item (result)
@@ -170,7 +168,6 @@
                                                               (result-id result)))
                                            (str type))))
                                 (when show-distance
-                                  (pprint result) (Terpri)
                                   (htm (:small
                                     " (within "
                                     (str
