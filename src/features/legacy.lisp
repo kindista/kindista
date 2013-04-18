@@ -17,21 +17,20 @@
 
 (in-package :kindista)
 
-(defun create-gift (&key giver recipients text (created (get-universal-time)) old-id)
+(defun create-gift (&key giver recipients text (created (get-universal-time)))
   (insert-db `(:type :gift
                :giver ,giver
                :recipients ,recipients
                :text ,text
-               :created ,created
-               :old-id ,old-id)))
+               :created ,created)))
 
 (defun index-gift (id data)
   (let* ((giver (db (getf data :giver)))
          (created (getf data :created))
          (recipients (getf data :recipients))
          (people (cons (getf data :giver) recipients))
-         (result (make-result :latitude (getf author :lat)
-                              :longitude (getf author :long)
+         (result (make-result :latitude (getf giver :lat)
+                              :longitude (getf giver :long)
                               :people people
                               :time created
                               :type :gift
@@ -47,7 +46,7 @@
         (asetf (gethash person *activity-person-index*)
                (sort (push result it) #'> :key #'result-time))))
 
-    (dolist (subject subjects)
+    (dolist (subject people)
       (let ((user (db subject)))
         (geo-index-insert *activity-geo-index* (make-result :latitude (getf user :lat)
                                                             :longitude (getf user :long)
@@ -101,25 +100,98 @@
          (see-other (or (post-parameter "next") (referer)))))
       (not-found))))
 
-(defun import-gifts (filename)
-  (let ((existing ()))
-    (iter (for (key item) in-hashtable *db*)
-      (awhen (getf item :old-id)
-        (push it existing)))
+(defvar *legacy-identity-map* ())
+(defvar *legacy-offer-map* ())
+(defvar *legacy-request-map* ())
+(defvar *legacy-gift-map* ())
+(defvar *legacy-map-stream*)
 
-    (with-open-file (in filename :if-does-not-exist nil)
-      (when in
-        (with-standard-io-syntax
-          (with-locked-hash-table (*db*)
-            (loop
-              (handler-case
-                (let ((item (read in)))
-                  (unless (member (parse-integer (first item)) existing)
-                    (when (third item)
-                      (create-gift :giver (parse-integer (first (second item)))
-                                   :recipients (iter (for id in (third item) by #'cddr)
-                                                     (collect (parse-integer id)))
-                                   :text (second (second item))
-                                   :created (parse-integer (third (second item)))
-                                   :old-id (parse-integer (first item))))))
-                (end-of-file (e) (declare (ignore e)) (return))))))))))
+(defun read-legacy-map ()
+  (with-open-file (in (s+ +db-path+ "legacymap") :if-does-not-exist nil)
+    (when in
+      (with-standard-io-syntax
+        (loop
+          (handler-case
+            (let ((item (read in)))
+              (case (first item)
+                (:gift
+                  (push (cons (second item) (third item)) *legacy-gift-map*))
+                (:offer
+                  (push (cons (second item) (third item)) *legacy-offer-map*))
+                (:request
+                  (push (cons (second item) (third item)) *legacy-request-map*))
+                (:identity
+                  (push (cons (second item) (third item)) *legacy-identity-map*))))
+          (end-of-file (e) (declare (ignore e)) (return)))))))
+  (setf *legacy-map-stream* (open (s+ +db-path+ "legacymap") :if-exists :append :if-does-not-exist :create :direction :output)))
+
+(defun write-legacy-map (type old-id new-id)
+  (case type
+    (:gift
+      (push (cons old-id new-id) *legacy-gift-map*))
+    (:offer
+      (push (cons old-id new-id) *legacy-offer-map*))
+    (:request
+      (push (cons old-id new-id) *legacy-request-map*))
+    (:identity
+      (push (cons old-id new-id) *legacy-identity-map*))) 
+  (with-standard-io-syntax
+    (prin1 (list type old-id new-id) *legacy-map-stream*)
+    (fresh-line *legacy-map-stream*))
+  (fsync *legacy-map-stream*))
+
+(defun import-identities (path)
+  (let ((identities (sort (map-over-file #'copy-list path) #'< :key #'car)))
+    (setf identities (cons (second identities) (remove 2 identities :key #'car)))
+    (iter (for (id pw names emails (long lat) contacts bio) in identities)
+          (let ((newid (insert-db `(:type :person
+                                          :name ,(car names)
+                                          :aliases ,(cdr names)
+                                          :emails ,emails
+                                          :bio-summary ,bio
+                                          :lat ,lat
+                                          :long ,long
+                                          :k1 t
+                                          :active t
+                                          :location t
+                                          :help t
+                                          :pass ,pw
+                                          :created 3540679452
+                                          :notify-gratitude t
+                                          :notify-message t
+                                          :notify-kindista t))))
+            (write-legacy-map :identity id newid)))
+
+    (labels ((id-lookup (id)
+               (cdr (assoc id *legacy-identity-map*))))
+      (iter (for (id pw names emails (long lat) contacts bio) in identities)
+            (modify-db (id-lookup id) :following (mapcar #'id-lookup contacts))))))
+
+(defun import-gifts (path)
+  (let ((gifts (map-over-file #'copy-list path)))
+
+    (labels ((id-lookup (id)
+               (cdr (assoc id *legacy-identity-map*))))
+      (iter (for (id giver recipients time text comments) in gifts)
+            (unless (member id *legacy-gift-map* :key #'car)
+              (let ((newid (insert-db `(:type :gift
+                                              :giver ,(id-lookup giver)
+                                              :recipients ,(mapcar #'id-lookup recipients)
+                                              :created ,time
+                                              :text ,text))))
+                (write-legacy-map :gift id newid)
+                (iter (for (id time text) in comments)
+                      (insert-db (list :type :comment
+                                       :on newid
+                                       :by (id-lookup id)
+                                       :text text
+                                       :created time)))))))))
+
+(defun map-over-file (fn path)
+  (with-open-file (in path :if-does-not-exist nil)
+    (when in
+      (with-standard-io-syntax
+        (iter
+          (handler-case
+            (collect (funcall fn (read in)))
+            (end-of-file (e) (declare (ignore e)) (finish))))))))
