@@ -25,11 +25,13 @@
                               :text text
                               :created now))))
 
-    (modify-db on :latest-comment id)   
+    (modify-db on :latest-comment id)
 
     (when (eq (db on :type) :conversation)
       (with-locked-hash-table (*db-results*)
-        (setf (result-time (gethash on *db-results*)) now)))))
+        (setf (result-time (gethash on *db-results*)) now)))
+
+    (send-comment-notification-email id)))
 
 (defun latest-comment (id)
   (or (getf (db id) :latest-comment) 0))

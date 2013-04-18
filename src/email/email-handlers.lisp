@@ -18,7 +18,7 @@
 (in-package :kindista)
 
 (defvar *style-a* "color:#5c8a2f;
-                   text-decoration:none;") 
+                   text-decoration:none;")
 
 (defvar *style-p* "margin-top:.9em;
                    margin-bottom:.9em;")
@@ -32,7 +32,10 @@
 
 (defun person-email-link (id)
   (html
-    (:a :href (s+ "https://kindista.org/people/" (username-or-id id)) (str (getf (db id) :name)))))
+    (:a :href (strcat +base-url+ "/people/" (username-or-id id)) (str (getf (db id) :name)))))
+
+(defun person-name (id)
+  (db id :name))
 
 (defun send-welcome-email (email token)
   (cl-smtp:send-email +mail-server+
@@ -59,28 +62,28 @@
                         "Kindista <noreply@kindista.org>"
                         to
                         "Please verify your email address."
-                        (email-verification-text invitation-id 
+                        (email-verification-text invitation-id
                                                  to
                                                  token)
-                        :html-message (email-verification-html invitation-id 
-                                                               to 
+                        :html-message (email-verification-html invitation-id
+                                                               to
                                                                token))))
 
 (defun send-password-reset (user email)
   (let* ((name (getf user :name))
          (token (car (getf user :password-reset-token)))
-         (expiration (humanize-future-time 
+         (expiration (humanize-future-time
                     (cdr (getf user :password-reset-token)))))
     (cl-smtp:send-email +mail-server+
                         "Kindista <noreply@kindista.org>"
                         email
                         "Forgotten Password"
                         (reset-password-text name
-                                             token 
+                                             token
                                              email
                                              expiration)
                         :html-message (reset-password-html name
-                                                           token 
+                                                           token
                                                            email
                                                            expiration))))
 
@@ -95,14 +98,14 @@
                         "Kindista <noreply@kindista.org>"
                         to
                         (s+ (getf (db from) :name) " has invited you to join Kindista!")
-                        (invitation-email-text invitation-id 
-                                               token 
+                        (invitation-email-text invitation-id
+                                               token
                                                to
                                                from
                                                :text text)
                         :html-message (invitation-email-html invitation-id
-                                                             token 
-                                                             to 
+                                                             token
+                                                             to
                                                              from
                                                              :text text)
     )))
@@ -116,34 +119,41 @@
                           "Kindista <noreply@kindista.org>"
                           (car (getf (db to) :emails))
                           (s+ (getf (db from) :name) " has posted a statement of gratitude about you")
-                          (gratitude-notification-email-text gratitude-id 
-                                                             gratitude 
+                          (gratitude-notification-email-text gratitude-id
+                                                             gratitude
                                                              from)
                           :html-message (gratitude-notification-email-html gratitude-id gratitude from)))))
 
-(defun send-message-notification-email (from to)
-  (cl-smtp:send-email +mail-server+
-                      "Kindista <noreply@kindista.org>"
-                      to
-                      (s+ "New message from " from)
-                      (message-notification-email-text from)
-                      :html-message (message-notification-email-html from)))
-
-(defun send-comment-mine-notification-email (from to)
-  (cl-smtp:send-email +mail-server+
-                      "Kindista <noreply@kindista.org>"
-                      to
-                      (s+ from " commented on your gift")
-                      (comment-mine-notification-email-text from)
-                      :html-message (comment-mine-notification-email-html from)))
-
-(defun send-comment-other-notification-email (from to)
-  (cl-smtp:send-email +mail-server+
-                      "Kindista <noreply@kindista.org>"
-                      to
-                      (s+ from " commented on a gift you received")
-                      (comment-other-notification-email-text from)
-                      :html-message (comment-other-notification-email-html from)))
+(defun send-comment-notification-email (comment-id)
+  (let* ((comment (db comment-id))
+         (conversation-id (getf comment :on))
+         (conversation (db conversation-id))
+         (subject (getf conversation :subject))
+         (text (getf comment :text))
+         (sender-id (getf comment :by))
+         (sender-name (db sender-id :name))
+         (people (mapcar #'car (getf conversation :people))))
+    (dolist (to (remove sender-id people))
+      (cl-smtp:send-email
+        +mail-server+
+        "Kindista <noreply@kindista.org>"
+        (car (db to :emails))
+        (s+ "New message from " sender-name)
+        (comment-notification-email-text conversation-id
+                                         sender-name
+                                         subject
+                                         (name-list (remove to people)
+                                                    :func #'person-name
+                                                    :minimum-links 5)
+                                         text)
+        :html-message (comment-notification-email-html
+                        conversation-id
+                        (person-email-link sender-id)
+                        subject
+                        (name-list (remove to people)
+                                   :func #'person-email-link
+                                   :minimum-links 5)
+                        text)))))
 
 (defun send-circle-notification-email (from to)
   (cl-smtp:send-email +mail-server+

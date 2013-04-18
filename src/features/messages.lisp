@@ -93,7 +93,7 @@
                  (:div :class "small card"
                    (:em "No results")))
                (finish)))
-            
+
             (finally
               (when (or (> page 0) (cdr items))
                 (htm
