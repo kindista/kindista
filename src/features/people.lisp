@@ -115,7 +115,10 @@
         (for i from 0 to (+ start count))
           (if (and (>= i start) items)
             (let ((item (car items)))
-              (when (or (not type) (eql type (result-type item)))
+              (when (or (not type)
+                        (and (eql type :gratitude)
+                             (eql :gift (result-type item)))
+                        (eql type (result-type item)))
                 (case (result-type item)
                   (:gratitude 
                     (str (unless (and (eql type :gratitude) 
@@ -124,6 +127,8 @@
                                                     :next-url next-url))))
                   (:person 
                     (str (joined-activity-item item)))
+                  (:gift 
+                    (str (gift-activity-item item :next-url next-url)))
                   (:offer
                     (str (inventory-activity-item "offer" item
                                               :show-what (unless (eql type :offer) t)
@@ -383,7 +388,7 @@
 (defun get-person-reputation (id)
   (require-user
     (ensuring-userid (id "/people/~a/reputation")
-      (profile-activity-html id :type :gratitude))))
+      (profile-activity-html id :type (:gift :gratitude)))))
 
 (defun get-person-offers (id)
   (require-user
