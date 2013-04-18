@@ -33,7 +33,7 @@
       (:div :class "settings-item title" (str title))
       (:div :class "settings-item content"
         (unless editable
-          (htm (:a :href (s+ base "?edit=" item)
+          (htm (:a :class "anchor-button":href (s+ base "?edit=" item)
                 (or (str edit-text) (htm "Edit")))))
         (str body)
         (:p :class "help-text" (:em (str help-text)))))))
@@ -291,8 +291,7 @@
                   (:button :class "yes" :type "submit" :class "submit" :name "submit" "Confirm new email")   
                   (:a :class "red" :href "/settings/communication" "Cancel"))) ))))
 
-      :edit-text ""
-      :editable editable
+      :editable T
       :help-text (s+ "Adding additional email address helps people find you "
                      "and keeps you from getting invites to Kindista at "
                      "your other addresses. "
