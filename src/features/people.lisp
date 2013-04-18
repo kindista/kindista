@@ -268,9 +268,10 @@
               (htm (:span :class "help-text" " (inactive account)"))))
        (:p :class "city" (str (getf user :city)) ", " (str (getf user :state)))
      (unless (eql userid *userid*)
+       (when (and (db userid :active) (db *userid* :active)) 
+         (htm (:form :method "GET" :action (strcat *base-url* "/message")
+           (:input :type "submit" :value "Send a message")))) 
        (htm 
-         (:form :method "GET" :action (strcat *base-url* "/message")
-           (:input :type "submit" :value "Send a message")) 
          (:form :method "POST" :action "/contacts"
            (:input :type "hidden" :name (if is-contact "remove" "add") :value userid)
            (:input :type "hidden" :name "next" :value *base-url*)
