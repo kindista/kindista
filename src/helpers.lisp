@@ -21,6 +21,8 @@
 (defparameter +full-name-scanner+ (create-scanner "^([a-zA-Z]+\\.? )[a-zA-Z]+"))
 (defparameter +email-scanner+ (create-scanner
                                  "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"))
+(defparameter *english-list*
+  "~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}")
 (defparameter +zip-scanner+ (create-scanner "^(\\d{5})((-)(\\d{4}))?$"))
 (defparameter +phone-scanner+ (create-scanner
                                 "(?:(?:\\+?1[\\(\\s]*(?:[.-]\\s*)?)?(?:(\\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])[\\)\\s]*)|([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\\s*(?:[.-]\\s*)?)([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\\s*(?:[.-]\\s*)?([0-9]{4})"))
@@ -152,14 +154,14 @@
   (html
     (:a :href (s+ "/people/" (username-or-id id)) (str (getf (db id) :name)))))
 
-(defun name-list (ids)
-  (let ((links (mapcar #'person-link (subseq ids 0 (min 3 (length ids))))))
-    (format nil "~{~A~^, ~}" (cond
-                               ((> (length ids) 4)
-                                (append links (list (strcat "and " (- (length ids) 3) " others")))) 
-                               ((eql (length ids) 4)
-                                (append links (list (person-link (nth 3 ids)))))
-                               (t links)))))
+(defun name-list (ids &key (func #'person-link) (minimum-links 3))
+  (let ((links (mapcar func (subseq ids 0 (min minimum-links (length ids))))))
+    (format nil *english-list* (cond
+                                ((> (length ids) (+ minimum-links 1))
+                                 (append links (list (strcat "and " (- (length ids) minimum-links) " others"))))
+                                ((eql (length ids) (+ minimum-links 1))
+                                 (append links (list (funcall func (nth 3 ids)))))
+                                (t links)))))
 
 (defun name-list-all (ids)
   (format nil "~{~A~^, ~}" (mapcar #'person-link ids)))
