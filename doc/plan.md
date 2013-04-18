@@ -17,20 +17,6 @@ along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
 -----------------------------------------------------------------------
 
-User Interface
-- [ ] remove references to "my" "your" "me" "you" etc.
-
-Resources
-
-Timezones
-- [ ] store timezone for each user.
-- [ ] add timezone support in shared/time.lisp 
-
-
-Donations
-- [ ] Write thank you email
-- [ ] set :donated flag on donator's account on donation
-
 Invitations
     # A limited resource
 - [X] change site text wording to indicate that accounts require invitations
@@ -145,6 +131,11 @@ Discussions
 - Group conversations
 
 ### LAUNCH
+
+Donations
+- [ ] Write thank you email
+- [ ] set :donated flag on donator's account on donation
+
 Flagging
     - What happens when something gets flagged?
       - Log the id of the flagger, of the item that is flagged.

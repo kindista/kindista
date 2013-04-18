@@ -100,7 +100,7 @@
         (multiple-value-bind (tags items)
             (nearby-inventory-top-tags :offer :base base :q q)
           (standard-page
-           "offers"
+           "Offers"
            (inventory-body-html "offer" :preposition "an "
                                         :base base 
                                         :q q 

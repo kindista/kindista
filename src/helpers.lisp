@@ -25,6 +25,9 @@
 (defparameter +phone-scanner+ (create-scanner
                                 "(?:(?:\\+?1[\\(\\s]*(?:[.-]\\s*)?)?(?:(\\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])[\\)\\s]*)|([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\\s*(?:[.-]\\s*)?)([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\\s*(?:[.-]\\s*)?([0-9]{4})"))
 
+(defparameter *english-list*
+  "~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}")
+
 (defun strcat (&rest items)
   (format nil "~{~A~}" items))
 
@@ -154,12 +157,12 @@
 
 (defun name-list (ids)
   (let ((links (mapcar #'person-link (subseq ids 0 (min 3 (length ids))))))
-    (format nil "~{~A~^, ~}" (cond
-                               ((> (length ids) 4)
-                                (append links (list (strcat "and " (- (length ids) 3) " others")))) 
-                               ((eql (length ids) 4)
-                                (append links (list (person-link (nth 3 ids)))))
-                               (t links)))))
+    (format nil *english-list* (cond
+                                 ((> (length ids) 4)
+                                  (append links (list (strcat "and " (- (length ids) 3) " others")))) 
+                                 ((eql (length ids) 4)
+                                  (append links (list (person-link (nth 3 ids)))))
+                                 (t links)))))
 
 (defun name-list-all (ids)
   (format nil "~{~A~^, ~}" (mapcar #'person-link ids)))

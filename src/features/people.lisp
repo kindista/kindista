@@ -271,11 +271,12 @@
        (:h1 (str (getf user :name))
             (when (eq (getf user :active) nil)
               (htm (:span :class "help-text" " (inactive account)"))))
-       (:p :class "city" (str (getf user :city)) ", " (str (getf user :state)))
+       (when (getf user :city)
+         (htm (:p :class "city" (str (getf user :city)) ", " (str (getf user :state))))) 
      (unless (eql userid *userid*)
        (htm 
-         (:form :method "GET" :action (strcat *base-url* "/message")
-           (:input :type "submit" :value "Send a message")) 
+         (:form :method "post" :action "/conversations/new"
+           (:button :type "submit" :name "add" :value userid "Send a message")) 
          (:form :method "POST" :action "/contacts"
            (:input :type "hidden" :name (if is-contact "remove" "add") :value userid)
            (:input :type "hidden" :name "next" :value *base-url*)
@@ -290,9 +291,9 @@
       (html
         (when *user* (str (profile-tabs-html userid :tab (or type :activity))))
         (when (and (eql type :request) (eql userid *userid*) )
-          (htm (str (simple-inventory-entry-html "request"))))
+          (htm (str (simple-inventory-entry-html "a" "request"))))
         (when (and (eql type :offer) (eql userid *userid*))
-          (htm (str (simple-inventory-entry-html "offer")))) 
+          (htm (str (simple-inventory-entry-html "an" "offer")))) 
         (when (and (eql type :gratitude)
                    (not (eql userid *userid*))
                    (eql (getf user :active) t))
@@ -388,7 +389,7 @@
 (defun get-person-reputation (id)
   (require-user
     (ensuring-userid (id "/people/~a/reputation")
-      (profile-activity-html id :type (:gift :gratitude)))))
+      (profile-activity-html id :type :gratitude))))
 
 (defun get-person-offers (id)
   (require-user
@@ -448,7 +449,7 @@
         (when *user* 
           (htm
             (:h2 "People with mutual connections") 
-            (dolist (data (suggested-people))
+            (dolist (data (sublist (suggested-people) 0 10))
               (let* ((id (cdr data))
                      (person (db id)))
                 ; (car data) is the number of mutual connections

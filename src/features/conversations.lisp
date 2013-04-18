@@ -78,7 +78,7 @@
             (:button :class "yes" :type "submit" 
                      :name "send" 
                      "Send"))))))
-     :selected "conversations")
+     :selected "messages")
     (conversation-add-person :text text :next next)))
 
 (defun conversation-add-person (&key people subject text next (results 'none))
@@ -117,7 +117,7 @@
            (htm (:input :type "hidden" :name "text" :value (escape-for-html text))))
 
          )))
-    :selected "conversations"))
+    :selected "messages"))
 
 (defun get-conversations-new ()
   (require-user
@@ -200,7 +200,9 @@
               (str
                 (card
                   (html
-                    (:h2 "Subject: " (str (getf it :subject)))
+                    (when (getf it :subject)
+                      (htm
+                        (:h2 "Subject: " (str (getf it :subject)))))
                     (:p "with " (str (name-list-all (remove *userid* (mapcar #'car (getf it :people)))))))))
 
               (dolist (comment-id (gethash id *comment-index*))
@@ -213,7 +215,7 @@
                         (str (h3-timestamp (getf data :created)))
                         (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
                         (:p :class (when (>= (or latest-seen 0) comment-id) "new") 
-                          (str (db comment-id :text))) )))))
+                          (str (regex-replace-all "\\n" (db comment-id :text) "<br>"))))))))
 
               (:div :class "item" :id "reply"
                 (:h4 "post a reply") 

@@ -285,7 +285,7 @@
 (defun simple-inventory-entry-html (preposition type)
   (html 
     (:div :class "item"
-      (:h4 (str (s+ "post " preposition type))) 
+      (:h4 (str (s+ "post " preposition " " type))) 
       (:form :method "post" :action (s+ "/" type "s/new") 
         (:table :class "post"
           (:tr

@@ -105,6 +105,7 @@
         (:strong "show activity within ")
         (:input :type "hidden" :name "next" :value "/home")
         (let ((distance (user-distance)))
+          (pprint distance) (terpri)
           (htm
             (:select :name "distance" :onchange "this.form.submit()"
               (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
@@ -140,7 +141,7 @@
                 (:p "We're so happy to have you join us! Here are some things you can do to get started:")
                 (:ul
                   (unless (getf *user* :avatar)
-                    (htm (:li (:a :href "/avatar" "Upload a picture") " so that other people can recognize you.")))
+                    (htm (:li (:a :href "/settings/personal" "Upload a picture") " so that other people can recognize you.")))
                   (:li (:a :href "/gratitude/new" "Express gratitude") " for someone who has affected your life.")
                   (:li (:a :href "/people/new" "Make a connection") " to say that you know someone.")
                   (:li (:a :href "/requests/new" "Post a request") " to the community for something you need.")
@@ -185,7 +186,7 @@
       ((and (getf *user* :lat)
             (getf *user* :long))
        (notice :home-verify-location "")
-       (verify-address :next-url "/home"))
+       (get-verify-address :next-url "/home"))
 
       (t
        (notice :home-setup "")
