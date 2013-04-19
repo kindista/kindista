@@ -61,7 +61,9 @@
     (if (eq type :offer)
       (geo-index-insert *offer-geo-index* result)
       (geo-index-insert *request-geo-index* result))
-    (geo-index-insert *activity-geo-index* result)))
+
+    (unless (< (result-time result) (- (get-universal-time) 15552000))
+      (geo-index-insert *activity-geo-index* result))))
 
 (defun modify-inventory-item (id &key text tags latitude longitude)
   (let* ((result (gethash id *db-results*))

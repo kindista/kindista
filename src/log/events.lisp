@@ -32,7 +32,6 @@
 (defun notice (type text &key (time (get-universal-time))
                              (userid (or *userid* -1))
                              (ip (or (header-in* :x-real-ip) "")))
-  (pprint (headers-in*)) (terpri)
   (send-message *notice-mailbox* (make-notice :type type
                                               :time time
                                               :text text

@@ -31,6 +31,13 @@
         (setf (result-time (gethash on *db-results*)) time)))
     (send-comment-notification-email id)))
 
+(defun delete-comment (id)
+  (with-locked-hash-table (*comment-index*)
+    (asetf (gethash (getf (db id) :on) *comment-index*) (remove id it)))
+
+  (remove-from-db id))
+
+
 (defun latest-comment (id)
   (or (getf (db id) :latest-comment) 0))
 
@@ -40,3 +47,29 @@
 
 (defun comments (id)
   (gethash id *comment-index*))
+
+(defun get-comment-delete (id)
+  (require-user
+    (setf id (parse-integer id)) 
+    (let ((it (db id)))
+      (if (eq (getf it :type) :comment)
+        (confirm-delete :url (strcat "/comments/" id) :next-url (referer) :type "comment" :text (getf it :text))
+        (not-found)))))
+
+(defun post-comment (id)
+  (require-user
+    (setf id (parse-integer id)) 
+    (let ((it (db id)))
+      (if (eq (getf it :type) :comment)
+        (cond
+          ((and (or (eql (getf it :by) *userid*)
+                    (getf *user* :admin))
+                (post-parameter "really-delete"))
+           (delete-comment id) 
+           (flash "The comment has been deleted.")
+           (see-other (or (post-parameter "next") "/"))) 
+
+          (t
+           (flash "You can only delete your own comments." :error t)
+           (see-other (or (post-parameter "next") "/"))))
+        (not-found)))))

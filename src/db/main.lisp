@@ -17,8 +17,6 @@
 
 (in-package :kindista)
 
-(declaim (optimize (speed 0) (safety 3) (debug 3)))
-
 (defvar *db* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
 (defvar *db-top* 0)
 (defvar *db-top-lock* (make-mutex :name "db top"))
@@ -107,32 +105,64 @@
 ;;; {{{ geo stuff
 (define-constant earth-radius 6372.8) ; km
 
+(declaim (ftype (function ((double-float) (double-float) (double-float) (double-float))
+                          double-float) air-distance))
+
 (defun air-distance (lat1 long1 lat2 long2)
-  "The great circle distance between two cities."
+  "The great circle distance between two points."
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+           (inline air-distance))
   (* 0.621371
-     (apply #'dist-rad (mapcar #'deg->rad (list lat1 long1 lat2 long2)))))
+     (dist-rad (deg->rad lat1)
+               (deg->rad long1)
+               (deg->rad lat2)
+               (deg->rad long2))))
 
 (defun person-distance (one &optional (two *user*))
   (air-distance (getf one :lat) (getf one :long) (getf two :lat) (getf two :long)))
 
+
+(declaim (ftype (function (float float float float)
+                          float) dist-rad))
+
 (defun dist-rad (lat1 long1 lat2 long2)
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+           (inline dist-rad))
   (let* ((hlat (haversine (- lat2 lat1)))
          (hlng (haversine (- long2 long1)))
          (root (sqrt (+ hlat (* (cos lat1) (cos lat2) hlng)))))
     (* 2 earth-radius (asin root))))
 
+(declaim (ftype (function (float) float) haversine))
+
 (defun haversine (x)
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+           (inline haversine))
   (expt (sin (/ x 2)) 2))
+
+(declaim (ftype (function (float) float) deg->rad))
 
 (defun deg->rad (deg)
   "Convert degrees and minutes to radians."
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+           (type float deg)
+           (inline deg->rad))
   (* deg (/ pi 180)))
 
+(declaim (ftype (function (float float) integer) geocode))
+
 (defun geocode (lat long)
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+           (inline geocode))
   (+ (ash (floor (* (/ (+ 90 lat) 180) (ash 1 10))) 10)
   (floor (* (/ (+ 180 long) 360) (ash 1 10)))))
 
+(declaim (ftype (function (integer integer) list) geocode-neighbors))
+
 (defun geocode-neighbors (geocode distance)
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+           (type integer geocode distance)
+           (inline geocode-neighbors))
   (setf distance (min 10 distance))
   (let* ((latcode (ash geocode -10))
          (longcode (- geocode (ash latcode 10))))
@@ -152,7 +182,12 @@
                  (asetf long (+ it 1024))))
               (collect (+ (ash lat 10) long) at beginning))))))
 
+(declaim (ftype (function (hash-table float float integer)
+                          list) geo-index-query))
+
 (defun geo-index-query (index lat long distance)
+  (declare (optimize (speed 3) (safety 0) (debug 0))
+           (type integer distance))
   (setf distance (min 10 (ceiling (/ distance 12.4274))))
   (iter (for item in (delete-duplicates
                        (iter (for code in (geocode-neighbors (geocode lat long) distance))
@@ -401,7 +436,6 @@
     (:invitation (index-invitation id data))
     (:gift (index-gift id data))
     (:gratitude (index-gratitude id data))
-    (:gift (index-gift id data))
     ((or :offer :request) (index-inventory-item id data))
     (:person (index-person id data))
     (:contact-n (index-contact-notification id data))

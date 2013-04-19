@@ -60,12 +60,12 @@
 (defun activity-icons (&key url hearts comments)
   (html
     (:a :class "icons" :href url
-      (when hearts
+      (when (and hearts (> hearts 0))
         (htm
           (:img :alt "love:" :src "/media/icons/heart16.png") 
           ;(:span :class "unicon" "♥ ")
           (:span (str hearts)))) 
-      (when comments
+      (when (and comments (> comments 0))
         (htm
           (:img :alt "comments:" :src "/media/icons/comment16.png") 
           ;(:span :class "unicon" " ✎ ")
@@ -127,7 +127,7 @@
          (data (db item-id)))
     (activity-item :id item-id
                    :user-id user-id
-                   :url (strcat "/gift/" item-id)
+                   :url (strcat "/gifts/" item-id)
                    :time (result-time result)
                    :next-url next-url
                    :hearts (length (loves item-id))

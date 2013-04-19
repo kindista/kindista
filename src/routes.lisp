@@ -111,6 +111,13 @@
     :get get-gift
     :post post-gift)
 
+  ("/comments/<int>"
+    ;:get get-comment
+    :post post-comment)
+
+  ("/comments/<int>/delete"
+    :get get-comment-delete)
+
   ("/people"
     :get get-people)
 
