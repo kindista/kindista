@@ -242,8 +242,9 @@
                                "-scale"
                                "100x100"
                                (strcat +avatar-path+ (cdr pair) ".png")))))
-        
-        ))))
+           (when (and (eql 0 (process-exit-code r1))
+                        (eql 0 (process-exit-code r2)))
+             (modify-db (cdr pair) :avatar t))))))
 
 (defun map-over-file (fn path)
   (with-open-file (in path :if-does-not-exist nil)

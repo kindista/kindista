@@ -450,8 +450,9 @@
                                   "-scale"
                                   "100x100"
                                   (strcat +avatar-path+ *userid* ".png")))))
-           (unless (and (eql 0 (process-exit-code r1))
+           (if (and (eql 0 (process-exit-code r1))
                         (eql 0 (process-exit-code r2)))
+             (modify-db *userid* :avatar t)
              (flash "The image you uploaded could not be processed. Sorry!" :error t))
            (see-other "/settings/personal"))))
 
