@@ -513,6 +513,7 @@ body.landing > p {
 #menu {
  padding-top: 1em;
  background:#f3f3f3;
+ font-size: 1.3em;
 }
 
 #beta {
@@ -554,6 +555,7 @@ body.landing > p {
   margin-left:0;
   width:16em;
   z-index:6;
+  font-size: 1em;
   background: none;
  }
 
@@ -648,13 +650,6 @@ body.landing > p {
  margin:0 0.625em 0 0;
  vertical-align:middle;
 }
-
-@media (max-width:39em) {
- #menu {
-  font-size: 1.3em;
- }
-}
-
 
 #fine-print-links {
  color: #999;
