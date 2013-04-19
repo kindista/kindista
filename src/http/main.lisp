@@ -292,6 +292,7 @@
 
 (defvar *acceptor* (make-instance 'k-acceptor
                                   :port 5000
+                                  :address "127.0.0.1"
                                   :access-log-destination nil
                                   :message-log-destination nil))
 
