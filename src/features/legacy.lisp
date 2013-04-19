@@ -35,7 +35,7 @@
                               :time created
                               :type :gift
                               :id id)))
-    
+
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 

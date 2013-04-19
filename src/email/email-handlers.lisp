@@ -155,11 +155,11 @@
                                    :minimum-links 5)
                         text)))))
 
-(defun send-circle-notification-email (from to)
+(defun send-contact-notification-email (from to)
   (cl-smtp:send-email +mail-server+
                       "Kindista <noreply@kindista.org>"
                       to
-                      (s+ from " added you to their circles on Kindista!")
-                      (circle-notification-email-text from)
-                      :html-message (circle-notification-email-html from)))
+                      (s+ from " added you to their contacts on Kindista!")
+                      (contact-notification-email-text from)
+                      :html-message (contact-notification-email-html from)))
 

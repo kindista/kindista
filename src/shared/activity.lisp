@@ -146,7 +146,7 @@
       (str (timestamp (result-time result)))
       (:p (str (person-link (first (result-people result)))) " joined Kindista"))))
 
-(defun inventory-activity-item (type result &key show-distance show-what next-url)
+(defun inventory-activity-item (type result &key (preposition "a ") show-distance show-what next-url)
   (let ((user-id (first (result-people result)))
         (data (db (result-id result))))
     (activity-item :id (result-id result)
@@ -163,7 +163,9 @@
                               (:p
                                 (str (person-link user-id))
                                 (when show-what
-                                  (str (if (getf data :edited) " edited a " " posted a "))
+                                  (str (if (getf data :edited) " edited "
+                                                               " posted "))
+                                  (str preposition)
                                   (htm (:a :href (str (format nil (s+ "/" type "s/~d")
                                                               (result-id result)))
                                            (str type))))
@@ -203,7 +205,7 @@
                      (:person
                        (str (joined-activity-item item)))
                      (:offer
-                       (str (inventory-activity-item "offer" item :show-what t :next-url next-url)))
+                       (str (inventory-activity-item "offer" item :preposition "an " :show-what t :next-url next-url)))
                      (:request
                        (str (inventory-activity-item "request" item :show-what t :next-url next-url)))))
                  (setf items (cdr items)))

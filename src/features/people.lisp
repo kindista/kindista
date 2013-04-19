@@ -111,7 +111,7 @@
   (let ((items (gethash userid *activity-person-index*))
         (start (* page 20)))
     (html
-      (iter 
+      (iter
         (for i from 0 to (+ start count))
           (if (and (>= i start) items)
             (let ((item (car items)))
@@ -120,19 +120,20 @@
                              (eql :gift (result-type item)))
                         (eql type (result-type item)))
                 (case (result-type item)
-                  (:gratitude 
-                    (str (unless (and (eql type :gratitude) 
+                  (:gratitude
+                    (str (unless (and (eql type :gratitude)
                                       (eql userid (first (result-people item))))
                            (gratitude-activity-item item
                                                     :next-url next-url))))
-                  (:person 
+                  (:person
                     (str (joined-activity-item item)))
-                  (:gift 
+                  (:gift
                     (str (gift-activity-item item :next-url next-url)))
                   (:offer
                     (str (inventory-activity-item "offer" item
                                               :show-what (unless (eql type :offer) t)
-                                              :next-url next-url)))   
+                                              :preposition "an "
+                                              :next-url next-url)))
                   (:request
                     (str (inventory-activity-item "request" item
                                                 :show-what (unless (eql type :request) t)
@@ -291,9 +292,9 @@
       (html
         (when *user* (str (profile-tabs-html userid :tab (or type :activity))))
         (when (and (eql type :request) (eql userid *userid*) )
-          (htm (str (simple-inventory-entry-html "request"))))
+          (htm (str (simple-inventory-entry-html "a " "request"))))
         (when (and (eql type :offer) (eql userid *userid*))
-          (htm (str (simple-inventory-entry-html "offer")))) 
+          (htm (str (simple-inventory-entry-html "an " "offer")))) 
         (when (and (eql type :gratitude)
                    (not (eql userid *userid*))
                    (eql (getf user :active) t))
@@ -374,7 +375,7 @@
 
         ((string= editing "skills")
          (profile-bio-html id :editing 'skills))
-        
+
         (t (not-found))))))
 
 (defun get-person-about (id)
@@ -389,7 +390,7 @@
 (defun get-person-reputation (id)
   (require-user
     (ensuring-userid (id "/people/~a/reputation")
-      (profile-activity-html id :type (:gift :gratitude)))))
+      (profile-activity-html id :type :gratitude))))
 
 (defun get-person-offers (id)
   (require-user
