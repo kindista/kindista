@@ -163,7 +163,8 @@
                               (:p
                                 (str (person-link user-id))
                                 (when show-what
-                                  (str (if (getf data :edited) " edited a " " posted a "))
+                                  (str (if (getf data :edited) " edited " " posted "))
+                                  (str (if (eq (getf data :type) :offer) "an " "a "))
                                   (htm (:a :href (str (format nil (s+ "/" type "s/~d")
                                                               (result-id result)))
                                            (str type))))
