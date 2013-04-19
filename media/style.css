@@ -545,6 +545,11 @@ body.landing > p {
  /*border-bottom: 1px solid #eee;*/
 }
 
+.icon {
+ width: 1.875em;
+ height: 1.875em;
+}
+
 
 @media (min-width:47em) {
  #menu {
@@ -557,6 +562,11 @@ body.landing > p {
   z-index:6;
   font-size: 1em;
   background: none;
+ }
+
+ .icon {
+  width: 1.47em;
+  height: 1.47em;
  }
 
  #fund {
@@ -662,11 +672,6 @@ body.landing > p {
  color: #999;
  display: inline-block;
  padding: .3em;
-}
-
-.icon {
- width:1.5em;
- height:1.5em;
 }
 
 .activity {
