@@ -102,8 +102,7 @@
             (nearby-inventory-top-tags :offer :base base :q q)
           (standard-page
            "Offers"
-           (inventory-body-html "offer" :preposition "an "
-                                        :base base
+           (inventory-body-html "offer" :base base
                                         :q q
                                         :items items
                                         :start start

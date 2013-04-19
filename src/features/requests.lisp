@@ -98,8 +98,7 @@
           (nearby-inventory-top-tags :request :base base :q q)
         (standard-page
          "Requests"
-         (inventory-body-html "request" :preposition "a "
-                                        :base base 
+         (inventory-body-html "request" :base base 
                                         :q q 
                                         :items items 
                                         :start start 
