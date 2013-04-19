@@ -394,6 +394,10 @@
                    (:input :type "submit" :value "Search"))
 
                  (:div :id "menu"
+                   (:div :id "beta"
+                     (:strong "Warning!")
+                     (:p "This site is for testing only. Any new content here may be " (:strong "DELETED") " until further notice.") )
+
                    (when *user*
                      (htm
                        (:table
