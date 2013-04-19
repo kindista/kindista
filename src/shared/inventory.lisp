@@ -259,12 +259,11 @@
                                (collect (cdr pair))))))
              (iter (for tag in (tags-from-string (post-parameter "tags")))
                    (setf tags (cons tag tags)))
-             
+
              (if (intersection tags *top-tags* :test #'string=)
                (progn
                  (modify-inventory-item (parse-integer id) :text (post-parameter "text")
                                                      :tags tags)
-                                                                     
                  (see-other (s+ "/" type "s/" id)))
 
                (enter-inventory-tags :title (s+ "Edit your " type)

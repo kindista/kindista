@@ -22,28 +22,28 @@
     (s+ sender
 " has invited you to join Kindista, the social network for building "
 "community and sharing local resources.
-      
-Your invitation code is " (write-to-string token) ".
-This invitation will expire in 30 days. 
 
-" 
+Your invitation code is " (write-to-string token) ".
+This invitation will expire in 30 days.
+
+"
 
       (when text
-        (s+ sender " says: 
+        (s+ sender " says:
             \""
             text "\"
-                  
+
 "))
 
 sender
 " only has a limited number of invitations and they sent one to you"
 " because they think you would make a valuable addition to the"
-" Kindista community. 
+" Kindista community.
 
 "
 
 "Please click on this link or copy and paste it into your browser"
-" to RSVP: 
+" to RSVP:
 "
 (url-compose (s+ +base-url+ "/signup")
              "id" invitation-id
@@ -54,8 +54,8 @@ sender
 "
 
 You will then have the option to join Kindista, or decline the "
-      " invitation so " sender " can give it to someone else.  
-      
+      " invitation so " sender " can give it to someone else.
+
 "
       "-The Kindista Team")))
 
@@ -64,13 +64,13 @@ You will then have the option to join Kindista, or decline the "
   (let ((sender (getf (db from) :name)))
     (html-email-base
       (html
-        (:p :style *style-p* 
-          (str (person-email-link from)) 
+        (:p :style *style-p*
+          (str (person-email-link from))
           " has invited you to join Kindista, the social network for building "
           "community and sharing local resources. ")
-        
+
         (:p :style *style-p*
-         "Your invitation code is " (:strong (str (write-to-string token)) ".")         
+         "Your invitation code is " (:strong (str (write-to-string token)) ".")
          (:br)
          "This invitation will expire in 30 days.")
 
@@ -90,7 +90,7 @@ You will then have the option to join Kindista, or decline the "
           " because they think you would make a valuable addition to the"
           " Kindista community.  ")
 
-        (:p :style *style-p* 
+        (:p :style *style-p*
           "Please click on this link or copy and paste it into your browser"
           " to RSVP: "
           (:br)

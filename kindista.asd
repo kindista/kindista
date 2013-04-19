@@ -95,4 +95,5 @@
                                                    (:file "email-handlers")
                                                    (:file "gratitude-notification")
                                                    (:file "invitation")
+                                                   (:file "message-notification")
                                                    (:file "reset-password")))))))

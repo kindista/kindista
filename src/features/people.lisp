@@ -111,7 +111,7 @@
   (let ((items (gethash userid *activity-person-index*))
         (start (* page 20)))
     (html
-      (iter 
+      (iter
         (for i from 0 to (+ start count))
           (if (and (>= i start) items)
             (let ((item (car items)))
@@ -120,19 +120,19 @@
                              (eql :gift (result-type item)))
                         (eql type (result-type item)))
                 (case (result-type item)
-                  (:gratitude 
-                    (str (unless (and (eql type :gratitude) 
+                  (:gratitude
+                    (str (unless (and (eql type :gratitude)
                                       (eql userid (first (result-people item))))
                            (gratitude-activity-item item
                                                     :next-url next-url))))
-                  (:person 
+                  (:person
                     (str (joined-activity-item item)))
-                  (:gift 
+                  (:gift
                     (str (gift-activity-item item :next-url next-url)))
                   (:offer
                     (str (inventory-activity-item "offer" item
                                               :show-what (unless (eql type :offer) t)
-                                              :next-url next-url)))   
+                                              :next-url next-url)))
                   (:request
                     (str (inventory-activity-item "request" item
                                                 :show-what (unless (eql type :request) t)
@@ -274,9 +274,11 @@
        (when (getf user :city)
          (htm (:p :class "city" (str (getf user :city)) ", " (str (getf user :state))))) 
      (unless (eql userid *userid*)
+       (when (and (db userid :active) (db *userid* :active)) 
+         (htm
+           (:form :method "post" :action "/conversations/new"
+             (:button :type "submit" :name "add" :value userid "Send a message"))
        (htm 
-         (:form :method "post" :action "/conversations/new"
-           (:button :type "submit" :name "add" :value userid "Send a message")) 
          (:form :method "POST" :action "/contacts"
            (:input :type "hidden" :name (if is-contact "remove" "add") :value userid)
            (:input :type "hidden" :name "next" :value *base-url*)
@@ -374,7 +376,7 @@
 
         ((string= editing "skills")
          (profile-bio-html id :editing 'skills))
-        
+
         (t (not-found))))))
 
 (defun get-person-about (id)

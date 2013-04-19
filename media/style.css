@@ -649,7 +649,7 @@ body.landing > p {
  vertical-align:middle;
 }
 
-@media (max-width:56em) {
+@media (max-width:39em) {
  #menu {
   font-size: 1.3em;
  }
@@ -1244,6 +1244,10 @@ button, .settings-item .content a {
  border-radius:3px;
 }
 
+div.settings-item.content > a {
+ margin: 0 0 1.3em 0.7em;
+}
+
 button.simple-link {
  padding:0;
  border:0;
@@ -1255,7 +1259,7 @@ button.simple-link {
  text-decoration:underline;
 }
 
-button.yes, .settings-item .content a {
+button.yes {
  background:#5c8a2f;
  /*background: #375497;*/
  border:0;
@@ -1460,14 +1464,10 @@ form.post-next h2 {
  top: .2em;
 }
 
-.settings-item .content a {
- margin-bottom: 0.5em;
-}
-
-
 .settings-item ul, .settings-item p {
  margin: 0;
  padding-left: 0;
+ margin-bottom: 0.5em;
  width: 100%;
 }
 
@@ -1506,9 +1506,12 @@ form.post-next h2 {
  padding: .3em .5em;
 }
 
+.settings-item p.help-text {
+ margin-top: 0.4em;
+}
+
 .help-text {
  color: #777;
- margin-top: .4em;
  clear: both;
 }
 

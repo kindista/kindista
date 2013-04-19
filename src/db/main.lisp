@@ -399,6 +399,7 @@
   (case (getf data :type)
     (:comment (index-comment id data))
     (:invitation (index-invitation id data))
+    (:gift (index-gift id data))
     (:gratitude (index-gratitude id data))
     (:gift (index-gift id data))
     ((or :offer :request) (index-inventory-item id data))

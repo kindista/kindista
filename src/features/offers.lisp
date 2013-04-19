@@ -103,10 +103,10 @@
           (standard-page
            "Offers"
            (inventory-body-html "offer" :preposition "an "
-                                        :base base 
-                                        :q q 
-                                        :items items 
-                                        :start start 
+                                        :base base
+                                        :q q
+                                        :items items
+                                        :start start
                                         :page page)
           :top (when (getf *user* :help)
                  (offers-help-text))
