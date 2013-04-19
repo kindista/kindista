@@ -277,7 +277,7 @@
        (when (and (db userid :active) (db *userid* :active)) 
          (htm
            (:form :method "post" :action "/conversations/new"
-             (:button :type "submit" :name "add" :value userid "Send a message"))
+             (:button :type "submit" :name "add" :value userid "Send a message"))))
        (htm 
          (:form :method "POST" :action "/contacts"
            (:input :type "hidden" :name (if is-contact "remove" "add") :value userid)
