@@ -101,20 +101,22 @@
           ;(:li (:a :href "/announcements/new" "post announcement"))
           )
           
-      (:form :class "item" :method "post" :action "/settings"
-        (:strong "show activity within ")
-        (:input :type "hidden" :name "next" :value "/home")
-        (let ((distance (user-distance)))
-          (pprint distance) (terpri)
-          (htm
-            (:select :name "distance" :onchange "this.form.submit()"
-              (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
-              (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
-              (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
-              (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
-              (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
+      (when *user*
+        (htm
+          (:form :class "item" :method "post" :action "/settings"
+            (:strong "show activity within ")
+            (:input :type "hidden" :name "next" :value "/home")
+            (let ((distance (user-distance)))
+              (pprint distance) (terpri)
+              (htm
+                (:select :name "distance" :onchange "this.form.submit()"
+                  (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
+                  (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
+                  (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
+                  (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
+                  (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
         " "
-        (:input :type "submit" :class "no-js" :value "apply"))
+        (:input :type "submit" :class "no-js" :value "apply"))))
         (let ((page (if (scan +number-scanner+ (get-parameter "p"))
                      (parse-integer (get-parameter "p"))
                      0)))
