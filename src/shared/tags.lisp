@@ -556,9 +556,10 @@
     :test #'string=))
 
 (defun all-tags-from-string (string)
-  (iter (for tag in (split " " (ppcre:regex-replace-all "," (string-downcase string) " ")))
+  (when string
+    (iter (for tag in (split " " (ppcre:regex-replace-all "," (string-downcase string) " ")))
         (when (ppcre:scan *tag-scanner* tag)
-          (collect tag))))
+          (collect tag)))))
 
 (defun remove-forbidden-tags (tags)
   (remove-if #'forbidden-tag-p tags))

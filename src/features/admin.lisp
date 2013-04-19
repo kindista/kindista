@@ -30,12 +30,36 @@
       (html
         (:h1 "Admin")
         (:ul
+          (:li (:a :href "/admin/old-inventory" "old inventory items"))
           (:li (:a :href "/admin/recent" "recently added"))))
+      :selected "admin")))
+
+(defun get-admin-old-inventory ()
+  (require-admin
+    (standard-page
+      "Recently Added"
+      (html
+        (:p (:a :href "/admin" "back to admin"))
+        (:h1 "old inventory items")
+        (let ((page (if (scan +number-scanner+ (get-parameter "p"))
+                     (parse-integer (get-parameter "p"))
+                     0)))
+         (with-location
+           (str (activity-items *old-inventory-index* :url "/admin/old-inventory" :page page)))))
       :selected "admin")))
 
 (defun get-admin-recent ()
   (require-admin
     (standard-page
       "Recently Added"
-      (activity-items (sort (copy-list *recent-activity-index*) #'> :key #'result-time))
+      (html
+        (:p (:a :href "/admin" "back to admin"))
+        (:h1 "recent sitewide activity")
+        (let ((page (if (scan +number-scanner+ (get-parameter "p"))
+                     (parse-integer (get-parameter "p"))
+                     0)))
+          (with-location
+            (str (activity-items (sort (copy-list *recent-activity-index*) #'> :key #'result-time)
+                                 :url "/admin/recent"
+                                 :page page)))))
       :selected "admin")))

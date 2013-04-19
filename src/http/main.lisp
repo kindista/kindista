@@ -38,7 +38,7 @@
 (defun flashes ()
   (with-locked-hash-table (*flashes*)
     (prog1
-      (gethash *token* *flashes*)
+      (delete-duplicates (gethash *token* *flashes*) :test #'string=)
       (remhash *token* *flashes*))))
 
 (defun not-found ()
