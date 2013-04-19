@@ -50,7 +50,7 @@
   (see-other "/"))
 
 (defun login-required ()
-  (flash "Sorry, that page is only available to people who are logged in." :error t)
+  (flash "Sorry, that is only available when you are logged in to Kindista." :error t)
   (see-other "/"))
 
 (defun active-status-required ()
