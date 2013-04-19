@@ -315,14 +315,13 @@
       :top (profile-top-html userid)
 
       :right (let ((mutuals (mutual-connections userid)))
-               (when (and mutuals (not (eql userid *userid*)))
+               (when mutuals
                  (html
                    (:div :class "item people"
                     (:h3 "Mutual Connections")
                     (:ul
-                      (dolist (id (mutual-connections userid))
-                        (htm (:li (:a :href (strcat "/people/" (username-or-id id))
-                                      (str (getf (db id) :name)))))))))))
+                      (dolist (link (alpha-people-links mutuals))
+                        (htm (:li (str link)))))))))
 
       :selected "people")))
 

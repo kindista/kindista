@@ -150,6 +150,17 @@
 (defun empty-string-p (string)
   (or (not string) (string= string "")))
 
+(defun alpha-people-links (userid-list)
+  (mapcar
+    #'cdr
+    (sort
+      (iter (for id in (copy-list userid-list))
+            (let* ((name (db id :name))
+                   (link (html (:a :href (strcat "/people/" (username-or-id id))
+                                         (str name)))))
+              (collect (cons name link))))
+     #'string-lessp :key #'car)))
+
 (defun person-link (id)
   (html
     (:a :href (s+ "/people/" (username-or-id id)) (str (getf (db id) :name)))))
