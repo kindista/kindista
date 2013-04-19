@@ -108,7 +108,7 @@
                    :url (strcat "/gratitude/" item-id)
                    :time (result-time result)
                    :next-url next-url
-                   :edit (when (eql user-id *userid*) t)
+                   :edit (when (or (eql user-id *userid*) (getf *user* :admin)) t)
                    :hearts (length (loves item-id))
                    ;:comments (length (comments item-id))
                    :content (html
@@ -154,7 +154,7 @@
                    :url (strcat "/" type "s/" (result-id result))
                    :time (result-time result)
                    :next-url next-url
-                   :edit (when (eql user-id *userid*) t)
+                   :edit (or (eql user-id *userid*) (getf *user* :admin))
                    :hearts (length (loves (result-id result)))
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")

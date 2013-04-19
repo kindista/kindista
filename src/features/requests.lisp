@@ -69,7 +69,8 @@
 (defun get-request-edit (id)
   (require-user
     (let* ((request (db (parse-integer id))))
-      (require-test ((eql *userid* (getf request :by))
+      (require-test ((or (eql *userid* (getf request :by))
+                         (getf *user* :admin))
                    "You can only edit your own requests.")
         (enter-inventory-tags :title "Edit your request"
                               :action (s+ "/requests/" id "/edit")
