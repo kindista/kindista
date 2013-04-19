@@ -41,8 +41,6 @@
       (:div :style "font-size: 0.9em; margin-top: 1em;" (:a :href "#" "How does Kindista use the money?"))
       )
       |#
-
-    (str (donate-sidebar))
     
     (unless *user*
       (htm
@@ -55,6 +53,8 @@
             (:input :type "password" :name "password")
             (:input :type "submit" :value "Log in")
             (:a :href "/reset" "Forgot your password?")))))
+
+    (str (donate-sidebar))
 
     (str (invite-sidebar))
 
