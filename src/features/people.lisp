@@ -73,6 +73,9 @@
       (geo-index-insert *people-geo-index* result) 
 
       (unless (< (result-time result) (- (get-universal-time) 15552000))
+        (unless (< (result-time result) (- (get-universal-time) 2592000))
+          (with-mutex (*recent-activity-mutex*)
+            (push result *recent-activity-index*)))
         (geo-index-insert *activity-geo-index* result)))))
 
 (defun deactivate-person (id)

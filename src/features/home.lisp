@@ -121,7 +121,7 @@
                      (parse-integer (get-parameter "p"))
                      0)))
          (with-location
-           (str (activity-items :page page))))))
+           (str (local-activity-items :page page))))))
     :selected "home"
     :top (cond
            ((not *user*)

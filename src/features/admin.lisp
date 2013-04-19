@@ -25,14 +25,17 @@
 
 (defun get-admin ()
   (require-admin
-    (notice :admin-page "")
     (standard-page
-      "Events"
+      "Admin"
       (html
         (:h1 "Admin")
-        (:h2 "Ideas")
         (:ul
-          (:li "create a new event")
-          (:li "upcoming events")
-          (:li "events friends are going to")))
+          (:li (:a :href "/admin/recent" "recently added"))))
+      :selected "admin")))
+
+(defun get-admin-recent ()
+  (require-admin
+    (standard-page
+      "Recently Added"
+      (activity-items (sort (copy-list *recent-activity-index*) #'> :key #'result-time))
       :selected "admin")))

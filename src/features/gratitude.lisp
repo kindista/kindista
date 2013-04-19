@@ -39,20 +39,26 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (geo-index-insert *activity-geo-index* result)
-
     (with-locked-hash-table (*activity-person-index*)
       (dolist (person people)
         (asetf (gethash person *activity-person-index*)
                (sort (push result it) #'> :key #'result-time))))
 
-    (dolist (subject subjects)
-      (let ((user (db subject)))
-        (geo-index-insert *activity-geo-index* (make-result :latitude (getf user :lat)
-                                                            :longitude (getf user :long)
-                                                            :people people
-                                                            :id id
-                                                            :time created))))))
+    (unless (< (result-time result) (- (get-universal-time) 15552000))
+
+      (geo-index-insert *activity-geo-index* result) 
+
+      (unless (< (result-time result) (- (get-universal-time) 2592000))
+        (with-mutex (*recent-activity-mutex*)
+          (push result *recent-activity-index*))) 
+
+      (dolist (subject subjects)
+        (let ((user (db subject)))
+          (geo-index-insert *activity-geo-index* (make-result :latitude (getf user :lat)
+                                                              :longitude (getf user :long)
+                                                              :people people
+                                                              :id id
+                                                              :time created)))))))
 
 (defun parse-subject-list (subject-list &key remove)
   (delete-duplicates

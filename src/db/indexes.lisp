@@ -52,3 +52,5 @@
 (defindex *offer-stem-index* :test 'equalp)
 (defindex *username-index* :test 'equalp)
 
+(defvar *recent-activity-mutex* (make-mutex))
+(defvar *recent-activity-index* ())

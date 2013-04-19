@@ -93,11 +93,12 @@
         (when comments
           (htm
             " &middot; "
-            (str (comment-button url))))
-        (unless (eql user-id *userid*)
-          (htm
-            " &middot; "
-            (str (flag-button url))))))))
+            (str (comment-button url))))))))
+
+        ;(unless (eql user-id *userid*)
+        ;  (htm
+        ;    " &middot; "
+        ;    (str (flag-button url))))))))
 
 (defun gratitude-activity-item (result &key next-url)
   (let* ((user-id (first (result-people result)))
@@ -180,14 +181,9 @@
                                     ")")))) 
                               (:p (cl-who:esc (getf data :text)))))))
 
-(defun activity-items (&key (user *user*) (page 0) (count 20) next-url)
+(defun activity-items (items &key (page 0) (count 20) next-url)
   (with-location
-    (let ((items (sort (geo-index-query *activity-geo-index*
-                                        *latitude*
-                                        *longitude*
-                                        (or (getf user :distance) 50))
-                       #'< :key #'activity-rank))
-          (start (* page 20)))
+    (let ((start (* page 20)))
       (html
         (iter (for i from 0 to (+ start count))
               (cond
@@ -227,3 +223,11 @@
                      (when (cdr items)
                        (htm
                          (:a :style "float: right;" :href (strcat "/home?p=" (+ page 1)) "next page >"))))))))))))
+
+(defun local-activity-items (&key (user *user*) (page 0) (count 20) next-url) 
+  (let ((items (sort (geo-index-query *activity-geo-index*
+                                      *latitude*
+                                      *longitude*
+                                      (or (getf user :distance) 50))
+                     #'< :key #'activity-rank)))
+    (activity-items items :page page :count count :next-url next-url)))
