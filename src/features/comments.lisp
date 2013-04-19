@@ -17,20 +17,18 @@
 
 (in-package :kindista)
 
-(defun create-comment (&key on (by *userid*) text)
-  (let* ((now (get-universal-time))
-         (id (insert-db (list :type :comment
-                              :on on
-                              :by by
-                              :text text
-                              :created now))))
+(defun create-comment (&key on (by *userid*) text (time (get-universal-time)))
+  (let ((id (insert-db (list :type :comment
+                             :on on
+                             :by by
+                             :text text
+                             :created time))))
 
     (modify-db on :latest-comment id)
 
     (when (eq (db on :type) :conversation)
       (with-locked-hash-table (*db-results*)
-        (setf (result-time (gethash on *db-results*)) now)))
-
+        (setf (result-time (gethash on *db-results*)) time)))
     (send-comment-notification-email id)))
 
 (defun latest-comment (id)

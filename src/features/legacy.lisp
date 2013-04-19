@@ -187,6 +187,65 @@
                                        :text text
                                        :created time)))))))))
 
+(defun import-offers (path)
+  (let ((offers (map-over-file #'copy-list path)))
+
+    (labels ((id-lookup (id)
+               (cdr (assoc id *legacy-identity-map*))))
+      (iter (for (id user text time expires) in offers)
+            (unless (member id *legacy-offer-map* :key #'car)
+              (let ((newid (insert-db `(:type :offer
+                                              :by ,(id-lookup user)
+                                              :created ,time
+                                              :expires ,expires
+                                              :text ,text))))
+                (write-legacy-map :offer id newid)))))))
+
+(defun import-requests (path)
+  (let ((requests (map-over-file #'copy-list path)))
+
+    (labels ((id-lookup (id)
+               (cdr (assoc id *legacy-identity-map*))))
+      (iter (for (id user text time expires) in requests)
+            (unless (member id *legacy-request-map* :key #'car)
+              (let ((newid (insert-db `(:type :request
+                                              :by ,(id-lookup user)
+                                              :created ,time
+                                              :expires ,expires
+                                              :text ,text))))
+                (write-legacy-map :request id newid)))))))
+
+(defun import-messages (path)
+  (let ((conversations (map-over-file #'copy-list path)))
+    (labels ((id-lookup (id)
+               (cdr (assoc id *legacy-identity-map*))))
+      (iter (for (ids messages) in conversations)
+            (let ((id (insert-db `(:type :conversation
+                                         :people ,(mapcar #'list (mapcar #'id-lookup ids))
+                                         :created ,(first (sort (mapcar #'second messages) #'<))
+                                         :public t))))
+              (iter (for (user time message) in (nreverse messages))
+                    (create-comment :on id :by (id-lookup user) :text message :time time)))))))
+
+(defun import-avatars (path)
+  (dolist (pair *legacy-identity-map*)
+    (let ((file (strcat path "/" (car pair) ".jpg")))
+      (let ((r1 (run-program "/usr/bin/convert"
+                             (list
+                               file
+                               "-scale"
+                               "300x300"
+                               (strcat +avatar-path+ (cdr pair) ".jpg"))))
+            (r2 (run-program "/usr/bin/convert"
+                             (list
+                               file
+                               "-scale"
+                               "100x100"
+                               (strcat +avatar-path+ (cdr pair) ".png")))))
+           (when (and (eql 0 (process-exit-code r1))
+                        (eql 0 (process-exit-code r2)))
+             (modify-db (cdr pair) :avatar t))))))
+
 (defun map-over-file (fn path)
   (with-open-file (in path :if-does-not-exist nil)
     (when in

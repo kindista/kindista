@@ -401,6 +401,7 @@
     (:invitation (index-invitation id data))
     (:gift (index-gift id data))
     (:gratitude (index-gratitude id data))
+    (:gift (index-gift id data))
     ((or :offer :request) (index-inventory-item id data))
     (:person (index-person id data))
     (:contact-n (index-contact-notification id data))
@@ -412,7 +413,9 @@
         #'string-lessp :key #'cadr))
 
 (defun user-distance (&optional (user *user*))
-  (or (getf user :distance) 25))
+  (if user
+    (or (getf user :distance) 25)
+    100))
 
 (defun user-rdist (&optional (user *user*))
   (or (getf user :rdist) 25))

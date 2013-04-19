@@ -69,7 +69,8 @@
 (defun get-request-edit (id)
   (require-user
     (let* ((request (db (parse-integer id))))
-      (require-test ((eql *userid* (getf request :by))
+      (require-test ((or (eql *userid* (getf request :by))
+                         (getf *user* :admin))
                    "You can only edit your own requests.")
         (enter-inventory-tags :title "Edit your request"
                               :action (s+ "/requests/" id "/edit")
@@ -97,8 +98,7 @@
           (nearby-inventory-top-tags :request :base base :q q)
         (standard-page
          "Requests"
-         (inventory-body-html "request" :preposition "a "
-                                        :base base 
+         (inventory-body-html "request" :base base 
                                         :q q 
                                         :items items 
                                         :start start 

@@ -41,8 +41,6 @@
       (:div :style "font-size: 0.9em; margin-top: 1em;" (:a :href "#" "How does Kindista use the money?"))
       )
       |#
-
-    (str (donate-sidebar))
     
     (unless *user*
       (htm
@@ -55,6 +53,8 @@
             (:input :type "password" :name "password")
             (:input :type "submit" :value "Log in")
             (:a :href "/reset" "Forgot your password?")))))
+
+    (str (donate-sidebar))
 
     (str (invite-sidebar))
 
@@ -101,19 +101,22 @@
           ;(:li (:a :href "/announcements/new" "post announcement"))
           )
           
-      (:form :class "item" :method "post" :action "/settings"
-        (:strong "show activity within ")
-        (:input :type "hidden" :name "next" :value "/home")
-        (let ((distance (user-distance)))
-          (htm
-            (:select :name "distance" :onchange "this.form.submit()"
-              (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
-              (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
-              (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
-              (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
-              (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
+      (when *user*
+        (htm
+          (:form :class "item" :method "post" :action "/settings"
+            (:strong "show activity within ")
+            (:input :type "hidden" :name "next" :value "/home")
+            (let ((distance (user-distance)))
+              (pprint distance) (terpri)
+              (htm
+                (:select :name "distance" :onchange "this.form.submit()"
+                  (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
+                  (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
+                  (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
+                  (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
+                  (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
         " "
-        (:input :type "submit" :class "no-js" :value "apply"))
+        (:input :type "submit" :class "no-js" :value "apply"))))
         (let ((page (if (scan +number-scanner+ (get-parameter "p"))
                      (parse-integer (get-parameter "p"))
                      0)))
@@ -140,7 +143,7 @@
                 (:p "We're so happy to have you join us! Here are some things you can do to get started:")
                 (:ul
                   (unless (getf *user* :avatar)
-                    (htm (:li (:a :href "/avatar" "Upload a picture") " so that other people can recognize you.")))
+                    (htm (:li (:a :href "/settings/personal" "Upload a picture") " so that other people can recognize you.")))
                   (:li (:a :href "/gratitude/new" "Express gratitude") " for someone who has affected your life.")
                   (:li (:a :href "/people/new" "Make a connection") " to say that you know someone.")
                   (:li (:a :href "/requests/new" "Post a request") " to the community for something you need.")
@@ -185,7 +188,7 @@
       ((and (getf *user* :lat)
             (getf *user* :long))
        (notice :home-verify-location "")
-       (verify-address :next-url "/home"))
+       (get-verify-address :next-url "/home"))
 
       (t
        (notice :home-setup "")

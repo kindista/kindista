@@ -73,7 +73,8 @@
 (defun get-offer-edit (id)
   (require-user
     (let* ((offer (db (parse-integer id))))
-      (require-test ((eql *userid* (getf offer :by))
+      (require-test ((or (eql *userid* (getf offer :by))
+                         (getf *user* :admin))
                    "You can only edit offers you have posted.")
         (enter-inventory-tags :title "Edit your offer"
                               :action (s+ "/offers/" id "/edit")
@@ -100,9 +101,8 @@
         (multiple-value-bind (tags items)
             (nearby-inventory-top-tags :offer :base base :q q)
           (standard-page
-           "offers"
-           (inventory-body-html "offer" :preposition "an "
-                                        :base base
+           "Offers"
+           (inventory-body-html "offer" :base base
                                         :q q
                                         :items items
                                         :start start

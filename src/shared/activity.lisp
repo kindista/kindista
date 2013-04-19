@@ -108,7 +108,7 @@
                    :url (strcat "/gratitude/" item-id)
                    :time (result-time result)
                    :next-url next-url
-                   :edit (when (eql user-id *userid*) t)
+                   :edit (when (or (eql user-id *userid*) (getf *user* :admin)) t)
                    :hearts (length (loves item-id))
                    ;:comments (length (comments item-id))
                    :content (html
@@ -146,7 +146,7 @@
       (str (timestamp (result-time result)))
       (:p (str (person-link (first (result-people result)))) " joined Kindista"))))
 
-(defun inventory-activity-item (type result &key (preposition "a ") show-distance show-what next-url)
+(defun inventory-activity-item (type result &key show-distance show-what next-url)
   (let ((user-id (first (result-people result)))
         (data (db (result-id result))))
     (activity-item :id (result-id result)
@@ -154,7 +154,7 @@
                    :url (strcat "/" type "s/" (result-id result))
                    :time (result-time result)
                    :next-url next-url
-                   :edit (when (eql user-id *userid*) t)
+                   :edit (or (eql user-id *userid*) (getf *user* :admin))
                    :hearts (length (loves (result-id result)))
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")
@@ -163,9 +163,8 @@
                               (:p
                                 (str (person-link user-id))
                                 (when show-what
-                                  (str (if (getf data :edited) " edited "
-                                                               " posted "))
-                                  (str preposition)
+                                  (str (if (getf data :edited) " edited " " posted "))
+                                  (str (if (eq (getf data :type) :offer) "an " "a "))
                                   (htm (:a :href (str (format nil (s+ "/" type "s/~d")
                                                               (result-id result)))
                                            (str type))))
@@ -205,7 +204,7 @@
                      (:person
                        (str (joined-activity-item item)))
                      (:offer
-                       (str (inventory-activity-item "offer" item :preposition "an " :show-what t :next-url next-url)))
+                       (str (inventory-activity-item "offer" item :show-what t :next-url next-url)))
                      (:request
                        (str (inventory-activity-item "request" item :show-what t :next-url next-url)))))
                  (setf items (cdr items)))

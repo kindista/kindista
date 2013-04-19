@@ -132,7 +132,6 @@
                   (:offer
                     (str (inventory-activity-item "offer" item
                                               :show-what (unless (eql type :offer) t)
-                                              :preposition "an "
                                               :next-url next-url)))
                   (:request
                     (str (inventory-activity-item "request" item
@@ -272,11 +271,13 @@
        (:h1 (str (getf user :name))
             (when (eq (getf user :active) nil)
               (htm (:span :class "help-text" " (inactive account)"))))
-       (:p :class "city" (str (getf user :city)) ", " (str (getf user :state)))
+       (when (getf user :city)
+         (htm (:p :class "city" (str (getf user :city)) ", " (str (getf user :state))))) 
      (unless (eql userid *userid*)
        (when (and (db userid :active) (db *userid* :active)) 
-         (htm (:form :method "GET" :action (strcat *base-url* "/message")
-           (:input :type "submit" :value "Send a message")))) 
+         (htm
+           (:form :method "post" :action "/conversations/new"
+             (:button :type "submit" :name "add" :value userid "Send a message"))))
        (htm 
          (:form :method "POST" :action "/contacts"
            (:input :type "hidden" :name (if is-contact "remove" "add") :value userid)
@@ -292,9 +293,9 @@
       (html
         (when *user* (str (profile-tabs-html userid :tab (or type :activity))))
         (when (and (eql type :request) (eql userid *userid*) )
-          (htm (str (simple-inventory-entry-html "a " "request"))))
+          (htm (str (simple-inventory-entry-html "a" "request"))))
         (when (and (eql type :offer) (eql userid *userid*))
-          (htm (str (simple-inventory-entry-html "an " "offer")))) 
+          (htm (str (simple-inventory-entry-html "an" "offer")))) 
         (when (and (eql type :gratitude)
                    (not (eql userid *userid*))
                    (eql (getf user :active) t))
@@ -449,7 +450,7 @@
         (when *user* 
           (htm
             (:h2 "People with mutual connections") 
-            (dolist (data (suggested-people))
+            (dolist (data (sublist (suggested-people) 0 10))
               (let* ((id (cdr data))
                      (person (db id)))
                 ; (car data) is the number of mutual connections

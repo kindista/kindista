@@ -515,6 +515,11 @@ body.landing > p {
  background:#f3f3f3;
 }
 
+#beta {
+ padding: 1em 1em 0;
+ color: #900;
+}
+
 #copyright {
  font-size: 0.85em;
  padding: 0 1em;
@@ -719,7 +724,7 @@ body.landing > p {
 .card > .image {
  float: left;
  width: 7em;
- height: 7em;
+ max-height: 7em;
  margin: 1em 1.75em 0.5em 1em;
  clear: left;
 }
@@ -973,7 +978,7 @@ button.text.large {
  font-size:1.1em;
 }
 
-.basics > form input {
+.basics > form input, .basics > form button {
  margin:0.45em 0.65em 0.55em 0;
  padding:0.5em;
  /*background:#375497;*/
@@ -1196,8 +1201,12 @@ menu.bar li a {
 }
 
 .welcome {
+ background: #FFFAE8;
  font-size: 0.9em;
- padding: 1em 1em 0 1em;
+ padding: 1em;
+ border-bottom: 1px solid #eee;
+ border-right: 1px solid #eee;
+ margin-right: -1px;
 }
 
 .welcome button {
@@ -1723,6 +1732,12 @@ body.donate {
 
 .card .text span {
  font-weight: bold;
+ color: #666;
+}
+
+.card .text .title span.none {
+ font-weight: normal;
+ font-style: italic;
  color: #666;
 }
 

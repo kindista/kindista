@@ -219,7 +219,8 @@
 (defun post-existing-inventory-item (type &key id url)
   (require-user
     (let ((item (db (parse-integer id))))
-      (require-test ((eql *userid* (getf item :by))
+      (require-test ((or (eql *userid* (getf item :by))
+                         (getf *user* :admin))
                     (s+ "You can only edit your own " type "s."))
         (cond
           ((post-parameter "delete")
@@ -284,7 +285,7 @@
 (defun simple-inventory-entry-html (preposition type)
   (html 
     (:div :class "item"
-      (:h4 (str (s+ "post " preposition type))) 
+      (:h4 (str (s+ "post " preposition " " type))) 
       (:form :method "post" :action (s+ "/" type "s/new") 
         (:table :class "post"
           (:tr

@@ -50,7 +50,7 @@
   (see-other "/"))
 
 (defun login-required ()
-  (flash "Sorry, that page is only available to people who are logged in." :error t)
+  (flash "Sorry, that is only available when you are logged in to Kindista." :error t)
   (see-other "/"))
 
 (defun active-status-required ()
@@ -292,6 +292,7 @@
 
 (defvar *acceptor* (make-instance 'k-acceptor
                                   :port 5000
+                                  :address "127.0.0.1"
                                   :access-log-destination nil
                                   :message-log-destination nil))
 
@@ -394,6 +395,10 @@
                    (:input :type "submit" :value "Search"))
 
                  (:div :id "menu"
+                   (:div :id "beta"
+                     (:strong "Warning!")
+                     (:p "This site is for testing only. Any new content here may be " (:strong "DELETED") " until further notice.") )
+
                    (when *user*
                      (htm
                        (:table
