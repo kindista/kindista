@@ -258,7 +258,9 @@
                        :editing (eql editing 'contact)
                        :editable editable))))
             (htm (:h3 "This person hasn't written anything here."))))
-        :right (when editing (html (:h2 "Style guide")))
+        :right (if editing 
+                 (html (:h2 "Style guide"))
+                 (mutual-connections-html userid))
         :top (profile-top-html userid)
         :selected "people"))))
 
@@ -283,6 +285,16 @@
            (:input :type "hidden" :name (if is-contact "remove" "add") :value userid)
            (:input :type "hidden" :name "next" :value *base-url*)
            (:input :class (when is-contact "cancel") :type "submit" :value (if is-contact "Remove from contacts" "Add to contacts")))))))))
+
+(defun mutual-connections-html (userid)
+  (let ((mutuals (mutual-connections userid)))
+        (when mutuals
+          (html
+            (:div :class "item people"
+             (:h3 "Mutual Connections")
+             (:ul
+               (dolist (link (alpha-people-links mutuals))
+                 (htm (:li (str link))))))))))
 
 (defun profile-activity-html (userid &key type)
   (let* ((user (db userid))
@@ -315,14 +327,7 @@
 
       :top (profile-top-html userid)
 
-      :right (let ((mutuals (mutual-connections userid)))
-               (when mutuals
-                 (html
-                   (:div :class "item people"
-                    (:h3 "Mutual Connections")
-                    (:ul
-                      (dolist (link (alpha-people-links mutuals))
-                        (htm (:li (str link)))))))))
+      :right (mutual-connections-html userid)
 
       :selected "people")))
 
