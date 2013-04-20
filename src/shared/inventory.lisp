@@ -190,7 +190,7 @@
                                  (scan *tag-scanner* (cdr pair)))
                         (collect (cdr pair))))))
       (iter (for tag in (tags-from-string (post-parameter "tags")))
-            (setf tags (cons tag tags))))))
+            (setf tags (cons tag tags)))
       
     (cond
       ((post-parameter "cancel")
