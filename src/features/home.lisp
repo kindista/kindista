@@ -107,7 +107,6 @@
             (:strong "show activity within ")
             (:input :type "hidden" :name "next" :value "/home")
             (let ((distance (user-distance)))
-              (pprint distance) (terpri)
               (htm
                 (:select :name "distance" :onchange "this.form.submit()"
                   (:option :value "2" :selected (when (eql distance 2) "") "2 miles")

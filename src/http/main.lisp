@@ -274,7 +274,6 @@
             (let ((method (request-method*)))
               (iter (for rule-method in (cadr rule) by #'cddr)
                     (for rule-function in (cdadr rule) by #'cddr)
-                    (pprint (list rule-method rule-function)) (Terpri)
                     (when (eq method rule-method)
                       (leave (with-user (apply (fdefinition rule-function) (coerce results 'list)))))
                     (finally

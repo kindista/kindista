@@ -316,8 +316,6 @@
     
     ((or (not (eq (getf invitation :type) :invitation))
          (not (string= test-token true-token)))
-     (pprint (getf invitation :type))
-     (terpri)
      (flash (s+ "The activation code you have entered does not match "
                 "this email address. "
                 "If you have received multiple verification emails for "
@@ -412,7 +410,6 @@
       ((post-parameter "name")
        (cond
          ((validate-name it)
-          (pprint (post-parameters*))
           (let ((aliases (remove-duplicates
                            (loop for (x . y) in (post-parameters*) 
                                  when (and (string= x "aliases")
