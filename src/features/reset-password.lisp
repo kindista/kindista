@@ -94,7 +94,7 @@
           (modify-db userid :pass (new-password (post-parameter "new-password-1"))
                             :password-reset-token nil)
           (setf (token-userid *token*) userid)
-          (notice :login "")
+          (notice :login :reset t)
           (flash "You have successfully changed your password.")
           (see-other "/home"))))
 
@@ -122,7 +122,7 @@
       (modify-db userid :password-reset-token (cons
                                                 (random-password 12)
                                                 (+ (get-universal-time) 604800)))
-      (send-password-reset (user email))
+      (send-password-reset user email)
       (flash (s+ "A password reset token has been sent to " email ". "
                  "Please click on the link provided in that email to reset "
                  "your password."))

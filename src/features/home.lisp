@@ -182,14 +182,14 @@
   (with-user
     (cond
       ((or (getf *user* :location) (not *user*))
-       (notice :home "")
+       (notice :home)
        (standard-home))
 
       ((and (getf *user* :lat)
             (getf *user* :long))
-       (notice :home-verify-location "")
+       (notice :home-verify-location)
        (get-verify-address :next-url "/home"))
 
       (t
-       (notice :home-setup "")
+       (notice :home-setup)
        (newuser-home)))))
