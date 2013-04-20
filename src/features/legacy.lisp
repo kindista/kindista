@@ -39,20 +39,22 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (geo-index-insert *activity-geo-index* result)
-
     (with-locked-hash-table (*activity-person-index*)
       (dolist (person people)
         (asetf (gethash person *activity-person-index*)
                (sort (push result it) #'> :key #'result-time))))
 
-    (dolist (subject people)
-      (let ((user (db subject)))
-        (geo-index-insert *activity-geo-index* (make-result :latitude (getf user :lat)
-                                                            :longitude (getf user :long)
-                                                            :people people
-                                                            :id id
-                                                            :time created))))))
+
+    (unless (< created (- (get-universal-time) 15552000))
+      (geo-index-insert *activity-geo-index* result) 
+
+      (dolist (subject people)
+        (let ((user (db subject)))
+          (geo-index-insert *activity-geo-index* (make-result :latitude (getf user :lat)
+                                                              :longitude (getf user :long)
+                                                              :people people
+                                                              :id id
+                                                              :time created)))))))
 
 (defun delete-gift (id)
   (let* ((result (gethash id *db-results*))
@@ -82,7 +84,33 @@
             (str (gift-activity-item (make-result :id id
                                                   :time (getf it :created)
                                                   :people (cons (getf it :giver) (getf it :recipients)))
-                                                  :next-url (script-name*))))))
+                                                  :next-url (script-name*)))
+            (:div :class "comments"
+
+            (dolist (comment-id (gethash id *comment-index*))
+              (let* ((data (db comment-id))
+                     (by (getf data :by))
+                     (bydata (db by)))
+                (str
+                  (card
+                    (html
+                      (str (h3-timestamp (getf data :created)))
+                      (when (or (eql (getf data :by) *userid*)
+                                (getf *user* :admin))
+                        (htm (:a :class "right" :href (strcat "/comments/" comment-id "/delete") "delete"))) 
+                      (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
+                      (:p 
+                        (str (regex-replace-all "\\n" (db comment-id :text) "<br>")))))))) 
+
+            (:div :class "item" :id "reply"
+              (:h4 "post a comment") 
+              (:form :method "post" :action (script-name*)
+                (:table :class "post"
+                  (:tr
+                    (:td (:textarea :cols "150" :rows "4" :name "text"))
+                    (:td
+                      (:button :class "yes" :type "submit" :class "submit" "Send"))))))))
+          :selected "people"))
       (not-found))))
 
 (defun post-gift (id)
@@ -90,6 +118,9 @@
     (setf id (parse-integer id)) 
     (aif (db id)
       (cond
+        ((post-parameter "text")
+         (create-comment :on id :text (post-parameter "text"))
+         (see-other (script-name*)))
         ((and (post-parameter "love")
               (eq (getf it :type) :gift))
          (love id)

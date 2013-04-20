@@ -51,21 +51,6 @@
         :selected "requests"))
     (not-found)))
 
-(defun post-request (id)
-  (require-active-user
-    (setf id (parse-integer id)) 
-    (aif (db id)
-      (cond
-        ((and (post-parameter "love")
-              (member (getf it :type) '(:gratitude :offer :request)))
-         (love id)
-         (see-other (or (post-parameter "next") (referer))))
-        ((and (post-parameter "unlove")
-              (member (getf it :type) '(:gratitude :offer :request)))
-         (unlove id)
-         (see-other (or (post-parameter "next") (referer)))))
-      (not-found))))
-
 (defun get-request-edit (id)
   (require-user
     (let* ((request (db (parse-integer id))))
@@ -79,9 +64,8 @@
                               :button-text "Save request"
                               :selected "requests")))))
 
-(defun post-request-edit (id)
-  (post-existing-inventory-item "request" :id id
-                                          :url (s+ "/requests/" id "/edit")))
+(defun post-request (id)
+  (post-existing-inventory-item "request" :id id :url (script-name*)))
 
 (defun get-requests ()
   (with-location

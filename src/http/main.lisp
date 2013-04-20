@@ -38,24 +38,24 @@
 (defun flashes ()
   (with-locked-hash-table (*flashes*)
     (prog1
-      (gethash *token* *flashes*)
+      (delete-duplicates (gethash *token* *flashes*) :test #'string=)
       (remhash *token* *flashes*))))
 
 (defun not-found ()
-  (flash "The page you requested could not be found. Here's the home page instead." :error t)
-  (see-other "/"))
+  (flash "The page you requested could not be found." :error t)
+  (see-other (or (referer) "/")))
 
 (defun permission-denied ()
   (flash "The page you requested is private." :error t)
-  (see-other "/"))
+  (see-other (or (referer) "/")))
 
 (defun login-required ()
   (flash "Sorry, that is only available when you are logged in to Kindista." :error t)
-  (see-other "/"))
+  (see-other (or (referer) "/")))
 
 (defun active-status-required ()
   (flash "Sorry, you must reactivate your account to perform that action." :error t)
-  (see-other "/"))
+  (see-other (or (referer) "/")))
 
 ;;; routing and acceptor {{{
 
@@ -274,7 +274,6 @@
             (let ((method (request-method*)))
               (iter (for rule-method in (cadr rule) by #'cddr)
                     (for rule-function in (cdadr rule) by #'cddr)
-                    (pprint (list rule-method rule-function)) (Terpri)
                     (when (eq method rule-method)
                       (leave (with-user (apply (fdefinition rule-function) (coerce results 'list)))))
                     (finally
@@ -332,6 +331,7 @@
       (str content))))
 
 (defun base-page (title body &key class)
+  (declare (optimize (speed 3) (debug 0) (safety 0)))
   (html
     "<!DOCTYPE html>"
     (:html
@@ -359,6 +359,7 @@
              :class class))
 
 (defun standard-page (title body &key selected top right search search-scope class)
+  (declare (optimize (speed 3) (debug 0) (safety 0)))
   (header-page title
                (html
                  (:div
@@ -448,7 +449,7 @@
       (:form :method "post" :action url
         (when next-url
           (htm (:input :type "hidden" :name "next" :value next-url)))
-        (:button :class "yes" :type "submit" :class "submit" :name "really-delete" "Yes")      
-        (:a :href next-url "No, I didn't mean it!")))
+        (:a :href next-url "No, I didn't mean it!")  
+        (:button :class "yes" :type "submit" :class "submit" :name "really-delete" "Yes")))
     :class class))
 

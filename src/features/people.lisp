@@ -66,17 +66,17 @@
 
     (when (and (getf data :lat) 
                (getf data :long) 
-               (getf data :created))
-      ;people that don't give a location don't get indexed
-      (cond 
-        ((getf data :active) 
-         (metaphone-index-insert names result)
-         (geo-index-insert *people-geo-index* result) 
-         (geo-index-insert *activity-geo-index* result))
-      (t
-         (metaphone-index-insert (list nil) result)
-         (geo-index-remove *people-geo-index* result)
-         (geo-index-remove *activity-geo-index* result))))))
+               (getf data :created)
+               (getf data :active))
+
+      (metaphone-index-insert names result)
+      (geo-index-insert *people-geo-index* result) 
+
+      (unless (< (result-time result) (- (get-universal-time) 15552000))
+        (unless (< (result-time result) (- (get-universal-time) 2592000))
+          (with-mutex (*recent-activity-mutex*)
+            (push result *recent-activity-index*)))
+        (geo-index-insert *activity-geo-index* result)))))
 
 (defun deactivate-person (id)
   (let ((result (gethash id *db-results*)))
@@ -409,11 +409,11 @@
 
 
 (defun nearby-people (&optional (userid *userid*))
-  (let* ((user (db userid)))
+  (with-location
     (labels ((distance (result)
                (air-distance *latitude* *longitude* (result-latitude result) (result-longitude result))))
       (sublist (remove userid
-                 (sort (geo-index-query *people-geo-index* *latitude* *longitude* 25)
+                 (sort (geo-index-query *people-geo-index* *latitude* *longitude* 50)
                        #'< :key #'distance)
                  :key #'result-id)
              0 10))))
@@ -421,6 +421,9 @@
 (defun mutual-connections (one &optional (two *userid*))
   (intersection (gethash one *followers-index*)
                 (getf (db two) :following)))
+
+(defun contactp (id)
+  (member id (getf *user* :following)))
 
 (defun suggested-people (&optional (userid *userid*))
   ; get nearby people
@@ -448,13 +451,13 @@
         ; favorites / connections?
         (:h2 "Connect with people who live nearby")
         (with-location
-          (dolist (data (nearby-people))
+          (dolist (data (remove-if #'contactp (nearby-people) :key #'result-id))
             (let* ((id (result-id data))
                    (person (db id)))
               (str (person-card id (getf person :name))))))
         (when *user* 
           (htm
-            (:h2 "People with mutual connections") 
+            (:h2 "People with mutual contacts") 
             (dolist (data (sublist (suggested-people) 0 10))
               (let* ((id (cdr data))
                      (person (db id)))

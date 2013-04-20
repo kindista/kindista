@@ -22,22 +22,12 @@
 (defvar *notice-mailbox* (make-mailbox :name "notice reader"))
 (defvar *notice-handlers* (make-hash-table :synchronized t :size 100 :test 'eq))
 
-(defstruct notice
-  (type :info :type symbol)
-  (time (get-universal-time) :type integer)
-  (text "" :type string)
-  (userid -1 :type integer)
-  (ip "" :type string))
-
-(defun notice (type text &key (time (get-universal-time))
-                             (userid (or *userid* -1))
-                             (ip (or (header-in* :x-real-ip) "")))
-  (pprint (headers-in*)) (terpri)
-  (send-message *notice-mailbox* (make-notice :type type
-                                              :time time
-                                              :text text
-                                              :userid userid
-                                              :ip ip)))
+(defun notice (type &rest rest 
+                    &key (time (get-universal-time))
+                         (id *userid*)
+                         (ip (when (boundp 'hunchentoot:*request*) (header-in* :x-real-ip)))
+                    &allow-other-keys)
+  (send-message *notice-mailbox* `(,type ,time ,id ,ip ,@rest)))
 
 (defun add-notice-handler (notice thunk)
   (with-locked-hash-table (*notice-handlers*)
@@ -53,13 +43,15 @@
       (if (eq *notice* 'exit)
         (return)
         (progn
-          (dolist (handler (gethash (notice-type *notice*) *notice-handlers*))
+          (dolist (handler (gethash (first *notice*) *notice-handlers*))
             (funcall handler)) 
           (dolist (handler (gethash :all *notice-handlers*))
             (funcall handler)))))))
 
 (defun start-notice-thread ()
-  (or *notice-thread* (setf *notice-thread* (make-thread #'notice-thread-loop))))
+  (if (or (not *notice-thread*)
+          (and *notice-thread* (not (thread-alive-p *notice-thread*))))
+    (setf *notice-thread* (make-thread #'notice-thread-loop))))
 
 (defun stop-notice-thread ()
   (when *notice-thread*

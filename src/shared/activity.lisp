@@ -26,15 +26,6 @@
          (htm (str type) " "))
        (str (humanize-universal-time time)))))
 
-(defun love-button (id url &optional next-url)
-  (html
-    (:form :method "POST" :action url
-      (when next-url
-        (htm (:input :type "hidden" :name "next" :value next-url)))
-      (if (member *userid* (gethash id *love-index*))
-        (htm (:input :type "submit" :name "unlove" :value "Loved"))
-        (htm (:input :type "submit" :name "love" :value "Love"))))))
-
 (defun comment-button (url)
   (html
     (:form :method "GET" :action url
@@ -46,26 +37,16 @@
       (:input :type "hidden" :name "next" :value next-url)
       (:input :type "submit" :value "Flag"))))
 
-(defun edit-button (url)
-  (html
-    (:form :method "GET" :action (s+ url "/edit")
-      (:input :type "submit" :value "Edit"))))
-
-(defun delete-button (url)
-  (html
-    (:form :method "POST" :action (s+ url "/edit")
-      (:input :type "submit" :name "delete" :value "Delete"))))
-
 
 (defun activity-icons (&key url hearts comments)
   (html
     (:a :class "icons" :href url
-      (when hearts
+      (when (and hearts (> hearts 0))
         (htm
           (:img :alt "love:" :src "/media/icons/heart16.png") 
           ;(:span :class "unicon" "♥ ")
           (:span (str hearts)))) 
-      (when comments
+      (when (and comments (> comments 0))
         (htm
           (:img :alt "comments:" :src "/media/icons/comment16.png") 
           ;(:span :class "unicon" " ✎ ")
@@ -83,21 +64,26 @@
       (str content)
       (:div :class "actions"
         (str (activity-icons :hearts hearts :comments comments :url url))    
-        (str (love-button id url next-url))
-        (when edit
-          (htm
-            " &middot; "  
-            (str (edit-button url))  
-            " &middot; "  
-            (str (delete-button url))))
+        (:form :method "post" :action url
+          (:input :type "hidden" :name "next" :value (script-name*))
+          (if (member *userid* (gethash id *love-index*))
+            (htm (:input :type "submit" :name "unlove" :value "Loved"))
+            (htm (:input :type "submit" :name "love" :value "Love")))   
+          (when edit
+            (htm
+              " &middot; "  
+              (:input :type "submit" :name "edit" :value "Edit")     
+              " &middot; "  
+              (:input :type "submit" :name "delete" :value "Delete")))) 
         (when comments
           (htm
             " &middot; "
-            (str (comment-button url))))
-        (unless (eql user-id *userid*)
-          (htm
-            " &middot; "
-            (str (flag-button url))))))))
+            (str (comment-button url))))))))
+
+        ;(unless (eql user-id *userid*)
+        ;  (htm
+        ;    " &middot; "
+        ;    (str (flag-button url))))))))
 
 (defun gratitude-activity-item (result &key next-url)
   (let* ((user-id (first (result-people result)))
@@ -127,7 +113,7 @@
          (data (db item-id)))
     (activity-item :id item-id
                    :user-id user-id
-                   :url (strcat "/gift/" item-id)
+                   :url (strcat "/gifts/" item-id)
                    :time (result-time result)
                    :next-url next-url
                    :hearts (length (loves item-id))
@@ -180,14 +166,9 @@
                                     ")")))) 
                               (:p (cl-who:esc (getf data :text)))))))
 
-(defun activity-items (&key (user *user*) (page 0) (count 20) next-url)
+(defun activity-items (items &key (page 0) (count 20) next-url (url "/home"))
   (with-location
-    (let ((items (sort (geo-index-query *activity-geo-index*
-                                        *latitude*
-                                        *longitude*
-                                        (or (getf user :distance) 50))
-                       #'< :key #'activity-rank))
-          (start (* page 20)))
+    (let ((start (* page 20)))
       (html
         (iter (for i from 0 to (+ start count))
               (cond
@@ -222,8 +203,16 @@
                     (:div :class "item"
                      (when (> page 0)
                        (htm
-                         (:a :href (strcat "/home?p=" (- page 1)) "< previous page")))
+                         (:a :href (strcat url "?p=" (- page 1)) "< previous page")))
                      "&nbsp;"
                      (when (cdr items)
                        (htm
-                         (:a :style "float: right;" :href (strcat "/home?p=" (+ page 1)) "next page >"))))))))))))
+                         (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >"))))))))))))
+
+(defun local-activity-items (&key (user *user*) (page 0) (count 20) next-url (url "/home")) 
+  (let ((items (sort (geo-index-query *activity-geo-index*
+                                      *latitude*
+                                      *longitude*
+                                      (or (getf user :distance) 50))
+                     #'< :key #'activity-rank)))
+    (activity-items items :page page :count count :next-url next-url :url url)))

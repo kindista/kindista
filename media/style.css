@@ -513,6 +513,7 @@ body.landing > p {
 #menu {
  padding-top: 1em;
  background:#f3f3f3;
+ font-size: 1.3em;
 }
 
 #beta {
@@ -544,6 +545,11 @@ body.landing > p {
  /*border-bottom: 1px solid #eee;*/
 }
 
+.icon {
+ width: 1.875em;
+ height: 1.875em;
+}
+
 
 @media (min-width:47em) {
  #menu {
@@ -554,7 +560,13 @@ body.landing > p {
   margin-left:0;
   width:16em;
   z-index:6;
+  font-size: 1em;
   background: none;
+ }
+
+ .icon {
+  width: 1.47em;
+  height: 1.47em;
  }
 
  #fund {
@@ -649,13 +661,6 @@ body.landing > p {
  vertical-align:middle;
 }
 
-@media (max-width:39em) {
- #menu {
-  font-size: 1.3em;
- }
-}
-
-
 #fine-print-links {
  color: #999;
  width: 100%;
@@ -667,11 +672,6 @@ body.landing > p {
  color: #999;
  display: inline-block;
  padding: .3em;
-}
-
-.icon {
- width:1.5em;
- height:1.5em;
 }
 
 .activity {
@@ -1003,6 +1003,15 @@ button.text.large {
  /*margin-left: 10.7em;*/
 }
 
+.card .right {
+ font-size: 0.8em;
+ margin: 0 0 0.5em 1em;
+ font-weight: normal;
+ clear: right;
+ float: right;
+ /*margin-left: 10.7em;*/
+}
+
 .card h3.timestamp a {
  font-weight: normal;
  color:#666;
@@ -1266,7 +1275,7 @@ button.yes {
  padding:0.5em;
  color: #fff;
  font-weight: bold;
- margin-right:1em;
+ margin-left:1em;
 }
 
 button.yes:first-child {
@@ -1748,4 +1757,11 @@ body.donate {
 
 .card .text > a:hover {
  text-decoration: none;
+}
+
+.comments {
+ background: #f9f9f9;
+ margin: 1em 2em;
+ max-width: 40em;
+ padding: 0 1em 0.1em;
 }

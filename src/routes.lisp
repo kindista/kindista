@@ -73,10 +73,6 @@
     :get get-offer
     :post post-offer)
 
-  ("/offers/<int:id>/edit"
-    :get get-offer-edit
-    :post post-offer-edit)
-
   ("/requests"
    :get get-requests)
 
@@ -90,10 +86,6 @@
   ("/requests/<int:id>"
     :get get-request
     :post post-request)
-
-  ("/requests/<int:id>/edit"
-    :get get-request-edit
-    :post post-request-edit)
 
   ("/gratitude/new"
    :get get-gratitudes-new
@@ -110,6 +102,13 @@
   ("/gifts/<int:id>"
     :get get-gift
     :post post-gift)
+
+  ("/comments/<int>"
+    ;:get get-comment
+    :post post-comment)
+
+  ("/comments/<int>/delete"
+    :get get-comment-delete)
 
   ("/people"
     :get get-people)
@@ -195,6 +194,12 @@
 
   ("/admin"
     :get get-admin)
+
+  ("/admin/recent"
+    :get get-admin-recent)
+
+  ("/admin/old-inventory"
+    :get get-admin-old-inventory)
 
   ; redirects
 

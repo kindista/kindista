@@ -27,7 +27,9 @@
 
 (defun clear-indexes ()
   (dolist (index *indexes*)
-    (clrhash (symbol-value index))))
+    (clrhash (symbol-value index)))
+  (setf *old-inventory-index* ())
+  (setf *recent-activity-index* ()))
 
 (defindex *activity-geo-index*)
 (defindex *activity-person-index*)
@@ -52,3 +54,7 @@
 (defindex *offer-stem-index* :test 'equalp)
 (defindex *username-index* :test 'equalp)
 
+(defvar *recent-activity-mutex* (make-mutex))
+(defvar *recent-activity-index* ())
+(defvar *old-inventory-mutex* (make-mutex))
+(defvar *old-inventory-index* ())

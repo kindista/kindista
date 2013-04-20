@@ -19,7 +19,7 @@
 
 (defun donate-sidebar ()
   (html
-    (:div :class "item"
+    (:div :class "item right only"
       (:h3 (:a :href "/donate" "Help spread the sharing!"))
       (:p "Help Kindista grow big and strong by responding to our " (:a :href "/group/kindista/requests" "requests") " or " (:a :href "/donate" "making a donation") "?"))))
 

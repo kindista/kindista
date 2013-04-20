@@ -52,16 +52,16 @@
       (cond
         ((password-match-p user (post-parameter "password"))
          (setf (token-userid *token*) user)
-         (notice :login "")
+         (notice :login)
          (see-other (or (post-parameter "next") "/home")))
         (t
          (setf (return-code*) +http-see-other+)
          (setf (header-out :location) "/home")
          (flash "<p>The email or password you entered was not recognized.</p><p>Please try again.</p><p>If you would like to join Kindista please request an invitation from someone you know.</p>" :error t)
-         (notice :auth-failure "")
+         (notice :auth-failure)
          "")))))
 
 (defun get-logout ()
-  (notice :logout "")
+  (notice :logout)
   (delete-token-cookie)
   (see-other "/"))

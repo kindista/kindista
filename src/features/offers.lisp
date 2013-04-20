@@ -54,22 +54,6 @@
         :selected "offers"))
     (not-found)))
 
-(defun post-offer (id)
-  (require-active-user
-    (setf id (parse-integer id)) 
-    (aif (db id)
-      (cond
-        ((and (post-parameter "love")
-              (member (getf it :type) '(:gratitude :offer :request)))
-         (love id)
-         (see-other (or (post-parameter "next") (referer))))
-        ((and (post-parameter "unlove")
-              (member (getf it :type) '(:gratitude :offer :request)))
-         (unlove id)
-         (see-other (or (post-parameter "next") (referer)))))
-      (not-found))))
-
-
 (defun get-offer-edit (id)
   (require-user
     (let* ((offer (db (parse-integer id))))
@@ -82,9 +66,8 @@
                               :tags (getf offer :tags)
                               :button-text "Save offer"
                               :selected "offers")))))
-(defun post-offer-edit (id)
-  (post-existing-inventory-item "offer" :id id
-                                           :url (s+ "/offers/" id "/edit")))
+(defun post-offer (id)
+  (post-existing-inventory-item "offer" :id id :url (script-name*)))
 
 (defun get-offers ()
   (with-user

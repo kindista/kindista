@@ -107,7 +107,6 @@
             (:strong "show activity within ")
             (:input :type "hidden" :name "next" :value "/home")
             (let ((distance (user-distance)))
-              (pprint distance) (terpri)
               (htm
                 (:select :name "distance" :onchange "this.form.submit()"
                   (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
@@ -121,7 +120,7 @@
                      (parse-integer (get-parameter "p"))
                      0)))
          (with-location
-           (str (activity-items :page page))))))
+           (str (local-activity-items :page page))))))
     :selected "home"
     :top (cond
            ((not *user*)
@@ -182,14 +181,14 @@
   (with-user
     (cond
       ((or (getf *user* :location) (not *user*))
-       (notice :home "")
+       (notice :home)
        (standard-home))
 
       ((and (getf *user* :lat)
             (getf *user* :long))
-       (notice :home-verify-location "")
+       (notice :home-verify-location)
        (get-verify-address :next-url "/home"))
 
       (t
-       (notice :home-setup "")
+       (notice :home-setup)
        (newuser-home)))))
