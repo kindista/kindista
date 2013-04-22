@@ -132,16 +132,16 @@
               (:form :method "post" :action "/settings"
                 (:h3 "Is this location correct?")
                 (:input :type "hidden" :name "next" :value (str next))
-                (:button :class "yes"
-                         :type "submit"
-                         :name "confirm-location"
-                         :value "1"
-                         "Yes, this is correct")
                 (:button :class "no"
                          :type "submit"
                          :name "reset-location"
                          :value "1"
-                         "No, go back")))))))))
+                         "No, go back")
+                (:button :class "yes"
+                         :type "submit"
+                         :name "confirm-location"
+                         :value "1"
+                         "Yes, this is correct")))))))))
 
 (defun settings-password (base)
   (let ((password (getf *user* :pass)))

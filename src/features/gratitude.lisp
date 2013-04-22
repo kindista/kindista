@@ -17,12 +17,21 @@
 
 (in-package :kindista)
 
+(defun new-gratitude-notice-handler ()
+  (send-gratitude-notification-email (getf (cddddr *notice*) :id)))
+
+(add-notice-handler :new-gratitude #'new-gratitude-notice-handler)
+
 (defun create-gratitude (&key author subjects text)
-  (insert-db `(:type :gratitude
-               :author ,author
-               :subjects ,subjects
-               :text ,text
-               :created ,(get-universal-time))))
+  (let* ((time (get-universal-time))
+         (gratitude (insert-db `(:type :gratitude
+                                       :author ,author
+                                       :subjects ,subjects
+                                       :text ,text
+                                       :created ,time))))
+    (notice :new-gratitude :time time
+                           :id gratitude)
+    gratitude))
 
 (defun index-gratitude (id data)
   (let* ((author (db (getf data :author)))
@@ -35,7 +44,7 @@
                               :time created
                               :type :gratitude
                               :id id)))
-    
+
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
@@ -236,7 +245,7 @@
 
 (defun post-gratitude (id)
   (require-active-user
-    (setf id (parse-integer id)) 
+    (setf id (parse-integer id))
     (aif (db id)
       (cond
         ((and (post-parameter "love")

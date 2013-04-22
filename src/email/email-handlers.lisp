@@ -113,7 +113,9 @@
 (defun send-gratitude-notification-email (gratitude-id)
   (let* ((gratitude (db (parse-integer gratitude-id)))
          (from (getf gratitude :author))
-         (to-list (getf gratitude :subjects)))
+         (to-list (iter (for subject in (getf gratitude :subjects))
+                        (when (db subject :notify-gratitude))
+                        (collect subject))))
     (dolist (to to-list)
       (cl-smtp:send-email +mail-server+
                           "Kindista <noreply@kindista.org>"
@@ -133,7 +135,9 @@
          (sender-id (getf comment :by))
          (sender-name (db sender-id :name))
          (people (mapcar #'car (getf conversation :people))))
-    (dolist (to (remove sender-id people))
+    (dolist (to (iter (for person in (remove sender-id people))
+                      (when (db person :notify-message))
+                      (collect person)))
       (cl-smtp:send-email
         +mail-server+
         "Kindista <noreply@kindista.org>"

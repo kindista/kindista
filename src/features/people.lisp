@@ -64,8 +64,8 @@
       (asetf (gethash id *activity-person-index*)
              (sort (push result it) #'> :key #'result-time)))
 
-    (when (and (getf data :lat) 
-               (getf data :long) 
+    (when (and (getf data :lat)
+               (getf data :long)
                (getf data :created)
                (getf data :active))
 
@@ -82,7 +82,7 @@
   (let ((result (gethash id *db-results*)))
     (metaphone-index-insert (list nil) result)
     (geo-index-remove *people-geo-index* result)
-    (geo-index-remove *activity-geo-index* result)     
+    (geo-index-remove *activity-geo-index* result)
     (dolist (request-id (gethash id *request-index*))
       (delete-inventory-item request-id))
     (dolist (offer-id (gethash id *offer-index*))
@@ -172,14 +172,19 @@
           (htm (:li (:a :href (strcat *base-url* "/activity") "Activity"))))
         (if (eql tab :gratitude)
           (htm (:li :class "selected" "Reputation"))
-          (htm (:li (:a :href (strcat *base-url* "/reputation") "Reputation"))))  
-        (when (eq active t) 
+          (htm (:li (:a :href (strcat *base-url* "/reputation") "Reputation"))))
+        (when (eq active t)
           (if (eql tab :offer)
             (htm (:li :class "selected" "Offers"))
             (htm (:li (:a :href (strcat *base-url* "/offers") "Offers"))))
           (if (eql tab :request)
             (htm (:li :class "selected" "Requests"))
-            (htm (:li (:a :href (strcat *base-url* "/requests") "Requests")))))))))
+            (htm (:li (:a :href (strcat *base-url* "/requests") "Requests")))))
+
+        (when (mutual-connections userid)
+          (if (eql tab :connections)
+            (htm (:li :class "selected mobile-only" "Mutual Connections"))
+            (htm (:li :class "mobile-only" (:a :href (strcat *base-url* "/connections") "Mutual Connections")))))))))
 
 (defun profile-bio-section-html (title content &key editing editable section-name)
   (when (string= content "")
@@ -200,7 +205,7 @@
                 (:textarea :name (strcat "bio-" section-name) (str content))
                 (:button :class "yes" :type "submit" :name "save" "Save")
                 (:a :class "cancel" :href *base-url* "Cancel")
-                ))) 
+                )))
           ((not content)
             (htm
               (:p :class "empty" "I'm empty... fill me out!")))
@@ -208,6 +213,28 @@
           (t
             (htm
               (:p (str content)))))))))
+
+(defun profile-top-html (userid)
+  (let ((user (db userid))
+        (is-contact (member userid (getf *user* :following))))
+    (html
+     (:img :class "bigavatar" :src (strcat "/media/avatar/" userid ".jpg"))
+     (:div :class "basics"
+       (:h1 (str (getf user :name))
+            (when (eq (getf user :active) nil)
+              (htm (:span :class "help-text" " (inactive account)"))))
+       (when (getf user :city)
+         (htm (:p :class "city" (str (getf user :city)) ", " (str (getf user :state)))))
+     (unless (eql userid *userid*)
+       (when (and (db userid :active) (db *userid* :active))
+         (htm
+           (:form :method "post" :action "/conversations/new"
+             (:button :type "submit" :name "add" :value userid "Send a message"))))
+       (htm
+         (:form :method "POST" :action "/contacts"
+           (:input :type "hidden" :name (if is-contact "remove" "add") :value userid)
+           (:input :type "hidden" :name "next" :value *base-url*)
+           (:input :class (when is-contact "cancel") :type "submit" :value (if is-contact "Remove from contacts" "Add to contacts")))))))))
 
 (defun profile-bio-html (userid &key editing)
   ; is the user editing one of the sections?
@@ -219,6 +246,9 @@
     (let* ((strid (username-or-id userid))
            (editable (when (not editing) (eql userid *userid*)))
            (user (db userid))
+           (mutuals (mutual-connections userid))
+           (mutual-links (html (:ul (dolist (link (alpha-people-links mutuals))
+                                      (htm (:li (str link)))))))
            (*base-url* (strcat "/people/" strid)))
       (standard-page
         (getf (db userid) :name)
@@ -232,13 +262,13 @@
                        (getf user :bio-summary)
                        :section-name "summary"
                        :editing (eql editing 'summary)
-                       :editable editable))  
+                       :editable editable))
                 (str (profile-bio-section-html
                        "What I'm doing with my life"
                        (getf user :bio-doing)
                        :section-name "doing"
                        :editing (eql editing 'doing)
-                       :editable editable))  
+                       :editable editable))
                 (str (profile-bio-section-html
                        "What I'm really good at"
                        (getf user :bio-skills)
@@ -258,35 +288,25 @@
                        :editing (eql editing 'contact)
                        :editable editable))))
             (htm (:h3 "This person hasn't written anything here."))))
-        :right (when editing (html (:h2 "Style guide")))
+        :right (if editing
+                 (html (:h2 "Style guide"))
+                 (when mutuals
+                   (mutual-connections-sidebar mutual-links)))
         :top (profile-top-html userid)
         :selected "people"))))
 
-(defun profile-top-html (userid)
-  (let ((user (db userid))
-        (is-contact (member userid (getf *user* :following))))
-    (html
-     (:img :class "bigavatar" :src (strcat "/media/avatar/" userid ".jpg"))
-     (:div :class "basics"
-       (:h1 (str (getf user :name))
-            (when (eq (getf user :active) nil)
-              (htm (:span :class "help-text" " (inactive account)"))))
-       (when (getf user :city)
-         (htm (:p :class "city" (str (getf user :city)) ", " (str (getf user :state))))) 
-     (unless (eql userid *userid*)
-       (when (and (db userid :active) (db *userid* :active)) 
-         (htm
-           (:form :method "post" :action "/conversations/new"
-             (:button :type "submit" :name "add" :value userid "Send a message"))))
-       (htm 
-         (:form :method "POST" :action "/contacts"
-           (:input :type "hidden" :name (if is-contact "remove" "add") :value userid)
-           (:input :type "hidden" :name "next" :value *base-url*)
-           (:input :class (when is-contact "cancel") :type "submit" :value (if is-contact "Remove from contacts" "Add to contacts")))))))))
+(defun mutual-connections-sidebar (link-list)
+  (html
+    (:div :class "people item right only"
+     (:h3 "Mutual Connections")
+     (str link-list))))
 
 (defun profile-activity-html (userid &key type)
   (let* ((user (db userid))
          (strid (username-or-id userid))
+         (mutuals (mutual-connections userid))
+         (mutual-links (html (:ul (dolist (link (alpha-people-links mutuals))
+                                      (htm (:li (str link)))))))
          (*base-url* (strcat "/people/" strid)))
     (standard-page
       (getf user :name)
@@ -295,7 +315,7 @@
         (when (and (eql type :request) (eql userid *userid*) )
           (htm (str (simple-inventory-entry-html "a" "request"))))
         (when (and (eql type :offer) (eql userid *userid*))
-          (htm (str (simple-inventory-entry-html "an" "offer")))) 
+          (htm (str (simple-inventory-entry-html "an" "offer"))))
         (when (and (eql type :gratitude)
                    (not (eql userid *userid*))
                    (eql (getf user :active) t))
@@ -315,20 +335,30 @@
 
       :top (profile-top-html userid)
 
-      :right (let ((mutuals (mutual-connections userid)))
-               (when mutuals
-                 (html
-                   (:div :class "item people"
-                    (:h3 "Mutual Connections")
-                    (:ul
-                      (dolist (link (alpha-people-links mutuals))
-                        (htm (:li (str link)))))))))
+      :right (when mutuals (mutual-connections-sidebar mutual-links))
+
+      :selected "people")))
+
+(defun profile-mutual-connections-html (userid)
+  (let* ((user (db userid))
+         (strid (username-or-id userid))
+         (mutuals (mutual-connections userid))
+         (*base-url* (strcat "/people/" strid)))
+    (standard-page
+      (getf user :name)
+      (html
+        (when *user* (str (profile-tabs-html userid :tab :connections)))
+        (:div
+          (:ul (dolist (link (alpha-people-links mutuals))
+                 (htm (:li (str link)))))))
+
+      :top (profile-top-html userid)
 
       :selected "people")))
 
 (defmacro ensuring-userid ((user-id base-url) &body body)
   (let ((is-number (gensym))
-        (user-name (gensym)) 
+        (user-name (gensym))
         (user-data (gensym)))
     `(let ((,is-number (scan +number-scanner+ ,user-id)))
        (if ,is-number
@@ -402,6 +432,10 @@
     (ensuring-userid (id "/people/~a/requests")
       (profile-activity-html id :type :request))))
 
+(defun get-person-mutual-connections (id)
+  (require-user
+    (ensuring-userid (id "/people/~a/connections")
+      (profile-mutual-connections-html id))))
 
 (defun nearby-people (&optional (userid *userid*))
   (with-location

@@ -87,7 +87,7 @@
         (:input :type "hidden" :name "token" :value token)
         (:input :type "hidden" :name "host-name" :value host-name)
         (:input :type "hidden" :name "invitation-email" :value email)
-        (:button :class "no" :type "submit" :class "submit" :name "really-decline" "Decline")      
+        (:button :class "no" :type "submit" :class "submit" :name "really-decline" "Decline")
         (:button :class "link" :type "submit" :class "submit"  "No, I didn't mean it!")))))
 
 (defun get-signup ()
@@ -109,20 +109,19 @@
     (let* ((userid (gethash (post-parameter "email") *email-index*))
            (id (parse-integer (post-parameter "invitation-id")))
            (invitation (db id))
-           (host (getf (db invitation) :host))
+           (host (getf invitation :host))
            (host-name (post-parameter "host-name"))
            (new-id nil))
-      (when *user* (reset-token-cookie)) 
+      (when *user* (reset-token-cookie))
       (cond
-
         ((post-parameter "decline")
          (decline-invitation :id id
                              :token (post-parameter "token")
                              :host-name (post-parameter "host-name")
-                             :emails (post-parameter "invitation-email")))
+                             :email (post-parameter "invitation-email")))
 
         ((post-parameter "really-decline")
-         (modify-db id 
+         (modify-db id
                     :valid-until (get-universal-time))
          (flash (s+ "You have declined your invitation from " host-name "."))
          (see-other "/home"))
@@ -135,7 +134,7 @@
         ((not (eq (getf invitation :type) :invitation))
          (signup-page :error "You need a valid invitation ID. If you know anyone who is already on Kindista you should ask them for an invitation."
                       :name (post-parameter "name")
-                      :emails (post-parameter "email")
+                      :email (post-parameter "email")
                       :password (post-parameter "password")
                       :host-name (post-parameter "host-name")
                       :token (post-parameter "token")
@@ -147,7 +146,7 @@
          (signup-page :error "The invitation ID you are using belongs to a different email address. 
 Please use the correct email address or find someone you know on Kindista and request an invitation."
                       :name (post-parameter "name")
-                      :emails (post-parameter "email")
+                      :email (post-parameter "email")
                       :password (post-parameter "password")
                       :host-name (post-parameter "host-name")
                       :token (post-parameter "token")
@@ -157,7 +156,7 @@ Please use the correct email address or find someone you know on Kindista and re
         ((gethash (post-parameter "email") *email-index*)
          (signup-page :error "The email address you have entered already belongs to another Kindista member. Please try again, or contact us if this really is your email address."
                       :name (post-parameter "name")
-                      :emails (post-parameter "email")
+                      :email (post-parameter "email")
                       :password (post-parameter "password")
                       :host-name (post-parameter "host-name")
                       :token (post-parameter "token")
@@ -167,7 +166,7 @@ Please use the correct email address or find someone you know on Kindista and re
         ((< (getf invitation :valid-until) (get-universal-time))
          (signup-page :error "Your invitation has expired. Please contact the person who invited you to join Kindista and request another invitation."
                       :name (post-parameter "name")
-                      :emails (post-parameter "email")
+                      :email (post-parameter "email")
                       :host-name (post-parameter "host-name")
                       :token (post-parameter "token")
                       :password (post-parameter "password")
@@ -179,7 +178,7 @@ Please use the correct email address or find someone you know on Kindista and re
                    (< 0 (length (post-parameter "password")))))
          (signup-page :error "All fields are required"
                       :name (post-parameter "name")
-                      :emails (post-parameter "email")
+                      :email (post-parameter "email")
                       :host-name (post-parameter "host-name")
                       :token (post-parameter "token")
                       :invitation-id id
@@ -193,7 +192,7 @@ Please use the correct email address or find someone you know on Kindista and re
                       :host-name (post-parameter "host-name")
                       :token (post-parameter "token")
                       :name (post-parameter "name")
-                      :emails (post-parameter "email")))
+                      :email (post-parameter "email")))
 
         ((not (validate-name (post-parameter "name")))
          (signup-page :error "Please use your full name"
@@ -202,15 +201,18 @@ Please use the correct email address or find someone you know on Kindista and re
                       :host-name (post-parameter "host-name")
                       :token (post-parameter "token")
                       :name (post-parameter "name")
-                      :emails (post-parameter "email")
+                      :email (post-parameter "email")
                       :password (post-parameter "password")))
 
         (t
+           (pprint host)(terpri)
            (setf new-id (create-person :name (post-parameter "name")
                                        :host host
-                                       :emails (post-parameter "email")
-                                       :password (post-parameter "password"))) 
-           (setf (token-userid *token*) new-id) 
-           (create-invitations :count 10 :host new-id) 
-           (delete-invitation id) 
+                                       :email (post-parameter "email")
+                                       :password (post-parameter "password")))
+           (setf (token-userid *token*) new-id)
+           (add-contact new-id host)
+           (add-contact host new-id)
+           (create-invitations :count 10 :host new-id)
+           (delete-invitation id)
            (see-other "/home"))))))

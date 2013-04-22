@@ -17,6 +17,11 @@
 
 (in-package :kindista)
 
+(defun new-comment-notice-handler ()
+  (send-comment-notification-email (getf (cddddr *notice*) :id)))
+
+(add-notice-handler :new-comment #'new-comment-notice-handler)
+
 (defun create-comment (&key on (by *userid*) text (time (get-universal-time)))
   (let ((id (insert-db (list :type :comment
                              :on on
@@ -28,8 +33,9 @@
 
     (when (eq (db on :type) :conversation)
       (with-locked-hash-table (*db-results*)
-        (setf (result-time (gethash on *db-results*)) time)))
-    (send-comment-notification-email id)))
+        (setf (result-time (gethash on *db-results*)) time))
+      (notice :new-comment :time :time :id id))
+    id))
 
 (defun delete-comment (id)
   (with-locked-hash-table (*comment-index*)

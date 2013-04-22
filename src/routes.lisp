@@ -131,6 +131,9 @@
   ("/people/<id>/requests"
     :get get-person-requests)
 
+  ("/people/<id>/connections"
+    :get get-person-mutual-connections)
+
   ("/conversations"
     :get get-conversations)
 
