@@ -21,7 +21,7 @@
   (html
     (:div :class "item right only"
       (:h3 (:a :href "/donate" "Help spread the sharing!"))
-      (:p "Help Kindista grow big and strong by responding to our " (:a :href "/group/kindista/requests" "requests") " or " (:a :href "/donate" "making a donation") "?"))))
+      (:p "Help Kindista grow big and strong by responding to our " (:a :href "/people/kindista/requests" "requests") " or " (:a :href "/donate" "making a donation") "?"))))
 
 (defun invite-sidebar ()
   (with-user
