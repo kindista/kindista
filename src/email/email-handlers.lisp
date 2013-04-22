@@ -111,7 +111,7 @@
     )))
 
 (defun send-gratitude-notification-email (gratitude-id)
-  (let* ((gratitude (db (parse-integer gratitude-id)))
+  (let* ((gratitude (db gratitude-id))
          (from (getf gratitude :author))
          (to-list (iter (for subject in (getf gratitude :subjects))
                         (when (db subject :notify-gratitude))

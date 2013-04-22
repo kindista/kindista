@@ -18,11 +18,17 @@
 (in-package :kindista)
 
 (defun run ()
-  (add-notice-handler :all #'log-notice)
+  (load-notice-handlers)
   (load-db)
   (load-tokens)
   (start *acceptor*)
   (start-notice-thread))
+
+(defun load-notice-handlers ()
+  (clrhash *notice-handlers*)
+  (add-notice-handler :all #'log-notice)
+  (add-notice-handler :new-comment #'new-comment-notice-handler)
+  (add-notice-handler :new-gratitude #'new-gratitude-notice-handler))
 
 (defun end ()
   (save-db)
