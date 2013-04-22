@@ -284,7 +284,6 @@
                     :id "lccy"
                     "*Exp year")
             (:select :id "ccy"
-              (:option :value "2012" "2012")
               (:option :value "2013" "2013")
               (:option :value "2014" "2014")
               (:option :value "2015" "2015")
@@ -294,7 +293,8 @@
               (:option :value "2019" "2019")
               (:option :value "2020" "2020")
               (:option :value "2021" "2021")
-              (:option :value "2022" "2022"))))
+              (:option :value "2022" "2022")
+              (:option :value "2023" "2022"))))
 
         (:button :id "ccnext" :class "nav" :type "submit" "Next >")
 
@@ -424,6 +424,7 @@
                                       :amount (* 100 (donate-info-amount*))
                                       :currency "USD"
                                       :description (donate-info-email*))
+                (modify-db *userid* :donated t)
 
                 "yay!")
                
@@ -435,6 +436,7 @@
                       :plan (make-donation-plan (* 100 (donate-info-amount*)))
                       :prorate nil
                       :card (donate-info-token*))
+                    (modify-db *userid* :plan (donate-info-amount*))
                     "yay updated!")
                   (let ((customer (stripe:create-customer
                                     :card (donate-info-token*)
@@ -443,7 +445,7 @@
 
                     (acond
                       ((stripe:sstruct-get customer :id)
-                       (modify-db *userid* :custid it)
+                       (modify-db *userid* :donated t :custid it :plan (donate-info-amount*))
                        "yay new monthly!")
 
                       (t "oh no something bad :-("))))))

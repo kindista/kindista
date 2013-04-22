@@ -21,6 +21,9 @@
 
 (setf (cl-who:html-mode) :sgml)
 
+(setf hunchentoot:*show-lisp-backtraces-p* nil)
+(setf hunchentoot:*show-lisp-errors-p* nil)
+
 (defvar *flashes* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 
 (defvar *base-url* "/")
@@ -292,8 +295,8 @@
 (defvar *acceptor* (make-instance 'k-acceptor
                                   :port 5000
                                   :address "127.0.0.1"
-                                  :access-log-destination nil
-                                  :message-log-destination nil))
+                                  :access-log-destination (s+ +db-path+ "access")
+                                  :message-log-destination (s+ +db-path+ "errors")))
 
 (defun page-header (&optional extra)
   (html
