@@ -886,6 +886,12 @@ body.landing > p {
  }
 }
 
+@media (min-width:56.01em) {
+ menu.bar li.mobile-only {
+  display:none;
+ }
+}
+
 .card blockquote {
  position:relative;
  margin:1em 0;
