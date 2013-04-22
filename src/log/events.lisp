@@ -24,10 +24,10 @@
 
 (defun notice (type &rest rest 
                     &key (time (get-universal-time))
-                         (id *userid*)
+                         (userid *userid*)
                          (ip (when (boundp 'hunchentoot:*request*) (header-in* :x-real-ip)))
                     &allow-other-keys)
-  (send-message *notice-mailbox* `(,type ,time ,id ,ip ,@rest)))
+  (send-message *notice-mailbox* `(,type ,time ,userid ,ip ,@rest)))
 
 (defun add-notice-handler (notice thunk)
   (with-locked-hash-table (*notice-handlers*)
