@@ -17,6 +17,10 @@
 
 (in-package :kindista)
 
+(defun add-contact (new-contact-id userid &key current-contacts)
+  (amodify-db userid :following (cons new-contact-id it))
+  (create-contact-notification :subject userid :object new-contact-id))
+
 (defun post-contacts ()
   (require-user
     (let ((contacts (getf *user* :following)))
@@ -24,8 +28,7 @@
         ((scan +number-scanner+ (post-parameter "add"))
          (let ((id (parse-integer (post-parameter "add"))))
            (unless (member id contacts)
-             (modify-db *userid* :following (cons id contacts))
-             (create-contact-notification :subject *userid* :object id)))
+             (add-contact id *userid*)))
          (see-other (or (post-parameter "next") "/home")))
 
         ((scan +number-scanner+ (post-parameter "remove"))
