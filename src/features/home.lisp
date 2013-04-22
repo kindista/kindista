@@ -144,7 +144,7 @@
                   (unless (getf *user* :avatar)
                     (htm (:li (:a :href "/settings/personal" "Upload a picture") " so that other people can recognize you.")))
                   (:li (:a :href "/gratitude/new" "Express gratitude") " for someone who has affected your life.")
-                  (:li (:a :href "/people/new" "Make a connection") " to say that you know someone.")
+                  (:li (:a :href "/people" "Make a connection") " to say that you know someone.")
                   (:li (:a :href "/requests/new" "Post a request") " to the community for something you need.")
                   )
                 (:p "On this page you can see what's going on around you and with people you have made
