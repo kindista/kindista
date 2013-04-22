@@ -109,12 +109,11 @@
     (let* ((userid (gethash (post-parameter "email") *email-index*))
            (id (parse-integer (post-parameter "invitation-id")))
            (invitation (db id))
-           (host (getf (db invitation) :host))
+           (host (getf invitation :host))
            (host-name (post-parameter "host-name"))
            (new-id nil))
-      (when *user* (reset-token-cookie)) 
+      (when *user* (reset-token-cookie))
       (cond
-
         ((post-parameter "decline")
          (decline-invitation :id id
                              :token (post-parameter "token")
@@ -122,7 +121,7 @@
                              :email (post-parameter "invitation-email")))
 
         ((post-parameter "really-decline")
-         (modify-db id 
+         (modify-db id
                     :valid-until (get-universal-time))
          (flash (s+ "You have declined your invitation from " host-name "."))
          (see-other "/home"))
@@ -206,6 +205,7 @@ Please use the correct email address or find someone you know on Kindista and re
                       :password (post-parameter "password")))
 
         (t
+           (pprint host)(terpri)
            (setf new-id (create-person :name (post-parameter "name")
                                        :host host
                                        :email (post-parameter "email")
