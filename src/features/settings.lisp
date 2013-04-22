@@ -173,6 +173,31 @@
                    "lower-case letters, numbers, and symbols; or a sentance "
                    "of at least 8 words."))))
 
+(defun settings-donate (base)
+  (let ((plan (getf *user* :plan)))
+    (settings-item-html base "donate" "Donate"
+      (html
+        (:form :method "post" :class "password" :action "/settings"
+         (:input :type "hidden" :name "next" :value "/settings/personal")
+         (:div :class "submit-settings"
+           (:button :class "no" :type "submit" :class "submit" :name "cancel-plan" "Cancel plan")
+           (:button :class "yes" :type "submit" :class "submit" "Change plan"))
+         (:div
+           (:label "Current monthly donation: " (:strong "$" (str plan)))
+           (:select :name "plan"
+             (:option :disabled "disabled" "Select a new plan")
+             (:option :value "5" "$5/month")
+             (:option :value "10" "$10/month")
+             (:option :value "20" "$20/month")
+             (:option :value "35" "$35/month")
+             (:option :value "50" "$50/month")
+             (:option :value "100" "$100/month")))))
+
+    :editable t
+    :help-text (s+ "Your monthly donation is specified in US Dollars. Changes take place on your "
+                   "next monthly bill&mdash;we do not prorate plan changes. Thank you for your "
+                   "financial support!"))))
+
 (defun settings-deactivate (base)
   (let ((action (if (eq (getf *user* :active) t)
                   "deactivate"
@@ -367,6 +392,7 @@
           (str (settings-name base (string= edit "name")))
           (str (settings-address base (string= edit "address")))
           (str (settings-password base))
+          (str (settings-donate base))
           (str (settings-deactivate base)))))))
 
 (defun go-settings ()
@@ -482,6 +508,42 @@
        (flash "You have deactivated you account. If you change your mind you can reactivate your account on the settings page.")
 
        (see-other "/settings/personal"))
+
+      ((post-parameter "cancel-plan")
+
+       (acond
+         ((and (getf *user* :plan)
+               (getf *user* :custid))
+
+          (handler-case
+            (progn (stripe:delete-subscription it)
+                   (flash "Your plan has been cancelled, effective immediately. Thank you for your financial support!") 
+                   (notice :cancel-plan :plan (getf *user* :plan) :custid (getf *user* :custid)) 
+                   (modify-db *userid* :plan nil) 
+                   (see-other "/settings/personal"))
+            (t (err)
+               (declare (ignore err))
+               (flash "There was an error deleting your subscription. Humans have been notified!" :error t)
+               (notice :error :on :cancel-plan :custid (getf *user* :custid)))))
+
+         (t
+          (flash "You do not currently have an active subscription.")
+          (see-other "/settings/personal"))))
+
+      ((post-parameter "plan")
+
+       (acond
+         ((and (getf *user* :plan)
+               (getf *user* :custid))
+
+          (let ((plan (parse-integer (post-parameter "plan"))))
+            (stripe:update-subscription it
+              :plan (make-donation-plan (* 100 plan))
+              :prorate nil)
+            (notice :change-plan :old (getf *user* :plan) :new plan :custid (getf *user* :custid))
+            (modify-db *userid* :plan plan) 
+            (flash "We've updated your subscription. Thank you very much for your financial support!") 
+            (see-other "/settings/personal")))))
 
       ((post-parameter "reactivate")
        (reactivate-person *userid*)
