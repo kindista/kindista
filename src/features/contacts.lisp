@@ -17,9 +17,16 @@
 
 (in-package :kindista)
 
-(defun add-contact (new-contact-id userid &key current-contacts)
+(defun add-contact (new-contact-id userid)
   (amodify-db userid :following (cons new-contact-id it))
+  (with-locked-hash-table (*followers-index*)
+    (push userid (gethash new-contact-id *followers-index*)))
   (create-contact-notification :subject userid :object new-contact-id))
+
+(defun remove-contact (contact-id userid)
+  (amodify-db *userid* :following (remove contact-id it))
+  (with-locked-hash-table (*followers-index*)
+    (remove userid (gethash contact-id *followers-index*))))
 
 (defun post-contacts ()
   (require-user
@@ -34,7 +41,7 @@
         ((scan +number-scanner+ (post-parameter "remove"))
          (let ((id (parse-integer (post-parameter "remove"))))
            (when (member id contacts)
-             (modify-db *userid* :following (remove id contacts))))
+             (remove-contact id *userid*)))
          (see-other (or (post-parameter "next") "/home")))
 
         (t
