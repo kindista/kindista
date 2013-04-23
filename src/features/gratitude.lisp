@@ -18,7 +18,6 @@
 (in-package :kindista)
 
 (defun new-gratitude-notice-handler ()
-  (pprint (getf (cddddr *notice*) :id)) (terpri)
   (send-gratitude-notification-email (getf (cddddr *notice*) :id)))
 
 (defun create-gratitude (&key author subjects text)

@@ -114,8 +114,8 @@
   (let* ((gratitude (db gratitude-id))
          (from (getf gratitude :author))
          (to-list (iter (for subject in (getf gratitude :subjects))
-                        (when (db subject :notify-gratitude))
-                        (collect subject))))
+                        (when (db subject :notify-gratitude)
+                          (collect subject)))))
     (dolist (to to-list)
       (cl-smtp:send-email +mail-server+
                           "Kindista <noreply@kindista.org>"
@@ -136,8 +136,8 @@
          (sender-name (db sender-id :name))
          (people (mapcar #'car (getf conversation :people))))
     (dolist (to (iter (for person in (remove sender-id people))
-                      (when (db person :notify-message))
-                      (collect person)))
+                      (when (db person :notify-message)
+                        (collect person))))
       (cl-smtp:send-email
         +mail-server+
         "Kindista <noreply@kindista.org>"
