@@ -192,6 +192,9 @@
   ("/donate/3"
     :get get-donate-3)
 
+  ("/donate/4"
+    :get get-donate-4)
+
   ("/donate/once"
     :get get-donate-once)
 

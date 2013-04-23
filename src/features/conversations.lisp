@@ -86,9 +86,10 @@
     "Add person to conversation"
     (html
       (:div :class "item"
-       (:h2 "Who would you like to add?")
-       (:h3 "Search for a person")
+       (:h2 "Who would you like to add to the conversation?")
        (:form :method "post" :action "/conversations/new"
+         (:button :type "submit" :class "cancel" :name "cancel-add" "Cancel")
+         (:h3 "Search for a person")
          (:input :type "text" :name "name")
          (:input :type "submit" :class "submit" :name "search" :value "Search")
 
@@ -126,8 +127,10 @@
 (defun post-conversations-new ()
   (require-user
     (cond
-      ((post-parameter "cancel")
-       (see-other (or (post-parameter "next") "/home")))
+      ((or (post-parameter "cancel")
+           (and (post-parameter "cancel-add")
+                (not (post-parameter "people"))))
+       (see-other (or (post-parameter "next") "/messages")))
       ((post-parameter "send")
        (let ((people (parse-subject-list (post-parameter "people") :remove (write-to-string *userid*)))
              (text (post-parameter "text"))
@@ -167,6 +170,7 @@
          (new-conversation
            :text (post-parameter "text")
            :subject (post-parameter "subject")
+           :next (post-parameter "next")
            :people (parse-subject-list
                        (format nil "~A,~A" (post-parameter "add") (post-parameter "people"))))))
 

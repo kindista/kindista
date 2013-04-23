@@ -121,14 +121,15 @@
                         (eql type (result-type item)))
                 (case (result-type item)
                   (:gratitude
-                    (str (unless (and (eql type :gratitude)
-                                      (eql userid (first (result-people item))))
-                           (gratitude-activity-item item
-                                                    :next-url next-url))))
+                    (when (or (not type)
+                              (not (eql userid (first (result-people item)))))
+                      (str (gratitude-activity-item item :next-url next-url))))
                   (:person
                     (str (joined-activity-item item)))
                   (:gift
-                    (str (gift-activity-item item :next-url next-url)))
+                    (when (or (not type)
+                              (eql userid (first (result-people item))))
+                      (str (gift-activity-item item :next-url next-url))))
                   (:offer
                     (str (inventory-activity-item "offer" item
                                               :show-what (unless (eql type :offer) t)
@@ -183,8 +184,8 @@
 
         (when (mutual-connections userid)
           (if (eql tab :connections)
-            (htm (:li :class "selected mobile-only" "Mutual Connections"))
-            (htm (:li :class "mobile-only" (:a :href (strcat *base-url* "/connections") "Mutual Connections")))))))))
+            (htm (:li :class "selected no-rightbar" "Mutual Connections"))
+            (htm (:li :class "no-rightbar" (:a :href (strcat *base-url* "/connections") "Mutual Connections")))))))))
 
 (defun profile-bio-section-html (title content &key editing editable section-name)
   (when (string= content "")
@@ -229,6 +230,7 @@
        (when (and (db userid :active) (db *userid* :active))
          (htm
            (:form :method "post" :action "/conversations/new"
+             (:input :type "hidden" :name "next" :value (script-name*))
              (:button :type "submit" :name "add" :value userid "Send a message"))))
        (htm
          (:form :method "POST" :action "/contacts"
@@ -330,6 +332,7 @@
                   (:td (:textarea :cols "1000" :rows "4" :name "text"))
                   (:td
                     (:button :class "yes" :type "submit" :class "submit" :name "create" "Post"))))))))
+
         (:div :class "activity"
           (str (profile-activity-items :userid userid :type type))))
 
@@ -465,7 +468,8 @@
                                    (iter (for person in following)
                                          (reducing (getf (db person) :following)
                                                    by #'union))))
-            (unless (member person following)
+            (unless (or (member person following)
+                        (not (db person :active)))
               (collect (cons (length (mutual-connections person userid)) person)))))
     #'> :key #'first))
 

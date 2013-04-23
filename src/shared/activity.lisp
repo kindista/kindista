@@ -141,6 +141,7 @@
                    :time (result-time result)
                    :next-url next-url
                    :edit (or (eql user-id *userid*) (getf *user* :admin))
+                   :reply t
                    :hearts (length (loves (result-id result)))
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")

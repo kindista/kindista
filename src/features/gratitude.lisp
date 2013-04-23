@@ -246,6 +246,15 @@
     (setf id (parse-integer id))
     (aif (db id)
       (cond
+        ((post-parameter "delete")
+         (confirm-delete :url (script-name*)
+                         :type "gratitude"
+                         :text (getf it :text)
+                         :next-url (referer)))
+        ((post-parameter "really-delete")
+         (delete-gratitude id)
+         (flash "Your statement of gratitude has been deleted!")
+         (see-other (or (post-parameter "next") "/home")))
         ((and (post-parameter "love")
               (member (getf it :type) '(:gratitude :offer :request)))
          (love id)
@@ -271,15 +280,6 @@
       (require-test ((eql *userid* (getf gratitude :author))
                      "You can only edit statements of gratitude that you have written.")
         (cond
-          ((post-parameter "delete")
-           (confirm-delete :url (s+ "/gratitude/" id "/edit")
-                           :type "gratitude"
-                           :text (getf gratitude :text)
-                           :next-url (referer)))
-          ((post-parameter "really-delete")
-           (delete-gratitude (parse-integer id))
-           (flash "Your statement of gratitude has been deleted!")
-           (see-other (or (post-parameter "next") "/home")))
 
           ((post-parameter "cancel")
            (see-other (or (post-parameter "next") "/home")))
