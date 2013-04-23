@@ -311,13 +311,21 @@
     (:img :class "icon" :src (s+ "/media/icons/" type ".png") :alt " ")))
 
 (defun menu-item (title slug icon &optional selected)
-  (html
-    (:li :class (when selected "selected") (:a :href (s+ "/" icon) (str (icon slug)) (str title)))))
+  (let ((inbox-count (new-inbox-items)))
+    (html
+      (:li :class (when selected "selected")
+       (:a :href (s+ "/" icon)
+           (str (icon slug))
+           (str title)
+           (when (and (string= title "Messages")
+                       (> inbox-count 0))
+                  (htm (:span :class "newcount"
+                        (str inbox-count)))))))))
 
 (defun menu (items &optional selected)
   (html
     (:menu
-      (iter (for item in items) 
+      (iter (for item in items)
             (when item
               (str (menu-item (car item)
                               (cadr item)
@@ -425,7 +433,6 @@
                                     '("Help & Feedback" "help")
                                     (when (getf *user* :admin)
                                       '("Admin" "admin")))
-                              
                               selected))
 
                    (:div :id "fine-print-links"

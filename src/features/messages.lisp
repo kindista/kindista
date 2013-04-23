@@ -26,12 +26,25 @@
 (defun result-gratitude-p (result)
   (eq (result-type result) :gratitude))
 
+(defun new-inbox-items ()
+  (loop for item in (all-inbox-items)
+        while (< (db *userid* :last-checked-mail) (result-time item))
+        unless (and (eq (result-type item) :conversation)
+                    (eq (db (result-id item) :latest-comment)
+                        (cdr (assoc *userid* (result-people item)))))
+        counting item into new-items
+        finally (return new-items)))
+
+(defun all-inbox-items (&key (id *userid*))
+  (sort (append (gethash id *person-conversation-index*)
+                (gethash id *person-notification-index*)
+                (remove-if-not #'result-gratitude-p 
+                               (gethash id *activity-person-index*)))
+    #'> :key #'result-time))
+
 (defun inbox-items (&key (page 0) (count 20))
   (let ((start (* page count))
-        (items (sort (append (gethash *userid* *person-conversation-index*)
-                             (gethash *userid* *person-notification-index*)
-                             (remove-if-not #'result-gratitude-p (gethash *userid* *activity-person-index*)))
-                     #'> :key #'result-time)))
+        (items (all-inbox-items)))
     (html
       (iter (for i from 0 to (+ start count))
             (cond
@@ -108,6 +121,7 @@
 
 (defun get-messages ()
   (require-user
+    (modify-db *userid* :last-checked-mail (get-universal-time))
     (standard-page
 
       "Messages"

@@ -661,6 +661,15 @@ body.landing > p {
  vertical-align:middle;
 }
 
+menu .newcount {
+ display:inline-block;
+ padding: .17em .35em;
+ margin-left: 1em;
+ border-radius: 1.67em;
+ background-color: #a6ddf3;
+ color: #fff;
+}
+
 #fine-print-links {
  color: #999;
  width: 100%;
