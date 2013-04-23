@@ -722,19 +722,20 @@
   ; get all requests within distance
   ; for each stem get matching requests
   ; return intersection
-  (sort
-    (result-id-intersection
-      (stem-index-query (case type
-                          ('offer *offer-stem-index*)
-                          (t *request-stem-index*))
-                        text)
-      (geo-index-query (case type
-                         ('offer *offer-geo-index*)
-                         (t *request-geo-index*))
-                       (getf *user* :lat)
-                       (getf *user* :long)
-                       distance))
-    #'> :key #'inventory-rank))
+  (with-location
+    (sort
+      (result-id-intersection
+        (geo-index-query (case type
+                           (:offer *offer-geo-index*)
+                           (t *request-geo-index*))
+                         *latitude*
+                         *longitude*
+                         distance)
+        (stem-index-query (case type
+                           (:offer *offer-stem-index*)
+                           (t *request-stem-index*))
+                          text))
+      #'> :key #'inventory-rank)))
 
 ;(defun person-search-rank (id &key (userid *userid*))
 ;  (let* ((mutuals (mutual-connections id userid))
@@ -830,8 +831,8 @@
                      (:p "no results"))))))
             
             (t ; all
-             (let ((requests (search-inventory 'request q :distance (user-rdist)))
-                   (offers (search-inventory 'offer q :distance (user-rdist)))
+             (let ((requests (search-inventory :request q :distance (user-rdist)))
+                   (offers (search-inventory :offer q :distance (user-rdist)))
                    (people (search-people q)))
 
                (if (or requests offers people)
@@ -845,7 +846,7 @@
                            "more")))) 
                    (when requests
                      (htm
-                       (:h2 (:a :href "/requests" "Requests")
+                       (:h2 (:a :href (s+ "/requests?q=" (url-encode q)) "Requests")
                          " "
                          (str (rdist-selection-html (request-uri*)
                                                     :style "float:right;"
@@ -857,7 +858,7 @@
                              (:a :href (s+ "/requests?q=" (url-encode q)) (fmt "see ~d more requests" (- (length requests) 5))))))))
                    (when offers
                      (htm
-                       (:h2 (:a :href "/offers" "Offers")
+                       (:h2 (:a :href (s+ "/offers?q=" (url-encode q)) "Offers")
                          " "
                          (str (rdist-selection-html (request-uri*)
                                                     :style "float:right;"

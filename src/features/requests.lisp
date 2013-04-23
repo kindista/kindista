@@ -81,20 +81,20 @@
       (multiple-value-bind (tags items)
           (nearby-inventory-top-tags :request :base base :q q)
         (standard-page
-         "Requests"
-         (inventory-body-html "request" :base base 
-                                        :q q 
-                                        :items items 
-                                        :start start 
-                                        :page page)
-        :top (when (getf *user* :help)
-               (requests-help-text))
-        :search q
-        :search-scope (if q "requests" "all")
-        :right (html
-                 (str (donate-sidebar))
-                 (str (browse-inventory-tags "request" :q q :base base :tags tags)))
-        :selected "requests")))))
+          "Requests"
+          (inventory-body-html "request" :base base 
+                                         :q q 
+                                         :items items 
+                                         :start start 
+                                         :page page)
+          :top (when (getf *user* :help)
+                 (requests-help-text))
+          :search q
+          :search-scope (if q "requests" "all")
+          :right (html
+                   (str (donate-sidebar))
+                   (str (browse-inventory-tags "request" :q q :base base :tags tags)))
+          :selected "requests")))))
 
 
 (defun get-requests-all ()

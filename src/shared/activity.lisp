@@ -52,7 +52,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time next-url hearts comments type distance edit user-id)
+(defun activity-item (&key id url content time next-url hearts comments type distance edit user-id reply)
   (html
     (:div :class "card" :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -69,6 +69,10 @@
           (if (member *userid* (gethash id *love-index*))
             (htm (:input :type "submit" :name "unlove" :value "Loved"))
             (htm (:input :type "submit" :name "love" :value "Love")))   
+          (when reply
+             (htm
+              " &middot; "  
+              (:input :type "submit" :name "reply" :value "Reply")))
           (when edit
             (htm
               " &middot; "  
@@ -186,9 +190,9 @@
                      (:person
                        (str (joined-activity-item item)))
                      (:offer
-                       (str (inventory-activity-item "offer" item :show-what t :next-url next-url)))
+                       (str (inventory-activity-item "offer" item :show-what t :next-url next-url :show-distance t)))
                      (:request
-                       (str (inventory-activity-item "request" item :show-what t :next-url next-url)))))
+                       (str (inventory-activity-item "request" item :show-what t :next-url next-url :show-distance t)))))
                  (setf items (cdr items)))
 
                 (t
