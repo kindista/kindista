@@ -29,7 +29,7 @@ Invitations
 - [X] enabling/validating an invitation sets the :valid-until field to a future date
 - [X] expire initations when :valid-until is in the past
 - [X] modify signup form to require an invite code
-
+- [X] add host/invitee to each other's contact lists
 Admin Interface
 
 People
@@ -45,6 +45,10 @@ Notices (async system)
 - [X] event handler table
 - [X] event handling thread
 
+Profile page
+- [X] make a new tab for mutual connections that is only visible on mobile
+- [X] hide left-bar mutual connections for mobile
+
 Metrics
 - [X] metric logging function
 - [X] enable metric log on (run)
@@ -52,6 +56,9 @@ Metrics
 - [ ] Daily signups
 - [ ] Weekly signups
 - [ ] Daily logins
+
+Search
+- [ ] is inventory query being kept from search-all when user selects offers/requests? is it possible to search terms and select tags at the same time?
 
 Task Queue
     # For follow-up and background actions that do not take place inside a request
@@ -71,12 +78,20 @@ Acknowledgements
 - [X] Create activity view for acknowledgements (K1 gifts)
 
 Notifications
-- [ ] Emailing
+- [X] Emailing
+- [ ] unread messages count in main menu
 
 Importing -- depends on Acknowledgements
 - [ ] Add tags to K1 offers and requests
 - [ ] Import K1 offers and requests
 - [ ] Import K1 users
+- [ ] import K1 communication preferences
+
+Loves
+- [ ] what is "love"?  help text when a user hover's over the love icon/love link
+
+People page
+- [ ] create a view for all of a user's contacts and everyone who is following them
 
 Follow-up
 - [ ] Newsletter to existing users
@@ -84,8 +99,8 @@ Follow-up
 - [ ] Invitation a few days later to complete more steps and let person know what has been happening
 
 Discussions
-- [ ] Person-to-person messages
-- [ ] Comments
+- [X] Person-to-person messages
+- [X] Comments
 
 Settings
 - [X] contact preferences
@@ -106,14 +121,16 @@ Settings
 - [X] reindex names and location indexes
 - [X] set contact items to t
 - [X] change password with "forgot password link
+- [X] check user communication preferences before sending gratitude/message notifications
+- [ ] warning if avatar is too big for nginx
 
 Writing
 - [ ] About page
 
 Terms and Privacy
 - [ ] Create UI to get users to agree to new terms upon first login
-- [ ] Proof read terms
-- [ ] Proof read privacy
+- [ ] Proofread terms
+- [ ] Proofread privacy
 - [ ] Change effective dates on Privacy and Terms
 - [X] turn TOU into a markup file
 
