@@ -235,16 +235,23 @@
         (collect (multiple-value-list (double-metaphone word)))))
 
 
+;(defun map-metaphone-codes (function string)
+;  (iter (for code in (delete-duplicates
+;                       (iter (for word in (split " " string))
+;                           (nunioning
+;                             (iter (for i from 1 to (length word))
+;                                   (nunioning
+;                                     (flatten
+;                                       (name-to-metaphone-codes (subseq word 0 i)))
+;                                     test #'string=))
+;                             test #'string=))
+;                     :test #'string=))
+;        (unless (string= code "")
+;          (funcall function code))))
+
 (defun map-metaphone-codes (function string)
   (iter (for code in (delete-duplicates
-                       (iter (for word in (split " " string))
-                           (nunioning
-                             (iter (for i from 1 to (length word))
-                                   (nunioning
-                                     (flatten
-                                       (name-to-metaphone-codes (subseq word 0 i)))
-                                     test #'string=))
-                             test #'string=))
+                       (flatten (name-to-metaphone-codes string))
                      :test #'string=))
         (unless (string= code "")
           (funcall function code))))

@@ -848,7 +848,7 @@ body.landing > p {
   margin:50px 8px 8px;
  }
 
-  menu.bar .notonly {
+  menu.bar .no-rightbar {
   display:none;
  }
 
@@ -882,12 +882,6 @@ body.landing > p {
 
 @media (max-width:56em) {
  .item.right.only {
-  display:none;
- }
-}
-
-@media (min-width:56.01em) {
- menu.bar li.mobile-only {
   display:none;
  }
 }

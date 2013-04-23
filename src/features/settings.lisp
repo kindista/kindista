@@ -460,13 +460,13 @@
       ((post-parameter "avatar")
 
        (let ((file (native-namestring (first it))))
-         (let ((r1 (run-program "/usr/bin/convert"
+         (let ((r1 (run-program *convert-path*
                                 (list
                                   file
                                   "-scale"
                                   "300x300"
                                   (strcat +avatar-path+ *userid* ".jpg"))))
-               (r2 (run-program "/usr/bin/convert"
+               (r2 (run-program *convert-path*
                                 (list
                                   file
                                   "-scale"

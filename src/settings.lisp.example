@@ -17,6 +17,8 @@
 
 (in-package :kindista)
 
+(defparameter *convert-path* "/usr/bin/convert")
+
 (define-constant +db-path+ "/srv/kindista/data/" :test #'string=)
 (define-constant +markdown-path+ "/srv/kindista/src/markdown/" :test #'string=)
 (define-constant +avatar-path+ "/srv/kindista/media/avatar/"; <- trailing slash
