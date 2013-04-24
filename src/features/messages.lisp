@@ -28,7 +28,7 @@
 
 (defun new-inbox-items ()
   (loop for item in (all-inbox-items)
-        while (< (db *userid* :last-checked-mail) (result-time item))
+        while (< (or (db *userid* :last-checked-mail) 0) (result-time item))
         unless (and (eq (result-type item) :conversation)
                     (eq (db (result-id item) :latest-comment)
                         (cdr (assoc *userid* (result-people item)))))
