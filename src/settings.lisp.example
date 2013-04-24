@@ -26,5 +26,5 @@
 (define-constant +mail-server+ "localhost" :test #'string=)
 (define-constant +base-url+ "http://kindista.local/" :test #'string=)
 (define-constant +avatar-base+ "/media/avatar/" :test #'string=)
-
+(define-constant +kindista-id+ 0 :test #'eql)
 
