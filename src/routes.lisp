@@ -171,12 +171,13 @@
     :get get-about)
 
   ("/help"
-    :get get-help)
+    :get go-help)
 
   ("/help/faqs"
     :get get-faqs)
 
   ("/help/feedback"
+    :post post-feedback
     :get get-feedback)
 
   ("/terms"
