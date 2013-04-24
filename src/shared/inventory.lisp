@@ -49,7 +49,7 @@
       (if (eq type :offer)
         (with-locked-hash-table (*offer-stem-index*)
           (dolist (stem stems)
-            (push result (gethash stem *offer-stem-index*)))) 
+            (push result (gethash stem *offer-stem-index*))))
         (with-locked-hash-table (*request-stem-index*)
           (dolist (stem stems)
             (push result (gethash stem *request-stem-index*))))))
@@ -88,8 +88,8 @@
 
           (setf oldstems (delete-if #'commonp oldstems))
           (setf newstems (delete-if #'commonp newstems))
-          
-          (when (eq type :offer)          
+
+          (when (eq type :offer)
             (with-locked-hash-table (*offer-stem-index*)
               (dolist (stem oldstems)
                 (asetf (gethash stem *offer-stem-index*)
@@ -97,7 +97,7 @@
               (dolist (stem newstems)
                 (push result (gethash stem *offer-stem-index*))))
 
-          (when (eq type :request)          
+          (when (eq type :request)
             (with-locked-hash-table (*request-stem-index*)
               (dolist (stem oldstems)
                 (asetf (gethash stem *request-stem-index*)
@@ -113,25 +113,24 @@
                (or (not (eql latitude (getf data :lat)))
                    (not (eql longitude (getf data :long)))))
 
-      (if (eq type :offer)          
-        (geo-index-remove *offer-geo-index* result)  
+      (if (eq type :offer)
+        (geo-index-remove *offer-geo-index* result)
         (geo-index-remove *request-geo-index* result))
       (geo-index-remove *activity-geo-index* result)
       (setf (result-latitude result) latitude)
       (setf (result-longitude result) longitude)
-      (if (eq type :offer)          
-        (geo-index-insert *offer-geo-index* result)  
+      (if (eq type :offer)
+        (geo-index-insert *offer-geo-index* result)
         (geo-index-insert *request-geo-index* result))
       (geo-index-insert *activity-geo-index* result))
-    
-    
+
     (if (and (getf *user* :admin)
              (not (eql *userid* (getf data :by))))
 
       (modify-db id :text text :tags tags :lat latitude :long longitude)
 
       (progn
-        (setf (result-time result) now) 
+        (setf (result-time result) now)
         (with-locked-hash-table (*activity-person-index*)
           (asetf (gethash id *activity-person-index*)
                  (sort it #'> :key #'result-time)))
@@ -180,7 +179,7 @@
     (when (member id *old-inventory-index* :key #'result-id)
       (with-mutex (*old-inventory-mutex*)
         (asetf *old-inventory-index* (remove id it :key #'result-id))))
-    
+
     (remove-from-db id)))
 
 (defun post-new-inventory-item (type &key url)
@@ -191,7 +190,7 @@
                         (collect (cdr pair))))))
       (iter (for tag in (tags-from-string (post-parameter "tags")))
             (setf tags (cons tag tags)))
-      
+
     (cond
       ((post-parameter "cancel")
        (see-other (or (post-parameter "next") "/home")))
@@ -213,14 +212,14 @@
                               :selected (s+ type "s")))
 
       ((and (post-parameter "create")
-            (post-parameter "text")) 
+            (post-parameter "text"))
 
        (if (intersection tags *top-tags* :test #'string=)
-         (see-other 
+         (see-other
            (format nil (s+ "/" type "s/~A")
              (create-inventory-item :type (if (string= type "request") :request
                                                                        :offer)
-                                    :text (post-parameter "text") 
+                                    :text (post-parameter "text")
                                     :tags tags)))
 
          (enter-inventory-tags :title (s+ "Preview your " type)
@@ -300,14 +299,14 @@
                                    :selected (s+ type "s")))
 
             ((and (post-parameter "create")
-                  (post-parameter "text")) 
+                  (post-parameter "text"))
 
              (if (intersection tags *top-tags* :test #'string=)
                (progn
                  (when (member id *old-inventory-index* :key #'result-id)
                    (with-mutex (*old-inventory-mutex*)
                      (asetf *old-inventory-index* (remove id it :key #'result-id))))
-                 
+
                  (modify-inventory-item id :text (post-parameter "text") :tags tags)
                  (see-other (or (post-parameter "next") (strcat "/" type "s/" id))))
 
@@ -331,8 +330,8 @@
 (defun simple-inventory-entry-html (preposition type)
   (html 
     (:div :class "item"
-      (:h4 (str (s+ "post " preposition " " type))) 
-      (:form :method "post" :action (s+ "/" type "s/new") 
+      (:h4 (str (s+ "post " preposition " " type)))
+      (:form :method "post" :action (s+ "/" type "s/new")
         (:table :class "post"
           (:tr
             (:td (:textarea :cols "150" :rows "4" :name "text"))
@@ -340,7 +339,7 @@
               (:button :class "yes" :type "submit" :class "submit" :name "post" "Post"))))))))
 
 (defun enter-inventory-text (&key type title text action selected tags next)
-  (standard-page 
+  (standard-page
     (or title (if (string= type "offer")
                   "Post an offer"
                   "Post a request"))
@@ -375,14 +374,14 @@
           (htm
             (:p :class "error" (str error))))
         (:form :class "post-next"
-               :method "post" 
+               :method "post"
                :action action
           (when next
             (htm (:input :type "hidden" :name "next" :value next)))
           (:input :type "hidden" :name "text" :value (escape-for-html text))
           (:p (cl-who:esc text)
               " "
-              (:button :class "red" :type "submit" :class "cancel" :name "back" "edit")) 
+              (:button :class "red" :type "submit" :class "cancel" :name "back" "edit"))
           (:h2 "select at least one keyword")
           (dolist (tag *top-tags*)
             (htm 
@@ -399,10 +398,10 @@
                   :placeholder "e.g. produce, bicycle, tai-chi"
                   :value (format nil "~{~a~^,~^ ~}" suggested))
 
-          (:p (:button :class "yes" 
-                       :type "submit" 
-                       :class "submit" 
-                       :name "create" 
+          (:p (:button :class "yes"
+                       :type "submit"
+                       :class "submit"
+                       :name "create"
                        (str button-text)
                        )))))
      :selected selected)))
@@ -434,7 +433,7 @@
                                          (t *request-geo-index*))
                                          *latitude*
                                          *longitude*
-                                       distance)) 
+                                       distance))
                     #'> :key #'inventory-rank))
           (items nil))
       (let ((tags (make-hash-table :test 'equalp)))
@@ -450,18 +449,16 @@
           (progn
             (setf items (iter (for tag in base)
                               (reducing (gethash tag tags) by #'result-id-intersection)
-                              (remhash tag tags))) 
+                              (remhash tag tags)))
             (iter (for (tag tag-items) in-hashtable tags)
                   (let ((new-items (intersection tag-items items :key #'result-id)))
                     (if new-items
                       (setf (gethash tag tags) new-items)
                       (remhash tag tags)))))
-          
+
           (setf items nearby))
-                
 
         ; for each tag, number of contents + ordered list of subtags (up to 4)
-        
         (values (iter (for (tag tag-items) in-hashtable tags)
                       (collect (list tag
                                      (length tag-items)
@@ -482,7 +479,6 @@
                                                        "more"
                                                        (reduce #'+ (subseq subtags (- subtag-count 1)) :key #'cdr))))
                                            (sort top-subtags #'string< :key #'car)))))))
-                                                       
                 items)))))
 
 (defun nearby-inventory-top-tags (type &key (count 9) (more t) base (subtag-count 4) q)
@@ -492,7 +488,7 @@
                          nearby
                          (remove-if-not #'top-tag-p nearby :key #'first))
                        #'> :key #'second))
-           (top-tags (subseq tags 0 (min count (length tags))))) 
+           (top-tags (subseq tags 0 (min count (length tags)))))
       (cond
         ((and more (> (length tags) (+ count 1)))
          (values
@@ -522,12 +518,12 @@
       (htm
         (:div :class "activity"
           (:div :class "item"
-            (unless (or (not *user*) 
+            (unless (or (not *user*)
                         (eq (getf *user* :active) nil)
                         base
                         q)
               (str (simple-inventory-entry-html preposition type)))
-            
+
             (when q
               (htm
                 (:span (:strong :class "small" (str (s+ "showing " type "s matching \"")) (str q) (:strong "\"")))))
@@ -538,7 +534,7 @@
           (:span
             (when (or base q)
               (htm
-                (:span :style "float: right;" (:a :href (str base-url) 
+                (:span :style "float: right;" (:a :href (str base-url)
                                                         (str (s+"show all " type "s")))))))
           (iter (for i from 0 to (+ start 20))
                 (cond
@@ -547,7 +543,7 @@
 
                   ((and (>= i start) items)
                    (str (inventory-activity-item type
-                                                 (pop items) 
+                                                 (pop items)
                                                  :show-distance t)))
                   (t
                    (when (< (user-rdist) 100)
@@ -566,7 +562,7 @@
                        "&nbsp;"
                        (when (cdr items)
                          (htm
-                           (:a :style "float: right;" 
+                           (:a :style "float: right;"
                                :href (url-compose base-url "p" (+ page 1) "kw" base) 
                                "next page >")))))))))))))
 
@@ -575,15 +571,15 @@
     (html
       (when base
         (htm
-          (:p (:strong "categories selected: ")) 
+          (:p (:strong "categories selected: "))
           (:ul :class "keywords"
             (dolist (tag base)
               (htm
                 (:li
-                  (:a :href (url-compose base-url "kw" tag "q" q) (str tag)) 
+                  (:a :href (url-compose base-url "kw" tag "q" q) (str tag))
                   " "
                   (:a :href (url-compose base-url "kw" (remove tag base :test #'string=) "q" q)
-                      "[x]")      
+                      "[x]")
                   ))))))
       (:h3 "filter by category")
       (dolist (tag tags)
@@ -632,7 +628,7 @@
         (when base
           (htm
             (:p (:a :href (str base-url) (str (s+ "show all " type "s"))))
-            (:p (:strong "keywords selected: ")) 
+            (:p (:strong "keywords selected: "))
             (:ul :class "keywords"
               (dolist (tag base)
                 (htm
@@ -640,7 +636,7 @@
                     (:a :href (format nil (s+ base-url "?kw=~{~a~^+~}") (remove tag base :test #'string=))
                         "[x]")
                     " "
-                    (:a :href (format nil (s+ base-url "?kw=~a") tag) (str tag)) 
+                    (:a :href (format nil (s+ base-url "?kw=~a") tag) (str tag))
                     ))))))
         (dolist (tag tags)
           (htm
