@@ -176,6 +176,9 @@
   ("/help/faqs"
     :get get-faqs)
 
+  ("/help/feedback"
+    :get get-feedback)
+
   ("/terms"
     :get get-terms)
 
