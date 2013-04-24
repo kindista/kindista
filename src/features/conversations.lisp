@@ -46,7 +46,7 @@
 (defun get-conversations ()
   (see-other "/messages"))
 
-(defun new-conversation (&key people subject text next)
+(defun new-conversation (&key people subject text next single-recipient)
   (if people
     (standard-page
      "New conversation"
@@ -54,29 +54,33 @@
        (:div :class "item"
         (:h2 "New Conversation")
        (:div :class "item"
-        (:form :method "post" 
-               :action "/conversations/new" 
+        (:form :method "post"
+               :action "/conversations/new"
                :class "recipients"
-          (:label "With:")
-          (:menu :class "recipients"
-           (unless people
-             (htm (:li (:em "nobody yet"))))
-           (dolist (person people)
-             (htm
-               (:li 
-                 (str (getf (db person) :name)) 
-                 (:button :class "text large" :type "submit" :name "remove" :value person " ⨯ ")))))
+          (:div :class "recipients"
+            (:label "With:")
+            (:menu :class "recipients"
+              (unless people
+                (htm (:li (:em "nobody yet"))))
+              (dolist (person people)
+                (htm
+                  (:li
+                    (str (getf (db person) :name))
+                    (unless single-recipient
+                      (htm (:button :class "text large x-remove" :type "submit" :name "remove" :value person " ⨯ "))))))
+              (unless single-recipient
+                (htm (:li (:button :type "submit" :class "text" :name "add" :value "new" "+ Add someone"))))))
+
           (when people
-            (htm (:input :type "hidden" :name "people" :value (format nil "~{~A~^,~}" people))))
+            (htm (:input :type "hidden" :name "people" :value (format nil "~{~A~^,~}" people)))) 
           (when next
-            (htm (:input :type "hidden" :name "next" :value next)))
-          (:p (:button :type "submit" :class "text" :name "add" :value "new" "+ Add someone"))
+              (htm (:input :type "hidden" :name "next" :value next))) 
           (:p (:label "Subject: ") (:input :type "text" :name "subject" :value subject))
           (:textarea :rows "8" :name "text" (str text))
-          (:p  
+          (:p
             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
-            (:button :class "yes" :type "submit" 
-                     :name "send" 
+            (:button :class "yes" :type "submit"
+                     :name "send"
                      "Send"))))))
      :selected "messages")
     (conversation-add-person :text text :next next)))
@@ -141,7 +145,7 @@
            (setf text nil))
          (cond
            ((and people text subject)
-            (see-other (format nil (or (post-parameter "next") 
+            (see-other (format nil (or (post-parameter "next")
                                        "/conversations/~A")
                                (create-conversation :people (mapcar #'list (cons *userid* people))
                                                     :public nil
@@ -161,6 +165,7 @@
              "no text OR recipients")
            (t
             "totally blank"))))
+
       ((post-parameter "add")
        (if (string= (post-parameter "add") "new")
          (conversation-add-person :people (parse-subject-list (post-parameter "people"))
@@ -171,6 +176,7 @@
            :text (post-parameter "text")
            :subject (post-parameter "subject")
            :next (post-parameter "next")
+           :single-recipient (post-parameter "single-recipient")
            :people (parse-subject-list
                        (format nil "~A,~A" (post-parameter "add") (post-parameter "people"))))))
 

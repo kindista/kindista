@@ -1312,6 +1312,12 @@ button.link {
  margin-right:1em;
 }
 
+button.simple-link {
+ border:0;
+ background-color: transparent;
+ font-size: inherit;
+}
+
 button.no-padding {
  padding: 0;
 }
@@ -1407,6 +1413,32 @@ table.post td {
 
 form.post-next h2 {
  margin: 0.75em 0;
+}
+
+form.recipients div.recipients {
+ overflow: hidden;
+}
+
+form.recipients label {
+ display: block;
+ float: left;
+ width: 4em;
+ height: 100%;
+}
+
+form.recipients menu.recipients {
+ float: left;
+ display: block;
+ margin: 0;
+}
+
+form.recipients menu.recipients li {
+ vertical-align: top;
+}
+
+form.recipients button.x-remove {
+ margin-left: 0.3em;
+ vertical-align: top;
 }
 
 .person-list img {

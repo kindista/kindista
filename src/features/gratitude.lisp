@@ -105,7 +105,7 @@
     (geo-index-remove *activity-geo-index* result)
     (remove-from-db id)))
 
-(defun gratitude-compose (&key subjects text next existing-url)
+(defun gratitude-compose (&key subjects text next existing-url single-recipient)
   (if subjects
     (standard-page
      (if existing-url "Edit your statement of gratitude" "Express gratitude")
@@ -125,16 +125,17 @@
              (htm
                (:li 
                  (str (getf (db subject) :name)) 
-                 (unless existing-url 
+                 (unless (or single-recipient existing-url) 
                    (htm 
-                     (:button :class "text large" :type "submit" :name "remove" :value subject " ⨯ ")))))))
+                     (:button :class "text large x-remove" :type "submit" :name "remove" :value subject " ⨯ "))))
+                (unless (or single-recipient existing-url)
+                  (htm
+                    (:li (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or project"))))
+               )))
           (when subjects
             (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" subjects))))
           (when next
             (htm (:input :type "hidden" :name "next" :value next)))
-          (unless existing-url 
-            (htm 
-              (:p (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or project"))))
           (:textarea :rows "8" :name "text" (str text))
           (:p  
             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
@@ -211,6 +212,8 @@
                                 :text (post-parameter "text")
                                 :next (post-parameter "next"))
          (gratitude-compose
+           :single-recipient (post-parameter "single-recipient")
+           :next (post-parameter "next")
            :text (post-parameter "text")
            :subjects (parse-subject-list
                        (format nil "~A,~A" (post-parameter "add") (post-parameter "subject"))))))
