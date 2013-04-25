@@ -17,6 +17,7 @@
 
 (in-package :kindista)
 
+(defparameter *show-errors* t)
 (defparameter *convert-path* "/usr/bin/convert")
 
 (define-constant +db-path+ "/srv/kindista/data/" :test #'string=)

@@ -284,13 +284,15 @@
                                     &key &allow-other-keys)
   "Disable automatic error pages."
   (declare (ignore http-status-code properties))
-  (base-page
-    "Error"
-    (html
-      (str (page-header))
-      (:div :id "site-error"
-        (:h1 "Something terrible happened")
-        (:p "Humans have been notified!")))))
+  (if *show-errors*
+    (call-next-method)
+    (base-page
+      "Error"
+      (html
+        (str (page-header))
+        (:div :id "site-error"
+          (:h1 "Something terrible happened")
+          (:p "Humans have been notified!"))))))
 
 (defvar *acceptor* (make-instance 'k-acceptor
                                   :port 5000
