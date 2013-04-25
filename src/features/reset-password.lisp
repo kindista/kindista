@@ -28,14 +28,14 @@
            (htm
              (:div :class "settings-item reset-password"
                (:form :method "post" :class "password" :autocomplete "off" :action "/reset"
-                 (:input :type "hidden" :name "token" :value token)
                  (:input :type "hidden" :name "email" :value email)
-                 (:div
-                   (:label "Security code:")
-                   (:input :type "text"
-                           :name "user-token"
-                           :value token
-                           :placeholder "enter security code here"))
+                 (if (and token (not (string= token "")))
+                   (htm (:input :type "hidden" :name "token" :value token)) 
+                   (htm (:div
+                          (:label "Security code:")
+                          (:input :type "text"
+                                  :name "token"
+                                  :placeholder "enter security code here")))) 
                  (:div
                    (:label "New password:")
                    (:input :type "password"
@@ -76,7 +76,7 @@
          (emailp (scan +email-scanner+ (post-parameter "email")))
          (userid (gethash email *email-index*))
          (user (db userid))
-         (token (or (post-parameter "token") (post-parameter "user-token"))))
+         (token (post-parameter "token")))
    (cond 
      (token
        (cond
@@ -111,7 +111,7 @@
            (awhen (getf user :password-reset-token) 
              (> (cdr it) 
                 (+ 3600 (get-universal-time)))))
-      (send-password-reset user email)
+      (send-password-reset userid email)
       (flash (s+ "Your password reset token has been resent to " email ". "
                  "Please click on the link provided in that email to reset "
                  "your password."))
@@ -122,7 +122,7 @@
       (modify-db userid :password-reset-token (cons
                                                 (random-password 12)
                                                 (+ (get-universal-time) 604800)))
-      (send-password-reset user email)
+      (send-password-reset userid email)
       (flash (s+ "A password reset token has been sent to " email ". "
                  "Please click on the link provided in that email to reset "
                  "your password."))
