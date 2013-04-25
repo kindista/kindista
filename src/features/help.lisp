@@ -43,9 +43,6 @@
 
     (delete-comments id)
 
-    (with-locked-hash-table (*comment-index*)
-      (remhash id *comment-index*))
-
     (with-locked-hash-table (*db-results*)
       (remhash id *db-results*))
 

@@ -199,8 +199,9 @@
 (defun index-reply (id data)
   (let ((result (make-result :id id
                              :time (db (getf data :latest-comment) :created)
-                             :people (db (getf data :latest-comment) :people)
+                             :people (getf data :people)
                              :type :reply)))
+
     (setf (gethash id *db-results*) result)
     (with-locked-hash-table (*person-conversation-index*)
       (dolist (pair (getf data :people))

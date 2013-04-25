@@ -74,11 +74,11 @@
 
             (when (getf *user* :admin)
               (htm
-                (:div :class "card reply"
-                (:h4 "post a comment") 
-                (:form :method "post" :action (strcat "/feedback/" id)
-                  (:table :class "post"
-                    (:tr
-                      (:td (:textarea :cols "150" :rows "4" :name "text"))
-                      (:td
-                        (:button :class "yes" :type "submit" :class "submit" "Reply")))))))))))))
+                (:div :class "item reply"
+                  (:h4 "post a comment") 
+                  (:form :method "post" :action (strcat "/feedback/" id)
+                    (:table :class "post"
+                      (:tr
+                        (:td (:textarea :cols "150" :rows "4" :name "text"))
+                        (:td
+                          (:button :class "yes" :type "submit" :class "submit" "Reply")))))))))))))

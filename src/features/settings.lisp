@@ -395,6 +395,10 @@
           (str (settings-donate base))
           (str (settings-deactivate base)))))))
 
+(defun get-settings-error ()
+  (flash "The avatar you uploaded is too large. Please upload an image smaller than 10MB." :error t)
+  (go-settings))
+
 (defun go-settings ()
   (see-other "/settings/personal"))
 

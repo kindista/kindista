@@ -64,6 +64,14 @@
                               :button-text "Save request"
                               :selected "requests")))))
 
+(defun get-request-reply (id)
+  (require-user
+    (let* ((id (parse-integer id))
+           (data (db id)))
+      (if (eql (getf data :type) :request)
+        (inventory-item-reply "request" id data)
+        (not-found)))))
+
 (defun post-request (id)
   (post-existing-inventory-item "request" :id id :url (script-name*)))
 
