@@ -57,9 +57,6 @@ Metrics
 - [ ] Weekly signups
 - [ ] Daily logins
 
-Search
-- [ ] is inventory query being kept from search-all when user selects offers/requests? is it possible to search terms and select tags at the same time?
-
 Task Queue
     # For follow-up and background actions that do not take place inside a request
 - [X] create task queue
@@ -79,13 +76,14 @@ Acknowledgements
 
 Notifications
 - [X] Emailing
-- [ ] unread messages count in main menu
+- [X] unread messages count in main menu
 
 Importing -- depends on Acknowledgements
 - [ ] Add tags to K1 offers and requests
 - [ ] Import K1 offers and requests
 - [ ] Import K1 users
 - [ ] import K1 communication preferences
+- [ ] give K1 users some invitations
 
 Loves
 - [ ] what is "love"?  help text when a user hover's over the love icon/love link
@@ -112,14 +110,6 @@ Settings
 - [X] aliases
 - [X] index aliases as well as names
 - [X] deactivate account
-- [X] setf (db userid) :active to nil
-- [X] delete offers/requests
-- [X] remove name/aliases from metaphone index and id from geo index
-- [X] set contact items to nil
-- [X] activate account
-- [X] setf :active to t
-- [X] reindex names and location indexes
-- [X] set contact items to t
 - [X] change password with "forgot password link
 - [X] check user communication preferences before sending gratitude/message notifications
 - [ ] warning if avatar is too big for nginx
