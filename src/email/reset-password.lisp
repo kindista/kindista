@@ -1,7 +1,8 @@
 (in-package :kindista)
 
-(defun send-password-reset (user email)
-  (let* ((name (getf user :name))
+(defun send-password-reset (userid email)
+  (let* ((user (db userid))
+         (name (getf user :name))
          (token (car (getf user :password-reset-token)))
          (expiration (humanize-future-time
                     (cdr (getf user :password-reset-token)))))
