@@ -73,6 +73,9 @@
     :get get-offer
     :post post-offer)
 
+  ("/offers/<int:id>/reply"
+    :get get-offer-reply)
+
   ("/requests"
    :get get-requests)
 
@@ -86,6 +89,9 @@
   ("/requests/<int:id>"
     :get get-request
     :post post-request)
+
+  ("/requests/<int:id>/reply"
+    :get get-request-reply)
 
   ("/gratitude/new"
    :get get-gratitudes-new
@@ -157,6 +163,10 @@
 
   ("/settings/personal"
     :get get-settings)
+
+  ("/settings/error"
+    :get get-settings-error)
+
 
   ("/settings/verify-address"
     :get get-verify-address)
