@@ -17,6 +17,22 @@
 
 (in-package :kindista)
 
+(defun send-gratitude-notification-email (gratitude-id)
+  (let* ((gratitude (db gratitude-id))
+         (from (getf gratitude :author))
+         (to-list (iter (for subject in (getf gratitude :subjects))
+                        (when (db subject :notify-gratitude)
+                          (collect subject)))))
+    (dolist (to to-list)
+      (cl-smtp:send-email +mail-server+
+                          "Kindista <noreply@kindista.org>"
+                          (car (getf (db to) :emails))
+                          (s+ (getf (db from) :name) " has posted a statement of gratitude about you")
+                          (gratitude-notification-email-text gratitude-id
+                                                             gratitude
+                                                             from)
+                          :html-message (gratitude-notification-email-html gratitude-id gratitude from)))))
+
 (defun gratitude-notification-email-text (gratitude-id gratitude from)
   (strcat (getf (db from) :name)
 " has shared a statement of gratitude about you on Kindista.

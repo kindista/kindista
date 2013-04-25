@@ -17,6 +17,24 @@
 
 (in-package :kindista)
 
+(defvar *style-a* "color:#5c8a2f;
+                   text-decoration:none;")
+
+(defvar *style-p* "margin-top:.9em;
+                   margin-bottom:.9em;")
+
+(defvar *style-quote-box* "border-collapse: collapse;
+                           background: #ebf2e4;
+                           margin: 8px;
+                           border: thin solid #bac2b2;")
+
+(defun person-email-link (id)
+  (html
+    (:a :href (strcat +base-url+ "/people/" (username-or-id id)) (str (getf (db id) :name)))))
+
+(defun person-name (id)
+  (db id :name))
+
 (defun html-email-base (content)
   (html
     (:html
@@ -46,4 +64,20 @@
                             color: #000000;
                             background: #ffffff;"
                  (str content))))))))
+
+(defun send-welcome-email (email token)
+  (cl-smtp:send-email +mail-server+
+                      "Kindista <noreply@kindista.org>"
+                      email
+                      "Welcome to Kindista!"
+                      (welcome-email-text email token)
+                      :html-message (welcome-email-html email token)))
+
+(defun send-new-email (email token)
+  (cl-smtp:send-email +mail-server+
+                      "Kindista <noreply@kindista.org>"
+                      email
+                      "Verify your email address"
+                      (new-email-text email token)
+                      :html-message (new-email-html email token)))
 

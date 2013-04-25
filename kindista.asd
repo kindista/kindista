@@ -90,9 +90,9 @@
                              (:file "main")
                              (:module email
                                       :serial t
-                                      :components ((:file "base")
+                                      :components ((:file "helpers")
                                                    (:file "email-verification")
-                                                   (:file "email-handlers")
+                                                   (:file "feedback-notification")
                                                    (:file "gratitude-notification")
                                                    (:file "invitation")
                                                    (:file "message-notification")

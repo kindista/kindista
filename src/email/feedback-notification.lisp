@@ -17,26 +17,27 @@
 
 (in-package :kindista)
 
-(defun run ()
-  (load-notice-handlers)
-  (load-db)
-  (load-tokens)
-  (start *acceptor*)
-  (start-notice-thread))
+(defun send-feedback-notification-email (id)
+  (let* ((feedback (db id))
+         (by (db (getf feedback :by) :name))
+         (text (getf feedback :text)))
+    (cl-smtp:send-email +mail-server+
+                        "Kindista <noreply@kindista.org>"
+                        "feedback@kindista.org"
+                        (s+ "Kindista feedback from " by)
+                        (feedback-notification-email-text id
+                                                          by
+                                                          text))))
 
-(defun load-notice-handlers ()
-  (clrhash *notice-handlers*)
-  (add-notice-handler :all #'log-notice)
-  (add-notice-handler :new-comment #'new-comment-notice-handler)
-  (add-notice-handler :new-feedback #'new-feedback-notice-handler)
-  (add-notice-handler :new-gratitude #'new-gratitude-notice-handler))
+(defun feedback-notification-email-text (id by text)
+  (strcat
+"Feedback ID: " id
+"
 
-(defun end ()
-  (save-db)
-  (save-tokens)
-  (stop *acceptor*)
-  (stop-notice-thread))
+Posted by: " by
+"
 
-(defun quit ()
-  (end)
-  (sb-ext:exit))
+Text:
+" text))
+
+

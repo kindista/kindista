@@ -17,6 +17,39 @@
 
 (in-package :kindista)
 
+(defun send-comment-notification-email (comment-id)
+  (let* ((comment (db comment-id))
+         (conversation-id (getf comment :on))
+         (conversation (db conversation-id))
+         (subject (getf conversation :subject))
+         (text (getf comment :text))
+         (sender-id (getf comment :by))
+         (sender-name (db sender-id :name))
+         (people (mapcar #'car (getf conversation :people))))
+    (dolist (to (iter (for person in (remove sender-id people))
+                      (when (db person :notify-message)
+                        (collect person))))
+      (cl-smtp:send-email
+        +mail-server+
+        "Kindista <noreply@kindista.org>"
+        (car (db to :emails))
+        (s+ "New message from " sender-name)
+        (comment-notification-email-text conversation-id
+                                         sender-name
+                                         subject
+                                         (name-list (remove to people)
+                                                    :func #'person-name
+                                                    :minimum-links 5)
+                                         text)
+        :html-message (comment-notification-email-html
+                        conversation-id
+                        (person-email-link sender-id)
+                        subject
+                        (name-list (remove to people)
+                                   :func #'person-email-link
+                                   :minimum-links 5)
+                        text)))))
+
 (defun comment-notification-email-text (conversation-id from subject people text)
   (strcat "A conversation with " people
 "

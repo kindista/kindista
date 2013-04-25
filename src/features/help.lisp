@@ -17,11 +17,17 @@
 
 (in-package :kindista)
 
+(defun new-feedback-notice-handler ()
+  (send-feedback-notification-email (getf (cddddr *notice*) :id)))
+
 (defun create-feedback (&key (by *userid*) text (time (get-universal-time)))
-  (insert-db (list :type :feedback
-                   :text text
-                   :by by
-                   :created time)))
+  (let ((id (insert-db (list :type :feedback
+                             :text text
+                             :by by
+                             :created time))))
+
+    (notice :new-feedback :time time :id id)
+    id))
 
 (defun index-feedback (id data)
   (let* ((by (getf data :by))

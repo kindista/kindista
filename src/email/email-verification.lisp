@@ -1,5 +1,21 @@
 (in-package :kindista)
 
+(defun send-email-verification (invitation-id)
+  (let* ((invitation (db invitation-id))
+         (token (getf invitation :token))
+         (expires (getf invitation :valid-until))
+         (to (getf invitation :recipient-email)))
+    (cl-smtp:send-email +mail-server+
+                        "Kindista <noreply@kindista.org>"
+                        to
+                        "Please verify your email address."
+                        (email-verification-text invitation-id
+                                                 to
+                                                 token)
+                        :html-message (email-verification-html invitation-id
+                                                               to
+                                                               token))))
+
 (defun email-verification-text (id to token)
   (s+ 
 "To validate this email address, click on this link or 

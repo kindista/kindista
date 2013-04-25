@@ -17,6 +17,29 @@
 
 (in-package :kindista)
 
+(defun send-invitation-email (invitation-id)
+  (let* ((invitation (db invitation-id))
+         (token (getf invitation :token))
+         (from (getf invitation :host))
+         (text (getf invitation :text))
+         (expires (getf invitation :valid-until))
+         (to (getf invitation :recipient-email)))
+    (cl-smtp:send-email +mail-server+
+                        "Kindista <noreply@kindista.org>"
+                        to
+                        (s+ (getf (db from) :name) " has invited you to join Kindista!")
+                        (invitation-email-text invitation-id
+                                               token
+                                               to
+                                               from
+                                               :text text)
+                        :html-message (invitation-email-html invitation-id
+                                                             token
+                                                             to
+                                                             from
+                                                             :text text)
+    )))
+
 (defun invitation-email-text (invitation-id token to from &key text)
   (let ((sender (getf (db from) :name)))
     (s+ sender
