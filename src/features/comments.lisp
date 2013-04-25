@@ -25,11 +25,13 @@
                              :on on
                              :by by
                              :text text
-                             :created time))))
+                             :created time)))
+        (on-type (db on :type)))
 
     (modify-db on :latest-comment id)
 
-    (when (eq (db on :type) :conversation)
+    (when (or (eq on-type :conversation)
+              (eq on-type :reply))
       (with-locked-hash-table (*db-results*)
         (setf (result-time (gethash on *db-results*)) time))
       (notice :new-comment :time time :id id))
@@ -40,6 +42,12 @@
     (asetf (gethash (getf (db id) :on) *comment-index*) (remove id it)))
 
   (remove-from-db id))
+
+(defun delete-comments (id)
+  (dolist (comment (gethash id *comment-index*))
+    (delete-comment comment))
+  (with-locked-hash-table (*comment-index*)
+    (remhash id *comment-index*)))
 
 
 (defun latest-comment (id)

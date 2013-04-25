@@ -176,7 +176,11 @@
   ("/help/faqs"
     :get get-faqs)
 
-  ("/help/feedback"
+  ("/feedback"
+    :post post-feedbacks
+    :get get-feedbacks)
+
+  ("/feedback/<id>"
     :post post-feedback
     :get get-feedback)
 

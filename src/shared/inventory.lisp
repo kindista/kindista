@@ -163,6 +163,8 @@
                    (remove result it)))))
       (geo-index-remove *request-geo-index* result))
 
+    (delete-comments id)
+
     (with-locked-hash-table (*love-index*)
       (dolist (person-id (gethash id *love-index*))
         (amodify-db person-id :loves (remove id it))))
@@ -181,6 +183,28 @@
         (asetf *old-inventory-index* (remove id it :key #'result-id))))
 
     (remove-from-db id)))
+
+(defun create-reply (&key on text (user *userid*))
+  (let* ((time (get-universal-time))
+         (id (insert-db (list :type :reply
+                              :on on
+                              :by user
+                              :people (list (cons user nil) (cons (db on :by) nil))
+                              :created time))))
+
+    (create-comment :on id :by user :text text)
+
+    id))
+
+(defun index-reply (id data)
+  (let ((result (make-result :id id
+                             :time (db (getf data :latest-comment) :created)
+                             :people (db (getf data :latest-comment) :people)
+                             :type :reply)))
+    (setf (gethash id *db-results*) result)
+    (with-locked-hash-table (*person-conversation-index*)
+      (dolist (pair (getf data :people))
+        (push result (gethash (car pair) *person-conversation-index*))))))
 
 (defun post-new-inventory-item (type &key url)
   (require-active-user
@@ -318,6 +342,15 @@
                                      :button-text (s+ "Save " type)
                                      :error "You must select at least one keyword"
                                      :selected (s+ type "s"))))
+
+            ((post-parameter "reply")
+             (see-other (s+ (script-name*) "/reply")))
+
+            ((post-parameter "reply-text")
+             (create-reply :on id :text (post-parameter "reply-text"))
+             (flash "Your reply has been sent.")
+             (see-other (script-name*)))
+
 
             (t
               (enter-inventory-tags :title (s+ "Edit your " type)
@@ -530,12 +563,11 @@
             (str (rdist-selection-html (url-compose base-url "q" q "kw" base)
                                        :style "display:inline;"
                                        :text (if q " within "
-                                                   "showing results within "))))
-          (:span
+                                                   "showing results within ")))
             (when (or base q)
               (htm
-                (:span :style "float: right;" (:a :href (str base-url)
-                                                        (str (s+"show all " type "s")))))))
+                (:p (:a :href (str base-url) (str (s+"show all " type "s")))))))
+          
           (iter (for i from 0 to (+ start 20))
                 (cond
                   ((< i start)
@@ -653,3 +685,19 @@
                          (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
                      (unless (= i 1)
                        (str ", ")))))))))))))
+
+(defun inventory-item-reply (type id data)
+  (standard-page
+    "Reply"
+    (html
+      (:h1 "Reply to " (str type))
+      (:p (str (getf data :text)))
+      (:h4 "Write your reply:")
+      (:div :class "item"
+        (:form :method "post" :action (strcat "/" type "s/" id)
+          (:table :class "post"
+           (:tr
+             (:td (:textarea :cols "1000" :rows "4" :name "reply-text"))
+             (:td
+               (:button :class "yes" :type "submit" :class "submit" "Reply")))))))
+    :selected (s+ type "s")))

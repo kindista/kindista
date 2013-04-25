@@ -66,6 +66,15 @@
                               :tags (getf offer :tags)
                               :button-text "Save offer"
                               :selected "offers")))))
+
+(defun get-offer-reply (id)
+  (require-user
+    (let* ((id (parse-integer id))
+           (data (db id)))
+      (if (eql (getf data :type) :offer)
+        (inventory-item-reply "offer" id data)
+        (not-found)))))
+
 (defun post-offer (id)
   (post-existing-inventory-item "offer" :id id :url (script-name*)))
 

@@ -97,6 +97,8 @@
     (with-locked-hash-table (*db-results*)
       (remhash id *db-results*))
 
+    (delete-comments id)
+
     (with-locked-hash-table (*activity-person-index*)
       (dolist (person people)
         (asetf (gethash person *activity-person-index*)

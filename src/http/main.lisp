@@ -60,7 +60,7 @@
   (flash "Sorry, you must reactivate your account to perform that action." :error t)
   (see-other (or (referer) "/")))
 
-;;; routing and acceptor {{{
+;;; routing and jcceptor {{{
 
 (setf *methods-for-post-parameters* '(:post :put))
 
@@ -142,12 +142,6 @@
   (let* ((salt (first (ppcre:split ":" crypted-password :limit 2)))
          (crypted-password2 (crypt-password password salt)))
     (string= crypted-password crypted-password2)))
-
-(defun set-password (username password)
-  (with-file-lock ((s+ +db-path+ "users/" username))
-    (let ((user (load-user username)))
-      (setf (getf user :pass) (new-password password))
-      (save-user username user))))
 
 (defun password-match-p (id password)
   (let ((crypted-password (getf (db id) :pass)))
@@ -284,13 +278,19 @@
                       "that method is not permitted on this URL")))))))
     (not-found)))
 
-#|(defmethod acceptor-status-message ((acceptor k-acceptor)
+(defmethod acceptor-status-message ((acceptor k-acceptor)
                                     http-status-code
                                     &rest properties
                                     &key &allow-other-keys)
   "Disable automatic error pages."
   (declare (ignore http-status-code properties))
-  nil)|#
+  (base-page
+    "Error"
+    (html
+      (str (page-header))
+      (:div :id "site-error"
+        (:h1 "Something terrible happened")
+        (:p "Humans have been notified!")))))
 
 (defvar *acceptor* (make-instance 'k-acceptor
                                   :port 5000

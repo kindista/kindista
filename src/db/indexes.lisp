@@ -29,6 +29,7 @@
   (dolist (index *indexes*)
     (clrhash (symbol-value index)))
   (setf *old-inventory-index* ())
+  (setf *feedback-index* ())
   (setf *recent-activity-index* ()))
 
 (defindex *activity-geo-index*)
@@ -58,3 +59,5 @@
 (defvar *recent-activity-index* ())
 (defvar *old-inventory-mutex* (make-mutex))
 (defvar *old-inventory-index* ())
+(defvar *feedback-mutex* (make-mutex))
+(defvar *feedback-index* ())

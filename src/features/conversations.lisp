@@ -197,81 +197,117 @@
 (defun get-conversation (id)
   (require-user
     (setf id (parse-integer id))
-    (aif (db id)
-      (if (member *userid* (mapcar #'first (getf it :people)))
-        (let ((latest-seen (cdr (assoc *userid* (getf it :people)))))
-          (standard-page
-            (ellipsis (getf it :subject) 24)
-            (html
-              (str (menu-horiz "actions"
-                               (html (:a :href "/messages" "back to messages"))
-                               (html (:a :href "#reply" "reply"))
-                               (html (:a :href (strcat "/conversations/" id "/leave") "leave conversation"))))
-              (str
-                (card
-                  (html
-                    (when (getf it :subject)
-                      (htm
-                        (:h2 "Subject: " (str (getf it :subject)))))
-                    (:p "with " (str (name-list-all (remove *userid* (mapcar #'car (getf it :people)))))))))
+    (let* ((it (db id))
+           (type (getf it :type)))
+      (if (or (eq type :reply)
+              (eq type :conversation))
+        (if (member *userid* (mapcar #'first (getf it :people)))
+          (let ((latest-seen (cdr (assoc *userid* (getf it :people)))))
+            (standard-page
+              (ellipsis (getf it :subject) 24)
+              (html
+                (str (menu-horiz "actions"
+                                 (html (:a :href "/messages" "back to messages"))
+                                 (html (:a :href "#reply" "reply"))
+                                 (when (eq (getf it :type) :conversation)
+                                   (html (:a :href (strcat "/conversations/" id "/leave") "leave conversation")))))
+                (str
+                  (card
+                    (html
+                      (when (getf it :subject)
+                        (htm
+                          (:h2 "Subject: " (str (getf it :subject)))))
+                      (case type
+                        (:conversation
+                          (let ((people (remove *userid* (mapcar #'car (getf it :people)))))
+                            (if people
+                              (htm (:p "with " (str (name-list-all people))))
+                              (htm (:p :class "error" "Everybody else has left this conversation.")))))
+                        (:reply
+                          (let ((item (db (getf it :on))))
+                            (if (eql (getf it :by) *userid*)
+                              (htm
+                                (:p
+                                "You replied to "
+                                (str (person-link (getf item :by))) 
+                                "'s "
+                                (case (getf item :type)
+                                  (:offer
+                                   (htm (:a :href (strcat "/offers/" (getf it :on)) "offer")))
+                                  (:request
+                                   (htm (:a :href (strcat "/requests/" (getf it :on)) "request"))))
+                                ":"))
+                              (htm
+                                (:p
+                                  "A conversation with "
+                                  (str (person-link (getf it :by))) 
+                                  " about your "
+                                  (case (getf item :type)
+                                    (:offer
+                                     (htm (:a :href (strcat "/offers/" (getf it :on)) "offer")))
+                                    (:request
+                                     (htm (:a :href (strcat "/requests/" (getf it :on)) "request"))))
+                                  ":")))
+                            (htm (:blockquote (str (regex-replace-all "\\n" (getf item :text) "<br>"))))))))))
 
-              (dolist (comment-id (gethash id *comment-index*))
-                (let* ((data (db comment-id))
-                       (by (getf data :by))
-                       (bydata (db by)))
-                  (str
-                    (card
-                      (html
-                        (str (h3-timestamp (getf data :created)))
-                        (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
-                        (:p :class (when (>= (or latest-seen 0) comment-id) "new") 
-                          (str (regex-replace-all "\\n" (db comment-id :text) "<br>"))))))))
+                (dolist (comment-id (gethash id *comment-index*))
+                  (let* ((data (db comment-id))
+                         (by (getf data :by))
+                         (bydata (db by)))
+                    (str
+                      (card
+                        (html
+                          (str (h3-timestamp (getf data :created)))
+                          (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
+                          (:p :class (when (>= (or latest-seen 0) comment-id) "new") 
+                            (str (regex-replace-all "\\n" (db comment-id :text) "<br>"))))))))
 
-              (:div :class "item" :id "reply"
-                (:h4 "post a reply") 
-                (:form :method "post" :action (script-name*)
-                  (:table :class "post"
-                    (:tr
-                      (:td (:textarea :cols "150" :rows "4" :name "text"))
-                      (:td
-                        (:button :class "yes" :type "submit" :class "submit" "Send")))))) 
+                (:div :class "item" :id "reply"
+                  (:h4 "post a reply") 
+                  (:form :method "post" :action (script-name*)
+                    (:table :class "post"
+                      (:tr
+                        (:td (:textarea :cols "150" :rows "4" :name "text"))
+                        (:td
+                          (:button :class "yes" :type "submit" :class "submit" "Send")))))) 
 
-              (unless (eql (cdr (assoc *userid* (db id :people))) (latest-comment id))
-                (amodify-db id :people (progn (setf (cdr (assoc *userid* it)) (latest-comment id)) it)))
+                (unless (eql (cdr (assoc *userid* (db id :people))) (latest-comment id))
+                  (amodify-db id :people (progn (setf (cdr (assoc *userid* it)) (latest-comment id)) it)))
 
-              ; get most recent comment seen
-              ; get comments for 
+                ; get most recent comment seen
+                ; get comments for 
 
-            )
+              )
 
-            :selected "messages"))
+              :selected "messages"))
 
-        (permission-denied))
-      (not-found))))
+          (permission-denied)) 
+      (not-found)))))
 
 (defun get-conversation-leave (id)
   (require-user
     (setf id (parse-integer id))
-    (aif (db id)
-      (if (member *userid* (mapcar #'first (getf it :people)))
-        (standard-page
-          "Leave conversation"
-          (html
+    (let ((it (db id)))
+      (if (and it (eql (getf it :type) :conversation))
+        (if (member *userid* (mapcar #'first (getf it :people)))
+          (standard-page
+            "Leave conversation"
+            (html
 
-            (:h2 "Are you sure you want to leave this conversation?")
+              (:h2 "Are you sure you want to leave this conversation?")
 
-            (:p "You won't be able to re-join the conversation after leaving.")
+              (:p "You won't be able to re-join the conversation after leaving.")
 
-            (:p (:strong "Subject: ") (str (getf it :subject)))
+              (:p (:strong "Subject: ") (str (getf it :subject)))
 
-            (:form :method "post" :action (strcat "/conversations/" id)
-              (:button :class "yes" :type "submit" :class "submit" :name "leave" "Yes")      
-              (:a :href (strcat "/conversations/" id) "No, I didn't mean it!"))) 
+              (:form :method "post" :action (strcat "/conversations/" id)
+                (:a :href (strcat "/conversations/" id) "No, I didn't mean it!")
+                (:button :class "yes" :type "submit" :class "submit" :name "leave" "Yes")))
 
-          :selected "messages")
+            :selected "messages")
 
-        (permission-denied)) 
-      (not-found))))
+          (permission-denied)) 
+        (not-found)))))
 
 (defun post-conversation (id)
   (require-active-user

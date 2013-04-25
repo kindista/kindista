@@ -29,7 +29,8 @@
 (defun new-inbox-items ()
   (loop for item in (all-inbox-items)
         while (< (or (db *userid* :last-checked-mail) 0) (result-time item))
-        unless (and (eq (result-type item) :conversation)
+        unless (and (or (eq (result-type item) :conversation)
+                        (eq (result-type item) :reply))
                     (eq (db (result-id item) :latest-comment)
                         (cdr (assoc *userid* (result-people item)))))
         counting item into new-items
@@ -59,6 +60,41 @@
                             (latest (latest-comment id))
                             (latest-seen (cdr (assoc *userid* (getf item-data :people))))
                             (comment-data (db latest))
+                            (comments (length (gethash id *comment-index*)))
+                            (people (remove *userid*
+                                            (cons (getf comment-data :by)
+                                                  (remove (getf comment-data :by)
+                                                          (mapcar #'car (getf item-data :people)))))))
+                       (str
+                         (card
+                           (html
+                             (str (h3-timestamp (result-time item)))
+                             (:p :class "people"
+                               (cond
+                                 ((eql (getf comment-data :by) *userid*)
+                                  (str "↪ "))
+                                 ((not (eql latest latest-seen))
+                                  (str "• ")))
+
+                               (if people
+                                 (str (name-list people))
+                                 (htm (:span :class "nobody" "Empty conversation"))))
+
+                             (:p :class "text"
+                               (:span :class "title"
+                                 (:a :href (strcat "/conversations/" id) (str (ellipsis (getf item-data :subject) 30)))
+                                 (when (> comments 1)
+                                   (htm
+                                     " (" (str comments) ")")))
+                               " - "
+                               (:a :href (strcat "/conversations/" id)
+                                (str (ellipsis (getf comment-data :text))))))))))
+                   (:reply
+                     (let* ((id (result-id item))
+                            (latest (latest-comment id))
+                            (latest-seen (cdr (assoc *userid* (getf item-data :people))))
+                            (comment-data (db latest))
+                            (original-item (db (getf item-data :on)))
                             (comments (length (gethash id *comment-index*))))
                        (str
                          (card
@@ -71,17 +107,30 @@
                                  ((not (eql latest latest-seen))
                                   (str "• ")))
 
-                               (str (name-list (remove *userid*
-                                                       (cons (getf comment-data :by)
-                                                             (remove (getf comment-data :by)
-                                                                     (mapcar #'car (getf item-data :people))))))))
+                               (if (eql (db id :by) *userid*)
+                                 (htm
+                                   "You replied to "
+                                   (str (person-link (getf original-item :by)))
+                                   "'s "
+                                   (case (getf original-item :type)
+                                     (:offer
+                                      (htm (:a :href (strcat "/offers/" (getf item-data :on)) "offer")))
+                                     (:request
+                                      (htm (:a :href (strcat "/requests/" (getf item-data :on)) "request")))))
+                                 (htm
+                                   (str (person-link (getf item-data :by)))
+                                   " replied to your "
+                                   (case (getf original-item :type)
+                                     (:offer
+                                      (htm (:a :href (strcat "/offers/" (getf item-data :on)) "offer")))
+                                     (:request
+                                      (htm (:a :href (strcat "/requests/" (getf item-data :on)) "request")))))))
+
                              (:p :class "text"
                                (:span :class "title"
-                                 (:a :href (strcat "/conversations/" id) (str (ellipsis (getf item-data :subject) 30)))
                                  (when (> comments 1)
                                    (htm
-                                     " (" (str comments) ")")))
-                               " - "
+                                     " (" (str comments) ") - ")))
                                (:a :href (strcat "/conversations/" id)
                                 (str (ellipsis (getf comment-data :text))))))))))
                    (:contact-n

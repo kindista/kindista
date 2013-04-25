@@ -29,3 +29,56 @@
       (when next-url
         (htm (:input :type "hidden" :name "next" :value next-url)))
       (:input :type "submit" :value title))))
+
+(defun feedback-card (id)
+  (let* ((data (db id))
+         (url (strcat "/feedback/" id))
+         (by (getf data :by))
+         (bydata (db by)))
+    (card
+      (html
+        (str (h3-timestamp (getf data :created)))
+        (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
+        (:p (str (regex-replace-all "\\n" (getf data :text) "<br>")))
+        (:div :class "actions"
+          (str (activity-icons :hearts (loves id) :url url))
+          (:form :method "post" :action url
+            (:input :type "hidden" :name "next" :value (script-name*))
+            (if (member *userid* (gethash id *love-index*))
+              (htm (:input :type "submit" :name "unlove" :value "Loved"))
+              (htm (:input :type "submit" :name "love" :value "Love")))   
+            (when (getf *user* :admin)
+               (htm
+                " &middot; "  
+                (:input :type "submit" :name "reply" :value "Reply")))
+            (when (eql *userid* by)
+              (htm
+                " &middot; "  
+                (:input :type "submit" :name "delete" :value "Delete")))))
+
+          (:div :class "comments"
+            (dolist (comment-id (gethash id *comment-index*))
+              (let* ((data (db comment-id))
+                     (by (getf data :by))
+                     (bydata (db by)))
+                (str
+                  (card
+                    (html
+                      (str (h3-timestamp (getf data :created)))
+                      (when (or (eql (getf data :by) *userid*)
+                                (getf *user* :admin))
+                        (htm (:a :class "right" :href (strcat "/comments/" comment-id "/delete") "delete"))) 
+                      (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
+                      (:p 
+                        (str (regex-replace-all "\\n" (db comment-id :text) "<br>")))))))) 
+
+            (when (getf *user* :admin)
+              (htm
+                (:div :class "card reply"
+                (:h4 "post a comment") 
+                (:form :method "post" :action (strcat "/feedback/" id)
+                  (:table :class "post"
+                    (:tr
+                      (:td (:textarea :cols "150" :rows "4" :name "text"))
+                      (:td
+                        (:button :class "yes" :type "submit" :class "submit" "Reply")))))))))))))

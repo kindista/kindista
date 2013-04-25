@@ -61,6 +61,8 @@
          (data (db id))
          (people (cons (getf data :giver) (getf data :recipients))))
 
+    (delete-comments id)
+
     (with-locked-hash-table (*db-results*)
       (remhash id *db-results*))
 
@@ -102,7 +104,7 @@
                       (:p 
                         (str (regex-replace-all "\\n" (db comment-id :text) "<br>")))))))) 
 
-            (:div :class "item" :id "reply"
+            (:div :class "item reply"
               (:h4 "post a comment") 
               (:form :method "post" :action (script-name*)
                 (:table :class "post"

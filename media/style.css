@@ -1806,3 +1806,22 @@ body.donate {
  max-width: 40em;
  padding: 0 1em 0.1em;
 }
+
+.item.reply:first-child {
+ padding-top: 1em;
+}
+
+input[name=reply] {
+ font-weight: bold;
+}
+
+.nobody {
+ font-weight: bold;
+ font-style: italic;
+ color: #666;
+}
+
+#site-error {
+ text-align: center;
+ margin: 2em;
+}

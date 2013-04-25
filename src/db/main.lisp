@@ -441,10 +441,12 @@
   (case (getf data :type)
     (:comment (index-comment id data))
     (:invitation (index-invitation id data))
+    (:feedback (index-feedback id data))
     (:gift (index-gift id data))
     (:gratitude (index-gratitude id data))
     ((or :offer :request) (index-inventory-item id data))
     (:person (index-person id data))
+    (:reply (index-reply id data))
     (:contact-n (index-contact-notification id data))
     (:conversation (index-conversation id data))))
 
