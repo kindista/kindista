@@ -29,7 +29,7 @@
          (text (getf comment :text))
          (sender-id (getf comment :by))
          (sender-name (db sender-id :name))
-         (inventory-poster (db (getf inventory-item :by)))
+         (inventory-poster (getf inventory-item :by))
          (subject (if (eq on-type :reply)
                     (if (eql sender-id inventory-poster)
                       (s+ sender-name " has replied to your question about their " inventory-type ":")
@@ -126,7 +126,7 @@ Thank you for sharing your gifts with us!
                  (str (strcat +base-url+ "/conversation/" on-id))))
 
       (:p :style *style-p*
-          "If you no long wish to receive notifications when people send you messages, please edit your settings:"
+          "If you no longer wish to receive notifications when people send you messages, please edit your settings:"
        (:br)
        (:a :href (strcat +base-url+ "/settings/communication")
                  (str (strcat +base-url+ "/settings/communication"))))
