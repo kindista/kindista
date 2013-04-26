@@ -31,8 +31,8 @@
         while (< (or (db *userid* :last-checked-mail) 0) (result-time item))
         unless (and (or (eq (result-type item) :conversation)
                         (eq (result-type item) :reply))
-                    (eq (db (result-id item) :latest-comment)
-                        (cdr (assoc *userid* (result-people item)))))
+                    (eql (db (db (result-id item) :latest-comment) :by)
+                         *userid*))
         counting item into new-items
         finally (return new-items)))
 
