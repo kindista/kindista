@@ -108,15 +108,16 @@
 
 
 (defun get-offers-all ()
-  (require-user
-    (let ((base (iter (for tag in (split " " (get-parameter "kw")))
-                      (when (scan *tag-scanner* tag)
-                        (collect tag)))))
-      (multiple-value-bind (tags items)
-          (nearby-inventory-top-tags :offer :count 10000 :subtag-count 10)
-        (standard-page
-         "offers"
-           (browse-all-inventory-tags "offer" :base base :tags tags)
-           :top (when (getf *user* :help)
-                 (offers-help-text))
-           :selected "offers")))))
+  (with-user
+    (with-location
+      (let ((base (iter (for tag in (split " " (get-parameter "kw")))
+                        (when (scan *tag-scanner* tag)
+                          (collect tag)))))
+        (multiple-value-bind (tags items)
+            (nearby-inventory-top-tags :offer :count 10000 :subtag-count 10)
+          (standard-page
+           "offers"
+             (browse-all-inventory-tags "offer" :base base :tags tags)
+             :top (when (getf *user* :help)
+                   (offers-help-text))
+             :selected "offers"))))))

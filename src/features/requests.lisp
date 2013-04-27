@@ -106,15 +106,16 @@
 
 
 (defun get-requests-all ()
-  (require-user
-    (let ((base (iter (for tag in (split " " (get-parameter "kw")))
-                      (when (scan *tag-scanner* tag)
-                        (collect tag)))))
-      (multiple-value-bind (tags items)
-          (nearby-inventory-top-tags :request :count 10000 :subtag-count 10)
-        (standard-page
-         "Requests"
-           (browse-all-inventory-tags "request" :base base :tags tags)
-           :top (when (getf *user* :help)
-                 (requests-help-text))
-           :selected "requests")))))
+  (with-user
+    (with-location
+      (let ((base (iter (for tag in (split " " (get-parameter "kw")))
+                        (when (scan *tag-scanner* tag)
+                          (collect tag)))))
+        (multiple-value-bind (tags items)
+            (nearby-inventory-top-tags :request :count 10000 :subtag-count 10)
+          (standard-page
+           "Requests"
+             (browse-all-inventory-tags "request" :base base :tags tags)
+             :top (when (getf *user* :help)
+                   (requests-help-text))
+             :selected "requests"))))))
