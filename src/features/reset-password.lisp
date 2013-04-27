@@ -53,7 +53,7 @@
                (:p :class "help-text"
                 "Minimum of 8 characters. "
                 "We strongly recommend using either a mix of upper- and "
-                "lower-case letters, numbers, and symbols; or a sentance "
+                "lower-case letters, numbers, and symbols; or a sentence "
                 "of at least 8 words.")   
                ))))
         (t
