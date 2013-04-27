@@ -32,7 +32,7 @@ To reset your password and access your account please click on
 the following link or cut and paste it into the address bar of your browser:
 
 "
-(url-compose (s+ +base-url+ "/reset")
+(url-compose (s+ +base-url+ "reset")
              "token" token 
              "email" email)
 "
