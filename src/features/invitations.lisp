@@ -61,7 +61,7 @@
                       (> (getf (db id) :valid-until) now))
             (collect id)))))
 
-(defun unconfirmed-invitations (host)
+(defun unconfirmed-invitations (&optional (host *userid*))
   (let ((all-invites (gethash host *person-invitation-index*))
         (now (get-universal-time)))
     (iter (for id in all-invites) 
