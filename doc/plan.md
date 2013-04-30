@@ -66,7 +66,7 @@ Renew SSL
 - [X] renew SSL certificate for kindista.org
 
 Help and Feedback
-- [ ] Collect comments
+- [X] Collect comments
 - [ ] Index of active topics
 - [ ] Bug fixes
 - [ ] New features
@@ -83,13 +83,13 @@ Importing -- depends on Acknowledgements
 - [ ] Import K1 offers and requests
 - [ ] Import K1 users
 - [ ] import K1 communication preferences
-- [ ] give K1 users some invitations
 
 Loves
 - [ ] what is "love"?  help text when a user hover's over the love icon/love link
 
 People page
-- [ ] create a view for all of a user's contacts and everyone who is following them
+- [X] create a view for all of a user's contacts
+- [ ] create a view showing everyone who is following me
 
 Follow-up
 - [ ] Newsletter to existing users
