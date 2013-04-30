@@ -119,6 +119,18 @@
   ("/people"
     :get get-people)
 
+  ("/people/contacts"
+    :get get-people-contacts)
+
+  ("/people/nearby"
+    :get get-people-nearby)
+
+  ("/people/suggested"
+    :get get-people-suggested)
+
+  ("/people/invited"
+    :get get-people-invited)
+
   ("/people/<id>"
     :get get-person)
 

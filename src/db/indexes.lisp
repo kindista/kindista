@@ -40,6 +40,7 @@
 (defindex *followers-index*)
 (defindex *geo-index-index* :test 'equal)
 (defindex *gratitude-index*)
+(defindex *invited-index*)
 (defindex *love-index*)
 (defindex *metaphone-index* :test 'equalp)
 (defindex *people-geo-index*)

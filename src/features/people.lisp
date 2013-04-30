@@ -60,6 +60,11 @@
           (unless (member id (gethash item *love-index*))
             (push id (gethash item *love-index*))))))
 
+    (awhen (getf data :host)
+      (with-locked-hash-table (*invited-index*)
+        (unless (member id (gethash it *invited-index*))
+          (push id (gethash it *invited-index*)))))
+
     (with-locked-hash-table (*activity-person-index*)
       (asetf (gethash id *activity-person-index*)
              (sort (push result it) #'> :key #'result-time)))
@@ -184,7 +189,7 @@
 
         (when (mutual-connections userid)
           (if (eql tab :connections)
-            (htm (:li :class "selected no-rightbar" "Mutual Connections"))
+            (htm (:li :class "selected" "Mutual Connections"))
             (htm (:li :class "no-rightbar" (:a :href (strcat *base-url* "/connections") "Mutual Connections")))))))))
 
 (defun profile-bio-section-html (title content &key editing editable section-name)
@@ -445,10 +450,10 @@
     (labels ((distance (result)
                (air-distance *latitude* *longitude* (result-latitude result) (result-longitude result))))
       (sublist (remove userid
-                 (sort (geo-index-query *people-geo-index* *latitude* *longitude* 50)
-                       #'< :key #'distance)
-                 :key #'result-id)
-             0 10))))
+                 (mapcar #'result-id
+                         (sort (geo-index-query *people-geo-index* *latitude* *longitude* 50)
+                               #'< :key #'distance)))
+             0 20))))
 
 (defun mutual-connections (one &optional (two *userid*))
   (intersection (gethash one *followers-index*)
@@ -461,42 +466,142 @@
   ; get nearby people
   ; get contacts of contacts
   ; get distance and number of mutuals for each
+  (flet ((mutuals (person)
+           (length (mutual-connections person userid))))
+    (sort
+      (let* ((user (db userid))
+             (following (getf user :following)))
+        (iter (for person in (remove userid
+                                     (iter (for person in following)
+                                           (reducing (getf (db person) :following)
+                                                     by #'union))))
+              (unless (or (member person following)
+                          (not (db person :active)))
+                (collect person))))
+      #'> :key #'mutuals)))
+
+(defun sorted-contacts (&optional (userid *userid*))
   (sort
-    (let* ((user (db userid))
-           (following (getf user :following)))
-      (iter (for person in (remove userid
-                                   (iter (for person in following)
-                                         (reducing (getf (db person) :following)
-                                                   by #'union))))
-            (unless (or (member person following)
-                        (not (db person :active)))
-              (collect (cons (length (mutual-connections person userid)) person)))))
-    #'> :key #'first))
+    (copy-list (db userid :following))
+    #'string-lessp :key #'person-name))
 
 (defun go-people ()
   (moved-permanently "/people"))
 
+(defun people-tabs-html (&key (tab :contacts))
+  (html
+    (:menu :class "bar"
+      (:h3 :class "label" "People Menu")
+      
+      (if (eql tab :contacts)
+        (htm (:li :class "selected" "Contacts"))
+        (htm (:li (:a :href "/people/contacts" "Contacts"))))
+
+      (if (eql tab :nearby)
+        (htm (:li :class "selected" "Nearby"))
+        (htm (:li (:a :href "/people/nearby" "Nearby"))))
+
+      (if (eql tab :suggested)
+        (htm (:li :class "selected" "Suggested"))
+        (htm (:li (:a :href "/people/suggested" "Suggested"))))
+
+      (if (eql tab :invited)
+        (htm (:li :class "selected" "Invited"))
+        (htm (:li (:a :href "/people/invited" "Invited")))))))
+
 (defun get-people ()
-  (with-user
-    (standard-page
-      "People"
+  (if *user*
+    (see-other "/people/contacts")
+    (see-other "/people/nearby")))
+
+(defun get-people-contacts ()
+  (if *user*
+    (let ((contacts (sorted-contacts)))
+      (standard-page
+      "Contacts"
       (html
-        ; favorites / connections?
-        (:h2 "Connect with people who live nearby")
-        (with-location
-          (dolist (data (remove-if #'contactp (nearby-people) :key #'result-id))
-            (let* ((id (result-id data))
-                   (person (db id)))
-              (str (person-card id (getf person :name))))))
-        (when *user* 
+        (str (people-tabs-html))
+        (unless contacts
+          (htm (:h3 "No contacts")))
+        (let ((letters ()))
+          (dolist (id contacts)
+            (let ((char (char-upcase (elt (db id :name) 0))))
+              (unless (member char letters)
+                (push char letters))))
           (htm
-            (:h2 "People with mutual contacts") 
-            (dolist (data (sublist (suggested-people) 0 10))
-              (let* ((id (cdr data))
-                     (person (db id)))
-                ; (car data) is the number of mutual connections
-                (str (person-card id (getf person :name))))))))
+            (:a :name "index")
+            (:p (fmt "~{<a href=#~(~:C~)>~:*~:C</a>~^ | ~}" (nreverse letters)))))
+
+        (let ((letter nil))
+          (dolist (id contacts)
+            (let ((char (char-upcase (elt (db id :name) 0))))
+              (unless (eq char letter)
+                (htm (:a :name (char-downcase char))
+                     (:h3 (str char) (:small " (" (htm (:a :href "#index" " back to index ")) ")")))
+                (setf letter char))
+              (str (person-card id (db id :name)))))))
+
       :selected "people"
       :right (html
                (str (donate-sidebar))
-               (str (invite-sidebar))))))
+               (str (invite-sidebar)))))
+    (see-other "/people/nearby")))
+
+(defun get-people-nearby ()
+  (standard-page
+    "Nearby people"
+    (html
+      (when *user* (str (people-tabs-html :tab :nearby)))
+      (dolist (id (nearby-people))
+        (str (person-card id (db id :name)))))
+    :selected "people"
+    :right (html
+             (str (donate-sidebar))
+             (str (invite-sidebar)))))
+
+(defun get-people-suggested ()
+  (if *user*
+    (standard-page
+      "Suggested people"
+      (html
+        (str (people-tabs-html :tab :suggested))
+        (dolist (id (suggested-people))
+          (str (person-card id (db id :name)))))
+      :selected "people"
+      :right (html
+               (str (donate-sidebar))
+               (str (invite-sidebar))))
+    (see-other "/people/nearby")))
+
+(defun get-people-invited ()
+  (if *user*
+    (let ((unconfirmed (unconfirmed-invitations))
+          (confirmed (gethash *userid* *invited-index*)))
+      (standard-page
+        "Invited"
+        (html
+          (str (people-tabs-html :tab :invited))
+
+          (when unconfirmed
+            (htm
+              (:h2 "Unconfirmed invitations")
+              (:ul
+              (dolist (email unconfirmed)
+                (htm (:li (str email)))))))
+
+          (when confirmed
+            (htm
+              (dolist (id confirmed)
+                (str (person-card id (db id :name))))))
+          
+          (unless (or confirmed unconfirmed)
+            (htm
+              (:h2 "No invitations yet.")
+              (:p "Would you like to " (:a :href "/invite" "invite someone") "?"))))
+
+        :selected "people"
+        :right (html
+                 (str (donate-sidebar))
+                 (str (invite-sidebar)))))
+      (see-other "/people/nearby")))
+
