@@ -17,13 +17,26 @@
 
 (in-package :kindista)
 
-(defun create-invitations (&key (count 1) (host *userid*))
-  (iter (for i from 1 to count) 
-        (collect (insert-db (list :type :invitation
-                                  :host host
-                                  :recipient-email nil
-                                  :text nil
-                                  :valid-until (get-universal-time))))))
+(defun new-invitation-notice-handler ()
+  (let* ((invitation-id (getf (cddddr *notice*) :id))
+         (self (db invitation-id :self)))
+   (if self
+     (send-email-verification invitation-id)
+     (send-invitation-email invitation-id))))
+
+(defun create-invitation (email &key text (host *userid*) (self nil))
+; self invitations are verifications for alternate email addresses
+  (let* ((time (get-universal-time))
+         (invitation (insert-db (list :type :invitation
+                                      :host host
+                                      :token (random-password 9)
+                                      :self self
+                                      :recipient-email email
+                                      :text text
+                                      :valid-until (+ time 2592000)))))
+
+    (notice :new-invitation :time time :id invitation)
+    invitation))
 
 (defun index-invitation (id data)
   (let* ((host (getf (db id) :host)))
@@ -37,14 +50,6 @@
              (remove invitation-id it))) 
     (remove-from-db invitation-id)))
 
-(defun address-invitation (id &key recipient-email text self)
-; self invitations are verifications for alternate email addresses
-  (modify-db id :recipient-email recipient-email 
-                :token (random-password 9)
-                :self self
-                :text text
-                :valid-until (+ (get-universal-time) 2592000)))
-
 (defun add-alt-email (invitation-id)
   (let* ((invitation (db invitation-id))
          (userid (getf invitation :host))
@@ -53,55 +58,24 @@
                        :pending-alt-emails (remove invitation-id it))) 
     (delete-invitation invitation-id))
 
-(defun available-invitations (host)
-  (let ((all-invites (gethash host *person-invitation-index*))
-        (now (get-universal-time)))
-    (iter (for id in all-invites) 
-          (unless (or (getf (db id) :self) 
-                      (> (getf (db id) :valid-until) now))
-            (collect id)))))
-
 (defun unconfirmed-invitations (host)
   (let ((all-invites (gethash host *person-invitation-index*))
         (now (get-universal-time)))
-    (iter (for id in all-invites) 
+    (iter (for id in all-invites)
           (unless (< (getf (db id) :valid-until) now)
-            (awhen (getf (db id) :recipient-email) 
+            (awhen (getf (db id) :recipient-email)
               (collect it))))))
 
-(defun send-invitation (recipient-email &key (host *userid*) text)
-  (let* ((available-invites (available-invitations host))
-         (invitation (car available-invites)))
-    (if available-invites
-      (progn 
-        (address-invitation invitation :recipient-email recipient-email
-                                       :text text)
-        (send-invitation-email invitation)
-        invitation)
-      (flash "You do not have any invitations at this time." :error t))))
-
-
-(defun available-invitation-count (host)
- (length (available-invitations host)))
-
-(defun invite-page (&key emails available-count text next-url pluralize)
+(defun invite-page (&key emails text next-url)
   (standard-page "Invite friends"
     (html
       (:div :class "item"
         (:form :method "post" :action "/invite"
           (:input :type "hidden" :name "next-url" :value (or next-url (referer)))
           (:h2 "Invite your friends to join Kindista!")
-          (:p "You have " 
-              (:strong (str available-count)) 
-              " invitation" (str pluralize)
-              " available at this time."
-           (:br)
-           "If you have multiple invitations available, "
-           "you may enter multiple email addresses, separated by comas:")
+          (:p "You may enter multiple email addresses, separated by comas:")
           (:textarea :rows "3" :name "bulk-emails" :placeholder "Enter email addresses here..." (str (when emails emails)))
-          (:p "Include a message for your recipient"
-              (str pluralize) 
-              ": (optional)")
+          (:p "Include a message for your recipient(s): (optional)")
           (:textarea :rows "6" :name "text" :placeholder "Enter your message here..." (str (when text text)))
           (:p 
             (:button :class "no" :type "submit" :class "cancel" :name "cancel" "Cancel") 
@@ -128,26 +102,17 @@
               (htm
                 (:h3 "Your personalized invitation message is:")
                 (str text)))
-            (:p 
-              (:button :class "no" :type "submit" :class "submit" :name "edit" "Edit Invitation") 
-              (:button :class "yes" :type "submit" :class "submit" :name "confirm" "Send Invitation"))))))))
+            (:p
+              (:button :class "no" :type "submit" :class "submit" :name "edit" "Edit Invitation")
+              (:button :class "yes" :type "submit" :class "submit" :name "confirm" "Send Invitation" (str pluralize)))))))))
 
 (defun get-invite ()
   (require-user
-    (let* ((available-count (available-invitation-count *userid*))
-           (pluralize (unless (= available-count 1) "s")))
-    (cond 
-      ((> available-count 0) 
-        (invite-page :available-count available-count
-                     :pluralize pluralize))
-      (t
-       (flash "You do not have any available invitations at this time." :error t)
-       (see-other "/home"))))))
+    (invite-page)))
 
 (defun post-invite ()
   (require-user
     (let* ((next-url (post-parameter "next-url"))
-           (available-count (available-invitation-count *userid*))
            (emails (remove-duplicates 
                      (emails-from-string (post-parameter "bulk-emails"))
                      :test #'string=))
@@ -156,13 +121,8 @@
                                   (collect email))))
            (new-emails (set-difference emails
                                        member-emails
-                                       :test #'string=))
-           (pluralize (when (> available-count 1) "s")))
+                                       :test #'string=)))
     (cond
-      ((not (> available-count 0))
-       (flash "You do not have any available invitations at this time." :error t)
-       (see-other next-url))
-
       ((post-parameter "cancel")
        (see-other next-url))
 
@@ -173,21 +133,6 @@
        (flash "You must enter at least 1 valid email address." :error t)
        (invite-page :text (post-parameter "text")
                     :emails (post-parameter "bulk-emails")
-                    :available-count available-count
-                    :pluralize pluralize
-                    :next-url next-url))
-
-      ((and (post-parameter "review")
-            (> (length new-emails) available-count))
-       (flash (strcat "You have entered too many email addresses. You only have " 
-                      available-count 
-                      " invitation" pluralize
-                      " available at this time.")
-              :error t)
-       (invite-page :text (post-parameter "text")
-                    :emails (post-parameter "bulk-emails")
-                    :available-count available-count
-                    :pluralize pluralize
                     :next-url next-url))
 
       ((post-parameter "review")
@@ -201,15 +146,13 @@
       ((post-parameter "edit")
        (invite-page :text (post-parameter "text")
                     :emails (post-parameter "bulk-emails")
-                    :available-count available-count
-                    :pluralize pluralize
                     :next-url next-url))
 
       ((post-parameter "confirm")
        (dolist (email new-emails)
-         (send-invitation email :text (unless 
-                                        (string= (post-parameter "text") "")
-                                        (post-parameter "text"))))
+         (create-invitation email :text (unless
+                                          (string= (post-parameter "text") "")
+                                          (post-parameter "text"))))
        (if (> (length new-emails) 1)
          (flash "Your invitations have been sent.")
          (flash "Your invitaion has been sent."))

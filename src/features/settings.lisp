@@ -565,7 +565,6 @@
        (let* ((new-email (post-parameter "new-email"))
               (id (gethash new-email *email-index*))
               (emails (getf *user* :emails))
-              (confirmation (car (create-invitations)))
               (pending (awhen (getf *user* :pending-alt-emails) it)))
          (cond
            ((equal (car emails) new-email)
@@ -588,11 +587,9 @@
                        "Please try again.") :error t)
             (see-other "/settings/communication?edit=email"))
            (t
-            (address-invitation confirmation
-                                :recipient-email new-email
-                                :self t)
-            (send-email-verification confirmation)
-            (modify-db *userid* :pending-alt-emails (cons confirmation pending))
+            (let ((confirmation nil))
+              (setf confirmation (create-invitation new-email :self t))
+              (modify-db *userid* :pending-alt-emails (cons confirmation pending)))
             (flash (s+ "A verification email has been sent to " new-email
                        ". Please click on the link provided in that email "
                        "to complete the email verification process."))

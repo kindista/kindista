@@ -29,6 +29,7 @@
   (add-notice-handler :all #'log-notice)
   (add-notice-handler :new-comment #'new-comment-notice-handler)
   (add-notice-handler :new-feedback #'new-feedback-notice-handler)
+  (add-notice-handler :new-invitation #'new-invitation-notice-handler)
   (add-notice-handler :new-gratitude #'new-gratitude-notice-handler))
 
 (defun end ()
