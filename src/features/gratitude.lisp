@@ -121,19 +121,19 @@
                :class "recipients"
           (:label "About:")
           (:menu :class "recipients"
-           (unless subjects
-             (htm (:li (:em "nobody yet"))))
-           (dolist (subject subjects)
-             (htm
-               (:li 
-                 (str (getf (db subject) :name)) 
-                 (unless (or single-recipient existing-url) 
-                   (htm 
-                     (:button :class "text large x-remove" :type "submit" :name "remove" :value subject " ⨯ "))))
-                (unless (or single-recipient existing-url)
-                  (htm
-                    (:li (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or project"))))
-               )))
+            (unless subjects
+              (htm (:li (:em "nobody yet"))))
+            (dolist (subject subjects)
+              (htm
+                (:li
+                  (str (getf (db subject) :name)) 
+                  (unless (or single-recipient existing-url) 
+                    (htm
+                      (:button :class "text large x-remove" :type "submit" :name "remove" :value subject " ⨯ ")))))) 
+            (unless (or single-recipient existing-url)
+              (htm
+                (:li (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or project")))))
+
           (when subjects
             (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" subjects))))
           (when next

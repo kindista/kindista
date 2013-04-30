@@ -30,7 +30,7 @@
 
 (defun person-email-link (id)
   (html
-    (:a ref (strcat +base-url+ "people/" (username-or-id id)) (str (getf (db id) :name)))))
+    (:a :href (strcat +base-url+ "people/" (username-or-id id)) (str (getf (db id) :name)))))
 
 (defun person-name (id)
   (db id :name))
