@@ -1085,6 +1085,13 @@ img.bigavatar {
  margin:5px;
 }
 
+div.activity ul.mutuals-list {
+ padding: 0;
+ margin-left: 0.6em;
+ font-size: 1.2em;
+ line-height: 1.5em;
+}
+
 .section {
  padding:10px;
  margin:10px;

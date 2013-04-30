@@ -351,8 +351,8 @@
       (getf user :name)
       (html
         (when *user* (str (profile-tabs-html userid :tab :connections)))
-        (:div
-          (:ul (dolist (link (alpha-people-links mutuals))
+        (:div :class "activity"
+          (:ul :class "mutuals-list" (dolist (link (alpha-people-links mutuals))
                  (htm (:li (str link)))))))
 
       :top (profile-top-html userid)
