@@ -46,25 +46,25 @@
 
 (defun not-found ()
   (flash "The page you requested could not be found." :error t)
-  (if (equal (referer) (script-name))
+  (if (equal (referer) (request-uri*))
     (see-other "/")
     (see-other (or (referer) "/"))))
 
 (defun permission-denied ()
   (flash "The page you requested is private." :error t)
-  (if (equal (referer) (script-name))
+  (if (equal (referer) (request-uri*))
     (see-other "/")
     (see-other (or (referer) "/"))))
 
 (defun login-required ()
   (flash "Sorry, that is only available when you are logged in to Kindista." :error t)
-  (if (equal (referer) (script-name))
+  (if (equal (referer) (request-uri*))
     (see-other "/")
     (see-other (or (referer) "/"))))
 
 (defun active-status-required ()
   (flash "Sorry, you must reactivate your account to perform that action." :error t)
-  (if (equal (referer) (script-name))
+  (if (equal (referer) (request-uri*))
     (see-other "/")
     (see-other (or (referer) "/"))))
 
