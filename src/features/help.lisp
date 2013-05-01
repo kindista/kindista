@@ -71,9 +71,10 @@
       (if (eql tab :about)
         (htm (:li :class "selected" "About Kindista"))
         (htm (:li (:a :href "/about" "About Kindista"))))   
-      (if (eql tab :feedback)
-        (htm (:li :class "selected" "Feedback"))
-        (htm (:li (:a :href "/feedback" "Feedback"))))
+      (when *user*
+        (if (eql tab :feedback)
+          (htm (:li :class "selected" "Feedback"))
+          (htm (:li (:a :href "/feedback" "Feedback")))))
       (if (eql tab :faq)
         (htm (:li :class "selected" "Frequent Questions"))
         (htm (:li (:a :href "/faq" "Frequent Questions")))))))
@@ -96,7 +97,7 @@
              (str (invite-sidebar)))))
 
 (defun get-feedbacks ()
-  (require-user
+  (if *user*
     (standard-page
       "Feedback"
       (html
@@ -115,7 +116,8 @@
       :selected "help"
       :right (html
                (str (donate-sidebar))
-               (str (invite-sidebar))))))
+               (str (invite-sidebar))))
+    (see-other "/faq")))
 
 (defun post-feedbacks ()
   (require-user
