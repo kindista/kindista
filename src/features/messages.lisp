@@ -129,7 +129,8 @@
                                      (:offer
                                       (htm (:a :href (strcat "/offers/" (getf item-data :on)) "offer")))
                                      (:request
-                                      (htm (:a :href (strcat "/requests/" (getf item-data :on)) "request")))))))
+                                      (htm (:a :href (strcat "/requests/" (getf item-data :on)) "request")))
+                                     (t (htm (:span :class "none" "deleted offer or request")))))))
 
                              (:p :class "text"
                                (:span :class "title"

@@ -246,7 +246,8 @@
                                     (:offer
                                      (htm (:a :href (strcat "/offers/" (getf it :on)) "offer")))
                                     (:request
-                                     (htm (:a :href (strcat "/requests/" (getf it :on)) "request"))))
+                                     (htm (:a :href (strcat "/requests/" (getf it :on)) "request")))
+                                    (t (str "deleted offer or request")))
                                   ":")))
                             (htm (:blockquote (str (regex-replace-all "\\n" (getf item :text) "<br>"))))))))))
 
