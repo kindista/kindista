@@ -325,10 +325,11 @@
   (html
     (:menu
       (iter (for (title slug count) in items)
-            (str (menu-item title
-                            slug
-                            (string= selected slug)
-                            count))))))
+            (when title
+              (str (menu-item title
+                              slug
+                              (string= selected slug)
+                              count)))))))
 
 (defun welcome-bar (content &optional (hide t))
   (html
