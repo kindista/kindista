@@ -321,18 +321,7 @@
     (html
       (:img :src "/media/biglogo.png")
       (str dialog)
-      (:div :id "letter"
-        (:h2 "From Kindista co-founder Benjamin Crandall")
-        (:p "Google might have close to a million servers. Yahoo has something like 12,000 staff. We have about 800 servers and 150 employees.")
-        (:p "Wikipedia is the #5 site on the web and serves 482 million different people every month – with billions of page views.")
-        (:p "Commerce is fine. Advertising is not evil. But it doesn't belong here. Not in Wikipedia.")
-        (:p "Wikipedia is something special. It is like a library or a public park. It is like a temple for the mind. It is a place we can all go to think, to learn, to share our knowledge with others.")
-        (:p "When I founded Wikipedia, I could have made it into a for-profit company with advertising banners, but I decided to do something different. We’ve worked hard over the years to keep it lean and tight. We fulfill our mission, and leave waste to others.")
-        (:p "If everyone reading this donated $5, we would only have to fundraise for one day a year. But not everyone can or will donate. And that's fine. Each year just enough people decide to give.")
-        (:p "This year, please consider making a donation of $5, $20, $50 or whatever you can to protect and sustain Wikipedia.")
-        (:p "Thanks,")
-        (:p (:strong "Jimmy Wales"))
-        (:p "Wikipedia Founder")))
+      (:div :id "letter"))
     :class "donate"))
 
 
