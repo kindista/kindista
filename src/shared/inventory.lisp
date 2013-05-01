@@ -127,7 +127,9 @@
     (if (and (getf *user* :admin)
              (not (eql *userid* (getf data :by))))
 
-      (modify-db id :text text :tags tags :lat latitude :long longitude)
+      (if (and latitude longitude)
+        (modify-db id :text text :tags tags :lat latitude :long longitude)
+        (modify-db id :text text :tags tags))
 
       (progn
         (setf (result-time result) now)
