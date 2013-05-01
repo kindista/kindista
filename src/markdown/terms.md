@@ -1,6 +1,6 @@
 # Terms of Service
 
-Last updated on April 27, 2013.
+Last updated on May 1, 2013.
 
 Permission is granted, free of charge, to any person accessing
 kindista.org ("Kindista") to use Kindista subject to the following

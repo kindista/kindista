@@ -1,4 +1,4 @@
-**Effective March 1, 2012**
+**Effective May 1, 2013**
 
 # Kindista Privacy Policy 
 
