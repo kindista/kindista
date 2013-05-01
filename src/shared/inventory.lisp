@@ -314,7 +314,9 @@
              ((post-parameter "really-delete")
               (delete-inventory-item id)
               (flash (s+ "Your " type " has been deleted!"))
-              (see-other (or (post-parameter "next") "/home")))
+              (if (equal (post-parameter "next") (script-name*))
+                (see-other "/home") 
+                (see-other (or (post-parameter "next") "/home"))))
 
              ((post-parameter "back")
               (enter-inventory-text :type type
