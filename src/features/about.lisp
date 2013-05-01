@@ -28,7 +28,7 @@
       "About"
       (html
         (str (help-tabs-html :tab :about)) 
-        (str  *about-html*)) 
+        (str *about-html*)) 
       :selected "help"
       :right (html
                (str (donate-sidebar))
