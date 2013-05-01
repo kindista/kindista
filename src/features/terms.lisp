@@ -17,13 +17,15 @@
 
 (in-package :kindista)
 
+(defparameter *terms-html* (markdown-file (s+ +markdown-path+ "terms.md")))
+
 (defun get-terms ()
   (with-user 
     (standard-page 
       "Terms of Use"
       (html 
         (:div :class "legal" :id "terms"
-          (str (markdown-file (s+ +markdown-path+ "terms.md")))))  
+          (str *terms-html*)))
       :right (html
                (str (donate-sidebar))
                (when *user* (str (invite-sidebar)))))))

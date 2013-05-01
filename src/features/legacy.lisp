@@ -176,7 +176,9 @@
 (defun import-identities (path settings-path)
   (let ((settings (map-over-file #'copy-list settings-path))
         (identities (sort (map-over-file #'copy-list path) #'< :key #'car)))
-    (setf identities (cons (second identities) (remove 2 identities :key #'car)))
+    (setf identities (append (list (second identities))
+                             (list (third identities))
+                             (remove 2 (remove 3 identities :key #'car) :key #'car)))
     (iter (for (id pw names emails (long lat) contacts bio) in identities)
           (let ((newid (insert-db `(:type :person
                                           :name ,(car names)
