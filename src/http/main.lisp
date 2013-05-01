@@ -46,19 +46,27 @@
 
 (defun not-found ()
   (flash "The page you requested could not be found." :error t)
-  (see-other (or (referer) "/")))
+  (if (equal (referer) (script-name))
+    (see-other "/")
+    (see-other (or (referer) "/"))))
 
 (defun permission-denied ()
   (flash "The page you requested is private." :error t)
-  (see-other (or (referer) "/")))
+  (if (equal (referer) (script-name))
+    (see-other "/")
+    (see-other (or (referer) "/"))))
 
 (defun login-required ()
   (flash "Sorry, that is only available when you are logged in to Kindista." :error t)
-  (see-other (or (referer) "/")))
+  (if (equal (referer) (script-name))
+    (see-other "/")
+    (see-other (or (referer) "/"))))
 
 (defun active-status-required ()
   (flash "Sorry, you must reactivate your account to perform that action." :error t)
-  (see-other (or (referer) "/")))
+  (if (equal (referer) (script-name))
+    (see-other "/")
+    (see-other (or (referer) "/"))))
 
 ;;; routing and jcceptor {{{
 
