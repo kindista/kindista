@@ -419,9 +419,10 @@
                              " &middot; "
                              (:a :href "/logout" "Log&nbsp;out"))))))
 
-                   (let ((inbox-count (new-inbox-items)))
-                     (str (menu (list `("Inbox" "messages" ,(when (> inbox-count 0) inbox-count)))
-                                selected))) 
+                   (when *user*
+                     (let ((inbox-count (new-inbox-items)))
+                       (str (menu (list `("Inbox" "messages" ,(when (> inbox-count 0) inbox-count)))
+                                  selected)))) 
 
                    (str (menu (list '("News" "home")
                                     '("Offers" "offers")
