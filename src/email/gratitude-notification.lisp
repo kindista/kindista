@@ -43,12 +43,12 @@
 
 You can see the statement on Kindista here:
 "
-+base-url+ "/gratitude/" gratitude-id
++base-url+ "gratitude/" gratitude-id
 
 "
 If you no longer wish to receive notifications when people post gratitude about you, please edit your settings:
 "
-+base-url+ "/settings/communication"
++base-url+ "settings/communication"
 "
 
 Thank you for sharing your gifts with us!
@@ -61,7 +61,7 @@ Thank you for sharing your gifts with us!
       (:p :style *style-p* 
           (str (person-email-link from))
             " has shared a "
-            (:a :href (strcat +base-url+ "/gratitude/" gratitude-id)
+            (:a :href (strcat +base-url+ "gratitude/" gratitude-id)
                           "statement of gratitude")
                 " about you on Kindista.")
 
@@ -74,7 +74,7 @@ Thank you for sharing your gifts with us!
       (:p :style *style-p* 
           "If you no long wish to receive notifications when people post gratitude about you, please edit your settings:"
        (:br)
-       (:a :href (strcat +base-url+ "/settings/communication") (strcat +base-url+ "/settings/communication")))
+       (:a :href (strcat +base-url+ "settings/communication") (strcat +base-url+ "settings/communication")))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
       (:p "-The Kindista Team"))))

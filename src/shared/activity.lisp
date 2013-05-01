@@ -103,12 +103,10 @@
                    ;:comments (length (comments item-id))
                    :content (html
                               (:p (str (person-link user-id))
-                                  (str (if (getf data :editied) " edited " " shared ")) 
-                                  (:a :href (strcat "/gratitude/" item-id) "gratitude") 
+                                  (str (if (getf data :editied) " edited " " shared "))
+                                  (:a :href (strcat "/gratitude/" item-id) "gratitude")
                                   " for "
-                                  (fmt "~{~A~^, ~}"
-                                      (iter (for subject in (getf data :subjects))
-                                            (collect (person-link subject)))))
+                                  (str (name-list (getf data :subjects) :minimum-links 100)))
                               (:p (cl-who:esc (getf data :text)))))))
 
 (defun gift-activity-item (result &key next-url)

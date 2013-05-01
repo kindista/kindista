@@ -29,17 +29,22 @@
 (defun new-inbox-items ()
   (loop for item in (all-inbox-items)
         while (< (or (db *userid* :last-checked-mail) 0) (result-time item))
-        unless (and (or (eq (result-type item) :conversation)
-                        (eq (result-type item) :reply))
-                    (eql (db (db (result-id item) :latest-comment) :by)
-                         *userid*))
+        unless (case (result-type item)
+                 (:conversation
+                   (eql (db (db (result-id item) :latest-comment) :by)
+                        *userid*))
+                 (:reply
+                   (eql (db (db (result-id item) :latest-comment) :by)
+                        *userid*))
+                 (:gratitude
+                   (eql (db (result-id item) :author) *userid*)))
         counting item into new-items
         finally (return new-items)))
 
 (defun all-inbox-items (&key (id *userid*))
   (sort (append (gethash id *person-conversation-index*)
                 (gethash id *person-notification-index*)
-                (remove-if-not #'result-gratitude-p 
+                (remove-if-not #'result-gratitude-p
                                (gethash id *activity-person-index*)))
     #'> :key #'result-time))
 

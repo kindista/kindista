@@ -213,6 +213,5 @@ Please use the correct email address or find someone you know on Kindista and re
            (setf (token-userid *token*) new-id)
            (add-contact new-id host)
            (add-contact host new-id)
-           (create-invitations :count 10 :host new-id)
            (delete-invitation id)
            (see-other "/home"))))))
