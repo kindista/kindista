@@ -125,7 +125,7 @@
       (:button :type "submit" :name "amount" :value "250" "$250")
       (:button :type "submit" :name "amount" :value "other" "Other")
 
-      (:h3 (:a :href "/donate" "Or, make a monthly donation"))
+      (when *user* (htm (:h3 (:a :href "/donate" "Or, make a monthly donation"))))
 
       (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
      ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
@@ -334,9 +334,11 @@
 
 
 (defun get-donate ()
-  (base-page
-    "Donate"
-    (donate-page (donate-monthly-1))))
+  (if *user*
+    (base-page
+      "Donate"
+      (donate-page (donate-monthly-1)))
+    (see-other "/donate/once")))
 
 
 (defun post-donate ()
@@ -433,7 +435,8 @@
                       :plan (make-donation-plan (* 100 (donate-info-amount*)))
                       :prorate nil
                       :card (donate-info-token*))
-                    (modify-db *userid* :plan (donate-info-amount*))
+                    (when *user*
+                      (modify-db *userid* :plan (donate-info-amount*)))
                     (flash "Thank you so much for your donation! You will receive email from us shortly.")
                     (see-other "/"))
                   (let ((customer (stripe:create-customer
@@ -443,7 +446,8 @@
 
                     (acond
                       ((stripe:sstruct-get customer :id)
-                       (modify-db *userid* :donated t :custid it :plan (donate-info-amount*))
+                       (when *user*
+                         (modify-db *userid* :donated t :custid it :plan (donate-info-amount*)))
                        (flash "Thank you so much for your donation! You will receive email from us shortly.")
                        (see-other "/"))
 
