@@ -184,7 +184,7 @@
 
         (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
      ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
-      )))
+      ))))
 
 (defun donate-dialog-3 (&key show-error show-amount)
   (with-donate-info
@@ -303,7 +303,7 @@
 
         (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
      ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
-      )))
+      ))))
 
 (defun donate-dialog-4 ()
   (html
