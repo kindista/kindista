@@ -217,6 +217,7 @@
                          (setf *processing* nil)
                          (cond
                            ((or (eq (@ response :error :code) "invalid_number")
+                                (eq (@ response :error :code) "card_error")
                                 (eq (@ response :error :code) "incorrect_number"))
                             ((@ ((@ document get-element-by-id) "lccn") set-attribute) "class" "error"))
                            ((eq (@ response :error :code) "invalid_cvc")
