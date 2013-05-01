@@ -79,7 +79,7 @@
         (htm (:li (:a :href "/faq" "Frequent Questions")))))))
 
 (defun go-help ()
-  (see-other "/help/feedback"))
+  (see-other "/feedback"))
 
 (defparameter *faq-html* (markdown-file (s+ +markdown-path+ "faq.md")))
 

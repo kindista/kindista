@@ -166,8 +166,7 @@ has also added the person to their own contacts list.*
 
 Kindista membership is currently "by invitation only."
 This means that it is up to **you** to help our network grow.
-Each Kindista member gets a number of invitations when they join.
-We encourage you to use these invitations wisely, inviting people you trust 
+We encourage you to send invitations wisely, inviting people you trust 
 who will actively share their resources with, and ask for support from,
 the Kindista community.
 
@@ -175,10 +174,6 @@ Our invitation system creates a trail of accountability
 and helps us prevent spam and abuse as we grow.
 This system allows us to remove invitation privledges 
 from people who abuse our community or who invite abusers to join.
-
-Don't worry about using up all your invitations.
-If we see that you are inviting people that complete their profile
-and participate in the community, we will give you more invitations.
 
 By default we will add your invitees to your contacts list (and
 you to their list) when they join. You can add or remove 

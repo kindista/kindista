@@ -10,7 +10,7 @@ you appreciate them.
 To get a taste of what's happening on Kindista, take a look at the
 [offers](/offers) and [requests](/requests) sections of the site.
 
-The [home page](/home) (a.k.a "Activity") shows all of the recent
+The [home page](/home) (a.k.a "News") shows all of the recent
 gifting activity that has taken place near you.
 
 ### How does Kindista make money?
