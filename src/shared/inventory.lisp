@@ -314,7 +314,7 @@
              ((post-parameter "really-delete")
               (delete-inventory-item id)
               (flash (s+ "Your " type " has been deleted!"))
-              (if (equal (post-parameter "next") (script-name*))
+              (if (equal (fourth (split "/" (post-parameter "next") :limit 4)) (subseq (script-name*) 1))
                 (see-other "/home") 
                 (see-other (or (post-parameter "next") "/home"))))
 
