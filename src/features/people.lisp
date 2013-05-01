@@ -238,6 +238,9 @@
              (:input :type "hidden" :name "next" :value (script-name*))
              (:button :type "submit" :name "add" :value userid "Send a message"))))
        (htm
+         (:form :method "GET" :action (strcat "/people/" (username-or-id userid) "/reputation")
+           (:button :type "submit" "Express gratitude"))
+
          (:form :method "POST" :action "/contacts"
            (:input :type "hidden" :name (if is-contact "remove" "add") :value userid)
            (:input :type "hidden" :name "next" :value *base-url*)
@@ -328,7 +331,7 @@
                    (eql (getf user :active) t))
           (htm
             (:div :class "item"
-             (:h4 "Do you have gratitude to share about " (str (getf user :name)) "?")
+             (:h4 "Do you have gratitude to share for " (str (getf user :name)) "?")
              (:form :method "post" :action "/gratitude/new"
                (:input :type "hidden" :name "subject" :value userid)
                (:input :type "hidden" :name "next" :value (strcat *base-url* "/reputation"))

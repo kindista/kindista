@@ -64,46 +64,32 @@
      (:li (:a :href (strcat "/people/" +kindista-id+ "/reputation") "express gratitude"))
      (:li
        (:form :method "POST" :action "/conversations/new"
-        (:input :type "hidden" :name "next" :value "/feedback")
+        (:input :type "hidden" :name "next" :value (script-name*))
         (:input :type "hidden" :name "single-recipient" :value "t")
         (:button :class "simple-link" :type "submit" :name "add" :value +kindista-id+ "contact kindista"))))
     (:menu :class "bar"
+      (if (eql tab :about)
+        (htm (:li :class "selected" "About Kindista"))
+        (htm (:li (:a :href "/about" "About Kindista"))))   
       (if (eql tab :feedback)
         (htm (:li :class "selected" "Feedback"))
         (htm (:li (:a :href "/feedback" "Feedback"))))
-      (if (eql tab :faqs)
+      (if (eql tab :faq)
         (htm (:li :class "selected" "Frequent Questions"))
-        (htm (:li (:a :href "/help/faqs" "Frequent Questions")))))))
-
-(defun faqs-html ()
-  (html
-    (str (help-tabs-html :tab :faqs))
-    (:div :class "legal faqs"
-      (str (markdown-file (s+ +markdown-path+ "faq.md"))))))
-
-(defun feedback-html ()
-  (html
-    (str (help-tabs-html :tab :feedback))
-    (:div :class "item"
-     (:h4 "Ask a question, report a problem, or suggest a new feature:")
-     (:form :method "post" :action "/feedback"
-       (:table :class "post"
-        (:tr
-          (:td (:textarea :cols "1000" :rows "4" :name "text"))
-          (:td
-            (:button :class "yes" :type "submit" :class "submit" :name "create" "Post")))))) 
-
-     (dolist (result *feedback-index*)
-       (str (feedback-card (result-id result))))))
+        (htm (:li (:a :href "/faq" "Frequent Questions")))))))
 
 (defun go-help ()
-  (see-other "/feedback"))
+  (see-other "/help/feedback"))
 
-(defun get-faqs ()
+(defparameter *faq-html* (markdown-file (s+ +markdown-path+ "faq.md")))
+
+(defun get-faq ()
   (standard-page
     "Frequently Asked Questions"
     (html
-      (str (faqs-html)))
+      (str (help-tabs-html :tab :faq))
+      (:div :class "legal faq"
+        (str *faq-html*)))
     :selected "help"
     :right (html
              (str (donate-sidebar))
@@ -114,7 +100,18 @@
     (standard-page
       "Feedback"
       (html
-        (str (feedback-html)))
+        (str (help-tabs-html :tab :feedback))
+        (:div :class "item"
+         (:h4 "Ask a question, report a problem, or suggest a new feature:")
+         (:form :method "post" :action "/feedback"
+           (:table :class "post"
+            (:tr
+              (:td (:textarea :cols "1000" :rows "4" :name "text"))
+              (:td
+                (:button :class "yes" :type "submit" :class "submit" :name "create" "Post")))))) 
+
+         (dolist (result *feedback-index*)
+           (str (feedback-card (result-id result)))))
       :selected "help"
       :right (html
                (str (donate-sidebar))

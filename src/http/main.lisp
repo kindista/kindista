@@ -312,27 +312,23 @@
   (html
     (:img :class "icon" :src (s+ "/media/icons/" type ".png") :alt " ")))
 
-(defun menu-item (title slug icon &optional selected)
-  (let ((inbox-count (new-inbox-items)))
-    (html
-      (:li :class (when selected "selected")
-       (:a :href (s+ "/" icon)
-           (str (icon slug))
-           (str title)
-           (when (and (string= title "Messages")
-                       (> inbox-count 0))
-                  (htm (:span :class "newcount"
-                        (str inbox-count)))))))))
+(defun menu-item (title slug &optional selected count)
+  (html
+    (:li :class (when selected "selected")
+      (:a :href (s+ "/" slug)
+          (str (icon slug))
+          (str title)
+          (when count
+            (htm (:span :class "newcount" (str count))))))))
 
 (defun menu (items &optional selected)
   (html
     (:menu
-      (iter (for item in items)
-            (when item
-              (str (menu-item (car item)
-                              (cadr item)
-                              (or (caddr item) (cadr item))
-                              (string= selected (cadr item)))))))))
+      (iter (for (title slug count) in items)
+            (str (menu-item title
+                            slug
+                            (string= selected slug)
+                            count))))))
 
 (defun welcome-bar (content &optional (hide t))
   (html
@@ -409,10 +405,6 @@
                    (:input :type "submit" :value "Search"))
 
                  (:div :id "menu"
-                   (:div :id "beta"
-                     (:strong "Warning!")
-                     (:p "This site is for testing only. Any new content here may be " (:strong "DELETED") " until further notice.") )
-
                    (when *user*
                      (htm
                        (:table
@@ -422,15 +414,18 @@
                            (:td (:a :href (s+ "/people/" (username-or-id)) (str (getf *user* :name)))))
                          (:tr
                            (:td
-                             (:a :href "/settings" "Settings")
-                             " &nbsp;&middot;&nbsp; "
-                             (:a :href "/logout" "Log out"))))))
+                             (:a :class (when (eq selected :settings) "selected") :href "/settings" "Settings")
+                             " &middot; "
+                             (:a :href "/logout" "Log&nbsp;out"))))))
 
-                   (str (menu (list '("Activity" "home")
-                                    '("Messages" "messages")
+                   (let ((inbox-count (new-inbox-items)))
+                     (str (menu (list `("Inbox" "messages" ,(when (> inbox-count 0) inbox-count)))
+                                selected))) 
+
+                   (str (menu (list '("News" "home")
                                     '("Offers" "offers")
                                     '("Requests" "requests")
-                                    '("People" "people")
+                                    '("People" "people") 
                                     ;'("Events" "events") 
                                     '("Help & Feedback" "help")
                                     (when (getf *user* :admin)

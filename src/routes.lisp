@@ -189,14 +189,17 @@
   ("/deactivate-account"
     :get confirm-deactivation)
 
-  ("/about"
-    :get get-about)
-
   ("/help"
     :get go-help)
 
-  ("/help/faqs"
-    :get get-faqs)
+  ("/faq"
+    :get get-faq)
+
+  ("/about"
+    :get get-about)
+
+  ("/help/about"
+    :get go-about)
 
   ("/feedback"
     :post post-feedbacks

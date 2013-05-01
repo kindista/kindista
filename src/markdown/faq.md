@@ -1,4 +1,3 @@
-
 <div id="questions">
 
 ### Offers and Requests
@@ -19,9 +18,6 @@
 - [Can I post gratitude about someone if I haven't  received any resources from them?](#can-i-post-gratitude-about-anyone)
 - [Why should I express my gratitude publicly?](#why-express-gratitude-publicly)
 
-### About Kindista
-- [How does Kindista make money?](#how-does-kindista-make-money)
-- [Will Kindista start selling advertising?](#will-kindista-sell-advertising)
 </div>
   
 ## Offers and Requests
@@ -41,6 +37,8 @@ You can even offer the temporary use of tools,
 equipment, or living or work space.
 Get creative.  We encourage you to post anything you have
 that is underutilized, or of which you have excess.)
+
+<small><a href="#questions">Return to questions</a></small>
 
 <a id="am-i-obligated-to-give-an-offer"></a>
 
@@ -77,6 +75,8 @@ All that we ask is that you make every reasonable effort
 to follow through with your offer once you agree to give
 to someone.
 
+<small><a href="#questions">Return to questions</a></small>
+
 <a id="can-i-request-things-i-can-afford-to-buy"></a>
 
 ### Should I request things that I can afford to buy myself?
@@ -92,6 +92,7 @@ we hope that you will share your financial abundance with others
 so that they can pay for needs that are hard to meet directly through sharing,
 such as utilities, car insurance, and phone bills.
 
+<small><a href="#questions">Return to questions</a></small>
 <a id="can-i-barter-on-kindista"></a>
 
 ### Can I use Kindista to barter with other members?
@@ -109,6 +110,7 @@ pass-through costs (materials, fuel, etc.) or require them
 to provide materials that will be used in creating a gift
 (such as yarn for knitted clothing or wood and nails for a deck).
 
+<small><a href="#questions">Return to questions</a></small>
 <a id="are-resources-taxable"></a>
 
 ### Are resources shared using Kindista taxable?
@@ -120,6 +122,8 @@ and
 [here](http://www.irs.gov/uac/Eight-Tips-to-Determine-if-Your-Gift-is-Taxable).
 If you are still unsure about whether your gift is taxable
 you may want to consult a tax attorney.
+
+<small><a href="#questions">Return to questions</a></small>
 
 ## Connections
 
@@ -141,6 +145,7 @@ are sharing exclusively with their contacts.
 Adding someone as a contact also makes it easier to send them messages
 and find them in the search bar.
 
+<small><a href="#questions">Return to questions</a></small>
 <a id="what-are-mutual-connections"></a>
 
 ### What are mutual connections on a person's profile?
@@ -154,6 +159,7 @@ if you might want to share with someone.
 that does not necessarily mean that the person whose profile you are looking at 
 has also added the person to their own contacts list.*
 
+<small><a href="#questions">Return to questions</a></small>
 <a id="how-do-invitations-work"></a>
 
 ### How do invitations work?
@@ -178,6 +184,7 @@ By default we will add your invitees to your contacts list (and
 you to their list) when they join. You can add or remove 
 someone from your contacts at any time by visiting their profile page.
 
+<small><a href="#questions">Return to questions</a></small>
 <a id="can-i-trust-someone-on-kindista"></a>
 
 ### How do I know I can trust someone on Kindista?
@@ -229,6 +236,7 @@ you can edit what you have written and your edited statement
 will re-appear near the top of the activity feed 
 for your community to see.
 
+<small><a href="#questions">Return to questions</a></small>
 <a id="can-i-post-gratitude-about-anyone"></a>
 
 ### Can I post gratitude about someone if I haven't received any resources from them?
@@ -256,6 +264,7 @@ posting inaccurate information in a statement of gratitude
 can reflect poorly on your own Kindista reputation, 
 and may cause people to lose trust in you.
 
+<small><a href="#questions">Return to questions</a></small>
 <a id="why-express-gratitude-publicly"></a>
 
 ### Why should I express my gratitude publicly?
@@ -276,59 +285,5 @@ lots of their needs met through the system.
 That's why it's up to us to be 
 as publicly generous and appreciative as possible right now. 
 
-## About Kindista
-
-<a id="how-does-kindista-make-money"></a>
-
-### How does Kindista make money?
-
-Kindista is a project of CommonGoods Network, 
-an Oregon 501(c)(3) not-for-profit organization. 
-To date, all of our funding has come from 
-individual contributions, with significant startup funding 
-from CommonGoods' founder, Benjamin Crandall. 
-Your [donations](/donate) are greatly appreciated 
-and are fully tax-deductible to the extent allowed by law.
-
-While our ongoing expenses are very low, 
-we are only able to continue to operate
-through the countless hours volunteered by 
-[Eamon](/people/eamon/requests),
-[Benjamin](/people/benjamin/requests), and others.
-It is our hope to be able to receive all of what
-[we need](/projects/kindista/requests)
-through the generosity of our community.
-Many of our needs can be met through non-monetary gifts, 
-however we definitely appreciate 
-[monetary donations](/donate) as well.
-
-As a non-profit organization, Kindista will never 
-"sell out" or become a publicly-traded corporation.
-We are not in this to become financially wealthy 
-and we have no shareholders to distract us,
-so you can rest assured that we will always work 
-to serve the interests of our users and the global community.
-
-<a id="will-kindista-sell-advertising"></a>
-
-### Will Kindista start selling advertising?
-
-No. We believe that putting advertising on Kindista 
-would dilute our mission and compromise our integrity. 
-Allowing advertisements would create the appearance that 
-we are endorsing our advertisers, 
-and creates a variety of conflicts of interest.
-Advertising an obligitory relationship 
-where the advertiser gives money, not out of generosity,
-but out of the desire of more money in return. 
-This is counter to the spirit of gift.
-
-More fundamentally, we are working towards a world 
-in which people do not have to rely on money to get their needs met.
-Modern day advertising encourages people 
-to rely on using money to get their needs met. 
-Even worse, it creates insatiable consumerist desires 
-and encourages people to trade their lives away 
-(through time spent earning money) on things they don't even need.
-We want no part in that.
+<small><a href="#questions">Return to questions</a></small>
 

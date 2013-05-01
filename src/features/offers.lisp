@@ -115,9 +115,10 @@
                           (collect tag)))))
         (multiple-value-bind (tags items)
             (nearby-inventory-top-tags :offer :count 10000 :subtag-count 10)
+          (declare (ignore items))
           (standard-page
            "offers"
-             (browse-all-inventory-tags "offer" :base base :tags tags)
+             (browse-all-inventory-tags "an" "offer" :base base :tags tags)
              :top (when (getf *user* :help)
                    (offers-help-text))
              :selected "offers"))))))

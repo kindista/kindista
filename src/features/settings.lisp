@@ -384,16 +384,16 @@
     (let ((base "/settings/personal")
           (edit (get-parameter "edit")))
       (standard-page
-        "Settings"
+        "Personal settings"
         (html
-          (:h2 "Settings")
           (str (settings-tabs-html "personal"))
           (str (settings-avatar base (string= edit "avatar")))
           (str (settings-name base (string= edit "name")))
           (str (settings-address base (string= edit "address")))
           (str (settings-password base))
-          (str (settings-donate base))
-          (str (settings-deactivate base)))))))
+          (when (getf *user* :plan) (str (settings-donate base)))
+          (str (settings-deactivate base)))
+        :selected :settings))))
 
 (defun get-settings-error ()
   (flash "The avatar you uploaded is too large. Please upload an image smaller than 10MB." :error t)
@@ -413,10 +413,9 @@
       (t
        (let ((base "/settings/communication"))
          (standard-page
-           "Settings"
+           "Communication settings"
            (html
              (:div :class "settings"
-               (:h2 "Settings")
                (str (settings-tabs-html "communication"))
                (:p "We'll email you whenever something happens on Kindista that "
                    "involves you. You can specify which actions you would like "
@@ -429,7 +428,8 @@
 
                (str (settings-emails base
                                      (string= (get-parameter "edit") "email")
-                                     :activate (get-parameter "activate")))))))))))
+                                     :activate (get-parameter "activate")))))
+           :selected :settings))))))
 
 (defun post-settings ()
   (require-user

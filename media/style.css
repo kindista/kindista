@@ -639,6 +639,11 @@ body.landing > p {
  font-weight:bold;
 }
 
+#menu table tr:last-child a {
+ padding: 2px;
+}
+
+
 #menu menu {
  margin:0;
  padding:0.8em 0 0 0;
@@ -651,7 +656,7 @@ body.landing > p {
  font-weight: bold;
 }
 
-#menu li.selected {
+#menu .selected {
  background:#e1edc5;
  /*background: #eee;*/
 }
@@ -1764,12 +1769,12 @@ body.donate {
  padding-bottom: .5em;
 }
 
-.faqs li {
+.faq li {
  list-style-type: disc;
  padding-bottom: .35em;
 }
 
-.faqs p {
+.faq p {
  margin-top: .6em;
 }
 

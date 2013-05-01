@@ -113,9 +113,10 @@
                           (collect tag)))))
         (multiple-value-bind (tags items)
             (nearby-inventory-top-tags :request :count 10000 :subtag-count 10)
+          (declare (ignore items))
           (standard-page
            "Requests"
-             (browse-all-inventory-tags "request" :base base :tags tags)
+             (browse-all-inventory-tags "a" "request" :base base :tags tags)
              :top (when (getf *user* :help)
                    (requests-help-text))
              :selected "requests"))))))

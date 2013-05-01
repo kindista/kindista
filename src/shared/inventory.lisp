@@ -652,10 +652,10 @@
           (:div :class "category"
            (:h3 (:a :href (str (s+ base-url "/all")) "show all keywords"))))))))
 
-(defun browse-all-inventory-tags (type &key base tags)
+(defun browse-all-inventory-tags (preposition type &key base tags)
   (html
     (unless base
-      (str (simple-inventory-entry-html type)))
+      (str (simple-inventory-entry-html preposition type)))
     (let ((base-url (s+ "/" type "s")))
       (htm
         (:div :class "item"
