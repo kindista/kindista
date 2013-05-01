@@ -221,7 +221,7 @@
                             ((@ ((@ document get-element-by-id) "lccn") set-attribute) "class" "error"))
                            ((eq (@ response :error :code) "invalid_cvc")
                             ((@ ((@ document get-element-by-id) "lcvc") set-attribute) "class" "error"))
-                           ((eq (@ response :error :code) "card_error")
+                           ((eq (@ response :error :code) "card_declined")
                             (alert "Your card was declined by our payment processor.")
                             ((@ ((@ document get-element-by-id) "lccn") set-attribute) "class" "error"))
                            ((eq (@ response :error :code) "invalid_expiry_month")
