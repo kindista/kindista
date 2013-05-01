@@ -327,7 +327,7 @@
   (base-page
     "Donate"
     (html
-      (:img :src "/media/biglogo.png")
+      (:a :href "/" (:img :src "/media/biglogo.png"))
       (str dialog)
       (:div :id "letter"))
     :class "donate"))

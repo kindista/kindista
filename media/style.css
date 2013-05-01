@@ -1612,7 +1612,7 @@ body.donate {
  background: #eee;
 }
 
-.donate > img {
+.donate > a > img {
  margin: 2.5em;
  width: 7em;
  display: block;
