@@ -422,8 +422,8 @@
                                       :currency "USD"
                                       :description (donate-info-email*))
                 (modify-db *userid* :donated t)
-
-                "yay!")
+                (flash "Thank you so much for your donation! You will receive email from us shortly.")
+                (see-other "/"))
                
                ((string= (donate-info-type*) "monthly")
 
@@ -434,7 +434,8 @@
                       :prorate nil
                       :card (donate-info-token*))
                     (modify-db *userid* :plan (donate-info-amount*))
-                    "yay updated!")
+                    (flash "Thank you so much for your donation! You will receive email from us shortly.")
+                    (see-other "/"))
                   (let ((customer (stripe:create-customer
                                     :card (donate-info-token*)
                                     :email (donate-info-email*)
@@ -443,9 +444,10 @@
                     (acond
                       ((stripe:sstruct-get customer :id)
                        (modify-db *userid* :donated t :custid it :plan (donate-info-amount*))
-                       "yay new monthly!")
+                       (flash "Thank you so much for your donation! You will receive email from us shortly.")
+                       (see-other "/"))
 
-                      (t "oh no something bad :-("))))))
+                      (t (flash "An error occurred while processing your payment. Humans have been notified, and we'll be in touch shortly." :error t)))))))
              (stripe::stripe-error (err)
                (let ((code (stripe:sstruct-get (stripe::stripe-error-reply err) :error :code)))
                  (cond
