@@ -72,7 +72,7 @@ Thank you for sharing your gifts with us!
                (str (getf gratitude :text)))))
 
       (:p :style *style-p* 
-          "If you no long wish to receive notifications when people post gratitude about you, please edit your settings:"
+          "If you no longer wish to receive notifications when people post gratitude about you, please edit your settings:"
        (:br)
        (:a :href (strcat +base-url+ "settings/communication") (strcat +base-url+ "settings/communication")))
 
