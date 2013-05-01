@@ -108,7 +108,8 @@
       (:h3 (:a :href "/donate/once" "Or, make a one-time donation"))
 
       (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
-      (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") "."))))
+     ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
+      )))
 
 (defun donate-once-1 ()
   (html
@@ -127,7 +128,8 @@
       (:h3 (:a :href "/donate" "Or, make a monthly donation"))
 
       (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
-      (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") "."))))
+     ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
+      )))
 
 (defun donate-dialog-2 (&optional show-error)
   (with-donate-info
@@ -181,7 +183,8 @@
         (:button :class "nav" :type "submit" "Next >")
 
         (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
-        (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")))))
+     ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
+      )))
 
 (defun donate-dialog-3 (&key show-error show-amount)
   (with-donate-info
@@ -299,7 +302,8 @@
         (:button :id "ccnext" :class "nav" :type "submit" "Next >")
 
         (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
-        (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")))))
+     ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
+      )))
 
 (defun donate-dialog-4 ()
   (html
@@ -313,7 +317,8 @@
       (:button :name "confirm" :class "nav" :type "submit" "Donate >")
 
       (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
-      (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") "."))))
+     ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
+      )))
     
 (defun donate-page (dialog)
   (base-page
