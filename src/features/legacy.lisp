@@ -173,8 +173,9 @@
     (fresh-line *legacy-map-stream*))
   (fsync *legacy-map-stream*))
 
-(defun import-identities (path)
-  (let ((identities (sort (map-over-file #'copy-list path) #'< :key #'car)))
+(defun import-identities (path settings-path)
+  (let ((settings (map-over-file #'copy-list settings-path))
+        (identities (sort (map-over-file #'copy-list path) #'< :key #'car)))
     (setf identities (cons (second identities) (remove 2 identities :key #'car)))
     (iter (for (id pw names emails (long lat) contacts bio) in identities)
           (let ((newid (insert-db `(:type :person
@@ -190,9 +191,11 @@
                                           :help t
                                           :pass ,pw
                                           :created 3540679452
-                                          :notify-gratitude t
-                                          :notify-message t
-                                          :notify-kindista t))))
+                                          :notify-contact ,(member id (first settings))
+                                          :notify-comment ,(member id (second settings))
+                                          :notify-gratitude ,(member id (fourth settings))
+                                          :notify-message ,(member id (sixth settings))
+                                          :notify-kindista ,(member id (fifth settings))))))
             (write-legacy-map :identity id newid)))
 
     (labels ((id-lookup (id)
