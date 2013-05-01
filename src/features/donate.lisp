@@ -198,7 +198,7 @@
                    (setf *processing* t)
                    (dolist (element ((@ document get-elements-by-tag-name) "label"))
                      ((@ element set-attribute) "class" ""))
-                   ((@ *stripe set-publishable-key) (lisp *stripe-publish-key*))
+                   ((@ *stripe set-publishable-key) (ps:lisp *stripe-publish-key*))
                    ((@ *stripe create-token)
                     (create
                       :number (@ ((@ document get-element-by-id) "ccn") value)
