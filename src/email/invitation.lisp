@@ -59,7 +59,7 @@ This invitation will expire in 30 days.
 "))
 
 sender
-" only has a limited number of invitations and they sent one to you"
+" sent you an invitation"
 " because they think you would make a valuable addition to the"
 " Kindista community.
 
@@ -109,7 +109,7 @@ You will then have the option to join Kindista, or decline the "
 
         (:p :style *style-p*
           (str sender)
-          " only has a limited number of invitations and they sent one to you"
+          " sent you an invitation"
           " because they think you would make a valuable addition to the"
           " Kindista community.  ")
 

@@ -62,13 +62,8 @@
           (:br)
           (:button :class "yes" :type "submit" "Sign up") 
 
-          (:span "Have an account? " (:a :href "/login" "Log in")) 
+          (:span "Have an account? " (:a :href "/login" "Log in"))))
 
-          (:div :id "decline"
-            (:p (:strong "Or decline the invitation so " 
-                         (str sender) 
-                         " can invite someone else.")))
-          (:button :class "no" :name "decline" :type "submit" "Decline invitation")))
       :top (when (get-parameter "action")
              (welcome-bar
                (html
@@ -76,19 +71,6 @@
                  (:a :href "/signup" "create an account") ". Or, " (:a :href "/login" "log in")
                  " if you've already got one!")
                nil)))))
-
-(defun decline-invitation (&key host-name id token email)
-  (standard-page
-    "Decline Invitation"
-    (html
-      (:h2 "Are you sure you want to decline your invitation from " (str host-name) "?")
-      (:form :method "post" :action "/signup"
-        (:input :type "hidden" :name "invitation-id" :value id)
-        (:input :type "hidden" :name "token" :value token)
-        (:input :type "hidden" :name "host-name" :value host-name)
-        (:input :type "hidden" :name "invitation-email" :value email)
-        (:button :class "no" :type "submit" :class "submit" :name "really-decline" "Decline")
-        (:button :class "link" :type "submit" :class "submit"  "No, I didn't mean it!")))))
 
 (defun get-signup ()
   (with-user
@@ -114,18 +96,6 @@
            (new-id nil))
       (when *user* (reset-token-cookie))
       (cond
-        ((post-parameter "decline")
-         (decline-invitation :id id
-                             :token (post-parameter "token")
-                             :host-name (post-parameter "host-name")
-                             :email (post-parameter "invitation-email")))
-
-        ((post-parameter "really-decline")
-         (modify-db id
-                    :valid-until (get-universal-time))
-         (flash (s+ "You have declined your invitation from " host-name "."))
-         (see-other "/home"))
-
         ((not (and (post-parameter "invitation-id")
                    (post-parameter "token")))
          (flash "Kindista is by invitation only. You can only RSVP from a valid invitation email." :error t) 
