@@ -114,36 +114,42 @@
 
 (defun profile-activity-items (&key (userid *userid*) (page 0) (count 20) next-url type)
   (let ((items (gethash userid *activity-person-index*))
-        (start (* page 20)))
+        (start (* page count))
+        (i 0))
     (html
       (iter
-        (for i from 0 to (+ start count))
-          (if (and (>= i start) items)
-            (let ((item (car items)))
-              (when (or (not type)
-                        (and (eql type :gratitude)
-                             (eql :gift (result-type item)))
-                        (eql type (result-type item)))
-                (case (result-type item)
-                  (:gratitude
-                    (when (or (not type)
-                              (not (eql userid (first (result-people item)))))
-                      (str (gratitude-activity-item item :next-url next-url))))
-                  (:person
-                    (str (joined-activity-item item)))
-                  (:gift
-                    (when (or (not type)
-                              (eql userid (first (result-people item))))
-                      (str (gift-activity-item item :next-url next-url))))
-                  (:offer
-                    (str (inventory-activity-item "offer" item
-                                              :show-what (unless (eql type :offer) t)
-                                              :next-url next-url)))
-                  (:request
-                    (str (inventory-activity-item "request" item
-                                                :show-what (unless (eql type :request) t)
-                                                :next-url next-url))))))
+        (let ((item (car items)))
+          (when (or (not item)
+                    (>= i (+ count start)))
             (finish))
+
+          (when (or (not type)
+                    (and (eql type :gratitude)
+                         (eql :gift (result-type item)))
+                    (eql type (result-type item)))
+
+            (when (>= i start)
+              (case (result-type item)
+                (:gratitude
+                  (when (or (not type)
+                            (not (eql userid (first (result-people item)))))
+                    (str (gratitude-activity-item item :next-url next-url))))
+                (:person
+                  (str (joined-activity-item item)))
+                (:gift
+                  (when (or (not type)
+                            (eql userid (first (result-people item))))
+                    (str (gift-activity-item item :next-url next-url))))
+                (:offer
+                  (str (inventory-activity-item "offer" item
+                                            :show-what (unless (eql type :offer) t)
+                                            :next-url next-url)))
+                (:request
+                  (str (inventory-activity-item "request" item
+                                              :show-what (unless (eql type :request) t)
+                                              :next-url next-url)))))
+
+            (incf i)))
 
           (setf items (cdr items))
 
@@ -153,11 +159,11 @@
                 (:div :class "item"
                  (when (> page 0)
                    (htm
-                     (:a :href (strcat "/home?p=" (- page 1)) "< previous page")))
+                     (:a :href (strcat (script-name*) "?p=" (- page 1)) "< previous page")))
                  "&nbsp;"
                  (when (cdr items)
                    (htm
-                     (:a :style "float: right;" :href (strcat "/home?p=" (+ page 1)) "next page >")))))))))))
+                     (:a :style "float: right;" :href (strcat (script-name*) "?p=" (+ page 1)) "next page >")))))))))))
 
 (defun profile-tabs-html (userid &key tab)
   (let* ((person (db userid))
@@ -342,7 +348,7 @@
                     (:button :class "yes" :type "submit" :class "submit" :name "create" "Post"))))))))
 
         (:div :class "activity"
-          (str (profile-activity-items :userid userid :type type))))
+          (str (profile-activity-items :userid userid :type type :page (aif (get-parameter "p") (parse-integer it) 0)))))
 
       :top (profile-top-html userid)
 
