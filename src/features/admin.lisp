@@ -104,7 +104,7 @@
                                              subject
                                              text
                                              :html-message html)))))))
-          (dolist (id '(0 1)) ; (id (hash-table-keys *db*))
+          (dolist (id (hash-table-keys *db*))
             (send-mail id))))
 
       (progn
