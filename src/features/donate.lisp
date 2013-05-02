@@ -94,6 +94,7 @@
 (defun donate-monthly-1 ()
   (html
     (:form :id "donate" :method "post" :action "/donate"
+      (:a :href "/" (:img :src "/media/logo.png"))
       (:input :type "hidden" :name "type" :value "monthly")
       (:h2 "Sign up to make a monthly contribution")
       (:button :type "submit" :name "amount" :value "5" "$5")
@@ -114,6 +115,7 @@
 (defun donate-once-1 ()
   (html
     (:form :id "donate" :method "post" :action "/donate"
+      (:a :href "/" (:img :src "/media/logo.png"))
       (:input :type "hidden" :name "type" :value "once")
       (:h2 "Make a one-time donation supporting Kindista")
       (:button :type "submit" :name "amount" :value "10" "$10")
@@ -135,6 +137,7 @@
   (with-donate-info
     (html
       (:form :id "donate" :method "post" :action "/donate"
+        (:a :href "/" (:img :src "/media/logo.png"))
         (:h2 "Step 2/4")
         (:h3 "Billing address")
         (:ul
@@ -236,6 +239,7 @@
                            ((@ form submit)))))))
                  f))))
       (:form :id "donate" :method "post" :action "/donate" :onsubmit "return tokenize(this);"
+        (:a :href "/" (:img :src "/media/logo.png"))
         (:h2 "Step 3/4")
         (:h3 "Credit card info")
         (:input :id "cctoken" :name "token" :type "hidden")
