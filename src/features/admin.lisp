@@ -31,7 +31,8 @@
         (:h1 "Admin")
         (:ul
           (:li (:a :href "/admin/old-inventory" "old inventory items"))
-          (:li (:a :href "/admin/recent" "recently added"))))
+          (:li (:a :href "/admin/recent" "recently added"))
+          (:li (:a :href "/admin/sendmail" "send email to everyone"))))
       :selected "admin")))
 
 (defun get-admin-old-inventory ()
@@ -63,3 +64,49 @@
                                  :url "/admin/recent"
                                  :page page)))))
       :selected "admin")))
+
+(defun get-admin-sendmail ()
+  (require-admin
+    (standard-page
+      "Recently Added"
+      (html
+        (:p (:a :href "/admin" "back to admin"))
+        (:h1 "send broadcast email")
+        (:form :action "/admin/sendmail" :method "post"
+          (:label "From:")
+          (:input :type "text" :name "from" :value "\"Nicholas E. Walker\" <root@kindista.org>")
+          (:br)
+          (:label "Subject:")
+          (:input :type "text" :name "subject")
+          (:br)
+          (:textarea :name "markdown")
+          (:input :type "submit")))
+      :selected "admin")))
+
+(defun post-admin-sendmail ()
+  (require-admin
+    (if (and (post-parameter "markdown")
+             (post-parameter "from")
+             (post-parameter "subject"))
+      (let* ((text (post-parameter "markdown"))
+             (html (html-email-base (second (multiple-value-list (markdown text :stream nil)))))
+             (subject (post-parameter "subject"))
+             (from (post-parameter "from")))
+        (flet ((send-mail (id)
+                 (let ((data (db id)))
+                   (when (getf data :notify-kindista)
+                     (let ((name (getf data :name))
+                           (email (first (getf data :emails))))
+                       (when email
+                         (cl-smtp:send-email +mail-server+
+                                             from
+                                             (format nil "\"~A\" <~A>" name email)
+                                             subject
+                                             text
+                                             :html-message html)))))))
+          (dolist (id '(0 1)) ; (id (hash-table-keys *db*))
+            (send-mail id))))
+
+      (progn
+        (flash "specify everything please" :error t)
+        (see-other "/admin/sendmail")))))

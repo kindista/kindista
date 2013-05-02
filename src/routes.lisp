@@ -237,6 +237,10 @@
   ("/admin/recent"
     :get get-admin-recent)
 
+  ("/admin/sendmail"
+    :get get-admin-sendmail
+    :post post-admin-sendmail)
+
   ("/admin/old-inventory"
     :get get-admin-old-inventory)
 

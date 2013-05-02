@@ -40,7 +40,8 @@
     (:html
       (:head
         (:style :type "text/css"
-                      "a:hover {text-decoration:underline;} ")
+                      "a:hover {text-decoration:underline;}
+a {color: #5C8A2F;}")
         (:title "Kindista"))
 
       (:body :style "font-family: Ubuntu, Roboto, \"Segoe UI\", \"Helvetica Neue\", Tahoma, sans-serif;"
@@ -58,7 +59,7 @@
                              color: #799f56;
                              font-size: 22px;
                              font-weight: 500;"
-                     (:img :src "http://media.kindista.org/logo.png" :alt "kindista"))))
+                     (:img :src "http://media.kindista.org/logo.png" :alt "kindista" :width 129 :height 25))))
 
           (:tr (:td :style "padding: 10px;
                             color: #000000;
