@@ -123,33 +123,31 @@
                     (>= i (+ count start)))
             (finish))
 
-          (when (or (not type)
-                    (and (eql type :gratitude)
-                         (eql :gift (result-type item)))
-                    (eql type (result-type item)))
+          (when (and (or (not type)
+                         (and (eql type :gratitude)
+                              (eql :gift (result-type item)))
+                         (eql type (result-type item)))
+                     (> (incf i) start))
 
-            (when (>= i start)
-              (case (result-type item)
-                (:gratitude
-                  (when (or (not type)
-                            (not (eql userid (first (result-people item)))))
-                    (str (gratitude-activity-item item :next-url next-url))))
-                (:person
-                  (str (joined-activity-item item)))
-                (:gift
-                  (when (or (not type)
-                            (eql userid (first (result-people item))))
-                    (str (gift-activity-item item :next-url next-url))))
-                (:offer
-                  (str (inventory-activity-item "offer" item
-                                            :show-what (unless (eql type :offer) t)
-                                            :next-url next-url)))
-                (:request
-                  (str (inventory-activity-item "request" item
-                                              :show-what (unless (eql type :request) t)
-                                              :next-url next-url)))))
-
-            (incf i)))
+            (case (result-type item)
+              (:gratitude
+                (when (or (not type)
+                          (not (eql userid (first (result-people item)))))
+                  (str (gratitude-activity-item item :next-url next-url))))
+              (:person
+                (str (joined-activity-item item)))
+              (:gift
+                (when (or (not type)
+                          (eql userid (first (result-people item))))
+                  (str (gift-activity-item item :next-url next-url))))
+              (:offer
+                (str (inventory-activity-item "offer" item
+                                          :show-what (unless (eql type :offer) t)
+                                          :next-url next-url)))
+              (:request
+                (str (inventory-activity-item "request" item
+                                            :show-what (unless (eql type :request) t)
+                                            :next-url next-url))))))
 
           (setf items (cdr items))
 
