@@ -155,6 +155,6 @@
                                           (post-parameter "text"))))
        (if (> (length new-emails) 1)
          (flash "Your invitations have been sent.")
-         (flash "Your invitaion has been sent."))
+         (flash "Your invitation has been sent."))
        (see-other (post-parameter "next-url")))))))
 
