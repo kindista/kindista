@@ -333,7 +333,7 @@
   (html
     (:menu
       (iter (for (title slug count) in items)
-            (when title
+            (when (and title slug)
               (str (menu-item title
                               slug
                               (string= selected slug)
