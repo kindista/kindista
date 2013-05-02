@@ -61,7 +61,8 @@
 
       (dolist (subject subjects)
         (let ((user (db subject)))
-          (geo-index-insert *activity-geo-index* (make-result :latitude (getf user :lat)
+          (geo-index-insert *activity-geo-index* (make-result :type :gratitude
+                                                              :latitude (getf user :lat)
                                                               :longitude (getf user :long)
                                                               :people people
                                                               :id id
