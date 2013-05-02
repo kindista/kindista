@@ -311,6 +311,7 @@
 (defun donate-dialog-4 ()
   (html
     (:form :id "donate" :method "post" :action "/donate"
+      (:a :href "/" (:img :src "/media/logo.png"))
       (:h2 "Step 4/4")
       (:h3 "Confirm donation")
 
@@ -327,9 +328,8 @@
   (base-page
     "Donate"
     (html
-      (:a :href "/" (:img :src "/media/biglogo.png"))
       (str dialog)
-      (:div :id "letter"))
+      )
     :class "donate"))
 
 
