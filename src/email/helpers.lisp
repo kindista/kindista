@@ -59,7 +59,7 @@ a {color: #5C8A2F;}")
                              color: #799f56;
                              font-size: 22px;
                              font-weight: 500;"
-                     (:img :src "http://media.kindista.org/logo.png" :alt "kindista" :width 129 :height 25))))
+                     (:img :src "http://media.kindista.org/logo.png" :alt "kindista" :width 136 :height 26))))
 
           (:tr (:td :style "padding: 10px;
                             color: #000000;

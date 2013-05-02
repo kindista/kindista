@@ -28,7 +28,7 @@
 
 (routes
   ("/"
-    :get go-home)
+    :get get-splash)
 
   ("/home"
     :get get-home)

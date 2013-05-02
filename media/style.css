@@ -73,6 +73,11 @@ body {
  font-size: 0.85em;
 }
 
+body.splash {
+ background: url('hands.jpg') no-repeat;
+ background-size: 100% auto;
+}
+
 html {
  overflow-y: scroll;
 }
@@ -342,6 +347,115 @@ body.landing > p {
  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
  box-shadow: 0 0 1px rgba(0,0,0,0.8);
 }
+
+body.splash #header {
+ background: rgba(255,255,255,0.7);
+ height: 3.5em;
+ box-shadow: none;
+}
+
+body.splash #symbol {
+ margin: 0.7em 1em;
+}
+
+#splashbox h2 {
+ font-size: 2em;
+}
+
+#splashlogin p {
+ margin: 0.5em 0 1em 0;
+}
+
+#splashlogin h3 {
+ margin-top: 1em;
+ font-weight: normal;
+ font-size: 1.5em;
+}
+
+#splashbox > p {
+ font-size: 1.5em;
+}
+
+#splashbox {
+ background: rgba(255,255,255,0.85);
+ padding: 2em;
+ border-radius: 2em;
+ box-shadow: 0.05em 0.05em 2em rgba(0,0,0,0.3);
+ width: 54em;
+ margin: 4em auto;
+}
+
+#splashlogin {
+ float: right;
+ margin: 0 0.5em 0 2em;
+}
+
+#splashlogin label {
+ display: block;
+ font-size: 0.9em;
+ font-weight: bold;
+}
+
+#splashlogin input, button.yes, button.cancel {
+ vertical-align: bottom;
+ font-size: 1em;
+ height: 2.5em;
+ padding: 0.4em 0.4em;
+ margin: 0.35em 0;
+ border: 1px solid #444;
+ border-radius: 0.25em;
+ box-shadow: 1px 1px 1px rgba(255,255,255,0.5), inset 1px 1px 0px rgba(209,209,209,0.5);
+}
+
+button.yes {
+ font-weight: bold;
+ color: #fff;
+ background: -moz-linear-gradient(
+  top,
+  #96c42b 0%,
+  #6f9321);
+ background: -webkit-gradient(
+  linear, left top, left bottom, 
+  from(#96c42b),
+  to(#6f9321));
+ border: 1px solid #474747;
+ text-shadow:
+  1px 1px 2px rgba(0,0,0,0.4);
+  padding: 0.5em 0.7em;
+}
+
+#splashlogin button {
+ margin-left: 0.5em;
+ width: 4.5em;
+}
+
+#splashlogin input:focus {
+ border 1px solid #5be;
+ box-shadow: 0 0 0.5em rgba(80,160,230,0.6) inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+#splashlogin input[type=text] {
+ width: 15em;
+ margin-bottom: 1em;
+}
+
+#splashlogin input[value=] {
+ background: red;
+}
+
+#splashlogin input[type=password] {
+ width: 10em;
+}
+
+#splashlogin button {
+}
+
+#screenshots {
+ margin-top: 6em;
+ background: #666;
+}
+
+
 
 #header h1 {
  color:#5c8a2f;
@@ -990,22 +1104,6 @@ button.text.large {
  font-size:1.1em;
 }
 
-.basics > form input, .basics > form button {
- margin:0.45em 0.65em 0.55em 0;
- padding:0.5em;
- /*background:#375497;*/
- background:#5c8a2f;
- border:0;
- border-radius:4px;
- color:#fff;
- font-weight:bold;
-}
-
-.basics > form input.cancel {
- background:#ddd;
- color: #000;
-}
-
 .card .timestamp, .item .distance {
  font-size: 0.8em;
  margin: 1.4em 0 0.5em 1em;
@@ -1287,16 +1385,6 @@ button.simple-link {
  text-decoration:underline;
 }
 
-button.yes {
- background:#5c8a2f;
- /*background: #375497;*/
- border:0;
- padding:0.5em;
- color: #fff;
- font-weight: bold;
- margin-left:1em;
-}
-
 button.yes:first-child {
  margin-left:0.4em;
 }
@@ -1336,13 +1424,24 @@ button.link:hover {
  text-decoration: underline;
 }
 
+button.cancel, input.cancel {
+ font-weight: bold;
+ color: #fff;
+ background: -moz-linear-gradient(
+  top,
+  #777 0%,
+  #444);
+ background: -webkit-gradient(
+  linear, left top, left bottom, 
+  from(#777),
+  to(#444));
+ border: 1px solid #474747;
+ text-shadow:
+  1px 1px 2px rgba(0,0,0,0.4);
+  padding: 0.5em 0.7em;
+}
+
 a.cancel, button.cancel {
- border-radius:3px;
- border:0;
- padding:0.5em;
- background: #ccc;
- color: #000;
- font-weight:bold;
  margin-right:1em;
 }
 
@@ -1838,4 +1937,8 @@ input[name=reply] {
 #site-error {
  text-align: center;
  margin: 2em;
+}
+
+.clear {
+ clear: both;
 }

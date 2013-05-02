@@ -240,15 +240,15 @@
          (htm
            (:form :method "post" :action "/conversations/new"
              (:input :type "hidden" :name "next" :value (script-name*))
-             (:button :type "submit" :name "add" :value userid "Send a message"))))
+             (:button :class "yes" :type "submit" :name "add" :value userid "Send a message"))))
        (htm
          (:form :method "GET" :action (strcat "/people/" (username-or-id userid) "/reputation")
-           (:button :type "submit" "Express gratitude"))
+           (:button :class "yes" :type "submit" "Express gratitude"))
 
          (:form :method "POST" :action "/contacts"
            (:input :type "hidden" :name (if is-contact "remove" "add") :value userid)
            (:input :type "hidden" :name "next" :value *base-url*)
-           (:input :class (when is-contact "cancel") :type "submit" :value (if is-contact "Remove from contacts" "Add to contacts")))))))))
+           (:button :class (when is-contact "cancel") :type "submit" (str (if is-contact "Remove from contacts" "Add to contacts"))))))))))
 
 (defun profile-bio-html (userid &key editing)
   ; is the user editing one of the sections?
