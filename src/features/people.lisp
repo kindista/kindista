@@ -112,7 +112,7 @@
   (or (getf (db id) :username)
       (write-to-string id)))
 
-(defun profile-activity-items (&key (userid *userid*) (page 0) (count 20) next-url type)
+(defun profile-activity-items (&key (userid *userid*) (page 0) (count 20) type)
   (let ((items (gethash userid *activity-person-index*))
         (start (* page count))
         (i 0))
@@ -133,21 +133,19 @@
               (:gratitude
                 (when (or (not type)
                           (not (eql userid (first (result-people item)))))
-                  (str (gratitude-activity-item item :next-url next-url))))
+                  (str (gratitude-activity-item item))))
               (:person
                 (str (joined-activity-item item)))
               (:gift
                 (when (or (not type)
                           (eql userid (first (result-people item))))
-                  (str (gift-activity-item item :next-url next-url))))
+                  (str (gift-activity-item item))))
               (:offer
                 (str (inventory-activity-item "offer" item
-                                          :show-what (unless (eql type :offer) t)
-                                          :next-url next-url)))
+                                          :show-what (unless (eql type :offer) t))))
               (:request
                 (str (inventory-activity-item "request" item
-                                            :show-what (unless (eql type :request) t)
-                                            :next-url next-url))))))
+                                            :show-what (unless (eql type :request) t)))))))
 
           (setf items (cdr items))
 
@@ -248,7 +246,7 @@
          (:form :method "POST" :action "/contacts"
            (:input :type "hidden" :name (if is-contact "remove" "add") :value userid)
            (:input :type "hidden" :name "next" :value *base-url*)
-           (:button :class (when is-contact "cancel") :type "submit" (str (if is-contact "Remove from contacts" "Add to contacts"))))))))))
+           (:button :class (if is-contact "cancel" "yes") :type "submit" (str (if is-contact "Remove from contacts" "Add to contacts"))))))))))
 
 (defun profile-bio-html (userid &key editing)
   ; is the user editing one of the sections?

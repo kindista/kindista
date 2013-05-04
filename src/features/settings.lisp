@@ -33,7 +33,7 @@
       (:div :class "settings-item title" (str title))
       (:div :class "settings-item content"
         (unless editable
-          (htm (:a :class "anchor-button":href (s+ base "?edit=" item)
+          (htm (:a :class "yes" :href (s+ base "?edit=" item)
                 (or (str edit-text) (htm "Edit")))))
         (str body)
         (:p :class "help-text" (:em (str help-text)))))))

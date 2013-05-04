@@ -31,10 +31,9 @@
     (:form :method "GET" :action url
       (:input :type "submit" :value "Discuss"))))
 
-(defun flag-button (url &optional next-url)
+(defun flag-button (url)
   (html
     (:form :method "GET" :action (s+ url "/flag")
-      (:input :type "hidden" :name "next" :value next-url)
       (:input :type "submit" :value "Flag"))))
 
 
@@ -52,9 +51,9 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time next-url hearts comments type distance edit user-id reply)
+(defun activity-item (&key id url content time hearts comments type distance edit reply class)
   (html
-    (:div :class "card" :id id
+    (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
       (str (timestamp time :type type))
       (when distance
@@ -62,42 +61,43 @@
           (:p :class "distance"
             "within " (str (distance-string distance)))))
       (str content)
-      (:div :class "actions"
-        (str (activity-icons :hearts hearts :comments comments :url url))    
-        (:form :method "post" :action url
-          (:input :type "hidden" :name "next" :value (script-name*))
-          (if (member *userid* (gethash id *love-index*))
-            (htm (:input :type "submit" :name "unlove" :value "Loved"))
-            (htm (:input :type "submit" :name "love" :value "Love")))   
-          (when reply
-             (htm
-              " &middot; "  
-              (:input :type "submit" :name "reply" :value "Reply")))
-          (when edit
-            (htm
-              " &middot; "  
-              (:input :type "submit" :name "edit" :value "Edit")     
-              " &middot; "  
-              (:input :type "submit" :name "delete" :value "Delete")))) 
-        (when comments
-          (htm
-            " &middot; "
-            (str (comment-button url))))))))
+      (when *user*
+        (htm
+          (:div :class "actions"
+            (str (activity-icons :hearts hearts :comments comments :url url))    
+            (:form :method "post" :action url
+              (:input :type "hidden" :name "next" :value (script-name*))
+              (if (member *userid* (gethash id *love-index*))
+                (htm (:input :type "submit" :name "unlove" :value "Loved"))
+                (htm (:input :type "submit" :name "love" :value "Love")))   
+              (when reply
+                 (htm
+                  " &middot; "  
+                  (:input :type "submit" :name "reply" :value "Reply")))
+              (when edit
+                (htm
+                  " &middot; "  
+                  (:input :type "submit" :name "edit" :value "Edit")     
+                  " &middot; "  
+                  (:input :type "submit" :name "delete" :value "Delete"))))
+            (when comments
+              (htm
+                " &middot; "
+                (str (comment-button url))))))))))
 
         ;(unless (eql user-id *userid*)
         ;  (htm
         ;    " &middot; "
         ;    (str (flag-button url))))))))
 
-(defun gratitude-activity-item (result &key next-url)
+(defun gratitude-activity-item (result)
   (let* ((user-id (first (result-people result)))
          (item-id (result-id result))
          (data (db item-id)))
     (activity-item :id item-id
-                   :user-id user-id
                    :url (strcat "/gratitude/" item-id)
+                   :class "gratitude"
                    :time (result-time result)
-                   :next-url next-url
                    :edit (when (or (eql user-id *userid*) (getf *user* :admin)) t)
                    :hearts (length (loves item-id))
                    ;:comments (length (comments item-id))
@@ -109,15 +109,14 @@
                                   (str (name-list (getf data :subjects) :minimum-links 100)))
                               (:p (cl-who:esc (getf data :text)))))))
 
-(defun gift-activity-item (result &key next-url)
+(defun gift-activity-item (result)
   (let* ((user-id (first (result-people result)))
          (item-id (result-id result))
          (data (db item-id)))
     (activity-item :id item-id
-                   :user-id user-id
                    :url (strcat "/gifts/" item-id)
+                   :class "gratitude"
                    :time (result-time result)
-                   :next-url next-url
                    :hearts (length (loves item-id))
                    :comments (length (comments item-id))
                    :content (html
@@ -130,19 +129,18 @@
 
 (defun joined-activity-item (result)
   (html
-    (:div :class "card"
+    (:div :class "card joined"
       (str (timestamp (result-time result)))
       (:p (str (person-link (first (result-people result)))) " joined Kindista"))))
 
-(defun inventory-activity-item (type result &key show-distance show-what next-url)
+(defun inventory-activity-item (type result &key show-distance show-what)
   (let ((user-id (first (result-people result)))
         (data (db (result-id result))))
     (activity-item :id (result-id result)
-                   :user-id user-id
                    :url (strcat "/" type "s/" (result-id result))
                    :time (result-time result)
-                   :next-url next-url
                    :edit (or (eql user-id *userid*) (getf *user* :admin))
+                   :class type
                    :reply t
                    :hearts (length (loves (result-id result)))
                    :type (unless show-what (cond ((getf data :edited) "edited")
@@ -169,11 +167,11 @@
                                     ")")))) 
                               (:p (cl-who:esc (getf data :text)))))))
 
-(defun activity-items (items &key (page 0) (count 20) next-url (url "/home"))
+(defun activity-items (items &key (page 0) (count 20) (url "/home") (paginate t) (location t))
   (with-location
-    (let ((start (* page 20)))
+    (let ((start (* page count)))
       (html
-        (iter (for i from 0 to (+ start count))
+        (iter (for i from 0 to (- (+ start count) 1))
               (cond
                 ((< i start)
                  (setf items (cdr items)))
@@ -182,15 +180,15 @@
                  (let* ((item (car items)))
                    (case (result-type item)
                      (:gratitude
-                       (str (gratitude-activity-item item :next-url next-url)))
+                       (str (gratitude-activity-item item)))
                      (:gift
-                       (str (gift-activity-item item :next-url next-url)))
+                       (str (gift-activity-item item)))
                      (:person
                        (str (joined-activity-item item)))
                      (:offer
-                       (str (inventory-activity-item "offer" item :show-what t :next-url next-url :show-distance t)))
+                       (str (inventory-activity-item "offer" item :show-what t :show-distance location)))
                      (:request
-                       (str (inventory-activity-item "request" item :show-what t :next-url next-url :show-distance t)))))
+                       (str (inventory-activity-item "request" item :show-what t :show-distance location)))))
                  (setf items (cdr items)))
 
                 (t
@@ -201,7 +199,7 @@
                  (finish)))
 
               (finally
-                (when (or (> page 0) (cdr items))
+                (when (and paginate (or (> page 0) (cdr items)))
                   (htm
                     (:div :class "item"
                      (when (> page 0)
@@ -212,10 +210,10 @@
                        (htm
                          (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >"))))))))))))
 
-(defun local-activity-items (&key (user *user*) (page 0) (count 20) next-url (url "/home")) 
+(defun local-activity-items (&key (user *user*) (page 0) (count 20) (url "/home")) 
   (let ((items (sort (geo-index-query *activity-geo-index*
                                       *latitude*
                                       *longitude*
                                       (or (getf user :distance) 50))
                      #'< :key #'activity-rank)))
-    (activity-items items :page page :count count :next-url next-url :url url)))
+    (activity-items items :page page :count count :url url)))

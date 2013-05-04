@@ -130,6 +130,7 @@
       (when *user* (htm (:h3 (:a :href "/donate" "Or, make a monthly donation"))))
 
       (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
+      (:img :src "/media/pbs.png" :width "119" :height "26")
      ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
       )))
 

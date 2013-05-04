@@ -126,14 +126,15 @@
            ((not *user*)
             (welcome-bar
               (html
-                (:h2 "Welcome to Kindista!")
-                (:p "On this page you can see what's going on in Eugene, OR. If you were logged in, you'd "
-                    "see what's going on around you and with the people you connect with. Use the menu "
+                (:h2 "Kindista Demo")
+                (:p "This is what Kindista looks like to someone living in Eugene, Oregon. "
+                    "If you were logged in now, you'd see what's going on around you. "
+                    "Use the menu "
                     (:span :class "menu-button" " (click the button on the header) ")
                     (:span :class "menu-showing" " on the left ")
                     " to explore the site.")
-                (:p "Many activities on Kindista require the creation of an account. An account represents your true identity in the world. To create a Kindista account, you will need an invitation from an existing Kindista member.")
-                (:p "You can find us on " (:a :href "http://freenode.net/" "Freenode") " " (:a :href "http://en.wikipedia.org/wiki/Internet_Relay_Chat" "IRC") " in #kindista. Source code is available on " (:a :href "http://github.com/kindista/kindista" "GitHub") "."))
+                (:p "Because we don't have the resources to fight spam, to create a Kindista account you will need an invitation from an existing Kindista member. Or, you can "
+                    (:a :href "#" (:strong "fill out an application")) "."))
               nil))
            ((getf *user* :help)
             (welcome-bar
