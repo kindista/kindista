@@ -809,6 +809,13 @@
           (:h1 (str (s+ "Search results for \"" q "\"")))
 
           (cond
+            ((scan +email-scanner+ q)
+             (aif (gethash q *email-index*)
+               (return-from get-search (see-other (strcat "/people/" (username-or-id it))))
+               (htm
+                 (:p "Nobody on Kindista has that email address. Would you like to "
+                     (:a :href (strcat "/invite?email=" (url-encode q)) "invite them")
+                     "?"))))
             ((string= scope "requests")
              (see-other (s+ "/requests?q=" (url-encode q))))
 

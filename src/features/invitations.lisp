@@ -78,7 +78,7 @@
           (:p "Include a message for your recipient(s): (optional)")
           (:textarea :rows "6" :name "text" :placeholder "Enter your message here..." (str (when text text)))
           (:p 
-            (:button :class "no" :type "submit" :class "cancel" :name "cancel" "Cancel") 
+            (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel") 
             (:button :class "yes" :type "submit" :class "submit" :name "review" "Next")))))))
 
 (defun confirm-invitations (&key text emails bulk-emails next-url)
@@ -103,12 +103,12 @@
                 (:h3 "Your personalized invitation message is:")
                 (str text)))
             (:p
-              (:button :class "no" :type "submit" :class "submit" :name "edit" "Edit Invitation")
+              (:button :class "cancel" :type "submit" :class "submit" :name "edit" "Edit Invitation")
               (:button :class "yes" :type "submit" :class "submit" :name "confirm" "Send Invitation" (str pluralize)))))))))
 
 (defun get-invite ()
   (require-user
-    (invite-page)))
+    (invite-page :emails (get-parameter "email"))))
 
 (defun post-invite ()
   (require-user
