@@ -150,16 +150,7 @@
           (setf items (cdr items))
 
           (finally
-            (when (or (> page 0) (cdr items))
-              (htm
-                (:div :class "item"
-                 (when (> page 0)
-                   (htm
-                     (:a :href (strcat (script-name*) "?p=" (- page 1)) "< previous page")))
-                 "&nbsp;"
-                 (when (cdr items)
-                   (htm
-                     (:a :style "float: right;" :href (strcat (script-name*) "?p=" (+ page 1)) "next page >")))))))))))
+            (str (paginate-links page (cdr items))))))))
 
 (defun profile-tabs-html (userid &key tab)
   (let* ((person (db userid))
@@ -450,15 +441,13 @@
     (ensuring-userid (id "/people/~a/connections")
       (profile-mutual-connections-html id))))
 
-(defun nearby-people (&optional (userid *userid*))
+(defun nearby-people ()
   (with-location
     (labels ((distance (result)
                (air-distance *latitude* *longitude* (result-latitude result) (result-longitude result))))
-      (sublist (remove userid
-                 (mapcar #'result-id
-                         (sort (geo-index-query *people-geo-index* *latitude* *longitude* 50)
-                               #'< :key #'distance)))
-             0 20))))
+      (mapcar #'result-id
+              (sort (remove *userid* (geo-index-query *people-geo-index* *latitude* *longitude* 50) :key #'result-id)
+                    #'< :key #'distance)))))
 
 (defun mutual-connections (one &optional (two *userid*))
   (intersection (gethash one *followers-index*)
@@ -553,16 +542,26 @@
     (see-other "/people/nearby")))
 
 (defun get-people-nearby ()
-  (standard-page
-    "Nearby people"
-    (html
-      (when *user* (str (people-tabs-html :tab :nearby)))
-      (dolist (id (nearby-people))
-        (str (person-card id (db id :name)))))
-    :selected "people"
-    :right (html
-             (str (donate-sidebar))
-             (str (invite-sidebar)))))
+  (let* ((page (if (scan +number-scanner+ (get-parameter "p"))
+                (parse-integer (get-parameter "p"))
+                0))
+         (start (* page 20)))
+    
+    (standard-page
+      "Nearby people"
+      (html
+        (when *user* (str (people-tabs-html :tab :nearby)))
+        (multiple-value-bind (ids more) (sublist (nearby-people) start 20)
+          (when (> page 0)
+            (str (paginate-links page more)))
+          (dolist (id ids)
+            (str (person-card id (db id :name))))
+          (str (paginate-links page more))))
+
+      :selected "people"
+      :right (html
+               (str (donate-sidebar))
+               (str (invite-sidebar))))))
 
 (defun get-people-suggested ()
   (if *user*

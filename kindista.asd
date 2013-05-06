@@ -56,6 +56,7 @@
                                            (:file "timestamp")
                                            (:file "menu-horiz")
                                            (:file "card")
+                                           (:file "paginate")
                                            (:file "person-card")))
                              (:module features
                               :serial t
