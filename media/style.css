@@ -1465,6 +1465,10 @@ button.yes:first-child {
  margin-left:0.4em;
 }
 
+.basics button.yes:first-child {
+ margin-left: 0;
+}
+
 a + button.yes {
  vertical-align: middle;
  margin-left:1em;
