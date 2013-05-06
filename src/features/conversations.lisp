@@ -145,6 +145,7 @@
            (setf text nil))
          (cond
            ((and people text subject)
+            (flash "Your message has been sent.")
             (see-other (format nil (or (post-parameter "next")
                                        "/conversations/~A")
                                (create-conversation :people (mapcar #'list (cons *userid* people))
