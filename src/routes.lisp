@@ -36,6 +36,10 @@
   ("/search"
     :get get-search)
 
+  ("/request-invitation"
+    :get get-request-invitation
+    :post post-request-invitation)
+
   ("/signup"
     :get get-signup
     :post post-signup)
