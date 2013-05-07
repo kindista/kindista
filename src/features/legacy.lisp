@@ -85,8 +85,7 @@
           (html
             (str (gift-activity-item (make-result :id id
                                                   :time (getf it :created)
-                                                  :people (cons (getf it :giver) (getf it :recipients)))
-                                                  :next-url (script-name*)))
+                                                  :people (cons (getf it :giver) (getf it :recipients)))))
             (:div :class "comments"
 
             (dolist (comment-id (gethash id *comment-index*))
