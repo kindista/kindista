@@ -81,7 +81,7 @@ from " says:
 
 You can see the conversation on Kindista here:
 "
-(strcat +base-url+ "conversation/" on-id)
+(strcat +base-url+ "conversations/" on-id)
 
 "
 
@@ -122,8 +122,8 @@ Thank you for sharing your gifts with us!
 
       (:p :style *style-p*
        "You can see the conversation on Kindista here: "
-       (:a :href (strcat +base-url+ "conversation/" on-id)
-                 (str (strcat +base-url+ "conversation/" on-id))))
+       (:a :href (strcat +base-url+ "conversations/" on-id)
+                 (str (strcat +base-url+ "conversations/" on-id))))
 
       (:p :style *style-p*
           "If you no longer wish to receive notifications when people send you messages, please edit your settings:"
