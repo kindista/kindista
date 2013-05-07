@@ -38,7 +38,7 @@
 " has shared a statement of gratitude about you on Kindista.
 
 "
-(getf (db gratitude) :text)
+(getf gratitude :text)
 "
 
 You can see the statement on Kindista here:

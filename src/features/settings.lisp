@@ -47,7 +47,7 @@
           (:form :method "post" :action "/settings" :enctype "multipart/form-data"
             (:input :type "hidden" :name "next" :value "/settings/personal")
             (:div :class "submit-settings"
-              (:button :class "no" :type "submit" :class "submit" :name "cancel" "Cancel")
+              (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
               (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
             (:input :type "file" :name "avatar"))))
       (t
@@ -66,7 +66,7 @@
             (:form :method "post" :action "/settings"
               (:input :type "hidden" :name "next" :value "/settings/personal")
               (:div :class "submit-settings"
-                (:button :class "no" :type "submit" :class "submit" :name "cancel" "Cancel")
+                (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
                 (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
               (:ul
                 (:li (:span (:input :type "text"
@@ -101,7 +101,7 @@
           (:form :method "post" :class "address" :action "/settings"
            (:input :type "hidden" :name "next" :value "/settings/personal")
            (:div :class "submit-settings"
-             (:button :class "no" :type "submit" :class "submit" :name "cancel" "Cancel")
+             (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
              (:button :class "yes" :type "submit" :class "submit" :name "confirm-address" "Submit"))
            (:input :type "text" :name "address" :value (str address)))))
       (t
@@ -132,7 +132,7 @@
               (:form :method "post" :action "/settings"
                 (:h3 "Is this location correct?")
                 (:input :type "hidden" :name "next" :value (str next))
-                (:button :class "no"
+                (:button :class "cancel"
                          :type "submit"
                          :name "reset-location"
                          :value "1"
@@ -180,7 +180,7 @@
         (:form :method "post" :class "password" :action "/settings"
          (:input :type "hidden" :name "next" :value "/settings/personal")
          (:div :class "submit-settings"
-           (:button :class "no" :type "submit" :class "submit" :name "cancel-plan" "Cancel plan")
+           (:button :class "cancel" :type "submit" :class "submit" :name "cancel-plan" "Cancel plan")
            (:button :class "yes" :type "submit" :class "submit" "Change plan"))
          (:div
            (:label "Current monthly donation: " (:strong "$" (str plan)))
@@ -227,12 +227,13 @@
         (:h1 "Are you sure you want to deactivate your account?")
         (:form :method "post" :action "/settings"
           (:input :type "hidden" :name "next" :value "/settings")
+          (:a :href "/settings" "No, I didn't mean it!") 
           (:button :class "yes" 
                    :type "submit" 
                    :class "submit" 
                    :name "confirm-deactivation" 
                    "Yes, deactivate my Kindista account.")
-          (:a :href "/settings" "No, I didn't mean it!"))
+          )
         (:p :class "settings-item help-text"
           (:strong "Warning: ")
           "Deactivating your account will delete all of your current offers " 
