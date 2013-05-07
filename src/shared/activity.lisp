@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time hearts comments type distance edit reply class)
+(defun activity-item (&key id url content time hearts comments type distance delete edit reply class)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -74,6 +74,10 @@
                  (htm
                   " &middot; "  
                   (:input :type "submit" :name "reply" :value "Reply")))
+              (when delete
+                (htm
+                  " &middot; "  
+                  (:input :type "submit" :name "delete" :value "Delete"))) 
               (when edit
                 (htm
                   " &middot; "  
@@ -118,6 +122,7 @@
                    :class "gratitude"
                    :time (result-time result)
                    :hearts (length (loves item-id))
+                   :delete (when (or (eql user-id *userid*) (getf *user* :admin)) t)
                    :comments (length (comments item-id))
                    :content (html
                               (:p (str (person-link user-id))
