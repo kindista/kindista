@@ -37,7 +37,7 @@
             (:p (:a :href "/reset" "Forgot your password?"))
             (:h3 "New to Kindista?")
             (:p (:a :href "/request-invitation" "Request an invitation.")))  
-          (:h2 "Share offers, requests, and gratitude with people who live nearby.")
+          (:h2 "Kindista helps you share offers, requests, and gratitude with people who live nearby.")
           (:p "Make connections with people who can help you lead a more abundant life through the culture of sharing. "
               (:strong "Because sharing is good."))
           (:p :class "clear"))
@@ -55,7 +55,9 @@
                                    :paginate nil))))
           (:div :class "splactions"
             (:a :class "yes" :href "/home" "Try out Kindista")
+            " "
             (:a :class "yes" :href "/request-invitation" "Request an invitation")
+            " "
             (:a :class "yes" :href "/donate" "Make a donation")))
 
 
@@ -65,7 +67,9 @@
           (:img :src "/media/screenshot2.png")
           (:div :class "splactions"
             (:a :class "yes" :href "/home" "Try out Kindista")
+            " "
             (:a :class "yes" :href "/request-invitation" "Request an invitation")
+            " "
             (:a :class "yes" :href "/donate" "Make a donation"))
           (:br)
           (:p "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")))
