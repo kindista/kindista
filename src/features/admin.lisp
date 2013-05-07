@@ -93,11 +93,11 @@
                  (:form :method "post" :action (strcat "/admin/invite-request/" id)
                    (:button :type "submit" 
                             :name "delete" 
-                            :class "no" 
+                            :class "cancel" 
                             "Delete Spam")
                    (:button :type "submit" 
                             :name "deny" 
-                            :class "no" 
+                            :class "cancel" 
                             "Deny request")
                    (:button :type "submit" 
                             :name "invite" 
