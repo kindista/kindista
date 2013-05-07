@@ -19,13 +19,10 @@
 
 (defun new-invitation-notice-handler ()
   (let* ((invitation-id (getf (cddddr *notice*) :id))
-         (self (db invitation-id :self))
-         (invite-request (db invitation-id :invite-request-id)))
+         (self (db invitation-id :self)))
    (cond
      (self
        ((send-email-verification invitation-id)))
-     (invite-request
-       (send-invite-request-response invitation-id))
      (t
       (send-invitation-email invitation-id)))))
 
