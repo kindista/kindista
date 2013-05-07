@@ -22,7 +22,7 @@
          (self (db invitation-id :self)))
    (cond
      (self
-       ((send-email-verification invitation-id)))
+      (send-email-verification invitation-id))
      (t
       (send-invitation-email invitation-id)))))
 
@@ -42,6 +42,7 @@
     invitation))
 
 (defun index-invitation (id data)
+  (declare (ignore data))
   (let* ((host (getf (db id) :host)))
    (with-locked-hash-table (*person-invitation-index*) 
       (push id (gethash host *person-invitation-index*)))))
