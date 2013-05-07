@@ -134,7 +134,7 @@
                     (:span :class "menu-showing" " on the left ")
                     " to explore the site.")
                 (:p "Because we don't have the resources to fight spam, to create a Kindista account you will need an invitation from an existing Kindista member. Or, you can "
-                    (:a :href "#" (:strong "fill out an application")) "."))
+                    (:a :href "/request-invitation" (:strong "fill out an application")) "."))
               nil))
            ((getf *user* :help)
             (welcome-bar
