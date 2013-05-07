@@ -412,6 +412,16 @@ body.splash #symbol {
  margin: 4em auto;
 }
 
+@media (max-width:50em) {
+ #splashbox {
+  width: 100%;
+ }
+
+ body.splash {
+  background-size: auto;
+ }
+}
+
 .splactions {
  padding-top: 2em;
  text-align: center;
@@ -419,6 +429,7 @@ body.splash #symbol {
 
 .splactions a.yes {
  margin: 0.5em;
+ line-height: 4em;
 }
 
 #splashlogin {
@@ -440,6 +451,7 @@ body.splash #symbol {
  margin: 0.35em 0;
  border: 1px solid #444;
  border-radius: 0.25em;
+ white-space: nowrap;
  box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.5);
 }
 
@@ -512,6 +524,9 @@ a.yes {
 }
 
 #preview-cards {
+ column-fill: balance;
+ -moz-column-fill: balance;
+ -webkit-column-fill: balance;
  column-count: 3;
  -moz-column-count: 3;
  -webkit-column-count: 3;
@@ -522,6 +537,7 @@ a.yes {
  padding: 0em 1.2em 1.2em 1.2em;
  border-radius: 0.6em;
  background: #fff;
+ display: inline-block;
 }
 
 #preview-cards .card.offer {
@@ -547,8 +563,55 @@ a.yes {
  padding: 2em;
 }
 
+#screenshots img {
+ max-width: 100%;
+}
+
 #screenshots h2 {
  font-size: 3em;
+}
+
+
+@media (max-width:39em) {
+ #splashbox {
+  padding: 1em;
+  background: none;
+  margin: 0;
+  box-shadow: none;
+ }
+
+ body.splash {
+  background: none;
+ }
+}
+
+@media (max-width:49em) {
+ #preview-cards {
+  column-count: 2;
+  -moz-column-count: 2;
+  -webkit-column-count: 2;
+ }
+}
+
+@media (max-width:30em) {
+ #splashbox h2 {
+  margin-top: 2em;
+  font-size: 1.5em;
+ }
+ #splashlogin {
+  width: 15em;
+  float: none;
+  margin: 0;
+ }
+ #preview {
+  margin-top: 0;
+  box-shadow: none;
+ }
+ #preview-cards {
+  column-count: 1;
+  -moz-column-count: 1;
+  -webkit-column-count: 1;
+ }
 }
 
 

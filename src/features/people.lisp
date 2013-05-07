@@ -85,7 +85,7 @@
       (unless (< (result-time result) (- (get-universal-time) 15552000))
         (geo-index-insert *activity-geo-index* result)))))
 
-(defun post-change-person-address (id)
+(defun reindex-person-location (id)
   (let* ((result (gethash id *db-results*))
          (data (db id))
          (lat (getf data :lat))
@@ -135,7 +135,7 @@
           (unless (< (result-time result) (- (get-universal-time) 15552000))
             (geo-index-insert *activity-geo-index* result)))))))
 
-(defun post-change-person-names (id)
+(defun reindex-person-names (id)
   (let* ((result (gethash id *db-results*))
          (data (db id))
          (names (cons (getf data :name)

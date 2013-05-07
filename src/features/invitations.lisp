@@ -42,6 +42,7 @@
     invitation))
 
 (defun index-invitation (id data)
+  (declare (ignore data))
   (let* ((host (getf (db id) :host)))
    (with-locked-hash-table (*person-invitation-index*) 
       (push id (gethash host *person-invitation-index*)))))

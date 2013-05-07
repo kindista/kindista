@@ -311,7 +311,7 @@
 (defun page-header (&optional extra)
   (html
     (:div :id "header"
-     (:a :id "logo" :href "/home" (:img :id "symbol" :src "/media/logo.png" :alt "kindista"))
+     (:a :id "logo" :href (if *user* "/home" "/") (:img :id "symbol" :src "/media/logo.png" :alt "kindista"))
      ;(:h1 "kindista")
      (when extra
        (str extra)))))

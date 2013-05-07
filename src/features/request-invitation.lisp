@@ -115,7 +115,7 @@
             (:label :for "other" "Do you have any other ideas for how you want to help grow the sharing economy in your area? (optional)")
             (:textarea :cols "150" :rows "5" :name "other" :placeholder "Any other ideas?" (str other)))
           (:div
-            (:button :class "no"
+            (:button :class "cancel"
                      :type "submit"
                      :name "cancel"
                      "Cancel")
