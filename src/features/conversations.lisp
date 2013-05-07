@@ -195,6 +195,10 @@
                    (post-parameter "people")
                    :remove (post-parameter "remove")))))))
 
+
+(defun go-conversation (id)
+  (moved-permanently (strcat "/conversations/" id)))
+
 (defun get-conversation (id)
   (require-user
     (setf id (parse-integer id))

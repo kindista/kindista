@@ -167,6 +167,9 @@
     :get get-conversation
     :post post-conversation)
 
+  ("/conversation/<int:id>"
+    :get go-conversation)
+
   ("/conversations/<int:id>/leave"
     :get get-conversation-leave)
 
