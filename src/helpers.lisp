@@ -70,18 +70,16 @@
 (defmacro asetf (place value)
   `(anaphora::symbolic setf ,place ,value))
 
-(defun sublist (list &optional start length)
+(defun sublist (list &optional start count)
   (when start
-    (dotimes (i start)
-      (setf list (cdr list))))
-  (if length
-    (when list
-      (iter (for i from 1 to length)
-            (collect (car list))
-            (if (cdr list)
-              (setf list (cdr list))
-              (finish))))
-    (copy-list list)))
+    (setf list (nthcdr start list)))
+  (let ((length (length list)))
+    (cond
+      ((or (not count)
+           (>= count length))
+       (values list nil))
+      (t
+       (values (subseq list 0 count) t)))))
 
 (defun intersection-fourth (list1 list2)
   (intersection list1 list2 :key #'fourth))
