@@ -394,7 +394,7 @@
            (when next
              (htm (:input :type "hidden" :name "next" :value next)))
            (:textarea :cols "40" :rows "8" :name "text" (str text))
-           (:p  (:button :class "no" :type "submit" :class "cancel" :name "cancel" "Cancel")
+           (:p  (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
            (:button :class "yes" :type "submit" :class "submit" :name "post" "Next")))))
    :selected selected))
 

@@ -19,16 +19,22 @@
 
 (defun new-invitation-notice-handler ()
   (let* ((invitation-id (getf (cddddr *notice*) :id))
-         (self (db invitation-id :self)))
-   (if self
-     (send-email-verification invitation-id)
-     (send-invitation-email invitation-id))))
+         (self (db invitation-id :self))
+         (invite-request (db invitation-id :invite-request-id)))
+   (cond
+     (self
+       ((send-email-verification invitation-id)))
+     (invite-request
+       (send-invite-request-response invitation-id))
+     (t
+      (send-invitation-email invitation-id)))))
 
-(defun create-invitation (email &key text (host *userid*) (self nil))
+(defun create-invitation (email &key text invitation-request-id (host *userid*) (self nil))
 ; self invitations are verifications for alternate email addresses
   (let* ((time (get-universal-time))
          (invitation (insert-db (list :type :invitation
                                       :host host
+                                      :invite-request-id invitation-request-id
                                       :token (random-password 9)
                                       :self self
                                       :recipient-email email

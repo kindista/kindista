@@ -17,28 +17,40 @@
 
 (in-package :kindista)
 
-(defun run ()
-  (load-notice-handlers)
-  (load-db)
-  (load-tokens)
-  (start *acceptor*)
-  (start-notice-thread))
+(defun send-invite-request-notification-email (id)
+ (cl-smtp:send-email +mail-server+
+                     "Kindista <noreply@kindista.org>"
+                     "feedback@kindista.org"
+                     "New Kindista Invitation Request" 
+                     (invite-request-notification-email-text id)))
 
-(defun load-notice-handlers ()
-  (clrhash *notice-handlers*)
-  (add-notice-handler :all #'log-notice)
-  (add-notice-handler :new-comment #'new-comment-notice-handler)
-  (add-notice-handler :new-feedback #'new-feedback-notice-handler)
-  (add-notice-handler :new-invitation #'new-invitation-notice-handler)
-  (add-notice-handler :new-invite-request #'new-invite-request-notice-handler)
-  (add-notice-handler :new-gratitude #'new-gratitude-notice-handler))
+(defun invite-request-notification-email-text (id)
+(let ((request (db id)))
+(strcat
+"Invitation Request ID: " id
+"
 
-(defun end ()
-  (save-db)
-  (save-tokens)
-  (stop *acceptor*)
-  (stop-notice-thread))
+Requested by: " (getf request :name)
+"
 
-(defun quit ()
-  (end)
-  (sb-ext:exit))
+Email: " (getf request :email)
+"
+
+Resources offered: 
+"(getf request :offering)
+"
+
+Help offered: 
+" 
+(if (getf request :events) "help with events" "")
+"
+"
+(if (getf request :invite) "invite friends" "")
+"
+"
+(if (getf request :resources) "post resources" "")
+"
+"
+(if (getf request :gratitude) "post gratitude" ""))))
+
+

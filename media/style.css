@@ -263,6 +263,33 @@ textarea {
  margin-right: 1.2em;
 }
 
+#request-invite {
+ margin: 1em;
+}
+
+#request-invite div, #request-invite ul {
+ margin-bottom: 1em;
+ max-width: 200em;
+}
+
+#request-invite input[type=text] {
+ margin:0;
+ width: 25em;
+ border-top-right-radius: 3px;
+ border-bottom-right-radius: 3px;
+ border-top-left-radius: 3px;
+ border-bottom-left-radius: 3px;
+ margin: 0.5em 0.5em 0.5em 0;
+}
+
+#request-invite textarea {
+ width: 100%;
+}
+
+#request-invite label {
+ display: block;
+}
+
 .confirm-invite p {
  margin: 1em 0 1em 0;
 }
@@ -2033,6 +2060,15 @@ body.donate {
 #questions ul {
  padding-left: 1em;
  margin-top: .25em;
+}
+
+#admin-page ul {
+ padding-left: 0;
+}
+
+#admin-page li {
+ font-size: 1.3em;
+ line-height: 2.5em;
 }
 
 .card .people a {

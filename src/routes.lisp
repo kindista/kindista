@@ -36,6 +36,10 @@
   ("/search"
     :get get-search)
 
+  ("/request-invitation"
+    :get get-request-invitation
+    :post post-request-invitation)
+
   ("/signup"
     :get get-signup
     :post post-signup)
@@ -233,6 +237,12 @@
 
   ("/admin"
     :get get-admin)
+
+  ("/admin/invite-requests"
+    :get get-admin-invite-requests)
+
+  ("/admin/invite-request/<id>"
+    :post post-admin-invite-request)
 
   ("/admin/recent"
     :get get-admin-recent)
