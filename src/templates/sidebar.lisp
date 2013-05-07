@@ -33,5 +33,5 @@
           (:p "Kindista is invitation-only. As a Kindista member, you can invite people you know to join. ")
           (:br)
           (:a :class "yes" :href "/invite" "Invite Friends")
-          (:a :href "/help/faqs#how-do-invitations-work" "How does this work?"))))))
+          (:a :href "/faq#how-do-invitations-work" "How does this work?"))))))
 
