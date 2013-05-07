@@ -39,6 +39,9 @@
 (defun validate-name (string)
   (scan +full-name-scanner+ string))
 
+(defun validate-email (string)
+  (scan +email-scanner+ string))
+
 (defun fsync (stream)
   (finish-output stream)
   (sb-posix:fsync (sb-posix:file-descriptor stream)))

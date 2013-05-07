@@ -58,6 +58,8 @@
 
 (defvar *recent-activity-mutex* (make-mutex))
 (defvar *recent-activity-index* ())
+(defvar *invite-request-mutex* (make-mutex))
+(defvar *invite-request-index* ())
 (defvar *old-inventory-mutex* (make-mutex))
 (defvar *old-inventory-index* ())
 (defvar *feedback-mutex* (make-mutex))
