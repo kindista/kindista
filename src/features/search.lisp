@@ -830,10 +830,7 @@
                      "?")
                  (if people
                    (htm
-                     (str (people-results-html (sublist people 0 5)))
-                     (when (> (length people) 5)
-                       (htm
-                         "more"))) 
+                     (str (people-results-html people)))
                    (htm
                      (:p "no results"))))))
             
@@ -846,11 +843,11 @@
                  (progn
                    (when people
                      (htm
-                       (:h2 (:a :href "/people" "People"))
+                       (:h2 (:a :href (s+ "/search?scope=people&q=" (url-encode q)) "People"))
                        (str (people-results-html (sublist people 0 5)))
                        (when (> (length people) 5)
                          (htm
-                           "more")))) 
+                           (:div :class "more-results" (:a :href (s+ "/search?scope=people&q=" (url-encode q)) (fmt "see ~d more people" (- (length people) 5))))))))
                    (when requests
                      (htm
                        (:h2 (:a :href (s+ "/requests?q=" (url-encode q)) "Requests")

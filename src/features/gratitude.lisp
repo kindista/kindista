@@ -32,7 +32,8 @@
     gratitude))
 
 (defun index-gratitude (id data)
-  (let* ((author (db (getf data :author)))
+  (let* ((author-id (getf data :author))
+         (author (db author-id))
          (created (getf data :created))
          (subjects (getf data :subjects))
          (people (cons (getf data :author) subjects))
@@ -45,6 +46,9 @@
 
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
+
+    (with-locked-hash-table (*gratitude-index*)
+      (push id (gethash author-id *gratitude-index*)))
 
     (with-locked-hash-table (*activity-person-index*)
       (dolist (person people)

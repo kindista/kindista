@@ -44,8 +44,9 @@
       (setf (gethash id *db-results*) result))
 
     (awhen (getf data :emails) 
-      (dolist (email it) 
-        (setf (gethash email *email-index*) id)))
+      (with-locked-hash-table (*email-index*)
+        (dolist (email it) 
+          (setf (gethash email *email-index*) id))))
 
     (setf (gethash (getf data :username) *username-index*) id)
 
@@ -69,6 +70,10 @@
       (asetf (gethash id *activity-person-index*)
              (sort (push result it) #'> :key #'result-time)))
 
+    (unless (< (result-time result) (- (get-universal-time) 2592000))
+      (with-mutex (*recent-activity-mutex*)
+        (push result *recent-activity-index*)))
+
     (when (and (getf data :lat)
                (getf data :long)
                (getf data :created)
@@ -78,10 +83,64 @@
       (geo-index-insert *people-geo-index* result) 
 
       (unless (< (result-time result) (- (get-universal-time) 15552000))
-        (unless (< (result-time result) (- (get-universal-time) 2592000))
-          (with-mutex (*recent-activity-mutex*)
-            (push result *recent-activity-index*)))
         (geo-index-insert *activity-geo-index* result)))))
+
+(defun post-change-person-address (id)
+  (let* ((result (gethash id *db-results*))
+         (data (db id))
+         (lat (getf data :lat))
+         (long (getf data :long)))
+
+    (unless result
+      (notice :error :note "no db result on ungeoindex-person"))
+
+    (geo-index-remove *people-geo-index* result)
+    (geo-index-remove *activity-geo-index* result)  
+
+    (when (and lat long
+               (getf data :created)
+               (getf data :active))
+
+      (metaphone-index-insert (cons (getf data :name) (getf data :aliases)) result)
+      (geo-index-insert *people-geo-index* result) 
+
+      (unless (< (result-time result) (- (get-universal-time) 15552000))
+        (geo-index-insert *activity-geo-index* result))
+
+      (dolist (id (gethash id *request-index*))
+        (let ((result (gethash id *db-results*)))
+          (geo-index-remove *request-geo-index* result)
+          (geo-index-remove *activity-geo-index* result)
+          (setf (result-latitude result) lat)
+          (setf (result-longitude result) long)
+          (unless (< (result-time result) (- (get-universal-time) 15552000))
+            (geo-index-insert *activity-geo-index* result))
+          (geo-index-insert *request-geo-index* result)))
+
+      (dolist (id (gethash id *offer-index*))
+        (let ((result (gethash id *db-results*)))
+          (geo-index-remove *offer-geo-index* result)
+          (geo-index-remove *activity-geo-index* result)
+          (setf (result-latitude result) lat)
+          (setf (result-longitude result) long)
+          (geo-index-insert *offer-geo-index* result) 
+          (unless (< (result-time result) (- (get-universal-time) 15552000))
+            (geo-index-insert *activity-geo-index* result))))
+      
+      (dolist (id (gethash id *gratitude-index*))
+        (let ((result (gethash id *db-results*)))
+          (geo-index-remove *activity-geo-index* result)
+          (setf (result-latitude result) lat)
+          (setf (result-longitude result) long)
+          (unless (< (result-time result) (- (get-universal-time) 15552000))
+            (geo-index-insert *activity-geo-index* result)))))))
+
+(defun post-change-person-names (id)
+  (let* ((result (gethash id *db-results*))
+         (data (db id))
+         (names (cons (getf data :name)
+                      (getf data :aliases)))) 
+    (metaphone-index-insert names result)))
 
 (defun deactivate-person (id)
   (let ((result (gethash id *db-results*)))
@@ -100,13 +159,13 @@
   (let* ((result (gethash id *db-results*))
          (data (db id))
          (names (cons (getf data :name)
-                      (getf data :aliases)))) 
-  (metaphone-index-insert names result)
-  (geo-index-insert *people-geo-index* result) 
-  (geo-index-insert *activity-geo-index* result) 
-  (modify-db id :active t
-                :notify-message t
-                :notify-gratitude t)))
+                      (getf data :aliases))))
+    (metaphone-index-insert names result)
+    (geo-index-insert *people-geo-index* result) 
+    (geo-index-insert *activity-geo-index* result) 
+    (modify-db id :active t
+                  :notify-message t
+                  :notify-gratitude t)))
 
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)
