@@ -47,7 +47,7 @@
           (:form :method "post" :action "/settings" :enctype "multipart/form-data"
             (:input :type "hidden" :name "next" :value "/settings/personal")
             (:div :class "submit-settings"
-              (:button :class "no" :type "submit" :class "submit" :name "cancel" "Cancel")
+              (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
               (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
             (:input :type "file" :name "avatar"))))
       (t
@@ -66,7 +66,7 @@
             (:form :method "post" :action "/settings"
               (:input :type "hidden" :name "next" :value "/settings/personal")
               (:div :class "submit-settings"
-                (:button :class "no" :type "submit" :class "submit" :name "cancel" "Cancel")
+                (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
                 (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
               (:ul
                 (:li (:span (:input :type "text"
@@ -101,7 +101,7 @@
           (:form :method "post" :class "address" :action "/settings"
            (:input :type "hidden" :name "next" :value "/settings/personal")
            (:div :class "submit-settings"
-             (:button :class "no" :type "submit" :class "submit" :name "cancel" "Cancel")
+             (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
              (:button :class "yes" :type "submit" :class "submit" :name "confirm-address" "Submit"))
            (:input :type "text" :name "address" :value (str address)))))
       (t
@@ -132,7 +132,7 @@
               (:form :method "post" :action "/settings"
                 (:h3 "Is this location correct?")
                 (:input :type "hidden" :name "next" :value (str next))
-                (:button :class "no"
+                (:button :class "cancel"
                          :type "submit"
                          :name "reset-location"
                          :value "1"
@@ -144,34 +144,33 @@
                          "Yes, this is correct")))))))))
 
 (defun settings-password (base)
-  (let ((password (getf *user* :pass)))
-    (settings-item-html base "password" "Password"
-      (html
-        (:form :method "post" :class "password" :autocomplete "off" :action "/settings"
-         (:input :type "hidden" :name "next" :value "/settings/personal")
-         (:div :class "submit-settings"
-           (:button :class "yes" :type "submit" :class "submit" "Change password"))
-         (:div
-           (:label "Current password:")
-           (:input :type "password"
-                   :name "password"
-                   :placeholder "verify your current password"))
-         (:div
-           (:label "New password:")
-           (:input :type "password"
-                   :name "new-password-1"
-                   :placeholder "new password: at least 8 characters"))   
-         (:div
-           (:label "Confirm your new password:")
-           (:input :type "password"
-                   :name "new-password-2"
-                   :placeholder "please retype your new password"))))   
+  (settings-item-html base "password" "Password"
+    (html
+      (:form :method "post" :class "password" :autocomplete "off" :action "/settings"
+       (:input :type "hidden" :name "next" :value "/settings/personal")
+       (:div :class "submit-settings"
+         (:button :class "yes" :type "submit" :class "submit" "Change password"))
+       (:div
+         (:label "Current password:")
+         (:input :type "password"
+                 :name "password"
+                 :placeholder "verify your current password"))
+       (:div
+         (:label "New password:")
+         (:input :type "password"
+                 :name "new-password-1"
+                 :placeholder "new password: at least 8 characters"))   
+       (:div
+         (:label "Confirm your new password:")
+         (:input :type "password"
+                 :name "new-password-2"
+                 :placeholder "please retype your new password"))))   
 
-    :editable t
-    :help-text (s+ "Minimum of 8 characters. "
-                   "We strongly recommend using either a mix of upper- and "
-                   "lower-case letters, numbers, and symbols; or a sentence "
-                   "of at least 8 words."))))
+  :editable t
+  :help-text (s+ "Minimum of 8 characters. "
+                 "We strongly recommend using either a mix of upper- and "
+                 "lower-case letters, numbers, and symbols; or a sentence "
+                 "of at least 8 words.")))
 
 (defun settings-donate (base)
   (let ((plan (getf *user* :plan)))
@@ -180,7 +179,7 @@
         (:form :method "post" :class "password" :action "/settings"
          (:input :type "hidden" :name "next" :value "/settings/personal")
          (:div :class "submit-settings"
-           (:button :class "no" :type "submit" :class "submit" :name "cancel-plan" "Cancel plan")
+           (:button :class "cancel" :type "submit" :class "submit" :name "cancel-plan" "Cancel plan")
            (:button :class "yes" :type "submit" :class "submit" "Change plan"))
          (:div
            (:label "Current monthly donation: " (:strong "$" (str plan)))
@@ -225,15 +224,7 @@
     (html
       (:div :class "item"
         (:h1 "Are you sure you want to deactivate your account?")
-        (:form :method "post" :action "/settings"
-          (:input :type "hidden" :name "next" :value "/settings")
-          (:button :class "yes" 
-                   :type "submit" 
-                   :class "submit" 
-                   :name "confirm-deactivation" 
-                   "Yes, deactivate my Kindista account.")
-          (:a :href "/settings" "No, I didn't mean it!"))
-        (:p :class "settings-item help-text"
+        (:p
           (:strong "Warning: ")
           "Deactivating your account will delete all of your current offers " 
           "and requests, and prevent people from "
@@ -241,7 +232,16 @@
           "Deactivating your account will not remove any statements of gratitude "
           "you have given or received. "
           "You may reactivate your account anytime by logging into Kindista and "
-          "clicking \"Reactivate account\" on this page.")))
+          "clicking \"Reactivate account\" on this page.")  
+        (:form :method "post" :action "/settings"
+          (:input :type "hidden" :name "next" :value "/settings")
+          (:a :class "cancel" :href "/settings" "No, I didn't mean it!")
+          (:button :class "yes" 
+                   :type "submit" 
+                   :class "submit" 
+                   :name "confirm-deactivation" 
+                   "Yes, deactivate my Kindista account."))
+        ))
     :class "text"))
 
 (defun settings-emails (base editable &key activate)
@@ -446,10 +446,19 @@
                                            (not (string= y ""))) 
                                  collect y)
                            :test #'string=)))
-            (unless (equal (getf *user* :aliases) aliases)
-              (modify-db *userid* :aliases aliases)))
-          (unless (equal (getf *user* :name) it)
-            (modify-db *userid* :name it)))
+            (cond
+              ((and (not (equal (getf *user* :aliases) aliases))
+                    (equal (getf *user* :name) it))
+               (modify-db *userid* :aliases aliases)
+               (reindex-person-names *userid*))
+              ((and (equal (getf *user* :aliases) aliases)
+                    (not (equal (getf *user* :name) it)))
+               (modify-db *userid* :name it)
+               (reindex-person-names *userid*)) 
+              ((and (not (equal (getf *user* :aliases) aliases))
+                    (not (equal (getf *user* :name) it)))
+               (modify-db *userid* :name it :aliases aliases)
+               (reindex-person-names *userid*))))
          (t
            (flash "You must use your true full name (first and last) for your primary name on Kindista.  Single word names are permitted for your nicknames." :error t))) 
        (see-other (or (post-parameter "next") "/home")))
@@ -457,7 +466,7 @@
       ((post-parameter "address")
        (multiple-value-bind (lat long address city state country street zip)
          (geocode-address it)
-         (modify-db *userid* :lat lat :long long :address address :city city :state state :street street :zip zip :country country))
+         (modify-db *userid* :lat lat :long long :address address :city city :state state :street street :zip zip :country country :location nil))
        (see-other (url-compose "/settings/verify-address" 
                                "next" (or (post-parameter "next") "/home")))) 
 
@@ -684,4 +693,5 @@
             (getf *user* :lat)
             (getf *user* :long))
        (modify-db *userid* :location t)
+       (post-change-person-address *userid*)
        (see-other (or (post-parameter "next") "/home"))))))
