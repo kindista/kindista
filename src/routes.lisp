@@ -238,6 +238,12 @@
   ("/admin"
     :get get-admin)
 
+  ("/admin/invite-requests"
+    :get get-admin-invite-requests)
+
+  ("/admin/invite-request/<id>"
+    :post post-admin-invite-request)
+
   ("/admin/recent"
     :get get-admin-recent)
 

@@ -20,10 +20,11 @@
 (defun new-invite-request-notice-handler ()
   (send-invite-request-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-invite-request (&key name email offering into events resources invite gratitude other (time (get-universal-time)))
+(defun create-invite-request (&key name email address offering into events resources invite gratitude other (time (get-universal-time)))
   (let ((invite-request (insert-db `(:type :invite-request
                                      :name ,name
                                      :email ,email
+                                     :address ,address
                                      :offering ,offering
                                      :into ,into
                                      :events ,events
@@ -35,7 +36,27 @@
   (notice :new-invite-request :time :time :id invite-request)
   invite-request))
 
-(defun request-invitation (&key error name email offering into events resources invite gratitude other)
+(defun index-invite-request (id data)
+  (let ((result (make-result :time (getf data :requested)
+                             :type :invite-request
+                             :id id)))
+
+    (with-locked-hash-table (*db-results*)
+      (setf (gethash id *db-results*) result))
+
+    (with-mutex (*invite-request-mutex*)
+      (push result *invite-request-index*))))
+
+(defun delete-invite-request (id)
+  (let ((result (gethash id *db-results*)))
+    (with-locked-hash-table (*db-results*)
+      (remhash id *db-results*))
+    (when (member id *invite-request-index* :key #'result-id)
+      (with-mutex (*invite-request-mutex*)
+       (asetf *invite-request-index* (remove id it :key #'result-id))))
+    (remove-from-db id)))
+
+(defun request-invitation (&key error name email address offering into events resources invite gratitude other)
   (standard-page
     "Request an Invitation"
     (html
@@ -45,12 +66,13 @@
             (flash "Please enter your true full name (first and last).":error t))
           (:email
             (flash "Please correct your email address.":error t))
+          (:address
+            (flash "Please correct your street address (minimum City, State, and Postal Code).":error t))
           (:offering
             (flash "Please tell us a little more about your skills and what you would like to share with your community."))
           (:into
             (flash "Please tell us a little more about what you are into."))))
-      (:div :id "request-invite" :class "settings-item"
-        (:form :method "post" :action "/request-invitation" 
+      (:div :id "request-invite" :class "settings-item" (:form :method "post" :action "/request-invitation" 
           (:div
             (:label :for "name" "Full Name")
             (:input :type "text" :name "name" :value name :placeholder "Enter your full name"))
@@ -59,11 +81,15 @@
             (:input :type "text" :name "email" :value email :placeholder "Please enter your email address"))
 
           (:div
-            (:label :for "offering" "Please tell us about your skills and what you would like to share with your community:")
+            (:label :for "address" "Street Address (for information on how we use your location data, please see our " (:a :href "/privacy" "privacy policy")").")
+            (:input :type "text" :name "address" :value address :placeholder "Please enter your street address"))
+
+          (:div
+            (:label :for "offering" "Please tell us about your skills and what you would like to share with your community: (minimum 150 characters)")
             (:textarea  :cols "150" :rows "5" :name "offering" :placeholder "skills, tools, materials, work or meeting space, housing, food, or other resources..." (str offering)))
 
           (:div
-            (:label :for "into" "What else are you into?")
+            (:label :for "into" "What else are you into? (minimum 150 characters)")
             (:textarea :cols "150" :rows "5" :name "into" :placeholder "Interests, activites, etc." (str into)))
           
           (:p "Are you willing to help promote Kindista in your local community?")
@@ -109,6 +135,7 @@
 (defun post-request-invitation ()
   (let* ((name (post-parameter "name"))
          (email (post-parameter "email"))
+         (address (post-parameter "address"))
          (offering (post-parameter "offering"))
          (into (post-parameter "into"))
          (events (post-parameter "events"))
@@ -123,6 +150,7 @@
     ((not (validate-name (post-parameter "name")))
      (request-invitation :name name
                          :email email
+                         :address address
                          :offering offering
                          :into into
                          :events events
@@ -135,6 +163,7 @@
     ((not (validate-email email))
      (request-invitation :name name
                          :email email
+                         :address address
                          :offering offering
                          :into into
                          :events events
@@ -144,9 +173,23 @@
                          :other other
                          :error :email))
 
+    ((< (length address) 10)
+     (request-invitation :name name
+                         :email email
+                         :address address
+                         :offering offering
+                         :into into
+                         :events events
+                         :resources resources
+                         :invite invite
+                         :gratitude gratitude
+                         :other other
+                         :error :address))
+
     ((< (length offering) 150)
      (request-invitation :name name
                          :email email
+                         :address address
                          :offering offering
                          :into into
                          :events events
@@ -159,6 +202,7 @@
     ((< (length into) 150)
      (request-invitation :name name
                          :email email
+                         :address address
                          :offering offering
                          :into into
                          :events events
@@ -171,6 +215,7 @@
     (t
      (create-invite-request :name name
                             :email email
+                            :address address
                             :offering offering
                             :into into
                             :events (when events t)
