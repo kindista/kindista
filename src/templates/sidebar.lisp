@@ -20,8 +20,9 @@
 (defun donate-sidebar ()
   (html
     (:div :class "item right only"
-      (:h3 (:a :href "/donate" "Help spread the sharing!"))
-      (:p "Help Kindista grow big and strong by responding to our " (:a :href "/people/kindista/requests" "requests") " or " (:a :href "/donate" "making a donation") "?"))))
+      (:h3 "Support Kindista")
+      (:p (:a :class "yes" :href "/donate" "Donate"))
+      (:p "Your donations are tax-deductable to the extent permitted by law. Kindista is a project of CommonGoods Network, an Oregon 501(c)(3) non-profit."))))
 
 (defun invite-sidebar ()
   (with-user
