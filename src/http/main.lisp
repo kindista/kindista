@@ -57,10 +57,8 @@
     (see-other (or (referer) "/"))))
 
 (defun login-required ()
-  (flash "Sorry, that is only available when you are logged in to Kindista." :error t)
-  (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
-    (see-other "/")
-    (see-other (or (referer) "/"))))
+  (flash "The page you requested is only available when you are logged in to Kindista." :error t)
+  (see-other "/login"))
 
 (defun active-status-required ()
   (flash "Sorry, you must reactivate your account to perform that action." :error t)
