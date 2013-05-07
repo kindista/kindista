@@ -247,8 +247,7 @@
         (html
           (str (gratitude-activity-item (make-result :id id
                                                      :time (getf it :created)
-                                                     :people (cons (getf it :author) (getf it :subjects)))
-                                        :next-url (script-name*))))))
+                                                     :people (cons (getf it :author) (getf it :subjects))))))))
     (not-found)))
 
 (defun post-gratitude (id)
