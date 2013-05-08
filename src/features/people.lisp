@@ -97,6 +97,9 @@
     (geo-index-remove *people-geo-index* result)
     (geo-index-remove *activity-geo-index* result)  
 
+    (setf (result-latitude result) lat)
+    (setf (result-longitude result) long)
+
     (when (and lat long
                (getf data :created)
                (getf data :active))
