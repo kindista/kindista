@@ -85,8 +85,7 @@
           (html
             (str (gift-activity-item (make-result :id id
                                                   :time (getf it :created)
-                                                  :people (cons (getf it :giver) (getf it :recipients)))
-                                                  :next-url (script-name*)))
+                                                  :people (cons (getf it :giver) (getf it :recipients)))))
             (:div :class "comments"
 
             (dolist (comment-id (gethash id *comment-index*))
@@ -123,6 +122,10 @@
         ((post-parameter "text")
          (create-comment :on id :text (post-parameter "text"))
          (see-other (script-name*)))
+        ((post-parameter "delete")
+         (delete-gift id)
+         (flash "This gift has been deleted.")
+         (see-other (or (post-parameter "next") (referer))))
         ((and (post-parameter "love")
               (eq (getf it :type) :gift))
          (love id)

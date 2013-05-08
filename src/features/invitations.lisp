@@ -22,7 +22,7 @@
          (self (db invitation-id :self)))
    (cond
      (self
-      (send-email-verification invitation-id))
+       (send-email-verification invitation-id))
      (t
       (send-invitation-email invitation-id)))))
 
