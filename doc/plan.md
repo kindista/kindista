@@ -20,7 +20,7 @@ Known Issues
 - [ ] Conversations are mistakenly marked as public
 - [ ] reindex geo-activity for all locations of gratitude participants (subjects and author) when gratitude is edited or deleted
 - [ ] make profile pics clickable
-- [ ] fix invitation urls and index invitations by token
+- [X] fix invitation urls and index invitations by token
 
 New Member Follow-up
 - [ ] list of all Eugene members for Kim to follow up with
@@ -32,6 +32,10 @@ Send Requested Invitations
 
 First-time Offers and Requests
 - [ ] click-through for first time offers and requests
+
+Send Invitations
+- [ ] invite pre-kindista signups
+- [ ] invite non-Eugene K1 signups
 
 People
 - [ ] add a "Looking for someone?" wizard/helper form to the top of the page
