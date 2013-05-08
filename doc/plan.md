@@ -16,21 +16,22 @@ You should have received a copy of the GNU Affero General Public License
 along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
 -----------------------------------------------------------------------
+Known Issues
+- [ ] Conversations are mistakenly marked as public
+- [ ] reindex geo-activity for all locations of gratitude participants (subjects and author) when gratitude is edited or deleted
+- [ ] make profile pics clickable
+- [ ] fix invitation urls and index invitations by token
 
-Invitations
-    # A limited resource
-- [X] change site text wording to indicate that accounts require invitations
-- [X] modify account creation workflow to require invitation
-- [X] create 10 new invitations for a new user on creation
-- [X] add expiration date and invitation IDs to invitation emails
-- [X] allow invitees to decline invitations on the signup page
-- [X] display the invitation number on the signup page
-- [ ] notify Kindista administrators when someone is down to their last invitation, so we can give them more if we want to
-- [X] enabling/validating an invitation sets the :valid-until field to a future date
-- [X] expire initations when :valid-until is in the past
-- [X] modify signup form to require an invite code
-- [X] add host/invitee to each other's contact lists
-Admin Interface
+New Member Follow-up
+- [ ] list of all Eugene members for Kim to follow up with
+
+Send Requested Invitations
+- [ ] create default email for denied invite requests
+- [ ] create default email for accepted invite requests
+- [ ] send responses
+
+First-time Offers and Requests
+- [ ] click-through for first time offers and requests
 
 People
 - [ ] add a "Looking for someone?" wizard/helper form to the top of the page
@@ -40,55 +41,21 @@ People
 - "What are you learning?"
 - "How do you spend a typical weekday?"
 
-Notices (async system)
-- [X] event structure
-- [X] event handler table
-- [X] event handling thread
-
-Profile page
-- [X] make a new tab for mutual connections that is only visible on mobile
-- [X] hide left-bar mutual connections for mobile
-
 Metrics
-- [X] metric logging function
-- [X] enable metric log on (run)
 - [ ] donations
 - [ ] Daily signups
 - [ ] Weekly signups
 - [ ] Daily logins
 
-Task Queue
-    # For follow-up and background actions that do not take place inside a request
-- [X] create task queue
-- [X] create task runner thread loop
-
-Renew SSL
-- [X] renew SSL certificate for kindista.org
-
 Help and Feedback
-- [X] Collect comments
 - [ ] Index of active topics
 - [ ] Bug fixes
 - [ ] New features
-
-Acknowledgements
-- [X] Create activity view for acknowledgements (K1 gifts)
-
-Notifications
-- [X] Emailing
-- [X] unread messages count in main menu
-
-Importing -- depends on Acknowledgements
-- [ ] Add tags to K1 offers and requests
-- [ ] Import K1 offers and requests
-- [ ] Import K1 users
-- [ ] import K1 communication preferences
 
 Loves
 - [ ] what is "love"?  help text when a user hover's over the love icon/love link
 
 People page
-- [X] create a view for all of a user's contacts
 - [ ] create a view showing everyone who is following me
 
 Follow-up
@@ -96,35 +63,11 @@ Follow-up
 - [ ] Automated message from one of us to new signups
 - [ ] Invitation a few days later to complete more steps and let person know what has been happening
 
-Discussions
-- [X] Person-to-person messages
-- [X] Comments
-
 Settings
-- [X] contact preferences
-- [X] change avatar
-- [X] add/change email addresses
-- [X] change password
-- [X] name
-- [X] location
-- [X] aliases
-- [X] index aliases as well as names
-- [X] deactivate account
-- [X] change password with "forgot password link
-- [X] check user communication preferences before sending gratitude/message notifications
 - [ ] warning if avatar is too big for nginx
 
 Writing
 - [ ] About page
-
-Terms and Privacy
-- [ ] Create UI to get users to agree to new terms upon first login
-- [ ] Proofread terms
-- [ ] Proofread privacy
-- [ ] Change effective dates on Privacy and Terms
-- [X] turn TOU into a markup file
-
-### MAYBE
 
 Groups
 - unified projects and communities
@@ -133,11 +76,6 @@ Groups
 - discussions
 - membership
 - moderation
-
-Discussions
-- Group conversations
-
-### LAUNCH
 
 Donations
 - [ ] Write thank you email
@@ -187,25 +125,3 @@ Awards for users (badges)
 
 ----------------------------------------------------------
 
-### DONE
-
-User Interface
-- [X] unified visual framework for several closely-related tools
-- [X] made user interface "responsive" (adaptible to mobile phones, tablets, and large monitors)
-- [X] JavaScript is no longer essential
-
-Changes
-- [X] recent activity list (recent changes)
-- [X] include new/edited gratitude
-- [X] include new/edited resources
-- [X] include new/edited requests
-- [X] include new/edited announcements
-
-Inventory
-- [X] tag system
-- [X] top-level tags are automatically calculated for display as categories
-- [X] browing inventory items by single tags and tag combinations
-
-Database
-- [X] implemented porter stemming full-text search index
-- [X] implemented geohash search index
