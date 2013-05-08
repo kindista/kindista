@@ -18,17 +18,12 @@
 (in-package :kindista)
 
 (defun signup-page (&key error 
-                         invitation-id 
                          name 
-                         host-name 
                          email 
-                         password 
                          token 
                          invitation-email)
   (let ((code (or token (get-parameter "token")))
-        (sender (or host-name (get-parameter "from")))
-        (id (or invitation-id (get-parameter "id")))
-        )
+        (email (or email (get-parameter "email"))))
     (standard-page
       "Sign up"
       (html
@@ -38,8 +33,6 @@
              (:br) "Your activation code is:  " (str code))))
         (:form :method "POST" :action "/signup" :id "signup"
           (:input :type "hidden" :name "token" :value code)
-          (:input :type "hidden" :name "invitation-id" :value id)
-          (:input :type "hidden" :name "host-name" :value sender)
           (:input :type "hidden" :name "invitation-email" :value (or invitation-email 
                                                                      (get-parameter "email")))
           (:h2 "Create an account") 
@@ -51,11 +44,13 @@
           (:br)
           (:label :for "email" "Email") 
           (:input :type "email" :name "email" :value (or email 
-                                                         invitation-email
-                                                         (get-parameter "email"))) 
+                                                         invitation-email))
           (:br)
           (:label :for "name" "Password") 
-          (:input :type "password" :name "password" :value password) 
+          (:input :type "password" :name "password") 
+          (:br)
+          (:label :for "name" "Confirm Password") 
+          (:input :type "password" :name "password-2") 
           (:p :class "fineprint" "By creating an account, you are agreeing to our "
             (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
 
@@ -77,9 +72,7 @@
     (cond 
       (*user* 
        (see-other "/home")) 
-      ((or (not (get-parameter "id"))
-           (not (get-parameter "token"))
-           (not (get-parameter "from"))
+      ((or (not (get-parameter "token"))
            (not (get-parameter "email")))
        (flash "Kindista is by invitation only. You can only RSVP from a valid invitation email." :error t) 
        (see-other "/home"))
@@ -88,92 +81,72 @@
 
 (defun post-signup ()
   (with-user
-    (let* ((userid (gethash (post-parameter "email") *email-index*))
-           (id (parse-integer (post-parameter "invitation-id")))
+    (let* ((token (post-parameter "token"))
+           (id (car (gethash token *invitation-index*)))
            (invitation (db id))
            (host (getf invitation :host))
-           (host-name (post-parameter "host-name"))
            (new-id nil))
       (when *user* (reset-token-cookie))
       (cond
-        ((not (and (post-parameter "invitation-id")
-                   (post-parameter "token")))
+        ((not invitation)
          (flash "Kindista is by invitation only. You can only RSVP from a valid invitation email." :error t) 
          (see-other "/home"))
 
-        ((not (eq (getf invitation :type) :invitation))
-         (signup-page :error "You need a valid invitation ID. If you know anyone who is already on Kindista you should ask them for an invitation."
-                      :name (post-parameter "name")
-                      :email (post-parameter "email")
-                      :password (post-parameter "password")
-                      :host-name (post-parameter "host-name")
-                      :token (post-parameter "token")
-                      :invitation-id id
-                      :invitation-email (post-parameter "invitation-email")))
-
-        ((not (equal (getf invitation :recipient-email) 
-                     (post-parameter "invitation-email")))
-         (signup-page :error "The invitation ID you are using belongs to a different email address. 
+        ((not (or (equal (getf invitation :recipient-email)
+                         (post-parameter "invitation-email"))
+                  (equal (getf invitation :recipient-email)
+                         (post-parameter "email"))))
+         (signup-page :error "The invitation you are using belongs to a different email address. 
 Please use the correct email address or find someone you know on Kindista and request an invitation."
                       :name (post-parameter "name")
                       :email (post-parameter "email")
-                      :password (post-parameter "password")
-                      :host-name (post-parameter "host-name")
-                      :token (post-parameter "token")
-                      :invitation-id id
+                      :token token
                       :invitation-email (post-parameter "invitation-email")))
 
         ((gethash (post-parameter "email") *email-index*)
          (signup-page :error "The email address you have entered already belongs to another Kindista member. Please try again, or contact us if this really is your email address."
                       :name (post-parameter "name")
                       :email (post-parameter "email")
-                      :password (post-parameter "password")
-                      :host-name (post-parameter "host-name")
-                      :token (post-parameter "token")
-                      :invitation-id id
+                      :token token
                       :invitation-email (post-parameter "invitation-email")))
 
         ((< (getf invitation :valid-until) (get-universal-time))
          (signup-page :error "Your invitation has expired. Please contact the person who invited you to join Kindista and request another invitation."
                       :name (post-parameter "name")
                       :email (post-parameter "email")
-                      :host-name (post-parameter "host-name")
-                      :token (post-parameter "token")
-                      :password (post-parameter "password")
-                      :invitation-id id
+                      :token token
                       :invitation-email (post-parameter "invitation-email")))
 
         ((not (and (< 0 (length (post-parameter "name")))
                    (< 0 (length (post-parameter "email")))
-                   (< 0 (length (post-parameter "password")))))
+                   (< 0 (length (post-parameter "password")))
+                   (< 0 (length (post-parameter "password-2")))))
          (signup-page :error "All fields are required"
                       :name (post-parameter "name")
                       :email (post-parameter "email")
-                      :host-name (post-parameter "host-name")
-                      :token (post-parameter "token")
-                      :invitation-id id
-                      :invitation-email (post-parameter "invitation-email")  
-                      :password (post-parameter "password")))
+                      :token token
+                      :invitation-email (post-parameter "invitation-email")))
 
         ((> 8 (length (post-parameter "password")))
-         (signup-page :error "Please use a strong password"
-                      :invitation-id id
-                      :invitation-email (post-parameter "invitation-email")  
-                      :host-name (post-parameter "host-name")
-                      :token (post-parameter "token")
+         (signup-page :error "Please use a strong password of at least 8 characters."
                       :name (post-parameter "name")
-                      :email (post-parameter "email")))
+                      :email (post-parameter "email")
+                      :invitation-email (post-parameter "invitation-email")
+                      :token token))
 
         ((not (validate-name (post-parameter "name")))
          (signup-page :error "Please use your full name"
-                      :invitation-id id
-                      :invitation-email (post-parameter "invitation-email")  
-                      :host-name (post-parameter "host-name")
-                      :token (post-parameter "token")
                       :name (post-parameter "name")
                       :email (post-parameter "email")
-                      :password (post-parameter "password")))
+                      :token token
+                      :invitation-email (post-parameter "invitation-email")))
 
+        ((not (string= (post-parameter "password") (post-parameter "password-2")))
+         (signup-page :error "Your password confirmation did not match the password you entered."
+                      :name (post-parameter "name")
+                      :email (post-parameter "email")
+                      :token token
+                      :invitation-email (post-parameter "invitation-email")))
         (t
            (pprint host)(terpri)
            (setf new-id (create-person :name (post-parameter "name")
@@ -181,7 +154,8 @@ Please use the correct email address or find someone you know on Kindista and re
                                        :email (post-parameter "email")
                                        :password (post-parameter "password")))
            (setf (token-userid *token*) new-id)
-           (add-contact new-id host)
+           (unless (eql host +kindista-id+)
+             (add-contact new-id host))
            (add-contact host new-id)
            (delete-invitation id)
            (see-other "/home"))))))

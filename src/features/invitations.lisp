@@ -32,7 +32,7 @@
          (invitation (insert-db (list :type :invitation
                                       :host host
                                       :invite-request-id invitation-request-id
-                                      :token (random-password 9)
+                                      :token (random-invitation-token 9)
                                       :self self
                                       :recipient-email email
                                       :text text
@@ -43,16 +43,31 @@
 
 (defun index-invitation (id data)
   (declare (ignore data))
-  (let* ((host (getf (db id) :host)))
-   (with-locked-hash-table (*person-invitation-index*) 
+  (let* ((invitation (db id))
+         (host (getf invitation :host))
+         (token (getf invitation :token)))
+   (with-locked-hash-table (*invitation-index*)
+     (push id (gethash token *invitation-index*)))
+   (with-locked-hash-table (*person-invitation-index*)
       (push id (gethash host *person-invitation-index*)))))
 
 (defun delete-invitation (invitation-id)
-  (let ((host (getf (db invitation-id) :host)))
+  (let* ((invitation (db invitation-id))
+         (host (getf invitation :host))
+         (token (getf invitation :token)))
+    (with-locked-hash-table (*invitation-index*)
+      (remhash token *invitation-index*))
     (with-locked-hash-table (*person-invitation-index*) 
       (asetf (gethash host *person-invitation-index*)
              (remove invitation-id it))) 
     (remove-from-db invitation-id)))
+
+(defun unique-invite-token-p (token)
+  (not (member token (hash-table-keys *invitation-index*) :test #'string=)))
+
+(defun random-invitation-token (length)
+  (do ((new-token (random-password length) (random-password length)))
+      ((unique-invite-token-p new-token) new-token)))
 
 (defun add-alt-email (invitation-id)
   (let* ((invitation (db invitation-id))

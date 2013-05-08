@@ -22,25 +22,22 @@
          (token (getf invitation :token))
          (from (getf invitation :host))
          (text (getf invitation :text))
-         (expires (getf invitation :valid-until))
          (to (getf invitation :recipient-email)))
     (cl-smtp:send-email +mail-server+
                         "Kindista <noreply@kindista.org>"
                         to
                         (s+ (getf (db from) :name) " has invited you to join Kindista!")
-                        (invitation-email-text invitation-id
-                                               token
+                        (invitation-email-text token
                                                to
                                                from
                                                :text text)
-                        :html-message (invitation-email-html invitation-id
-                                                             token
+                        :html-message (invitation-email-html token
                                                              to
                                                              from
                                                              :text text)
     )))
 
-(defun invitation-email-text (invitation-id token to from &key text)
+(defun invitation-email-text (token to from &key text)
   (let ((sender (getf (db from) :name)))
     (s+ sender
 " has invited you to join Kindista, the social network for building "
@@ -69,10 +66,8 @@ sender
 " to RSVP:
 "
 (url-compose (s+ +base-url+ "signup")
-             "id" invitation-id
              "email" to
-             "token" token
-             "from" sender)
+             "token" token)
 
 "
 
@@ -83,7 +78,7 @@ You will then have the option to join Kindista, or decline the "
       "-The Kindista Team")))
 
 
-(defun invitation-email-html (invitation-id token to from &key text)
+(defun invitation-email-html (token to from &key text)
   (let ((sender (getf (db from) :name)))
     (html-email-base
       (html
@@ -118,17 +113,11 @@ You will then have the option to join Kindista, or decline the "
           " to RSVP: "
           (:br)
           (:a :href (url-compose (s+ +base-url+ "signup")
-                                 "id" invitation-id
                                  "email" to
-                                 "from" sender
-                                 "token" token
-                                 )
+                                 "token" token)
                     (str (url-compose (s+ +base-url+ "signup")
-                                      "id" invitation-id
                                       "email" to
-                                      "from" sender
-                                      "token" token
-                                      ))))
+                                      "token" token))))
 
 
         (:p :style *style-p* 
