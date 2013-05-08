@@ -37,10 +37,7 @@
             (:label :for "password" "Password")
             (:input :type "password" :name "password")
             (:input :type "submit" :value "Log in")
-            (:p (:a :href "/reset" "Forgot your password?"))
-            (:p "New to Kindista?"
-             (:br)
-             (:a :href "/signup" "Create an account"))))))))
+            (:a :href "/reset" "Forgot your password?")))))))
 
 (defun post-login ()
   (with-token
