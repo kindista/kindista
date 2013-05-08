@@ -72,6 +72,9 @@
                (remove result it))))
 
     (geo-index-remove *activity-geo-index* result)
+
+    (delete-comments id)
+
     (remove-from-db id)))
 
 
