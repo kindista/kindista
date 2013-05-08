@@ -30,6 +30,7 @@
     (clrhash (symbol-value index)))
   (setf *old-inventory-index* ())
   (setf *feedback-index* ())
+  (setf *invite-request-index* ())
   (setf *recent-activity-index* ()))
 
 (defindex *activity-geo-index*)
