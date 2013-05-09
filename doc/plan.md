@@ -26,9 +26,8 @@ New Member Follow-up
 - [ ] list of all Eugene members for Kim to follow up with
 
 Send Requested Invitations
-- [ ] create default email for denied invite requests
-- [ ] create default email for accepted invite requests
-- [ ] send responses
+- [X] create default email for accepted invite requests
+- [X] send responses
 
 First-time Offers and Requests
 - [ ] click-through for first time offers and requests
@@ -36,6 +35,7 @@ First-time Offers and Requests
 Send Invitations
 - [ ] invite pre-kindista signups
 - [ ] invite non-Eugene K1 signups
+- [ ] get bill kauth to send invites to ashland folks
 
 People
 - [ ] add a "Looking for someone?" wizard/helper form to the top of the page
