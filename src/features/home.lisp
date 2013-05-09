@@ -174,7 +174,10 @@
               "Enter a street address and click \"Next\". We'll show you a map to confirm the location."))
           (:form :method "post" :action "/settings"
             (:input :type "hidden" :name "next" :value "/home")
-            (:input :type "text" :name "address" :placeholder "1600 Pennsylvania Avenue NW, Washington, DC")
+            (:input :type "text" 
+                    :name "address" 
+                    :placeholder "1600 Pennsylvania Avenue NW, Washington, DC"
+                    :value (getf *user* :address))
             (:input :type "submit" :value "Next")))))
     :selected "home"))
 

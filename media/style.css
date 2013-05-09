@@ -245,7 +245,7 @@ textarea {
 }
 
 #signup label {
- width: 9em;
+ width: 6em;
  margin-bottom:.5em;
  display: inline-block;
 }
@@ -288,6 +288,14 @@ textarea {
 
 #request-invite label {
  display: block;
+}
+
+.confirm-invite div {
+ max-width: 100em;
+}
+
+.confirm-invite textarea {
+ width: 100%;
 }
 
 .confirm-invite p {
