@@ -17,9 +17,9 @@ along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
 -----------------------------------------------------------------------
 Known Issues
-- [ ] Conversations are mistakenly marked as public
-- [ ] reindex geo-activity for all locations of gratitude participants (subjects and author) when gratitude is edited or deleted
-- [ ] make profile pics clickable
+- [X] Conversations are mistakenly marked as public
+- [X] reindex geo-activity for all locations of gratitude participants (subjects and author) when gratitude is edited or deleted
+- [X] make profile pics clickable
 - [X] fix invitation urls and index invitations by token
 
 New Member Follow-up
