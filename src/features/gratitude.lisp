@@ -63,14 +63,17 @@
         (with-mutex (*recent-activity-mutex*)
           (push result *recent-activity-index*))) 
 
-      (dolist (subject subjects)
-        (let ((user (db subject)))
-          (geo-index-insert *activity-geo-index* (make-result :type :gratitude
-                                                              :latitude (getf user :lat)
-                                                              :longitude (getf user :long)
-                                                              :people people
-                                                              :id id
-                                                              :time created)))))))
+      (with-locked-hash-table (*gratitude-results-index*)
+        (dolist (subject subjects)
+          (let* ((user (db subject))
+                 (result (make-result :type :gratitude
+                                      :latitude (getf user :lat)
+                                      :longitude (getf user :long)
+                                      :people people
+                                      :id id
+                                      :time created)))
+            (push result (gethash id *gratitude-results-index*))
+            (geo-index-insert *activity-geo-index* result)))))))
 
 (defun parse-subject-list (subject-list &key remove)
   (delete-duplicates
@@ -101,6 +104,11 @@
 
     (with-locked-hash-table (*db-results*)
       (remhash id *db-results*))
+
+    (with-locked-hash-table (*gratitude-results-index*)
+      (dolist (result (gethash id *gratitude-results-index*))
+        (geo-index-remove *activity-geo-index* result))
+      (remhash id *gratitude-results-index*))
 
     (delete-comments id)
 
