@@ -250,10 +250,7 @@
     (start-token))) 
 
 (defun markdown-file (path)
-  (multiple-value-bind (doc text)
-      (markdown (pathname path) :stream nil)
-    (declare (ignore doc))
-    text))
+  (nth-value 1 (markdown (pathname path) :stream nil)))
 
 (defun see-other (url)
   (setf (return-code*) +http-see-other+)

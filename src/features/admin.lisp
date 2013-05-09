@@ -173,7 +173,7 @@
              (post-parameter "from")
              (post-parameter "subject"))
       (let* ((text (post-parameter "markdown"))
-             (html (html-email-base (second (multiple-value-list (markdown text :stream nil)))))
+             (html (html-email-base (nth-value 1 (markdown text :stream nil))))
              (subject (post-parameter "subject"))
              (from (post-parameter "from")))
         (flet ((send-mail (id)
