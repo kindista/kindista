@@ -36,11 +36,12 @@
 (defun person-card (id alias)
   (let* ((mutuals (mutual-connections id))
          (person (db id))
-         (name (getf person :name)))
+         (name (getf person :name))
+         (link (s+ "/people/" (username-or-id id))))
     (html
       (:div :class "card"
-        (:div :class "image" (:img :src (strcat "/media/avatar/" id ".jpg")))
-        (:h3 (:a :href (strcat "/people/" (username-or-id id))
+        (:div :class "image" (:a :href link (:img :src (strcat "/media/avatar/" id ".jpg"))))
+        (:h3 (:a :href link
                (str name)))
         (unless (string= name alias)
           (htm (:p "nickname: " (str alias))))
@@ -48,6 +49,6 @@
         (awhen (getf person :city) 
           (htm (:p "Lives in " (str it))))
         (when mutuals
-          (htm (:p (:a :href (strcat "/people/" id "/connections" ) 
+          (htm (:p (:a :href (s+ link "/connections" ) 
                    (str (strcat (length mutuals) " mutual connection")) 
                    (str (when (> (length mutuals) 1) "s"))))))))))

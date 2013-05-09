@@ -413,17 +413,18 @@
 
                  (:div :id "menu"
                    (when *user*
-                     (htm
-                       (:table
-                         (:tr
-                           (:td :rowspan "2"
-                            (:img :src (format nil "/media/avatar/~A.png" *userid*)))
-                           (:td (:a :href (s+ "/people/" (username-or-id)) (str (getf *user* :name)))))
-                         (:tr
-                           (:td
-                             (:a :class (when (eq selected :settings) "selected") :href "/settings" "Settings")
-                             " &middot; "
-                             (:a :href "/logout" "Log&nbsp;out"))))))
+                     (let ((link (s+ "/people/" (username-or-id))))
+                       (htm
+                         (:table
+                           (:tr
+                             (:td :rowspan "2"
+                              (:a :href link (:img :src (format nil "/media/avatar/~A.png" *userid*))))
+                             (:td (:a :href link (str (getf *user* :name)))))
+                           (:tr
+                             (:td
+                               (:a :class (when (eq selected :settings) "selected") :href "/settings" "Settings")
+                               " &middot; "
+                               (:a :href "/logout" "Log&nbsp;out")))))))
 
                    (when *user*
                      (let ((inbox-count (new-inbox-items)))
