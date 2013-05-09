@@ -26,12 +26,12 @@
                                      :email ,email
                                      :address ,address
                                      :offering ,offering
-                                     :into ,into
-                                     :events ,events
-                                     :resources ,resources
-                                     :invite ,invite
-                                     :gratitude ,gratitude
-                                     :other ,other
+                                     :bio-into ,into
+                                     :help-events ,events
+                                     :commit-resources ,resources
+                                     :commit-invite ,invite
+                                     :commit-gratitude ,gratitude
+                                     :sharing-ideas ,other
                                      :requested ,time))))
   (notice :new-invite-request :time :time :id invite-request)
   invite-request))

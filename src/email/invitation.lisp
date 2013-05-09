@@ -34,8 +34,7 @@
                         :html-message (invitation-email-html token
                                                              to
                                                              from
-                                                             :text text)
-    )))
+                                                             :text text))))
 
 (defun invitation-email-text (token to from &key text)
   (let ((sender (getf (db from) :name)))
@@ -71,11 +70,8 @@ sender
 
 "
 
-You will then have the option to join Kindista, or decline the "
-      " invitation so " sender " can give it to someone else.
-
 "
-      "-The Kindista Team")))
+"-The Kindista Team")))
 
 
 (defun invitation-email-html (token to from &key text)
@@ -119,9 +115,100 @@ You will then have the option to join Kindista, or decline the "
                                       "email" to
                                       "token" token))))
 
-
-        (:p :style *style-p* 
-          "You will then have the option to join Kindista, or decline the "
-          " invitation so " (str sender) " can give it to someone else.  ")
-
         (:p "-The Kindista Team")))))
+
+(defun send-requested-invite-email (invitation-id)
+  (let* ((invitation (db invitation-id))
+         (token (getf invitation :token))
+         (text (getf invitation :text))
+         (name (getf invitation :name))
+         (email (getf invitation :recipient-email)))
+    (cl-smtp:send-email +mail-server+
+                        "Kindista <noreply@kindista.org>"
+                        email
+                        "Here's the invitation you requested to join Kindista!"
+                        (requested-invite-email-text token
+                                                     name
+                                                     email
+                                                     :text text)
+                        :html-message (requested-invite-email-html token
+                                                                   name
+                                                                   email
+                                                                   :text text))))
+
+(defun requested-invite-email-text (token name email &key text)
+(s+ "Hi " name ",
+"
+"
+Here is the invitation you requested to join Kindista!"
+"
+
+Your invitation code is " (write-to-string token) ".
+This invitation will expire in 60 days.
+
+"
+
+(when text
+(s+ "Personal message from the Kindista crew: 
+\""
+text "\"
+
+"))
+
+"We are excited for you to join the Kindista community!
+
+"
+
+"Please click on this link or copy and paste it into your browser"
+" to create your account:
+"
+(url-compose (s+ +base-url+ "signup")
+             "email" email
+             "token" token)
+
+"
+Thanks for sharing your gifts with us!
+"
+"-The Kindista Team"))
+
+
+(defun requested-invite-email-html (token name email &key text)
+(html-email-base
+  (html
+    (:p :style *style-p*
+      "Hi " (str name) ","
+      "Here is the invitation you requested to join Kindista!")
+
+    (:p :style *style-p*
+     "Your invitation code is " (:strong (str (write-to-string token)) ".")
+     (:br)
+     "This invitation will expire in 60 days.")
+
+    (when text
+      (htm (:table :cellspacing 0
+                   :cellpadding 0
+                   :style *style-quote-box*
+             (:tr (:td :style "padding: 4px 12px;"
+                     "Personal message from the Kindista crew: "
+                      (:br)
+                      "\"" (str text) "\"")))))
+
+    (:p :style *style-p*
+      "We are excited for you to join the Kindista community!")
+
+    (:p :style *style-p*
+      "Please click on this link or copy and paste it into your browser"
+      " to create your account: "
+      (:br)
+      (:a :href (url-compose (s+ +base-url+ "signup")
+                             "email" email
+                             "token" token)
+                (str (url-compose (s+ +base-url+ "signup")
+                                  "email" email
+                                  "token" token))))
+
+    (:p :style *style-p*
+      "Thanks for sharing your gifts with us!")
+
+    (:p "-The Kindista Team"))))
+
