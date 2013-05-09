@@ -812,7 +812,8 @@ a.yes {
 
 #right {
  margin: 1em;
- /*border-bottom: 1px solid #eee;*/
+ padding-bottom: 1em;
+ border-bottom: 1px solid #eee;
 }
 
 .icon {
