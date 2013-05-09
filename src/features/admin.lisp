@@ -90,46 +90,48 @@
                           (when resources (htm (:li "seeding resources")))
                           (when invite (htm (:li "inviting new users")))
                           (when gratitude (htm (:li "seeding gratitudes")))))))
-                 (:form :method "post" :action (strcat "/admin/invite-request/" id)
+                 (:div :class "confirm-invite"
+                   (:form :method "post" 
+                        :action (strcat "/admin/invite-request/" id)
+                   (:textarea :cols "150" :rows "5" :name "message" :placeholder "Personal message to this person along with the response... (optional)")
                    (:button :type "submit" 
                             :name "delete" 
                             :class "cancel" 
-                            "Delete Spam")
-                   (:button :type "submit" 
-                            :name "deny" 
-                            :class "cancel" 
-                            "Deny request")
-                   (:button :type "submit" 
-                            :name "invite" 
-                            :class "yes" 
-                            "Send Invitation")
-                   ))))))))))
+                            "Delete request")
+                   (if (getf data :invited)
+                     (htm (:strong "An invitation has been sent for this request."))
+                     (htm
+                       (:button :type "submit" 
+                                :name "invite" 
+                                :class "yes" 
+                                "Send Invitation"))))))))))))))
 
 (defun post-admin-invite-request (id)
   (require-admin
-    (let* ((id (parse-integer id))
-           (request (db id)))
+    (let* ((request-id (parse-integer id))
+           (request (db request-id)))
       (cond
         ((post-parameter "delete")
-         (confirm-delete :url (strcat "/admin/invite-request/" id)
+         (confirm-delete :url (strcat "/admin/invite-request/" request-id)
                          :next-url "/admin/invite-requests"
                          :type "invitation request"
                          :text (strcat "An request from " (getf request :name)
                                    " , offering: \"" (getf request :offering)
                                    "\"")))
         ((post-parameter "really-delete")
-         (delete-invite-request id)
-         (flash (strcat "Invitation request " id " has been deleted."))
+         (delete-invite-request request-id)
+         (flash (strcat "Invitation request " request-id " has been deleted."))
          (see-other "/admin/invite-requests"))
         ((post-parameter "invite")
-         (create-invitation (getf request :email)
-                            :text (s+ )
-                            )
-         )
-
-        
-      ))
-    ))
+         (let ((invitation-id (create-invitation (getf request :email)
+                                                 :text (post-parameter "message")
+                                                 :invite-request-id request-id
+                                                 :expires 5184000
+                                                 :host +kindista-id+
+                                                 :name (getf request :name))))
+                 (modify-db request-id :invite-id invitation-id))
+         (flash (strcat "You have sent an invitation to Request ID: " request-id))
+         (see-other "/admin/invite-requests"))))))
 
 (defun get-admin-recent ()
   (require-admin
