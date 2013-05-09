@@ -55,7 +55,7 @@
          (setf (return-code*) +http-see-other+)
          (setf (header-out :location) "/home")
          (flash "<p>The email or password you entered was not recognized.</p><p>Please try again.</p><p>If you would like to join Kindista please request an invitation from someone you know.</p>" :error t)
-         (notice :auth-failure)
+         (notice :auth-failure :username user)
          "")))))
 
 (defun get-logout ()
