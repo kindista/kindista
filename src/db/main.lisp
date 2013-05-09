@@ -312,8 +312,10 @@
     (with-standard-io-syntax
       (with-locked-hash-table (*tokens*)
         (iter (for (key value) in-hashtable *tokens*)
-              (prin1 (cons key value) out)
-              (fresh-line out))))
+              (when (or (token-userid value)
+                        (token-donate-info value))
+                (prin1 (cons key value) out)
+                (fresh-line out)))))
     (fsync out))
   (rename-file (s+ +db-path+ "tokens-tmp") "tokens"))
 
