@@ -98,8 +98,8 @@
                             :name "delete" 
                             :class "cancel" 
                             "Delete request")
-                   (if (getf data :invited)
-                     (htm (:strong "An invitation has been sent for this request."))
+                   (aif (getf data :invite-id)
+                     (htm (:strong "Invitation number " (str it) " has been sent for this request."))
                      (htm
                        (:button :type "submit" 
                                 :name "invite" 
