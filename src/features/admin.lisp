@@ -90,21 +90,22 @@
                           (when resources (htm (:li "seeding resources")))
                           (when invite (htm (:li "inviting new users")))
                           (when gratitude (htm (:li "seeding gratitudes")))))))
-                 (:div :class "confirm-invite"
-                   (:form :method "post" 
-                        :action (strcat "/admin/invite-request/" id)
-                   (:textarea :cols "150" :rows "5" :name "message" :placeholder "Personal message to this person along with the response... (optional)")
-                   (:button :type "submit" 
-                            :name "delete" 
-                            :class "cancel" 
-                            "Delete request")
-                   (aif (getf data :invite-id)
-                     (htm (:strong "Invitation number " (str it) " has been sent for this request."))
-                     (htm
-                       (:button :type "submit" 
-                                :name "invite" 
-                                :class "yes" 
-                                "Send Invitation"))))))))))))))
+                 (aif (getf data :invite-id)
+                   (htm 
+                     (:h2 "Invitation number " (str it) " has been sent for this request."))
+                   (htm
+                     (:div :class "confirm-invite"
+                     (:form :method "post" 
+                          :action (strcat "/admin/invite-request/" id)
+                     (:textarea :cols "150" :rows "5" :name "message" :placeholder "Personal message to this person along with the response... (optional)")
+                     (:button :type "submit" 
+                              :name "delete" 
+                              :class "cancel" 
+                              "Delete request")
+                     (:button :type "submit" 
+                              :name "invite" 
+                              :class "yes" 
+                              "Send Invitation"))))))))))))))
 
 (defun post-admin-invite-request (id)
   (require-admin
