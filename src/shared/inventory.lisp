@@ -557,6 +557,11 @@
     (let ((base-url (s+ "/" type "s")))
       (htm
         (:div :class "activity"
+          (when *user*
+            (htm
+              (:menu :class "horiz"
+                (:strong "actions")
+                (:li (:a :href (s+ "/people/" (username-or-id) "/" type "s") (str (s+ "show my " type "s")))))))
           (:div :class "item"
             (unless (or (not *user*)
                         (eq (getf *user* :active) nil)
