@@ -173,4 +173,4 @@
                                 (t links)))))
 
 (defun name-list-all (ids)
-  (format nil "~{~A~^, ~}" (mapcar #'person-link ids)))
+  (format nil *english-list* (mapcar #'person-link ids)))
