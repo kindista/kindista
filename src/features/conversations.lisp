@@ -203,11 +203,13 @@
   (require-user
     (setf id (parse-integer id))
     (let* ((it (db id))
+           (people (mapcar #'car (getf it :people)))
            (type (getf it :type)))
       (if (or (eq type :reply)
               (eq type :conversation))
-        (if (member *userid* (mapcar #'first (getf it :people)))
-          (let ((latest-seen (cdr (assoc *userid* (getf it :people)))))
+        (if (member *userid* people)
+          (let ((latest-seen (cdr (assoc *userid* (getf it :people))))
+                (with (remove *userid* people)))
             (standard-page
               (ellipsis (getf it :subject) 24)
               (html
@@ -224,23 +226,24 @@
                           (:h2 "Subject: " (str (getf it :subject)))))
                       (case type
                         (:conversation
-                          (let ((people (remove *userid* (mapcar #'car (getf it :people)))))
-                            (if people
-                              (htm (:p "with " (str (name-list-all people))))
-                              (htm (:p :class "error" "Everybody else has left this conversation.")))))
+                          (if with
+                            (htm (:p "with " (str (name-list-all with))))
+                            (htm (:p :class "error" "Everybody else has left this conversation."))))
                         (:reply
                           (let ((item (db (getf it :on))))
                             (if (eql (getf it :by) *userid*)
                               (htm
                                 (:p
                                 "You replied to "
-                                (str (person-link (getf item :by))) 
+                                (str (person-link (or (getf item :by)
+                                                      (first with))))
                                 "'s "
                                 (case (getf item :type)
                                   (:offer
                                    (htm (:a :href (strcat "/offers/" (getf it :on)) "offer")))
                                   (:request
-                                   (htm (:a :href (strcat "/requests/" (getf it :on)) "request"))))
+                                   (htm (:a :href (strcat "/requests/" (getf it :on)) "request")))
+                                  (t (str "deleted offer or request"))) 
                                 ":"))
                               (htm
                                 (:p

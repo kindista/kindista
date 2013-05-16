@@ -100,6 +100,9 @@
                             (latest-seen (cdr (assoc *userid* (getf item-data :people))))
                             (comment-data (db latest))
                             (original-item (db (getf item-data :on)))
+                            (with (or (getf original-item :by)
+                                      (first (remove *userid*
+                                                     (mapcar #'car (db id :people))))))
                             (comments (length (gethash id *comment-index*))))
                        (str
                          (card
@@ -115,13 +118,14 @@
                                (if (eql (db id :by) *userid*)
                                  (htm
                                    "You replied to "
-                                   (str (person-link (getf original-item :by)))
+                                   (str (person-link with))
                                    "'s "
                                    (case (getf original-item :type)
                                      (:offer
                                       (htm (:a :href (strcat "/offers/" (getf item-data :on)) "offer")))
                                      (:request
-                                      (htm (:a :href (strcat "/requests/" (getf item-data :on)) "request")))))
+                                      (htm (:a :href (strcat "/requests/" (getf item-data :on)) "request")))
+                                     (t (htm (:span :class "none" "deleted offer or request")))))
                                  (htm
                                    (str (person-link (getf item-data :by)))
                                    " replied to your "
