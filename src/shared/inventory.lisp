@@ -62,10 +62,6 @@
       (geo-index-insert *offer-geo-index* result)
       (geo-index-insert *request-geo-index* result))
 
-    (unless (result-tags result)
-      (with-mutex (*old-inventory-mutex*)
-        (push result *old-inventory-index*)))
-
     (unless (< (result-time result) (- (get-universal-time) 15552000))
       (unless (< (result-time result) (- (get-universal-time) 2592000))
         (with-mutex (*recent-activity-mutex*)
@@ -179,10 +175,6 @@
 
     (with-locked-hash-table (*db-results*)
       (remhash id *db-results*))
-
-    (when (member id *old-inventory-index* :key #'result-id)
-      (with-mutex (*old-inventory-mutex*)
-        (asetf *old-inventory-index* (remove id it :key #'result-id))))
 
     (remove-from-db id)))
 
@@ -342,10 +334,6 @@
 
               (if (intersection tags *top-tags* :test #'string=)
                 (progn
-                  (when (member id *old-inventory-index* :key #'result-id)
-                    (with-mutex (*old-inventory-mutex*)
-                      (asetf *old-inventory-index* (remove id it :key #'result-id))))
-
                   (modify-inventory-item id :text (post-parameter "text") :tags tags)
                   (see-other (or (post-parameter "next") (strcat "/" type "s/" id))))
 

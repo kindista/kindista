@@ -254,9 +254,6 @@
     :get get-admin-sendmail
     :post post-admin-sendmail)
 
-  ("/admin/old-inventory"
-    :get get-admin-old-inventory)
-
   ; redirects
 
   ("/people/"

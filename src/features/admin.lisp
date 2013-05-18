@@ -36,20 +36,6 @@
             (:li (:a :href "/admin/sendmail" "send email to everyone")))))
       :selected "admin")))
 
-(defun get-admin-old-inventory ()
-  (require-admin
-    (standard-page
-      "Recently Added"
-      (html
-        (:p (:a :href "/admin" "back to admin"))
-        (:h1 "old inventory items")
-        (let ((page (if (scan +number-scanner+ (get-parameter "p"))
-                     (parse-integer (get-parameter "p"))
-                     0)))
-         (with-location
-           (str (activity-items *old-inventory-index* :url "/admin/old-inventory" :page page)))))
-      :selected "admin")))
-
 (defun get-admin-invite-requests ()
   (require-admin
     (standard-page
