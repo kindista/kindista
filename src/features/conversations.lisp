@@ -26,11 +26,6 @@
                               :created time))))
 
     (create-comment :on id :by user :text text)
-
-    (dolist (recipient (remove *userid* people))
-      ; notification??
-      )
-
     id))
 
 (defun index-conversation (id data)
