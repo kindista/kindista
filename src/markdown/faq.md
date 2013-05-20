@@ -1,6 +1,7 @@
 <div id="questions">
 
 ### Offers and Requests
+- [What are the guidelines for posting offers and requests?](#sharing-guidelines)
 - [What kinds of things can be offered and requested on Kindista?](#what-can-i-offer-and-request)
 - [Do I have to give to anyone who requests my offer?](#am-i-obligated-to-give-an-offer)
 - [Should I request things that I can afford to buy myself?](#can-i-request-things-i-can-afford-to-buy)
@@ -21,6 +22,46 @@
 </div>
   
 ## Offers and Requests
+
+<a id="sharing-guidelines"></a>
+
+### What are the guidelines for posting offers and requests?
+
+- You may only use Kindista for non-profit sharing. 
+  Selling, renting, trading, and bartering are expressly forbidden.
+  **Therefore, you may not post an offer as part of a request or a request as part of an offer.**
+  More information about this policy is available [here](#can-i-barter-on-kindista).
+- Posting an offer or a request does not create a specific obligation to give. 
+  It is your responsibility to use normal judgment, precautions and comfort levels in choosing to 
+  give or accept any appropriate offerings with other participants of Kindista.
+- You are permitted to include the conditions under which you might accept an offer or a request,
+  including charging a gift recipient for any out-of-pocket expenses accociated with your gift.
+- Members are not expected to guarantee or provide warranties for the goods or services they 
+  share through Kindista.
+- Honesty and communication are foundational to healthy community function. 
+  Therefore, you must accurately communicate your abilities and qualifications for the  services
+  you offer, as well as the qualities and condition of any goods you offer.
+- Before committing to share goods or services, verify that you and the recipient are in agreement
+  about what exactly will be shared.
+- Although it is your right to decline an interaction at any time, you understand that the
+  strength and integrity of our community depends on our ability to rely on each other and to 
+  follow through with our commitments.
+- If you are unable or unwilling to follow through with a commitment you have already
+  made with another Member, it is your responsibility to communicate to that Member as soon as
+  possible the reasons for which you are breaking your committment.
+- After someone on Kindista has shared goods or services with you, you are generally expected to
+  post a [Statement of Gratitude](/gratitude/new) about them unless they have requested otherwise.
+  Your statment of gratitude will encourage others to share with those who have shared with you.
+- In accordance with the [Terms of Use](/terms), neither Kindista 
+  nor its parent organization CommonGoods Network, holds responsibility for any liability or 
+  damages that may occur during any exchanges and you release it from such liability.
+
+These Guidelines are not suggestions. They are the rules, principles, and expectations to which
+you **MUST** agree if you use Kindista to share resources.
+Please refer to the [Terms of Use](/terms) for more information regarding these Guidelines and 
+your responsibilities in using Kindista.
+
+<small><a href="#questions">Return to questions</a></small>
 
 <a id="what-can-i-offer-and-request"></a>
 
