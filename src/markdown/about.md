@@ -15,18 +15,18 @@ gifting activity that has taken place near you.
 
 ### How does Kindista make money?
 
-Kindista is funded entirely through donations to its parent company,
+Kindista is funded entirely through donations to its parent organization,
 CommonGoods Network. If you would like to support Kindista, please
 [make a tax-deductable donation](/donate) to CommonGoods.
 
-This is only possible because [Benjamin](/people/ben) and
+This is only possible because [Benjamin](/people/benjamin) and
 [Eamon](/people/root) have collectively volunteered over 2,000 hours to
 the development of Kindista.
 
 ### What is CommonGoods Network?
 
 CommonGoods Network is an Oregon 501(c)(3) not-for-profit organization
-founded in 2008 by [Benjamin](/people/ben). Our mission is to
+founded in 2008 by [Benjamin](/people/benjamin). Our mission is to
 produce communication tools (like Kindista) to support a more beautiful
 world.
 
