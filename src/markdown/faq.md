@@ -35,7 +35,7 @@
   It is your responsibility to use normal judgment, precautions and comfort levels in choosing to 
   give or accept any appropriate offerings with other participants of Kindista.
 - You are permitted to include the conditions under which you might accept an offer or a request,
-  including charging a gift recipient for any out-of-pocket expenses accociated with your gift.
+  including charging a gift recipient for any out-of-pocket expenses associated with your gift.
 - Members are not expected to guarantee or provide warranties for the goods or services they 
   share through Kindista.
 - Honesty and communication are foundational to healthy community function. 
@@ -47,11 +47,11 @@
   strength and integrity of our community depends on our ability to rely on each other and to 
   follow through with our commitments.
 - If you are unable or unwilling to follow through with a commitment you have already
-  made with another Member, it is your responsibility to communicate to that Member as soon as
-  possible the reasons for which you are breaking your committment.
+  made with another member, it is your responsibility to communicate to that member as soon as
+  possible the reasons for which you are breaking your commitment.
 - After someone on Kindista has shared goods or services with you, you are generally expected to
   post a [Statement of Gratitude](/gratitude/new) about them unless they have requested otherwise.
-  Your statment of gratitude will encourage others to share with those who have shared with you.
+  Your statement of gratitude will encourage others to share with those who have shared with you.
 - In accordance with the [Terms of Use](/terms), neither Kindista 
   nor its parent organization CommonGoods Network, holds responsibility for any liability or 
   damages that may occur during any exchanges and you release it from such liability.
@@ -102,7 +102,7 @@ when deciding whether to respond to a request:
 - Are there specific circumstances under which I feel comfortable
   giving this gift?
   And if so, will those circumstances be met in this situation?
-- Do I think this gift will really be benefical to this person?
+- Do I think this gift will really be beneficial to this person?
 - If I am only able to give this gift to one person,
   is this person the person I really want to give this gift to?
 - Given what I know about this person,
@@ -124,7 +124,7 @@ to someone.
 
 Yes! We're building a culture where we want to share with each other
 because we actually care about each other, not just because
-we recieve pieces of paper with numbers on them in return.
+we receive pieces of paper with numbers on them in return.
 Even if you are blessed with financial abundance, 
 we hope you will still try to get as many of your needs
 met through gift as possible.
@@ -140,7 +140,7 @@ such as utilities, car insurance, and phone bills.
 
 Kindista is specifically designed to encourage a culture of sharing
 in which we are all able to give freely without having to worry
-about how we are going to get our nees met in return.
+about how we are going to get our needs met in return.
 In that spirit, it is a violation of the [Terms of Use](/terms#restrictions)
 to post an offer that requires the recipient to give you
 goods or services in return.
@@ -213,7 +213,7 @@ the Kindista community.
 
 Our invitation system creates a trail of accountability 
 and helps us prevent spam and abuse as we grow.
-This system allows us to remove invitation privledges 
+This system allows us to remove invitation privileges 
 from people who abuse our community or who invite abusers to join.
 
 By default we will add your invitees to your contacts list (and
