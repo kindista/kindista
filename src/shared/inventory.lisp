@@ -429,7 +429,9 @@
           (:p
             (:strong "Important: ") 
             "Please read the "
-            (:a :href "/faq#sharing-guidelines" "Guidelines for Sharing on Kindista")
+            (:a :href "/faq#sharing-guidelines" 
+                :target "_blank"
+                "Guidelines for Sharing on Kindista")
             " before posting any offers or requests. "
             "All offers and requests on Kindista are subject to these guidelines.")
 
