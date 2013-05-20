@@ -53,8 +53,8 @@
   post a [Statement of Gratitude](/gratitude/new) about them unless they have requested otherwise.
   Your statement of gratitude will encourage others to share with those who have shared with you.
 - In accordance with the [Terms of Use](/terms), neither Kindista 
-  nor its parent organization CommonGoods Network, holds responsibility for any liability or 
-  damages that may occur during any exchanges and you release it from such liability.
+  nor its parent organization CommonGoods Network holds responsibility for any liability or 
+  damages that may occur during any exchanges and you release us from such liability.
 
 These Guidelines are not suggestions. They are the rules, principles, and expectations to which
 you **MUST** agree if you use Kindista to share resources.
