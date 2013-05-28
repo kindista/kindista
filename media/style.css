@@ -244,7 +244,7 @@ textarea {
  margin-bottom:.5em;
 }
 
-#signup label {
+#signup label, #broadcast label {
  width: 6em;
  margin-bottom:.5em;
  display: inline-block;
@@ -258,7 +258,7 @@ textarea {
  margin: 1.5em 0 .8em 0em;
 }
 
-#signup button {
+#signup button, #broadcast button {
  min-width: 5em;
  margin-right: 1.2em;
 }
@@ -272,7 +272,8 @@ textarea {
  max-width: 200em;
 }
 
-#request-invite input[type=text] {
+#request-invite input[type=text],
+#broadcast input[type=text] {
  margin:0;
  width: 25em;
  border-top-right-radius: 3px;

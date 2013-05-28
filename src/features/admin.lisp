@@ -139,19 +139,21 @@
 (defun get-admin-sendmail ()
   (require-admin
     (standard-page
-      "Recently Added"
+      "Send Broadcast"
       (html
-        (:p (:a :href "/admin" "back to admin"))
-        (:h1 "send broadcast email")
-        (:form :action "/admin/sendmail" :method "post"
-          (:label "From:")
-          (:input :type "text" :name "from" :value "\"Nicholas E. Walker\" <root@kindista.org>")
-          (:br)
-          (:label "Subject:")
-          (:input :type "text" :name "subject")
-          (:br)
-          (:textarea :name "markdown")
-          (:input :type "submit")))
+        (:div :class "item" :id "broadcast"
+          (:p (:a :href "/admin" "back to admin"))
+          (:h1 "send broadcast email") 
+          (:form :action "/admin/sendmail" :method "post"
+            (:p
+              (:label "From:")
+              (:input :type "text" :name "from" :value "\"Nicholas E. Walker\" <root@kindista.org>"))
+            (:p
+              (:label "Subject:")
+              (:input :type "text" :name "subject"))
+            (:textarea :name "markdown")
+            (:button :type "submit" :name "test" :class "yes" "Send Test")
+            (:button :type "submit" :class "yes" "Send to everyone"))))
       :selected "admin")))
 
 (defun post-admin-sendmail ()
@@ -163,21 +165,28 @@
              (html (html-email-base (nth-value 1 (markdown text :stream nil))))
              (subject (post-parameter "subject"))
              (from (post-parameter "from")))
-        (flet ((send-mail (id)
-                 (let ((data (db id)))
-                   (when (getf data :notify-kindista)
-                     (let ((name (getf data :name))
-                           (email (first (getf data :emails))))
-                       (when email
-                         (cl-smtp:send-email +mail-server+
-                                             from
-                                             (format nil "\"~A\" <~A>" name email)
-                                             subject
-                                             text
-                                             :html-message html)))))))
-          (dolist (id (hash-table-keys *db*))
-            (send-mail id))))
+        (if (post-parameter "test")
+          (cl-smtp:send-email +mail-server+
+                              from
+                              from
+                              subject
+                              text
+                              :html-message html)
+          (flet ((send-mail (id)
+                   (let ((data (db id)))
+                     (when (getf data :notify-kindista)
+                       (let ((name (getf data :name))
+                             (email (first (getf data :emails))))
+                         (when email
+                           (cl-smtp:send-email +mail-server+
+                                               from
+                                               (format nil "\"~A\" <~A>" name email)
+                                               subject
+                                               text
+                                               :html-message html)))))))
+            (dolist (id (hash-table-keys *db*))
+              (send-mail id))))
+        (flash "your message has been sent"))
 
-      (progn
-        (flash "specify everything please" :error t)
-        (see-other "/admin/sendmail")))))
+      (flash "specify everything please" :error t))
+    (see-other "/admin/sendmail")))
