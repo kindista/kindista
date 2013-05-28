@@ -468,7 +468,20 @@ body.splash #symbol {
 button.yes, a.yes {
  font-weight: bold;
  color: #fff;
+ background: #96c42b;
  background: -moz-linear-gradient(
+  top,
+  #96c42b 0%,
+  #6f9321);
+ background: -ms-linear-gradient(
+  top,
+  #96c42b 0%,
+  #6f9321);
+ background: -o-linear-gradient(
+  top,
+  #96c42b 0%,
+  #6f9321);
+ background: -webkit-linear-gradient(
   top,
   #96c42b 0%,
   #6f9321);
@@ -485,7 +498,20 @@ button.yes, a.yes {
 button.blue, a.blue {
  font-weight: bold;
  color: #fff;
+ background: #3c6dc8;
  background: -moz-linear-gradient(
+  top,
+  #3c6dc8 0%,
+  #29519c);
+ background: -ms-linear-gradient(
+  top,
+  #3c6dc8 0%,
+  #29519c);
+ background: -o-linear-gradient(
+  top,
+  #3c6dc8 0%,
+  #29519c);
+ background: -webkit-linear-gradient(
   top,
   #3c6dc8 0%,
   #29519c);
@@ -500,9 +526,9 @@ button.blue, a.blue {
 }
 
 a.yes, a.blue {
- margin: 0.35em 0.5em 0.35em 0;
  line-height: 2.5em;
- vertical-align: middle;
+ margin: 0.35em 0.5em 0.35em 0;
+ height: auto;
 }
 
 #splashlogin button {
@@ -1633,6 +1659,14 @@ button.cancel, input.cancel {
   top,
   #999 0%,
   #666);
+ background: -ms-linear-gradient(
+  top,
+  #999 0%,
+  #666);
+ background: -o-linear-gradient(
+  top,
+  #999 0%,
+  #666);
  background: -webkit-gradient(
   linear, left top, left bottom, 
   from(#999),
@@ -1655,6 +1689,14 @@ button.red {
  font-weight: bold;
  color: #fff;
  background: -moz-linear-gradient(
+  top,
+  #999 0%,
+  #666);
+ background: -ms-linear-gradient(
+  top,
+  #999 0%,
+  #666);
+ background: -o-linear-gradient(
   top,
   #999 0%,
   #666);
@@ -1954,6 +1996,8 @@ body.donate {
  outline: medium none;
  padding: 0.25em 0.1em;
  background: -moz-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #008FC5;
+ background: -ms-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #008FC5;
+ background: -webkit-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #008FC5;
  border: 2px solid #7EC7E2;
  color: #fff;
  border-radius: 0.35em;
@@ -1966,6 +2010,9 @@ body.donate {
 
 #donate button[disabled] {
  background: -moz-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #c5c5c5;
+ background: -ms-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #c5c5c5;
+ background: -webkit-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #c5c5c5;
+ background: -o-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #c5c5c5;
  border: 2px solid #e2e2e2;
 }
 
