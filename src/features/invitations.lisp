@@ -97,7 +97,7 @@
         (:form :method "post" :action "/invite"
           (:input :type "hidden" :name "next-url" :value (or next-url (referer)))
           (:h2 "Invite your friends to join Kindista!")
-          (:p "You may enter multiple email addresses, separated by comas:")
+          (:p "You may enter multiple email addresses, separated by commas:")
           (:textarea :rows "3" :name "bulk-emails" :placeholder "Enter email addresses here..." (str (when emails emails)))
           (:p "Include a message for your recipient(s): (optional)")
           (:textarea :rows "6" :name "text" :placeholder "Enter your message here..." (str (when text text)))
