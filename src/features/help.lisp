@@ -68,16 +68,16 @@
         (:input :type "hidden" :name "single-recipient" :value "t")
         (:button :class "simple-link" :type "submit" :name "add" :value +kindista-id+ "contact kindista"))))
     (:menu :class "bar"
-      (if (eql tab :about)
-        (htm (:li :class "selected" "About Kindista"))
-        (htm (:li (:a :href "/about" "About Kindista"))))   
-      (when *user*
-        (if (eql tab :feedback)
-          (htm (:li :class "selected" "Feedback"))
-          (htm (:li (:a :href "/feedback" "Feedback")))))
       (if (eql tab :faq)
-        (htm (:li :class "selected" "Frequent Questions"))
-        (htm (:li (:a :href "/faq" "Frequent Questions")))))))
+	  (htm (:li :class "selected" "Frequent Questions"))
+	  (htm (:li (:a :href "/faq" "Frequent Questions"))))
+      (when *user*
+	(if (eql tab :feedback)
+	    (htm (:li :class "selected" "Feedback"))
+	    (htm (:li (:a :href "/feedback" "Feedback")))))
+      (if (eql tab :about)
+	  (htm (:li :class "selected" "About Kindista"))
+	  (htm (:li (:a :href "/about" "About Kindista")))))))
 
 (defun go-help ()
   (see-other "/feedback"))
