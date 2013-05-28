@@ -28,7 +28,7 @@
     (when *user*
       (html
         (:div :class "item right"
-          (:a :class "yes" :href "/invite" "Invite People")
+          (:a :class "blue" :href "/invite" "Invite People")
           (:p :class "small" "Want to express gratitude for your friends? It's easy to invite them to join Kindista. "
               (:a :href "/faq#how-do-invitations-work" "Learn how invitations work") "."))))))
 
