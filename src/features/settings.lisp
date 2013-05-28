@@ -33,8 +33,9 @@
       (:div :class "settings-item title" (str title))
       (:div :class "settings-item content"
         (unless editable
-          (htm (:a :class "yes" :href (s+ base "?edit=" item)
-                (or (str edit-text) (htm "Edit")))))
+          (htm (:div :class "button"
+		     (:a :class "yes" :href (s+ base "?edit=" item)
+			 (or (str edit-text) (htm "Edit"))))))
         (str body)
         (:p :class "help-text" (:em (str help-text)))))))
 
