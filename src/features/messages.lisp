@@ -26,18 +26,25 @@
 (defun result-gratitude-p (result)
   (eq (result-type result) :gratitude))
 
-(defun new-inbox-items ()
-  (loop for item in (all-inbox-items)
-        while (< (or (db *userid* :last-checked-mail) 0) (result-time item))
+(defun users-with-new-mail ()
+  (iter (for id in (hash-table-keys *db*))
+        (let ((new-items (new-inbox-items id)))
+          (when (and (eq (db id :type) :person)
+                     (> new-items 0))
+            (collect id)))))
+
+(defun new-inbox-items (&optional (userid *userid*))
+  (loop for item in (all-inbox-items :id userid)
+        while (< (or (db userid :last-checked-mail) 0) (result-time item))
         unless (case (result-type item)
                  (:conversation
                    (eql (db (db (result-id item) :latest-comment) :by)
-                        *userid*))
+                        userid))
                  (:reply
                    (eql (db (db (result-id item) :latest-comment) :by)
-                        *userid*))
+                        userid))
                  (:gratitude
-                   (eql (db (result-id item) :author) *userid*)))
+                   (eql (db (result-id item) :author) userid)))
         counting item into new-items
         finally (return new-items)))
 
