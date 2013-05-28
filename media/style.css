@@ -482,6 +482,8 @@ button.yes, a.yes {
 
 a.yes {
  margin: 0.35em 0.5em 0.35em 0;
+ line-height: 2.5em;
+ vertical-align: middle;
 }
 
 #splashlogin button {
@@ -649,7 +651,7 @@ a.yes {
  z-index: 10;
  position: relative;
  width:10em;
- margin: 0.45em 1em 0.3em;
+ margin: 0.65em 1em 0;
 }
 
 #header div {
@@ -1307,10 +1309,6 @@ button.text.large {
  color:#666;
 }
 
-.item a:not(.yes) {
- font-weight: 500;
-}
-
 .item h3 a {
  font-weight: bold;
 }
@@ -1827,7 +1825,7 @@ form.recipients button.x-remove {
  margin-bottom: .6em;
 }
 
-.settings-item div > a {
+.settings-item div.button {
  display: block;
  float: right;
 }
