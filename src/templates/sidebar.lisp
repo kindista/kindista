@@ -20,7 +20,7 @@
 (defun donate-sidebar ()
   (html
     (:div :class "item right only"
-      (:p (:a :class "yes" :href "/donate" "Donate to Kindista"))
+      (:p (:a :class "blue" :href "/donate" "Donate to Kindista"))
       (:p :class "small" "Your tax-deductable donations support the operation and improvement of Kindista. Help make this website possible!"))))
 
 (defun invite-sidebar ()
