@@ -153,6 +153,7 @@
               (:input :type "text" :name "subject"))
             (:textarea :name "markdown")
             (:button :type "submit" :name "test" :class "yes" "Send Test")
+            (:button :type "submit" :name "unread-mail" :class "yes" "Send to users with unread mail")
             (:button :type "submit" :class "yes" "Send to everyone"))))
       :selected "admin")))
 
@@ -165,27 +166,42 @@
              (html (html-email-base (nth-value 1 (markdown text :stream nil))))
              (subject (post-parameter "subject"))
              (from (post-parameter "from")))
-        (if (post-parameter "test")
-          (cl-smtp:send-email +mail-server+
-                              from
-                              from
-                              subject
-                              text
-                              :html-message html)
-          (flet ((send-mail (id)
-                   (let ((data (db id)))
-                     (when (getf data :notify-kindista)
-                       (let ((name (getf data :name))
-                             (email (first (getf data :emails))))
-                         (when email
-                           (cl-smtp:send-email +mail-server+
-                                               from
-                                               (format nil "\"~A\" <~A>" name email)
-                                               subject
-                                               text
-                                               :html-message html)))))))
-            (dolist (id (hash-table-keys *db*))
-              (send-mail id))))
+        (cond
+          ((post-parameter "test")
+           (cl-smtp:send-email +mail-server+
+                               from
+                               from
+                               subject
+                               text
+                               :html-message html))
+          ((post-parameter "unread-mail")
+           (dolist (id (users-with-new-mail))
+             (let* ((data (db id))
+                    (name (getf data :name))
+                    (email (first (getf data :emails))))
+               (when email
+                (cl-smtp:send-email +mail-server+
+                                    from
+                                    (format nil "\"~A\" <~A>" name email)
+                                    subject
+                                    text
+                                    :html-message html)))))
+
+          (t
+           (flet ((send-mail (id)
+                    (let ((data (db id)))
+                      (when (getf data :notify-kindista)
+                        (let ((name (getf data :name))
+                              (email (first (getf data :emails))))
+                          (when email
+                            (cl-smtp:send-email +mail-server+
+                                                from
+                                                (format nil "\"~A\" <~A>" name email)
+                                                subject
+                                                text
+                                                :html-message html)))))))
+             (dolist (id (hash-table-keys *db*))
+               (send-mail id)))))
         (flash "your message has been sent"))
 
       (flash "specify everything please" :error t))
