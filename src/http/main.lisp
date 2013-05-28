@@ -433,7 +433,7 @@
                                     '("Requests" "requests")
                                     '("People" "people") 
                                     ;'("Events" "events") 
-                                    '("Help & Feedback" "help")
+                                    '("Help & Feedback" "faq")
                                     (when (getf *user* :admin)
                                       '("Admin" "admin")))
                               selected))

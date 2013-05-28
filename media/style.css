@@ -451,7 +451,8 @@ body.splash #symbol {
  font-weight: bold;
 }
 
-#splashlogin input, button.yes, button.cancel, a.yes {
+#splashlogin input, button.yes, button.cancel, a.yes, button.blue, a.blue {
+ font-weight: bold;
  vertical-align: bottom;
  font-size: 1em;
  height: 2.5em;
@@ -460,7 +461,7 @@ body.splash #symbol {
  border: 1px solid #444;
  border-radius: 0.25em;
  white-space: nowrap;
- box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.5);
+ box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);
 }
 
 button.yes, a.yes {
@@ -480,8 +481,27 @@ button.yes, a.yes {
   padding: 0.5em 0.7em;
 }
 
-a.yes {
+button.blue, a.blue {
+ font-weight: bold;
+ color: #fff;
+ background: -moz-linear-gradient(
+  top,
+  #3c6dc8 0%,
+  #29519c);
+ background: -webkit-gradient(
+  linear, left top, left bottom, 
+  from(#3c6dc8),
+  to(#29519c));
+ border: 1px solid #474747;
+ text-shadow:
+  1px 1px 2px rgba(0,0,0,0.4);
+  padding: 0.5em 0.7em;
+}
+
+a.yes, a.blue {
  margin: 0.35em 0.5em 0.35em 0;
+ line-height: 2.5em;
+ vertical-align: middle;
 }
 
 #splashlogin button {
@@ -648,8 +668,8 @@ a.yes {
 #symbol {
  z-index: 10;
  position: relative;
- width:10em;
- margin: 0.45em 1em 0.3em;
+ width: 10em;
+ margin: 0.5em 1em 0;
 }
 
 #header div {
@@ -1307,15 +1327,11 @@ button.text.large {
  color:#666;
 }
 
-.item a:not(.yes) {
- font-weight: 500;
-}
-
 .item h3 a {
  font-weight: bold;
 }
 
-.item p a:not(.yes) {
+.item p a:not(.yes):not(.blue) {
  font-weight: normal;
 }
 
@@ -1827,7 +1843,7 @@ form.recipients button.x-remove {
  margin-bottom: .6em;
 }
 
-.settings-item div > a {
+.settings-item div.button {
  display: block;
  float: right;
 }

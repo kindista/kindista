@@ -20,18 +20,15 @@
 (defun donate-sidebar ()
   (html
     (:div :class "item right only"
-      (:h3 "Support Kindista")
-      (:p (:a :class "yes" :href "/donate" "Donate"))
-      (:p "Your donations are tax-deductable to the extent permitted by law. Kindista is a project of CommonGoods Network, an Oregon 501(c)(3) non-profit."))))
+      (:p (:a :class "blue" :href "/donate" "Donate to Kindista"))
+      (:p :class "small" "Your tax-deductable donations support the operation and improvement of Kindista. Help make this website possible!"))))
 
 (defun invite-sidebar ()
   (with-user
     (when *user*
       (html
         (:div :class "item right"
-          (:h3 (:a :href "/invite" "Invite friends"))
-          (:p "Kindista is invitation-only. As a Kindista member, you can invite people you know to join. ")
-          (:br)
-          (:a :class "yes" :href "/invite" "Invite Friends")
-          (:a :href "/faq#how-do-invitations-work" "How does this work?"))))))
+          (:a :class "yes" :href "/invite" "Invite People")
+          (:p :class "small" "Want to express gratitude for your friends? It's easy to invite them to join Kindista. "
+              (:a :href "/faq#how-do-invitations-work" "Learn how invitations work") "."))))))
 
