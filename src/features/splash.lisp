@@ -76,7 +76,7 @@
         (:div :class "splactions footer"
           (if *userid*
             (htm (:a :href "/contact-kindista" "contact"))
-            (htm (:a :href (s+ "mailto:info@" +base-url+) "contact")))
+            (htm (:a :href "mailto:info@kindista.org" "contact")))
           " &middot; "
           (:a :href "/about" "about")
           " &middot; "
