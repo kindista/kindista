@@ -64,8 +64,8 @@
       (:li (:a :href (strcat "/people/" +kindista-id+ "/reputation") "express gratitude"))
       (:li
         (if *userid*
-          (htm (:a :href "/contact-kindista" "contact"))
-          (htm (:a :href "mailto:info@kindista.org" "contact")))))
+          (htm (:a :href "/contact-us" "contact us"))
+          (htm (:a :href "mailto:info@kindista.org" "contact us")))))
     (:menu :class "bar"
       (if (eql tab :faq)
    (htm (:li :class "selected" "Frequent Questions"))
@@ -167,3 +167,10 @@
           (t
            (flash "WTF?" :error t)
            (see-other "/feedback")))))))
+
+(defun go-contact-us ()
+  (require-user
+    (new-conversation :people (list +kindista-id+)
+                      :single-recipient "t"
+                      :next (or (referer) "/home"))))
+

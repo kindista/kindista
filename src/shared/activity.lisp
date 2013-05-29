@@ -216,7 +216,7 @@
                          (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >"))))))))))))
 
 (defun local-activity-items (&key (user *user*) (page 0) (count 20) (url "/home"))
-  (let ((distance (or (getf user :distance) 0)))
+  (let ((distance (user-distance)))
     (if (= distance 0 )
       (activity-items (sort (copy-list *recent-activity-index*) #'> :key #'result-time)
                       :page page
