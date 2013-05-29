@@ -439,11 +439,11 @@
                               selected))
 
                    (:div :id "fine-print-links"
-                    (:a :href "/about" "about")
-                    " &middot; "
-                    (:a :href "/terms" "terms")
-                    " &middot; "
-                    (:a :href "/privacy" "privacy"))
+                     (:a :href "/about" "about")
+                     " &middot; "
+                     (:a :href "/terms" "terms")
+                     " &middot; "
+                     (:a :href "/privacy" "privacy"))
 
                    (:a :class "dark" :href "#top"
                        "Back to the top")))

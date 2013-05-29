@@ -63,21 +63,20 @@
      (:strong "actions")
      (:li (:a :href (strcat "/people/" +kindista-id+ "/reputation") "express gratitude"))
      (:li
-       (:form :method "POST" :action "/conversations/new"
-        (:input :type "hidden" :name "next" :value (script-name*))
-        (:input :type "hidden" :name "single-recipient" :value "t")
-        (:button :class "simple-link" :type "submit" :name "add" :value +kindista-id+ "contact kindista"))))
+       (if *userid*
+         (htm (:a :href "/contact-kindista" "contact"))
+         (htm (:a :href (s+ "mailto:info@" +base-url+) "contact")))))
     (:menu :class "bar"
       (if (eql tab :faq)
-	  (htm (:li :class "selected" "Frequent Questions"))
-	  (htm (:li (:a :href "/faq" "Frequent Questions"))))
+   (htm (:li :class "selected" "Frequent Questions"))
+   (htm (:li (:a :href "/faq" "Frequent Questions"))))
       (when *user*
-	(if (eql tab :feedback)
-	    (htm (:li :class "selected" "Feedback"))
-	    (htm (:li (:a :href "/feedback" "Feedback")))))
-      (if (eql tab :about)
-	  (htm (:li :class "selected" "About Kindista"))
-	  (htm (:li (:a :href "/about" "About Kindista")))))))
+        (if (eql tab :feedback)
+            (htm (:li :class "selected" "Feedback"))
+            (htm (:li (:a :href "/feedback" "Feedback")))))
+             (if (eql tab :about)
+          (htm (:li :class "selected" "About Kindista"))
+          (htm (:li (:a :href "/about" "About Kindista")))))))
 
 (defun go-help ()
   (see-other "/feedback"))

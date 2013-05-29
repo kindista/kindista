@@ -72,6 +72,17 @@
             " "
             (:a :class "yes" :href "/donate" "Make a donation"))
           (:br)
-          (:p "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")))
+          (:p "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")
+        (:div :class "splactions footer"
+          (if *userid*
+            (htm (:a :href "/contact-kindista" "contact"))
+            (htm (:a :href (s+ "mailto:info@" +base-url+) "contact")))
+          " &middot; "
+          (:a :href "/about" "about")
+          " &middot; "
+          (:a :href "/terms" "terms")
+          " &middot; "
+          (:a :href "/privacy" "privacy")  
+         )))
 
       :class "splash")))

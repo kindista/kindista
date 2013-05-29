@@ -63,6 +63,9 @@
     :get go-home
     :post post-contacts)
 
+  ("/contact-kindista"
+    :get go-contact-kindista)
+
   ("/offers"
    :get get-offers)
 

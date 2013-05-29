@@ -436,6 +436,12 @@ body.splash #symbol {
  text-align: center;
 }
 
+.splactions.footer a {
+ color: #ccc;
+ font-size: 1.3em;
+ padding: 0 .5em;
+}
+
 .splactions a.yes {
  margin: 0.5em;
  line-height: 4em;

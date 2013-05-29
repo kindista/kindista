@@ -119,6 +119,12 @@
          )))
     :selected "messages"))
 
+(defun go-contact-kindista ()
+  (require-user
+    (new-conversation :people (list +kindista-id+)
+                      :single-recipient "t"
+                      :next (or (referer) "/home"))))
+
 (defun get-conversations-new ()
   (require-user
     (new-conversation :people (parse-subject-list (get-parameter "people")))))
