@@ -460,7 +460,7 @@
 
 (defun user-distance (&optional (user *user*))
   (if user
-    (or (getf user :distance) 25)
+    (or (getf user :distance) 0)
     100))
 
 (defun user-rdist (&optional (user *user*))

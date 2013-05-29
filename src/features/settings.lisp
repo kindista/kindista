@@ -679,7 +679,9 @@
 
       ((scan +number-scanner+ (post-parameter "distance"))
        (modify-db *userid* :distance (parse-integer (post-parameter "distance")))
-       (flash (format nil "Now showing activity within ~a miles." (post-parameter "distance")))
+       (if (string= (post-parameter "distance") "0")
+         (flash "Now showing activity for all of Kindista.")
+         (flash (format nil "Now showing activity within ~a miles." (post-parameter "distance"))))
        (see-other (or (post-parameter "next") "/home")))
 
       ((equalp (post-parameter "help") "0")

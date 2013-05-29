@@ -215,10 +215,16 @@
                        (htm
                          (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >"))))))))))))
 
-(defun local-activity-items (&key (user *user*) (page 0) (count 20) (url "/home")) 
-  (let ((items (sort (geo-index-query *activity-geo-index*
-                                      *latitude*
-                                      *longitude*
-                                      (or (getf user :distance) 50))
-                     #'< :key #'activity-rank)))
-    (activity-items items :page page :count count :url url)))
+(defun local-activity-items (&key (user *user*) (page 0) (count 20) (url "/home"))
+  (let ((distance (or (getf user :distance) 0)))
+    (if (= distance 0 )
+      (activity-items (sort (copy-list *recent-activity-index*) #'> :key #'result-time)
+                      :page page
+                      :count count
+                      :url url)
+      (let ((items (sort (geo-index-query *activity-geo-index*
+                                        *latitude*
+                                        *longitude*
+                                        distance)
+                       #'< :key #'activity-rank)))
+        (activity-items items :page page :count count :url url)))))

@@ -113,7 +113,8 @@
                   (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
                   (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
                   (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
-                  (:option :value "100" :selected (when (eql distance 100) "") "100 miles"))))
+                  (:option :value "100" :selected (when (eql distance 100) "") "100 miles")
+                  (:option :value "0" :selected (when (eql distance 0) "") "all Kindista"))))
         " "
         (:input :type "submit" :class "no-js" :value "apply"))))
         (let ((page (if (scan +number-scanner+ (get-parameter "p"))
