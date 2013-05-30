@@ -415,7 +415,7 @@
                          (:table
                            (:tr
                              (:td :rowspan "2"
-                              (:a :href link (:img :src (format nil "/media/avatar/~A.png" *userid*))))
+                              (:a :href link (:img :src (strcat +avatar-base+ *userid* ".jpg?" (get-universal-time)))))
                              (:td (:a :href link (str (getf *user* :name)))))
                            (:tr
                              (:td
