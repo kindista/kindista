@@ -53,7 +53,7 @@
             (:input :type "file" :name "avatar"))))
       (t
         (html
-          (:img :src (strcat +avatar-base+ *userid* ".jpg")))))
+          (:img :src (strcat +avatar-base+ *userid* ".jpg?" (get-universal-time))))))
 
   :editable editable))
 

@@ -113,7 +113,7 @@
         (:div :class "item confirm-invite"
           (:form :method "post" :action "/invite"
             (:input :type "hidden" :name "next-url" :value next-url)
-            (:input :type "hidden" :name "text" :value text)
+            (:input :type "hidden" :name "text" :value (escape-for-html text))
             (:input :type "hidden" :name "bulk-emails" :value bulk-emails)
             (:h2 "Review your invitation" (str pluralize))
             (:h3 (str (strcat count " ")) "Recipient" (str pluralize) ":")
