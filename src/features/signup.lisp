@@ -140,7 +140,7 @@ Please use the correct email address or find someone you know on Kindista and re
         (t
            (pprint host)(terpri)
            (setf new-id
-                 (aif invite-request-id
+                 (aif (integerp invite-request-id)
                    (progn
                      (modify-db it :type :person
                                    :name name

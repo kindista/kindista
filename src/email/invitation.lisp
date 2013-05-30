@@ -137,14 +137,14 @@ sender
                                                                    :text text))))
 
 (defun requested-invite-email-text (token name email &key text)
-(s+ "Hi " name ",
+(s+ "Greetings,
 "
 "
 At some point in the past year, you signed up to be notified when Kindista.org was available in your area.  Although it has taken longer than we had hoped, we are excited to invite you to join our gift-economy network!
 "
 
 "
-You may be one of the first people to sign up in your local area. If that is the case, please feel free to contact us for suggestions about how to jump start a new sharing network in your local community."
+You may be one of the first people to sign up in your local area. If that is the case, start by inviting your friends to join and please feel free to contact us for suggestions about how to jump start a new sharing network in your local community."
 
 "
 
@@ -181,13 +181,13 @@ Thanks for sharing your gifts with us!
 (html-email-base
   (html
     (:p :style *style-p*
-     "Hi " (str name) ",")
+     "Greetings,")
     
     (:p :style *style-p*
 "At some point in the past year, you signed up to be notified when Kindista.org was available in your area.  Although it has taken longer than we had hoped, we are excited to invite you to join our gift-economy network!")
 
     (:p :style *style-p*
-     " You may be one of the first people to sign up in your local area. If that is the case, please feel free to contact us for suggestions about how to jump start a new sharing network in your local community. ")
+     " You may be one of the first people to sign up in your local area. If that is the case, start by inviting your friends to join and please feel free to contact us for suggestions about how to jump start a new sharing network in your local community. ")
      
     (:p :style *style-p*
      "Your invitation code is " (:strong (str (write-to-string token)) ".")
