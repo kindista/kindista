@@ -214,6 +214,10 @@
       ((post-parameter "cancel")
        (see-other (or (post-parameter "next") "/home")))
 
+      ((not (db *userid* :location))
+       (flash "You must set your street address on your settings page before you can post an offer or a request." :error t)
+       (see-other (or (post-parameter "next") "/home")))
+
       ((post-parameter "back")
        (enter-inventory-text :type type
                              :text (post-parameter "text")
