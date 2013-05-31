@@ -272,6 +272,8 @@
          (delete-gratitude id)
          (flash "Your statement of gratitude has been deleted!")
          (see-other (or (post-parameter "next") "/home")))
+        ((post-parameter "edit")
+         (see-other (strcat "/gratitude/" id "/edit")))
         ((and (post-parameter "love")
               (member (getf it :type) '(:gratitude :offer :request)))
          (love id)
