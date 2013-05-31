@@ -207,6 +207,11 @@
     (cond
       ((post-parameter "cancel")
        (see-other (or (post-parameter "next") "/home")))
+
+      ((not (db *userid* :location))
+       (flash "You must set your street address on your settings page before you can post gratitude about someone." :error t)
+       (see-other (or (post-parameter "next") "/home")))
+
       ((post-parameter "create")
        (let ((subjects (parse-subject-list (post-parameter "subject") :remove (write-to-string *userid*))))
          (cond
