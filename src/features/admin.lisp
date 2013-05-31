@@ -62,7 +62,7 @@
                    (str (getf data :offering)))
                   (:p (:strong "Interests and activities:")
                    (:br)
-                   (str (getf data :into)))
+                   (str (getf data :bio-into)))
                   (awhen (getf data :other)
                     (htm
                       (:p (:strong "Other ideas for sharing economy:")
