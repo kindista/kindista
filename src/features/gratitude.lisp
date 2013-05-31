@@ -66,6 +66,7 @@
       (with-locked-hash-table (*gratitude-results-index*)
         (dolist (subject subjects)
           (let* ((user (db subject))
+                 (location (getf user :location))
                  (result (make-result :type :gratitude
                                       :latitude (getf user :lat)
                                       :longitude (getf user :long)
@@ -73,7 +74,7 @@
                                       :id id
                                       :time created)))
             (push result (gethash id *gratitude-results-index*))
-            (geo-index-insert *activity-geo-index* result)))))))
+            (when location (geo-index-insert *activity-geo-index* result))))))))
 
 (defun parse-subject-list (subject-list &key remove)
   (delete-duplicates
