@@ -297,6 +297,24 @@
           (:h1 "Something terrible happened")
           (:p "Humans have been notified!"))))))
 
+(defmethod acceptor-log-message ((acceptor k-acceptor) (log-level (eql :error)) format-string &rest format-arguments)
+  "Print extra information when logging an error. Sends a formatted
+  message to the destination denoted by (ACCEPTOR-MESSAGE-LOG-DESTINATION
+  ACCEPTOR).  FORMAT and ARGS are as in FORMAT.  LOG-LEVEL is a keyword
+  denoting the log level or NIL in which case it is ignored."
+  (hunchentoot::with-log-stream (stream (acceptor-message-log-destination acceptor) hunchentoot::*message-log-lock*)
+    (handler-case
+        (format stream "[~A~@[ [~A]~]] ~A ~A ~:S ~:S ~?~%"
+                (hunchentoot::iso-time) log-level
+                *userid*
+                (script-name*)
+                (get-parameters*)
+                (post-parameters*)
+                format-string format-arguments)
+      (error (e)
+        (ignore-errors
+         (format *trace-output* "error ~A while writing to error log, error not logged~%" e))))))
+
 (defvar *acceptor* (make-instance 'k-acceptor
                                   :port 5000
                                   :address "127.0.0.1"
