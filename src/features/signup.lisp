@@ -140,28 +140,29 @@ Please use the correct email address or find someone you know on Kindista and re
         (t
            (pprint host)(terpri)
            (setf new-id
-                 (aif invite-request-id
-                   (progn
-                     (modify-db it :type :person
-                                   :name name
-                                   :emails (list email)
-                                   :host +kindista-id+
-                                   :active t
-                                   :help t
-                                   :pass (new-password (post-parameter "password"))
-                                   :created (get-universal-time)
-                                   :notify-gratitude t
-                                   :notify-message t
-                                   :notify-kindista t
-                                   :email nil
-                                   :requested nil)
-                     (with-locked-hash-table (*db-results*)
-                       (remhash it *db-results*))
-                     (when (member it *invite-request-index* :key #'result-id)
-                       (with-mutex (*invite-request-mutex*)
-                        (setf *invite-request-index* (remove it *invite-request-index* :key #'result-id))))
-                     (index-person it (db it))
-                     it)
+                 (if (integerp invite-request-id)
+                   (let ((it invite-request-id))
+                     (progn
+                       (modify-db it :type :person
+                                     :name name
+                                     :emails (list email)
+                                     :host +kindista-id+
+                                     :active t
+                                     :help t
+                                     :pass (new-password (post-parameter "password"))
+                                     :created (get-universal-time)
+                                     :notify-gratitude t
+                                     :notify-message t
+                                     :notify-kindista t
+                                     :email nil
+                                     :requested nil)
+                       (with-locked-hash-table (*db-results*)
+                         (remhash it *db-results*))
+                       (when (member it *invite-request-index* :key #'result-id)
+                         (with-mutex (*invite-request-mutex*)
+                          (setf *invite-request-index* (remove it *invite-request-index* :key #'result-id))))
+                       (index-person it (db it))
+                       it))
                    (create-person :name (post-parameter "name")
                                   :host host
                                   :email (post-parameter "email")
