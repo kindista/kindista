@@ -125,7 +125,7 @@
                 (:p "You did not include a personalized message to your invitation recipient" (str pluralize) "."))
               (htm
                 (:h3 "Your personalized invitation message is:")
-                (str text)))
+                (:blockquote :class "review-text" (str (html-text text)))))
             (:p
               (:button :class "cancel" :type "submit" :class "submit" :name "edit" "Edit Invitation")
               (:button :class "yes" :type "submit" :class "submit" :name "confirm" "Send Invitation" (str pluralize)))))))))

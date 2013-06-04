@@ -252,7 +252,7 @@
                                      (htm (:a :href (strcat "/requests/" (getf it :on)) "request")))
                                     (t (str "deleted offer or request")))
                                   ":")))
-                            (htm (:blockquote (str (regex-replace-all "\\n" (getf item :text) "<br>"))))))))))
+                            (htm (:blockquote (str (html-text (getf item :text)))))))))))
 
                 (dolist (comment-id (gethash id *comment-index*))
                   (let* ((data (db comment-id))

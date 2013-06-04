@@ -92,15 +92,15 @@
     "Home"
     (html
       (:div :class "activity"
-        (:menu :class "horiz"
-          (:strong "actions")
-          (:li (:a :href "/gratitude/new" "express gratitude"))
-          (:li (:a :href "/offers/new" "post an offer"))
-          (:li (:a :href "/requests/new" "make a request"))
-          ;(:li (:a :href "/events/new" "event"))
-          ;(:li (:a :href "/announcements/new" "post announcement"))
-          )
-          
+        (str 
+          (menu-horiz "actions"
+                      (html (:a :href "/gratitude/new" "express gratitude"))
+                      (html (:a :href "/offers/new" "post an offer"))
+                      (html (:a :href "/requests/new" "make a request"))
+                      ;(:a :href "/events/new" "event")
+                      ;(:a :href "/announcements/new" "post announcement")
+                      ))
+
       (when *user*
         (htm
           (:form :class "item" :method "post" :action "/settings"

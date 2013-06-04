@@ -47,10 +47,10 @@ This invitation will expire in 30 days.
 
 "
 
-      (when text
-        (s+ sender " says:
-            \""
-            text "\"
+(when text
+(s+ sender " says:
+\""
+text "\"
 
 "))
 
@@ -96,7 +96,7 @@ sender
 
                         (str sender) " says:"
                           (:br)
-                          "\"" (str text) "\"")))))
+                          "\"" (str (html-text text)) "\"")))))
 
         (:p :style *style-p*
           (str sender)
@@ -191,7 +191,7 @@ Thanks for sharing your gifts with us!
              (:tr (:td :style "padding: 4px 12px;"
                      "Personal message from the Kindista crew: "
                       (:br)
-                      "\"" (str text) "\"")))))
+                      "\"" (str (html-text text)) "\"")))))
 
     (:p :style *style-p*
       "We are excited for you to join the Kindista community!")
