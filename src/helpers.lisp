@@ -121,6 +121,9 @@
               param-strings))
       (setf params (cddr params))))
 
+(defun html-text (string)
+  (regex-replace-all "\\n" (escape-for-html string) "<br>"))
+
 (defun distance-string (miles)
   (let ((distance (/ (round miles 0.5) 2)))
     (cond

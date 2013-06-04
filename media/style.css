@@ -161,6 +161,7 @@ menu.horiz {
 
 menu.horiz li {
  display: inline-block;
+ font-weight: bold;
  margin-left:1em;
 }
 
@@ -1734,6 +1735,20 @@ a.red {
 
 .category a {
  white-space: nowrap;
+}
+
+#edit-tags blockquote.review-text {
+ margin: .5em 0 .5em 0;
+}
+
+blockquote.review-text {
+ margin: 0;
+ background: #f8f8f8;
+ padding: .5em;
+ border-radius: .25em;
+ border-style: solid;
+ border-width: 1px;
+ border-color: #bbb;
 }
 
 div.tag {

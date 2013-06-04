@@ -111,7 +111,8 @@
                                   (:a :href (strcat "/gratitude/" item-id) "gratitude")
                                   " for "
                                   (str (name-list (getf data :subjects) :minimum-links 100)))
-                              (:p (cl-who:esc (getf data :text)))))))
+                              (:p
+                                (str (html-text (getf data :text))))))))
 
 (defun gift-activity-item (result)
   (let* ((user-id (first (result-people result)))
@@ -130,7 +131,7 @@
                                   (:a :href (strcat "/gifts/" item-id) "acknowledged") 
                                   " by "
                                   (str (name-list-all (getf data :recipients))))
-                              (:p (cl-who:esc (getf data :text)))))))
+                              (:p (str (html-text (getf data :text))))))))
 
 (defun joined-activity-item (result)
   (html
@@ -170,7 +171,7 @@
                                                       *latitude*
                                                       *longitude*)))
                                     ")")))) 
-                              (:p (cl-who:esc (getf data :text)))))))
+                              (:p (str (html-text (getf data :text))))))))
 
 (defun activity-items (items &key (page 0) (count 20) (url "/home") (paginate t) (location t))
   (with-location

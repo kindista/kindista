@@ -400,8 +400,8 @@
   (let ((suggested (or tags (get-tag-suggestions text))))
     (standard-page title
      (html
-       (:div :class "item"
-        (:h2 title )
+       (:div :class "item" :id "edit-tags"
+        (:h2 (str title) )
         (when error
           (htm
             (:p :class "error" (str error))))
@@ -411,10 +411,11 @@
           (when next
             (htm (:input :type "hidden" :name "next" :value next)))
           (:input :type "hidden" :name "text" :value (escape-for-html text))
-          (:p (cl-who:esc text)
-              " "
-              (:button :class "red" :type "submit" :class "cancel" :name "back" "edit"))
-          (:h2 "select at least one keyword")
+          (:p 
+            (:blockquote :class "review-text" (str (html-text text)))
+            " "
+            (:button :class "red" :type "submit" :class "cancel" :name "back" "edit"))
+          (:h2 "Select at least one keyword")
           (dolist (tag *top-tags*)
             (htm 
               (:div :class "tag"
@@ -425,7 +426,7 @@
                                    (setf suggested (remove tag suggested :test #'string=))
                                    ""))
                    (:span (str tag)))))
-          (:h2 "additional keywords (optional)")
+          (:h2 "Additional keywords (optional)")
           (:input :type "text" :name "tags" :size 40
                   :placeholder "e.g. produce, bicycle, tai-chi"
                   :value (format nil "~{~a~^,~^ ~}" suggested))
