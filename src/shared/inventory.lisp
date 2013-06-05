@@ -590,7 +590,8 @@
                   ((and (>= i start) items)
                    (str (inventory-activity-item type
                                                  (pop items)
-                                                 :show-distance t)))
+                                                 :show-distance t
+                                                 :truncate t)))
                   (t
                    (when (< (user-rdist) 100)
                      (htm
