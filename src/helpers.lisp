@@ -121,6 +121,16 @@
               param-strings))
       (setf params (cddr params))))
 
+(defun ellipsis (text &optional (length 160) &key see-more)
+  (let ((newtext (subseq text 0 (min (length text) length))))
+    (if (> (length text) length)
+      (html
+        (str newtext)
+        "..." 
+        (when see-more
+          (htm (:a :href see-more " see more"))))
+      newtext)))
+
 (defun html-text (string)
   (regex-replace-all "\\n" (escape-for-html string) "<br>"))
 
