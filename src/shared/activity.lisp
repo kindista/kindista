@@ -94,12 +94,14 @@
         ;    " &middot; "
         ;    (str (flag-button url))))))))
 
-(defun gratitude-activity-item (result)
+(defun gratitude-activity-item (result &key truncate)
   (let* ((user-id (first (result-people result)))
          (item-id (result-id result))
-         (data (db item-id)))
+         (data (db item-id))
+         (item-url (strcat "/gratitude/" item-id)))
+
     (activity-item :id item-id
-                   :url (strcat "/gratitude/" item-id)
+                   :url item-url
                    :class "gratitude"
                    :time (result-time result)
                    :edit (when (or (eql user-id *userid*) (getf *user* :admin)) t)
@@ -108,11 +110,16 @@
                    :content (html
                               (:p (str (person-link user-id))
                                   (str (if (getf data :editied) " edited " " shared "))
-                                  (:a :href (strcat "/gratitude/" item-id) "gratitude")
+                                  (:a :href item-url "gratitude")
                                   " for "
                                   (str (name-list (getf data :subjects) :minimum-links 100)))
                               (:p
-                                (str (html-text (getf data :text))))))))
+                                (str
+                                  (if truncate
+                                    (ellipsis (html-text (getf data :text))
+                                              500
+                                              :see-more item-url)
+                                    (html-text (getf data :text)))))))))
 
 (defun gift-activity-item (result)
   (let* ((user-id (first (result-people result)))
@@ -139,16 +146,19 @@
       (str (timestamp (result-time result)))
       (:p (str (person-link (first (result-people result)))) " joined Kindista"))))
 
-(defun inventory-activity-item (type result &key show-distance show-what)
-  (let ((user-id (first (result-people result)))
-        (data (db (result-id result))))
-    (activity-item :id (result-id result)
-                   :url (strcat "/" type "s/" (result-id result))
+(defun inventory-activity-item (type result &key truncate show-distance show-what)
+  (let* ((user-id (first (result-people result)))
+         (item-id (result-id result))
+         (data (db item-id))
+         (item-url (strcat "/" type "s/" item-id)))
+
+    (activity-item :id item-id
+                   :url item-url
                    :time (result-time result)
                    :edit (or (eql user-id *userid*) (getf *user* :admin))
                    :class type
                    :reply t
-                   :hearts (length (loves (result-id result)))
+                   :hearts (length (loves item-id))
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")
                                                  ((string= type "offer") "offered")))
@@ -158,8 +168,7 @@
                                 (when show-what
                                   (str (if (getf data :edited) " edited " " posted "))
                                   (str (if (eq (getf data :type) :offer) "an " "a "))
-                                  (htm (:a :href (str (format nil (s+ "/" type "s/~d")
-                                                              (result-id result)))
+                                  (htm (:a :href (str item-url)
                                            (str type))))
                                 (when show-distance
                                   (htm (:small
@@ -170,8 +179,14 @@
                                                       (result-longitude result)
                                                       *latitude*
                                                       *longitude*)))
-                                    ")")))) 
-                              (:p (str (html-text (getf data :text))))))))
+                                    ")"))))
+                              (:p
+                                (str
+                                  (if truncate
+                                    (ellipsis (html-text (getf data :text))
+                                              500
+                                              :see-more item-url)
+                                    (html-text (getf data :text)))))))))
 
 (defun activity-items (items &key (page 0) (count 20) (url "/home") (paginate t) (location t))
   (with-location
@@ -186,7 +201,7 @@
                  (let* ((item (car items)))
                    (case (result-type item)
                      (:gratitude
-                       (str (gratitude-activity-item item)))
+                       (str (gratitude-activity-item item :truncate t)))
                      (:gift
                        (str (gift-activity-item item)))
                      (:person
@@ -194,7 +209,7 @@
                      (:offer
                        (str (inventory-activity-item "offer" item :show-what t :show-distance location)))
                      (:request
-                       (str (inventory-activity-item "request" item :show-what t :show-distance location)))))
+                       (str (inventory-activity-item "request" item :show-what t :show-distance location :truncate t)))))
                  (setf items (cdr items)))
 
                 (t
