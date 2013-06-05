@@ -17,12 +17,6 @@
 
 (in-package :kindista)
 
-(defun ellipsis (text &optional (length 160))
-  (let ((newtext (subseq text 0 (min (length text) length))))
-    (if (> (length text) length)
-      (s+ newtext "...")
-      newtext)))
-
 (defun result-gratitude-p (result)
   (eq (result-type result) :gratitude))
 
