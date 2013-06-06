@@ -139,9 +139,12 @@
 
                              (:p :class "text"
                                (:span :class "title"
+                                 (:a :href (strcat "/conversations/" id)
+                                   (str (ellipsis (getf original-item :text) 30)))
                                  (when (> comments 1)
                                    (htm
-                                     " (" (str comments) ") - ")))
+                                     " (" (str comments) ") "))
+                                 " - ")
                                (:a :href (strcat "/conversations/" id)
                                 (str (ellipsis (getf comment-data :text))))))))))
                    (:contact-n
