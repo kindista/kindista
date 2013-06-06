@@ -117,7 +117,7 @@ Thank you for sharing your gifts with us!
                      :cellpadding 0
                      :style *style-quote-box*
                (:tr (:td :style "padding: 4px 12px;"
-                        "\"" (str it) "\"")))))
+                        "\"" (str (html-text it)) "\"")))))
 
       (:p :style *style-p*
         (str from) " says:")
@@ -126,7 +126,7 @@ Thank you for sharing your gifts with us!
               :cellpadding 0
               :style *style-quote-box*
         (:tr (:td :style "padding: 4px 12px;"
-                 "\"" (str text) "\"")))
+                 "\"" (str (html-text text)) "\"")))
 
       (:p :style *style-p*
        "You can see the conversation on Kindista here: "
