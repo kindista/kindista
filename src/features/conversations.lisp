@@ -206,7 +206,9 @@
           (let ((latest-seen (cdr (assoc *userid* (getf it :people))))
                 (with (remove *userid* people)))
             (standard-page
-              (ellipsis (getf it :subject) 24)
+              (aif (getf it :subject)
+                (ellipsis it 24)
+                "Conversation")
               (html
                 (str (menu-horiz "actions"
                                  (html (:a :href "/messages" "back to messages"))
