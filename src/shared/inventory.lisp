@@ -173,6 +173,9 @@
 
     (geo-index-remove *activity-geo-index* result)
 
+    (with-mutex (*recent-activity-mutex*)
+      (asetf *recent-activity-index* (remove id it :key #'result-id)))
+
     (with-locked-hash-table (*db-results*)
       (remhash id *db-results*))
 
