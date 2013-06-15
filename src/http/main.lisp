@@ -450,6 +450,7 @@
                                     '("Offers" "offers")
                                     '("Requests" "requests")
                                     '("People" "people") 
+                                    '("Groups" "groups") 
                                     ;'("Events" "events") 
                                     '("Help & Feedback" "faq")
                                     (when (getf *user* :admin)
