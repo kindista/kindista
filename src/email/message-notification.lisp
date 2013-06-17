@@ -88,7 +88,7 @@ You can see the conversation on Kindista here:
 
 "
 
-If you no longer wish to receive notifications when people send you messages, please edit your settings:
+If you no longer wish to receive notifications when people send you messages, please edit your communication settings:
 "
 (strcat +base-url+ "settings/communication")
 
@@ -134,7 +134,7 @@ Thank you for sharing your gifts with us!
                  (str (strcat +base-url+ "conversations/" on-id))))
 
       (:p :style *style-p*
-          "If you no longer wish to receive notifications when people send you messages, please edit your settings:"
+          "If you no longer wish to receive notifications when people send you messages, please edit your communication settings:"
        (:br)
        (:a :href (strcat +base-url+ "settings/communication")
                  (str (strcat +base-url+ "settings/communication"))))

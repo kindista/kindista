@@ -28,6 +28,7 @@
                :created ,(get-universal-time)
                :notify-gratitude t
                :notify-message t
+               :notify-reminders t
                :notify-kindista t)))
 
 (defun index-person (id data)
@@ -39,6 +40,9 @@
                              :time (getf data :created)))
         (names (cons (getf data :name)
                      (getf data :aliases))))
+
+    (with-mutex (*active-people-mutex*)
+      (push id *active-people-index*))
 
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
@@ -86,6 +90,7 @@
         (geo-index-insert *activity-geo-index* result)))))
 
 (defun reindex-person-location (id)
+  ;when people change locations
   (let* ((result (gethash id *db-results*))
          (data (db id))
          (lat (getf data :lat))
@@ -150,12 +155,15 @@
     (metaphone-index-insert (list nil) result)
     (geo-index-remove *people-geo-index* result)
     (geo-index-remove *activity-geo-index* result)
+    (with-mutex (*active-people-mutex*)
+      (asetf *active-people-index* (remove it *active-people-index*)))
     (dolist (request-id (gethash id *request-index*))
       (delete-inventory-item request-id))
     (dolist (offer-id (gethash id *offer-index*))
       (delete-inventory-item offer-id))
     (modify-db id :active nil
                   :notify-message nil
+                  :notify-reminders nil
                   :notify-gratitude nil)))
 
 (defun reactivate-person (id)
@@ -166,8 +174,11 @@
     (metaphone-index-insert names result)
     (geo-index-insert *people-geo-index* result) 
     (geo-index-insert *activity-geo-index* result) 
+    (with-mutex (*active-people-mutex*)
+      (push id *active-peopl-index*))
     (modify-db id :active t
                   :notify-message t
+                  :notify-reminders t
                   :notify-gratitude t)))
 
 (defun username-or-id (&optional (id *userid*))
