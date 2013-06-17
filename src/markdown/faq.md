@@ -77,7 +77,7 @@ skills, support, housing, work space, or art.
 You can even offer the temporary use of tools,
 equipment, or living or work space.
 Get creative.  We encourage you to post anything you have
-that is underutilized, or of which you have excess.)
+that is underutilized, or of which you have excess.
 
 <small><a href="#questions">Return to questions</a></small>
 

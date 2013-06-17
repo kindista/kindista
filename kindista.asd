@@ -100,4 +100,5 @@
                                                    (:file "invitation")
                                                    (:file "invite-request-notification")
                                                    (:file "message-notification")
+                                                   (:file "reminders")
                                                    (:file "reset-password")))))))

@@ -154,6 +154,7 @@ Please use the correct email address or find someone you know on Kindista and re
                                      :notify-gratitude t
                                      :notify-message t
                                      :notify-kindista t
+                                     :notify-reminders t
                                      :email nil
                                      :requested nil)
                        (with-locked-hash-table (*db-results*)

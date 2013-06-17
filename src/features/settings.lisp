@@ -33,9 +33,10 @@
       (:div :class "settings-item title" (str title))
       (:div :class "settings-item content"
         (unless editable
-          (htm (:div :class "button"
-		     (:a :class "yes" :href (s+ base "?edit=" item)
-			 (or (str edit-text) (htm "Edit"))))))
+          (htm
+            (:div :class "button"
+              (:a :class "yes" :href (s+ base "?edit=" item)
+                                     (or (str edit-text) (htm "Edit"))))))
         (str body)
         (:p :class "help-text" (:em (str help-text)))))))
 
@@ -374,6 +375,10 @@
                 :checked (when (getf *user* :notify-message) "checked"))
                "when someone sends me a message")
           (:li (:input :type "checkbox"
+                :name "reminders"
+                :checked (when (getf *user* :notify-reminders) "checked"))
+               "with occasional suggestions about how I can get the most out of Kindista")
+          (:li (:input :type "checkbox"
                 :name "kindista"
                 :checked (when (getf *user* :notify-kindista) "checked"))
                "with updates and information about Kindista"))))
@@ -567,6 +572,7 @@
       ((post-parameter "save-notifications")
        (modify-db *userid* :notify-gratitude (when (post-parameter "gratitude") t))
        (modify-db *userid* :notify-message (when (post-parameter "message") t))
+       (modify-db *userid* :notify-reminders (when (post-parameter "reminders") t))
        (modify-db *userid* :notify-kindista (when (post-parameter "kindista") t))
        (flash "Your notification preferences have been saved.")
        (see-other (or (post-parameter "next") "/home")))
