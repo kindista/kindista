@@ -99,6 +99,12 @@
 (defstruct alias
   alias result)
 
+(defun alias-person-p (alias)
+  (eq (result-type (alias-result alias)) :person))
+
+(defun alias-group-p (alias)
+  (eq (result-type (alias-result alias)) ::roup))
+
 (defun result-id-intersection (list1 list2)
   (intersection list1 list2 :key #'result-id))
 
@@ -450,6 +456,7 @@
     (:gratitude (index-gratitude id data))
     ((or :offer :request) (index-inventory-item id data))
     (:person (index-person id data))
+    (:group (index-group id data))
     (:reply (index-reply id data))
     (:contact-n (index-contact-notification id data))
     (:conversation (index-conversation id data))))
