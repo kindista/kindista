@@ -159,6 +159,30 @@
   ("/people/<id>/connections"
     :get get-person-mutual-connections)
 
+  ("/groups"
+    :get get-groups)
+
+  ("/groups/<id>"
+    :get get-group)
+
+  ("/groups/<id>/about"
+    :get get-group-about)
+
+  ("/groups/<id>/activity"
+    :get get-group-activity)
+
+  ("/groups/<id>/reputation"
+    :get get-group-reputation)
+
+  ("/groups/<id>/offers"
+    :get get-group-offers)
+
+  ("/groups/<id>/requests"
+    :get get-group-requests)
+
+  ("/groups/<id>/members"
+    :get get-group-members)
+
   ("/conversations"
     :get get-conversations)
 
