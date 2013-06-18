@@ -49,7 +49,8 @@
       (cond
         ((password-match-p user (post-parameter "password"))
          (setf (token-userid *token*) user)
-         (notice :login)
+         (let ((*userid* user))
+           (notice :login))
          (see-other (or (post-parameter "next") "/home")))
         (t
          (setf (return-code*) +http-see-other+)
