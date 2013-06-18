@@ -35,6 +35,7 @@
 
 (defindex *activity-geo-index*)
 (defindex *activity-person-index*)
+(defindex *activity-group-index*)
 (defindex *comment-index*)
 (defindex *email-index* :test 'equalp)
 (defindex *event-geo-index*)
@@ -42,6 +43,8 @@
 (defindex *geo-index-index* :test 'equal)
 (defindex *gratitude-index*)
 (defindex *gratitude-results-index*)
+(defindex *group-membership-index*)
+(defindex *groups-geo-index*)
 (defindex *invited-index*)
 (defindex *invitation-index* :test 'equalp)
 (defindex *love-index*)
