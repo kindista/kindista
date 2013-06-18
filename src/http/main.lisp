@@ -304,16 +304,28 @@
   denoting the log level or NIL in which case it is ignored."
   (hunchentoot::with-log-stream (stream (acceptor-message-log-destination acceptor) hunchentoot::*message-log-lock*)
     (handler-case
-        (format stream "[~A~@[ [~A]~]] ~A ~A ~:S ~:S ~?~%"
-                (hunchentoot::iso-time) log-level
-                *userid*
-                (script-name*)
-                (get-parameters*)
-                (post-parameters*)
-                format-string format-arguments)
+      (flet ((error-message (destination)
+               (format destination "[~A~@[ [~A]~]] ~A ~A ~:S ~:S ~?~%"
+                       (hunchentoot::iso-time)
+                       log-level
+                       *userid*
+                       (script-name*)
+                       (get-parameters*)
+                       (post-parameters*)
+                       format-string
+                       format-arguments)))
+        (send-error-notification-email (error-message nil))
+        (error-message stream))
       (error (e)
         (ignore-errors
          (format *trace-output* "error ~A while writing to error log, error not logged~%" e))))))
+
+(defun send-error-notification-email (message)
+  (cl-smtp:send-email +mail-server+
+                      "Kindista <noreply@kindista.org>"
+                      "feedback@kindista.org"
+                      "Kindista Error - Notifying Humans"
+                      message))
 
 (defvar *acceptor* (make-instance 'k-acceptor
                                   :port 5000
