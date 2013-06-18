@@ -746,7 +746,7 @@
 ;    (+ mutuals ) ) )
 
 (defun search-people (query &key (userid *userid*))
-  (let* ((aliases (metaphone-index-query query))
+  (let* ((aliases (remove-if-not #'alias-person-p (metaphone-index-query query)))
          (user (db userid))
          (lat (getf user :lat))
          (long (getf user :long))
@@ -768,6 +768,24 @@
               (sort aliases; (remove userid people :key #'result-id)
                     #'> :key #'person-rank)))))
 
+(defun search-groups (query &key (userid *userid*))
+  (let* ((aliases (remove-if-not #'alias-group-p (metaphone-index-query query)))
+         (user (db userid)) 
+         (lat (getf user :lat))
+         (long (getf user :long)))
+    (flet ((group-rank (alias)
+             (let* ((result (alias-result alias))
+                    (member-count (length (db (result-id result) :members)))
+                    (distance (air-distance lat long (result-latitude result) (result-longitude result))))
+               (+ (* 9 member-count)
+                  (/ 50 (log (+ 4 distance) 10)))))
+           (group-id (alias)
+             (result-id (alias-result alias))))
+
+      (mapcar #'group-id
+            (sort aliases
+                  #'> :key #'group-rank)))))
+
 (defun request-results-html (request-list)
   (html
     (dolist (item request-list)
@@ -783,6 +801,12 @@
     (:div 
       (dolist (person person-list)
         (str (person-card (car person) (cdr person)))))))
+
+(defun groups-results-html (group-list)
+  (html
+    (:div 
+      (dolist (group group-list)
+        (str (group-card group))))))
 
 (defun search-nearby-people (query &key (userid *userid*) (distance 10))
   (let* ((user (db userid))
@@ -833,13 +857,26 @@
                      (str (people-results-html people)))
                    (htm
                      (:p "no results"))))))
+
+            ((string= scope "groups")
+             (let ((groups (search-groups q)))
+               (htm
+                 (:p "Searching for groups. Would you like to "
+                     (:a :href (s+ "/search?q=" (url-encode q)) "search everything")
+                     "?")
+                 (if groups
+                   (htm
+                     (str (groups-results-html groups)))
+                   (htm
+                     (:p "no results"))))))
             
             (t ; all
              (let ((requests (search-inventory :request q :distance (user-rdist)))
                    (offers (search-inventory :offer q :distance (user-rdist)))
-                   (people (search-people q)))
+                   (people (search-people q))
+                   (groups (search-groups q)))
 
-               (if (or requests offers people)
+               (if (or requests offers people groups)
                  (progn
                    (when people
                      (htm
@@ -848,6 +885,13 @@
                        (when (> (length people) 5)
                          (htm
                            (:div :class "more-results" (:a :href (s+ "/search?scope=people&q=" (url-encode q)) (fmt "see ~d more people" (- (length people) 5))))))))
+                   (when groups
+                     (htm
+                       (:h2 (:a :href (s+ "/search?scope=groups&q=" (url-encode q)) "Groups"))
+                       (str (groups-results-html (sublist groups 0 5)))
+                       (when (> (length groups) 5)
+                         (htm
+                           (:div :class "more-results" (:a :href (s+ "/search?scope=groups&q=" (url-encode q)) (fmt "see ~d more groups" (- (length groups) 5))))))))
                    (when requests
                      (htm
                        (:h2 (:a :href (s+ "/requests?q=" (url-encode q)) "Requests")
