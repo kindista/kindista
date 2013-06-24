@@ -98,4 +98,4 @@ Assuming you made the correct changes to your server configuration files, Kindis
 ## Contributions ##
 
 We love community contributions!  
-If you want to help out, please contact us at [info@kindista.org](mailto:info@kindista.org) or hit us up on IRC (#kindista on Freenode).
+If you want to help out, please contact us at [info@kindista.org](mailto:info@kindista.org).
