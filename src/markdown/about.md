@@ -35,7 +35,7 @@ with initial funding contributed by Benjamin.
 
 As a non-profit organization, Kindista cannot "sell out" or become a
 publicly-traded corporation. As long we are able to sustain the
-organiation, CommonGoods will continue to serve its mission.
+organization, CommonGoods will continue to serve its mission.
 
 ### Will Kindista ever sell advertising?
 
