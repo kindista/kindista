@@ -386,7 +386,6 @@
   (db id :created))
 
 (defun update-db (id data)
-  (assert (gethash id *db*))
   (with-mutex (*db-log-lock*)
     (with-standard-io-syntax
       (prin1 (append (list (get-universal-time) id) data) *db-log*)
@@ -396,6 +395,7 @@
     (setf (gethash id *db*) data)))
 
 (defun modify-db (id &rest items)
+  (assert (gethash id *db*))
   (with-locked-hash-table (*db*)
     (let ((data (db id)))
       (do
