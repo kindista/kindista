@@ -10,14 +10,6 @@ With Kindista you can:
 - Connect with other people who are contributing to a new culture of sharing in your community
 - See in real-time what kinds of sharing are happening near you.
 
-A pilot version of Kindista was released for testing in Eugene, OR in June 2012.
-Visit [kindista.org](http://kindista.org) for more information.
-The pilot version has not been released and is fundamentally incompatible with the version available on GitHub. 
-The Kindista pilot software will be replaced by this version upon its completion and user data will be migrated.
-
-Please check out [the plan](https://github.com/kindista/kindista/blob/master/PLAN) for information regarding what needs to be finished in this version of Kindista before it will be released publicly.
-
-
 ## Getting Started ##
 
 This document assumes that you have a running Common Lisp development environment. 
@@ -98,4 +90,4 @@ Assuming you made the correct changes to your server configuration files, Kindis
 ## Contributions ##
 
 We love community contributions!  
-If you want to help out, please contact us at [info@kindista.org](mailto:info@kindista.org) or hit us up on IRC (#kindista on Freenode).
+If you want to help out, please contact us at [info@kindista.org](mailto:info@kindista.org).
