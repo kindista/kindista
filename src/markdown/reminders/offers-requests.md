@@ -1,5 +1,5 @@
 We are happy you have joined Kindista and taken your first step into the Sharing Economy!
-We invite you to take the next step and post some offers and requests; so you can further enrich your life, as well as well as your community and the lives of those around you.
+We invite you to take the next step and post some offers and requests; so you can further enrich your life, as well as your community and the lives of those around you.
 
 Here are some tips to help you get started:
 
