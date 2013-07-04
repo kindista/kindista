@@ -41,8 +41,9 @@
         (names (cons (getf data :name)
                      (getf data :aliases))))
 
-    (with-mutex (*active-people-mutex*)
-      (push id *active-people-index*))
+    (when (getf data :active)
+      (with-mutex (*active-people-mutex*)
+      (push id *active-people-index*)))
 
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
