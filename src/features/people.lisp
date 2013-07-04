@@ -17,6 +17,15 @@
 
 (in-package :kindista)
 
+(defun inactive-people ()
+  "diagnostic tool for admins only. inefficient; should not be used in code."
+  (set-difference
+    (loop for id in (hash-table-keys *db-results*)
+          when (eq (result-type (gethash id *db-results*)) :person)
+          collect id)
+    *active-people-index*
+    :test #'equal))
+
 (defun create-person (&key name email password host)
   (insert-db `(:type :person
                :name ,name
