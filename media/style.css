@@ -374,6 +374,7 @@ body.landing > p {
 #header {
  position: relative;
  z-index: 10;
+ height: 2.9em;
  background: #f3f3f3; /* Old browsers */
  background: -moz-linear-gradient(top, #ffffff 0%, #ededed 100%); /* FF3.6+ */
  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#ffffff), color-stop(100%,#ededed)); /* Chrome,Safari4+ */
@@ -692,9 +693,6 @@ a.yes, a.blue {
  #logo {
   width:8em;
   display: block;
- }
- #header {
-  height:2.9em;
  }
 }
 

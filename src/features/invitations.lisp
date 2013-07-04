@@ -79,7 +79,9 @@
          (userid (getf invitation :host))
          (email (getf invitation :recipient-email)))
     (amodify-db userid :emails (append it (list email))
-                       :pending-alt-emails (remove invitation-id it))) 
+                       :pending-alt-emails (remove invitation-id it))
+    (with-locked-hash-table (*email-index*)
+      (setf (gethash email *email-index*) *userid*)))
     (delete-invitation invitation-id))
 
 (defun unconfirmed-invitations (&optional (host *userid*))
