@@ -467,26 +467,24 @@
 
 (defun nearby-inventory-items (type &key base (subtag-count 4) (distance 50) q)
   (with-location
-    (let ((nearby (sort
-                    (if q
-                      (result-id-intersection
-                        (geo-index-query (case type
-                                           (:offer *offer-geo-index*)
-                                           (t *request-geo-index*))
-                                         *latitude*
-                                         *longitude*
-                                         distance)
-                        (stem-index-query (case type
-                                           (:offer *offer-stem-index*)
-                                           (t *request-stem-index*))
-                                          q))
+    (let ((nearby (if q
+                    (result-id-intersection
                       (geo-index-query (case type
                                          (:offer *offer-geo-index*)
                                          (t *request-geo-index*))
-                                         *latitude*
-                                         *longitude*
-                                       distance))
-                    #'> :key #'inventory-rank))
+                                       *latitude*
+                                       *longitude*
+                                       distance)
+                      (stem-index-query (case type
+                                         (:offer *offer-stem-index*)
+                                         (t *request-stem-index*))
+                                        q))
+                    (geo-index-query (case type
+                                       (:offer *offer-geo-index*)
+                                       (t *request-geo-index*))
+                                       *latitude*
+                                       *longitude*
+                                     distance)))
           (items nil))
       (let ((tags (make-hash-table :test 'equalp)))
         (dolist (item nearby)
@@ -531,7 +529,7 @@
                                                        "more"
                                                        (reduce #'+ (subseq subtags (- subtag-count 1)) :key #'cdr))))
                                            (sort top-subtags #'string< :key #'car)))))))
-                items)))))
+                (sort items #'> :key #'inventory-rank))))))
 
 (defun nearby-inventory-top-tags (type &key (count 9) (more t) base (subtag-count 4) q)
   (multiple-value-bind (nearby items)
@@ -591,7 +589,7 @@
             (when (or base q)
               (htm
                 (:p (:a :href (str base-url) (str (s+"show all " type "s")))))))
-          
+
           (iter (for i from 0 to (+ start 20))
                 (cond
                   ((< i start)
