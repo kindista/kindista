@@ -29,6 +29,7 @@
   (dolist (index *indexes*)
     (clrhash (symbol-value index)))
   (setf *feedback-index* ()
+        *event-index* ()
         *invite-request-index* ()
         *recent-activity-index* ()
         *active-people-index* ()))
@@ -38,6 +39,7 @@
 (defindex *comment-index*)
 (defindex *email-index* :test 'equalp)
 (defindex *event-geo-index*)
+(defindex *event-stem-index* :test 'equalp)
 (defindex *followers-index*)
 (defindex *geo-index-index* :test 'equal)
 (defindex *gratitude-index*)
@@ -52,10 +54,10 @@
 (defindex *person-invitation-index*)
 (defindex *person-notification-index*)
 (defindex *request-geo-index*)
-(defindex *request-index*)
+(defindex *request-index*) ;should be called "person-request-index"
 (defindex *request-stem-index* :test 'equalp)
 (defindex *offer-geo-index*)
-(defindex *offer-index*)
+(defindex *offer-index*) ;should be called "person-offer-index"
 (defindex *offer-stem-index* :test 'equalp)
 (defindex *username-index* :test 'equalp)
 
@@ -63,6 +65,8 @@
 (defvar *recent-activity-index* ())
 (defvar *invite-request-mutex* (make-mutex))
 (defvar *invite-request-index* ())
+(defvar *event-mutex* (make-mutex))
+(defvar *event-index* ())
 (defvar *feedback-mutex* (make-mutex))
 (defvar *feedback-index* ())
 (defvar *active-people-mutex* (make-mutex))

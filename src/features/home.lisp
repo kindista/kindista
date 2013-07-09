@@ -41,39 +41,13 @@
       (:div :style "font-size: 0.9em; margin-top: 1em;" (:a :href "#" "How does Kindista use the money?"))
       )
       |#
-    
-    (unless *user*
-      (htm
-        (:div :class "login item"
-          (:h3 "Log in")
-          (:form :method "POST" :action "/login" :id "login"
-            (:label :for "username" "Email")
-            (:input :type "text" :name "username" :value (get-parameter "retry"))
-            (:label :for "password" "Password")
-            (:input :type "password" :name "password")
-            (:input :type "submit" :value "Log in")
-            (:a :href "/reset" "Forgot your password?")))))
+    (str (login-sidebar))
 
     (str (donate-sidebar))
 
     (str (invite-sidebar))
 
-    #|
-    (:div :class "item right only"
-      (:h3 (:a :href "/events" "Events") " happening nearby")
-      ;; TODO lookup the user's timezone by lat/long
-      ;; 
-      (:menu
-        (let ((lastday nil))
-          (dolist (event (upcoming-events :count 6))
-            (let ((item (db (result-id event))))
-              (htm
-                (:li (:strong (getf item :title)))
-                (:li
-                 "7:00PM "
-                 (:a :href (strcat "/events/" (result-id event))
-                     "East Eugene Gift Circle"))))))))
-    |#
+    (str (events-sidebar))
 
     (when *user*
       (let (people (suggested-people))
@@ -97,31 +71,18 @@
                       (html (:a :href "/gratitude/new" "express gratitude"))
                       (html (:a :href "/offers/new" "post an offer"))
                       (html (:a :href "/requests/new" "make a request"))
-                      ;(:a :href "/events/new" "event")
                       ;(:a :href "/announcements/new" "post announcement")
                       ))
 
       (when *user*
-        (htm
-          (:form :class "item" :method "post" :action "/settings"
-            (:strong "show activity within ")
-            (:input :type "hidden" :name "next" :value "/home")
-            (let ((distance (user-distance)))
-              (htm
-                (:select :name "distance" :onchange "this.form.submit()"
-                  (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
-                  (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
-                  (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
-                  (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
-                  (:option :value "100" :selected (when (eql distance 100) "") "100 miles")
-                  (:option :value "0" :selected (when (eql distance 0) "") "everywhere"))))
-        " "
-        (:input :type "submit" :class "no-js" :value "apply"))))
-        (let ((page (if (scan +number-scanner+ (get-parameter "p"))
-                     (parse-integer (get-parameter "p"))
-                     0)))
-         (with-location
-           (str (local-activity-items :page page))))))
+        (str (distance-selection-html "/home"
+                                      :text "show activity within "
+                                      :class "item")))
+      (let ((page (if (scan +number-scanner+ (get-parameter "p"))
+                   (parse-integer (get-parameter "p"))
+                   0)))
+        (with-location
+          (str (local-activity-items :page page))))))
     :selected "home"
     :top (cond
            ((not *user*)

@@ -14,6 +14,7 @@
                :cl-who
                :cl-stripe
                ;:css-lite
+               :chronicity
                :vecto
                :double-metaphone
                :drakma

@@ -426,15 +426,23 @@
                  (:form :action "/search" :method "GET" :id "search"
                    ;(:strong "Search ")
                    (:select :name "scope"
-                     (:option :value "all" :selected (when (or (not search-scope)
-                                                                     (string= search-scope "all"))
-                                                             "selected") "All")
-                     (:option :value "offers" :selected (when (equalp search-scope "offers")
-                                                                       "selected") "Offers")
-                     (:option :value "requests" :selected (when (equalp search-scope "requests")
-                                                                       "selected") "Requests")
-                     (:option :value "people" :selected (when (equalp search-scope "people")
-                                                                   "selected") "People"))
+                     (:option :value "all" 
+                              :selected (when (or (not search-scope)
+                                                  (string= search-scope "all"))
+                                          "selected")
+                              "All")
+                     (:option :value "offers"
+                              :selected (when (equalp search-scope "offers") "selected")
+                              "Offers")
+                     (:option :value "requests"
+                              :selected (when (equalp search-scope "requests") "selected")
+                              "Requests")
+                     (:option :value "events"
+                              :selected (when (equalp search-scope "events") "selected")
+                              "Events")
+                     (:option :value "people"
+                              :selected (when (equalp search-scope "people") "selected")
+                              "People"))
                    (:input :type "text" :size "14" :name "q" :value search)
                    (:input :type "submit" :value "Search"))
 
@@ -462,7 +470,7 @@
                                     '("Offers" "offers")
                                     '("Requests" "requests")
                                     '("People" "people") 
-                                    ;'("Events" "events") 
+                                    '("Events" "events") 
                                     '("Help & Feedback" "faq")
                                     (when (getf *user* :admin)
                                       '("Admin" "admin")))

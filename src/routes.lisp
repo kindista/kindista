@@ -116,6 +116,17 @@
     :get get-gift
     :post post-gift)
 
+  ("/events/new"
+   :get get-events-new
+   :post post-events-new)
+
+  ("/events/<int:id>"
+    :get get-event
+    :post post-event)
+
+  ("/events"
+   :get get-events-all)
+
   ("/comments/<int>"
     ;:get get-comment
     :post post-comment)
@@ -188,7 +199,6 @@
 
   ("/settings/error"
     :get get-settings-error)
-
 
   ("/settings/verify-address"
     :get get-verify-address)
@@ -269,7 +279,7 @@
 
   ("/kindista.js"
    :get get-js)
-  
+
   ("/sometimes-people-need-a-little-more-encouragement"
     :get send-all-reminders))
 

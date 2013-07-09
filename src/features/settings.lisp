@@ -119,31 +119,30 @@
 
 (defun get-verify-address (&key next-url)
   (let ((next (or next-url (get-parameter "next"))))
-    (with-user 
-      (standard-page
-        "Please verify your location."
-        (html
-          (:div :class "item"
-            (:div :class "setup"
-              (:h2 "Verify your location")
-              (:p "We will never share your exact location with anyone else.
-                   If you would like to know more about how we use the information you share with us,
-                   please read our " (:a :href "/privacy" "privacy policy") ".")
-              (str (static-google-map :size "280x150" :zoom 12 :lat (getf *user* :lat) :long (getf *user* :long)))
+    (standard-page
+      "Please verify your location."
+      (html
+        (:div :class "item"
+          (:div :class "setup"
+            (:h2 "Verify your location")
+            (:p "We will never share your exact location with anyone else.
+                 If you would like to know more about how we use the information you share with us,
+                 please read our " (:a :href "/privacy" "privacy policy") ".")
+            (str (static-google-map :size "280x150" :zoom 12 :lat (getf *user* :lat) :long (getf *user* :long)))
 
-              (:form :method "post" :action "/settings"
-                (:h3 "Is this location correct?")
-                (:input :type "hidden" :name "next" :value (str next))
-                (:button :class "cancel"
-                         :type "submit"
-                         :name "reset-location"
-                         :value "1"
-                         "No, go back")
-                (:button :class "yes"
-                         :type "submit"
-                         :name "confirm-location"
-                         :value "1"
-                         "Yes, this is correct")))))))))
+            (:form :method "post" :action "/settings"
+              (:h3 "Is this location correct?")
+              (:input :type "hidden" :name "next" :value (str next))
+              (:button :class "cancel"
+                       :type "submit"
+                       :name "reset-location"
+                       :value "1"
+                       "No, go back")
+              (:button :class "yes"
+                       :type "submit"
+                       :name "confirm-location"
+                       :value "1"
+                       "Yes, this is correct"))))))))
 
 (defun settings-password (base)
   (settings-item-html base "password" "Password"

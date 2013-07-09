@@ -55,7 +55,7 @@
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
-      (str (timestamp time :type type))
+      (when time (str (timestamp time :type type)))
       (when distance
         (htm
           (:p :class "distance"
@@ -64,25 +64,25 @@
       (when *user*
         (htm
           (:div :class "actions"
-            (str (activity-icons :hearts hearts :comments comments :url url))    
+            (str (activity-icons :hearts hearts :comments comments :url url))
             (:form :method "post" :action url
               (:input :type "hidden" :name "next" :value (script-name*))
               (if (member *userid* (gethash id *love-index*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
-                (htm (:input :type "submit" :name "love" :value "Love")))   
+                (htm (:input :type "submit" :name "love" :value "Love")))
               (when reply
                  (htm
-                  " &middot; "  
+                  " &middot; "
                   (:input :type "submit" :name "reply" :value "Reply")))
               (when delete
                 (htm
-                  " &middot; "  
-                  (:input :type "submit" :name "delete" :value "Delete"))) 
+                  " &middot; "
+                  (:input :type "submit" :name "delete" :value "Delete")))
               (when edit
                 (htm
-                  " &middot; "  
-                  (:input :type "submit" :name "edit" :value "Edit")     
-                  " &middot; "  
+                  " &middot; "
+                  (:input :type "submit" :name "edit" :value "Edit")
+                  " &middot; "
                   (:input :type "submit" :name "delete" :value "Delete"))))
             (when comments
               (htm
@@ -93,6 +93,65 @@
         ;  (htm
         ;    " &middot; "
         ;    (str (flag-button url))))))))
+
+(defun event-activity-item (result &key sidebar truncate (show-distance nil) time)
+  (let* ((user-id (first (result-people result)))
+         (item-id (result-id result))
+         (data (db item-id))
+         (event-time (or time (humanize-exact-time (getf data :local-time)
+                                                   :detailed t)))
+         (item-url (strcat "/events/" item-id)))
+
+    (activity-item :id item-id
+                   :url item-url
+                   :class "event"
+                   :edit (when (or (eql user-id *userid*) (getf *user* :admin)) t)
+                   :hearts (length (loves item-id))
+                   ;:comments (length (comments item-id))
+                   :content (html
+                                (:h3 (:a :href item-url
+                                               (str
+                                                 (if truncate
+                                                   (ellipsis
+                                                     (html-text (getf data :title))
+                                                     (if sidebar 33 50))
+                                                   (html-text (getf data :title))))))
+                              (unless sidebar
+                                (htm
+                                  (:p
+                                    (str (if (getf data :editied)
+                                           "Edited by "
+                                           "Posted by "))
+                                    (str (person-link user-id))
+                                    "&nbsp;"
+                                    (str (humanize-universal-time (getf data :created))))))
+
+                              (:table
+                                (:tr
+                                  (:td (:strong "Time: "))
+                                  (:td (str event-time)))
+
+                                (:tr
+                                  (:td (:strong "Place: "))
+                                  (:td (str (getf data :address))
+                                   (when (and show-distance (not sidebar))
+                                     (htm (:small
+                                       " (within "
+                                       (str
+                                         (distance-string
+                                           (air-distance (result-latitude result)
+                                                         (result-longitude result)
+                                                         *latitude*
+                                                         *longitude*)))
+                                     ")"))))))
+
+                              (:p
+                                (str
+                                  (if truncate
+                                    (ellipsis (html-text (getf data :details))
+                                              (if sidebar 150 500)
+                                              :see-more item-url)
+                                    (html-text (getf data :details)))))))))
 
 (defun gratitude-activity-item (result &key truncate)
   (let* ((user-id (first (result-people result)))
@@ -233,7 +292,7 @@
 
 (defun local-activity-items (&key (user *user*) (page 0) (count 20) (url "/home"))
   (let ((distance (user-distance)))
-    (if (= distance 0 )
+    (if (= distance 0)
       (activity-items (sort (copy-list *recent-activity-index*) #'> :key #'result-time)
                       :page page
                       :count count
