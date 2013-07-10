@@ -243,6 +243,14 @@
                    :placeholder "Add a time? (ex. 2:30 PM)"
                    :value time))
 
+         (:p
+           (:strong "Important: ")
+           "Please read the "
+           (:a :href "/faq#event-guidelines"
+             "Guidelines for Posting Events on Kindista")
+           " before posting any events to the calendar. "
+           "All events on Kindista are subject to these guidelines.")
+
          (:button :class "cancel"
                   :type "submit"
                   :name "cancel"
