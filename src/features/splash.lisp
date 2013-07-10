@@ -36,7 +36,7 @@
             (:button :class "yes" :type "submit" "Log in")
             (:p (:a :href "/reset" "Forgot your password?"))
             (:h3 "New to Kindista?")
-            (:p (:a :href "/request-invitation" "Request an invitation.")))  
+            (:p (:a :href "/request-invitation" "Sign up for an account.")))  
           (:h2 "Kindista helps you share offers, requests, and gratitude with people who live nearby.")
           (:p "Make connections with people who can help you lead a more abundant life through the culture of sharing. "
               (:strong "Because sharing is good."))
@@ -56,7 +56,7 @@
           (:div :class "splactions"
             (:a :class "yes" :href "/home" "Try out Kindista")
             " "
-            (:a :class "yes" :href "/request-invitation" "Request an invitation")
+            (:a :class "yes" :href "/request-invitation"  "Sign up for an account.")
             " "
             (:a :class "yes" :href "/donate" "Make a donation")))
 
@@ -68,7 +68,7 @@
           (:div :class "splactions"
             (:a :class "yes" :href "/home" "Try out Kindista")
             " "
-            (:a :class "yes" :href "/request-invitation" "Request an invitation")
+            (:a :class "yes" :href "/request-invitation" "Sign up for an account.")
             " "
             (:a :class "yes" :href "/donate" "Make a donation"))
           (:br)
