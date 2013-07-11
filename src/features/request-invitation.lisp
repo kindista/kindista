@@ -122,7 +122,16 @@
             (:button :class "yes"
                      :type "submit"
                      :name "request-invite"
-                     "Request invite")))))))
+                     "Sign up"))
+          (:p
+            (:strong "Please note: ")
+            "We will process your sign-up form as soon as possible, "
+            "usually within an hour. "
+            "However, we have a small staff and in rare cases (like if "
+            "we are offline for an extended weekend) it may be a couple "
+            "of days before you receive your account activation code. "
+            "Thank you for your understanding.")
+          )))))
 
 (defun get-request-invitation ()
   (cond
