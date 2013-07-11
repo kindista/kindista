@@ -302,10 +302,10 @@
                   (unless (string= it "") (read-from-string it))))
            (date (when (scan +date-scanner+ (post-parameter "date"))
                    (post-parameter "date")))
-           (time (when (scan +time-scanner+ (post-parameter "time"))
-                   (post-parameter "time")))
-           (local-time (when date
-                         (handler-case (parse-datetime date time)
+           (time (post-parameter "time"))
+           (local-time (when (and date time)
+                         (handler-case
+                             (parse-datetime date time)
                            (local-time::invalid-time-specification () nil)))))
 
       (labels ((try-again (e) (enter-event-details :title title
@@ -343,7 +343,7 @@
           (try-again "Please enter a valid time (e.g. 2:30 pm)"))
 
          ((not local-time)
-          (try-again "Please enter a valid date and time"))
+          (try-again "We couldn't understand your time. Please specify just one start time for the event (e.g. \"2:30pm\")"))
 
          ((< local-time (- (get-universal-time) +day-in-seconds+))
           ; local-time for any given time zone must not be earlier than today.
