@@ -179,7 +179,7 @@
                                      :paginate paginate)))
         (if (= distance 0)
           (show-local-events
-            (sort (copy-list *event-index*) #'< :key #'result-time))
+            (sort (copy-list *event-index*) #'< :key #'event-imminence))
 
           (show-local-events (sort (geo-index-query *event-geo-index*
                                                     *latitude*
