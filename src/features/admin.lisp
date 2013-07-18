@@ -125,9 +125,14 @@
          (confirm-delete :url (strcat "/admin/invite-request/" request-id)
                          :next-url "/admin/invite-requests"
                          :type "invitation request"
-                         :text (strcat "An request from " (getf request :name)
-                                   " , offering: \"" (getf request :offering)
-                                   "\"")))
+                         :text (strcat "An invitation request from "
+                                       (getf request :name)
+                                       " , offering: \""
+                                       #\return
+                                       #\linefeed
+                                       #\linefeed
+                                       (getf request :offering)
+                                       "\"")))
         ((post-parameter "really-delete")
          (delete-invite-request request-id)
          (flash (strcat "Invitation request " request-id " has been deleted."))

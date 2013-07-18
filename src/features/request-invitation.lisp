@@ -66,6 +66,15 @@
             (flash "Please enter your true full name (first and last).":error t))
           (:email
             (flash "Please correct your email address.":error t))
+          (:unique-email
+            (flash (strcat
+                     "There is already a Kindista account associated with "
+                     "the email address: "
+                     email
+                     ". "
+                     "If you already have a Kindista account, please login "
+                     "or click \"Forgot your password?\" on the home page "
+                     "to reset your password.")))
           (:address
             (flash "Please correct your street address (minimum City, State, and Postal Code).":error t))
           (:offering
@@ -142,7 +151,7 @@
 
 
 (defun post-request-invitation ()
-  (let* ((name (post-parameter "name"))
+  (let ((name (post-parameter "name"))
          (email (post-parameter "email"))
          (address (post-parameter "address"))
          (offering (post-parameter "offering"))
@@ -152,85 +161,50 @@
          (invite (post-parameter "invite"))
          (gratitude (post-parameter "gratitude"))
          (other (post-parameter "other")))
-   (cond
-    ((post-parameter "cancel")
-     (see-other "/"))
+    (labels ((try-again (e)
+              (request-invitation :name name
+                                  :email email
+                                  :address address
+                                  :offering offering
+                                  :into into
+                                  :events events
+                                  :resources resources
+                                  :invite invite
+                                  :gratitude gratitude
+                                  :other other
+                                  :error e)))
+      (cond
+       ((post-parameter "cancel")
+        (see-other "/"))
 
-    ((not (validate-name (post-parameter "name")))
-     (request-invitation :name name
-                         :email email
-                         :address address
-                         :offering offering
-                         :into into
-                         :events events
-                         :resources resources
-                         :invite invite
-                         :gratitude gratitude
-                         :other other
-                         :error :name))
+       ((not (validate-name name))
+        (try-again :name))
 
-    ((not (validate-email email))
-     (request-invitation :name name
-                         :email email
-                         :address address
-                         :offering offering
-                         :into into
-                         :events events
-                         :resources resources
-                         :invite invite
-                         :gratitude gratitude
-                         :other other
-                         :error :email))
+       ((not (validate-email email))
+        (try-again :email))
 
-    ((< (length address) 10)
-     (request-invitation :name name
-                         :email email
-                         :address address
-                         :offering offering
-                         :into into
-                         :events events
-                         :resources resources
-                         :invite invite
-                         :gratitude gratitude
-                         :other other
-                         :error :address))
+       ((gethash email *email-index*)
+        (try-again :unique-email))
 
-    ((< (length offering) 150)
-     (request-invitation :name name
-                         :email email
-                         :address address
-                         :offering offering
-                         :into into
-                         :events events
-                         :resources resources
-                         :invite invite
-                         :gratitude gratitude
-                         :other other
-                         :error :offering))
+       ((< (length address) 10)
+        (try-again :address))
 
-    ((< (length into) 150)
-     (request-invitation :name name
-                         :email email
-                         :address address
-                         :offering offering
-                         :into into
-                         :events events
-                         :resources resources
-                         :invite invite
-                         :gratitude gratitude
-                         :other other
-                         :error :into))
+       ((< (length offering) 150)
+        (try-again :offering))
 
-    (t
-     (create-invite-request :name name
-                            :email email
-                            :address address
-                            :offering offering
-                            :into into
-                            :events (when events t)
-                            :resources (when resources t)
-                            :invite (when invite t)
-                            :gratitude (when gratitude t)
-                            :other other)
-     (flash "Thanks for your interest in joining Kindista! We'll email you after we have a chance to look over your invitation request.")
-     (see-other "/home")))))
+       ((< (length into) 150)
+        (try-again :into))
+
+       (t
+        (create-invite-request :name name
+                               :email email
+                               :address address
+                               :offering offering
+                               :into into
+                               :events (when events t)
+                               :resources (when resources t)
+                               :invite (when invite t)
+                               :gratitude (when gratitude t)
+                               :other other)
+        (flash "Thanks for your interest in joining Kindista! We'll email you after we have a chance to look over your invitation request.")
+        (see-other "/home"))))))
