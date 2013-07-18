@@ -97,7 +97,29 @@
 (defun post-admin-invite-request (id)
   (require-admin
     (let* ((request-id (parse-integer id))
-           (request (db request-id)))
+           (request (db request-id))
+           (text (strcat
+                   (awhen (post-parameter "message")
+                     (strcat
+                       it
+                       #\return
+                       #\linefeed
+                       #\linefeed
+                       ))
+                   (awhen (getf request :offering)
+                     (strcat
+                       "For your reference, here is the text you entered "
+                       "about resources you might share on Kindista: "
+                       #\return
+                       #\linefeed
+                       #\linefeed
+                       it
+                       #\return
+                       #\linefeed
+                       #\linefeed
+                       "Save this email so you can cut and paste your text "
+                       "into the new offers you post on Kindista."
+                       )))))
       (cond
         ((post-parameter "delete")
          (confirm-delete :url (strcat "/admin/invite-request/" request-id)
@@ -112,7 +134,7 @@
          (see-other "/admin/invite-requests"))
         ((post-parameter "invite")
          (let ((invitation-id (create-invitation (getf request :email)
-                                                 :text (post-parameter "message")
+                                                 :text text
                                                  :invite-request-id request-id
                                                  :expires 5184000
                                                  :host +kindista-id+

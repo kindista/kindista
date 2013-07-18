@@ -177,6 +177,7 @@ Thanks for sharing your gifts with us!
   (html
     (:p :style *style-p*
       "Hi " (str name) ","
+      (:br)
       "Here is the invitation you requested to join Kindista!")
 
     (:p :style *style-p*
