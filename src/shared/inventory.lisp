@@ -533,7 +533,10 @@
 
 (defun nearby-inventory-top-tags (type &key (count 9) (more t) base (subtag-count 4) q)
   (multiple-value-bind (nearby items)
-      (nearby-inventory-items type :base base :subtag-count subtag-count :q q)
+      (nearby-inventory-items type :base base
+                                   :subtag-count subtag-count
+                                   :q q
+                                   :distance (user-rdist))
     (let* ((tags (sort (if base
                          nearby
                          (remove-if-not #'top-tag-p nearby :key #'first))
