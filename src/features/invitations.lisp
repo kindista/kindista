@@ -92,6 +92,21 @@
             (awhen (getf (db id) :recipient-email)
               (collect it))))))
 
+(defun emails-awaiting-rsvp ()
+  (let ((kindista-invites nil)
+        (user-invites nil))
+    (dolist (invite-id (hash-table-values *invitation-index*))
+      (let* ((invite (db (car invite-id)))
+              (email (getf invite :recipient-email)))
+        (unless (member email (hash-table-keys *email-index*) :test #'string=)
+          (case (getf invite :host)
+            (2 (pushnew email kindista-invites :test #'string=))
+            (t (pushnew email user-invites :test #'string=))))))
+    (values kindista-invites
+            user-invites
+            (length kindista-invites)
+            (length user-invites))))
+
 (defun invite-page (&key emails text next-url)
   (standard-page "Invite friends"
     (html

@@ -31,6 +31,7 @@
                 :serial t
                 :components ((:file "package")
                              (:file "helpers")
+                             (:file "metrics")
                              (:file "settings")
                              (:module db
                               :serial t
