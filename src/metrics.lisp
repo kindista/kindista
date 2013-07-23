@@ -73,3 +73,19 @@
   (hash-table-count *invitation-index*))
 
 
+(defun gratitude-texts ()
+  (loop for result in (hash-table-values *db-results*)
+        when (eq (result-type result) :gratitude)
+        collect (cons (result-id result) (db (result-id result) :text))))
+
+(defun eugene-members ()
+  (with-location
+    (length
+      (iter (for person in *active-people-index*)
+        (let* ((person (db person))
+               (lat (getf person :lat))
+               (long (getf person :long)))
+          (when (and lat
+                     long
+                     (< (air-distance *latitude* *longitude* lat long) 25))
+            (collect person)))))))
