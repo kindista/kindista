@@ -27,7 +27,7 @@
           (:input :type "text" :name "username" :value (get-parameter "retry"))
           (:label :for "password" "Password")
           (:input :type "password" :name "password")
-          (:input :type "submit" :value "Log in")
+          (:button :type "submit" :class "yes" "Log in")
           (:a :href "/reset" "Forgot your password?"))))))
 
 (defun donate-sidebar ()

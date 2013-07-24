@@ -168,9 +168,9 @@
       (:div :class "item"
        (:h2 "Who would you like to write about?")
        (:h3 "Search for a person")
-       (:form :method "post" :action "/gratitude/new"
+       (:form :method "post" :class "new-gratitude" :action "/gratitude/new"
          (:input :type "text" :name "name")
-         (:input :type "submit" :class "submit" :name "search" :value "Search")
+         (:button :type "submit" :class "submit yes" :name "search" "Search")
 
          (if (eq results 'none)
            (progn
