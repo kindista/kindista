@@ -150,6 +150,9 @@
             (t
                (setf new-id
                      (if (integerp invite-request-id)
+                       ;for legacy invitation requests
+                       ;this can be removed when there are no 
+                       ;invite requests in *invite-request-index*
                        (let ((it invite-request-id))
                          (progn
                            (modify-db it :type :person
@@ -182,4 +185,19 @@
                  (add-contact new-id host))
                (add-contact host new-id)
                (delete-invitation id)
-               (see-other "/home"))))))))
+               (see-other "/home"))))
+    (labels ((try-again (e)
+               (signup-page :error e :name name :email email)))
+    (cond
+      (not (validate-name name)
+        (try-again "Please use your full name"))
+      (not (scan +email-scanner+ email)
+        (try-again "There was a problem with the email address you entered. Please use a valid email address."))
+      (not (string= emal (post-parameter "email-2"))
+        (try-again "Your email confirmation did not match the email you entered"))
+      (t
+       (flash "We have sent an invitation to the email address you entered. Please check your email and follow the instructions we sent you to complete the sign-up process.")
+       )
+      )
+      )
+    ))))
