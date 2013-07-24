@@ -179,13 +179,17 @@
                                      :paginate paginate)))
         (if (= distance 0)
           (show-local-events
-            (sort (copy-list *event-index*) #'< :key #'event-imminence))
+            (remove-if #'stale-eventp
+                           (sort (copy-list *event-index*) #'< :key #'result-time)))
 
-          (show-local-events (sort (geo-index-query *event-geo-index*
-                                                    *latitude*
-                                                    *longitude*
-                                                    distance)
-                                     #'< :key #'event-imminence)))))))
+
+          (show-local-events 
+            (remove-if #'stale-eventp
+                       (sort (geo-index-query *event-geo-index*
+                                              *latitude*
+                                              *longitude*
+                                              distance)
+                               #'< :key #'result-time))))))))
 
 (defun events-rightbar ()
   (html
