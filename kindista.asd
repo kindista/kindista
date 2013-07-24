@@ -83,7 +83,6 @@
                                            (:file "people")
                                            (:file "privacy")
                                            (:file "requests")
-                                           (:file "request-invitation")
                                            (:file "reset-password")
                                            (:file "root")
                                            (:file "search")
