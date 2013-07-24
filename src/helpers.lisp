@@ -108,7 +108,7 @@
 (defun event-imminence (item)
   (let ((imminence (- (or (result-time item) 0)
                       (- (get-universal-time) +day-in-seconds+))))
-    (when (> imminence 0)) imminence))
+    (when (> imminence 0) imminence)))
 
 (defun event-rank (item)
   (let ((contacts (getf *user* :following))
