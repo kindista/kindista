@@ -387,9 +387,20 @@
                   "Post a request"))
     (html
       (:div :class "item"
-         (:h2 (if (string= selected "offers")
-                (str "Please describe your offer")
-                (str "Please describe your request")))
+         (if (string= selected "offers")
+           (if (getf *user* :pending)
+             (htm (:h2 "Post an offer")
+                  (:p "Now that you have created a Kindista account, "
+                   "please post some offers for your local community. "
+                   "After we review your initial offers and confirm that "
+                   "you're not a spammer, we'll let you send messages to "
+                   "other Kindista users.")
+                  (:p (:strong "Please note: this offer will not be "
+                       "be displayed on Kindista until we have a chance "
+                       "to review your account. "))
+                  (:h3 "Please describe your offer"))
+             (htm (:h2 "Please describe your offer")))
+           (htm (:h2 "Please describe your request")))
          (:form :method "post" :action action
            (dolist (tag tags)
              (htm (:input :type "hidden" :name "tag" :value tag)))

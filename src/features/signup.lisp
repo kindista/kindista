@@ -22,7 +22,7 @@
     "Sign up"
     (html
       (:h2 "Sign up for Kindista ")
-      (:h3 "Step One: Verify Your Email Address")
+      (:h3 "Step 1 of 3: Verify Your Email Address")
       (:p (:em
             (:strong "Please note: ")
             "To prevent spam and abuse, some features on "
@@ -30,8 +30,8 @@
             "offers, or after another Kindista member vouches for you. "
             (:br)
             (:strong :class "red"
-             " If you have already recieved an invitation from a "
-             "friend to join Kindista, please follow the link in your "
+             " If you have already recieved an invitation to join Kindista "
+             "from us or from a friend , please follow the link in your "
              "invitation email instead of filling out this form.")))
       (:form :method "POST" :action "/signup" :id "signup"
         (when error
@@ -51,20 +51,24 @@
         (:br)
         (:button :class "yes" :type "submit" "Sign up") 
 
-        (:span "Have an account? " (:a :href "/login" "Log in"))))))
+        (:span "Already have an account? " (:a :href "/login" "Log in"))))))
 
-(defun email-verification-page (&key error name email token)
+(defun email-verification-page (&key error name email token host)
   (standard-page
     "Sign up"
     (html
-      (:h2 "Please RSVP to your invitation. ")
+      (if (eq host +kindista-id+)
+        (htm (:h2 "Create a Kindista account")
+             (:h3 "Step 2 of 3: Set your password"))
+        (htm (:h2 "Please RSVP to your invitation. ")))
       (:p "Your activation code is:  " (:strong (str token))
         (:br) "Your email address is: " (:strong (str email)))
       (:p "You will be able to change your email address on the Settings page after you sign up.")
       (:form :method "POST" :action "/signup" :id "signup"
         (:input :type "hidden" :name "token" :value token)
         (:input :type "hidden" :name "email" :value email)
-        (:h2 "Create an account")
+        (unless (eq host +kindista-id+)
+          (htm (:h2 "Create an account")))
         (when error
           (flash error :error t))
         (:label :for "name" "Full Name") 
@@ -81,7 +85,7 @@
         (:br)
         (:button :class "yes" :type "submit" "Sign up") 
 
-        (:span "Have an account? " (:a :href "/login" "Log in"))))
+        (:span "Already have an account? " (:a :href "/login" "Log in"))))
 
     :top (when (get-parameter "action")
            (welcome-bar
@@ -97,17 +101,19 @@
            (get-token (get-parameter "token"))
            (invitation-id (car (gethash get-token *invitation-index*)))
            (invitation (db invitation-id))
+           (host (getf invitation :host))
            (valid-email (getf invitation :recipient-email))
            (name (getf invitation :name)))
-      (cond 
-        (*user* 
-         (see-other "/home")) 
+      (cond
+        (*user*
+         (see-other "/home"))
         ((or (not get-token)
              (not (string= valid-email get-email)))
          (signup-page))
-        (t 
+        (t
          (email-verification-page :email get-email
                       :token get-token
+                      :host host
                       :name name))))))
 
 (defun post-signup ()
@@ -126,7 +132,8 @@
                    (email-verification-page :error e
                                             :name name
                                             :email email
-                                            :token token)))
+                                            :token token
+                                            :host host)))
           (cond
             ((not (string= (getf invitation :recipient-email) email))
              (try-again "The invitation you are using belongs to a different email address. 
@@ -177,6 +184,7 @@
                            (index-person it (db it))
                            it))
                        (create-person :name (post-parameter "name")
+                                      :pending (when (eq host +kindista-id+) t)
                                       :host host
                                       :email (post-parameter "email")
                                       :password (post-parameter "password"))))
@@ -186,18 +194,19 @@
                (add-contact host new-id)
                (delete-invitation id)
                (see-other "/home"))))
+
     (labels ((try-again (e)
                (signup-page :error e :name name :email email)))
-    (cond
-      (not (validate-name name)
-        (try-again "Please use your full name"))
-      (not (scan +email-scanner+ email)
-        (try-again "There was a problem with the email address you entered. Please use a valid email address."))
-      (not (string= emal (post-parameter "email-2"))
-        (try-again "Your email confirmation did not match the email you entered"))
-      (t
-       (flash "We have sent an invitation to the email address you entered. Please check your email and follow the instructions we sent you to complete the sign-up process.")
-       )
-      )
-      )
-    ))))
+      (cond
+        ((not (validate-name name))
+         (try-again "Please use your full name"))
+        ((not (scan +email-scanner+ email))
+         (try-again "There was a problem with the email address you entered. Please use a valid email address."))
+        ((not (string= email (post-parameter "email-2")))
+         (try-again "Your email confirmation did not match the email you entered"))
+        (t
+         (create-invitation email :host +kindista-id+
+                                  :name name
+                                  :expires (* 60 +day-in-seconds+))
+         (flash "We have sent an invitation to the email address you entered. Please check your email and follow the instructions we sent you to complete the sign-up process.")
+         (see-other "/home"))))))))

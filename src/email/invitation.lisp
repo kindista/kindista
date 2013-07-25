@@ -167,6 +167,11 @@ text "\"
              "token" token)
 
 "
+As a reminder, in an effort to prevent spam some features may not be "
+"available until someone on Kindista vouches for you, or until you "
+"post some offers and we have time to review them. 
+"
+"
 Thanks for sharing your gifts with us!
 "
 "-The Kindista Team"))
@@ -207,6 +212,10 @@ Thanks for sharing your gifts with us!
                 (str (url-compose (s+ +base-url+ "signup")
                                   "email" email
                                   "token" token))))
+    (:p :style *style-p*
+      "As a reminder, in an effort to prevent spam some features may not be "
+      "available until someone on Kindista vouches for you, or until you "
+      "post some offers and we have time to review them." )
 
     (:p :style *style-p*
       "Thanks for sharing your gifts with us!")

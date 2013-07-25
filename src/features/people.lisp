@@ -26,11 +26,12 @@
     *active-people-index*
     :test #'equal))
 
-(defun create-person (&key name email password host)
+(defun create-person (&key name email password host (pending nil))
   (insert-db `(:type :person
                :name ,name
                :emails ,(list email)
                :host ,host
+               :pending ,pending
                :active t
                :help t
                :pass ,(new-password password)

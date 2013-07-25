@@ -1633,8 +1633,13 @@ menu.bar li a {
 }
 
 .setup input[type=text] {
+ margin-right: 0.7em;
  width:35em;
  max-width: 100%;
+}
+
+.setup button {
+ vertical-align: middle;
 }
 
 #guest-actions {

@@ -20,12 +20,12 @@
 (defun new-invitation-notice-handler ()
   (let* ((invitation-id (getf (cddddr *notice*) :id))
          (invitation (db invitation-id))
-         (request-id (getf invitation :invite-request-id))
+         (host (getf invitation :host))
          (self (getf invitation :self)))
    (cond
      (self
        (send-email-verification invitation-id))
-     (request-id
+     ((eq host +kindista-id+)
        (send-requested-invite-email invitation-id))
      (t
       (send-invitation-email invitation-id)))))

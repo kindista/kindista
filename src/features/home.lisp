@@ -95,8 +95,15 @@
                     (:span :class "menu-button" " (click the button on the header) ")
                     (:span :class "menu-showing" " on the left ")
                     " to explore the site.")
-                (:p "Because we don't have the resources to fight spam, to create a Kindista account you will need an invitation from an existing Kindista member. Or, you can "
-                    (:a :href "/request-invitation" (:strong "fill out an application")) "."))
+                (:p "Because we don't have the resources to fight spam, "
+                 "we prefer that you sign up using an invitation from an "
+                 "existing Kindista member. "
+                 "If you don't know anyone currently on Kindista, go ahead and "
+                 (:a :href "/signup" (:strong "sign up"))
+                 ". "
+                 "Please be aware that some features may not be available to "
+                 "you until you post some offers and we have time to review "
+                 "them to make sure you're not a spammer."))
               nil))
            ((getf *user* :help)
             (welcome-bar
@@ -123,7 +130,11 @@
     (html
       (:div :class "item"
         (:div :class "setup"
-          (:h2 "Welcome to Kindista!")
+          (if (getf *user* :pending)
+            (htm 
+              (:h2 "Complete your account")
+              (:h3 "Step 3 of 3: Enter your location"))
+            (htm (:h2 "Welcome to Kindista!")))
           (:p "Kindista is a social network for " (:strong "building and supporting real community") ".
                We use your location to help you find " (:strong "local people, offers, and events") ".
                To get started, we need to know where you call home.")
@@ -135,12 +146,16 @@
             (:small
               "Enter a street address and click \"Next\". We'll show you a map to confirm the location."))
           (:form :method "post" :action "/settings"
-            (:input :type "hidden" :name "next" :value "/home")
+            (:input :type "hidden"
+                     :name "next"
+                     :value (if (getf *user* :pending)
+                              "/offers/new"
+                              "/home"))
             (:input :type "text" 
                     :name "address" 
                     :placeholder "1600 Pennsylvania Avenue NW, Washington, DC"
                     :value (getf *user* :address))
-            (:input :type "submit" :value "Next")))))
+            (:button :type "submit" :class "submit yes" "Next")))))
     :selected "home"))
 
 (defun get-home ()
