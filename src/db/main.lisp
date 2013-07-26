@@ -420,15 +420,17 @@
              ((statements ())
               (item items (cddr item)))
              ((not (and (car item) (symbolp (car item)))) statements)
-             
-             (push `(let ((it (getf ,data ,(car item)))) 
+             (push `(let ((it (getf ,data ,(car item))))
                       (setf (getf ,data ,(car item)) ,(cadr item))) statements))
          (update-db ,id ,data)))))
 
 (defun insert-db (data)
   (let ((id (with-mutex (*db-top-lock*) (incf *db-top*))))
     (update-db id data)
-    (index-item id data)
+    (if (getf *user* :pending)
+      (with-locked-hash-table (*pending-person-items-index*)
+        (push (list id nil data) (gethash *userid* *pending-person-items-index*)))
+      (index-item id data))
     id))
 
 (defun remove-from-db (id)

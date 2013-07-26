@@ -248,12 +248,18 @@
             (post-parameter "text"))
 
        (if (intersection tags *top-tags* :test #'string=)
-         (see-other
-           (format nil (s+ "/" type "s/~A")
-             (create-inventory-item :type (if (string= type "request") :request
-                                                                       :offer)
-                                    :text (post-parameter "text")
-                                    :tags tags)))
+         (let ((new-id (create-inventory-item
+                         :type (if (string= type "request") :request
+                                                            :offer)
+                         :text (post-parameter "text")
+                         :tags tags)))
+           (if (getf *user* :pending)
+             (progn
+               new-id
+               (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. Thank you for your patience.")
+               (see-other "/home"))
+             (see-other
+              (format nil (strcat "/" type "s/" new-id)))))
 
          (enter-inventory-tags :title (s+ "Preview your " type)
                                :text (post-parameter "text")
@@ -385,22 +391,18 @@
     (or title (if (string= type "offer")
                   "Post an offer"
                   "Post a request"))
-    (html
-      (:div :class "item"
-         (if (string= selected "offers")
-           (if (getf *user* :pending)
-             (htm (:h2 "Post an offer")
-                  (:p "Now that you have created a Kindista account, "
-                   "please post some offers for your local community. "
-                   "After we review your initial offers and confirm that "
-                   "you're not a spammer, we'll let you send messages to "
-                   "other Kindista users.")
-                  (:p (:strong "Please note: this offer will not be "
-                       "be displayed on Kindista until we have a chance "
-                       "to review your account. "))
-                  (:h3 "Please describe your offer"))
-             (htm (:h2 "Please describe your offer")))
-           (htm (:h2 "Please describe your request")))
+    (let ((type (or type (if (string= selected "offers")
+                           "offer"
+                           "request"))))
+      (html
+       (:div :class "item"
+         (str (pending-disclaimer type))
+         (when (getf *user* :pending)
+           (htm (:p "Now that you have created a Kindista account, "
+                 "please post some "
+                 (str type)
+                 "s for your local community. ")))
+         (:h2 (str (s+ "Please describe your " type)))
          (:form :method "post" :action action
            (dolist (tag tags)
              (htm (:input :type "hidden" :name "tag" :value tag)))
@@ -408,8 +410,8 @@
              (htm (:input :type "hidden" :name "next" :value next)))
            (:textarea :cols "40" :rows "8" :name "text" (str text))
            (:p  (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
-           (:button :class "yes" :type "submit" :class "submit" :name "post" "Next")))))
-   :selected selected))
+           (:button :class "yes" :type "submit" :class "submit" :name "post" "Next"))))))
+    :selected selected))
 
 (defun enter-inventory-tags (&key title action text error tags button-text selected next)
   ; show the list of top-level tags
@@ -422,6 +424,7 @@
     (standard-page title
      (html
        (:div :class "item" :id "edit-tags"
+        (str (pending-disclaimer))
         (:h2 (str title) )
         (when error
           (htm

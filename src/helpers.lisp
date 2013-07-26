@@ -207,3 +207,17 @@
 
 (defun name-list-all (ids)
   (format nil *english-list* (mapcar #'person-link ids)))
+
+(defun pending-disclaimer (&optional type)
+  (when (getf *user* :pending)
+    (html
+      (:p :class "err"
+        (:em (:strong "Please note: ")
+          "This "
+          (str (aif type it "item"))
+          " will be displayed on Kindista after we have a chance to review "
+          "your account and confirm that you're not a spammer. "
+          "You also won't be able to send messages to other Kindista members "
+          "until you post some offers and we have a chance to review your "
+          "initial activity."))
+      (:br))))

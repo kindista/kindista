@@ -126,6 +126,7 @@
     (standard-page
      (if existing-url "Edit your statement of gratitude" "Express gratitude")
      (html
+       (str (pending-disclaimer "statement of gratitude"))
        (:div :class "item"
         (:h2 (str (if existing-url "Edit your statement of gratitude"
                                    "Express gratitude")))
@@ -166,6 +167,7 @@
     "Express gratitude"
     (html
       (:div :class "item"
+       (str (pending-disclaimer "statement of gratitude"))
        (:h2 "Who would you like to write about?")
        (:h3 "Search for a person")
        (:form :method "post" :class "new-gratitude" :action "/gratitude/new"

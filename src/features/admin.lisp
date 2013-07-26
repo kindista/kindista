@@ -31,10 +31,74 @@
         (:div :id "admin-page"
           (:h1 "Admin")
           (:ul
+            (:li (:a :href "/admin/pending-accounts" "pending accounts to review"))
             (:li (:a :href "/admin/invite-requests" "invitation requests"))
             (:li (:a :href "/admin/recent" "recently added"))
             (:li (:a :href "/admin/sendmail" "send email to everyone")))))
       :selected "admin")))
+
+(defun get-admin-pending-accounts ()
+  (require-admin
+    (standard-page
+      "Pending Accounts"
+      (html
+        (:p (:a :href "/admin" "back to admin"))
+        (:h2 "Kindista Accounts Pending Admin Approval")
+        (dolist (id (hash-table-keys *pending-person-items-index*))
+          (let ((person (db id))
+                (link (person-link id))
+                (items (gethash id *pending-person-items-index*)))
+            (str
+              (card
+                (html
+                  (:p (str link)
+                    " joined "
+                    (str (humanize-universal-time (getf person :created))))
+                  (:p (:strong "Location: ") (str (awhen (getf person :address) it)))
+                  (dolist (item items)
+                    (let ((data (cdr item)))
+                      (htm
+                        (:div :class "item pending-account"
+                          (case (getf data :type)
+                            (:gratitude
+                              (htm
+                                (str (timestamp (getf data :created)))
+                                (:p (str link)
+                                 " posted a statement of gratitude about "
+                                 (str (name-list-all (getf data :subjects))))
+                                (:blockquote :class "review-text"
+                                  (str (getf data :text)))))
+                            (:offer
+                              (htm
+                                (str (timestamp (getf data :created)))
+                                (:p (str link)
+                                 " posted an offer")
+                                (:blockquote :class "review-text"
+                                  (str (getf data :text)))
+                                (:p (:strong "Tags: ")
+                                 (str (format nil *english-list* (getf data :tags))))))
+                            (:request
+                              (htm
+                                (str (timestamp (getf data :created)))
+                                (:p (str link)
+                                 " posted a request")
+                                (:blockquote :class "review-text"
+                                  (str (getf data :text)))
+                                (:p (:strong "Tags: ")
+                                 (str (format nil *english-list* (getf data :tags)))))))))))
+                   (htm
+                     (:div :class "confirm-invite"
+                     (:form :method "post" 
+                          :action (strcat "/admin/pending-accounts/" id)
+                     (:textarea :cols "150" :rows "5" :name "message" :placeholder "Personal message to this person along with the approval... (optional)")
+                     (:button :type "submit"
+                              :name "delete"
+                              :class "cancel"
+                              "Delete spammer")
+                     (:button :type "submit"
+                              :name "invite"
+                              :class "yes"
+                              "Approve account")))))))))))))
 
 (defun get-admin-invite-requests ()
   (require-admin

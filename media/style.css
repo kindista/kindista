@@ -304,6 +304,10 @@ textarea {
  display: block;
 }
 
+.pending-account blockquote.review-text {
+ margin-top: 1em;
+}
+
 .confirm-invite div {
  max-width: 100em;
 }
@@ -324,8 +328,9 @@ textarea {
  box-shadow: 1px 1px 1px rgba(0,0,0,0.1);
 }
 
-.flash.err {
+.err {
  background:#f7dada;
+ padding: 1em;
 }
 
 .flash p {
