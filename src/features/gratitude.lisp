@@ -27,8 +27,9 @@
                                        :subjects ,subjects
                                        :text ,text
                                        :created ,time))))
-    (notice :new-gratitude :time time
-                           :id gratitude)
+    (unless (getf *userid* :pending)
+      (notice :new-gratitude :time time
+                             :id gratitude))
     gratitude))
 
 (defun index-gratitude (id data)

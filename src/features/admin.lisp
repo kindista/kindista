@@ -17,6 +17,11 @@
 
 (in-package :kindista)
 
+(defun account-approval-notice-handler ()
+  (let ((data (cdddr *notice*)))
+   (send-account-approval-email (getf data :id)
+                               :text (getf data :text))))
+
 (defmacro require-admin (&body body)
   `(with-user
      (if (getf *user* :admin)
@@ -45,18 +50,22 @@
         (:p (:a :href "/admin" "back to admin"))
         (:h2 "Kindista Accounts Pending Admin Approval")
         (dolist (id (hash-table-keys *pending-person-items-index*))
-          (let ((person (db id))
-                (link (person-link id))
-                (items (gethash id *pending-person-items-index*)))
+          (let* ((person (db id))
+                 (email (first (getf person :emails)))
+                 (link (person-link id))
+                 (items (gethash id *pending-person-items-index*)))
             (str
               (card
                 (html
                   (:p (str link)
                     " joined "
                     (str (humanize-universal-time (getf person :created))))
+                  (:p (:strong "ID: ") (str id))
+                  (:p (:strong "Email: ")
+                   (:a :href (s+ "mailto:" email) (str email)))
                   (:p (:strong "Location: ") (str (awhen (getf person :address) it)))
                   (dolist (item items)
-                    (let ((data (cdr item)))
+                    (let ((data (db item)))
                       (htm
                         (:div :class "item pending-account"
                           (case (getf data :type)
@@ -86,19 +95,53 @@
                                   (str (getf data :text)))
                                 (:p (:strong "Tags: ")
                                  (str (format nil *english-list* (getf data :tags)))))))))))
-                   (htm
-                     (:div :class "confirm-invite"
-                     (:form :method "post" 
-                          :action (strcat "/admin/pending-accounts/" id)
-                     (:textarea :cols "150" :rows "5" :name "message" :placeholder "Personal message to this person along with the approval... (optional)")
-                     (:button :type "submit"
-                              :name "delete"
-                              :class "cancel"
-                              "Delete spammer")
-                     (:button :type "submit"
-                              :name "invite"
-                              :class "yes"
-                              "Approve account")))))))))))))
+                  (:div :class "confirm-invite"
+                    (:form :method "post" 
+                           :action (strcat "/admin/pending-accounts/" id)
+                      (:textarea :cols "150" :rows "5" :name "message" :placeholder "Personal message to this person along with the approval... (optional)")
+                      (:p (:strong (:em "Please email the user with the email link above before deleting their account!")))
+                      (:button :type "submit"
+                               :name "delete"
+                               :class "cancel"
+                               "Delete spammer")
+                      (:button :type "submit"
+                               :name "approve"
+                               :class "yes"
+                               "Approve account"))))))))))))
+
+(defun post-admin-pending-account (id)
+  (require-admin
+    (let* ((userid (parse-integer id))
+           (user (db userid)))
+      (cond
+        ((post-parameter "delete")
+         (confirm-delete :url (strcat "/admin/pending-accounts/" userid)
+                         :next-url "/admin/pending-accounts"
+                         :type (strcat "user account (" userid ")")))
+        ((post-parameter "really-delete")
+         (delete-pending-account userid)
+         (flash (strcat "Pending account " userid " has been deleted."))
+         (see-other "/admin/pending-accounts"))
+        ((post-parameter "approve")
+         (modify-db userid :pending nil)
+         (let ((item-ids (gethash id *pending-person-items-index*)))
+            (dolist (item-id item-ids)
+              (let ((item (db item-id)))
+                (case (getf item :type)
+                  (:gratitude
+                    (notice :new-gratitude :time (getf item :created)
+                                           :id item-id)))
+                (index-item item-id item)))
+           (with-locked-hash-table (*pending-person-items-index*)
+             (remhash id *pending-person-items-index*)))
+         (notice :account-approval :time (get-universal-time)
+                                   :id userid
+                                   :text (post-parameter "message"))
+         (flash (strcat "You have approved "
+                        (getf user :name)
+                        "'s account: "
+                        userid))
+         (see-other "/admin/pending-accounts"))))))
 
 (defun get-admin-invite-requests ()
   (require-admin

@@ -192,6 +192,12 @@
                   :notify-reminders t
                   :notify-gratitude t)))
 
+(defun delete-pending-account (id)
+  (with-locked-hash-table (*pending-person-items-index*)
+    (dolist (item (hash-table-keys *pending-person-items-index*))
+      (remove-from-db item))
+    (remhash id *pending-person-items-index*)))
+
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)
       (write-to-string id)))

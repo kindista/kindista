@@ -27,6 +27,7 @@
 (defun load-notice-handlers ()
   (clrhash *notice-handlers*)
   (add-notice-handler :all #'log-notice)
+  (add-notice-handler :account-approval #'account-approval-notice-handler)
   (add-notice-handler :new-comment #'new-comment-notice-handler)
   (add-notice-handler :new-feedback #'new-feedback-notice-handler)
   (add-notice-handler :new-invitation #'new-invitation-notice-handler)
