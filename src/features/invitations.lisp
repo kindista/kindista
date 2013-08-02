@@ -148,11 +148,15 @@
               (:button :class "yes" :type "submit" :class "submit" :name "confirm" "Send Invitation" (str pluralize)))))))))
 
 (defun get-invite ()
-  (require-user
-    (invite-page :emails (get-parameter "email"))))
+  (require-active-user
+    (if (getf *user* :pending)
+       (progn
+         (pending-flash "invite people to join Kindista")
+         (see-other (or (referer) "/home")))
+      (invite-page :emails (get-parameter "email")))))
 
 (defun post-invite ()
-  (require-user
+  (require-active-user
     (let* ((next-url (post-parameter "next-url"))
            (emails (remove-duplicates 
                      (emails-from-string (post-parameter "bulk-emails"))
@@ -164,6 +168,10 @@
                                        member-emails
                                        :test #'string=)))
     (cond
+      ((getf *user* :pending)
+       (pending-flash "invite people to join Kindista")
+       (see-other (or next-url "/home")))
+
       ((post-parameter "cancel")
        (see-other next-url))
 

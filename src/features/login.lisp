@@ -41,16 +41,29 @@
 
 (defun post-login ()
   (with-token
-    (let ((user (post-parameter "username"))
-          (next (post-parameter "next")))
-      (if (find #\@ user :test #'equal)
-        (setf user (gethash user *email-index*))
-        (setf user (gethash user *username-index*)))
+    (let ((username (post-parameter "username"))
+          (next (post-parameter "next"))
+          (user nil))
+      (if (find #\@ username :test #'equal)
+        (setf user (gethash username *email-index*))
+        (setf user (gethash username *username-index*)))
       (cond
         ((password-match-p user (post-parameter "password"))
          (setf (token-userid *token*) user)
          (notice :login)
-         (see-other (or (post-parameter "next") "/home")))
+         (see-other (or next "/home")))
+        ((gethash username *banned-emails-index*)
+         (flash (s+ "The email you have entered, "
+                    user
+                    ",is associated with an account "
+                    "that has been banned for posting inappropriate "
+                    "content or otherwise violating Kindista's "
+                    "Terms of Use. "
+                    "If you believe this to be an error, please email us"
+                    "so we can resolve this issue.")
+                :error t)
+         (see-other "/home"))
+
         (t
          (setf (return-code*) +http-see-other+)
          (setf (header-out :location) "/home")

@@ -18,7 +18,8 @@
 (in-package :kindista)
 
 (defun account-approval-notice-handler ()
-  (let ((data (cdddr *notice*)))
+  (let ((data (cddddr *notice*)))
+    (pprint *notice*)
    (send-account-approval-email (getf data :id)
                                :text (getf data :text))))
 
@@ -124,18 +125,16 @@
          (see-other "/admin/pending-accounts"))
         ((post-parameter "approve")
          (modify-db userid :pending nil)
-         (let ((item-ids (gethash id *pending-person-items-index*)))
+         (let ((item-ids (gethash userid *pending-person-items-index*)))
             (dolist (item-id item-ids)
               (let ((item (db item-id)))
                 (case (getf item :type)
                   (:gratitude
-                    (notice :new-gratitude :time (getf item :created)
-                                           :id item-id)))
+                    (notice :new-gratitude :id item-id)))
                 (index-item item-id item)))
            (with-locked-hash-table (*pending-person-items-index*)
-             (remhash id *pending-person-items-index*)))
-         (notice :account-approval :time (get-universal-time)
-                                   :id userid
+             (remhash userid *pending-person-items-index*)))
+         (notice :account-approval :id userid
                                    :text (post-parameter "message"))
          (flash (strcat "You have approved "
                         (getf user :name)

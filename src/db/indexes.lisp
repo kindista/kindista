@@ -38,6 +38,7 @@
 (defindex *activity-person-index*)
 (defindex *comment-index*)
 (defindex *email-index* :test 'equalp)
+(defindex *banned-emails-index* :test 'equalp)
 (defindex *event-geo-index*)
 (defindex *event-stem-index* :test 'equalp)
 (defindex *followers-index*)

@@ -208,6 +208,13 @@
 (defun name-list-all (ids)
   (format nil *english-list* (mapcar #'person-link ids)))
 
+(defun pending-flash (action)
+  (flash (s+ "Your account hasn't been fully activated yet. "
+             "If you haven't already done so, please post some offers. "
+             "After we review your initial activity you will be able to "
+             action ".")
+         :error t))
+
 (defun pending-disclaimer (&optional type)
   (when (getf *user* :pending)
     (html

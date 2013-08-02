@@ -138,6 +138,17 @@
             ((not (string= (getf invitation :recipient-email) email))
              (try-again "The invitation you are using belongs to a different email address. 
     Please use the correct email address or find someone you know on Kindista and request an invitation."))
+            ((gethash email *banned-emails-index*)
+             (flash (s+ "The email you have entered, "
+                        email
+                        ",is associated with an account "
+                        "that has been banned for posting inappropriate "
+                        "content or otherwise violating Kindista's "
+                        "Terms of Use. "
+                        "If you believe this to be an error, please email us"
+                        "so we can resolve this issue.")
+                    :error t)
+             (see-other "/home"))
 
             ((gethash email *email-index*)
              (try-again "The email address you have entered already belongs to another Kindista member. Please try again, or contact us if this really is your email address."))

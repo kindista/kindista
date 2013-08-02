@@ -199,7 +199,11 @@
 
 (defun get-events-new ()
   (require-active-user
-    (enter-event-details)))
+    (if (getf *user* :pending)
+      (progn
+        (pending-flash "post events on Kindista")
+        (see-other (or (referer) "/home")))
+      (enter-event-details))))
 
 (defun enter-event-details (&key error date time location title details existing-url)
   (standard-page
@@ -319,6 +323,10 @@
                                                    :time time
                                                    :error e)))
         (cond
+         ((getf *user* :pending)
+          (pending-flash "post events on Kindista")
+          (see-other (or (referer) "/home")))
+
          ((post-parameter "cancel")
           (see-other (or (post-parameter "next") "/home")))
 
@@ -394,7 +402,7 @@
     (not-found)))
 
 (defun post-event (id)
-  (require-user
+  (require-active-user
     (let* ((id (parse-integer id))
            (item (db id))
            (old-location (getf item :address))

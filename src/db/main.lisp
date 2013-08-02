@@ -427,11 +427,7 @@
 (defun insert-db (data)
   (let ((id (with-mutex (*db-top-lock*) (incf *db-top*))))
     (update-db id data)
-    (if (eq nil (or (getf *user* :pending)
-                    (getf (db *userid*) :pending)))
-      (index-item id data)
-      (with-locked-hash-table (*pending-person-items-index*)
-        (push id (gethash *userid* *pending-person-items-index*))))
+    (index-item id data)
     id))
 
 (defun remove-from-db (id)

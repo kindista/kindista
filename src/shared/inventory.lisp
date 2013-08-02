@@ -28,6 +28,7 @@
 (defun index-inventory-item (id data)
   (let* ((by (getf data :by))
          (type (getf data :type))
+         (pending (db by :pending))
          (result (make-result :latitude (or (getf data :lat) (getf (db (getf data :by)) :lat))
                               :longitude (or (getf data :long) (getf (db (getf data :by)) :long))
                               :id id
@@ -36,37 +37,43 @@
                               :time (or (getf data :edited) (getf data :created))
                               :tags (getf data :tags))))
 
-    (with-locked-hash-table (*db-results*)
-      (setf (gethash id *db-results*) result))
+    (cond
+      (pending
+       (with-locked-hash-table (*pending-person-items-index*)
+         (push id (gethash by *pending-person-items-index*))))
 
-    (if (eq type :offer)
-      (with-locked-hash-table (*offer-index*)
-        (push id (gethash by *offer-index*)))
-      (with-locked-hash-table (*request-index*)
-        (push id (gethash by *request-index*))))
+      (t
+       (with-locked-hash-table (*db-results*)
+         (setf (gethash id *db-results*) result))
 
-    (let ((stems (stem-text (getf data :text))))
-      (if (eq type :offer)
-        (with-locked-hash-table (*offer-stem-index*)
-          (dolist (stem stems)
-            (push result (gethash stem *offer-stem-index*))))
-        (with-locked-hash-table (*request-stem-index*)
-          (dolist (stem stems)
-            (push result (gethash stem *request-stem-index*))))))
+       (if (eq type :offer)
+         (with-locked-hash-table (*offer-index*)
+           (push id (gethash by *offer-index*)))
+         (with-locked-hash-table (*request-index*)
+           (push id (gethash by *request-index*))))
 
-    (with-locked-hash-table (*activity-person-index*)
-      (asetf (gethash by *activity-person-index*)
-             (sort (push result it) #'> :key #'result-time)))
+       (let ((stems (stem-text (getf data :text))))
+         (if (eq type :offer)
+           (with-locked-hash-table (*offer-stem-index*)
+             (dolist (stem stems)
+               (push result (gethash stem *offer-stem-index*))))
+           (with-locked-hash-table (*request-stem-index*)
+             (dolist (stem stems)
+               (push result (gethash stem *request-stem-index*))))))
 
-    (if (eq type :offer)
-      (geo-index-insert *offer-geo-index* result)
-      (geo-index-insert *request-geo-index* result))
+       (with-locked-hash-table (*activity-person-index*)
+         (asetf (gethash by *activity-person-index*)
+                (sort (push result it) #'> :key #'result-time)))
 
-    (unless (< (result-time result) (- (get-universal-time) 15552000))
-      (unless (< (result-time result) (- (get-universal-time) 2592000))
-        (with-mutex (*recent-activity-mutex*)
-          (push result *recent-activity-index*)))
-      (geo-index-insert *activity-geo-index* result))))
+       (if (eq type :offer)
+         (geo-index-insert *offer-geo-index* result)
+         (geo-index-insert *request-geo-index* result))
+
+       (unless (< (result-time result) (- (get-universal-time) 15552000))
+         (unless (< (result-time result) (- (get-universal-time) 2592000))
+           (with-mutex (*recent-activity-mutex*)
+             (push result *recent-activity-index*)))
+         (geo-index-insert *activity-geo-index* result))))))
 
 (defun modify-inventory-item (id &key text tags latitude longitude)
   (let* ((result (gethash id *db-results*))
@@ -153,39 +160,37 @@
                   (stem-text (s+ (getf data :title) " " (getf data :details)))
                   (stem-text (getf data :text)))))
 
-    (with-locked-hash-table (stem-index)
-      (dolist (stem stems)
-        (asetf (gethash stem stem-index)
-               (remove result it))))
+    (when result
+      (with-locked-hash-table (stem-index)
+        (dolist (stem stems)
+          (asetf (gethash stem stem-index)
+                 (remove result it))))
 
-    (geo-index-remove geo-index result)
+      (geo-index-remove geo-index result)
 
-    (if (eq type :event)
-      (with-mutex (*event-mutex*)
-        (asetf *event-index* (remove result it)))
-      (with-locked-hash-table (type-index)
-        (asetf (gethash (getf data :by) type-index)
-               (remove id it))))
+      (if (eq type :event)
+        (with-mutex (*event-mutex*)
+          (asetf *event-index* (remove result it)))
+        (with-locked-hash-table (type-index)
+          (asetf (gethash (getf data :by) type-index)
+                 (remove id it))))
 
-    (unless (eq type :event)
-      (delete-comments id)
+      (unless (eq type :event)
+        (with-locked-hash-table (*activity-person-index*)
+          (asetf (gethash (getf data :by) *activity-person-index*)
+                 (remove result it)))
+        (geo-index-remove *activity-geo-index* result)
+        (with-mutex (*recent-activity-mutex*)
+          (asetf *recent-activity-index* (remove id it :key #'result-id))))
 
       (with-locked-hash-table (*love-index*)
         (dolist (person-id (gethash id *love-index*))
           (amodify-db person-id :loves (remove id it))))
 
-      (with-locked-hash-table (*activity-person-index*)
-        (asetf (gethash (getf data :by) *activity-person-index*)
-               (remove result it)))
+      (with-locked-hash-table (*db-results*)
+        (remhash id *db-results*)))
 
-      (geo-index-remove *activity-geo-index* result)
-
-      (with-mutex (*recent-activity-mutex*)
-        (asetf *recent-activity-index* (remove id it :key #'result-id))))
-
-    (with-locked-hash-table (*db-results*)
-      (remhash id *db-results*))
-
+    (delete-comments id)
     (remove-from-db id)))
 
 (defun create-reply (&key on text (user *userid*))
@@ -256,7 +261,7 @@
            (if (getf *user* :pending)
              (progn
                new-id
-               (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. Thank you for your patience.")
+               (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
                (see-other "/home"))
              (see-other
               (format nil (strcat "/" type "s/" new-id)))))
@@ -401,7 +406,11 @@
            (htm (:p "Now that you have created a Kindista account, "
                  "please post some "
                  (str type)
-                 "s for your local community. ")))
+                 "s for your local community. "
+                 (:strong
+                   (:em "When posting multiple items, please enter them in "
+                     "separate " (str type) "s.")))
+                (:br)))
          (:h2 (str (s+ "Please describe your " type)))
          (:form :method "post" :action action
            (dolist (tag tags)
