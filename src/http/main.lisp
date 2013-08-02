@@ -192,8 +192,14 @@
 
 (defmacro require-user (&body body)
   `(with-user
+     (pprint *userid*)
+     
      (if *userid*
-       (progn ,@body)
+       (if (getf *user* :banned)
+         (progn
+           (flash "This account has been suspended for posting inappropriate content or otherwise violating Kindista's Terms of Use.  If you believe this to be an error please email us so we can resolve this issue." :error t)
+           (get-logout))
+         (progn ,@body))
        (login-required))))
 
 (defmacro require-active-user (&body body)

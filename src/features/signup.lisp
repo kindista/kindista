@@ -27,7 +27,7 @@
             (:strong "Please note: ")
             "To prevent spam and abuse, some features on "
             "Kindista may only be available after you post your first "
-            "offers, or after another Kindista member vouches for you. "
+            "offers and we have a chance to review your initial activity. "
             (:br)
             (:strong :class "red"
              " If you have already recieved an invitation to join Kindista "

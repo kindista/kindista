@@ -56,7 +56,7 @@
          (flash (s+ "The email you have entered, "
                     user
                     ",is associated with an account "
-                    "that has been banned for posting inappropriate "
+                    "that has been suspended for posting inappropriate "
                     "content or otherwise violating Kindista's "
                     "Terms of Use. "
                     "If you believe this to be an error, please email us"
