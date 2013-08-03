@@ -17,6 +17,8 @@
 
 (in-package :kindista)
 
+(defun new-pending-offer-notice-handler ()
+  (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
 
 (defun create-inventory-item (&key type (by *userid*) text tags)
   (insert-db (list :type type
@@ -40,7 +42,9 @@
     (cond
       (pending
        (with-locked-hash-table (*pending-person-items-index*)
-         (push id (gethash by *pending-person-items-index*))))
+         (push id (gethash by *pending-person-items-index*)))
+       (when (eq type :offer)
+         (notice :new-pending-offer :id id)))
 
       (t
        (with-locked-hash-table (*db-results*)
