@@ -331,7 +331,7 @@
   (let ((user (db userid))
         (is-contact (member userid (getf *user* :following))))
     (html
-     (:img :class "bigavatar" :src (strcat +avatar-base+ userid ".jpg?" (get-universal-time)))
+     (:img :class "bigavatar" :src (get-avatar-thumbnail userid 300 300))
      (:div :class "basics"
        (:h1 (str (getf user :name))
             (cond

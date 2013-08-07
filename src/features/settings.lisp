@@ -476,25 +476,11 @@
                                "next" (or (post-parameter "next") "/home")))) 
 
       ((post-parameter "avatar")
-
-       (let ((file (native-namestring (first it))))
-         (let ((r1 (run-program *convert-path*
-                                (list
-                                  file
-                                  "-scale"
-                                  "300x300"
-                                  (strcat +avatar-path+ *userid* ".jpg"))))
-               (r2 (run-program *convert-path*
-                                (list
-                                  file
-                                  "-scale"
-                                  "100x100"
-                                  (strcat +avatar-path+ *userid* ".png")))))
-           (if (and (eql 0 (process-exit-code r1))
-                        (eql 0 (process-exit-code r2)))
-             (modify-db *userid* :avatar t)
-             (flash "The image you uploaded could not be processed. Sorry!" :error t))
-           (see-other "/settings/personal"))))
+       (handler-case
+         (let ((id (create-image (first it) (third it))))
+           (modify-db *userid* :avatar id))
+         (t () (flash "Please use a .jpg, .png, or .gif" :error t)))
+       (see-other "/settings/personal"))
 
       ((post-parameter "reset-location")
        (modify-db *userid* :lat nil :long nil :address nil :location nil)

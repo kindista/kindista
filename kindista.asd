@@ -9,6 +9,7 @@
                ;:cl-gd
                :cl-json
                :cl-markdown
+               :cl-fad
                :cl-ppcre
                :cl-smtp
                :cl-who
@@ -47,6 +48,7 @@
                              (:module shared
                               :serial t
                               :components ((:file "inventory")
+                                           (:file "images")
                                            (:file "activity")
                                            (:file "geo")
                                            (:file "tags")
