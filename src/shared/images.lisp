@@ -52,3 +52,10 @@
   (aif (db userid :avatar)
     (get-image-thumbnail it maxwidth maxheight)
     *avatar-not-found*))
+
+(defun convert-old-avatars ()
+  (dolist (pathname (cl-fad:list-directory +avatar-path+))
+    (when (equalp (pathname-type pathname) "jpg")
+      (let ((id (handler-case (parse-integer (pathname-name pathname)) (t () nil))))
+        (when id
+          (modify-db id :avatar (create-image pathname "image/jpeg")))))))
