@@ -37,7 +37,7 @@
 
 (defun get-image-thumbnail (id maxwidth maxheight)
   (let* ((image (db id))
-         (filename (format nil "~d-~d-~d.~s" id maxwidth maxheight (getf image :suffix)))
+         (filename (format nil "~d-~d-~d.~a" id maxwidth maxheight (getf image :suffix)))
          (filepath (merge-pathnames *images-path* filename)))
     (assert image)
     (unless (file-exists-p filepath)
