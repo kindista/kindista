@@ -107,6 +107,27 @@
             (length kindista-invites)
             (length user-invites))))
 
+(defun quick-invite-page (&key text)
+  (standard-page "Send invitations"
+    (html
+      (:div :class "item"
+        (:form :method "post" :action "/invite"
+          (:input :type "hidden" :name "text" :value text)
+          (:input :type "hidden" :name "next" :value "/invite")
+          (:h2 "Sign up for Kindista!")
+          (:p "Please enter your email address below."
+           "We will send you an invitation email to complete the signup process. "
+           "If you do not see the invitation in your inbox, please check your spam folder.")
+          (:div
+            (:label "Email address")
+            (:input :type "text" :name "email" :placeholder "Please enter your email address"))
+          (:div
+            (:label "Confirm your email address")
+            (:input :type "text" :name "confirm-email" :placeholder "Please confirm your email address"))
+          (:p
+            (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
+            (:button :class "yes" :type "submit" :class "submit" :name "quick-invite" "Sign me up!")))))))
+
 (defun invite-page (&key emails text next-url)
   (standard-page "Invite friends"
     (html
@@ -205,5 +226,25 @@
        (if (> (length new-emails) 1)
          (flash "Your invitations have been sent.")
          (flash "Your invitation has been sent."))
-       (see-other (post-parameter "next-url")))))))
+       (see-other (post-parameter "next-url")))
+
+      ((not (scan +email-scanner+ (post-parameter "email")))
+       (flash "Please enter a valid email address." :error t)
+       (see-other "/invite"))
+
+      ((gethash (post-parameter "email") *email-index*)
+       (flash (strcat (post-parameter "email") "is already a Kindista member!") :error t)
+       (see-other "/invite"))
+
+      ((not (string= (post-parameter "email") (post-parameter "confirm-email")))
+       (flash "Your confirmation email does not match the email address you have entered." :error t)
+       (see-other "/invite"))
+
+      ((post-parameter "quick-invite")
+       (create-invitation (post-parameter "email")
+                          :text (unless (string= (post-parameter "text") "")
+                                  (post-parameter "text")))
+       (flash (strcat "An invitation has been sent to "
+                      (post-parameter "email")))
+       (see-other "invite"))))))
 
