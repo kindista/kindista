@@ -57,4 +57,6 @@
     (when (equalp (pathname-type pathname) "jpg")
       (let ((id (handler-case (parse-integer (pathname-name pathname)) (t () nil))))
         (when id
-          (modify-db id :avatar (create-image pathname "image/jpeg")))))))
+          (let ((imageid (create-image pathname "image/jpeg")))
+            (copy-file pathname (merge-pathnames *images-path* (strcat imageid "-300-300.jpg"))) 
+            (modify-db id :avatar imageid)))))))
