@@ -314,8 +314,9 @@
           (editing
             (htm
               (:form :method "post" :action "/settings"
-                (:input :type "hidden" :name "next" :value *base-url*)
-                (:textarea :name (strcat "bio-" section-name) (str content))
+                (:input :type "hidden" :name "next" :value (strcat *base-url* "/about"))
+                (:textarea :name (strcat "bio-" section-name)
+                           (str (escape-for-html content)))
                 (:button :class "yes" :type "submit" :name "save" "Save")
                 (:a :class "cancel" :href *base-url* "Cancel")
                 )))
@@ -325,13 +326,13 @@
 
           (t
             (htm
-              (:p (str content)))))))))
+              (:p (str (html-text content))))))))))
 
 (defun profile-top-html (userid)
   (let ((user (db userid))
         (is-contact (member userid (getf *user* :following))))
     (html
-     (:img :class "bigavatar" :src (strcat +avatar-base+ userid ".jpg?" (get-universal-time)))
+     (:img :class "bigavatar" :src (get-avatar-thumbnail userid 300 300))
      (:div :class "basics"
        (:h1 (str (getf user :name))
             (cond
@@ -414,7 +415,6 @@
                        :editable editable))))
             (htm (:h3 "This person hasn't written anything here."))))
         :right (if editing
-                 (html (:h2 "Style guide"))
                  (when mutuals
                    (mutual-connections-sidebar mutual-links)))
         :top (profile-top-html userid)
@@ -511,17 +511,6 @@
        ;   (profile-bio-html id)
        ;   (profile-activity-html id)))
 
-        ((or (not (eql id *userid*))
-             (getf *user* :bio-summary)
-             (getf *user* :bio-into)
-             (getf *user* :bio-contact)
-             (getf *user* :bio-skils)
-             (getf *user* :bio-doing))
-         (profile-activity-html id))
-
-        ((not editing)
-         (profile-bio-html id))
-
         ((string= editing "doing")
          (profile-bio-html id :editing 'doing))
 
@@ -536,6 +525,14 @@
 
         ((string= editing "skills")
          (profile-bio-html id :editing 'skills))
+
+        ((or (not (eql id *userid*))
+             (getf *user* :bio-summary)
+             (getf *user* :bio-into)
+             (getf *user* :bio-contact)
+             (getf *user* :bio-skils)
+             (getf *user* :bio-doing))
+         (profile-activity-html id))
 
         (t (not-found))))))
 
