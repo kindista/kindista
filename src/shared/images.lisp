@@ -34,9 +34,9 @@
    (modify-db image :filename filename)
    (values image)))
 
-(defun get-image-thumbnail (id maxwidth maxheight)
+(defun get-image-thumbnail (id maxwidth maxheight &key (filetype "jpg"))
   (let* ((image (db id))
-         (filename (format nil "~d-~d-~d.~a" id maxwidth maxheight (getf image :suffix)))
+         (filename (format nil "~d-~d-~d.~a" id maxwidth maxheight filetype))
          (filepath (merge-pathnames *images-path* filename)))
     (assert image)
     (unless (file-exists-p filepath)
@@ -47,9 +47,9 @@
                          (native-namestring filepath))))
     (strcat *images-base* filename)))
 
-(defun get-avatar-thumbnail (userid maxwidth maxheight)
+(defun get-avatar-thumbnail (userid maxwidth maxheight &key (filetype "jpg"))
   (aif (db userid :avatar)
-    (get-image-thumbnail it maxwidth maxheight)
+    (get-image-thumbnail it maxwidth maxheight :filetype filetype)
     *avatar-not-found*))
 
 (defun convert-old-avatars ()
