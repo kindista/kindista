@@ -54,7 +54,7 @@
             (:input :type "file" :name "avatar"))))
       (t
         (html
-          (:img :src (strcat +avatar-base+ *userid* ".jpg?" (get-universal-time))))))
+          (:img :class "bigavatar" :src (get-avatar-thumbnail *userid* 300 300)))))
 
   :editable editable))
 

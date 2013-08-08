@@ -28,16 +28,15 @@
                   (t
                    (error "~S is not a supported content type" content-type))))
          (image (insert-db `(:type :image
-                             :suffix ,suffix
                              :content-type ,content-type)))
          (filename (strcat image "." suffix)))
    (copy-file path (merge-pathnames *original-images* filename))
    (modify-db image :filename filename)
    (values image)))
 
-(defun get-image-thumbnail (id maxwidth maxheight)
+(defun get-image-thumbnail (id maxwidth maxheight &key (filetype "jpg"))
   (let* ((image (db id))
-         (filename (format nil "~d-~d-~d.~s" id maxwidth maxheight (getf image :suffix)))
+         (filename (format nil "~d-~d-~d.~a" id maxwidth maxheight filetype))
          (filepath (merge-pathnames *images-path* filename)))
     (assert image)
     (unless (file-exists-p filepath)
@@ -48,7 +47,16 @@
                          (native-namestring filepath))))
     (strcat *images-base* filename)))
 
-(defun get-avatar-thumbnail (userid maxwidth maxheight)
+(defun get-avatar-thumbnail (userid maxwidth maxheight &key (filetype "jpg"))
   (aif (db userid :avatar)
-    (get-image-thumbnail it maxwidth maxheight)
+    (get-image-thumbnail it maxwidth maxheight :filetype filetype)
     *avatar-not-found*))
+
+(defun convert-old-avatars ()
+  (dolist (pathname (cl-fad:list-directory +avatar-path+))
+    (when (equalp (pathname-type pathname) "jpg")
+      (let ((id (handler-case (parse-integer (pathname-name pathname)) (t () nil))))
+        (when id
+          (let ((imageid (create-image pathname "image/jpeg")))
+            (copy-file pathname (merge-pathnames *images-path* (strcat imageid "-300-300.jpg"))) 
+            (modify-db id :avatar imageid)))))))
