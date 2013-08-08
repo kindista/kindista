@@ -28,7 +28,6 @@
                   (t
                    (error "~S is not a supported content type" content-type))))
          (image (insert-db `(:type :image
-                             :suffix ,suffix
                              :content-type ,content-type)))
          (filename (strcat image "." suffix)))
    (copy-file path (merge-pathnames *original-images* filename))
