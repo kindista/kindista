@@ -110,18 +110,17 @@
 (defun quick-invite-page (&key text)
   (standard-page "Send invitations"
     (html
-      (:div :class "item"
+      (:div :class "item create-event"
         (:form :method "post" :action "/invite"
           (:input :type "hidden" :name "text" :value text)
-          (:input :type "hidden" :name "next" :value "/invite")
           (:h2 "Sign up for Kindista!")
-          (:p "Please enter your email address below."
+          (:p "Please enter your email address below. "
            "We will send you an invitation email to complete the signup process. "
            "If you do not see the invitation in your inbox, please check your spam folder.")
           (:div
             (:label "Email address")
             (:input :type "text" :name "email" :placeholder "Please enter your email address"))
-          (:div
+          (:div 
             (:label "Confirm your email address")
             (:input :type "text" :name "confirm-email" :placeholder "Please confirm your email address"))
           (:p
@@ -170,11 +169,14 @@
 
 (defun get-invite ()
   (require-active-user
-    (if (getf *user* :pending)
-       (progn
-         (pending-flash "invite people to join Kindista")
-         (see-other (or (referer) "/home")))
-      (invite-page :emails (get-parameter "email")))))
+
+    (cond
+      ((getf *user* :pending)
+       (pending-flash "invite people to join Kindista")
+       (see-other (or (referer) "/home"))) 
+      ((eq *userid* 7222)
+       (quick-invite-page :text "Thanks for signing up for Kindista at Beloved."))
+      (t (invite-page :emails (get-parameter "email"))))))
 
 (defun post-invite ()
   (require-active-user
