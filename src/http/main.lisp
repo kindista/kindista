@@ -192,8 +192,6 @@
 
 (defmacro require-user (&body body)
   `(with-user
-     (pprint *userid*)
-     
      (if *userid*
        (if (getf *user* :banned)
          (progn
