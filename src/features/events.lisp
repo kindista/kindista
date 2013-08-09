@@ -428,6 +428,10 @@
                   (location (or (unless (string= (post-parameter "location") "")
                                   (post-parameter "location"))
                                 old-location))
+                  (lat (awhen (post-parameter "lat")
+                         (unless (string= it "") (read-from-string it))))
+                  (long (awhen (post-parameter "long")
+                         (unless (string= it "") (read-from-string it))))
                   (new-date-p (scan +date-scanner+ (post-parameter "date")))
                   (new-time-p (scan +time-scanner+ (post-parameter "time")))
                   (date (or (when new-date-p (post-parameter "date"))
@@ -504,7 +508,8 @@
                       (= local-time old-local-time))
                  (try-again "You haven't entered any new details. Nothing has been changed."))
 
-                ((not (string= location old-location))
+                ((and (not (and lat long))
+                      (not (string= location old-location)))
                  ; if there's a new location
                  (multiple-value-bind (latitude longitude address)
                    (geocode-address location)
@@ -526,6 +531,11 @@
 
                 ((post-parameter "submit-edits")
                  (modify-data)
+                 (flash "Your event has been updated")
+                 (see-other url))
+
+                ((post-parameter "confirm-location")
+                 (modify-data :lat lat :long long :address location)
                  (flash "Your event has been updated")
                  (see-other url))))))))))
 
