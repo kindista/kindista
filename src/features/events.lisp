@@ -223,7 +223,7 @@
            (:input :type "text"
                    :name "title"
                    :placeholder "ex: Community Garden Work Party"
-                   :value title))
+                   :value (escape-for-html title)))
          (:div
            (:label "Details")
            (:textarea :rows "8"
@@ -288,7 +288,7 @@
           (:input :type "hidden" :name "location" :value location)
           (:input :type "hidden" :name "lat" :value lat)
           (:input :type "hidden" :name "long" :value long)
-          (:input :type "hidden" :name "title" :value title)
+          (:input :type "hidden" :name "title" :value (escape-for-html title))
           (:input :type "hidden" :name "details" :value (escape-for-html details))
           (:input :type "hidden" :name "date" :value date)
           (:input :type "hidden" :name "time" :value time)
