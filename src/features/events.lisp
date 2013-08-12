@@ -223,7 +223,7 @@
            (:input :type "text"
                    :name "title"
                    :placeholder "ex: Community Garden Work Party"
-                   :value (escape-for-html title)))
+                   :value (awhen title (escape-for-html it))))
          (:div
            (:label "Details")
            (:textarea :rows "8"
