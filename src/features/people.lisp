@@ -318,7 +318,7 @@
                 (:textarea :name (strcat "bio-" section-name)
                            (awhen content (str (escape-for-html it))))
                 (:button :class "yes" :type "submit" :name "save" "Save")
-                (:a :class "cancel" :href *base-url* "Cancel")
+                (:a :class "cancel red" :href *base-url* "Cancel")
                 )))
           ((not content)
             (htm
