@@ -534,6 +534,9 @@
              (getf *user* :bio-doing))
          (profile-activity-html id))
 
+        ((eql id *userid*)
+         (profile-bio-html id))
+
         (t (not-found))))))
 
 (defun get-person-about (id)
