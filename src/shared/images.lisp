@@ -34,6 +34,10 @@
    (modify-db image :filename filename)
    (values image)))
 
+(defun delete-image (id)
+  
+  )
+
 (defun get-image-thumbnail (id maxwidth maxheight &key (filetype "jpg"))
   (let* ((image (db id))
          (filename (format nil "~d-~d-~d.~a" id maxwidth maxheight filetype))
