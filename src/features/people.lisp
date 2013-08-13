@@ -316,7 +316,7 @@
               (:form :method "post" :action "/settings"
                 (:input :type "hidden" :name "next" :value (strcat *base-url* "/about"))
                 (:textarea :name (strcat "bio-" section-name)
-                           (str (escape-for-html content)))
+                           (awhen content (str (escape-for-html it))))
                 (:button :class "yes" :type "submit" :name "save" "Save")
                 (:a :class "cancel" :href *base-url* "Cancel")
                 )))
