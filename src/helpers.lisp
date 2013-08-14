@@ -92,7 +92,7 @@
   (intersection list1 list2 :test #'string=))
 
 (defun emails-from-string (string)
-  (iter (for email in (split " " (ppcre:regex-replace-all "," (string-downcase string) " ")))
+  (iter (for email in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
         (when (ppcre:scan +email-scanner+ email)
           (collect email))))
 
