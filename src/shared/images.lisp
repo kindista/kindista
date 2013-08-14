@@ -35,8 +35,10 @@
    (values image)))
 
 (defun delete-image (id)
-  
-  )
+  (dolist (path (directory (strcat *images-path* id "-*.*")))
+    (delete-file path))
+  (delete-file (first (directory (strcat *original-images* id ".*"))))
+  (remove-from-db id))
 
 (defun get-image-thumbnail (id maxwidth maxheight &key (filetype "jpg"))
   (let* ((image (db id))
