@@ -477,7 +477,12 @@
 
       ((post-parameter "avatar")
        (handler-case
-         (let ((id (create-image (first it) (third it))))
+         ;hunchentoot returns a list containing (path file-name content-type)
+         ;when the post-parameter is a file, i.e. (first it) = path
+         (let ((id (create-image (first it) (third it)))
+               (old-avatar (getf *user* :avatar)))
+           (when (integerp old-avatar)
+             (delete-image old-avatar))
            (modify-db *userid* :avatar id))
          (t () (flash "Please use a .jpg, .png, or .gif" :error t)))
        (see-other "/settings/personal"))
