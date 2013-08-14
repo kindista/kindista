@@ -34,7 +34,8 @@
                                                    (send-message (metric-system-mailbox system) '(:daily))))))
 
 (defmethod start ((system metric-system))
-  (unless (thread-alive-p (slot-value system 'thread))
+  (unless (and (slot-boundp system 'thread)
+               (thread-alive-p (slot-value system 'thread)))
     (setf (slot-value system 'thread) (make-thread (fdefinition 'metric-system-loop) :arguments (list system)))
     (send-message (metric-system-mailbox system) '(:start))))
 
