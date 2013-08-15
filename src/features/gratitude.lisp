@@ -274,10 +274,16 @@
     (require-user
       (standard-page
         "Gratitude"
-        (html
-          (str (gratitude-activity-item (make-result :id id
-                                                     :time (getf it :created)
-                                                     :people (cons (getf it :author) (getf it :subjects))))))))
+        (let ((author (getf it :author)))
+          (html
+            (:div :class "gratitude item"
+              (str (gratitude-activity-item (make-result :id id
+                                                       :time (getf it :created)
+                                                       :people (cons (getf it :author) (getf it :subjects))))))
+            (:div :class "images"
+              (when (and (eql author *userid*)
+                         (< (length (getf it :images)) 6))
+                (str (post-image-form "/gratitude/id" "/gratitude/id"))))))))
     (not-found)))
 
 (defun post-gratitude (id)

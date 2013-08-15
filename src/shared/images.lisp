@@ -34,6 +34,15 @@
    (modify-db image :filename filename)
    (values image)))
 
+(defun post-image-form (action next &key class)
+  (html
+    (:form :method "post" :action action :enctype "multipart/form-data"
+      (:input :type "hidden" :name "next" :value next)
+      (:div :class (or class "submit-settings")
+        (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
+        (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
+      (:input :type "file" :name "image"))))
+
 (defun delete-image (id)
   (dolist (path (directory (strcat *images-path* id "-*.*")))
     (delete-file path))
