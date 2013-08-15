@@ -302,6 +302,13 @@
          (see-other (or (post-parameter "next") "/home")))
         ((post-parameter "edit")
          (see-other (strcat "/gratitude/" id "/edit")))
+        ((post-parameter "image")
+         (if (> (length (getf it :images)) 4)
+           (progn
+             (flash "")
+             )
+           )
+         )
         ((and (post-parameter "love")
               (member (getf it :type) '(:gratitude :offer :request)))
          (love id)
