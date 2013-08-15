@@ -298,73 +298,57 @@
          (flash "Your reply has been sent.")
          (see-other (script-name*)))
 
-      (t
-       (require-test ((or (eql *userid* (getf item :by))
-                         (getf *user* :admin))
-                    (s+ "You can only edit your own " type "s."))
-         (let ((tags (iter (for pair in (post-parameters*))
-                           (when (and (string= (car pair) "tag")
-                                      (scan *tag-scanner* (cdr pair)))
-                             (collect (cdr pair))))))
-           (iter (for tag in (tags-from-string (post-parameter "tags")))
-                 (setf tags (cons tag tags)))
+        ((and (post-parameter "love"))
+         (love id)
+         (see-other (or (post-parameter "next") (referer))))
 
-           (cond
-             ((and (post-parameter "love"))
-              (love id)
-              (see-other (or (post-parameter "next") (referer))))
+        ((and (post-parameter "unlove"))
+         (unlove id)
+         (see-other (or (post-parameter "next") (referer))))
 
-             ((and (post-parameter "unlove"))
-              (unlove id)
-              (see-other (or (post-parameter "next") (referer))))
+        (t
+         (require-test ((or (eql *userid* (getf item :by))
+                           (getf *user* :admin))
+                      (s+ "You can only edit your own " type "s."))
+           (let ((tags (iter (for pair in (post-parameters*))
+                             (when (and (string= (car pair) "tag")
+                                        (scan *tag-scanner* (cdr pair)))
+                               (collect (cdr pair))))))
+             (iter (for tag in (tags-from-string (post-parameter "tags")))
+                   (setf tags (cons tag tags)))
 
-             ((post-parameter "edit")
-              (enter-inventory-tags :title (s+ "Edit your " type)
-                                    :action url
-                                    :text (getf item :text)
-                                    :tags (or tags (getf item :tags))
-                                    :next (or (post-parameter "next") (referer))
-                                    :button-text (s+ "Save " type)
-                                    :selected (s+ type "s")))
-             ((post-parameter "delete")
-              (confirm-delete :url url
-                              :type type
-                              :text (getf item :text)
-                              :next-url (referer)))
+             (cond
+               ((post-parameter "edit")
+                (enter-inventory-tags :title (s+ "Edit your " type)
+                                      :action url
+                                      :text (getf item :text)
+                                      :tags (or tags (getf item :tags))
+                                      :next (or (post-parameter "next") (referer))
+                                      :button-text (s+ "Save " type)
+                                      :selected (s+ type "s")))
+               ((post-parameter "delete")
+                (confirm-delete :url url
+                                :type type
+                                :text (getf item :text)
+                                :next-url (referer)))
 
-             ((post-parameter "really-delete")
-              (delete-inventory-item id)
-              (flash (s+ "Your " type " has been deleted!"))
-              (if (equal (fourth (split "/" (post-parameter "next") :limit 4)) (subseq (script-name*) 1))
-                (see-other "/home") 
-                (see-other (or (post-parameter "next") "/home"))))
+               ((post-parameter "really-delete")
+                (delete-inventory-item id)
+                (flash (s+ "Your " type " has been deleted!"))
+                (if (equal (fourth (split "/" (post-parameter "next") :limit 4)) (subseq (script-name*) 1))
+                  (see-other "/home") 
+                  (see-other (or (post-parameter "next") "/home"))))
 
-             ((post-parameter "back")
-              (enter-inventory-text :type type
-                                    :text (post-parameter "text")
-                                    :action url
-                                    :tags (or tags (getf item :tags))
-                                    :next (or (post-parameter "next") (referer))
-                                    :selected (s+ type "s")))
+               ((post-parameter "back")
+                (enter-inventory-text :type type
+                                      :text (post-parameter "text")
+                                      :action url
+                                      :tags (or tags (getf item :tags))
+                                      :next (or (post-parameter "next") (referer))
+                                      :selected (s+ type "s")))
 
-             ((and (post-parameter "post")
-                   (post-parameter "text"))
-
-              (enter-inventory-tags :title (s+ "Edit your " type)
-                                    :action url
-                                    :text (post-parameter "text")
-                                    :tags (or tags (getf item :tags))
-                                    :next (or (post-parameter "next") (referer))
-                                    :button-text (s+ "Save " type)
-                                    :selected (s+ type "s")))
-
-             ((and (post-parameter "create")
-                   (post-parameter "text"))
-
-              (if (intersection tags *top-tags* :test #'string=)
-                (progn
-                  (modify-inventory-item id :text (post-parameter "text") :tags tags)
-                  (see-other (or (post-parameter "next") (strcat "/" type "s/" id))))
+               ((and (post-parameter "post")
+                     (post-parameter "text"))
 
                 (enter-inventory-tags :title (s+ "Edit your " type)
                                       :action url
@@ -372,17 +356,33 @@
                                       :tags (or tags (getf item :tags))
                                       :next (or (post-parameter "next") (referer))
                                       :button-text (s+ "Save " type)
-                                      :error "You must select at least one keyword"
-                                      :selected (s+ type "s"))))
+                                      :selected (s+ type "s")))
+
+               ((and (post-parameter "create")
+                     (post-parameter "text"))
+
+                (if (intersection tags *top-tags* :test #'string=)
+                  (progn
+                    (modify-inventory-item id :text (post-parameter "text") :tags tags)
+                    (see-other (or (post-parameter "next") (strcat "/" type "s/" id))))
+
+                  (enter-inventory-tags :title (s+ "Edit your " type)
+                                        :action url
+                                        :text (post-parameter "text")
+                                        :tags (or tags (getf item :tags))
+                                        :next (or (post-parameter "next") (referer))
+                                        :button-text (s+ "Save " type)
+                                        :error "You must select at least one keyword"
+                                        :selected (s+ type "s"))))
 
 
-             (t
-               (enter-inventory-tags :title (s+ "Edit your " type)
-                                     :action url
-                                     :text (getf item :text)
-                                     :tags (or tags (getf item :tags))
-                                     :button-text (s+ "Save " type)
-                                     :selected (s+ type "s")))))))))))
+               (t
+                 (enter-inventory-tags :title (s+ "Edit your " type)
+                                       :action url
+                                       :text (getf item :text)
+                                       :tags (or tags (getf item :tags))
+                                       :button-text (s+ "Save " type)
+                                       :selected (s+ type "s")))))))))))
 
 (defun simple-inventory-entry-html (preposition type)
   (html 
