@@ -35,6 +35,11 @@
 (defun person-name (id)
   (db id :name))
 
+(defun no-reply-notice ()
+  (format nil   "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER. If you want to contact the sender, please do so from their profile on Kindista.org.
+
+"))
+
 (defun html-email-base (content)
   (html
     (:html
