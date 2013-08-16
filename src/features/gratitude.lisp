@@ -109,7 +109,11 @@
 (defun delete-gratitude (id)
   (let* ((result (gethash id *db-results*))
          (data (db id))
-         (people (cons (getf data :author) (getf data :subjects))))
+         (people (cons (getf data :author) (getf data :subjects)))
+         (images (getf data :images)))
+
+    (dolist (image-id images)
+      (delete-image image-id))
 
     (with-locked-hash-table (*db-results*)
       (remhash id *db-results*))
@@ -118,6 +122,9 @@
       (dolist (result (gethash id *gratitude-results-index*))
         (geo-index-remove *activity-geo-index* result))
       (remhash id *gratitude-results-index*))
+
+    (with-mutex (*recent-activity-mutex*)
+      (asetf *recent-activity-index* (remove id it :key #'result-id)))
 
     (delete-comments id)
 
@@ -274,49 +281,94 @@
     (require-user
       (standard-page
         "Gratitude"
-        (let ((author (getf it :author)))
+        (let ((author (getf it :author))
+              (images (getf it :images))
+              (url (strcat "/gratitude/" id)))
           (html
             (:div :class "gratitude item"
               (str (gratitude-activity-item (make-result :id id
                                                        :time (getf it :created)
-                                                       :people (cons (getf it :author) (getf it :subjects))))))
-            (:div :class "images"
+                                                       :people (cons author (getf it :subjects))))))
+            (:div :class "activity images"
               (when (and (eql author *userid*)
-                         (< (length (getf it :images)) 6))
-                (str (post-image-form "/gratitude/id" "/gratitude/id"))))))))
+                         (< (length images) 6))
+                (htm (:div :class "post-image"
+                       (str (post-image-form url url)))))
+                (dolist (image-id images)
+                  (htm
+                    (:div :class "activity-image"
+                      (:img :src (get-image-thumbnail image-id 300 300))
+                      (when (or (eql *userid* author)
+                                (getf *user* :admin)) 
+                        (htm
+                          (:form :method "post" :action url
+                            (:button :class "simple-link red"
+                                     :type "submit"
+                                     :value image-id
+                                     :name "delete-image"
+                                     "Delete"))))))))))))
     (not-found)))
 
 (defun post-gratitude (id)
   (require-active-user
     (setf id (parse-integer id))
     (aif (db id)
-      (cond
-        ((post-parameter "delete")
-         (confirm-delete :url (script-name*)
-                         :type "gratitude"
-                         :text (getf it :text)
-                         :next-url (referer)))
-        ((post-parameter "really-delete")
-         (delete-gratitude id)
-         (flash "Your statement of gratitude has been deleted!")
-         (see-other (or (post-parameter "next") "/home")))
-        ((post-parameter "edit")
-         (see-other (strcat "/gratitude/" id "/edit")))
-        ((post-parameter "image")
-         (if (> (length (getf it :images)) 4)
-           (progn
-             (flash "")
-             )
-           )
-         )
-        ((and (post-parameter "love")
-              (member (getf it :type) '(:gratitude :offer :request)))
-         (love id)
-         (see-other (or (post-parameter "next") (referer))))
-        ((and (post-parameter "unlove")
-              (member (getf it :type) '(:gratitude :offer :request)))
-         (unlove id)
-         (see-other (or (post-parameter "next") (referer)))))
+      (let ((url (strcat "/gratitude/" id)))
+        (cond
+          ((and (post-parameter "love")
+                (member (getf it :type) '(:gratitude :offer :request)))
+           (love id)
+           (see-other (or (post-parameter "next") (referer))))
+          ((and (post-parameter "unlove")
+                (member (getf it :type) '(:gratitude :offer :request)))
+           (unlove id)
+           (see-other (or (post-parameter "next") (referer))))
+
+          (t
+           (require-test ((or (eql *userid* (getf it :author))
+                              (getf *user* :admin))
+                         (s+ "You can only edit your own statatements of gratitude."))
+             (cond
+               ((post-parameter "delete")
+                (confirm-delete :url (script-name*)
+                                :type "gratitude"
+                                :text (getf it :text)
+                                :next-url (referer)))
+               ((and (post-parameter "really-delete")
+                     (not (post-parameter "delete-image")))
+                (delete-gratitude id)
+                (flash "Your statement of gratitude has been deleted!")
+                (see-other (or (post-parameter "next") "/home")))
+               ((post-parameter "delete-image")
+                (confirm-delete :url (script-name*)
+                                :type "picture"
+                                :image-id (post-parameter "delete-image")
+                                :next-url (referer)))
+               ((post-parameter "image")
+                (if (> (length (getf it :images)) 4)
+                  (progn
+                    (flash "You have already posted the maximum of 5 images to this statement of gratitude.  Please delete one to add another." :error t)
+                    (see-other url))
+                  (progn
+                    (handler-case
+                      ;; hunchentoot returns a list containing
+                      ;; (path file-name content-type) when the
+                      ;; post-parameter is a file, i.e. (first it) = path
+                      (let* ((image (post-parameter "image"))
+                             (image-id (create-image (first image)
+                                                     (third image))))
+                        (amodify-db id :images (cons image-id it)))
+                      (t () (flash "Please use a .jpg, .png, or .gif" :error t)))
+                    (see-other url))))
+               ((and (post-parameter "really-delete")
+                     (post-parameter "delete-image"))
+                (let ((image-id (parse-integer (post-parameter "delete-image"))))
+                  (amodify-db id :images (remove image-id it))
+                  (delete-image image-id))
+                (flash "Your picture has been deleted!")
+                (see-other url))
+               ((post-parameter "edit")
+                (see-other (strcat "/gratitude/" id "/edit"))))))))
       (not-found))))
 
 (defun get-gratitude-edit (id)

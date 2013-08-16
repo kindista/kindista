@@ -494,16 +494,20 @@
                         (right "right")
                         (class class))))
 
-(defun confirm-delete (&key url next-url (type "item") class text)
+(defun confirm-delete (&key url next-url (type "item") class text image-id)
   (standard-page
     "Confirm Delete"
     (html
       (:h1 "Are you sure you want to delete this " (str type) "?")
       (when text
         (htm (:p (cl-who:esc text))))
+      (when image-id
+        (htm (:img :class "activity-image" :src (get-image-thumbnail image-id 300 300))))
       (:form :method "post" :action url
-        (when next-url
-          (htm (:input :type "hidden" :name "next" :value next-url)))
+        (awhen image-id
+          (htm (:input :type "hidden" :name "delete-image" :value it)))
+        (awhen next-url
+          (htm (:input :type "hidden" :name "next" :value it)))
         (:a :href next-url "No, I didn't mean it!")  
         (:button :class "yes" :type "submit" :class "submit" :name "really-delete" "Yes")))
     :class class))

@@ -258,7 +258,7 @@
                                  :value email
                                  "Make primary")
                         " | "
-                        (:button :class "simple-link red"
+                        (:button :class "simple-link gray"
                                  :name "remove-email"
                                  :type "submit"
                                  :value email
