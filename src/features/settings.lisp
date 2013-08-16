@@ -45,7 +45,7 @@
     base "avatar" "Avatar"
     (cond
       (editable
-        (post-image-form "/settings" "/settings/personal" :class "submit-settings"))
+        (new-image-form "/settings" "/settings/personal" :class "submit-settings"))
       (t
         (html
           (:img :class "bigavatar" :src (get-avatar-thumbnail *userid* 300 300)))))

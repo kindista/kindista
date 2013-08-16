@@ -504,8 +504,6 @@
       (when image-id
         (htm (:img :class "activity-image" :src (get-image-thumbnail image-id 300 300))))
       (:form :method "post" :action url
-        (awhen image-id
-          (htm (:input :type "hidden" :name "delete-image" :value it)))
         (awhen next-url
           (htm (:input :type "hidden" :name "next" :value it)))
         (:a :href next-url "No, I didn't mean it!")  
