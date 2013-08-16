@@ -494,7 +494,7 @@
                         (right "right")
                         (class class))))
 
-(defun confirm-delete (&key url next-url (type "item") class text image-id)
+(defun confirm-delete (&key url next-url (type "item") class text image-id item-id)
   (standard-page
     "Confirm Delete"
     (html
@@ -504,6 +504,8 @@
       (when image-id
         (htm (:img :class "activity-image" :src (get-image-thumbnail image-id 300 300))))
       (:form :method "post" :action url
+        (awhen item-id
+          (htm (:input :type "hidden" :name "item-id" :value it)))
         (awhen next-url
           (htm (:input :type "hidden" :name "next" :value it)))
         (:a :href next-url "No, I didn't mean it!")  
