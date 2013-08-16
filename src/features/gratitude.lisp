@@ -302,6 +302,11 @@
                                 (getf *user* :admin)) 
                         (htm
                           (:form :method "post" :action url
+                            (:button :class "simple-link green"
+                                     :type "submit"
+                                     :value image-id
+                                     :name "rotate-image"
+                                     "Rotate")
                             (:button :class "simple-link red"
                                      :type "submit"
                                      :value image-id
@@ -339,11 +344,9 @@
                 (delete-gratitude id)
                 (flash "Your statement of gratitude has been deleted!")
                 (see-other (or (post-parameter "next") "/home")))
-               ((post-parameter "delete-image")
-                (confirm-delete :url (script-name*)
-                                :type "picture"
-                                :image-id (post-parameter "delete-image")
-                                :next-url (referer)))
+               ((post-parameter "rotate-image")
+                (rotate-image (parse-integer (post-parameter "rotate-image")))
+                (see-other (script-name*)))
                ((post-parameter "image")
                 (if (> (length (getf it :images)) 4)
                   (progn
@@ -360,6 +363,12 @@
                         (amodify-db id :images (cons image-id it)))
                       (t () (flash "Please use a .jpg, .png, or .gif" :error t)))
                     (see-other url))))
+               ((and (post-parameter "delete-image")
+                     (not (post-parameter "really-delete")))
+                (confirm-delete :url (script-name*)
+                                :type "picture"
+                                :image-id (parse-integer (post-parameter "delete-image"))
+                                :next-url (referer)))
                ((and (post-parameter "really-delete")
                      (post-parameter "delete-image"))
                 (let ((image-id (parse-integer (post-parameter "delete-image"))))

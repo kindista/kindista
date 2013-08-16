@@ -1707,14 +1707,15 @@ div.settings-item.content > a {
 }
 
 div.activity-image {
+ margin: 1em 1em 1em 0;
  position: relative;
- width: 300px;
+ display: inline-block;
 }
 
 .activity-image form {
  position: absolute;
- top: .4em;
- right: .4em
+ top: .5em;
+ right: .4em;
 }
 
 .activity-image button.simple-link {

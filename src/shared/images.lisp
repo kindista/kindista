@@ -43,6 +43,16 @@
         (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
       (:input :type "file" :name "image"))))
 
+(defun rotate-image (id)
+  (let* ((image (db id))
+         (original-file (strcat *original-images* (getf image :filename))))
+    (pprint original-file)
+    (run-program *convert-path*
+                 (list original-file "-rotate"  "90" original-file))
+    (dolist (path (directory (strcat *images-path* id "-*.*")))
+      (pprint path)
+      (delete-file path))))
+
 (defun delete-image (id)
   (dolist (path (directory (strcat *images-path* id "-*.*")))
     (delete-file path))
