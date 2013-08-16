@@ -149,6 +149,7 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
+         (images (getf data :images))
          (type-index (case type
                        (:offer *offer-index*)
                        (:request *request-index*)))
@@ -169,6 +170,9 @@
         (dolist (stem stems)
           (asetf (gethash stem stem-index)
                  (remove result it))))
+
+      (dolist (image-id images)
+        (delete-image image-id))
 
       (geo-index-remove geo-index result)
 
