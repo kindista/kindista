@@ -37,6 +37,7 @@
 (defun new-image-form (action next &key class on)
   (html
     (:form :method "post"
+           :name "imageform"
            :class (or class "submit-image item")
            :action action
            :enctype "multipart/form-data"
@@ -45,7 +46,7 @@
       (:span "Add a photo:")
       (:input :type "file"
               :name "image"
-              :onchange (ps-inline (set-display ((@ document get-element-by-id) "spinner") "inline-block") ((@ this form submit))))
+              :onchange (ps-inline (submit-image-form)))
       (:div :id "spinner" :class "spinner"))))
 
 (defun rotate-image (id)

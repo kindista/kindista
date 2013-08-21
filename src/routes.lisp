@@ -22,7 +22,6 @@
   (go-home))
 
 (defun get-js ()
-  (setf (ps::ps-package-prefix :kindista-js) "K")
   (with-output-to-string (s)
     (paren-files:compile-script-system :kindista-js :output-stream s)))
 

@@ -3,6 +3,7 @@
 (defpackage :kindista-js
   (:use :common-lisp
         :parenscript)
-  (:export :set-display))
+  (:export :set-display
+           :submit-image-form))
 
 (setf (ps::ps-package-prefix :kindista-js) "K")

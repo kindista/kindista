@@ -141,7 +141,6 @@
     (when (and (eql *userid* by)
                (eq type (or :offer :request :gratitude)))
 
-      (pprint id)
       (setf (result-time result) time)
       (with-locked-hash-table (*activity-person-index*)
         (asetf (gethash by *activity-person-index*)

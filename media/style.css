@@ -2411,7 +2411,7 @@ input[name=reply] {
    width:30px;
    margin:0 auto;
    vertical-align: middle;
-   display: inline-block;
+   display: none;
    position:relative;
    -webkit-animation: rotation .6s infinite linear;
    -moz-animation: rotation .6s infinite linear;
