@@ -39,14 +39,13 @@
     (:form :method "post"
            :class (or class "submit-image item")
            :action action
-          ;:onsubmit (set-display "this.form.spinner" "inline-block")
            :enctype "multipart/form-data"
       (:input :type "hidden" :name "next" :value next)
       (when on (htm (:input :type "hidden" :name "on" :value on)))
       (:span "Add a photo:")
       (:input :type "file"
               :name "image"
-              :onchange "this.form.submit()")
+              :onchange (ps-inline (set-display ((@ document get-element-by-id) "spinner") "inline-block") ((@ this form submit))))
       (:div :id "spinner" :class "spinner"))))
 
 (defun rotate-image (id)

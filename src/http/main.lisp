@@ -389,7 +389,7 @@
         (:meta :name "HandheldFriendly" :content "True")
         ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
         (:link :rel "stylesheet" :href "/media/style.css")
-        ;(:script :type "text/javascript" :src "/kindista.js")
+        (:script :type "text/javascript" :src "/kindista.js")
         ;(str "<!--[if lt IE 9]>")
         ;(:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
         ;(str "<![endif]-->")

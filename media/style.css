@@ -2410,7 +2410,8 @@ input[name=reply] {
    height:30px;
    width:30px;
    margin:0 auto;
-   display: none;
+   vertical-align: middle;
+   display: inline-block;
    position:relative;
    -webkit-animation: rotation .6s infinite linear;
    -moz-animation: rotation .6s infinite linear;
