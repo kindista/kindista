@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time hearts comments type distance delete edit reply class)
+(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -84,6 +84,11 @@
                   (:input :type "submit" :name "edit" :value "Edit")
                   " &middot; "
                   (:input :type "submit" :name "delete" :value "Delete"))))
+            (when (and image-text
+                       (not (string= url (script-name*))))
+              (htm
+                " &middot; "
+                (:a :href url (str image-text))))
             (when comments
               (htm
                 " &middot; "
@@ -155,15 +160,21 @@
 
 (defun gratitude-activity-item (result &key truncate)
   (let* ((user-id (first (result-people result)))
+         (self (eql user-id *userid*))
          (item-id (result-id result))
          (data (db item-id))
+         (images (getf data :images))
          (item-url (strcat "/gratitude/" item-id)))
 
     (activity-item :id item-id
                    :url item-url
                    :class "gratitude"
                    :time (result-time result)
-                   :edit (when (or (eql user-id *userid*) (getf *user* :admin)) t)
+                   :edit (when (or self (getf *user* :admin)) t)
+                   :image-text (when self
+                                 (if images
+                                   "Add/remove photos"
+                                   "Add photos"))
                    :hearts (length (loves item-id))
                    ;:comments (length (comments item-id))
                    :content (html
@@ -178,7 +189,9 @@
                                     (ellipsis (html-text (getf data :text))
                                               500
                                               :see-more item-url)
-                                    (html-text (getf data :text)))))))))
+                                    (html-text (getf data :text)))))
+                              (unless (string= item-url (script-name*))
+                                (str (activity-item-images images item-url)))))))
 
 (defun gift-activity-item (result)
   (let* ((user-id (first (result-people result)))
@@ -207,16 +220,22 @@
 
 (defun inventory-activity-item (type result &key truncate show-distance show-what)
   (let* ((user-id (first (result-people result)))
+         (self (eql user-id *userid*))
          (item-id (result-id result))
          (data (db item-id))
+         (images (getf data :images))
          (item-url (strcat "/" type "s/" item-id)))
 
     (activity-item :id item-id
                    :url item-url
                    :time (result-time result)
-                   :edit (or (eql user-id *userid*) (getf *user* :admin))
+                   :edit (or self (getf *user* :admin))
+                   :image-text (when (and (string= type "offer") self)
+                                 (if images
+                                   "Add/remove photos"
+                                   "Add photos"))
                    :class type
-                   :reply t
+                   :reply (unless self t)
                    :hearts (length (loves item-id))
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")
@@ -245,7 +264,17 @@
                                     (ellipsis (html-text (getf data :text))
                                               500
                                               :see-more item-url)
-                                    (html-text (getf data :text)))))))))
+                                    (html-text (getf data :text)))))
+                              (unless (string= item-url (script-name*))
+                                (str (activity-item-images images item-url)))))))
+
+(defun activity-item-images (images url)
+  (html
+    (:div :class "small-activity-image"
+      (dolist (image-id images)
+        (htm
+          (:div :class "border"
+           (:a :href url (:img :src (get-image-thumbnail image-id 70 70)))))))))
 
 (defun activity-items (items &key (page 0) (count 20) (url "/home") (paginate t) (location t))
   (with-location

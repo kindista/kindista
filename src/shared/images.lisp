@@ -36,22 +36,25 @@
 
 (defun new-image-form (action next &key class on)
   (html
-    (:form :method "post" :action action :enctype "multipart/form-data"
+    (:form :method "post"
+           :class (or class "submit-image item")
+           :action action
+           :onsubmit (set-display "this.form.spinner" "inline-block")
+           :enctype "multipart/form-data"
       (:input :type "hidden" :name "next" :value next)
       (when on (htm (:input :type "hidden" :name "on" :value on)))
-      (:div :class (or class "submit-settings")
-        (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
-        (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
-      (:input :type "file" :name "image"))))
+      (:span "Add a photo:")
+      (:input :type "file"
+              :name "image"
+              :onchange "this.form.submit()")
+      (:div :id "spinner" :class "spinner"))))
 
 (defun rotate-image (id)
   (let* ((image (db id))
          (original-file (strcat *original-images* (getf image :filename))))
-    (pprint original-file)
     (run-program *convert-path*
                  (list original-file "-rotate"  "90" original-file))
     (dolist (path (directory (strcat *images-path* id "-*.*")))
-      (pprint path)
       (delete-file path))))
 
 (defun delete-image (id)

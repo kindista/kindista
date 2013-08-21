@@ -19,7 +19,6 @@
 
 (defun account-approval-notice-handler ()
   (let ((data (cddddr *notice*)))
-    (pprint *notice*)
    (send-account-approval-email (getf data :id)
                                :text (getf data :text))))
 
