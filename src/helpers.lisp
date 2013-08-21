@@ -129,6 +129,31 @@
     (* (/ 50 (log (+ (/ age 86400) 6)))
        (expt loves 0.3))))
 
+(defun refresh-item-time-in-indexes (id &key (time (get-universal-time)))
+  (let* ((result (gethash id *db-results*))
+         (type (result-type result))
+         (item (db id))
+         (by (case type
+               ((or :offer :request)
+                (getf item :by))
+               (:gratitude (getf item :author)))))
+
+    (when (and (eql *userid* by)
+               (eq type (or :offer :request :gratitude)))
+
+      (setf (result-time result) time)
+      (with-locked-hash-table (*activity-person-index*)
+        (asetf (gethash by *activity-person-index*)
+               (sort it #'> :key #'result-time)))
+
+      (unless (< (result-time result) (- (get-universal-time) 15552000))
+        (unless (< (result-time result) (- (get-universal-time) 2592000))
+          (with-mutex (*recent-activity-mutex*)
+            (setf *recent-activity-index*
+                  (sort (pushnew result *recent-activity-index*)
+                        #'> :key #'result-time))))
+        (geo-index-insert *activity-geo-index* result)))))
+
 (defun url-compose (base &rest params)
   (do ((param-strings ()))
       ((not params) (format nil "~a~a~{~a~^&~}" base (if param-strings "?" "") param-strings))

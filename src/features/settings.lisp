@@ -45,13 +45,7 @@
     base "avatar" "Avatar"
     (cond
       (editable
-        (html
-          (:form :method "post" :action "/settings" :enctype "multipart/form-data"
-            (:input :type "hidden" :name "next" :value "/settings/personal")
-            (:div :class "submit-settings"
-              (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
-              (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
-            (:input :type "file" :name "avatar"))))
+        (new-image-form "/settings" "/settings/personal" :class "submit-settings"))
       (t
         (html
           (:img :class "bigavatar" :src (get-avatar-thumbnail *userid* 300 300)))))
@@ -264,7 +258,7 @@
                                  :value email
                                  "Make primary")
                         " | "
-                        (:button :class "simple-link red"
+                        (:button :class "simple-link gray"
                                  :name "remove-email"
                                  :type "submit"
                                  :value email
@@ -475,7 +469,7 @@
        (see-other (url-compose "/settings/verify-address" 
                                "next" (or (post-parameter "next") "/home")))) 
 
-      ((post-parameter "avatar")
+      ((post-parameter "image")
        (handler-case
          ;hunchentoot returns a list containing (path file-name content-type)
          ;when the post-parameter is a file, i.e. (first it) = path

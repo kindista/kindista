@@ -109,7 +109,11 @@
 (defun delete-gratitude (id)
   (let* ((result (gethash id *db-results*))
          (data (db id))
-         (people (cons (getf data :author) (getf data :subjects))))
+         (people (cons (getf data :author) (getf data :subjects)))
+         (images (getf data :images)))
+
+    (dolist (image-id images)
+      (delete-image image-id))
 
     (with-locked-hash-table (*db-results*)
       (remhash id *db-results*))
@@ -118,6 +122,9 @@
       (dolist (result (gethash id *gratitude-results-index*))
         (geo-index-remove *activity-geo-index* result))
       (remhash id *gratitude-results-index*))
+
+    (with-mutex (*recent-activity-mutex*)
+      (asetf *recent-activity-index* (remove id it :key #'result-id)))
 
     (delete-comments id)
 
@@ -275,9 +282,12 @@
       (standard-page
         "Gratitude"
         (html
-          (str (gratitude-activity-item (make-result :id id
+          (:div :class "gratitude item"
+            (str (gratitude-activity-item (make-result :id id
                                                      :time (getf it :created)
-                                                     :people (cons (getf it :author) (getf it :subjects))))))))
+                                                     :people (cons (getf it :author)
+                                                                   (getf it :subjects))))))
+          (str (item-images-html id)))))
     (not-found)))
 
 (defun post-gratitude (id)
@@ -285,17 +295,6 @@
     (setf id (parse-integer id))
     (aif (db id)
       (cond
-        ((post-parameter "delete")
-         (confirm-delete :url (script-name*)
-                         :type "gratitude"
-                         :text (getf it :text)
-                         :next-url (referer)))
-        ((post-parameter "really-delete")
-         (delete-gratitude id)
-         (flash "Your statement of gratitude has been deleted!")
-         (see-other (or (post-parameter "next") "/home")))
-        ((post-parameter "edit")
-         (see-other (strcat "/gratitude/" id "/edit")))
         ((and (post-parameter "love")
               (member (getf it :type) '(:gratitude :offer :request)))
          (love id)
@@ -303,7 +302,24 @@
         ((and (post-parameter "unlove")
               (member (getf it :type) '(:gratitude :offer :request)))
          (unlove id)
-         (see-other (or (post-parameter "next") (referer)))))
+         (see-other (or (post-parameter "next") (referer))))
+
+        (t
+         (require-test ((or (eql *userid* (getf it :author))
+                            (getf *user* :admin))
+                       (s+ "You can only edit your own statatements of gratitude."))
+           (cond
+             ((post-parameter "delete")
+              (confirm-delete :url (script-name*)
+                              :type "gratitude"
+                              :text (getf it :text)
+                              :next-url (referer)))
+             ((post-parameter "really-delete")
+              (delete-gratitude id)
+              (flash "Your statement of gratitude has been deleted!")
+              (see-other (or (post-parameter "next") "/home")))
+             ((post-parameter "edit")
+              (see-other (strcat "/gratitude/" id "/edit")))))))
       (not-found))))
 
 (defun get-gratitude-edit (id)

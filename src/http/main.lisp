@@ -332,7 +332,7 @@
 (defun send-error-notification-email (message)
   (cl-smtp:send-email +mail-server+
                       "Kindista <noreply@kindista.org>"
-                      "feedback@kindista.org"
+                      *error-message-email*
                       "Kindista Error - Notifying Humans"
                       message))
 
@@ -394,7 +394,7 @@
         (:meta :name "HandheldFriendly" :content "True")
         ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
         (:link :rel "stylesheet" :href "/media/style.css")
-        ;(:script :type "text/javascript" :src "/kindista.js")
+        (:script :type "text/javascript" :src "/kindista.js")
         ;(str "<!--[if lt IE 9]>")
         ;(:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
         ;(str "<![endif]-->")
@@ -499,16 +499,20 @@
                         (right "right")
                         (class class))))
 
-(defun confirm-delete (&key url next-url (type "item") class text)
+(defun confirm-delete (&key url next-url (type "item") class text image-id item-id)
   (standard-page
     "Confirm Delete"
     (html
       (:h1 "Are you sure you want to delete this " (str type) "?")
       (when text
         (htm (:p (cl-who:esc text))))
+      (when image-id
+        (htm (:img :class "activity-image" :src (get-image-thumbnail image-id 300 300))))
       (:form :method "post" :action url
-        (when next-url
-          (htm (:input :type "hidden" :name "next" :value next-url)))
+        (awhen item-id
+          (htm (:input :type "hidden" :name "item-id" :value it)))
+        (awhen next-url
+          (htm (:input :type "hidden" :name "next" :value it)))
         (:a :href next-url "No, I didn't mean it!")  
         (:button :class "yes" :type "submit" :class "submit" :name "really-delete" "Yes")))
     :class class))

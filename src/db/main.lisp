@@ -200,9 +200,9 @@
 (defun geo-index-insert (index item)
   (let ((geocode (geocode (result-latitude item) (result-longitude item))))
     (with-locked-hash-table (*geo-index-index*)
-      (push geocode (gethash (cons index item) *geo-index-index*))) 
+      (pushnew geocode (gethash (cons index item) *geo-index-index*))) 
     (with-locked-hash-table (index)
-      (push item (gethash (geocode (result-latitude item) (result-longitude item)) index)))))
+      (pushnew item (gethash (geocode (result-latitude item) (result-longitude item)) index)))))
 
 (defun geo-index-remove (index item)
   (with-locked-hash-table (*geo-index-index*)

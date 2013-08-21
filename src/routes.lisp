@@ -22,7 +22,6 @@
   (go-home))
 
 (defun get-js ()
-  (setf (ps::ps-package-prefix :kindista-js) "K")
   (with-output-to-string (s)
     (paren-files:compile-script-system :kindista-js :output-stream s)))
 
@@ -61,6 +60,12 @@
 
   ("/contact-us"
     :get go-contact-us)
+
+  ("/image/new"
+    :post post-new-image)
+
+  ("/image/<int:id>"
+    :post post-existing-image)
 
   ("/offers"
    :get get-offers)
