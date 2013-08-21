@@ -327,7 +327,7 @@
 (defun send-error-notification-email (message)
   (cl-smtp:send-email +mail-server+
                       "Kindista <noreply@kindista.org>"
-                      "feedback@kindista.org"
+                      *error-message-email*
                       "Kindista Error - Notifying Humans"
                       message))
 
