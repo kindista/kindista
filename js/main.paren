@@ -2,3 +2,7 @@
 
 (defun foo ()
   123)
+
+(defmacro set-display (element value)
+  `(setf (@ ,element #:style #:display) ,value))
+

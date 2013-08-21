@@ -39,7 +39,7 @@
     (:form :method "post"
            :class (or class "submit-image item")
            :action action
-           :onsubmit (set-display "this.form.spinner" "inline-block")
+          ;:onsubmit (set-display "this.form.spinner" "inline-block")
            :enctype "multipart/form-data"
       (:input :type "hidden" :name "next" :value next)
       (when on (htm (:input :type "hidden" :name "on" :value on)))
@@ -142,13 +142,21 @@
            (flash "You have already posted the maximum of 5 images to this item.  Please delete one to add another." :error t)
            (see-other url))
           (t
-            (handler-case
-              ;; hunchentoot returns a list containing
-              ;; (path file-name content-type) when the
-              ;; post-parameter is a file, i.e. (first it) = path
-              (amodify-db item-id :images (cons (create-image (first image) (third image))
-                                                 it))
-              (t () (flash "Please use a .jpg, .png, or .gif" :error t)))
+            (flet ((modify-item-images (item-id &key edited)
+                     (handler-case
+                       ;; hunchentoot returns a list containing
+                       ;; (path file-name content-type) when the
+                       ;; post-parameter is a file, i.e. (first it) = path
+                       (amodify-db item-id :images (cons (create-image (first image) (third image)) it)
+                                           :edited (when edited edited))
+                       (t () (flash "Please use a .jpg, .png, or .gif" :error t)))))
+              (let ((now (get-universal-time)))
+                (if (and (getf *user* :admin)
+                         (not (eql *userid* by)))
+                  (modify-item-images item-id)
+                  (progn
+                    (refresh-item-time-in-indexes item-id :time now)
+                    (modify-item-images item-id :edited now)))))
             (see-other url)))))))
 
 (defun post-existing-image (id)
