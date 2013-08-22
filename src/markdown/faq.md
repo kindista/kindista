@@ -225,7 +225,7 @@ has also added the person to their own contacts list.*
 
 ### How do invitations work?
 
-Kindista membership is currently "by invitation only."
+Kindista membership is primarily by invitation.
 This means that it is up to **you** to help our network grow.
 We encourage you to send invitations wisely, inviting people you trust 
 who will actively share their resources with, and ask for support from,
