@@ -26,7 +26,6 @@
                :levenshtein
                :paren-files
                :sb-concurrency
-               :adw-charting
                :stem
                :kindista-js)
   :components ((:module src
