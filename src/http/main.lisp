@@ -66,7 +66,7 @@
     (see-other "/home")
     (see-other (or (referer) "/home"))))
 
-;;; routing and jcceptor {{{
+;;; routing and acceptor {{{
 
 (setf *methods-for-post-parameters* '(:post :put))
 
@@ -266,7 +266,9 @@
   (setf (header-out :location) url)
   "")
 
-(defclass k-acceptor (acceptor) ())
+(defclass k-acceptor (acceptor)
+  ((metric-system :initform (make-instance 'metric-system)
+                  :reader acceptor-metric-system)))
 
 (defmethod acceptor-dispatch-request ((acceptor k-acceptor) request)
   (with-token
@@ -279,7 +281,10 @@
               (iter (for rule-method in (cadr rule) by #'cddr)
                     (for rule-function in (cdadr rule) by #'cddr)
                     (when (eq method rule-method)
-                      (leave (with-user (apply (fdefinition rule-function) (coerce results 'list)))))
+                      (leave (with-user
+                               (when *userid*
+                                 (send-metric (acceptor-metric-system acceptor) :active *userid*))
+                               (apply (fdefinition rule-function) (coerce results 'list)))))
                     (finally
                       (setf (return-code*) +http-method-not-allowed+)
                       "that method is not permitted on this URL")))))))

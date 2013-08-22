@@ -36,6 +36,7 @@
         (:div :id "admin-page"
           (:h1 "Admin")
           (:ul
+            (:li (:a :href "/admin/metrics" "user metrics"))
             (:li (:a :href "/admin/pending-accounts" "pending accounts to review"))
             (:li (:a :href "/admin/invite-requests" "invitation requests"))
             (:li (:a :href "/admin/recent" "recently added"))

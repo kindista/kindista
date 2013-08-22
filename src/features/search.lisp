@@ -855,6 +855,7 @@
 
 (defun get-search ()
   (require-user
+    (send-metric* :used-search *userid*)
     (let ((scope (or (get-parameter "scope") "all"))
           (q (get-parameter "q")))
 

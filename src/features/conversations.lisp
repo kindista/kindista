@@ -339,7 +339,8 @@
 
           ((post-parameter "text")
            (flash "Your message has been sent.")
-           (create-comment :on id :text (post-parameter "text"))
+           (send-metric* :message-sent
+                         (create-comment :on id :text (post-parameter "text"))) 
            (see-other (script-name*))))
 
         (permission-denied))

@@ -185,6 +185,7 @@
 (defun get-messages ()
   (require-user
     (modify-db *userid* :last-checked-mail (get-universal-time))
+    (send-metric* :checked-mailbox *userid*)
     (standard-page
 
       "Messages"

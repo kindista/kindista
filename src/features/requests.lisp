@@ -76,6 +76,8 @@
   (post-existing-inventory-item "request" :id id :url (script-name*)))
 
 (defun get-requests ()
+  (when *userid*
+    (send-metric* :got-requests *userid*))
   (with-location
     (let* ((page (if (scan +number-scanner+ (get-parameter "p"))
                    (parse-integer (get-parameter "p"))

@@ -81,6 +81,8 @@
 
 (defun get-offers ()
   (with-user
+    (when *userid*
+      (send-metric* :got-offers *userid*))
     (with-location
       (let* ((page (if (scan +number-scanner+ (get-parameter "p"))
                      (parse-integer (get-parameter "p"))
