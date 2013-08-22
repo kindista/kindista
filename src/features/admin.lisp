@@ -280,7 +280,7 @@
           (:form :action "/admin/sendmail" :method "post"
             (:p
               (:label "From:")
-              (:input :type "text" :name "from" :value "\"Nicholas E. Walker\" <root@kindista.org>"))
+              (:input :type "text" :name "from" :value "\"Benjamin Crandall\" <ben@kindista.org>"))
             (:p
               (:label "Subject:")
               (:input :type "text" :name "subject"))
