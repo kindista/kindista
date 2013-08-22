@@ -286,7 +286,6 @@
               (:input :type "text" :name "subject"))
             (:textarea :name "markdown")
             (:button :type "submit" :name "test" :class "yes" "Send Test")
-            (:button :type "submit" :name "unread-mail" :class "yes" "Send to users with unread mail")
             (:button :type "submit" :class "yes" "Send to everyone"))))
       :selected "admin")))
 
