@@ -25,6 +25,7 @@
                   :hunchentoot
                   :cl-ppcre
                   :kindista-js
+                  :adw-charting
                   :iterate)
             (:import-from :parenscript :ps :ps-inline :@ :create :f)
             (:import-from :cl-fad :file-exists-p)

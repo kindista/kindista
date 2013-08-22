@@ -267,6 +267,12 @@
   ("/admin/pending-accounts/<id>"
     :post post-admin-pending-account)
 
+  ("/admin/metrics"
+    :get get-admin-metrics)
+
+  ("/admin/metrics/metrics.png"
+    :get get-admin-metrics-png)
+
   ("/admin/recent"
     :get get-admin-recent)
 
