@@ -169,13 +169,12 @@
 
 (defun get-invite ()
   (require-active-user
-
     (cond
       ((getf *user* :pending)
        (pending-flash "invite people to join Kindista")
        (see-other (or (referer) "/home"))) 
-      ((eq *userid* 7222)
-       (quick-invite-page :text "Thanks for signing up for Kindista at Beloved."))
+     ;((eq *userid* 7222)
+     ; (quick-invite-page :text "Thanks for signing up for Kindista at Beloved."))
       (t (invite-page :emails (get-parameter "email"))))))
 
 (defun post-invite ()
