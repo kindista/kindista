@@ -151,12 +151,11 @@
                                            :edited (when edited edited))
                        (t () (flash "Please use a .jpg, .png, or .gif" :error t)))))
               (let ((now (get-universal-time)))
-                (if (and (getf *user* :admin)
-                         (not (eql *userid* by)))
-                  (modify-item-images item-id)
+                (if (eql *userid* by)
                   (progn
                     (refresh-item-time-in-indexes item-id :time now)
-                    (modify-item-images item-id :edited now)))))
+                    (modify-item-images item-id :edited now))
+                  (modify-item-images item-id))))
             (see-other url)))))))
 
 (defun post-existing-image (id)

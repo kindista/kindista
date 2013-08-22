@@ -179,7 +179,7 @@
                    ;:comments (length (comments item-id))
                    :content (html
                               (:p (str (person-link user-id))
-                                  (str (if (getf data :editied) " edited " " shared "))
+                                  (str (if (getf data :edited) " edited " " shared "))
                                   (:a :href item-url "gratitude")
                                   " for "
                                   (str (name-list (getf data :subjects) :minimum-links 100)))

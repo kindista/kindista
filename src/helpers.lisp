@@ -139,7 +139,9 @@
                (:gratitude (getf item :author)))))
 
     (when (and (eql *userid* by)
-               (eq type (or :offer :request :gratitude)))
+               (or (eq type :gratitude)
+                   (eq type :offer)
+                   (eq type :request)))
 
       (setf (result-time result) time)
       (with-locked-hash-table (*activity-person-index*)

@@ -79,7 +79,7 @@
              (push result *recent-activity-index*)))
          (geo-index-insert *activity-geo-index* result))))))
 
-(defun modify-inventory-item (id &key text tags latitude longitude images)
+(defun modify-inventory-item (id &key text tags latitude longitude)
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
@@ -129,8 +129,7 @@
       (setf (result-longitude result) longitude)
       (if (eq type :offer)
         (geo-index-insert *offer-geo-index* result)
-        (geo-index-insert *request-geo-index* result))
-      (geo-index-insert *activity-geo-index* result))
+        (geo-index-insert *request-geo-index* result)))
 
     (if (and (getf *user* :admin)
              (not (eql *userid* by)))
@@ -140,10 +139,7 @@
         (modify-db id :text text :tags tags))
 
       (progn
-        (setf (result-time result) now)
-        (with-locked-hash-table (*activity-person-index*)
-          (asetf (gethash by *activity-person-index*)
-                 (sort it #'> :key #'result-time)))
+        (refresh-item-time-in-indexes id :time now)
         (modify-db id :text text :tags tags :lat latitude :long longitude :edited now)))))
 
 (defun delete-inventory-item (id)

@@ -103,7 +103,7 @@
 (defun modify-gratitude (id text)
   (let ((result (gethash id *db-results*))
         (now (get-universal-time)))
-    (setf (result-time result) now)
+    (refresh-item-time-in-indexes id :time now)
     (modify-db id :text text :edited now)))
 
 (defun delete-gratitude (id)
