@@ -687,6 +687,7 @@
 
       :selected "people"
       :right (html
+               (str (login-sidebar))
                (str (donate-sidebar))
                (str (invite-sidebar))))))
 
@@ -706,33 +707,58 @@
 
 (defun get-people-invited ()
   (if *user*
-    (let ((unconfirmed (unconfirmed-invitations))
-          (confirmed (gethash *userid* *invited-index*)))
-      (standard-page
-        "Invited"
-        (html
-          (str (people-tabs-html :tab :invited))
+    (multiple-value-bind (expired-invites valid-invites)
+      (unconfirmed-invitations)
+      (let ((confirmed (gethash *userid* *invited-index*)))
+        (standard-page
+          "Invited"
+          (html
+            (str (people-tabs-html :tab :invited))
 
-          (when unconfirmed
-            (htm
-              (:h2 "Unconfirmed invitations")
-              (:ul
-              (dolist (email unconfirmed)
-                (htm (:li (str email)))))))
+            (when valid-invites
+              (htm
+                (:h3 :class "my-invites" "Awaiting RSVP")
+                (:ul
+                (dolist (invite valid-invites)
+                  (htm (:li (str (cdr invite))))))))
 
-          (when confirmed
-            (htm
-              (dolist (id confirmed)
-                (str (person-card id (db id :name))))))
-          
-          (unless (or confirmed unconfirmed)
-            (htm
-              (:h2 "No invitations yet.")
-              (:p "Would you like to " (:a :href "/invite" "invite someone") "?"))))
+            (when expired-invites
+              (htm
+                (:h3 :class "my-invites" "Expired Invitations")
+                (:ul
+                (dolist (invite expired-invites)
+                  (htm (:li (str (cdr invite))))))))
+
+            (unless (or confirmed expired-invites valid-invites)
+              (htm
+                (:h2 "No invitations yet.")))
+
+            (:p
+              "Would you like to "
+              (:a :href "/invite" (str (s+ "invite someone"
+                                           (when (or confirmed
+                                                      expired-invites
+                                                      valid-invites)
+                                           " else"))))
+              "?"))
 
         :selected "people"
         :right (html
                  (str (donate-sidebar))
-                 (str (invite-sidebar)))))
+                 (str (invite-sidebar))))))
       (see-other "/people/nearby")))
 
+(defun post-people-invited ()
+  (require-acive-user
+    (let* ((id (parse-integer (post-parameter "invite-id")))
+           (invitation (db id))
+           (email (getf invitation :recipient-email)))
+      (when (eql (getf invitation :host) *userid*)
+        (cond
+          ((post-parameter "delete")
+           (delete-invitation id)
+           (flash (s+ "Your invitation to " email " has been deleted."))
+           (see-other "/people/invited"))
+          )))
+     )
+  )

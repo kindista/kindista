@@ -1235,7 +1235,7 @@ menu .newcount {
  margin-bottom: 0.6em;
 }
 
-.event h3.event-date {
+h3.event-date, h3.my-invites {
  line-height: 2em;
  background: #f3f3f3;
  border-bottom-style: solid;
