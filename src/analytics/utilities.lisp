@@ -35,19 +35,15 @@
 
 (defun get-admin-metrics-png ()
   (setf (content-type*) "image/png")
-  (let ((filename (s+ *metrics-path*
-                      (humanize-exact-time (get-universal-time) :year-first t)
-                      ".png")))
-    (if (file-exists-p filename)
-      filename
-      (with-chart (:line 600 600)
-       (add-series "Active Kindista Accounts"
-         (active-kindista-accounts-over-time))
-         (set-axis :y "Accounts" :data-interval 20)
-         (set-axis :x "Date"
-                   :label-formatter #'chart-date-labels
-                   :angle 90)
-         (save-file filename)))))
+  (with-output-to-string (s)
+    (with-chart (:line 600 600)
+     (add-series "Active Kindista Accounts"
+       (active-kindista-accounts-over-time))
+       (set-axis :y "Accounts" :data-interval 20)
+       (set-axis :x "Date"
+                 :label-formatter #'chart-date-labels
+                 :angle 90)
+       (save-stream s))))
 
 (defun chart-date-labels (timecode)
   (multiple-value-bind (time date-name formatted-date)

@@ -1,6 +1,6 @@
 ;;; Copyright 2012-2013 CommonGoods Network, Inc.
 ;;;
-;;; This file is part of Kindista.
+;; This file is part of Kindista.
 ;;;
 ;;; Kindista is free software: you can redistribute it and/or modify it
 ;;; under the terms of the GNU Affero General Public License as published
@@ -42,6 +42,14 @@
             (:li (:a :href "/admin/recent" "recently added"))
             (:li (:a :href "/admin/sendmail" "send email to everyone")))))
       :selected "admin")))
+
+(defun get-admin-metrics ()
+  (require-admin
+    (standard-page
+      "Admin"
+       (html
+         (:p (:a :href "/admin" "back to admin"))
+         (:img :src "/admin/metrics/metrics.png")))))
 
 (defun get-admin-pending-accounts ()
   (require-admin
