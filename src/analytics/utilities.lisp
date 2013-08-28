@@ -113,14 +113,15 @@
         when (eq (result-type result) :gratitude)
         collect (cons (result-id result) (db (result-id result) :text))))
 
-(defun eugene-members ()
+(defun local-members (&key focal-point-id (distance 25))
+"Provides values for a list of people within :distance (default=25 miles) 
+of a given :focal-point-id (default=Eugene OR), followed by the length of that list.
+Any id can be used as long as (getf id :lat/long) provides meaningful result."
+
   (with-location
-    (length
-      (iter (for person in *active-people-index*)
-        (let* ((person (db person))
-               (lat (getf person :lat))
-               (long (getf person :long)))
-          (when (and lat
-                     long
-                     (< (air-distance *latitude* *longitude* lat long) 25))
-            (collect person)))))))
+    (let* ((focal-point-data (awhen focal-point-id (db it)))
+           (lat (or (getf focal-point-data :lat) *latitude*))
+           (long (or (getf focal-point-data :long) *longitude*))
+           (people (mapcar #'result-id
+                     (geo-index-query *people-geo-index* lat long distance))))
+      (values people (length people)))))
