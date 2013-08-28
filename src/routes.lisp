@@ -148,7 +148,8 @@
     :get get-people-suggested)
 
   ("/people/invited"
-    :get get-people-invited)
+    :get get-people-invited
+    :post post-people-invited)
 
   ("/people/<id>"
     :get get-person)

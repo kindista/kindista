@@ -38,7 +38,7 @@
   (add-notice-handler :account-approval #'account-approval-notice-handler)
   (add-notice-handler :new-comment #'new-comment-notice-handler)
   (add-notice-handler :new-feedback #'new-feedback-notice-handler)
-  (add-notice-handler :new-invitation #'new-invitation-notice-handler)
+  (add-notice-handler :send-invitation #'send-invitation-notice-handler)
   (add-notice-handler :new-pending-offer #'new-pending-offer-notice-handler)
   (add-notice-handler :new-invite-request #'new-invite-request-notice-handler)
   (add-notice-handler :new-gratitude #'new-gratitude-notice-handler))

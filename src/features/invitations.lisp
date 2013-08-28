@@ -17,7 +17,7 @@
 
 (in-package :kindista)
 
-(defun new-invitation-notice-handler ()
+(defun send-invitation-notice-handler ()
   (let* ((invitation-id (getf (cddddr *notice*) :id))
          (invitation (db invitation-id))
          (host (getf invitation :host))
@@ -43,7 +43,7 @@
                                   :name ,name
                                   :valid-until ,(+ time expires)))))
 
-    (notice :new-invitation :time time :id invitation)
+    (notice :send-invitation :time time :id invitation)
     invitation))
 
 (defun index-invitation (id data)
@@ -147,7 +147,7 @@
           (:p "Include a message for your recipient(s): (optional)")
           (:textarea :rows "6" :name "text" :placeholder "Enter your message here..." (str (when text text)))
           (:p 
-            (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel") 
+            (:button :type "submit" :class "cancel" :name "cancel" "Cancel") 
             (:button :class "yes" :type "submit" :class "submit" :name "review" "Next")))))))
 
 (defun confirm-invitations (&key text emails bulk-emails next-url)
@@ -254,6 +254,27 @@
                           :text (unless (string= (post-parameter "text") "")
                                   (post-parameter "text")))
        (flash (strcat "An invitation has been sent to "
+
                       (post-parameter "email")))
        (see-other "invite"))))))
 
+(defun resend-invitation-html (id)
+  (let* ((invitation (db id))
+         (email (getf invitation :recipient-email))
+         (message (getf invitation :text)))
+    (standard-page
+      "Resend an invitation"
+      (html
+        (:div :class "item"
+          (:form :method "post" :action "/people/invited"
+            (:input :type "hidden" :name "invite-id" :value id)
+            (:h2 (str (s+ "Resend your invitation to " email)))
+            (if message
+              (htm (:p "Edit your message for this invitation (optional)."))
+              (htm (:p "Include a personal message with this invitation (optional).")))
+            (:textarea :rows "6" :name "text" :placeholder "Enter your message here..."
+             (str (awhen message it)))
+
+            (:p
+              (:button :type "submit" :class "cancel" :name "cancel" "Cancel") 
+              (:button :class "yes" :type "submit" :class "submit" :name "confirm-resend" "Resend"))))))))
