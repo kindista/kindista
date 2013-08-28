@@ -25,46 +25,40 @@
 ; number of users who have commented on a conversation (&key period-start period-end)
 ; number of users who have used kindista (&key period-start period-end)
 
-(defun get-admin-metrics ()
-  (require-admin
-    (standard-page
-      "Admin"
-       (html
-         (:p (:a :href "/admin" "back to admin"))
-         (:img :src "/admin/metrics/metrics.png")))))
+(defun get-admin-metrics-png ()
+  (setf (content-type*) "image/png")
+  (with-chart (:line 600 600)
+   (add-series "Active Kindista Accounts"
+     (active-kindista-accounts-over-time))
+     (set-axis :y "Accounts" :data-interval 20)
+     (set-axis :x "Date"
+               :label-formatter #'chart-date-labels
+               :angle 90)
+     (save-stream (send-headers))))
 
-;(defun get-admin-metrics-png ()
-;  (setf (content-type*) "image/png")
-;  (with-output-to-string (str)
-;    (with-chart (:line 600 600)
-;      (add-series "Active Kindista Accounts"
-;        (active-kindista-accounts-over-time))
-;        (set-axis :y "Accounts")
-;        (set-axis :x "Date")
-;        (save-stream str))))
+(defun chart-date-labels (timecode)
+  (multiple-value-bind (time date-name formatted-date)
+    (humanize-exact-time timecode)
+    (declare (ignore time date-name))
+    formatted-date))
 
-;(defun active-kindista-accounts-over-time ()
-;  (let ((day nil))
-;    (loop for i
-;          from (floor (/ (parse-datetime "05/01/2013") +day-in-seconds+))
-;          to (floor (/ (get-universal-time) +day-in-seconds+))
-;          do (setf day (* i +day-in-seconds+))
-;          collect (list
-;                    (multiple-value-bind (time date formatted)
-;                        (humanize-exact-time day)
-;                      (declare (ignore time formatted))
-;                      date)
-;                    (active-people day)))))
+(defun active-kindista-accounts-over-time ()
+  (let ((day nil))
+    (loop for i
+          from (floor (/ (parse-datetime "05/01/2013") +day-in-seconds+))
+          to (floor (/ (get-universal-time) +day-in-seconds+))
+          do (setf day (* i +day-in-seconds+))
+          collect (list day (active-people day)))))
 
-;(defun basic-chart ()
-;  (with-open-file (file (s+ *metrics-path* "active-accounts")
-;                        :direction :output
-;                        :if-exists :supersede)
-;    (with-standard-io-syntax
-;      (let ((*print-pretty* t))
-;        (prin1
-;          (active-kindista-accounts-over-time)
-;          file)))))
+(defun basic-chart ()
+  (with-open-file (file (s+ *metrics-path* "active-accounts")
+                        :direction :output
+                        :if-exists :supersede)
+    (with-standard-io-syntax
+      (let ((*print-pretty* t))
+        (prin1
+          (active-kindista-accounts-over-time)
+          file)))))
 
 (defun active-people (&optional date)
   "Returns number of active accounts on Kindista.
