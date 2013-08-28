@@ -27,18 +27,21 @@
                :paren-files
                :sb-concurrency
                :stem
+               :adw-charting-vecto
                :kindista-js)
   :components ((:module src
                 :serial t
                 :components ((:file "package")
                              (:file "helpers")
-                             (:file "metric-system")
-                             (:file "metrics")
                              (:file "settings")
                              (:module db
                               :serial t
                               :components ((:file "indexes")
                                            (:file "main")))
+                             (:module analytics
+                                      :serial t
+                                      :components ((:file "utilities")
+                                                   (:file "metric-system")))
                              (:module log
                               :serial t
                               :components ((:file "main")

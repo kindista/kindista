@@ -83,7 +83,7 @@
       (t
        (strcat "in " (floor (/ seconds 31536000)) " years")))))
 
-(defun humanize-exact-time (universal-time &key detailed)
+(defun humanize-exact-time (universal-time &key detailed year-first)
  (multiple-value-bind (seconds minutes hours date month year day-of-week)
      (decode-universal-time universal-time)
    (declare (ignore seconds))
@@ -101,9 +101,10 @@
           (formatted-date (strcat month "/" date "/" year))
           (date-name (strcat day-name ", " month-name " " date ", " year )))
 
-     (if detailed
-       (s+ date-name " at " time)
-       (values time date-name formatted-date)))))
+     (cond
+      (detailed (s+ date-name " at " time))
+      (year-first (strcat year "-" month "-" date))
+      (t (values time date-name formatted-date))))))
 
 (defun inline-timestamp (time &key type url)
   (let ((inner (html
