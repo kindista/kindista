@@ -101,7 +101,7 @@
                            :got-requests got-requests
                            :messages-sent messages-sent
                            :total-active-users (active-people)
-                           :total-eugene-users (eugene-members)
+                           :total-eugene-users (local-members)
                            :total-requests requests
                            :total-offers offers
                            :total-gratitudes gratitudes)
