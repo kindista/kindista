@@ -25,25 +25,16 @@
 ; number of users who have commented on a conversation (&key period-start period-end)
 ; number of users who have used kindista (&key period-start period-end)
 
-(defun get-admin-metrics ()
-  (require-admin
-    (standard-page
-      "Admin"
-       (html
-         (:p (:a :href "/admin" "back to admin"))
-         (:img :src "/admin/metrics/metrics.png")))))
-
 (defun get-admin-metrics-png ()
   (setf (content-type*) "image/png")
-  (with-output-to-string (s)
-    (with-chart (:line 600 600)
-     (add-series "Active Kindista Accounts"
-       (active-kindista-accounts-over-time))
-       (set-axis :y "Accounts" :data-interval 20)
-       (set-axis :x "Date"
-                 :label-formatter #'chart-date-labels
-                 :angle 90)
-       (save-stream s))))
+  (with-chart (:line 600 600)
+   (add-series "Active Kindista Accounts"
+     (active-kindista-accounts-over-time))
+     (set-axis :y "Accounts" :data-interval 20)
+     (set-axis :x "Date"
+               :label-formatter #'chart-date-labels
+               :angle 90)
+     (save-stream (send-headers))))
 
 (defun chart-date-labels (timecode)
   (multiple-value-bind (time date-name formatted-date)
