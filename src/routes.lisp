@@ -292,8 +292,5 @@
   ;js
 
   ("/kindista.js"
-   :get get-js)
-
-  ("/sometimes-people-need-a-little-more-encouragement"
-    :get send-all-reminders))
+   :get get-js))
 

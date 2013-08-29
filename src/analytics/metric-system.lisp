@@ -101,7 +101,10 @@
                            :got-requests got-requests
                            :messages-sent messages-sent
                            :total-active-users (active-people)
-                           :total-eugene-users (local-members)
+                           :total-eugene-users (multiple-value-bind (people people-count)
+                                                 (local-members)
+                                                 (declare (ignore people))
+                                                 people-count)
                            :total-requests requests
                            :total-offers offers
                            :total-gratitudes gratitudes)
