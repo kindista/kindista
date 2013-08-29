@@ -38,14 +38,14 @@
                               :serial t
                               :components ((:file "indexes")
                                            (:file "main")))
-                             (:module analytics
-                                      :serial t
-                                      :components ((:file "utilities")
-                                                   (:file "metric-system")))
                              (:module log
                               :serial t
                               :components ((:file "main")
                                            (:file "events")))
+                             (:module analytics
+                                      :serial t
+                                      :components ((:file "utilities")
+                                                   (:file "metric-system")))
                              (:module http
                               :serial t
                               :components ( (:file "main")))
