@@ -18,6 +18,7 @@
 (in-package :kindista)
 
 (defparameter *show-errors* t)
+(defparameter *productionp* nil)
 (defparameter *convert-path* "/usr/bin/convert")
 (defparameter *original-images* "/srv/kindista/data/images/")
 (defparameter *images-path* "/srv/kindista/media/images/")
