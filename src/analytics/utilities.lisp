@@ -117,11 +117,11 @@
 "Provides values for a list of people within :distance (default=25 miles) 
 of a given :focal-point-id (default=Eugene OR), followed by the length of that list.
 Any id can be used as long as (getf id :lat/long) provides meaningful result."
-
-  (with-location
-    (let* ((focal-point-data (awhen focal-point-id (db it)))
-           (lat (or (getf focal-point-data :lat) *latitude*))
-           (long (or (getf focal-point-data :long) *longitude*))
-           (people (mapcar #'result-id
-                     (geo-index-query *people-geo-index* lat long distance))))
-      (values people (length people)))))
+  (let* ((focal-point-data (if (db focal-point-id :lat)
+                             (db focal-point-id)
+                             (db +kindista-id+)))
+         (lat (getf focal-point-data :lat))
+         (long (getf focal-point-data :long))
+         (people (mapcar #'result-id
+                   (geo-index-query *people-geo-index* lat long distance))))
+    (values people (length people))))
