@@ -1692,6 +1692,22 @@ div.activity-image {
  margin:5px;
 }
 
+#my-invites ul {
+ padding-left:0;
+}
+
+#my-invites form {
+ float: right;
+ overflow: hidden;
+}
+
+#my-invites button {
+ padding: 0;
+ text-align: middle;
+ margin-left: 0.5em;
+ font-size: 0.8em;
+}
+
 div.activity ul.mutuals-list {
  padding: 0;
  margin-left: 0.6em;

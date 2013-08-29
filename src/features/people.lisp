@@ -715,38 +715,40 @@
           (html
             (str (people-tabs-html :tab :invited))
 
-            (when valid-invites
-              (htm
-                (:h3 :class "my-invites" "Awaiting RSVP")
-                (:ul
-                (dolist (invite valid-invites)
-                  (htm (:li (str (cdr invite))))))))
+            (:div :id "my-invites"
+              (when valid-invites
+               (htm
+                 (:h3 :class "my-invites" "Awaiting RSVP")
+                 (:ul
+                 (dolist (invite valid-invites)
+                   (htm (:li (str (cdr invite))))))))
 
-            (when expired-invites
-              (htm
-                (:h3 :class "my-invites" "Expired Invitations")
-                (:ul
-                (dolist (invite expired-invites)
-                  (htm
-                    (:li
-                      (:form :method "post" :action "/people/invited"
-                        (:input :type "hidden" :name "invite-id" :value (car invite))
+              (when expired-invites
+                (htm
+                  (:h3 :class "my-invites" "Expired Invitations")
+                  (:ul
+                  (dolist (invite expired-invites)
+                    (htm
+                      (:li
                         (str (cdr invite))
-                        (:button :class "cancel" :type "submit" :name "delete" "Delete")
-                        (:button :class "yes" :type "submit" :name "resend" "Resend invite"))))))))
+                        (:form :method "post" :action "/people/invited"
+                          (:input :type "hidden" :name "invite-id" :value (car invite))
+                          (:button :class "yes" :type "submit" :name "resend" "Resend invite")
+                          (:button :class "cancel" :type "submit" :name "delete" "Delete")
+                          )))))))
 
-            (unless (or confirmed expired-invites valid-invites)
-              (htm
-                (:h2 "No invitations yet.")))
+              (unless (or confirmed expired-invites valid-invites)
+                (htm
+                  (:h2 "No invitations yet.")))
 
-            (:p
-              "Would you like to "
-              (:a :href "/invite" (str (s+ "invite someone"
-                                           (when (or confirmed
-                                                      expired-invites
-                                                      valid-invites)
-                                           " else"))))
-              "?"))
+              (:p
+                "Would you like to "
+                (:a :href "/invite" (str (s+ "invite someone"
+                                             (when (or confirmed
+                                                        expired-invites
+                                                        valid-invites)
+                                             " else"))))
+                "?")))
 
         :selected "people"
         :right (html
