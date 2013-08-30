@@ -35,7 +35,7 @@
                          :html-message html))))
 
 (defun invitee-count (id)
-  (+ (or (awhen (unconfirmed-invitations id) (length it)) 0)
+  (+ (or (length (gethash id *person-invitation-index*)) 0)
      (or (length (gethash id *invited-index*)) 0)))
 
 (defun send-all-reminders ()

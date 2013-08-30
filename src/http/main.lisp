@@ -503,7 +503,7 @@
   (standard-page
     "Confirm Delete"
     (html
-      (:h1 "Are you sure you want to delete this " (str type) "?")
+      (:h2 "Are you sure you want to delete this " (str type) "?")
       (when text
         (htm (:p (cl-who:esc text))))
       (when image-id

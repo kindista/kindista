@@ -74,6 +74,13 @@
   (do ((new-token (random-password length) (random-password length)))
       ((unique-invite-token-p new-token) new-token)))
 
+(defun add-sent-parameter-to-all-invitations ()
+  (dolist (invitation (hash-table-values *invitation-index*))
+    (let* ((id (car invitation))
+           (invite (db id))
+           (sent (- (getf invite :valid-until) 2592000)))
+      (modify-db id :times-sent (list sent)))))
+
 (defun add-alt-email (invitation-id)
   (let* ((invitation (db invitation-id))
          (userid (getf invitation :host))
@@ -84,21 +91,23 @@
       (setf (gethash email *email-index*) *userid*)))
     (delete-invitation invitation-id))
 
-(defun unconfirmed-invitations (&optional (host *userid*))
+(defun delete-duplicate-invitations (&optional (host *userid*))
+"Deletes duplicate invites from this host and invitations to any current Kindista members.
+ Returns an association list of (invite-id . recipient-email)."
   (let ((all-invites (gethash host *person-invitation-index*))
-        (now (get-universal-time))
-        (valid-invitations nil)
-        (expired-invitations nil))
+        (unconfirmed nil))
     (dolist (id all-invites)
       (let ((invitation (db id)))
         (awhen (getf invitation :recipient-email)
-          (cond
-            ((member it (hash-table-keys *email-index*) :test #'string=)
-             (delete-invitation id))
-            ((> (getf invitation :valid-until) now)
-             (pushnew (cons id it) valid-invitations :test #'equal))
-            (t (pushnew (cons id it) expired-invitations :test #'equal))))))
-    (values expired-invitations valid-invitations)))
+          (if (or (member it (hash-table-keys *email-index*) :test #'string=)
+                  (assoc id unconfirmed))
+            (delete-invitation id)
+            (pushnew (cons id it) unconfirmed :test #'equal)))))
+    unconfirmed))
+
+(defun invitee-count (userid)
+  (+ (or (length (gethash userid *person-invitation-index*)) 0)
+     (or (length (gethash userid *invited-index*)) 0)))
 
 (defun emails-awaiting-rsvp ()
   (let ((kindista-invites nil)

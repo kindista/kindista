@@ -586,6 +586,10 @@ button.gray {
   padding: 0.5em 0.7em;
 }
 
+.gray-text {
+ color: #999;
+}
+
 a.red {
  color: #900;
 }
@@ -1697,15 +1701,19 @@ div.activity-image {
 }
 
 #my-invites form {
- float: right;
- overflow: hidden;
+ display: inline-block;
+ vertical-align: middle;
 }
 
 #my-invites button {
- padding: 0;
- text-align: middle;
- margin-left: 0.5em;
+ margin-right: 0.7em;
+ padding: 0 0.3em;
  font-size: 0.8em;
+}
+
+#my-invites li {
+ padding: 0.2em 0;
+ border-bottom: 1px solid #eee;
 }
 
 div.activity ul.mutuals-list {

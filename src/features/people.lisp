@@ -707,63 +707,71 @@
 
 (defun get-people-invited ()
   (if *user*
-    (multiple-value-bind (expired-invites valid-invites)
-      (unconfirmed-invitations)
-      (let ((confirmed (gethash *userid* *invited-index*)))
-        (standard-page
-          "Invited"
-          (html
-            (str (people-tabs-html :tab :invited))
+    (let ((confirmed (gethash *userid* *invited-index*))
+          (unconfirmed (delete-duplicate-invitations)))
+      (standard-page
+        "Invited"
+        (html
+          (str (people-tabs-html :tab :invited))
 
-            (:div :id "my-invites"
-              (when valid-invites
-               (htm
-                 (:h3 :class "my-invites" "Awaiting RSVP")
-                 (:ul
-                 (dolist (invite valid-invites)
-                   (htm (:li (str (cdr invite))))))))
+          (:div :id "my-invites"
+            (when unconfirmed
+              (htm
+                (:h3 :class "my-invites" "Awaiting RSVP ")
+                (:ul
+                  (dolist (invite unconfirmed)
+                    (let* ((id (car invite))
+                           (email (cdr invite))
+                           (invitation (db id))
+                           (sent (car (getf invitation :times-sent)))
+                           (expired (awhen (getf invitation :valid-until)
+                                      (when (< it (get-universal-time)) t))))
+                      (htm
+                        (:li
+                          (:form :method "post" :action "/people/invited"
+                            (:input :type "hidden" :name "invite-id" :value (car invite))
+                            (:button :class "yes" :type "submit" :name "resend"
+                              (if expired
+                                (htm "Renew invitation")
+                                (htm "Resend invite")))
+                            (:button :class "cancel" :type "submit" :name "delete" "Delete"))
+                          (str email)
+                          (:small :class "gray-text"
+                            (if expired
+                              (htm " expired")
+                              (str (s+ " (invited " (humanize-universal-time sent) ")")))))))))))
 
-              (when expired-invites
-                (htm
-                  (:h3 :class "my-invites" "Expired Invitations")
-                  (:ul
-                  (dolist (invite expired-invites)
-                    (htm
-                      (:li
-                        (str (cdr invite))
-                        (:form :method "post" :action "/people/invited"
-                          (:input :type "hidden" :name "invite-id" :value (car invite))
-                          (:button :class "yes" :type "submit" :name "resend" "Resend invite")
-                          (:button :class "cancel" :type "submit" :name "delete" "Delete")
-                          )))))))
+            (unless (or unconfirmed confirmed)
+              (htm
+                (:h2 "No invitations yet.")))
 
-              (unless (or confirmed expired-invites valid-invites)
-                (htm
-                  (:h2 "No invitations yet.")))
-
-              (:p
-                "Would you like to "
-                (:a :href "/invite" (str (s+ "invite someone"
-                                             (when (or confirmed
-                                                        expired-invites
-                                                        valid-invites)
+            (:p
+              "Would you like to "
+              (:a :href "/invite" (str (s+ "invite someone"
+                                           (when (or unconfirmed confirmed)
                                              " else"))))
-                "?")))
+              "?")))
 
         :selected "people"
         :right (html
                  (str (donate-sidebar))
-                 (str (invite-sidebar))))))
+                 (str (invite-sidebar)))))
       (see-other "/people/nearby")))
 
 (defun post-people-invited ()
   (require-active-user
-    (let* ((id (parse-integer (post-parameter "invite-id")))
+    (let* ((id (parse-integer (or (post-parameter "invite-id")
+                                  (post-parameter "item-id"))))
            (invitation (db id))
            (email (getf invitation :recipient-email)))
       (when (eql (getf invitation :host) *userid*)
         (cond
           ((post-parameter "delete")
+           (confirm-delete :url "/people/invited"
+                           :item-id id
+                           :next-url "/people/invited"
+                           :type (s+ "invitation to " email)))
+          ((post-parameter "really-delete")
            (delete-invitation id)
            (flash (s+ "Your invitation to " email " has been deleted."))
            (see-other "/people/invited"))
@@ -772,7 +780,9 @@
           ((post-parameter "cancel")
            (see-other "/people/invited"))
           ((post-parameter "confirm-resend")
-           (modify-db id :text (post-parameter "text")
-                         :valid-until (+ (get-universal-time) 2592000))
+           (let ((now (get-universal-time)))
+             (amodify-db id :text (post-parameter "text")
+                            :sent (push now it)
+                            :valid-until (+ now 2592000)))
            (flash (strcat "Your invitation to " email "has been resent."))
            (see-other "/people/invited")))))))
