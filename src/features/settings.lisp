@@ -372,6 +372,10 @@
                 :checked (when (getf *user* :notify-reminders) "checked"))
                "with occasional suggestions about how I can get the most out of Kindista")
           (:li (:input :type "checkbox"
+                :name "expired-invites"
+                :checked (when (getf *user* :notify-expired-invites) "checked"))
+               "when invitatations I send for my friends to join Kindista expire")
+          (:li (:input :type "checkbox"
                 :name "kindista"
                 :checked (when (getf *user* :notify-kindista) "checked"))
                "with updates and information about Kindista"))))
@@ -557,6 +561,7 @@
        (modify-db *userid* :notify-gratitude (when (post-parameter "gratitude") t))
        (modify-db *userid* :notify-message (when (post-parameter "message") t))
        (modify-db *userid* :notify-reminders (when (post-parameter "reminders") t))
+       (modify-db *userid* :notify-expired-invites (when (post-parameter "expired-invites") t))
        (modify-db *userid* :notify-kindista (when (post-parameter "kindista") t))
        (flash "Your notification preferences have been saved.")
        (see-other (or (post-parameter "next") "/home")))

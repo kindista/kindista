@@ -708,12 +708,11 @@
 (defun get-people-invited ()
   (if *user*
     (let ((confirmed (gethash *userid* *invited-index*))
-          (unconfirmed (delete-duplicate-invitations)))
+          (unconfirmed (unconfirmed-invites)))
       (standard-page
         "Invited"
         (html
           (str (people-tabs-html :tab :invited))
-
           (:div :id "my-invites"
             (when unconfirmed
               (htm
@@ -723,7 +722,8 @@
                     (let* ((id (car invite))
                            (email (cdr invite))
                            (invitation (db id))
-                           (sent (car (getf invitation :times-sent)))
+                           (sent (or (car (getf invitation :times-sent))
+                                     (get-universal-time)))
                            (expired (awhen (getf invitation :valid-until)
                                       (when (< it (get-universal-time)) t))))
                       (htm
@@ -780,9 +780,6 @@
           ((post-parameter "cancel")
            (see-other "/people/invited"))
           ((post-parameter "confirm-resend")
-           (let ((now (get-universal-time)))
-             (amodify-db id :text (post-parameter "text")
-                            :sent (push now it)
-                            :valid-until (+ now 2592000)))
+           (resend-invitation id :text (awhen (post-parameter "text") it))
            (flash (strcat "Your invitation to " email "has been resent."))
            (see-other "/people/invited")))))))

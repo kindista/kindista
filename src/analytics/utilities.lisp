@@ -107,7 +107,6 @@
 (defun outstanding-invitations-count ()
   (hash-table-count *invitation-index*))
 
-
 (defun gratitude-texts ()
   (loop for result in (hash-table-values *db-results*)
         when (eq (result-type result) :gratitude)

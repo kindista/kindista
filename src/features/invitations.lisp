@@ -1,5 +1,6 @@
 ;;; Copyright 2012-2013 CommonGoods Network, Inc.
 ;;;
+;;;
 ;;; This file is part of Kindista.
 ;;;
 ;;; Kindista is free software: you can redistribute it and/or modify it
@@ -22,6 +23,7 @@
          (invitation (db invitation-id))
          (host (getf invitation :host))
          (self (getf invitation :self)))
+   (pprint invitation-id)
    (cond
      (self
        (send-email-verification invitation-id))
@@ -30,17 +32,18 @@
      (t
       (send-invitation-email invitation-id)))))
 
-(defun create-invitation (email &key text invite-request-id (expires 2592000) (host *userid*) (self nil) name)
+(defun create-invitation (email &key text invite-request-id (expires (* 90 +day-in-seconds+)) (host *userid*) (self nil) name)
 ; self invitations are verifications for alternate email addresses
   (let* ((time (get-universal-time))
          (invitation (insert-db `(:type :invitation
                                   :host ,host
                                   :invite-request-id ,invite-request-id
-                                  :token ,(random-invitation-token 9)
+                                  :token ,(random-password 9)
                                   :self ,self
                                   :recipient-email ,email
                                   :text ,text
                                   :name ,name
+                                  :times-sent ,(list time)
                                   :valid-until ,(+ time expires)))))
 
     (notice :send-invitation :time time :id invitation)
@@ -50,35 +53,69 @@
   (declare (ignore data))
   (let* ((invitation (db id))
          (host (getf invitation :host))
-         (token (getf invitation :token)))
-   (with-locked-hash-table (*invitation-index*)
-     (push id (gethash token *invitation-index*)))
-   (with-locked-hash-table (*person-invitation-index*)
-      (push id (gethash host *person-invitation-index*)))))
-
-(defun delete-invitation (invitation-id)
-  (let* ((invitation (db invitation-id))
-         (host (getf invitation :host))
+         (email (getf invitation :email))
+         (sent (car (getf invitation :times-sent)))
          (token (getf invitation :token)))
     (with-locked-hash-table (*invitation-index*)
-      (remhash token *invitation-index*))
+      (push (cons id token) (gethash email *invitation-index*)))
+    (unless (getf invitation :auto-reminder-sent)
+      (with-mutex (*invitation-reminder-timer-mutex*)
+        (sort (push (cons sent id) *invitation-reminder-timer-index*) #'< :key #'car)))
+    (with-locked-hash-table (*person-invitation-index*)
+       (push id (gethash host *person-invitation-index*)))))
+
+(defun delete-invitation (id)
+  (let* ((invitation (db id))
+         (host (getf invitation :host))
+         (email (getf invitation :email)))
+    (with-locked-hash-table (*invitation-index*)
+      (let ((invitations (gethash email *invitation-index*)))
+        (if (> (length invitations) 1)
+          (asetf invitations (remove (assoc id invitations) it))
+          (remhash email *invitation-index*))))
+    (with-mutex (*invitation-reminder-timer-mutex*)
+      (remove (rassoc id *invitation-reminder-timer-index*)
+              *invitation-reminder-timer-index*
+              :test #'equal))
     (with-locked-hash-table (*person-invitation-index*)
       (asetf (gethash host *person-invitation-index*)
-             (remove invitation-id it)))
-    (remove-from-db invitation-id)))
+             (remove id it)))
+    (remove-from-db id)))
 
-(defun unique-invite-token-p (token)
-  (not (member token (hash-table-keys *invitation-index*) :test #'string=)))
+(defun resend-invitation (id &key text)
+  (let ((now (get-universal-time))
+        (sent (db id :times-sent)))
+    (if text
+      (amodify-db id :text text
+                     :times-sent (push now it)
+                     :expired-notice-sent nil
+                     :valid-until (+ now (* 90 +day-in-seconds+)))
+      (amodify-db id :times-sent (push now it)
+                     :expired-notice-sent nil
+                     :valid-until (+ now (* 90 +day-in-seconds+))))
+    (with-mutex (*invitation-reminder-timer-mutex*)
+      (remove (cons (cadr sent) id) *invitation-reminder-timer-index* :test #'equal)
+      (sort (push (cons (car sent) id) *invitation-reminder-timer-index*) #'< :key #'car) )
+  (notice :send-invitation :time now :id id)))
 
-(defun random-invitation-token (length)
-  (do ((new-token (random-password length) (random-password length)))
-      ((unique-invite-token-p new-token) new-token)))
+(defun send-automatic-invitation-reminder (id)
+  (with-mutex (*invitation-reminder-timer-mutex*)
+    (remove (rassoc id *invitation-reminder-timer-index*)
+            *invitation-reminder-timer-index*
+            :test #'equal))
+  (send-invitation-email id :reminder-type :auto)
+  (amodify-db id :times-sent (push (get-universal-time) it)))
 
 (defun add-sent-parameter-to-all-invitations ()
   (dolist (invitation (hash-table-values *invitation-index*))
     (let* ((id (car invitation))
            (invite (db id))
-           (sent (- (getf invite :valid-until) 2592000)))
+           (host (getf invite :host))
+           (sent (- (getf invite :valid-until)
+                    (* +day-in-seconds+
+                       (if (and (eql host +kindista-id+) (> id 4776))
+                          60
+                          30)))))
       (modify-db id :times-sent (list sent)))))
 
 (defun add-alt-email (invitation-id)
@@ -91,38 +128,98 @@
       (setf (gethash email *email-index*) *userid*)))
     (delete-invitation invitation-id))
 
-(defun delete-duplicate-invitations (&optional (host *userid*))
-"Deletes duplicate invites from this host and invitations to any current Kindista members.
- Returns an association list of (invite-id . recipient-email)."
+(defun unconfirmed-invites (&optional (host *userid*))
+"Returns an association list of (invite-id . recipient-email)."
   (let ((all-invites (gethash host *person-invitation-index*))
         (unconfirmed nil))
     (dolist (id all-invites)
       (let ((invitation (db id)))
         (awhen (getf invitation :recipient-email)
-          (if (or (member it (hash-table-keys *email-index*) :test #'string=)
-                  (assoc id unconfirmed))
-            (delete-invitation id)
-            (pushnew (cons id it) unconfirmed :test #'equal)))))
+          (push (cons id it) unconfirmed ))))
     unconfirmed))
+
+(defun find-duplicate-invitations (&optional (host *userid*))
+ "Finds duplicate invites from this host. Deletes invitations to any current Kindista members."
+  (let* ((all-invites (gethash host *person-invitation-index*))
+         (duplicates (make-hash-table :test #'equalp)))
+    (dolist (id all-invites)
+      (let* ((invitation (db id))
+             (email (getf invitation :recipient-email)))
+        (if (member email (hash-table-keys *email-index*) :test #'string=)
+          (delete-invitation id)
+          (asetf (gethash email duplicates)
+                 (push (list :id id
+                             :sent (car (last (getf invitation :times-sent))))
+                       it)))))
+    (maphash #'(lambda (key value)
+                 (when (< (length value) 2)
+                   (remhash key duplicates)))
+             duplicates)
+    duplicates))
+
+(defun delete-duplicate-invitations (&optional (host *userid*))
+"Deletes older duplicate invites from this host."
+  (let* ((duplicates (copy-hash-table (find-duplicate-invitations host))))
+    (labels ((sent-date (invite) (getf invite :sent))
+             (ids (plist) (mapcar #'(lambda (invite)
+                                      (getf invite :id))
+                                  plist))
+             (sort-invites (invites)
+              (sort invites #'> :key #'sent-date))
+             (delete-extra-invites (key value)
+               (declare (ignore key))
+               (dolist (id (cdr (ids (sort-invites value))))
+                 (delete-invitation id))))
+      (maphash #'delete-extra-invites duplicates))))
+
+(defun delete-all-duplicate-invitations ()
+  (dolist (id *active-people-index*)
+    (delete-duplicate-invitations id)))
 
 (defun invitee-count (userid)
   (+ (or (length (gethash userid *person-invitation-index*)) 0)
      (or (length (gethash userid *invited-index*)) 0)))
 
-(defun emails-awaiting-rsvp ()
-  (let ((kindista-invites nil)
-        (user-invites nil))
-    (dolist (invite-id (hash-table-values *invitation-index*))
-      (let* ((invite (db (car invite-id)))
-              (email (getf invite :recipient-email)))
-        (unless (member email (hash-table-keys *email-index*) :test #'string=)
-          (case (getf invite :host)
-            (2 (pushnew email kindista-invites :test #'string=))
-            (t (pushnew email user-invites :test #'string=))))))
-    (values kindista-invites
-            user-invites
-            (length kindista-invites)
-            (length user-invites))))
+(defun kindista-invite-expirations ()
+  (let ((invite-dates (list))
+        (kindista-members (hash-table-keys *email-index*)))
+    (dolist (invite-id (gethash +kindista-id+ *person-invitation-index*))
+      (let* ((invite (db invite-id))
+             (email (getf invite :recipient-email))
+             (expires (getf invite :valid-until)))
+        (unless (member email kindista-members :test #'string=)
+          (if (assoc expires invite-dates)
+            (push invite-id (cdr (assoc expires invite-dates)))
+            (setf invite-dates (push (cons expires (list invite-id)) invite-dates))))))
+    invite-dates))
+
+(defun kindista-invite-humanized-expirations ()
+  (mapcar #'(lambda (item)
+              (when item
+                (cons (humanize-exact-time (car item) :year-first t) (cdr item))))
+          (kindista-invite-expirations)))
+
+(defun expired-invitations (userid)
+  (let ((expired-invites (list)))
+    (dolist (invite-id (gethash userid *person-invitation-index*))
+      (let* ((invite (db invite-id))
+             (email (getf invite :recipient-email))
+             (expired (< (getf invite :valid-until) (get-universal-time))))
+        (when expired (push (cons email invite-id) expired-invites))))
+    expired-invites))
+
+(defun recently-expired-invitations (userid)
+"Returns an association list of (email . invite-id) of each invitation for which the user
+ has not yet been notified of its expiration."
+  (let ((recently-expired-invites (list)))
+    (dolist (invite-id (gethash userid *person-invitation-index*))
+      (let* ((invite (db invite-id))
+             (email (getf invite :recipient-email))
+             (expired (< (getf invite :valid-until) (get-universal-time))))
+        (when expired 
+          (unless (getf invite-id :expired-notice-sent)
+            (push (cons email invite-id) recently-expired-invites)))))
+    recently-expired-invites))
 
 (defun quick-invite-page (&key text)
   (standard-page "Send invitations"
@@ -155,8 +252,8 @@
           (:textarea :rows "3" :name "bulk-emails" :placeholder "Enter email addresses here..." (str (when emails emails)))
           (:p "Include a message for your recipient(s): (optional)")
           (:textarea :rows "6" :name "text" :placeholder "Enter your message here..." (str (when text text)))
-          (:p 
-            (:button :type "submit" :class "cancel" :name "cancel" "Cancel") 
+          (:p
+            (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
             (:button :class "yes" :type "submit" :class "submit" :name "review" "Next")))))))
 
 (defun confirm-invitations (&key text emails bulk-emails next-url)
@@ -197,15 +294,21 @@
 (defun post-invite ()
   (require-active-user
     (let* ((next-url (post-parameter "next-url"))
-           (emails (remove-duplicates 
+           (emails (remove-duplicates
                      (emails-from-string (post-parameter "bulk-emails"))
                      :test #'string=))
-           (member-emails (iter (for email in emails) 
-                                (awhen (gethash email *email-index*)
-                                  (collect email))))
+           (already-invited (unconfirmed-invites))
+           (duplicate-invites (intersection emails
+                                            (mapcar #'cdr already-invited) :test #'string=))
+           (member-emails (loop for email in emails
+                                when (gethash email *email-index*)
+                                collect email))
            (new-emails (set-difference emails
-                                       member-emails
-                                       :test #'string=)))
+                                       (union duplicate-invites member-emails :test #'string=)
+                                       :test #'string=))
+           (valid-emails (union new-emails duplicate-invites :test #'string=))
+           (text (unless (string= (post-parameter "text") "")
+                   (post-parameter "text"))))
     (cond
       ((getf *user* :pending)
        (pending-flash "invite people to join Kindista")
@@ -215,9 +318,9 @@
        (see-other next-url))
 
       ((and (post-parameter "review")
-            (not new-emails))
+            (not (or already-invited new-emails)))
        (dolist (email member-emails)
-         (flash (strcat email " is already a Kindista member!") :error t)) 
+         (flash (strcat email " is already a Kindista member!") :error t))
        (flash "You must enter at least 1 valid email address." :error t)
        (invite-page :text (post-parameter "text")
                     :emails (post-parameter "bulk-emails")
@@ -225,9 +328,9 @@
 
       ((post-parameter "review")
        (dolist (email member-emails)
-         (flash (strcat email " is already a Kindista member!") :error t)) 
+         (flash (strcat email " is already a Kindista member!") :error t))
        (confirm-invitations :text (post-parameter "text")
-                            :emails new-emails 
+                            :emails valid-emails
                             :bulk-emails (post-parameter "bulk-emails")
                             :next-url next-url))
 
@@ -237,11 +340,13 @@
                     :next-url next-url))
 
       ((post-parameter "confirm")
-       (dolist (email new-emails)
-         (create-invitation email :text (unless
-                                          (string= (post-parameter "text") "")
-                                          (post-parameter "text"))))
-       (if (> (length new-emails) 1)
+       (dolist (email (union new-emails duplicate-invites :test #'string=))
+         (create-invitation email :text text))
+      ;(dolist (email duplicate-invites)
+      ;  (let ((id (car (rassoc email already-invited))))
+      ;    (modify-db id :text text)
+      ;    (notice :send-invitation :id id)))
+       (if (> (+ (length duplicate-invites) (length new-emails)) 1)
          (flash "Your invitations have been sent.")
          (flash "Your invitation has been sent."))
        (see-other (post-parameter "next-url")))

@@ -96,32 +96,33 @@
              nil))))
 
 (defun get-signup ()
-  (with-user
-    (let* ((get-email (get-parameter "email"))
-           (get-token (get-parameter "token"))
-           (invitation-id (car (gethash get-token *invitation-index*)))
-           (invitation (db invitation-id))
-           (host (getf invitation :host))
-           (valid-email (getf invitation :recipient-email))
-           (name (getf invitation :name)))
-      (cond
-        (*user*
-         (see-other "/home"))
-        ((or (not get-token)
-             (not (string= valid-email get-email)))
-         (signup-page))
-        (t
-         (email-verification-page :email get-email
-                      :token get-token
-                      :host host
-                      :name name))))))
+  (let* ((get-email (get-parameter "email"))
+         (get-token (get-parameter "token"))
+         (valid-email (gethash get-email *invitation-index*))
+         (valid-token (rassoc get-token valid-email :test #'equal))
+         (invitation-id (car valid-token))
+         (invitation (db invitation-id))
+         (host (getf invitation :host))
+         (name (getf invitation :name)))
+    (cond
+      (*user*
+       (see-other "/home"))
+      ((not valid-token)
+       (signup-page))
+      (t
+       (email-verification-page :email get-email
+                                :token get-token
+                                :host host
+                                :name name)))))
 
 (defun post-signup ()
   (with-user
     (let* ((token (post-parameter "token"))
            (name (post-parameter "name"))
            (email (post-parameter "email"))
-           (id (car (gethash token *invitation-index*)))
+           (valid-email-invites (gethash email *invitation-index*))
+           (valid-token (rassoc token valid-email-invites :test #'equal))
+           (id (car valid-token))
            (invitation (db id))
            (host (getf invitation :host))
            (invite-request-id (getf invitation :invite-request-id))
@@ -135,9 +136,8 @@
                                             :token token
                                             :host host)))
           (cond
-            ((not (string= (getf invitation :recipient-email) email))
-             (try-again "The invitation you are using belongs to a different email address. 
-    Please use the correct email address or find someone you know on Kindista and request an invitation."))
+            ((not valid-token)
+             (try-again "The invitation code you have entered is not valid. Please sign up using te link provided in a valid Kindista invitation."))
             ((gethash email *banned-emails-index*)
              (flash (s+ "The email you have entered, "
                         email
@@ -200,10 +200,12 @@
                                       :email (post-parameter "email")
                                       :password (post-parameter "password"))))
                (setf (token-userid *token*) new-id)
-               (unless (eql host +kindista-id+)
-                 (add-contact new-id host))
+               (dolist (invite-id (mapcar #'car valid-email-invites))
+                 (let ((id (db invite-id :host)))
+                   (unless (eql id +kindista-id+)
+                     (add-contact new-id id)))
+                 (delete-invitation invite-id))
                (add-contact host new-id)
-               (delete-invitation id)
                (see-other "/home"))))
 
     (labels ((try-again (e)
