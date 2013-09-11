@@ -39,7 +39,7 @@
 (defun get-send-all-reminders ()
   (when (or (eq (getf *user* :admin))
             (string= (header-in* :x-real-ip) "127.0.0.0"))
-    (send-all-reminders))
+    (send-all-reminders)))
 
 (defun send-all-reminders ()
   (let ((complete-profile (read-file-into-string (s+ +markdown-path+ "reminders/complete-profile.md")))
