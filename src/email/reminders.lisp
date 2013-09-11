@@ -19,8 +19,6 @@
 
 (define-constant +week-in-seconds+ 604800)
 
-(defvar *reminder-timer* (make-timer (lambda () (send-all-reminders))))
-
 (defun send-reminder-email (userid title message)
   (let* ((data (db userid))
          (name (getf data :name))
@@ -37,6 +35,11 @@
 (defun invitee-count (id)
   (+ (or (awhen (unconfirmed-invitations id) (length it)) 0)
      (or (length (gethash id *invited-index*)) 0)))
+
+(defun get-send-all-reminders ()
+  (when (or (eq (getf *user* :admin))
+            (string= (header-in* :x-real-ip) "127.0.0.0"))
+    (send-all-reminders))
 
 (defun send-all-reminders ()
   (let ((complete-profile (read-file-into-string (s+ +markdown-path+ "reminders/complete-profile.md")))

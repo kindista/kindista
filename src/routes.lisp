@@ -288,6 +288,14 @@
   ("/home/"
     :get go-home)
 
+  ;chron-jobs
+
+  ("/schedule-metric-system-timer"
+   :get get-schedule-metric-system-timer)
+
+  ("/send-all-reminders"
+   :get get-send-all-reminders)
+
   ;js
 
   ("/kindista.js"
