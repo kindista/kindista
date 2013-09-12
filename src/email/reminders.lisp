@@ -37,8 +37,8 @@
      (or (length (gethash id *invited-index*)) 0)))
 
 (defun get-send-all-reminders ()
-  (when (or (eq (getf *user* :admin))
-            (string= (header-in* :x-real-ip) "127.0.0.0"))
+  (when (or (getf *user* :admin)
+            (string= (header-in* :x-real-ip) "127.0.0.1"))
     (send-all-reminders)))
 
 (defun send-all-reminders ()

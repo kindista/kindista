@@ -45,9 +45,8 @@
     (send-message (metric-system-mailbox system) '(:stop))))
 
 (defun get-scheule-metric-system-timer ()
-  (when (boundp 'hunchentoot:*request*)
-    (when (string= (header-in* :x-real-ip) "127.0.0.0")
-      (send-message (metric-system-mailbox system) '(:daily)))))
+  (when (string= (header-in* :x-real-ip) "127.0.0.1")
+    (send-message (metric-system-mailbox system) '(:daily))))
 
 (defgeneric send-metric (system &rest message))
 
