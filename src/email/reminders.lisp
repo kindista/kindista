@@ -19,8 +19,6 @@
 
 (define-constant +week-in-seconds+ 604800)
 
-(defvar *reminder-timer* (make-timer (lambda () (send-all-reminders))))
-
 (defun send-reminder-email (userid title message)
   (let* ((data (db userid))
          (name (getf data :name))
@@ -39,6 +37,11 @@
                                                 (get-universal-time)
                                                 (remove (assoc reminder-type it)
                                                         it))))
+
+(defun get-send-all-reminders ()
+  (when (or (getf *user* :admin)
+            (string= (header-in* :x-real-ip) "127.0.0.1"))
+    (send-all-reminders)))
 
 (defun send-all-reminders ()
   (let ((complete-profile (read-file-into-string (s+ +markdown-path+ "reminders/complete-profile.md")))

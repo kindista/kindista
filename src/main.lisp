@@ -30,7 +30,6 @@
   (load-tokens)
   (start *acceptor*)
   (start (acceptor-metric-system *acceptor*))
-  (when *productionp* (schedule-timer *reminder-timer* +day-in-seconds+))
   (start-notice-thread))
 
 (defun load-notice-handlers ()
@@ -49,7 +48,6 @@
   (save-tokens)
   (stop *acceptor*)
   (stop (acceptor-metric-system *acceptor*))
-  (when *productionp* (unschedule-timer *reminder-timer*))
   (stop-notice-thread))
 
 (defun quit ()
