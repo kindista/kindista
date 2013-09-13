@@ -215,6 +215,7 @@
                                      (concatenate 'string greeting
                                                           more-requests
                                                           closing))
-                (update-reminder-log userid :more-requests)))))))))
+                (update-reminder-log userid :more-requests))
+               ))))))
 
     (see-other "/home")))

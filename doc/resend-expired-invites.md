@@ -13,11 +13,9 @@ create reminder timer
   loop through the new index until there are no invites to send
   set the new timer based on the created-date of the next email in the list
 
-(dolist (id *active-people-index*)
-  (modify-db id :notify-expired-invites t))
-,d on (add-sent-parameter-to-all-invitations)
-run (add-sent-parameter-to-all-invitations)
-verify (db 3042 :sent)
+,b on features/invitations
+run (migrate-to-new-invitation-system)
+verify (db 3042 :times-sent)
 (end)
 (ql:quickload :kindista)
 (run)

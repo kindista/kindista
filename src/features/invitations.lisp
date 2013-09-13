@@ -94,22 +94,62 @@
                      :expired-notice-sent nil
                      :valid-until (+ now (* 90 +day-in-seconds+))))
     (with-mutex (*invitation-reminder-timer-mutex*)
-      (remove (cons (cadr sent) id) *invitation-reminder-timer-index* :test #'equal)
+      (remove (rassoc id *invitation-reminder-timer-index*)
+              *invitation-reminder-timer-index*
+              :test #'equal)
       (sort (push (cons (car sent) id) *invitation-reminder-timer-index*) #'< :key #'car) )
   (notice :send-invitation :time now :id id)))
 
+(defvar *auto-invite-reminder-timer* (make-timer (lambda ()
+                                                   (automatic-invitation-reminders))))
+
+(defun automatic-invitation-reminders ()
+  (loop for reminder in *invitation-reminder-timer-index*
+        with invite-id = (cdr reminder)
+        with invite = (db invite-id)
+        and now = (get-universal-time)
+        if (< (+ (car (getf invite :times-sent))
+                 (* 5 +week-in-seconds+))
+              now)
+          do ()
+        else
+
+        ))
+
 (defun send-automatic-invitation-reminder (id)
-  (with-mutex (*invitation-reminder-timer-mutex*)
-    (remove (rassoc id *invitation-reminder-timer-index*)
-            *invitation-reminder-timer-index*
-            :test #'equal))
-  (send-invitation-email id :reminder-type :auto)
-  (amodify-db id :times-sent (push (get-universal-time) it)))
+  (let ((now (get-universal-time)))
+    (with-mutex (*invitation-reminder-timer-mutex*)
+      (remove (rassoc id *invitation-reminder-timer-index*)
+              *invitation-reminder-timer-index*
+              :test #'equal))
+    (send-invitation-email id :reminder-type :auto)
+    (amodify-db id :times-sent (push now it)
+                   :auto-reminder-sent now)))
+
+(defun migrate-to-new-invitation-reminder-system ()
+"helper function for migrating to new invitation-reminder-system"
+  (add-notify-expired-invite-parameter-to-active-people)
+  (add-sent-parameter-to-all-invitations))
+
+(defun add-notify-expired-invite-parameter-to-active-people ()
+"helper function for migrating to new invitation-reminder-system"
+  (dolist (id *active-people-index*)
+    (modify-db id :notify-expired-invites t)))
+
+(defun inefficient-invitations-list ()
+"helper function for migrating to new invitation-reminder-system"
+  (save-db)
+  (let ((invitation-ids (list)))
+    (maphash #'(lambda (key value)
+                 (when (eql :invitation (getf value :type))
+                   (push key invitation-ids)))
+             *db*)
+    invitation-ids))
 
 (defun add-sent-parameter-to-all-invitations ()
-  (dolist (invitation (hash-table-values *invitation-index*))
-    (let* ((id (car invitation))
-           (invite (db id))
+"helper function for migrating to new invitation-reminder-system"
+  (dolist (id (inefficient-invitations-list))
+    (let* ((invite (db id))
            (host (getf invite :host))
            (sent (- (getf invite :valid-until)
                     (* +day-in-seconds+
