@@ -30,6 +30,7 @@
   (load-tokens)
   (start *acceptor*)
   (start (acceptor-metric-system *acceptor*))
+  (when *productionp* (automatic-invitation-reminders))
   (start-notice-thread))
 
 (defun load-notice-handlers ()
@@ -48,6 +49,7 @@
   (save-tokens)
   (stop *acceptor*)
   (stop (acceptor-metric-system *acceptor*))
+  (when *productionp* (unschedule-timer *auto-invite-reminder-timer*))
   (stop-notice-thread))
 
 (defun quit ()

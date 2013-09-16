@@ -17,34 +17,41 @@
 
 (in-package :kindista)
 
-(defun send-requested-invite-email (invitation-id)
+(defun send-requested-invite-email (invitation-id &key auto-reminder)
   (let* ((invitation (db invitation-id))
          (token (getf invitation :token))
          (text (getf invitation :text))
          (name (getf invitation :name))
          (email (getf invitation :recipient-email)))
-    (cl-smtp:send-email +mail-server+
-                        "Kindista <noreply@kindista.org>"
-                        email
-                        "Here's the invitation you requested to join Kindista!"
-                        (requested-invite-email-text token
-                                                     name
-                                                     email
-                                                     :text text)
-                        :html-message (requested-invite-email-html token
-                                                                   name
-                                                                   email
-                                                                   :text text))))
+    (cl-smtp:send-email
+      +mail-server+
+      "Kindista <noreply@kindista.org>"
+      email
+      (if auto-reminder
+        "Reminder: The Kindista invitation you requested will be expiring soon!"
+        "Here's the invitation you requested to join Kindista!"
+)                        (requested-invite-email-text token
+                                   name
+                                   email
+                                   :auto-reminder auto-reminder
+                                   :text text)
+      :html-message (requested-invite-email-html token
+                                                 name
+                                                 email
+                                                 :auto-reminder auto-reminder
+                                                 :text text))))
 
-(defun requested-invite-email-text (token name email &key text)
+(defun requested-invite-email-text (token name email &key text auto-reminder)
 (s+ "Hi " name ",
+
 "
-"
-Here is the invitation you requested to join Kindista!"
+(if auto-reminder
+"We are writing to let you know that the Kindista invitation you requested will  be expiring soon."
+"Here is the invitation you requested to join Kindista!")
+
 "
 
 Your invitation code is " (write-to-string token) ".
-This invitation will expire in 60 days.
 
 "
 
@@ -77,18 +84,19 @@ Thanks for sharing your gifts with us!
 "-The Kindista Team"))
 
 
-(defun requested-invite-email-html (token name email &key text)
+(defun requested-invite-email-html (token name email &key text auto-reminder)
 (html-email-base
   (html
     (:p :style *style-p*
       "Hi " (str name) ","
       (:br)
-      "Here is the invitation you requested to join Kindista!")
+      (str
+        (if auto-reminder
+          "We are writing to let you know that the Kindista invitation you requested will  be expiring soon."
+          "Here is the invitation you requested to join Kindista!")))
 
     (:p :style *style-p*
-     "Your invitation code is " (:strong (str (write-to-string token)) ".")
-     (:br)
-     "This invitation will expire in 60 days.")
+     "Your invitation code is " (:strong (str (write-to-string token)) "."))
 
     (when text
       (htm (:table :cellspacing 0

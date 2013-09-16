@@ -17,22 +17,24 @@
 
 (in-package :kindista)
 
-(defun send-invitation-email (invitation-id &key reminder-type)
+(defun send-invitation-email (invitation-id &key auto-reminder)
   (let* ((invitation (db invitation-id))
          (token (getf invitation :token))
          (from (getf invitation :host))
          (text (getf invitation :text))
-         (reminder-type (or reminder-type
-                            (when (> (length (getf invitation :times-sent)) 1) :host)))
+         (host-reminder (and (not auto-reminder)
+                             (> (length (getf invitation :times-sent)) 1)))
          (to (getf invitation :recipient-email)))
     (cl-smtp:send-email +mail-server+
                         "Kindista <noreply@kindista.org>"
                         to
-                        (case reminder-type
-                          (:auto (s+ "Reminder: your Kindista invitation from "
-                                     (getf (db from) :name)
-                                     " is expiring soon"))
-                          (:host (s+ (getf (db from) :name)
+                        (cond
+                          (auto-reminder
+                            (s+ "Reminder: your Kindista invitation from "
+                                (getf (db from) :name)
+                                " is expiring soon"))
+                          (host-reminder
+                            (s+ (getf (db from) :name)
                                 " is reminding you to join their sharing network on Kindista."))
                           (t (s+ (getf (db from) :name)
                                 " wants you to join their sharing network!")))
@@ -40,19 +42,19 @@
                                                to
                                                from
                                                :text text
-                                               :reminder-type reminder-type)
+                                               :auto-reminder auto-reminder)
                         :html-message (invitation-email-html token
                                                              to
                                                              from
                                                              :text text
-                                                             :reminder-type reminder-type))))
+                                                             :auto-reminder auto-reminder))))
 
-(defun invitation-email-text (token to from &key text reminder-type)
+(defun invitation-email-text (token to from &key text auto-reminder)
   (let ((sender (getf (db from) :name)))
     (s+ 
 (no-reply-notice)
 
-(when (eql reminder-type :auto)
+(when auto-reminder
 "We are writing to let you know that your Kindista invitation will be expiring soon.")
 "
 
@@ -92,13 +94,13 @@ sender
 "-The Kindista Team")))
 
 
-(defun invitation-email-html (token to from &key text reminder-type)
+(defun invitation-email-html (token to from &key text auto-reminder)
   (let ((sender (getf (db from) :name)))
     (html-email-base
       (html
         (:p :style *style-p* (str (no-reply-notice)))
 
-        (when (eql reminder-type :auto)
+        (when auto-reminder
           (htm
             (:p :style *style-p*
                 "We are writing to let you know that your Kindista invitation will be expiring "

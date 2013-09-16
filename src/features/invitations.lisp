@@ -23,12 +23,11 @@
          (invitation (db invitation-id))
          (host (getf invitation :host))
          (self (getf invitation :self)))
-   (pprint invitation-id)
    (cond
      (self
        (send-email-verification invitation-id))
      ((eq host +kindista-id+)
-       (send-requested-invite-email invitation-id))
+      (send-requested-invite-email invitation-id))
      (t
       (send-invitation-email invitation-id)))))
 
@@ -66,21 +65,24 @@
 
 (defun delete-invitation (id)
   (let* ((invitation (db id))
+         (type (getf invitation :type))
          (host (getf invitation :host))
          (email (getf invitation :email)))
-    (with-locked-hash-table (*invitation-index*)
-      (let ((invitations (gethash email *invitation-index*)))
-        (if (> (length invitations) 1)
-          (asetf invitations (remove (assoc id invitations) it))
-          (remhash email *invitation-index*))))
-    (with-mutex (*invitation-reminder-timer-mutex*)
-      (remove (rassoc id *invitation-reminder-timer-index*)
-              *invitation-reminder-timer-index*
-              :test #'equal))
-    (with-locked-hash-table (*person-invitation-index*)
-      (asetf (gethash host *person-invitation-index*)
-             (remove id it)))
-    (remove-from-db id)))
+    (when (eql type :invitation)
+      (with-locked-hash-table (*invitation-index*)
+        (let ((invitations (gethash email *invitation-index*)))
+          (if (> (length invitations) 1)
+            (asetf invitations (remove (assoc id invitations) it))
+            (remhash email *invitation-index*))))
+      (with-mutex (*invitation-reminder-timer-mutex*)
+        (asetf *invitation-reminder-timer-index*
+               (remove (rassoc id it)
+                       it
+                       :test #'equal)))
+      (with-locked-hash-table (*person-invitation-index*)
+        (asetf (gethash host *person-invitation-index*)
+               (remove id it))) 
+      (remove-from-db id))))
 
 (defun resend-invitation (id &key text)
   (let ((now (get-universal-time))
@@ -94,42 +96,57 @@
                      :expired-notice-sent nil
                      :valid-until (+ now (* 90 +day-in-seconds+))))
     (with-mutex (*invitation-reminder-timer-mutex*)
-      (remove (rassoc id *invitation-reminder-timer-index*)
-              *invitation-reminder-timer-index*
-              :test #'equal)
+      (asetf *invitation-reminder-timer-index*
+             (remove (rassoc id it)
+                     it
+                     :test #'equal))
       (sort (push (cons (car sent) id) *invitation-reminder-timer-index*) #'< :key #'car) )
   (notice :send-invitation :time now :id id)))
 
-(defvar *auto-invite-reminder-timer* (make-timer (lambda ()
-                                                   (automatic-invitation-reminders))))
+(defvar *auto-invite-reminder-timer* nil)
 
 (defun automatic-invitation-reminders ()
-  (loop for reminder in *invitation-reminder-timer-index*
-        with invite-id = (cdr reminder)
-        with invite = (db invite-id)
-        and now = (get-universal-time)
-        if (< (+ (car (getf invite :times-sent))
-                 (* 5 +week-in-seconds+))
-              now)
-          do ()
-        else
-
-        ))
+  (when *productionp*
+    (setf *auto-invite-reminder-timer* (make-timer #'automatic-invitation-reminders))
+    (loop for (time . id) in *invitation-reminder-timer-index*
+        with now = (get-universal-time)
+        while (< (+ (car (db id :times-time))
+                    (* 5 +week-in-seconds+))
+                 now)
+        do (progn
+             (send-automatic-invitation-reminder id)
+               (with-mutex (*invitation-reminder-timer-mutex*)
+                 (asetf *invitation-reminder-timer-index*
+                        (remove (rassoc id it)
+                                it
+                                :test #'equal))))
+        ; schedule timer for the first invitation that is less than 5 weeks old
+        finally (schedule-timer *auto-invite-reminder-timer*
+                                (+ time (* 5 +week-in-seconds+))
+                                :absolute-p t))))
 
 (defun send-automatic-invitation-reminder (id)
-  (let ((now (get-universal-time)))
+  (let ((invitation (db id))
+        (now (get-universal-time)))
     (with-mutex (*invitation-reminder-timer-mutex*)
       (remove (rassoc id *invitation-reminder-timer-index*)
               *invitation-reminder-timer-index*
               :test #'equal))
-    (send-invitation-email id :reminder-type :auto)
+    (case (getf invitation :host)
+      (+kindista-id+
+         (if (and (> id 4067)
+                  (< id 4779))
+           (send-prelaunch-invite-reminder id)
+           (send-requested-invite-email id :auto-reminder t)))
+      (t
+        (send-invitation-email id :auto-reminder t)))
     (amodify-db id :times-sent (push now it)
                    :auto-reminder-sent now)))
 
 (defun migrate-to-new-invitation-reminder-system ()
 "helper function for migrating to new invitation-reminder-system"
   (add-notify-expired-invite-parameter-to-active-people)
-  (add-sent-parameter-to-all-invitations))
+  (modify-all-invitations-for-migration))
 
 (defun add-notify-expired-invite-parameter-to-active-people ()
 "helper function for migrating to new invitation-reminder-system"
@@ -146,17 +163,22 @@
              *db*)
     invitation-ids))
 
-(defun add-sent-parameter-to-all-invitations ()
+(defun modify-all-invitations-for-migration ()
 "helper function for migrating to new invitation-reminder-system"
   (dolist (id (inefficient-invitations-list))
     (let* ((invite (db id))
            (host (getf invite :host))
-           (sent (- (getf invite :valid-until)
+           (expires (getf invite :valid-until))
+           (new-default-expiration (+ (get-universal-time) (* 6 +week-in-seconds+)))
+           (sent (- expires
                     (* +day-in-seconds+
                        (if (and (eql host +kindista-id+) (> id 4776))
                           60
                           30)))))
-      (modify-db id :times-sent (list sent)))))
+      (if (< expires new-default-expiration)
+        (modify-db id :times-sent (list sent)
+                      :valid-until new-default-expiration)
+        (modify-db id :times-sent (list sent))))))
 
 (defun add-alt-email (invitation-id)
   (let* ((invitation (db invitation-id))
