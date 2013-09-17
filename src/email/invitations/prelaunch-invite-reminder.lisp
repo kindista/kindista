@@ -35,7 +35,7 @@
 (s+ "Greetings,
 "
 "
-At some point last year, likely at a talk given by Charles Eisenstein, you signed up to be invited to join Kindista to get more of your needs met through sharing.  We sent you an invitation a couple of months ago, but in case you missed it we want to let you know that your invitation will be expiring soon.
+At some point last year, likely at a talk given by Charles Eisenstein, you signed up to be invited to join Kindista to get more of your needs met through the gift economy.  We sent you an invitation a couple of months ago, but in case you missed it we want to let you know that your invitation will be expiring soon.
 "
 
 "
@@ -78,7 +78,7 @@ Thanks for sharing your gifts with us!
      "Greetings,")
 
     (:p :style *style-p*
-"At some point last year, likely at a talk given by Charles Eisenstein, you signed up to be invited to join Kindista to get more of your needs met through sharing.  We sent you an invitation a couple of months ago, but in case you missed it we want to let you know that your invitation will be expiring soon.")
+"At some point last year, likely at a talk given by Charles Eisenstein, you signed up to be invited to join Kindista to get more of your needs met through the gift economy.  We sent you an invitation a couple of months ago, but in case you missed it we want to let you know that your invitation will be expiring soon.")
 
 
     (:p :style *style-p*

@@ -41,10 +41,11 @@
 (defun get-send-all-reminders ()
   (when (or (getf *user* :admin)
             (string= (header-in* :x-real-ip) "127.0.0.1"))
-    (send-all-reminders)))
+    (send-all-reminders)
+    (see-other "/home")))
 
-(defun send-all-reminders ()
-  (when *productionp*
+(defun send-all-reminders (&optional person-id)
+  (when (or *productionp* person-id)
     (let ((complete-profile (read-file-into-string (s+ +markdown-path+ "reminders/complete-profile.md")))
           (closing (read-file-into-string (s+ +markdown-path+ "reminders/closing.md")))
           (first-gratitude (read-file-into-string (s+ +markdown-path+ "reminders/first-gratitude.md")))
@@ -59,7 +60,7 @@
           (no-avatar (read-file-into-string (s+ +markdown-path+ "reminders/no-avatar.md")))
           (offers-requests (read-file-into-string (s+ +markdown-path+ "reminders/offers-requests.md"))))
 
-      (dolist (userid *active-people-index*)
+      (dolist (userid (or (list person-id) *active-people-index*))
         (let* ((person (db userid))
                (name (getf person :name))
                (avatar (getf person :avatar))
@@ -160,7 +161,7 @@
                                                                     first-gratitude)
                                                             (unless avatar no-avatar)
                                                             closing))
-                    (update-reminder-log userid :minimal-acitivity))
+                    (update-reminder-log userid :minimal-activity))
 
                  ; more-gratitude
                  ((and latest-gratitude
@@ -217,6 +218,4 @@
                                                             more-requests
                                                             closing))
                   (update-reminder-log userid :more-requests))
-                 ))))))
-
-      (see-other "/home"))))
+                 )))))))))

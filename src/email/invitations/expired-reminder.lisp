@@ -23,7 +23,7 @@
          (expired-count (length email-list)))
     (cl-smtp:send-email +mail-server+
                         "Kindista <noreply@kindista.org>"
-                        (getf host :email)
+                        (car (getf host :emails))
                         (if (> expired-count 1)
                             (strcat expired-count " of your Kindista invitations have expired")
                             "One of your Kindista invitations has expired")
@@ -49,16 +49,18 @@
 (dolist (email email-list)
   (format nil "~a~c~c" email #\return #\linefeed))
 "
-You can send them another invitation or delete the invitation if you don't think they are going to join: "
-(url-compose (s+ +base-url+ "people/invited"))
+You can send them another invitation or delete the invitation if you don't think they are going to join:
+"
++base-url+ "people/invited"
 
 "
-You can also change your communication settings if you no longer wish to receive these notifications from us:"
-(url-compose (s+ +base-url+ "settings/communication")
+You can also change your communication settings if you no longer wish to receive these notifications from us:
+"
++base-url+ "settings/communication"
 "
 Thanks for helping spread the word about Kindista!
 "
-"-The Kindista Team")))
+"-The Kindista Team"))
 
 (defun expired-invitations-reminder-html (name email-list expired-count)
   (html-email-base
@@ -79,12 +81,16 @@ Thanks for helping spread the word about Kindista!
       (:p :style *style-p*
         "You can send them another invitation or delete the invitation if you don't think "
         "they are going to join: "
-        (str (url-compose (s+ +base-url+ "people/invited"))))
+        (:br)
+        (:a :href (url-compose (s+ +base-url+ "people/invited"))
+                  (str (s+ +base-url+ "people/invited"))))
 
       (:p :style *style-p*
         "You can also change your communication settings if you no longer wish to receive these "
         "notifications from us:"
-        (str (url-compose (s+ +base-url+ "settings/communication"))))
+        (:br)
+        (:a :href (url-compose (s+ +base-url+ "settings/communication"))
+                  (str (s+ +base-url+ "settings/communication"))))
 
       (:p :style *style-p*
         "Thanks for helping spread the word about Kindista!")

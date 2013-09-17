@@ -42,14 +42,16 @@
                                                to
                                                from
                                                :text text
+                                               :host-reminder host-reminder
                                                :auto-reminder auto-reminder)
                         :html-message (invitation-email-html token
                                                              to
                                                              from
                                                              :text text
+                                                             :host-reminder host-reminder
                                                              :auto-reminder auto-reminder))))
 
-(defun invitation-email-text (token to from &key text auto-reminder)
+(defun invitation-email-text (token to from &key text auto-reminder host-reminder)
   (let ((sender (getf (db from) :name)))
     (s+ 
 (no-reply-notice)
@@ -75,7 +77,9 @@ text "\"
 "))
 
 sender
-" sent you an invitation"
+(if host-reminder
+" is reminding you to join"
+" sent you an invitation")
 " because they think you would make a valuable addition to the"
 " Kindista community.
 
@@ -94,7 +98,7 @@ sender
 "-The Kindista Team")))
 
 
-(defun invitation-email-html (token to from &key text auto-reminder)
+(defun invitation-email-html (token to from &key text auto-reminder host-reminder)
   (let ((sender (getf (db from) :name)))
     (html-email-base
       (html
@@ -126,7 +130,9 @@ sender
 
         (:p :style *style-p*
           (str sender)
-          " sent you an invitation"
+          (str (if host-reminder
+                 " is reminding you to join"
+                 " sent you an invitation"))
           " because they think you would make a valuable addition to the"
           " Kindista community.  ")
 

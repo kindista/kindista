@@ -107,6 +107,9 @@
     (cond
       (*user*
        (see-other "/home"))
+      ((and get-token (not valid-token))
+       (flash "Your invitation code is incorrect or is no longer valid. No worries, you can still sign up for Kindista below.") 
+       (signup-page))
       ((not valid-token)
        (signup-page))
       (t

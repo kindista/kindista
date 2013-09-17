@@ -39,6 +39,7 @@
                :notify-gratitude t
                :notify-message t
                :notify-reminders t
+               :notify-expired-invites t
                :notify-kindista t)))
 
 (defun index-person (id data)
@@ -175,6 +176,7 @@
     (modify-db id :active nil
                   :notify-message nil
                   :notify-reminders nil
+                  :notify-expired-invites nil
                   :notify-gratitude nil)))
 
 (defun reactivate-person (id)
@@ -190,6 +192,7 @@
     (modify-db id :active t
                   :notify-message t
                   :notify-reminders t
+                  :notify-expired-invites t
                   :notify-gratitude t)))
 
 (defun delete-pending-account (id)
@@ -706,7 +709,7 @@
     (see-other "/people/nearby")))
 
 (defun get-people-invited ()
-  (if *user*
+  (require-user
     (let ((confirmed (gethash *userid* *invited-index*))
           (unconfirmed (unconfirmed-invites)))
       (standard-page
@@ -719,17 +722,15 @@
                 (:h3 :class "my-invites" "Awaiting RSVP ")
                 (:ul
                   (dolist (invite unconfirmed)
-                    (let* ((id (car invite))
-                           (email (cdr invite))
-                           (invitation (db id))
-                           (sent (or (car (getf invitation :times-sent))
-                                     (get-universal-time)))
-                           (expired (awhen (getf invitation :valid-until)
-                                      (when (< it (get-universal-time)) t))))
+                    (let* ((id (getf invite :id))
+                           (email (getf invite :email))
+                           (times-sent (getf invite :times-sent))
+                           (last-sent (getf invite :last-sent))
+                           (expired (getf invite :expired)))
                       (htm
                         (:li
                           (:form :method "post" :action "/people/invited"
-                            (:input :type "hidden" :name "invite-id" :value (car invite))
+                            (:input :type "hidden" :name "invite-id" :value id)
                             (:button :class "yes" :type "submit" :name "resend"
                               (if expired
                                 (htm "Renew invitation")
@@ -738,15 +739,19 @@
                           (str email)
                           (:small :class "gray-text"
                             (if expired
-                              (htm " expired")
-                              (str (s+ " (invited " (humanize-universal-time sent) ")")))))))))))
+                              (str (s+ " (expired "
+                                       (humanize-universal-time expired) ")")                                   )
+                              (str (s+ (if (< 1 (length times-sent))
+                                         " (reminder sent "
+                                         " (invited ")
+                                       (humanize-universal-time last-sent) ")")))))))))))
 
             (unless (or unconfirmed confirmed)
               (htm
-                (:h2 "No invitations yet.")))
+                (:h2 "no invitations yet.")))
 
             (:p
-              "Would you like to "
+              "would you like to "
               (:a :href "/invite" (str (s+ "invite someone"
                                            (when (or unconfirmed confirmed)
                                              " else"))))
@@ -755,8 +760,7 @@
         :selected "people"
         :right (html
                  (str (donate-sidebar))
-                 (str (invite-sidebar)))))
-      (see-other "/people/nearby")))
+                 (str (invite-sidebar)))))))
 
 (defun post-people-invited ()
   (require-active-user

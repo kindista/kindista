@@ -52,7 +52,7 @@
   (declare (ignore data))
   (let* ((invitation (db id))
          (host (getf invitation :host))
-         (email (getf invitation :email))
+         (email (getf invitation :recipient-email))
          (sent (car (getf invitation :times-sent)))
          (token (getf invitation :token)))
     (with-locked-hash-table (*invitation-index*)
@@ -67,13 +67,13 @@
   (let* ((invitation (db id))
          (type (getf invitation :type))
          (host (getf invitation :host))
-         (email (getf invitation :email)))
+         (email (getf invitation :recipient-email)))
     (when (eql type :invitation)
       (with-locked-hash-table (*invitation-index*)
-        (let ((invitations (gethash email *invitation-index*)))
-          (if (> (length invitations) 1)
-            (asetf invitations (remove (assoc id invitations) it))
-            (remhash email *invitation-index*))))
+        (if (> (length (gethash email *invitation-index*)) 1)
+          (asetf (gethash email *invitation-index*)
+                 (remove (assoc id it) it))
+          (remhash email *invitation-index*)))
       (with-mutex (*invitation-reminder-timer-mutex*)
         (asetf *invitation-reminder-timer-index*
                (remove (rassoc id it)
@@ -81,12 +81,11 @@
                        :test #'equal)))
       (with-locked-hash-table (*person-invitation-index*)
         (asetf (gethash host *person-invitation-index*)
-               (remove id it))) 
+               (remove id it)))
       (remove-from-db id))))
 
 (defun resend-invitation (id &key text)
-  (let ((now (get-universal-time))
-        (sent (db id :times-sent)))
+  (let ((now (get-universal-time)))
     (if text
       (amodify-db id :text text
                      :times-sent (push now it)
@@ -100,17 +99,19 @@
              (remove (rassoc id it)
                      it
                      :test #'equal))
-      (sort (push (cons (car sent) id) *invitation-reminder-timer-index*) #'< :key #'car) )
+      (sort (push (cons now id) *invitation-reminder-timer-index*) #'< :key #'car))
   (notice :send-invitation :time now :id id)))
 
 (defvar *auto-invite-reminder-timer* nil)
 
 (defun automatic-invitation-reminders ()
-  (when *productionp*
+  (when (or *productionp*
+            ; only use on the live server or with test data
+            (< (length *invitation-reminder-timer-index*) 10))
     (setf *auto-invite-reminder-timer* (make-timer #'automatic-invitation-reminders))
     (loop for (time . id) in *invitation-reminder-timer-index*
         with now = (get-universal-time)
-        while (< (+ (car (db id :times-time))
+        while (< (+ (car (db id :times-sent))
                     (* 5 +week-in-seconds+))
                  now)
         do (progn
@@ -121,8 +122,11 @@
                                 it
                                 :test #'equal))))
         ; schedule timer for the first invitation that is less than 5 weeks old
+        ; if no invitations are present, check daily
         finally (schedule-timer *auto-invite-reminder-timer*
-                                (+ time (* 5 +week-in-seconds+))
+                                (if time
+                                  (+ time (* 5 +week-in-seconds+))
+                                  (+ now +day-in-seconds+))
                                 :absolute-p t))))
 
 (defun send-automatic-invitation-reminder (id)
@@ -141,7 +145,7 @@
       (t
         (send-invitation-email id :auto-reminder t)))
     (amodify-db id :times-sent (push now it)
-                   :auto-reminder-sent now)))
+                   :auto-reminder-sent (push now it))))
 
 (defun migrate-to-new-invitation-reminder-system ()
 "helper function for migrating to new invitation-reminder-system"
@@ -162,6 +166,12 @@
                    (push key invitation-ids)))
              *db*)
     invitation-ids))
+
+(defun delete-all-invitations ()
+"VERY DANGEROUS: should not be used on the server!"
+  (unless *productionp*
+    (dolist (id (inefficient-invitations-list))
+      (delete-invitation id))))
 
 (defun modify-all-invitations-for-migration ()
 "helper function for migrating to new invitation-reminder-system"
@@ -191,14 +201,23 @@
     (delete-invitation invitation-id))
 
 (defun unconfirmed-invites (&optional (host *userid*))
-"Returns an association list of (invite-id . recipient-email)."
+"Returns a property list of (:id :email :times-sent :last-sent :expired)."
   (let ((all-invites (gethash host *person-invitation-index*))
-        (unconfirmed nil))
+        (unconfirmed (list)))
     (dolist (id all-invites)
       (let ((invitation (db id)))
         (awhen (getf invitation :recipient-email)
-          (push (cons id it) unconfirmed ))))
-    unconfirmed))
+          (push (list :id id
+                      :email (getf invitation :recipient-email)
+                      :times-sent (getf invitation :times-sent)
+                      :last-sent (car (getf invitation :times-sent))
+                      :expired (awhen (getf invitation :valid-until)
+                                 (when (< it (get-universal-time)) it)))
+                unconfirmed))))
+    (sort unconfirmed
+          #'<
+          :key #'(lambda (item) (getf item :last-sent)))))
+
 
 (defun find-duplicate-invitations (&optional (host *userid*))
  "Finds duplicate invites from this host. Deletes invitations to any current Kindista members."
@@ -279,7 +298,7 @@
              (email (getf invite :recipient-email))
              (expired (< (getf invite :valid-until) (get-universal-time))))
         (when expired 
-          (unless (getf invite-id :expired-notice-sent)
+          (unless (getf invite :expired-notice-sent)
             (push (cons email invite-id) recently-expired-invites)))))
     recently-expired-invites))
 
@@ -361,7 +380,10 @@
                      :test #'string=))
            (already-invited (unconfirmed-invites))
            (duplicate-invites (intersection emails
-                                            (mapcar #'cdr already-invited) :test #'string=))
+                                            (mapcar #'(lambda (invite)
+                                                        (getf invite :email))
+                                                    already-invited)
+                                            :test #'string=))
            (member-emails (loop for email in emails
                                 when (gethash email *email-index*)
                                 collect email))
@@ -402,12 +424,14 @@
                     :next-url next-url))
 
       ((post-parameter "confirm")
-       (dolist (email (union new-emails duplicate-invites :test #'string=))
+       (dolist (email new-emails)
          (create-invitation email :text text))
-      ;(dolist (email duplicate-invites)
-      ;  (let ((id (car (rassoc email already-invited))))
-      ;    (modify-db id :text text)
-      ;    (notice :send-invitation :id id)))
+       (dolist (email duplicate-invites)
+         (let* ((invite (find email already-invited
+                              :key #'(lambda (item) (getf item :email))
+                              :test #'string=))
+                (id (getf invite :id)))
+           (resend-invitation id :text text)))
        (if (> (+ (length duplicate-invites) (length new-emails)) 1)
          (flash "Your invitations have been sent.")
          (flash "Your invitation has been sent."))

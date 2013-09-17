@@ -130,7 +130,7 @@
               (:button :class "cancel"
                        :type "submit"
                        :name "reset-location"
-                       :value "1"
+                       :value (referer)
                        "No, go back")
               (:button :class "yes"
                        :type "submit"
@@ -487,7 +487,7 @@
 
       ((post-parameter "reset-location")
        (modify-db *userid* :lat nil :long nil :address nil :location nil)
-       (see-other (or (post-parameter "next") "/home")))
+       (see-other (or it "/home")))
 
       ((post-parameter "password")
        (cond
@@ -617,7 +617,7 @@
             (send-email-verification id)))
        (flash (s+ "Your activation code has been resent to " email "."))
        (see-other "/settings/communication")))
-     
+
       ((post-parameter "make-email-primary")
        (let ((new-primary (post-parameter "make-email-primary")))
          (amodify-db *userid* :emails
