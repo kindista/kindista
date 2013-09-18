@@ -175,20 +175,22 @@
 
 (defun modify-all-invitations-for-migration ()
 "helper function for migrating to new invitation-reminder-system"
-  (dolist (id (inefficient-invitations-list))
-    (let* ((invite (db id))
-           (host (getf invite :host))
-           (expires (getf invite :valid-until))
-           (new-default-expiration (+ (get-universal-time) (* 6 +week-in-seconds+)))
-           (sent (- expires
-                    (* +day-in-seconds+
-                       (if (and (eql host +kindista-id+) (> id 4776))
-                          60
-                          30)))))
-      (if (< expires new-default-expiration)
-        (modify-db id :times-sent (list sent)
-                      :valid-until new-default-expiration)
-        (modify-db id :times-sent (list sent))))))
+  (let ((new-default-expiration (+ (get-universal-time)
+                                      (* 7 +week-in-seconds+)))
+        (first-sent nil))
+    (dolist (id (inefficient-invitations-list))
+      (let* ((invite (db id))
+             (host (getf invite :host))
+             (old-expiration (getf invite :valid-until)))
+        (setf first-sent (- old-expiration
+                            (* +day-in-seconds+
+                               (if (and (eql host +kindista-id+) (> id 4776))
+                                  60
+                                  30))))
+        (if (< old-expiration new-default-expiration)
+          (modify-db id :times-sent (list first-sent)
+                        :valid-until new-default-expiration)
+          (modify-db id :times-sent (list first-sent)))))))
 
 (defun add-alt-email (invitation-id)
   (let* ((invitation (db invitation-id))

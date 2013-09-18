@@ -5,11 +5,10 @@ Edit requested-invite text for reminder: "Final Reminder"
 when sending auto reminder
   make sure people are getting correct invitation file sent with :auto set
 
-,b on features/invitations
-run (migrate-to-new-invitation-system)
-verify (db 3042 :times-sent)
 (end)
 (ql:quickload :kindista)
+run (migrate-to-new-invitation-system)
+verify (db 3042 :times-sent)
 (run)
 
 (delete-all-duplicate-invitations)
