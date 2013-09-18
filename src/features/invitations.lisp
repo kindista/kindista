@@ -136,61 +136,14 @@
       (remove (rassoc id *invitation-reminder-timer-index*)
               *invitation-reminder-timer-index*
               :test #'equal))
-    (case (getf invitation :host)
-      (+kindista-id+
-         (if (and (> id 4067)
-                  (< id 4779))
-           (send-prelaunch-invite-reminder id)
-           (send-requested-invite-email id :auto-reminder t)))
-      (t
-        (send-invitation-email id :auto-reminder t)))
+    (if (eql (getf invitation :host) +kindista-id+)
+      (if (and (> id 4067)
+               (< id 4779))
+        (send-prelaunch-invite-reminder id)
+        (send-requested-invite-email id :auto-reminder t))
+      (send-invitation-email id :auto-reminder t))
     (amodify-db id :times-sent (push now it)
                    :auto-reminder-sent (push now it))))
-
-(defun migrate-to-new-invitation-reminder-system ()
-"helper function for migrating to new invitation-reminder-system"
-  (add-notify-expired-invite-parameter-to-active-people)
-  (modify-all-invitations-for-migration))
-
-(defun add-notify-expired-invite-parameter-to-active-people ()
-"helper function for migrating to new invitation-reminder-system"
-  (dolist (id *active-people-index*)
-    (modify-db id :notify-expired-invites t)))
-
-(defun inefficient-invitations-list ()
-"helper function for migrating to new invitation-reminder-system"
-  (save-db)
-  (let ((invitation-ids (list)))
-    (maphash #'(lambda (key value)
-                 (when (eql :invitation (getf value :type))
-                   (push key invitation-ids)))
-             *db*)
-    invitation-ids))
-
-(defun delete-all-invitations ()
-"VERY DANGEROUS: should not be used on the server!"
-  (unless *productionp*
-    (dolist (id (inefficient-invitations-list))
-      (delete-invitation id))))
-
-(defun modify-all-invitations-for-migration ()
-"helper function for migrating to new invitation-reminder-system"
-  (let ((new-default-expiration (+ (get-universal-time)
-                                      (* 7 +week-in-seconds+)))
-        (first-sent nil))
-    (dolist (id (inefficient-invitations-list))
-      (let* ((invite (db id))
-             (host (getf invite :host))
-             (old-expiration (getf invite :valid-until)))
-        (setf first-sent (- old-expiration
-                            (* +day-in-seconds+
-                               (if (and (eql host +kindista-id+) (> id 4776))
-                                  60
-                                  30))))
-        (if (< old-expiration new-default-expiration)
-          (modify-db id :times-sent (list first-sent)
-                        :valid-until new-default-expiration)
-          (modify-db id :times-sent (list first-sent)))))))
 
 (defun add-alt-email (invitation-id)
   (let* ((invitation (db invitation-id))
