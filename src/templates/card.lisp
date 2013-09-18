@@ -41,7 +41,7 @@
         (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
         (:p (str (regex-replace-all "\\n" (getf data :text) "<br>")))
         (:div :class "actions"
-          (str (activity-icons :hearts (loves id) :url url))
+          (str (activity-icons :hearts (length (loves id)) :url url))
           (:form :method "post" :action url
             (:input :type "hidden" :name "next" :value (script-name*))
             (if (member *userid* (gethash id *love-index*))

@@ -34,8 +34,8 @@
                           :html-message (gratitude-notification-email-html gratitude-id gratitude from)))))
 
 (defun gratitude-notification-email-text (gratitude-id gratitude from)
-  (strcat  "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER. If you want to reply to the message, please click on the link below."
-    
+  (strcat
+(no-reply-notice)
 (getf (db from) :name)
 " has shared a statement of gratitude about you on Kindista.
 
@@ -60,6 +60,7 @@ Thank you for sharing your gifts with us!
 (defun gratitude-notification-email-html (gratitude-id gratitude from)
   (html-email-base
     (html
+      (:p :style *style-p* (str (no-reply-notice)))
       (:p :style *style-p*
         "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER."
         (:br)

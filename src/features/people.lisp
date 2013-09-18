@@ -17,11 +17,21 @@
 
 (in-package :kindista)
 
-(defun create-person (&key name email password host)
+(defun inactive-people ()
+  "diagnostic tool for admins only. inefficient; should not be used in code."
+  (set-difference
+    (loop for id in (hash-table-keys *db-results*)
+          when (eq (result-type (gethash id *db-results*)) :person)
+          collect id)
+    *active-people-index*
+    :test #'equal))
+
+(defun create-person (&key name email password host (pending nil))
   (insert-db `(:type :person
                :name ,name
                :emails ,(list email)
                :host ,host
+               :pending ,pending
                :active t
                :help t
                :pass ,(new-password password)
@@ -41,8 +51,9 @@
         (names (cons (getf data :name)
                      (getf data :aliases))))
 
-    (with-mutex (*active-people-mutex*)
-      (push id *active-people-index*))
+    (when (getf data :active)
+      (with-mutex (*active-people-mutex*)
+      (push id *active-people-index*)))
 
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
@@ -134,7 +145,7 @@
           (geo-index-insert *offer-geo-index* result) 
           (unless (< (result-time result) (- (get-universal-time) 15552000))
             (geo-index-insert *activity-geo-index* result))))
-      
+
       (dolist (id (gethash id *gratitude-index*))
         (let ((result (gethash id *db-results*)))
           (geo-index-remove *activity-geo-index* result)
@@ -175,11 +186,37 @@
     (geo-index-insert *people-geo-index* result) 
     (geo-index-insert *activity-geo-index* result) 
     (with-mutex (*active-people-mutex*)
-      (push id *active-peopl-index*))
+      (push id *active-people-index*))
     (modify-db id :active t
                   :notify-message t
                   :notify-reminders t
                   :notify-gratitude t)))
+
+(defun delete-pending-account (id)
+  (let ((data (db id)))
+
+    (deactivate-person id)
+
+    (with-locked-hash-table (*pending-person-items-index*)
+      (dolist (item-id (gethash id *pending-person-items-index*))
+        (remove-from-db item-id))
+      (remhash id *pending-person-items-index*))
+
+    (awhen (getf data :emails)
+      (with-locked-hash-table (*email-index*)
+        (dolist (email it)
+          (remhash email *email-index*)))
+      (with-locked-hash-table (*banned-emails-index*)
+        (dolist (email it)
+          (setf (gethash email *banned-emails-index*) id))))
+
+    (awhen (getf data :username)
+      (with-locked-hash-table (*username-index*)
+        (remhash it *username-index*)))
+
+    (modify-db id :pending nil
+                  :banned t
+                  :notify-kindista nil)))
 
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)
@@ -227,15 +264,19 @@
 
 (defun profile-tabs-html (userid &key tab)
   (let* ((person (db userid))
-         (bio (getf person :bio))
+         (profile-p (or (getf person :bio-into)
+                        (getf person :bio-contact)
+                        (getf person :bio-skils)
+                        (getf person :bio-doing)
+                        (getf person :bio-summary)))
          (self (eql userid *userid*))
          (active (getf person :active))
-         (show-bio-tab (or bio self)))
+         (show-bio-tab (or profile-p self)))
     (html
       (:menu :class "bar"
         (:h3 :class "label" "Profile Menu")
         (when show-bio-tab
-          (if (and self (eql tab :about))
+          (if (eql tab :about)
             (htm (:li :class "selected" "About"))
             (htm (:li (:a :href (strcat *base-url* "/about") "About")))))
 
@@ -273,10 +314,11 @@
           (editing
             (htm
               (:form :method "post" :action "/settings"
-                (:input :type "hidden" :name "next" :value *base-url*)
-                (:textarea :name (strcat "bio-" section-name) (str content))
+                (:input :type "hidden" :name "next" :value (strcat *base-url* "/about"))
+                (:textarea :name (strcat "bio-" section-name)
+                           (awhen content (str (escape-for-html it))))
                 (:button :class "yes" :type "submit" :name "save" "Save")
-                (:a :class "cancel" :href *base-url* "Cancel")
+                (:a :class "cancel red" :href *base-url* "Cancel")
                 )))
           ((not content)
             (htm
@@ -284,17 +326,20 @@
 
           (t
             (htm
-              (:p (str content)))))))))
+              (:p (str (html-text content))))))))))
 
 (defun profile-top-html (userid)
   (let ((user (db userid))
         (is-contact (member userid (getf *user* :following))))
     (html
-     (:img :class "bigavatar" :src (strcat +avatar-base+ userid ".jpg?" (get-universal-time)))
+     (:img :class "bigavatar" :src (get-avatar-thumbnail userid 300 300))
      (:div :class "basics"
        (:h1 (str (getf user :name))
-            (when (eq (getf user :active) nil)
-              (htm (:span :class "help-text" " (inactive account)"))))
+            (cond
+              ((getf user :banned)
+               (htm (:span :class "help-text" " (deleted account)")))
+              ((eq (getf user :active) nil)
+               (htm (:span :class "help-text" " (inactive account)")))))
        (when (getf user :city)
          (htm (:p :class "city" (str (getf user :city)) ", " (str (getf user :state)))))
      (unless (eql userid *userid*)
@@ -322,6 +367,11 @@
     (let* ((strid (username-or-id userid))
            (editable (when (not editing) (eql userid *userid*)))
            (user (db userid))
+           (profile-p (or (getf user :bio-into)
+                          (getf user :bio-contact)
+                          (getf user :bio-skils)
+                          (getf user :bio-doing)
+                          (getf user :bio-summary)))
            (mutuals (mutual-connections userid))
            (mutual-links (html (:ul (dolist (link (alpha-people-links mutuals))
                                       (htm (:li (str link)))))))
@@ -330,7 +380,7 @@
         (getf (db userid) :name)
         (html
           (str (profile-tabs-html userid :tab :about))
-          (if (or (eql userid *userid*) (getf user :bio))
+          (if (or (eql userid *userid*) profile-p)
             (htm
               (:div :class "bio"
                 (str (profile-bio-section-html
@@ -365,7 +415,6 @@
                        :editable editable))))
             (htm (:h3 "This person hasn't written anything here."))))
         :right (if editing
-                 (html (:h2 "Style guide"))
                  (when mutuals
                    (mutual-connections-sidebar mutual-links)))
         :top (profile-top-html userid)
@@ -462,12 +511,6 @@
        ;   (profile-bio-html id)
        ;   (profile-activity-html id)))
 
-        ((not (eql id *userid*))
-         (profile-activity-html id))
-
-        ((not editing)
-         (profile-bio-html id))
-
         ((string= editing "doing")
          (profile-bio-html id :editing 'doing))
 
@@ -482,6 +525,17 @@
 
         ((string= editing "skills")
          (profile-bio-html id :editing 'skills))
+
+        ((or (not (eql id *userid*))
+             (getf *user* :bio-summary)
+             (getf *user* :bio-into)
+             (getf *user* :bio-contact)
+             (getf *user* :bio-skils)
+             (getf *user* :bio-doing))
+         (profile-activity-html id))
+
+        ((eql id *userid*)
+         (profile-bio-html id))
 
         (t (not-found))))))
 

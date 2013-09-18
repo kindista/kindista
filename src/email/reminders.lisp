@@ -36,6 +36,11 @@
   (+ (or (awhen (unconfirmed-invitations id) (length it)) 0)
      (or (length (gethash id *invited-index*)) 0)))
 
+(defun get-send-all-reminders ()
+  (when (or (getf *user* :admin)
+            (string= (header-in* :x-real-ip) "127.0.0.1"))
+    (send-all-reminders)))
+
 (defun send-all-reminders ()
   (let ((complete-profile (read-file-into-string (s+ +markdown-path+ "reminders/complete-profile.md")))
         (closing (read-file-into-string (s+ +markdown-path+ "reminders/closing.md")))
@@ -86,8 +91,7 @@
                  ;remind to finish profile at most every 3 weeks
                  (or (eql (assoc :complete-profile reminders) nil)
                      (> (- now (cdr (assoc :complete-profile reminders)))
-                        (* 3 +week-in-seconds+)))
-                 )
+                        (* 3 +week-in-seconds+))))
               (send-reminder-email userid
                                    (s+ name ", please finish your Kindista profile.")
                                    (concatenate 'string greeting
@@ -99,8 +103,7 @@
                                  (acons :complete-profile
                                         now
                                         (remove (assoc :complete-profile it) 
-                                          it)))
-           )
+                                          it))))
 
            ; no-inventory
            ((and (not latest-offer)
@@ -118,9 +121,8 @@
             (amodify-db userid :activity-reminders
                                (acons :no-inventory
                                       now
-                                      (remove (assoc :no-inventory it) 
-                                        it)))
-           )
+                                      (remove (assoc :no-inventory it)
+                                        it))))
 
            ; minimal-activity
            ((and (or (not latest-offer)
@@ -150,16 +152,14 @@
                                  (acons :minimal-activity
                                         now
                                         (remove (assoc :minimal-activity it) 
-                                          it)))
-            )
+                                          it))))
 
            ; more-gratitude
            ((and latest-gratitude
                  (> (- now (result-time latest-gratitude)) (* 26 +week-in-seconds+))
                  (or (eql (assoc :more-gratitude reminders) nil)
                      (> (- now (cdr (assoc :more-gratitude reminders)))
-                        (* 12 +week-in-seconds+)))
-                 )
+                        (* 12 +week-in-seconds+))))
             (send-reminder-email userid
                                  "Who are you grateful for these days?"
                                  (concatenate 'string greeting
@@ -169,8 +169,7 @@
                                (acons :more-gratitude
                                       now
                                       (remove (assoc :more-gratitude it) 
-                                        it)))
-           )
+                                        it))))
 
            ; more-offers
            ((and latest-offer
@@ -187,8 +186,7 @@
                                (acons :more-offers
                                       now
                                       (remove (assoc :more-offers it) 
-                                        it)))
-           )
+                                        it))))
 
            ; more-invitees
            ((or (and (< invitee-count 10)
@@ -209,8 +207,7 @@
                                (acons :more-invitees
                                       now
                                       (remove (assoc :more-invitees it) 
-                                        it)))
-           )
+                                        it))))
 
            ; more-requests
            ((and latest-request
@@ -227,6 +224,5 @@
                                (acons :more-requests
                                       now
                                       (remove (assoc :more-requests it) 
-                                        it)))
-           )
-           ))))))
+                                        it))))))))
+    (see-other "/home")))

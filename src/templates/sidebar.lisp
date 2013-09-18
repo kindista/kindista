@@ -17,6 +17,19 @@
 
 (in-package :kindista)
 
+(defun login-sidebar ()
+  (unless *user*
+    (html
+      (:div :class "login item"
+        (:h3 "Log in")
+        (:form :method "POST" :action "/login" :id "login"
+          (:label :for "username" "Email")
+          (:input :type "text" :name "username" :value (get-parameter "retry"))
+          (:label :for "password" "Password")
+          (:input :type "password" :name "password")
+          (:button :type "submit" :class "yes" "Log in")
+          (:a :href "/reset" "Forgot your password?"))))))
+
 (defun donate-sidebar ()
   (html
     (:div :class "item right only"
@@ -32,3 +45,16 @@
           (:p :class "small" "Want to express gratitude for your friends? It's easy to invite them to join Kindista. "
               (:a :href "/faq#how-do-invitations-work" "Learn how invitations work") "."))))))
 
+(defun events-sidebar ()
+  (let ((events (local-upcoming-events :count 6 :paginate nil :sidebar t)))
+    (html
+      (:div :class "item right only event"
+       (:h2 "Upcoming Events")
+       (if (string= events "")
+         (htm
+           (:p :class "small"
+            "There are not any events posted in your area at this time. "
+            (unless (= (user-distance) 0) "To see more events, increase the \"show activity within\" distance."))))
+       (:a :class "add" :href "/events/new" "+add an event")
+       (str events)
+       ))))

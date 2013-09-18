@@ -17,6 +17,27 @@
 
 (in-package :kindista)
 
+(define-constant +week-in-seconds+ 604800)
+(define-constant +day-in-seconds+ 86400)
+(define-constant +day-names+
+             '("Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday" "Sunday") :test #'equal)
+(define-constant +month-names+
+             '("January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December") :test #'equal)
+
+(defun parse-datetime (date &optional time)
+  (multiple-value-bind (seconds minutes hours date month year)
+    (let ((chronicity-date (chronicity:parse (s+ date (awhen time (s+ " at " it)))
+                             :endian-preference :middle)))
+      (if chronicity-date
+        (values (chronicity:sec-of chronicity-date)
+                (chronicity:minute-of chronicity-date)
+                (chronicity:hour-of chronicity-date)
+                (chronicity:day-of chronicity-date)
+                (chronicity:month-of chronicity-date)
+                (chronicity:year-of chronicity-date))
+        (error 'local-time::invalid-time-specification)))
+    (encode-universal-time seconds minutes hours date month year)))
+
 (defun humanize-universal-time (then)
   (let ((delta (- (get-universal-time) then)))
     (cond
@@ -61,6 +82,29 @@
        "next year")
       (t
        (strcat "in " (floor (/ seconds 31536000)) " years")))))
+
+(defun humanize-exact-time (universal-time &key detailed year-first)
+ (multiple-value-bind (seconds minutes hours date month year day-of-week)
+     (decode-universal-time universal-time)
+   (declare (ignore seconds))
+   (let* ((month-name (nth (- month 1) +month-names+))
+          (day-name (nth day-of-week +day-names+))
+          (m (if (> hours 12) "PM" "AM"))
+          (hour (cond 
+                  ((= hours 0) 12)
+                  ((> hours 12) (- hours 12))
+                  (t hours)))
+          (minute (if (< minutes 10)
+                    (strcat "0" minutes)
+                    minutes))
+          (time (strcat hour ":" minute " " m))
+          (formatted-date (strcat month "/" date "/" year))
+          (date-name (strcat day-name ", " month-name " " date ", " year )))
+
+     (cond
+      (detailed (s+ date-name " at " time))
+      (year-first (strcat year "-" month "-" date))
+      (t (values time date-name formatted-date))))))
 
 (defun inline-timestamp (time &key type url)
   (let ((inner (html

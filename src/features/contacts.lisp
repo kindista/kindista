@@ -21,7 +21,10 @@
   (amodify-db userid :following (cons new-contact-id it))
   (with-locked-hash-table (*followers-index*)
     (push userid (gethash new-contact-id *followers-index*)))
-  (create-contact-notification :subject userid :object new-contact-id))
+  ;at some point we can start notifing people when oters add them to their 
+  ;contacts
+  ;(create-contact-notification :subject userid :object new-contact-id)
+  )
 
 (defun remove-contact (contact-id userid)
   (amodify-db *userid* :following (remove contact-id it))

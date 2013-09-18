@@ -45,16 +45,10 @@
     base "avatar" "Avatar"
     (cond
       (editable
-        (html
-          (:form :method "post" :action "/settings" :enctype "multipart/form-data"
-            (:input :type "hidden" :name "next" :value "/settings/personal")
-            (:div :class "submit-settings"
-              (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
-              (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
-            (:input :type "file" :name "avatar"))))
+        (new-image-form "/settings" "/settings/personal" :class "submit-settings"))
       (t
         (html
-          (:img :src (strcat +avatar-base+ *userid* ".jpg?" (get-universal-time))))))
+          (:img :class "bigavatar" :src (get-avatar-thumbnail *userid* 300 300)))))
 
   :editable editable))
 
@@ -119,31 +113,30 @@
 
 (defun get-verify-address (&key next-url)
   (let ((next (or next-url (get-parameter "next"))))
-    (with-user 
-      (standard-page
-        "Please verify your location."
-        (html
-          (:div :class "item"
-            (:div :class "setup"
-              (:h2 "Verify your location")
-              (:p "We will never share your exact location with anyone else.
-                   If you would like to know more about how we use the information you share with us,
-                   please read our " (:a :href "/privacy" "privacy policy") ".")
-              (str (static-google-map :size "280x150" :zoom 12 :lat (getf *user* :lat) :long (getf *user* :long)))
+    (standard-page
+      "Please verify your location."
+      (html
+        (:div :class "item"
+          (:div :class "setup"
+            (:h2 "Verify your location")
+            (:p "We will never share your exact location with anyone else.
+                 If you would like to know more about how we use the information you share with us,
+                 please read our " (:a :href "/privacy" "privacy policy") ".")
+            (str (static-google-map :size "280x150" :zoom 12 :lat (getf *user* :lat) :long (getf *user* :long)))
 
-              (:form :method "post" :action "/settings"
-                (:h3 "Is this location correct?")
-                (:input :type "hidden" :name "next" :value (str next))
-                (:button :class "cancel"
-                         :type "submit"
-                         :name "reset-location"
-                         :value "1"
-                         "No, go back")
-                (:button :class "yes"
-                         :type "submit"
-                         :name "confirm-location"
-                         :value "1"
-                         "Yes, this is correct")))))))))
+            (:form :method "post" :action "/settings"
+              (:h3 "Is this location correct?")
+              (:input :type "hidden" :name "next" :value (str next))
+              (:button :class "cancel"
+                       :type "submit"
+                       :name "reset-location"
+                       :value "1"
+                       "No, go back")
+              (:button :class "yes"
+                       :type "submit"
+                       :name "confirm-location"
+                       :value "1"
+                       "Yes, this is correct"))))))))
 
 (defun settings-password (base)
   (settings-item-html base "password" "Password"
@@ -265,7 +258,7 @@
                                  :value email
                                  "Make primary")
                         " | "
-                        (:button :class "simple-link red"
+                        (:button :class "simple-link gray"
                                  :name "remove-email"
                                  :type "submit"
                                  :value email
@@ -476,26 +469,17 @@
        (see-other (url-compose "/settings/verify-address" 
                                "next" (or (post-parameter "next") "/home")))) 
 
-      ((post-parameter "avatar")
-
-       (let ((file (native-namestring (first it))))
-         (let ((r1 (run-program *convert-path*
-                                (list
-                                  file
-                                  "-scale"
-                                  "300x300"
-                                  (strcat +avatar-path+ *userid* ".jpg"))))
-               (r2 (run-program *convert-path*
-                                (list
-                                  file
-                                  "-scale"
-                                  "100x100"
-                                  (strcat +avatar-path+ *userid* ".png")))))
-           (if (and (eql 0 (process-exit-code r1))
-                        (eql 0 (process-exit-code r2)))
-             (modify-db *userid* :avatar t)
-             (flash "The image you uploaded could not be processed. Sorry!" :error t))
-           (see-other "/settings/personal"))))
+      ((post-parameter "image")
+       (handler-case
+         ;hunchentoot returns a list containing (path file-name content-type)
+         ;when the post-parameter is a file, i.e. (first it) = path
+         (let ((id (create-image (first it) (third it)))
+               (old-avatar (getf *user* :avatar)))
+           (when (integerp old-avatar)
+             (delete-image old-avatar))
+           (modify-db *userid* :avatar id))
+         (t () (flash "Please use a .jpg, .png, or .gif" :error t)))
+       (see-other "/settings/personal"))
 
       ((post-parameter "reset-location")
        (modify-db *userid* :lat nil :long nil :address nil :location nil)

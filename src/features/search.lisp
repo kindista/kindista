@@ -701,6 +701,23 @@
   ; replace non-words with spaces
   ; split on spaces
 
+(defun distance-selection-html (next-url &key text class style (search nil))
+  (html
+    (:form :method "post" :action "/settings" :style style :class class
+      (:strong :class (when search "small") (str text))
+      (:input :type "hidden" :name "next" :value next-url)
+      (let ((distance (user-distance)))
+        (htm
+          (:select :name "distance" :onchange "this.form.submit()"
+            (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
+            (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
+            (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
+            (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
+            (:option :value "100" :selected (when (eql distance 100) "") "100 miles")
+            (:option :value "0" :selected (when (eql distance 0) "") "everywhere"))))
+  " "
+  (:input :type "submit" :class "no-js" :value "apply"))))
+
 (defun rdist-selection-html (next-url &key text style)
   (html 
     (:form :method "post" :action "/settings" :style style
@@ -736,6 +753,24 @@
                            (t *request-stem-index*))
                           text))
       #'> :key #'inventory-rank)))
+
+(defun search-events (text &key (distance 10))
+  ; get all events within distance
+  ; for each stem get matching events
+  ; return intersection
+  (with-location
+    (if (= distance 0)
+      (sort
+        (stem-index-query *event-stem-index* text) #'< :key #'event-rank)
+      (sort
+        (result-id-intersection
+          (geo-index-query *event-geo-index*
+                           *latitude*
+                           *longitude*
+                           distance)
+          (stem-index-query *event-stem-index*
+                            text))
+        #'< :key #'event-rank))))
 
 ;(defun person-search-rank (id &key (userid *userid*))
 ;  (let* ((mutuals (mutual-connections id userid))
@@ -796,6 +831,13 @@
     (dolist (item offer-list)
       (str (inventory-activity-item "offer" item)))))
 
+(defun event-results-html (event-list)
+  (html
+    (dolist (item event-list)
+      (str (event-activity-item item
+                                :truncate t
+                                :show-distance t)))))
+
 (defun people-results-html (person-list)
   (html
     (:div 
@@ -822,8 +864,22 @@
           :key #'result-id)
         #'< :key #'result-distance))))
 
+(defun more-results-link (type url count &optional (displayed 5))
+  (when (> count displayed)
+    (let* ((extra (- count displayed))
+           (pluralize (when (> extra 1) "s")))
+      (html
+        (:div :class "more-results"
+          (:a :href url (str (strcat "see "
+                                     extra
+                                     " more "
+                                     (if (string= type "person")
+                                       (if pluralize "people" "person")
+                                       (s+ type pluralize))))))))))
+
 (defun get-search ()
   (require-user
+    (send-metric* :used-search *userid*)
     (let ((scope (or (get-parameter "scope") "all"))
           (q (get-parameter "q")))
 
@@ -845,6 +901,18 @@
 
             ((string= scope "offers")
              (see-other (s+ "/offers?q=" (url-encode q))) )
+
+            ((string= scope "events")
+             (let ((events (search-events q :distance (user-distance))))
+               (htm
+                 (:p "Searching for events. Would you like to "
+                     (:a :href (s+ "/search?q=" (url-encode q)) "search everything")
+                     "?")
+                 (if events
+                   (htm
+                     (str (event-results-html events)))
+                   (htm
+                     (:p "no results"))))))
 
             ((string= scope "people")
              (let ((people (search-people q)))
@@ -873,10 +941,11 @@
             (t ; all
              (let ((requests (search-inventory :request q :distance (user-rdist)))
                    (offers (search-inventory :offer q :distance (user-rdist)))
+                   (events (search-events q :distance (user-distance)))
                    (people (search-people q))
                    (groups (search-groups q)))
 
-               (if (or requests offers people groups)
+               (if (or requests offers events people groups)
                  (progn
                    (when people
                      (htm
@@ -900,10 +969,10 @@
                                                     :style "float:right;"
                                                     :text "show results within ")))
                        (str (request-results-html (sublist requests 0 5)))
-                       (when (> (length requests) 5)
-                         (htm
-                           (:div :class "more-results"
-                             (:a :href (s+ "/requests?q=" (url-encode q)) (fmt "see ~d more requests" (- (length requests) 5))))))))
+                       (str (more-results-link "request"
+                                               (s+ "/requests?q="
+                                                   (url-encode q))
+                                               (length requests)))))
                    (when offers
                      (htm
                        (:h2 (:a :href (s+ "/offers?q=" (url-encode q)) "Offers")
@@ -912,11 +981,23 @@
                                                     :style "float:right;"
                                                     :text "show results within ")))
                        (str (offer-results-html (sublist offers 0 5)))
-                       (when (> (length offers) 5)
-                         (htm
-                           (:div :class "more-results"
-                             (:a :href (s+ "/offers?q=" (url-encode q)) (fmt "see ~d more offers" (- (length offers) 5))))))))
-                             )
+                       (str (more-results-link "offer"
+                                               (s+ "/offers?q="
+                                                   (url-encode q))
+                                               (length offers)))))
+                   (when events
+                     (htm
+                       (:h2 (:a :href (s+ "/events?q=" (url-encode q)) "Events")
+                         " "
+                         (str (distance-selection-html (request-uri*)
+                                                       :style "float:right;"
+                                                       :search t
+                                                       :text "show results within ")))
+                       (str (event-results-html (sublist events 0 5)))
+                       (str (more-results-link "event"
+                                               (s+ "/search?scope=events&q="
+                                                   (url-encode q))
+                                               (length events))))))
                  (htm
                    (:p "no results :-(")))))))
         :search q

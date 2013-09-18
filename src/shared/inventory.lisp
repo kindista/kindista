@@ -17,6 +17,8 @@
 
 (in-package :kindista)
 
+(defun new-pending-offer-notice-handler ()
+  (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
 
 (defun create-inventory-item (&key type (by *userid*) text tags)
   (insert-db (list :type type
@@ -28,6 +30,7 @@
 (defun index-inventory-item (id data)
   (let* ((by (getf data :by))
          (type (getf data :type))
+         (pending (db by :pending))
          (result (make-result :latitude (or (getf data :lat) (getf (db (getf data :by)) :lat))
                               :longitude (or (getf data :long) (getf (db (getf data :by)) :long))
                               :id id
@@ -36,42 +39,51 @@
                               :time (or (getf data :edited) (getf data :created))
                               :tags (getf data :tags))))
 
-    (with-locked-hash-table (*db-results*)
-      (setf (gethash id *db-results*) result))
+    (cond
+      (pending
+       (with-locked-hash-table (*pending-person-items-index*)
+         (push id (gethash by *pending-person-items-index*)))
+       (when (eq type :offer)
+         (notice :new-pending-offer :id id)))
 
-    (if (eq type :offer)
-      (with-locked-hash-table (*offer-index*)
-        (push id (gethash by *offer-index*)))
-      (with-locked-hash-table (*request-index*)
-        (push id (gethash by *request-index*))))
+      (t
+       (with-locked-hash-table (*db-results*)
+         (setf (gethash id *db-results*) result))
 
-    (let ((stems (stem-text (getf data :text))))
-      (if (eq type :offer)
-        (with-locked-hash-table (*offer-stem-index*)
-          (dolist (stem stems)
-            (push result (gethash stem *offer-stem-index*))))
-        (with-locked-hash-table (*request-stem-index*)
-          (dolist (stem stems)
-            (push result (gethash stem *request-stem-index*))))))
+       (if (eq type :offer)
+         (with-locked-hash-table (*offer-index*)
+           (push id (gethash by *offer-index*)))
+         (with-locked-hash-table (*request-index*)
+           (push id (gethash by *request-index*))))
 
-    (with-locked-hash-table (*activity-person-index*)
-      (asetf (gethash by *activity-person-index*)
-             (sort (push result it) #'> :key #'result-time)))
+       (let ((stems (stem-text (getf data :text))))
+         (if (eq type :offer)
+           (with-locked-hash-table (*offer-stem-index*)
+             (dolist (stem stems)
+               (push result (gethash stem *offer-stem-index*))))
+           (with-locked-hash-table (*request-stem-index*)
+             (dolist (stem stems)
+               (push result (gethash stem *request-stem-index*))))))
 
-    (if (eq type :offer)
-      (geo-index-insert *offer-geo-index* result)
-      (geo-index-insert *request-geo-index* result))
+       (with-locked-hash-table (*activity-person-index*)
+         (asetf (gethash by *activity-person-index*)
+                (sort (push result it) #'> :key #'result-time)))
 
-    (unless (< (result-time result) (- (get-universal-time) 15552000))
-      (unless (< (result-time result) (- (get-universal-time) 2592000))
-        (with-mutex (*recent-activity-mutex*)
-          (push result *recent-activity-index*)))
-      (geo-index-insert *activity-geo-index* result))))
+       (if (eq type :offer)
+         (geo-index-insert *offer-geo-index* result)
+         (geo-index-insert *request-geo-index* result))
+
+       (unless (< (result-time result) (- (get-universal-time) 15552000))
+         (unless (< (result-time result) (- (get-universal-time) 2592000))
+           (with-mutex (*recent-activity-mutex*)
+             (push result *recent-activity-index*)))
+         (geo-index-insert *activity-geo-index* result))))))
 
 (defun modify-inventory-item (id &key text tags latitude longitude)
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
+         (by (getf data :by))
          (now (get-universal-time)))
 
     (when text
@@ -117,68 +129,73 @@
       (setf (result-longitude result) longitude)
       (if (eq type :offer)
         (geo-index-insert *offer-geo-index* result)
-        (geo-index-insert *request-geo-index* result))
-      (geo-index-insert *activity-geo-index* result))
+        (geo-index-insert *request-geo-index* result)))
 
     (if (and (getf *user* :admin)
-             (not (eql *userid* (getf data :by))))
+             (not (eql *userid* by)))
 
       (if (and latitude longitude)
         (modify-db id :text text :tags tags :lat latitude :long longitude)
         (modify-db id :text text :tags tags))
 
       (progn
-        (setf (result-time result) now)
-        (with-locked-hash-table (*activity-person-index*)
-          (asetf (gethash id *activity-person-index*)
-                 (sort it #'> :key #'result-time)))
+        (refresh-item-time-in-indexes id :time now)
         (modify-db id :text text :tags tags :lat latitude :long longitude :edited now)))))
 
 (defun delete-inventory-item (id)
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
-         (data (db id)))
+         (data (db id))
+         (images (getf data :images))
+         (type-index (case type
+                       (:offer *offer-index*)
+                       (:request *request-index*)))
+         (stem-index (case type
+                       (:offer *offer-stem-index*)
+                       (:request *request-stem-index*)
+                       (:event *event-stem-index*)))
+         (geo-index (case type
+                      (:offer *offer-geo-index*)
+                      (:request *request-geo-index*)
+                      (:event *event-geo-index*)))
+         (stems (if (eq type :event)
+                  (stem-text (s+ (getf data :title) " " (getf data :details)))
+                  (stem-text (getf data :text)))))
 
-    (when (eq type :offer)
-      (with-locked-hash-table (*offer-index*)
-        (asetf (gethash (getf data :by) *offer-index*)
-               (remove id it)))
-      (let ((stems (stem-text (getf data :text))))
-        (with-locked-hash-table (*offer-stem-index*)
-          (dolist (stem stems)
-            (asetf (gethash stem *offer-stem-index*)
-                   (remove result it)))))
-      (geo-index-remove *offer-geo-index* result))
+    (when result
+      (with-locked-hash-table (stem-index)
+        (dolist (stem stems)
+          (asetf (gethash stem stem-index)
+                 (remove result it))))
 
-    (when (eq type :request)
-      (with-locked-hash-table (*request-index*)
-        (asetf (gethash (getf data :by) *request-index*)
-               (remove id it)))
-      (let ((stems (stem-text (getf data :text))))
-        (with-locked-hash-table (*request-stem-index*)
-          (dolist (stem stems)
-            (asetf (gethash stem *request-stem-index*)
-                   (remove result it)))))
-      (geo-index-remove *request-geo-index* result))
+      (dolist (image-id images)
+        (delete-image image-id))
+
+      (geo-index-remove geo-index result)
+
+      (if (eq type :event)
+        (with-mutex (*event-mutex*)
+          (asetf *event-index* (remove result it)))
+        (with-locked-hash-table (type-index)
+          (asetf (gethash (getf data :by) type-index)
+                 (remove id it))))
+
+      (unless (eq type :event)
+        (with-locked-hash-table (*activity-person-index*)
+          (asetf (gethash (getf data :by) *activity-person-index*)
+                 (remove result it)))
+        (geo-index-remove *activity-geo-index* result)
+        (with-mutex (*recent-activity-mutex*)
+          (asetf *recent-activity-index* (remove id it :key #'result-id))))
+
+      (with-locked-hash-table (*love-index*)
+        (dolist (person-id (gethash id *love-index*))
+          (amodify-db person-id :loves (remove id it))))
+
+      (with-locked-hash-table (*db-results*)
+        (remhash id *db-results*)))
 
     (delete-comments id)
-
-    (with-locked-hash-table (*love-index*)
-      (dolist (person-id (gethash id *love-index*))
-        (amodify-db person-id :loves (remove id it))))
-
-    (with-locked-hash-table (*activity-person-index*)
-      (asetf (gethash (getf data :by) *activity-person-index*)
-             (remove result it)))
-
-    (geo-index-remove *activity-geo-index* result)
-
-    (with-mutex (*recent-activity-mutex*)
-      (asetf *recent-activity-index* (remove id it :key #'result-id)))
-
-    (with-locked-hash-table (*db-results*)
-      (remhash id *db-results*))
-
     (remove-from-db id)))
 
 (defun create-reply (&key on text (user *userid*))
@@ -241,12 +258,18 @@
             (post-parameter "text"))
 
        (if (intersection tags *top-tags* :test #'string=)
-         (see-other
-           (format nil (s+ "/" type "s/~A")
-             (create-inventory-item :type (if (string= type "request") :request
-                                                                       :offer)
-                                    :text (post-parameter "text")
-                                    :tags tags)))
+         (let ((new-id (create-inventory-item
+                         :type (if (string= type "request") :request
+                                                            :offer)
+                         :text (post-parameter "text")
+                         :tags tags)))
+           (if (getf *user* :pending)
+             (progn
+               new-id
+               (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
+               (see-other "/home"))
+             (see-other
+              (format nil (strcat "/" type "s/" new-id)))))
 
          (enter-inventory-tags :title (s+ "Preview your " type)
                                :text (post-parameter "text")
@@ -276,73 +299,57 @@
          (flash "Your reply has been sent.")
          (see-other (script-name*)))
 
-      (t
-       (require-test ((or (eql *userid* (getf item :by))
-                         (getf *user* :admin))
-                    (s+ "You can only edit your own " type "s."))
-         (let ((tags (iter (for pair in (post-parameters*))
-                           (when (and (string= (car pair) "tag")
-                                      (scan *tag-scanner* (cdr pair)))
-                             (collect (cdr pair))))))
-           (iter (for tag in (tags-from-string (post-parameter "tags")))
-                 (setf tags (cons tag tags)))
+        ((and (post-parameter "love"))
+         (love id)
+         (see-other (or (post-parameter "next") (referer))))
 
-           (cond
-             ((and (post-parameter "love"))
-              (love id)
-              (see-other (or (post-parameter "next") (referer))))
+        ((and (post-parameter "unlove"))
+         (unlove id)
+         (see-other (or (post-parameter "next") (referer))))
 
-             ((and (post-parameter "unlove"))
-              (unlove id)
-              (see-other (or (post-parameter "next") (referer))))
+        (t
+         (require-test ((or (eql *userid* (getf item :by))
+                           (getf *user* :admin))
+                      (s+ "You can only edit your own " type "s."))
+           (let ((tags (iter (for pair in (post-parameters*))
+                             (when (and (string= (car pair) "tag")
+                                        (scan *tag-scanner* (cdr pair)))
+                               (collect (cdr pair))))))
+             (iter (for tag in (tags-from-string (post-parameter "tags")))
+                   (setf tags (cons tag tags)))
 
-             ((post-parameter "edit")
-              (enter-inventory-tags :title (s+ "Edit your " type)
-                                    :action url
-                                    :text (getf item :text)
-                                    :tags (or tags (getf item :tags))
-                                    :next (or (post-parameter "next") (referer))
-                                    :button-text (s+ "Save " type)
-                                    :selected (s+ type "s")))
-             ((post-parameter "delete")
-              (confirm-delete :url url
-                              :type type
-                              :text (getf item :text)
-                              :next-url (referer)))
+             (cond
+               ((post-parameter "edit")
+                (enter-inventory-tags :title (s+ "Edit your " type)
+                                      :action url
+                                      :text (getf item :text)
+                                      :tags (or tags (getf item :tags))
+                                      :next (or (post-parameter "next") (referer))
+                                      :button-text (s+ "Save " type)
+                                      :selected (s+ type "s")))
+               ((post-parameter "delete")
+                (confirm-delete :url url
+                                :type type
+                                :text (getf item :text)
+                                :next-url (referer)))
 
-             ((post-parameter "really-delete")
-              (delete-inventory-item id)
-              (flash (s+ "Your " type " has been deleted!"))
-              (if (equal (fourth (split "/" (post-parameter "next") :limit 4)) (subseq (script-name*) 1))
-                (see-other "/home") 
-                (see-other (or (post-parameter "next") "/home"))))
+               ((post-parameter "really-delete")
+                (delete-inventory-item id)
+                (flash (s+ "Your " type " has been deleted!"))
+                (if (equal (fourth (split "/" (post-parameter "next") :limit 4)) (subseq (script-name*) 1))
+                  (see-other "/home") 
+                  (see-other (or (post-parameter "next") "/home"))))
 
-             ((post-parameter "back")
-              (enter-inventory-text :type type
-                                    :text (post-parameter "text")
-                                    :action url
-                                    :tags (or tags (getf item :tags))
-                                    :next (or (post-parameter "next") (referer))
-                                    :selected (s+ type "s")))
+               ((post-parameter "back")
+                (enter-inventory-text :type type
+                                      :text (post-parameter "text")
+                                      :action url
+                                      :tags (or tags (getf item :tags))
+                                      :next (or (post-parameter "next") (referer))
+                                      :selected (s+ type "s")))
 
-             ((and (post-parameter "post")
-                   (post-parameter "text"))
-
-              (enter-inventory-tags :title (s+ "Edit your " type)
-                                    :action url
-                                    :text (post-parameter "text")
-                                    :tags (or tags (getf item :tags))
-                                    :next (or (post-parameter "next") (referer))
-                                    :button-text (s+ "Save " type)
-                                    :selected (s+ type "s")))
-
-             ((and (post-parameter "create")
-                   (post-parameter "text"))
-
-              (if (intersection tags *top-tags* :test #'string=)
-                (progn
-                  (modify-inventory-item id :text (post-parameter "text") :tags tags)
-                  (see-other (or (post-parameter "next") (strcat "/" type "s/" id))))
+               ((and (post-parameter "post")
+                     (post-parameter "text"))
 
                 (enter-inventory-tags :title (s+ "Edit your " type)
                                       :action url
@@ -350,17 +357,33 @@
                                       :tags (or tags (getf item :tags))
                                       :next (or (post-parameter "next") (referer))
                                       :button-text (s+ "Save " type)
-                                      :error "You must select at least one keyword"
-                                      :selected (s+ type "s"))))
+                                      :selected (s+ type "s")))
+
+               ((and (post-parameter "create")
+                     (post-parameter "text"))
+
+                (if (intersection tags *top-tags* :test #'string=)
+                  (progn
+                    (modify-inventory-item id :text (post-parameter "text") :tags tags)
+                    (see-other (or (post-parameter "next") (strcat "/" type "s/" id))))
+
+                  (enter-inventory-tags :title (s+ "Edit your " type)
+                                        :action url
+                                        :text (post-parameter "text")
+                                        :tags (or tags (getf item :tags))
+                                        :next (or (post-parameter "next") (referer))
+                                        :button-text (s+ "Save " type)
+                                        :error "You must select at least one keyword"
+                                        :selected (s+ type "s"))))
 
 
-             (t
-               (enter-inventory-tags :title (s+ "Edit your " type)
-                                     :action url
-                                     :text (getf item :text)
-                                     :tags (or tags (getf item :tags))
-                                     :button-text (s+ "Save " type)
-                                     :selected (s+ type "s")))))))))))
+               (t
+                 (enter-inventory-tags :title (s+ "Edit your " type)
+                                       :action url
+                                       :text (getf item :text)
+                                       :tags (or tags (getf item :tags))
+                                       :button-text (s+ "Save " type)
+                                       :selected (s+ type "s")))))))))))
 
 (defun simple-inventory-entry-html (preposition type)
   (html 
@@ -378,11 +401,22 @@
     (or title (if (string= type "offer")
                   "Post an offer"
                   "Post a request"))
-    (html
-      (:div :class "item"
-         (:h2 (if (string= selected "offers")
-                (str "Please describe your offer")
-                (str "Please describe your request")))
+    (let ((type (or type (if (string= selected "offers")
+                           "offer"
+                           "request"))))
+      (html
+       (:div :class "item"
+         (str (pending-disclaimer type))
+         (when (getf *user* :pending)
+           (htm (:p "Now that you have created a Kindista account, "
+                 "please post some "
+                 (str type)
+                 "s for your local community. "
+                 (:strong
+                   (:em "When posting multiple items, please enter them in "
+                     "separate " (str type) "s.")))
+                (:br)))
+         (:h2 (str (s+ "Please describe your " type)))
          (:form :method "post" :action action
            (dolist (tag tags)
              (htm (:input :type "hidden" :name "tag" :value tag)))
@@ -390,8 +424,8 @@
              (htm (:input :type "hidden" :name "next" :value next)))
            (:textarea :cols "40" :rows "8" :name "text" (str text))
            (:p  (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
-           (:button :class "yes" :type "submit" :class "submit" :name "post" "Next")))))
-   :selected selected))
+           (:button :class "yes" :type "submit" :class "submit" :name "post" "Next"))))))
+    :selected selected))
 
 (defun enter-inventory-tags (&key title action text error tags button-text selected next)
   ; show the list of top-level tags
@@ -404,6 +438,7 @@
     (standard-page title
      (html
        (:div :class "item" :id "edit-tags"
+        (str (pending-disclaimer))
         (:h2 (str title) )
         (when error
           (htm
@@ -460,26 +495,24 @@
 
 (defun nearby-inventory-items (type &key base (subtag-count 4) (distance 50) q)
   (with-location
-    (let ((nearby (sort
-                    (if q
-                      (result-id-intersection
-                        (geo-index-query (case type
-                                           (:offer *offer-geo-index*)
-                                           (t *request-geo-index*))
-                                         *latitude*
-                                         *longitude*
-                                         distance)
-                        (stem-index-query (case type
-                                           (:offer *offer-stem-index*)
-                                           (t *request-stem-index*))
-                                          q))
+    (let ((nearby (if q
+                    (result-id-intersection
                       (geo-index-query (case type
                                          (:offer *offer-geo-index*)
                                          (t *request-geo-index*))
-                                         *latitude*
-                                         *longitude*
-                                       distance))
-                    #'> :key #'inventory-rank))
+                                       *latitude*
+                                       *longitude*
+                                       distance)
+                      (stem-index-query (case type
+                                         (:offer *offer-stem-index*)
+                                         (t *request-stem-index*))
+                                        q))
+                    (geo-index-query (case type
+                                       (:offer *offer-geo-index*)
+                                       (t *request-geo-index*))
+                                       *latitude*
+                                       *longitude*
+                                     distance)))
           (items nil))
       (let ((tags (make-hash-table :test 'equalp)))
         (dolist (item nearby)
@@ -524,11 +557,14 @@
                                                        "more"
                                                        (reduce #'+ (subseq subtags (- subtag-count 1)) :key #'cdr))))
                                            (sort top-subtags #'string< :key #'car)))))))
-                items)))))
+                (sort items #'> :key #'inventory-rank))))))
 
 (defun nearby-inventory-top-tags (type &key (count 9) (more t) base (subtag-count 4) q)
   (multiple-value-bind (nearby items)
-      (nearby-inventory-items type :base base :subtag-count subtag-count :q q)
+      (nearby-inventory-items type :base base
+                                   :subtag-count subtag-count
+                                   :q q
+                                   :distance (user-rdist))
     (let* ((tags (sort (if base
                          nearby
                          (remove-if-not #'top-tag-p nearby :key #'first))
@@ -584,7 +620,7 @@
             (when (or base q)
               (htm
                 (:p (:a :href (str base-url) (str (s+"show all " type "s")))))))
-          
+
           (iter (for i from 0 to (+ start 20))
                 (cond
                   ((< i start)

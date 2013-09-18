@@ -63,7 +63,10 @@
                         :inventory-text inventory-text)))))
 
 (defun comment-notification-email-text (on-id from subject people text &key inventory-text)
-  (strcat "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER. If you want to reply to the message, please click on the link below."
+  (strcat 
+(no-reply-notice)
+
+"You can also reply to this message by clicking on the link below."
 "
 
 A conversation with " people
@@ -101,10 +104,8 @@ Thank you for sharing your gifts with us!
 (defun comment-notification-email-html (on-id from subject people text &key inventory-text)
   (html-email-base
     (html
-      (:p :style *style-p*
-        "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER."
-        (:br)
-        "If you want to reply to the message, please click on the link below.")
+      (:p :style *style-p* (str (no-reply-notice)))
+      (:p :style *style-p* "You can also reply to this message by clicking on the link below." )
 
       (:p :style *style-p*
         "A conversation with " (str people))

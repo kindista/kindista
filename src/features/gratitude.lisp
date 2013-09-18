@@ -27,13 +27,15 @@
                                        :subjects ,subjects
                                        :text ,text
                                        :created ,time))))
-    (notice :new-gratitude :time time
-                           :id gratitude)
+    (unless (getf *user* :pending)
+      (notice :new-gratitude :time time
+                             :id gratitude))
     gratitude))
 
 (defun index-gratitude (id data)
   (let* ((author-id (getf data :author))
          (author (db author-id))
+         (pending (getf author :pending))
          (created (getf data :created))
          (subjects (getf data :subjects))
          (people (cons (getf data :author) subjects))
@@ -44,37 +46,43 @@
                               :type :gratitude
                               :id id)))
 
-    (with-locked-hash-table (*db-results*)
-      (setf (gethash id *db-results*) result))
+    (cond
+      (pending
+       (with-locked-hash-table (*pending-person-items-index*)
+        (push id (gethash author-id *pending-person-items-index*))))
 
-    (with-locked-hash-table (*gratitude-index*)
-      (push id (gethash author-id *gratitude-index*)))
+      (t
+       (with-locked-hash-table (*db-results*)
+         (setf (gethash id *db-results*) result))
 
-    (with-locked-hash-table (*activity-person-index*)
-      (dolist (person people)
-        (asetf (gethash person *activity-person-index*)
-               (sort (push result it) #'> :key #'result-time))))
+       (with-locked-hash-table (*gratitude-index*)
+         (push id (gethash author-id *gratitude-index*)))
 
-    (unless (< (result-time result) (- (get-universal-time) 15552000))
+       (with-locked-hash-table (*activity-person-index*)
+         (dolist (person people)
+           (asetf (gethash person *activity-person-index*)
+                  (sort (push result it) #'> :key #'result-time))))
 
-      (geo-index-insert *activity-geo-index* result) 
+       (unless (< (result-time result) (- (get-universal-time) 15552000))
 
-      (unless (< (result-time result) (- (get-universal-time) 2592000))
-        (with-mutex (*recent-activity-mutex*)
-          (push result *recent-activity-index*))) 
+         (geo-index-insert *activity-geo-index* result)
 
-      (with-locked-hash-table (*gratitude-results-index*)
-        (dolist (subject subjects)
-          (let* ((user (db subject))
-                 (location (getf user :location))
-                 (result (make-result :type :gratitude
-                                      :latitude (getf user :lat)
-                                      :longitude (getf user :long)
-                                      :people people
-                                      :id id
-                                      :time created)))
-            (push result (gethash id *gratitude-results-index*))
-            (when location (geo-index-insert *activity-geo-index* result))))))))
+         (unless (< (result-time result) (- (get-universal-time) 2592000))
+           (with-mutex (*recent-activity-mutex*)
+             (push result *recent-activity-index*)))
+
+         (with-locked-hash-table (*gratitude-results-index*)
+           (dolist (subject subjects)
+             (let* ((user (db subject))
+                    (location (getf user :location))
+                    (result (make-result :type :gratitude
+                                         :latitude (getf user :lat)
+                                         :longitude (getf user :long)
+                                         :people people
+                                         :id id
+                                         :time created)))
+               (push result (gethash id *gratitude-results-index*))
+               (when location (geo-index-insert *activity-geo-index* result))))))))))
 
 (defun parse-subject-list (subject-list &key remove)
   (delete-duplicates
@@ -95,13 +103,17 @@
 (defun modify-gratitude (id text)
   (let ((result (gethash id *db-results*))
         (now (get-universal-time)))
-    (setf (result-time result) now)
+    (refresh-item-time-in-indexes id :time now)
     (modify-db id :text text :edited now)))
 
 (defun delete-gratitude (id)
   (let* ((result (gethash id *db-results*))
          (data (db id))
-         (people (cons (getf data :author) (getf data :subjects))))
+         (people (cons (getf data :author) (getf data :subjects)))
+         (images (getf data :images)))
+
+    (dolist (image-id images)
+      (delete-image image-id))
 
     (with-locked-hash-table (*db-results*)
       (remhash id *db-results*))
@@ -111,6 +123,9 @@
         (geo-index-remove *activity-geo-index* result))
       (remhash id *gratitude-results-index*))
 
+    (with-mutex (*recent-activity-mutex*)
+      (asetf *recent-activity-index* (remove id it :key #'result-id)))
+
     (delete-comments id)
 
     (with-locked-hash-table (*activity-person-index*)
@@ -118,7 +133,7 @@
         (asetf (gethash person *activity-person-index*)
                (remove result it))))
 
-    (geo-index-remove *activity-geo-index* result)
+    (when result (geo-index-remove *activity-geo-index* result))
     (remove-from-db id)))
 
 (defun gratitude-compose (&key subjects text next existing-url single-recipient)
@@ -126,6 +141,7 @@
     (standard-page
      (if existing-url "Edit your statement of gratitude" "Express gratitude")
      (html
+       (str (pending-disclaimer "statement of gratitude"))
        (:div :class "item"
         (:h2 (str (if existing-url "Edit your statement of gratitude"
                                    "Express gratitude")))
@@ -166,11 +182,12 @@
     "Express gratitude"
     (html
       (:div :class "item"
+       (str (pending-disclaimer "statement of gratitude"))
        (:h2 "Who would you like to write about?")
        (:h3 "Search for a person")
-       (:form :method "post" :action "/gratitude/new"
+       (:form :method "post" :class "new-gratitude" :action "/gratitude/new"
          (:input :type "text" :name "name")
-         (:input :type "submit" :class "submit" :name "search" :value "Search")
+         (:button :type "submit" :class "submit yes" :name "search" "Search")
 
          (if (eq results 'none)
            (progn
@@ -213,14 +230,20 @@
        (see-other (or (post-parameter "next") "/home")))
 
       ((post-parameter "create")
-       (let ((subjects (parse-subject-list (post-parameter "subject") :remove (write-to-string *userid*))))
+       (let* ((subjects (parse-subject-list (post-parameter "subject")
+                                            :remove (write-to-string *userid*)))
+              (text (post-parameter "text"))
+              (new-id (create-gratitude :author *userid*
+                                        :subjects subjects
+                                        :text text)))
          (cond
-           ((and subjects (post-parameter "text"))
-            (see-other (format nil (or (post-parameter "next") 
-                                       "/gratitude/~A")
-                               (create-gratitude :author *userid*
-                                                 :subjects subjects
-                                                 :text (post-parameter "text")))))
+           ((and subjects text)
+            (if (getf *user* :pending)
+              (progn
+                new-id
+                (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
+                (see-other (or (post-parameter "next") "/home")))
+              (see-other (format nil "/gratitude/~A" new-id))))
            (subjects
             "no text")
            ((post-parameter "text")
@@ -259,9 +282,12 @@
       (standard-page
         "Gratitude"
         (html
-          (str (gratitude-activity-item (make-result :id id
+          (:div :class "gratitude item"
+            (str (gratitude-activity-item (make-result :id id
                                                      :time (getf it :created)
-                                                     :people (cons (getf it :author) (getf it :subjects))))))))
+                                                     :people (cons (getf it :author)
+                                                                   (getf it :subjects))))))
+          (str (item-images-html id)))))
     (not-found)))
 
 (defun post-gratitude (id)
@@ -269,17 +295,6 @@
     (setf id (parse-integer id))
     (aif (db id)
       (cond
-        ((post-parameter "delete")
-         (confirm-delete :url (script-name*)
-                         :type "gratitude"
-                         :text (getf it :text)
-                         :next-url (referer)))
-        ((post-parameter "really-delete")
-         (delete-gratitude id)
-         (flash "Your statement of gratitude has been deleted!")
-         (see-other (or (post-parameter "next") "/home")))
-        ((post-parameter "edit")
-         (see-other (strcat "/gratitude/" id "/edit")))
         ((and (post-parameter "love")
               (member (getf it :type) '(:gratitude :offer :request)))
          (love id)
@@ -287,7 +302,24 @@
         ((and (post-parameter "unlove")
               (member (getf it :type) '(:gratitude :offer :request)))
          (unlove id)
-         (see-other (or (post-parameter "next") (referer)))))
+         (see-other (or (post-parameter "next") (referer))))
+
+        (t
+         (require-test ((or (eql *userid* (getf it :author))
+                            (getf *user* :admin))
+                       (s+ "You can only edit your own statatements of gratitude."))
+           (cond
+             ((post-parameter "delete")
+              (confirm-delete :url (script-name*)
+                              :type "gratitude"
+                              :text (getf it :text)
+                              :next-url (referer)))
+             ((post-parameter "really-delete")
+              (delete-gratitude id)
+              (flash "Your statement of gratitude has been deleted!")
+              (see-other (or (post-parameter "next") "/home")))
+             ((post-parameter "edit")
+              (see-other (strcat "/gratitude/" id "/edit")))))))
       (not-found))))
 
 (defun get-gratitude-edit (id)

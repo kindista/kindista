@@ -9,11 +9,13 @@
                ;:cl-gd
                :cl-json
                :cl-markdown
+               :cl-fad
                :cl-ppcre
                :cl-smtp
                :cl-who
                :cl-stripe
                ;:css-lite
+               :chronicity
                :vecto
                :double-metaphone
                :drakma
@@ -25,6 +27,7 @@
                :paren-files
                :sb-concurrency
                :stem
+               :adw-charting-vecto
                :kindista-js)
   :components ((:module src
                 :serial t
@@ -39,12 +42,17 @@
                               :serial t
                               :components ((:file "main")
                                            (:file "events")))
+                             (:module analytics
+                                      :serial t
+                                      :components ((:file "utilities")
+                                                   (:file "metric-system")))
                              (:module http
                               :serial t
                               :components ( (:file "main")))
                              (:module shared
                               :serial t
                               :components ((:file "inventory")
+                                           (:file "images")
                                            (:file "activity")
                                            (:file "geo")
                                            (:file "tags")
@@ -101,5 +109,7 @@
                                                    (:file "invitation")
                                                    (:file "invite-request-notification")
                                                    (:file "message-notification")
+                                                   (:file "pending-offer-notification")
+                                                   (:file "pending-account-approval")
                                                    (:file "reminders")
                                                    (:file "reset-password")))))))

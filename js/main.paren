@@ -1,4 +1,10 @@
 (in-package :kindista-js)
 
-(defun foo ()
-  123)
+(defun set-display (element value)
+  (setf (@ element #:style #:display) value))
+
+(defun submit-image-form ()
+  (set-display ((@ #:document #:get-element-by-id) "spinner") "inline-block")
+  ((@ #:document #:forms #:imageform #:submit)))
+
+

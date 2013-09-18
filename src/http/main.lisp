@@ -66,7 +66,7 @@
     (see-other "/home")
     (see-other (or (referer) "/home"))))
 
-;;; routing and jcceptor {{{
+;;; routing and acceptor {{{
 
 (setf *methods-for-post-parameters* '(:post :put))
 
@@ -193,7 +193,11 @@
 (defmacro require-user (&body body)
   `(with-user
      (if *userid*
-       (progn ,@body)
+       (if (getf *user* :banned)
+         (progn
+           (flash "This account has been suspended for posting inappropriate content or otherwise violating Kindista's Terms of Use.  If you believe this to be an error please email us so we can resolve this issue." :error t)
+           (get-logout))
+         (progn ,@body))
        (login-required))))
 
 (defmacro require-active-user (&body body)
@@ -262,7 +266,9 @@
   (setf (header-out :location) url)
   "")
 
-(defclass k-acceptor (acceptor) ())
+(defclass k-acceptor (acceptor)
+  ((metric-system :initform (make-instance 'metric-system)
+                  :reader acceptor-metric-system)))
 
 (defmethod acceptor-dispatch-request ((acceptor k-acceptor) request)
   (with-token
@@ -275,7 +281,10 @@
               (iter (for rule-method in (cadr rule) by #'cddr)
                     (for rule-function in (cdadr rule) by #'cddr)
                     (when (eq method rule-method)
-                      (leave (with-user (apply (fdefinition rule-function) (coerce results 'list)))))
+                      (leave (with-user
+                               (when *userid*
+                                 (send-metric (acceptor-metric-system acceptor) :active *userid*))
+                               (apply (fdefinition rule-function) (coerce results 'list)))))
                     (finally
                       (setf (return-code*) +http-method-not-allowed+)
                       "that method is not permitted on this URL")))))))
@@ -304,16 +313,28 @@
   denoting the log level or NIL in which case it is ignored."
   (hunchentoot::with-log-stream (stream (acceptor-message-log-destination acceptor) hunchentoot::*message-log-lock*)
     (handler-case
-        (format stream "[~A~@[ [~A]~]] ~A ~A ~:S ~:S ~?~%"
-                (hunchentoot::iso-time) log-level
-                *userid*
-                (script-name*)
-                (get-parameters*)
-                (post-parameters*)
-                format-string format-arguments)
+      (flet ((error-message (destination)
+               (format destination "[~A~@[ [~A]~]] ~A ~A ~:S ~:S ~?~%"
+                       (hunchentoot::iso-time)
+                       log-level
+                       *userid*
+                       (script-name*)
+                       (get-parameters*)
+                       (post-parameters*)
+                       format-string
+                       format-arguments)))
+        (send-error-notification-email (error-message nil))
+        (error-message stream))
       (error (e)
         (ignore-errors
          (format *trace-output* "error ~A while writing to error log, error not logged~%" e))))))
+
+(defun send-error-notification-email (message)
+  (cl-smtp:send-email +mail-server+
+                      "Kindista <noreply@kindista.org>"
+                      *error-message-email*
+                      "Kindista Error - Notifying Humans"
+                      message))
 
 (defvar *acceptor* (make-instance 'k-acceptor
                                   :port 5000
@@ -373,7 +394,7 @@
         (:meta :name "HandheldFriendly" :content "True")
         ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
         (:link :rel "stylesheet" :href "/media/style.css")
-        ;(:script :type "text/javascript" :src "/kindista.js")
+        (:script :type "text/javascript" :src "/kindista.js")
         ;(str "<!--[if lt IE 9]>")
         ;(:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
         ;(str "<![endif]-->")
@@ -414,15 +435,23 @@
                  (:form :action "/search" :method "GET" :id "search"
                    ;(:strong "Search ")
                    (:select :name "scope"
-                     (:option :value "all" :selected (when (or (not search-scope)
-                                                                     (string= search-scope "all"))
-                                                             "selected") "All")
-                     (:option :value "offers" :selected (when (equalp search-scope "offers")
-                                                                       "selected") "Offers")
-                     (:option :value "requests" :selected (when (equalp search-scope "requests")
-                                                                       "selected") "Requests")
-                     (:option :value "people" :selected (when (equalp search-scope "people")
-                                                                   "selected") "People"))
+                     (:option :value "all" 
+                              :selected (when (or (not search-scope)
+                                                  (string= search-scope "all"))
+                                          "selected")
+                              "All")
+                     (:option :value "offers"
+                              :selected (when (equalp search-scope "offers") "selected")
+                              "Offers")
+                     (:option :value "requests"
+                              :selected (when (equalp search-scope "requests") "selected")
+                              "Requests")
+                     (:option :value "events"
+                              :selected (when (equalp search-scope "events") "selected")
+                              "Events")
+                     (:option :value "people"
+                              :selected (when (equalp search-scope "people") "selected")
+                              "People"))
                    (:input :type "text" :size "14" :name "q" :value search)
                    (:input :type "submit" :value "Search"))
 
@@ -433,7 +462,7 @@
                          (:table
                            (:tr
                              (:td :rowspan "2"
-                              (:a :href link (:img :src (strcat +avatar-base+ *userid* ".jpg?" (get-universal-time)))))
+                               (:a :href link (:img :src (get-avatar-thumbnail *userid* 100 100 :filetype "png"))))
                              (:td (:a :href link (str (getf *user* :name)))))
                            (:tr
                              (:td
@@ -451,7 +480,7 @@
                                     '("Requests" "requests")
                                     '("People" "people") 
                                     '("Groups" "groups") 
-                                    ;'("Events" "events") 
+                                    '("Events" "events") 
                                     '("Help & Feedback" "faq")
                                     (when (getf *user* :admin)
                                       '("Admin" "admin")))
@@ -471,16 +500,20 @@
                         (right "right")
                         (class class))))
 
-(defun confirm-delete (&key url next-url (type "item") class text)
+(defun confirm-delete (&key url next-url (type "item") class text image-id item-id)
   (standard-page
     "Confirm Delete"
     (html
       (:h1 "Are you sure you want to delete this " (str type) "?")
       (when text
         (htm (:p (cl-who:esc text))))
+      (when image-id
+        (htm (:img :class "activity-image" :src (get-image-thumbnail image-id 300 300))))
       (:form :method "post" :action url
-        (when next-url
-          (htm (:input :type "hidden" :name "next" :value next-url)))
+        (awhen item-id
+          (htm (:input :type "hidden" :name "item-id" :value it)))
+        (awhen next-url
+          (htm (:input :type "hidden" :name "next" :value it)))
         (:a :href next-url "No, I didn't mean it!")  
         (:button :class "yes" :type "submit" :class "submit" :name "really-delete" "Yes")))
     :class class))

@@ -8,6 +8,9 @@
 - [Can I use Kindista to barter with other members?](#can-i-barter-on-kindista)
 - [Are resources shared using Kindista taxable?](#are-resources-taxable)
 
+### Events
+- [What are the guidelines for posting events on Kindista?](#event-guidelines)
+
 ### Contacts
 - [What are contacts?](#what-are-contacts)
 - [What are mutual connections on a person's profile?](#what-are-mutual-connections)
@@ -141,7 +144,7 @@ such as utilities, car insurance, and phone bills.
 Kindista is specifically designed to encourage a culture of sharing
 in which we are all able to give freely without having to worry
 about how we are going to get our needs met in return.
-In that spirit, it is a violation of the [Terms of Use](/terms#restrictions)
+In that spirit, it is a violation of the [Terms of Use](/terms)
 to post an offer that requires the recipient to give you
 goods or services in return.
 Similarly, it is a violation to post a request in which you offer
@@ -163,6 +166,23 @@ and
 [here](http://www.irs.gov/uac/Eight-Tips-to-Determine-if-Your-Gift-is-Taxable).
 If you are still unsure about whether your gift is taxable
 you may want to consult a tax attorney.
+
+<small><a href="#questions">Return to questions</a></small>
+
+## Events
+
+<a id="event-guidelines"></a>
+
+### What are the guidelines for posting events on Kindista?
+
+Events posted to Kindista must adhere to our [Terms of Use](/terms).
+Kindista is for non-profit sharing, therefore you may not post an
+event to Kindista for which you plan on charging an entrance fee.
+
+You are free to conduct fundraising activities at events posted to Kindista.
+However, donating to your cause must not be a requirement for participants
+to attend your event.
+<em>If you post an event to Kindista, you may not turn away anyone due to a lack of funds.</em>
 
 <small><a href="#questions">Return to questions</a></small>
 
@@ -205,7 +225,7 @@ has also added the person to their own contacts list.*
 
 ### How do invitations work?
 
-Kindista membership is currently "by invitation only."
+Kindista membership is primarily by invitation.
 This means that it is up to **you** to help our network grow.
 We encourage you to send invitations wisely, inviting people you trust 
 who will actively share their resources with, and ask for support from,

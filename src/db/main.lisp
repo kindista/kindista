@@ -206,9 +206,9 @@
 (defun geo-index-insert (index item)
   (let ((geocode (geocode (result-latitude item) (result-longitude item))))
     (with-locked-hash-table (*geo-index-index*)
-      (push geocode (gethash (cons index item) *geo-index-index*))) 
+      (pushnew geocode (gethash (cons index item) *geo-index-index*))) 
     (with-locked-hash-table (index)
-      (push item (gethash (geocode (result-latitude item) (result-longitude item)) index)))))
+      (pushnew item (gethash (geocode (result-latitude item) (result-longitude item)) index)))))
 
 (defun geo-index-remove (index item)
   (with-locked-hash-table (*geo-index-index*)
@@ -392,7 +392,6 @@
   (db id :created))
 
 (defun update-db (id data)
-  (assert (gethash id *db*))
   (with-mutex (*db-log-lock*)
     (with-standard-io-syntax
       (prin1 (append (list (get-universal-time) id) data) *db-log*)
@@ -402,6 +401,7 @@
     (setf (gethash id *db*) data)))
 
 (defun modify-db (id &rest items)
+  (assert (gethash id *db*))
   (with-locked-hash-table (*db*)
     (let ((data (db id)))
       (do
@@ -426,8 +426,7 @@
              ((statements ())
               (item items (cddr item)))
              ((not (and (car item) (symbolp (car item)))) statements)
-             
-             (push `(let ((it (getf ,data ,(car item)))) 
+             (push `(let ((it (getf ,data ,(car item))))
                       (setf (getf ,data ,(car item)) ,(cadr item))) statements))
          (update-db ,id ,data)))))
 
@@ -451,6 +450,7 @@
     (:comment (index-comment id data))
     (:invitation (index-invitation id data))
     (:invite-request (index-invite-request id data))
+    (:event (index-event id data))
     (:feedback (index-feedback id data))
     (:gift (index-gift id data))
     (:gratitude (index-gratitude id data))

@@ -38,7 +38,9 @@
 
 (defun invitation-email-text (token to from &key text)
   (let ((sender (getf (db from) :name)))
-    (s+ sender
+    (s+ 
+(no-reply-notice)
+sender
 " has invited you to join Kindista, the social network for building "
 "community and sharing local resources.
 
@@ -78,6 +80,7 @@ sender
   (let ((sender (getf (db from) :name)))
     (html-email-base
       (html
+        (:p :style *style-p* (str (no-reply-notice)))
         (:p :style *style-p*
           (str (person-email-link from))
           " has invited you to join Kindista, the social network for building "
@@ -167,6 +170,11 @@ text "\"
              "token" token)
 
 "
+As a reminder, in an effort to prevent spam some features may not be "
+"available until someone on Kindista vouches for you, or until you "
+"post some offers and we have time to review them. 
+"
+"
 Thanks for sharing your gifts with us!
 "
 "-The Kindista Team"))
@@ -177,6 +185,7 @@ Thanks for sharing your gifts with us!
   (html
     (:p :style *style-p*
       "Hi " (str name) ","
+      (:br)
       "Here is the invitation you requested to join Kindista!")
 
     (:p :style *style-p*
@@ -206,6 +215,10 @@ Thanks for sharing your gifts with us!
                 (str (url-compose (s+ +base-url+ "signup")
                                   "email" email
                                   "token" token))))
+    (:p :style *style-p*
+      "As a reminder, in an effort to prevent spam some features may not be "
+      "available until someone on Kindista vouches for you, or until you "
+      "post some offers and we have time to review them." )
 
     (:p :style *style-p*
       "Thanks for sharing your gifts with us!")

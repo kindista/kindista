@@ -49,8 +49,9 @@
       (standard-page
         "Offers"
         (html
-          (:div :class "activity"
-            (str (inventory-activity-item "offer" (gethash id *db-results*) :show-distance t))))
+          (:div :class "activity item"
+            (str (inventory-activity-item "offer" (gethash id *db-results*) :show-distance t)))
+          (str (item-images-html id)))
         :selected "offers"))
     (not-found)))
 
@@ -80,6 +81,8 @@
 
 (defun get-offers ()
   (with-user
+    (when *userid*
+      (send-metric* :got-offers *userid*))
     (with-location
       (let* ((page (if (scan +number-scanner+ (get-parameter "p"))
                      (parse-integer (get-parameter "p"))

@@ -22,7 +22,6 @@
   (go-home))
 
 (defun get-js ()
-  (setf (ps::ps-package-prefix :kindista-js) "K")
   (with-output-to-string (s)
     (paren-files:compile-script-system :kindista-js :output-stream s)))
 
@@ -35,10 +34,6 @@
 
   ("/search"
     :get get-search)
-
-  ("/request-invitation"
-    :get get-request-invitation
-    :post post-request-invitation)
 
   ("/signup"
     :get get-signup
@@ -65,6 +60,12 @@
 
   ("/contact-us"
     :get go-contact-us)
+
+  ("/image/new"
+    :post post-new-image)
+
+  ("/image/<int:id>"
+    :post post-existing-image)
 
   ("/offers"
    :get get-offers)
@@ -115,6 +116,17 @@
   ("/gifts/<int:id>"
     :get get-gift
     :post post-gift)
+
+  ("/events/new"
+   :get get-events-new
+   :post post-events-new)
+
+  ("/events/<int:id>"
+    :get get-event
+    :post post-event)
+
+  ("/events"
+   :get get-events-all)
 
   ("/comments/<int>"
     ;:get get-comment
@@ -213,7 +225,6 @@
   ("/settings/error"
     :get get-settings-error)
 
-
   ("/settings/verify-address"
     :get get-verify-address)
 
@@ -274,6 +285,18 @@
   ("/admin/invite-request/<id>"
     :post post-admin-invite-request)
 
+  ("/admin/pending-accounts"
+    :get get-admin-pending-accounts)
+
+  ("/admin/pending-accounts/<id>"
+    :post post-admin-pending-account)
+
+  ("/admin/metrics"
+    :get get-admin-metrics)
+
+  ("/admin/metrics/metrics.png"
+    :get get-admin-metrics-png)
+
   ("/admin/recent"
     :get get-admin-recent)
 
@@ -289,11 +312,16 @@
   ("/home/"
     :get go-home)
 
+  ;chron-jobs
+
+  ("/schedule-metric-system-timer"
+   :get get-schedule-metric-system-timer)
+
+  ("/send-all-reminders"
+   :get get-send-all-reminders)
+
   ;js
 
   ("/kindista.js"
-   :get get-js)
-  
-  ("/sometimes-people-need-a-little-more-encouragement"
-    :get send-all-reminders))
+   :get get-js))
 

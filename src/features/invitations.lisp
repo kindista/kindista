@@ -20,12 +20,12 @@
 (defun new-invitation-notice-handler ()
   (let* ((invitation-id (getf (cddddr *notice*) :id))
          (invitation (db invitation-id))
-         (request-id (getf invitation :invite-request-id))
+         (host (getf invitation :host))
          (self (getf invitation :self)))
    (cond
      (self
        (send-email-verification invitation-id))
-     (request-id
+     ((eq host +kindista-id+)
        (send-requested-invite-email invitation-id))
      (t
       (send-invitation-email invitation-id)))))
@@ -79,7 +79,9 @@
          (userid (getf invitation :host))
          (email (getf invitation :recipient-email)))
     (amodify-db userid :emails (append it (list email))
-                       :pending-alt-emails (remove invitation-id it))) 
+                       :pending-alt-emails (remove invitation-id it))
+    (with-locked-hash-table (*email-index*)
+      (setf (gethash email *email-index*) *userid*)))
     (delete-invitation invitation-id))
 
 (defun unconfirmed-invitations (&optional (host *userid*))
@@ -89,6 +91,41 @@
           (unless (< (getf (db id) :valid-until) now)
             (awhen (getf (db id) :recipient-email)
               (collect it))))))
+
+(defun emails-awaiting-rsvp ()
+  (let ((kindista-invites nil)
+        (user-invites nil))
+    (dolist (invite-id (hash-table-values *invitation-index*))
+      (let* ((invite (db (car invite-id)))
+              (email (getf invite :recipient-email)))
+        (unless (member email (hash-table-keys *email-index*) :test #'string=)
+          (case (getf invite :host)
+            (2 (pushnew email kindista-invites :test #'string=))
+            (t (pushnew email user-invites :test #'string=))))))
+    (values kindista-invites
+            user-invites
+            (length kindista-invites)
+            (length user-invites))))
+
+(defun quick-invite-page (&key text)
+  (standard-page "Send invitations"
+    (html
+      (:div :class "item create-event"
+        (:form :method "post" :action "/invite"
+          (:input :type "hidden" :name "text" :value text)
+          (:h2 "Sign up for Kindista!")
+          (:p "Please enter your email address below. "
+           "We will send you an invitation email to complete the signup process. "
+           "If you do not see the invitation in your inbox, please check your spam folder.")
+          (:div
+            (:label "Email address")
+            (:input :type "text" :name "email" :placeholder "Please enter your email address"))
+          (:div 
+            (:label "Confirm your email address")
+            (:input :type "text" :name "confirm-email" :placeholder "Please confirm your email address"))
+          (:p
+            (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
+            (:button :class "yes" :type "submit" :class "submit" :name "quick-invite" "Sign me up!")))))))
 
 (defun invite-page (&key emails text next-url)
   (standard-page "Invite friends"
@@ -131,11 +168,17 @@
               (:button :class "yes" :type "submit" :class "submit" :name "confirm" "Send Invitation" (str pluralize)))))))))
 
 (defun get-invite ()
-  (require-user
-    (invite-page :emails (get-parameter "email"))))
+  (require-active-user
+    (cond
+      ((getf *user* :pending)
+       (pending-flash "invite people to join Kindista")
+       (see-other (or (referer) "/home"))) 
+     ;((eq *userid* 7222)
+     ; (quick-invite-page :text "Thanks for signing up for Kindista at Beloved."))
+      (t (invite-page :emails (get-parameter "email"))))))
 
 (defun post-invite ()
-  (require-user
+  (require-active-user
     (let* ((next-url (post-parameter "next-url"))
            (emails (remove-duplicates 
                      (emails-from-string (post-parameter "bulk-emails"))
@@ -147,6 +190,10 @@
                                        member-emails
                                        :test #'string=)))
     (cond
+      ((getf *user* :pending)
+       (pending-flash "invite people to join Kindista")
+       (see-other (or next-url "/home")))
+
       ((post-parameter "cancel")
        (see-other next-url))
 
@@ -180,5 +227,25 @@
        (if (> (length new-emails) 1)
          (flash "Your invitations have been sent.")
          (flash "Your invitation has been sent."))
-       (see-other (post-parameter "next-url")))))))
+       (see-other (post-parameter "next-url")))
+
+      ((not (scan +email-scanner+ (post-parameter "email")))
+       (flash "Please enter a valid email address." :error t)
+       (see-other "/invite"))
+
+      ((gethash (post-parameter "email") *email-index*)
+       (flash (strcat (post-parameter "email") "is already a Kindista member!") :error t)
+       (see-other "/invite"))
+
+      ((not (string= (post-parameter "email") (post-parameter "confirm-email")))
+       (flash "Your confirmation email does not match the email address you have entered." :error t)
+       (see-other "/invite"))
+
+      ((post-parameter "quick-invite")
+       (create-invitation (post-parameter "email")
+                          :text (unless (string= (post-parameter "text") "")
+                                  (post-parameter "text")))
+       (flash (strcat "An invitation has been sent to "
+                      (post-parameter "email")))
+       (see-other "invite"))))))
 

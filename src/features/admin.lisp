@@ -1,6 +1,6 @@
 ;;; Copyright 2012-2013 CommonGoods Network, Inc.
 ;;;
-;;; This file is part of Kindista.
+;; This file is part of Kindista.
 ;;;
 ;;; Kindista is free software: you can redistribute it and/or modify it
 ;;; under the terms of the GNU Affero General Public License as published
@@ -17,6 +17,11 @@
 
 (in-package :kindista)
 
+(defun account-approval-notice-handler ()
+  (let ((data (cddddr *notice*)))
+   (send-account-approval-email (getf data :id)
+                               :text (getf data :text))))
+
 (defmacro require-admin (&body body)
   `(with-user
      (if (getf *user* :admin)
@@ -31,10 +36,119 @@
         (:div :id "admin-page"
           (:h1 "Admin")
           (:ul
+            (:li (:a :href "/admin/metrics" "user metrics"))
+            (:li (:a :href "/admin/pending-accounts" "pending accounts to review"))
             (:li (:a :href "/admin/invite-requests" "invitation requests"))
             (:li (:a :href "/admin/recent" "recently added"))
             (:li (:a :href "/admin/sendmail" "send email to everyone")))))
       :selected "admin")))
+
+(defun get-admin-metrics ()
+  (require-admin
+    (standard-page
+      "Admin"
+       (html
+         (:p (:a :href "/admin" "back to admin"))
+         (:img :src "/admin/metrics/metrics.png")))))
+
+(defun get-admin-pending-accounts ()
+  (require-admin
+    (standard-page
+      "Pending Accounts"
+      (html
+        (:p (:a :href "/admin" "back to admin"))
+        (:h2 "Kindista Accounts Pending Admin Approval")
+        (dolist (id (hash-table-keys *pending-person-items-index*))
+          (let* ((person (db id))
+                 (email (first (getf person :emails)))
+                 (link (person-link id))
+                 (items (gethash id *pending-person-items-index*)))
+            (str
+              (card
+                (html
+                  (:p (str link)
+                    " joined "
+                    (str (humanize-universal-time (getf person :created))))
+                  (:p (:strong "ID: ") (str id))
+                  (:p (:strong "Email: ")
+                   (:a :href (s+ "mailto:" email) (str email)))
+                  (:p (:strong "Location: ") (str (awhen (getf person :address) it)))
+                  (dolist (item items)
+                    (let ((data (db item)))
+                      (htm
+                        (:div :class "item pending-account"
+                          (case (getf data :type)
+                            (:gratitude
+                              (htm
+                                (str (timestamp (getf data :created)))
+                                (:p (str link)
+                                 " posted a statement of gratitude about "
+                                 (str (name-list-all (getf data :subjects))))
+                                (:blockquote :class "review-text"
+                                  (str (getf data :text)))))
+                            (:offer
+                              (htm
+                                (str (timestamp (getf data :created)))
+                                (:p (str link)
+                                 " posted an offer")
+                                (:blockquote :class "review-text"
+                                  (str (getf data :text)))
+                                (:p (:strong "Tags: ")
+                                 (str (format nil *english-list* (getf data :tags))))))
+                            (:request
+                              (htm
+                                (str (timestamp (getf data :created)))
+                                (:p (str link)
+                                 " posted a request")
+                                (:blockquote :class "review-text"
+                                  (str (getf data :text)))
+                                (:p (:strong "Tags: ")
+                                 (str (format nil *english-list* (getf data :tags)))))))))))
+                  (:div :class "confirm-invite"
+                    (:form :method "post" 
+                           :action (strcat "/admin/pending-accounts/" id)
+                      (:textarea :cols "150" :rows "5" :name "message" :placeholder "Personal message to this person along with the approval... (optional)")
+                      (:p (:strong (:em "Please email the user with the email link above before deleting their account!")))
+                      (:button :type "submit"
+                               :name "delete"
+                               :class "cancel"
+                               "Delete spammer")
+                      (:button :type "submit"
+                               :name "approve"
+                               :class "yes"
+                               "Approve account"))))))))))))
+
+(defun post-admin-pending-account (id)
+  (require-admin
+    (let* ((userid (parse-integer id))
+           (user (db userid)))
+      (cond
+        ((post-parameter "delete")
+         (confirm-delete :url (strcat "/admin/pending-accounts/" userid)
+                         :next-url "/admin/pending-accounts"
+                         :type (strcat "user account (" userid ")")))
+        ((post-parameter "really-delete")
+         (delete-pending-account userid)
+         (flash (strcat "Pending account " userid " has been deleted."))
+         (see-other "/admin/pending-accounts"))
+        ((post-parameter "approve")
+         (modify-db userid :pending nil)
+         (let ((item-ids (gethash userid *pending-person-items-index*)))
+            (dolist (item-id item-ids)
+              (let ((item (db item-id)))
+                (case (getf item :type)
+                  (:gratitude
+                    (notice :new-gratitude :id item-id)))
+                (index-item item-id item)))
+           (with-locked-hash-table (*pending-person-items-index*)
+             (remhash userid *pending-person-items-index*)))
+         (notice :account-approval :id userid
+                                   :text (post-parameter "message"))
+         (flash (strcat "You have approved "
+                        (getf user :name)
+                        "'s account: "
+                        userid))
+         (see-other "/admin/pending-accounts"))))))
 
 (defun get-admin-invite-requests ()
   (require-admin
@@ -97,22 +211,49 @@
 (defun post-admin-invite-request (id)
   (require-admin
     (let* ((request-id (parse-integer id))
-           (request (db request-id)))
+           (request (db request-id))
+           (text (strcat
+                   (awhen (post-parameter "message")
+                     (strcat
+                       it
+                       #\return
+                       #\linefeed
+                       #\linefeed
+                       ))
+                   (awhen (getf request :offering)
+                     (strcat
+                       "For your reference, here is the text you entered "
+                       "about resources you might share on Kindista: "
+                       #\return
+                       #\linefeed
+                       #\linefeed
+                       it
+                       #\return
+                       #\linefeed
+                       #\linefeed
+                       "Save this email so you can cut and paste your text "
+                       "into the new offers you post on Kindista."
+                       )))))
       (cond
         ((post-parameter "delete")
          (confirm-delete :url (strcat "/admin/invite-request/" request-id)
                          :next-url "/admin/invite-requests"
                          :type "invitation request"
-                         :text (strcat "An request from " (getf request :name)
-                                   " , offering: \"" (getf request :offering)
-                                   "\"")))
+                         :text (strcat "An invitation request from "
+                                       (getf request :name)
+                                       " , offering: \""
+                                       #\return
+                                       #\linefeed
+                                       #\linefeed
+                                       (getf request :offering)
+                                       "\"")))
         ((post-parameter "really-delete")
          (delete-invite-request request-id)
          (flash (strcat "Invitation request " request-id " has been deleted."))
          (see-other "/admin/invite-requests"))
         ((post-parameter "invite")
          (let ((invitation-id (create-invitation (getf request :email)
-                                                 :text (post-parameter "message")
+                                                 :text text
                                                  :invite-request-id request-id
                                                  :expires 5184000
                                                  :host +kindista-id+
@@ -148,13 +289,12 @@
           (:form :action "/admin/sendmail" :method "post"
             (:p
               (:label "From:")
-              (:input :type "text" :name "from" :value "\"Nicholas E. Walker\" <root@kindista.org>"))
+              (:input :type "text" :name "from" :value "\"Benjamin Crandall\" <ben@kindista.org>"))
             (:p
               (:label "Subject:")
               (:input :type "text" :name "subject"))
             (:textarea :name "markdown")
             (:button :type "submit" :name "test" :class "yes" "Send Test")
-            (:button :type "submit" :name "unread-mail" :class "yes" "Send to users with unread mail")
             (:button :type "submit" :class "yes" "Send to everyone"))))
       :selected "admin")))
 

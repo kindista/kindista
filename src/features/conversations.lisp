@@ -120,16 +120,25 @@
     :selected "messages"))
 
 (defun get-conversations-new ()
-  (require-user
-    (new-conversation :people (parse-subject-list (get-parameter "people")))))
+  (require-active-user
+    (if (getf *user* :pending)
+       (progn
+         (pending-flash "contact other Kindista members")
+         (see-other (or (referer) "/home")))
+      (new-conversation :people (parse-subject-list (get-parameter "people"))))))
 
 (defun post-conversations-new ()
-  (require-user
+  (require-active-user
     (cond
+      ((getf *user* :pending)
+       (pending-flash "contact other Kindista members")
+       (see-other (or (post-parameter "next") "/home")))
+
       ((or (post-parameter "cancel")
            (and (post-parameter "cancel-add")
                 (not (post-parameter "people"))))
        (see-other (or (post-parameter "next") "/messages")))
+
       ((post-parameter "send")
        (let ((people (parse-subject-list (post-parameter "people") :remove (write-to-string *userid*)))
              (text (post-parameter "text"))
@@ -330,7 +339,8 @@
 
           ((post-parameter "text")
            (flash "Your message has been sent.")
-           (create-comment :on id :text (post-parameter "text"))
+           (send-metric* :message-sent
+                         (create-comment :on id :text (post-parameter "text"))) 
            (see-other (script-name*))))
 
         (permission-denied))
