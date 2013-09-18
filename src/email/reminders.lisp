@@ -38,6 +38,7 @@
 
 (defun get-send-all-reminders ()
   (when (or (getf *user* :admin)
+            (string= (header-in* :x-real-ip) *local-ip-address*)
             (string= (header-in* :x-real-ip) "127.0.0.1"))
     (send-all-reminders)))
 
