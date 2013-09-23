@@ -221,6 +221,27 @@
                   :banned t
                   :notify-kindista nil)))
 
+(defun find-people-with-incorrect-communication-settings ()
+  (sort (iter (for id in *active-people-index*)
+          (when (> id 8176)
+            (let ((data (db id)))
+              (when (or (not (getf data :notify-message))
+                        (not (getf data :notify-gratitude))
+                        (not (getf data :notify-kindista))
+                        (not (getf data :notify-expired-invites))
+                        (not (getf data :notify-reminders)))
+                (collect id))))) #'<))
+
+(defun fix-incorrect-communication-settings ()
+"To fix a bug possibly introduced when quickloading commit 933570c805f4af2a7e8d65ddfe2648bdbdf51215"
+  (iter (for id in *active-people-index*)
+        (when (> id 8176)
+          (modify-db id :notify-gratitude t
+                        :notify-message t
+                        :notify-reminders t
+                        :notify-expired-invites t
+                        :notify-kindista t))))
+
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)
       (write-to-string id)))
