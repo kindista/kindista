@@ -61,7 +61,7 @@
           (no-avatar (read-file-into-string (s+ +markdown-path+ "reminders/no-avatar.md")))
           (offers-requests (read-file-into-string (s+ +markdown-path+ "reminders/offers-requests.md"))))
 
-      (dolist (userid (or (list person-id) *active-people-index*))
+      (dolist (userid (or (awhen person-id (list it)) *active-people-index*))
         (let* ((person (db userid))
                (name (getf person :name))
                (avatar (getf person :avatar))
