@@ -289,7 +289,8 @@
 (defun post-existing-inventory-item (type &key id url)
   (require-user
     (let* ((id (parse-integer id))
-           (item (db id)))
+           (item (db id))
+           (by (getf item :by)))
       (cond
         ((post-parameter "reply")
          (see-other (s+ (script-name*) "/reply")))
@@ -297,6 +298,7 @@
         ((post-parameter "reply-text")
          (create-reply :on id :text (post-parameter "reply-text"))
          (flash "Your reply has been sent.")
+         (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
          (see-other (script-name*)))
 
         ((and (post-parameter "love"))
