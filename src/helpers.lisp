@@ -238,7 +238,7 @@
                                      collect (db id :name))
                                (mapcar #'person-link ids))))
 
-(defun contact-opt-out-flash (people-list)
+(defun contact-opt-out-flash (people-list &key (item-type "message"))
   (let* ((opt-outs (loop for id in people-list
                          when (not (db id :notify-message))
                          collect id))
@@ -248,8 +248,9 @@
     (when self-opt-out
       (flash (s+ "<p>You have chosen not to be notified when people send "
                  "messages to you through Kindista.</p>"
-                 "<p>In order to be notified when your recipient(s) reply "
-                 "to this message you must change your "
+                 "<p>In order to be notified when someone replies "
+                 "to this " item-type
+                 " you must change your "
                  "<a href=\"/settings/communication\">"
                  "communication settings</a>.</p>") :error t))
     (when other-opt-outs

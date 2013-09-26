@@ -264,12 +264,14 @@
            (if (getf *user* :pending)
              (progn
                new-id
+               (contact-opt-out-flash (list *userid*) :item-type type)
                (when (eq type :offer)
                  (notice :new-pending-offer :id new-id))
                (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
                (see-other "/home"))
-             (see-other
-              (format nil (strcat "/" type "s/" new-id)))))
+             (progn
+               (contact-opt-out-flash (list *userid*) :item-type type)
+               (see-other (format nil (strcat "/" type "s/" new-id))))))
 
          (enter-inventory-tags :title (s+ "Preview your " type)
                                :text (post-parameter "text")
