@@ -29,7 +29,7 @@
   (load-db)
   (load-tokens)
   (start *acceptor*)
-  (start (acceptor-metric-system *acceptor*))
+  (make-thread #'(lambda () (start (acceptor-metric-system *acceptor*))))
   (automatic-invitation-reminders)
   (start-notice-thread))
 
