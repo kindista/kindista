@@ -28,8 +28,8 @@
   (load-notice-handlers)
   (load-db)
   (load-tokens)
-  (start *acceptor*)
-  (make-thread #'(lambda () (start (acceptor-metric-system *acceptor*))))
+  (make-thread #'(lambda () (start *acceptor*)))
+  (start (acceptor-metric-system *acceptor*))
   (automatic-invitation-reminders)
   (start-notice-thread))
 
