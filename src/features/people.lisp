@@ -175,6 +175,7 @@
       (delete-inventory-item offer-id))
     (modify-db id :active nil
                   :notify-message nil
+                  :notify-kindist nil
                   :notify-reminders nil
                   :notify-expired-invites nil
                   :notify-gratitude nil)))
@@ -191,6 +192,7 @@
       (push id *active-people-index*))
     (modify-db id :active t
                   :notify-message t
+                  :notify-kindista t
                   :notify-reminders t
                   :notify-expired-invites t
                   :notify-gratitude t)))
@@ -221,11 +223,31 @@
                   :banned t
                   :notify-kindista nil)))
 
+(defun delete-active-account (id)
+  (let ((data (db id)))
+    (deactivate-person id)
+
+    (awhen (getf data :emails)
+      (with-locked-hash-table (*email-index*)
+        (dolist (email it)
+          (remhash email *email-index*))))
+
+    (modify-db id :emails (list nil)
+                  :deleted t)))
+
 (defun find-people-with-incorrect-communication-settings ()
   (sort (iter (for id in *active-people-index*)
           (let ((data (db id)))
             (when (or (not (getf data :notify-kindista))
                       (not (getf data :notify-reminders)))
+              (collect id)))) #'<))
+
+(defun find-people-with-incorrect-address-settings ()
+  (sort (iter (for id in *active-people-index*)
+          (let ((data (db id)))
+            (when (and (string= (getf data :street) "NIL NIL")
+                       (or (not (getf data :lat))
+                           (not (getf data :long))))
               (collect id)))) #'<))
 
 (defun reset-communication-settings ()
