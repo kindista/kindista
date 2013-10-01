@@ -31,8 +31,8 @@
   (let* ((by (getf data :by))
          (type (getf data :type))
          (pending (db by :pending))
-         (result (make-result :latitude (or (getf data :lat) (getf (db (getf data :by)) :lat))
-                              :longitude (or (getf data :long) (getf (db (getf data :by)) :long))
+         (result (make-result :latitude (or (getf data :lat) (db by :lat))
+                              :longitude (or (getf data :long) (db by :long))
                               :id id
                               :type type
                               :people (list by)
@@ -232,7 +232,9 @@
       ((post-parameter "cancel")
        (see-other (or (post-parameter "next") "/home")))
 
-      ((not (db *userid* :location))
+      ((or (not (getf *user* :location))
+           (not (getf *user* :long))
+           (not (getf *user* :lat)))
        (flash "You must set your street address on your settings page before you can post an offer or a request." :error t)
        (see-other (or (post-parameter "next") "/home")))
 
