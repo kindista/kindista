@@ -110,7 +110,14 @@
 
       (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
      ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
-      )))
+      (:p "We also appreciate checks mailed to:"
+           (:br)
+           "Kindista"
+           (:br)
+           "PO Box 5034"
+           (:br)
+           "Eugene, OR 97405")
+      (:p "Please make sure to include your email address so we can send you a thank you!"))))
 
 (defun donate-once-1 ()
   (html
@@ -132,7 +139,14 @@
       (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
       (:img :src "/media/pbs.png" :width "119" :height "26")
      ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
-      )))
+      (:p "We also appreciate checks mailed to:"
+           (:br)
+           "Kindista"
+           (:br)
+           "PO Box 5034"
+           (:br)
+           "Eugene, OR 97405")
+      (:p "Please make sure to include your email address so we can send you a thank you!")   )))
 
 (defun donate-dialog-2 (&optional show-error)
   (with-donate-info

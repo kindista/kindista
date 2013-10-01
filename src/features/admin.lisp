@@ -341,7 +341,7 @@
                                                 subject
                                                 text
                                                 :html-message html)))))))
-             (dolist (id (hash-table-keys *db*))
+             (dolist (id *active-people-index*)
                (send-mail id)))))
         (flash "your message has been sent"))
 

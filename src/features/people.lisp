@@ -228,15 +228,14 @@
                       (not (getf data :notify-reminders)))
               (collect id)))) #'<))
 
-(defun fix-incorrect-communication-settings ()
-"To fix a bug possibly introduced when quickloading commit 933570c805f4af2a7e8d65ddfe2648bdbdf51215"
-  (iter (for id in *active-people-index*)
-        (when (> id 8176)
-          (modify-db id :notify-gratitude t
-                        :notify-message t
-                        :notify-reminders t
-                        :notify-expired-invites t
-                        :notify-kindista t))))
+(defun reset-communication-settings ()
+"To fix a bug possibly introduced by using a multi-threaded taskmaster on *acceptor*"
+  (dolist (id *active-people-index*)
+    (modify-db id :notify-gratitude t
+                  :notify-message t
+                  :notify-reminders t
+                  :notify-expired-invites t
+                  :notify-kindista t)))
 
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)
