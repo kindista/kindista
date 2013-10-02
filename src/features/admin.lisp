@@ -298,6 +298,8 @@
             (:button :type "submit" :class "yes" "Send to everyone"))))
       :selected "admin")))
 
+(defvar *last-broadcast-email-time* 0)
+
 (defun post-admin-sendmail ()
   (require-admin
     (if (and (post-parameter "markdown")
@@ -328,7 +330,8 @@
                                     text
                                     :html-message html)))))
 
-          (t
+          ((< *last-broadcast-email-time* (- (get-universal-time) 300))
+           (setf *last-broadcast-email-time* (get-universal-time))
            (flet ((send-mail (id)
                     (let ((data (db id)))
                       (when (getf data :notify-kindista)
@@ -341,7 +344,7 @@
                                                 subject
                                                 text
                                                 :html-message html)))))))
-             (dolist (id *active-people-index*)
+             (dolist (id (remove-duplicates *active-people-index*))
                (send-mail id)))))
         (flash "your message has been sent"))
 
