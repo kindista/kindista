@@ -45,17 +45,21 @@
          (push id (gethash by *pending-person-items-index*))))
 
       (t
+       (with-locked-hash-table (*db-results*)
+         (setf (gethash id *db-results*) result))
+
+       (with-locked-hash-table (*activity-person-index*)
+         (asetf (gethash by *activity-person-index*)
+                (sort (push result it) #'> :key #'result-time)))
+
+       (if (eq type :offer)
+         (with-locked-hash-table (*offer-index*)
+           (push id (gethash by *offer-index*)))
+         (with-locked-hash-table (*request-index*)
+           (push id (gethash by *request-index*))))
+
        (when (and (result-latitude result)
                   (result-longitude result))
-
-         (with-locked-hash-table (*db-results*)
-           (setf (gethash id *db-results*) result))
-
-         (if (eq type :offer)
-           (with-locked-hash-table (*offer-index*)
-             (push id (gethash by *offer-index*)))
-           (with-locked-hash-table (*request-index*)
-             (push id (gethash by *request-index*))))
 
          (let ((stems (stem-text (getf data :text))))
            (if (eq type :offer)
@@ -65,10 +69,6 @@
              (with-locked-hash-table (*request-stem-index*)
                (dolist (stem stems)
                  (push result (gethash stem *request-stem-index*))))))
-
-         (with-locked-hash-table (*activity-person-index*)
-           (asetf (gethash by *activity-person-index*)
-                  (sort (push result it) #'> :key #'result-time)))
 
          (if (eq type :offer)
            (geo-index-insert *offer-geo-index* result)
