@@ -28,8 +28,9 @@
   (load-notice-handlers)
   (load-db)
   (load-tokens)
-  (start *acceptor*)
+  (make-thread #'(lambda () (start *acceptor*)))
   (start (acceptor-metric-system *acceptor*))
+  (automatic-invitation-reminders)
   (start-notice-thread))
 
 (defun load-notice-handlers ()
@@ -38,7 +39,7 @@
   (add-notice-handler :account-approval #'account-approval-notice-handler)
   (add-notice-handler :new-comment #'new-comment-notice-handler)
   (add-notice-handler :new-feedback #'new-feedback-notice-handler)
-  (add-notice-handler :new-invitation #'new-invitation-notice-handler)
+  (add-notice-handler :send-invitation #'send-invitation-notice-handler)
   (add-notice-handler :new-pending-offer #'new-pending-offer-notice-handler)
   (add-notice-handler :new-invite-request #'new-invite-request-notice-handler)
   (add-notice-handler :new-gratitude #'new-gratitude-notice-handler))
@@ -48,6 +49,7 @@
   (save-tokens)
   (stop *acceptor*)
   (stop (acceptor-metric-system *acceptor*))
+  (when *auto-invite-reminder-timer* (unschedule-timer *auto-invite-reminder-timer*))
   (stop-notice-thread))
 
 (defun quit ()

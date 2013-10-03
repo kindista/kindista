@@ -130,7 +130,7 @@
               (:button :class "cancel"
                        :type "submit"
                        :name "reset-location"
-                       :value "1"
+                       :value (referer)
                        "No, go back")
               (:button :class "yes"
                        :type "submit"
@@ -372,6 +372,10 @@
                 :checked (when (getf *user* :notify-reminders) "checked"))
                "with occasional suggestions about how I can get the most out of Kindista")
           (:li (:input :type "checkbox"
+                :name "expired-invites"
+                :checked (when (getf *user* :notify-expired-invites) "checked"))
+               "when invitatations I send for my friends to join Kindista expire")
+          (:li (:input :type "checkbox"
                 :name "kindista"
                 :checked (when (getf *user* :notify-kindista) "checked"))
                "with updates and information about Kindista"))))
@@ -483,7 +487,7 @@
 
       ((post-parameter "reset-location")
        (modify-db *userid* :lat nil :long nil :address nil :location nil)
-       (see-other (or (post-parameter "next") "/home")))
+       (see-other (or it "/home")))
 
       ((post-parameter "password")
        (cond
@@ -554,10 +558,14 @@
        (see-other "/settings/personal"))
 
       ((post-parameter "save-notifications")
-       (modify-db *userid* :notify-gratitude (when (post-parameter "gratitude") t))
-       (modify-db *userid* :notify-message (when (post-parameter "message") t))
-       (modify-db *userid* :notify-reminders (when (post-parameter "reminders") t))
-       (modify-db *userid* :notify-kindista (when (post-parameter "kindista") t))
+       (when (and (getf *user* :notify-message)
+                  (not (post-parameter "message")))
+         (flash "Warning: You will not recieve any email notifications when people reply to your Offers and Requests unless you choose to be notified \"when someone sends me a message\"!" :error t))
+       (modify-db *userid* :notify-gratitude (when (post-parameter "gratitude") t)
+                           :notify-message (when (post-parameter "message") t)
+                           :notify-reminders (when (post-parameter "reminders") t)
+                           :notify-expired-invites (when (post-parameter "expired-invites") t)
+                           :notify-kindista (when (post-parameter "kindista") t))
        (flash "Your notification preferences have been saved.")
        (see-other (or (post-parameter "next") "/home")))
 
@@ -612,7 +620,7 @@
             (send-email-verification id)))
        (flash (s+ "Your activation code has been resent to " email "."))
        (see-other "/settings/communication")))
-     
+
       ((post-parameter "make-email-primary")
        (let ((new-primary (post-parameter "make-email-primary")))
          (amodify-db *userid* :emails

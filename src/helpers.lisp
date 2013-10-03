@@ -232,8 +232,38 @@
                                  (append links (list (funcall func (nth 3 ids)))))
                                 (t links)))))
 
-(defun name-list-all (ids)
-  (format nil *english-list* (mapcar #'person-link ids)))
+(defun name-list-all (ids &key stringp)
+  (format nil *english-list* (if stringp
+                               (loop for id in ids
+                                     collect (db id :name))
+                               (mapcar #'person-link ids))))
+
+(defun contact-opt-out-flash (people-list &key (item-type "message"))
+  (let* ((opt-outs (loop for id in people-list
+                         when (not (db id :notify-message))
+                         collect id))
+         (self-opt-out (member *userid* opt-outs))
+         (other-opt-outs (remove *userid* opt-outs))
+         (pluralize (and opt-outs (> (length opt-outs) 1))))
+    (when self-opt-out
+      (flash (s+ "<p>You have chosen not to be notified when people send "
+                 "messages to you through Kindista.</p>"
+                 "<p>In order to be notified when someone replies "
+                 "to this " item-type
+                 " you must change your "
+                 "<a href=\"/settings/communication\">"
+                 "communication settings</a>.</p>") :error t))
+    (when other-opt-outs
+      (flash (s+ "<p>"
+                 (name-list-all other-opt-outs)
+                 (if pluralize " have " " has ")
+                 "chosen not to recieve email notifications when other "
+                 " Kindista members send them messages.</p>"
+                 "<p>They will recieve your message next time they log into "
+                 "Kindista. "
+                 "If this is an urgent matter, please use other means to " 
+                 "contact them.</p>")
+             :error t))))
 
 (defun pending-flash (action)
   (flash (s+ "Your account hasn't been fully activated yet. "

@@ -31,8 +31,8 @@
   (let* ((by (getf data :by))
          (type (getf data :type))
          (pending (db by :pending))
-         (result (make-result :latitude (or (getf data :lat) (getf (db (getf data :by)) :lat))
-                              :longitude (or (getf data :long) (getf (db (getf data :by)) :long))
+         (result (make-result :latitude (or (getf data :lat) (db by :lat))
+                              :longitude (or (getf data :long) (db by :long))
                               :id id
                               :type type
                               :people (list by)
@@ -42,13 +42,15 @@
     (cond
       (pending
        (with-locked-hash-table (*pending-person-items-index*)
-         (push id (gethash by *pending-person-items-index*)))
-       (when (eq type :offer)
-         (notice :new-pending-offer :id id)))
+         (push id (gethash by *pending-person-items-index*))))
 
       (t
        (with-locked-hash-table (*db-results*)
          (setf (gethash id *db-results*) result))
+
+       (with-locked-hash-table (*activity-person-index*)
+         (asetf (gethash by *activity-person-index*)
+                (sort (push result it) #'> :key #'result-time)))
 
        (if (eq type :offer)
          (with-locked-hash-table (*offer-index*)
@@ -56,28 +58,27 @@
          (with-locked-hash-table (*request-index*)
            (push id (gethash by *request-index*))))
 
-       (let ((stems (stem-text (getf data :text))))
+       (when (and (result-latitude result)
+                  (result-longitude result))
+
+         (let ((stems (stem-text (getf data :text))))
+           (if (eq type :offer)
+             (with-locked-hash-table (*offer-stem-index*)
+               (dolist (stem stems)
+                 (push result (gethash stem *offer-stem-index*))))
+             (with-locked-hash-table (*request-stem-index*)
+               (dolist (stem stems)
+                 (push result (gethash stem *request-stem-index*))))))
+
          (if (eq type :offer)
-           (with-locked-hash-table (*offer-stem-index*)
-             (dolist (stem stems)
-               (push result (gethash stem *offer-stem-index*))))
-           (with-locked-hash-table (*request-stem-index*)
-             (dolist (stem stems)
-               (push result (gethash stem *request-stem-index*))))))
+           (geo-index-insert *offer-geo-index* result)
+           (geo-index-insert *request-geo-index* result)) 
 
-       (with-locked-hash-table (*activity-person-index*)
-         (asetf (gethash by *activity-person-index*)
-                (sort (push result it) #'> :key #'result-time)))
-
-       (if (eq type :offer)
-         (geo-index-insert *offer-geo-index* result)
-         (geo-index-insert *request-geo-index* result))
-
-       (unless (< (result-time result) (- (get-universal-time) 15552000))
-         (unless (< (result-time result) (- (get-universal-time) 2592000))
-           (with-mutex (*recent-activity-mutex*)
-             (push result *recent-activity-index*)))
-         (geo-index-insert *activity-geo-index* result))))))
+         (unless (< (result-time result) (- (get-universal-time) 15552000))
+           (unless (< (result-time result) (- (get-universal-time) 2592000))
+             (with-mutex (*recent-activity-mutex*)
+               (push result *recent-activity-index*)))
+           (geo-index-insert *activity-geo-index* result)))))))
 
 (defun modify-inventory-item (id &key text tags latitude longitude)
   (let* ((result (gethash id *db-results*))
@@ -234,7 +235,9 @@
       ((post-parameter "cancel")
        (see-other (or (post-parameter "next") "/home")))
 
-      ((not (db *userid* :location))
+      ((or (not (getf *user* :location))
+           (not (getf *user* :long))
+           (not (getf *user* :lat)))
        (flash "You must set your street address on your settings page before you can post an offer or a request." :error t)
        (see-other (or (post-parameter "next") "/home")))
 
@@ -266,10 +269,14 @@
            (if (getf *user* :pending)
              (progn
                new-id
+               (contact-opt-out-flash (list *userid*) :item-type type)
+               (when (eq type :offer)
+                 (notice :new-pending-offer :id new-id))
                (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
                (see-other "/home"))
-             (see-other
-              (format nil (strcat "/" type "s/" new-id)))))
+             (progn
+               (contact-opt-out-flash (list *userid*) :item-type type)
+               (see-other (format nil (strcat "/" type "s/" new-id))))))
 
          (enter-inventory-tags :title (s+ "Preview your " type)
                                :text (post-parameter "text")
@@ -289,7 +296,8 @@
 (defun post-existing-inventory-item (type &key id url)
   (require-user
     (let* ((id (parse-integer id))
-           (item (db id)))
+           (item (db id))
+           (by (getf item :by)))
       (cond
         ((post-parameter "reply")
          (see-other (s+ (script-name*) "/reply")))
@@ -297,6 +305,7 @@
         ((post-parameter "reply-text")
          (create-reply :on id :text (post-parameter "reply-text"))
          (flash "Your reply has been sent.")
+         (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
          (see-other (script-name*)))
 
         ((and (post-parameter "love"))

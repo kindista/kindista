@@ -339,6 +339,7 @@
 (defvar *acceptor* (make-instance 'k-acceptor
                                   :port 5000
                                   :address "127.0.0.1"
+                                  :taskmaster (make-instance 'single-threaded-taskmaster)
                                   :access-log-destination (s+ +db-path+ "access")
                                   :message-log-destination (s+ +db-path+ "errors")))
 
@@ -504,7 +505,7 @@
   (standard-page
     "Confirm Delete"
     (html
-      (:h1 "Are you sure you want to delete this " (str type) "?")
+      (:h2 "Are you sure you want to delete this " (str type) "?")
       (when text
         (htm (:p (cl-who:esc text))))
       (when image-id

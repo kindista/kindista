@@ -150,6 +150,7 @@
          (cond
            ((and people text subject)
             (flash "Your message has been sent.")
+            (contact-opt-out-flash (append (list *userid*) people))
             (see-other (format nil (or (post-parameter "next")
                                        "/conversations/~A")
                                (create-conversation :people (mapcar #'list (cons *userid* people))
@@ -328,22 +329,22 @@
   (require-active-user
     (setf id (parse-integer id))
     (aif (db id)
-      (if (member *userid* (mapcar #'first (getf it :people)))
-        (cond
-          ((post-parameter "leave")
-           (with-locked-hash-table (*person-conversation-index*)
-             (asetf (gethash *userid* *person-conversation-index*)
-                    (remove id it :key #'result-id)))
-           (amodify-db id :people (remove *userid* it :key #'car))
-           (see-other "/messages"))
+      (let ((people (mapcar #'first (getf it :people))))
+        (if (member *userid* people)
+         (cond
+           ((post-parameter "leave")
+            (with-locked-hash-table (*person-conversation-index*)
+              (asetf (gethash *userid* *person-conversation-index*)
+                     (remove id it :key #'result-id)))
+            (amodify-db id :people (remove *userid* it :key #'car))
+            (see-other "/messages"))
 
-          ((post-parameter "text")
-           (flash "Your message has been sent.")
-           (send-metric* :message-sent
-                         (create-comment :on id :text (post-parameter "text"))) 
-           (see-other (script-name*))))
+           ((post-parameter "text")
+            (flash "Your message has been sent.")
+            (contact-opt-out-flash people)
+            (send-metric* :message-sent
+                          (create-comment :on id :text (post-parameter "text"))) 
+            (see-other (script-name*))))
 
-        (permission-denied))
-      (not-found)))
-  
-  )
+         (permission-denied)))
+      (not-found))))

@@ -427,6 +427,7 @@
               (item items (cddr item)))
              ((not (and (car item) (symbolp (car item)))) statements)
              (push `(let ((it (getf ,data ,(car item))))
+                      (declare (ignorable it))
                       (setf (getf ,data ,(car item)) ,(cadr item))) statements))
          (update-db ,id ,data)))))
 

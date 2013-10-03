@@ -31,7 +31,7 @@
 
 (defmethod initialize-instance :after ((system metric-system) &key)
   (setf (slot-value system 'timer) (make-timer #'(lambda ()
-                                                   (send-message (metric-system-mailbox system) '(:daily))))))
+                                                   (send-message (metric-system-mailbox system) '(:daily))) :thread t)))
 
 (defmethod start ((system metric-system))
   (unless (and (slot-boundp system 'thread)
@@ -44,9 +44,10 @@
   (when (thread-alive-p (slot-value system 'thread))
     (send-message (metric-system-mailbox system) '(:stop))))
 
-(defun get-scheule-metric-system-timer ()
-  (when (string= (header-in* :x-real-ip) "127.0.0.1")
-    (send-message (metric-system-mailbox system) '(:daily))))
+(defun get-schedule-metric-system-timer ()
+  (when (or (string= (header-in* :x-real-ip) "127.0.0.1")
+            (string= (header-in* :x-real-ip) *local-ip-address*))
+    (send-message (metric-system-mailbox (acceptor-metric-system *acceptor*)) '(:daily))))
 
 (defgeneric send-metric (system &rest message))
 

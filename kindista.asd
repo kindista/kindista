@@ -106,10 +106,14 @@
                                                    (:file "email-verification")
                                                    (:file "feedback-notification")
                                                    (:file "gratitude-notification")
-                                                   (:file "invitation")
-                                                   (:file "invite-request-notification")
                                                    (:file "message-notification")
                                                    (:file "pending-offer-notification")
                                                    (:file "pending-account-approval")
                                                    (:file "reminders")
-                                                   (:file "reset-password")))))))
+                                                   (:file "reset-password")
+                                                   (:module invitations
+                                                            :serial t
+                                                            :components ((:file "standard-invite")
+                                                                         (:file "requested-invite")
+                                                                         (:file "prelaunch-invite-reminder")
+                                                                         (:file "expired-reminder")))))))))

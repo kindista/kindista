@@ -39,6 +39,7 @@
                :notify-gratitude t
                :notify-message t
                :notify-reminders t
+               :notify-expired-invites t
                :notify-kindista t)))
 
 (defun index-person (id data)
@@ -174,7 +175,9 @@
       (delete-inventory-item offer-id))
     (modify-db id :active nil
                   :notify-message nil
+                  :notify-kindist nil
                   :notify-reminders nil
+                  :notify-expired-invites nil
                   :notify-gratitude nil)))
 
 (defun reactivate-person (id)
@@ -189,7 +192,9 @@
       (push id *active-people-index*))
     (modify-db id :active t
                   :notify-message t
+                  :notify-kindista t
                   :notify-reminders t
+                  :notify-expired-invites t
                   :notify-gratitude t)))
 
 (defun delete-pending-account (id)
@@ -217,6 +222,42 @@
     (modify-db id :pending nil
                   :banned t
                   :notify-kindista nil)))
+
+(defun delete-active-account (id)
+  (let ((data (db id)))
+    (deactivate-person id)
+
+    (awhen (getf data :emails)
+      (with-locked-hash-table (*email-index*)
+        (dolist (email it)
+          (remhash email *email-index*))))
+
+    (modify-db id :emails (list nil)
+                  :deleted t)))
+
+(defun find-people-with-incorrect-communication-settings ()
+  (sort (iter (for id in *active-people-index*)
+          (let ((data (db id)))
+            (when (or (not (getf data :notify-kindista))
+                      (not (getf data :notify-reminders)))
+              (collect id)))) #'<))
+
+(defun find-people-with-incorrect-address-settings ()
+  (sort (iter (for id in *active-people-index*)
+          (let ((data (db id)))
+            (when (and (string= (getf data :street) "NIL NIL")
+                       (or (not (getf data :lat))
+                           (not (getf data :long))))
+              (collect id)))) #'<))
+
+(defun reset-communication-settings ()
+"To fix a bug possibly introduced by using a multi-threaded taskmaster on *acceptor*"
+  (dolist (id *active-people-index*)
+    (modify-db id :notify-gratitude t
+                  :notify-message t
+                  :notify-reminders t
+                  :notify-expired-invites t
+                  :notify-kindista t)))
 
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)
@@ -687,6 +728,7 @@
 
       :selected "people"
       :right (html
+               (str (login-sidebar))
                (str (donate-sidebar))
                (str (invite-sidebar))))))
 
@@ -705,34 +747,81 @@
     (see-other "/people/nearby")))
 
 (defun get-people-invited ()
-  (if *user*
-    (let ((unconfirmed (unconfirmed-invitations))
-          (confirmed (gethash *userid* *invited-index*)))
+  (require-user
+    (let ((confirmed (gethash *userid* *invited-index*))
+          (unconfirmed (unconfirmed-invites)))
       (standard-page
         "Invited"
         (html
           (str (people-tabs-html :tab :invited))
+          (:div :id "my-invites"
+            (when unconfirmed
+              (htm
+                (:h3 :class "my-invites" "Awaiting RSVP ")
+                (:ul
+                  (dolist (invite unconfirmed)
+                    (let* ((id (getf invite :id))
+                           (email (getf invite :email))
+                           (times-sent (getf invite :times-sent))
+                           (last-sent (getf invite :last-sent))
+                           (expired (getf invite :expired)))
+                      (htm
+                        (:li
+                          (:form :method "post" :action "/people/invited"
+                            (:input :type "hidden" :name "invite-id" :value id)
+                            (:button :class "yes" :type "submit" :name "resend"
+                              (if expired
+                                (htm "Renew invitation")
+                                (htm "Resend invite")))
+                            (:button :class "cancel" :type "submit" :name "delete" "Delete"))
+                          (str email)
+                          (:small :class "gray-text"
+                            (if expired
+                              (str (s+ " (expired "
+                                       (humanize-universal-time expired) ")")                                   )
+                              (str (s+ (if (< 1 (length times-sent))
+                                         " (reminder sent "
+                                         " (invited ")
+                                       (humanize-universal-time last-sent) ")")))))))))))
 
-          (when unconfirmed
-            (htm
-              (:h2 "Unconfirmed invitations")
-              (:ul
-              (dolist (email unconfirmed)
-                (htm (:li (str email)))))))
+            (unless (or unconfirmed confirmed)
+              (htm
+                (:h2 "no invitations yet.")))
 
-          (when confirmed
-            (htm
-              (dolist (id confirmed)
-                (str (person-card id (db id :name))))))
-          
-          (unless (or confirmed unconfirmed)
-            (htm
-              (:h2 "No invitations yet.")
-              (:p "Would you like to " (:a :href "/invite" "invite someone") "?"))))
+            (:p
+              "would you like to "
+              (:a :href "/invite" (str (s+ "invite someone"
+                                           (when (or unconfirmed confirmed)
+                                             " else"))))
+              "?")))
 
         :selected "people"
         :right (html
                  (str (donate-sidebar))
-                 (str (invite-sidebar)))))
-      (see-other "/people/nearby")))
+                 (str (invite-sidebar)))))))
 
+(defun post-people-invited ()
+  (require-active-user
+    (let* ((id (parse-integer (or (post-parameter "invite-id")
+                                  (post-parameter "item-id"))))
+           (invitation (db id))
+           (email (getf invitation :recipient-email)))
+      (when (eql (getf invitation :host) *userid*)
+        (cond
+          ((post-parameter "delete")
+           (confirm-delete :url "/people/invited"
+                           :item-id id
+                           :next-url "/people/invited"
+                           :type (s+ "invitation to " email)))
+          ((post-parameter "really-delete")
+           (delete-invitation id)
+           (flash (s+ "Your invitation to " email " has been deleted."))
+           (see-other "/people/invited"))
+          ((post-parameter "resend")
+           (resend-invitation-html id))
+          ((post-parameter "cancel")
+           (see-other "/people/invited"))
+          ((post-parameter "confirm-resend")
+           (resend-invitation id :text (awhen (post-parameter "text") it))
+           (flash (strcat "Your invitation to " email "has been resent."))
+           (see-other "/people/invited")))))))

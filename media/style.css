@@ -586,6 +586,10 @@ button.gray {
   padding: 0.5em 0.7em;
 }
 
+.gray-text {
+ color: #999;
+}
+
 a.red {
  color: #900;
 }
@@ -1235,7 +1239,7 @@ menu .newcount {
  margin-bottom: 0.6em;
 }
 
-.event h3.event-date {
+h3.event-date, h3.my-invites {
  line-height: 2em;
  background: #f3f3f3;
  border-bottom-style: solid;
@@ -1690,6 +1694,26 @@ div.activity-image {
 
 .people li {
  margin:5px;
+}
+
+#my-invites ul {
+ padding-left:0;
+}
+
+#my-invites form {
+ display: inline-block;
+ vertical-align: middle;
+}
+
+#my-invites button {
+ margin-right: 0.7em;
+ padding: 0 0.3em;
+ font-size: 0.8em;
+}
+
+#my-invites li {
+ padding: 0.2em 0;
+ border-bottom: 1px solid #eee;
 }
 
 div.activity ul.mutuals-list {
