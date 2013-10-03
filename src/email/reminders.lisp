@@ -38,6 +38,8 @@
                                                 (remove (assoc reminder-type it)
                                                         it))))
 
+(defvar *last-reminder-email-time* 0)
+
 (defun get-send-all-reminders ()
   (when (or (getf *user* :admin)
             (string= (header-in* :x-real-ip) *local-ip-address*)
@@ -46,7 +48,9 @@
     (see-other "/home")))
 
 (defun send-all-reminders (&optional person-id)
-  (when (or *productionp* person-id)
+  (when (and (or *productionp* person-id)
+             (< *last-reminder-email-time* (- (get-universal-time) 300)))
+    (setf *last-reminder-email-time* (get-universal-time))
     (let ((complete-profile (read-file-into-string (s+ +markdown-path+ "reminders/complete-profile.md")))
           (closing (read-file-into-string (s+ +markdown-path+ "reminders/closing.md")))
           (first-gratitude (read-file-into-string (s+ +markdown-path+ "reminders/first-gratitude.md")))
@@ -61,7 +65,8 @@
           (no-avatar (read-file-into-string (s+ +markdown-path+ "reminders/no-avatar.md")))
           (offers-requests (read-file-into-string (s+ +markdown-path+ "reminders/offers-requests.md"))))
 
-      (dolist (userid (or (awhen person-id (list it)) *active-people-index*))
+      (dolist (userid (or (awhen person-id (list it))
+                          (remove-duplicates *active-people-index*)))
         (let* ((person (db userid))
                (name (getf person :name))
                (avatar (getf person :avatar))
