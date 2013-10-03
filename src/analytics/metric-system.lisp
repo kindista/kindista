@@ -31,7 +31,7 @@
 
 (defmethod initialize-instance :after ((system metric-system) &key)
   (setf (slot-value system 'timer) (make-timer #'(lambda ()
-                                                   (send-message (metric-system-mailbox system) '(:daily))))))
+                                                   (send-message (metric-system-mailbox system) '(:daily))) :thread t)))
 
 (defmethod start ((system metric-system))
   (unless (and (slot-boundp system 'thread)
