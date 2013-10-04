@@ -144,8 +144,8 @@
                    (eq type :request)))
 
       (setf (result-time result) time)
-      (with-locked-hash-table (*activity-person-index*)
-        (asetf (gethash by *activity-person-index*)
+      (with-locked-hash-table (*profile-activity-index*)
+        (asetf (gethash by *profile-activity-index*)
                (sort it #'> :key #'result-time)))
 
       (unless (< (result-time result) (- (get-universal-time) 15552000))
@@ -207,6 +207,33 @@
 
 (defun empty-string-p (string)
   (or (not string) (string= string "")))
+
+(defun mutual-connections (one &optional (two *userid*))
+  (intersection (gethash one *followers-index*)
+                (getf (db two) :following)))
+
+(defmacro ensuring-userid ((user-id base-url) &body body)
+  (let ((is-number (gensym))
+        (user-name (gensym))
+        (user-data (gensym)))
+    `(let ((,is-number (scan +number-scanner+ ,user-id)))
+       (if ,is-number
+         (let* ((,user-id (parse-integer ,user-id))
+                (,user-data (db ,user-id))
+                (,user-name (getf ,user-data :username)))
+           (if ,user-data
+             (if ,user-name
+               (see-other (format nil ,base-url ,user-name))
+               (progn ,@body))
+             (not-found)))
+         (let ((,user-id (gethash ,user-id *username-index*)))
+           (if ,user-id
+             (progn ,@body)
+             (not-found)))))))
+
+(defun username-or-id (&optional (id *userid*))
+  (or (getf (db id) :username)
+      (write-to-string id)))
 
 (defun alpha-people-links (userid-list)
   (mapcar

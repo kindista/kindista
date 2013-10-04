@@ -48,8 +48,8 @@
        (with-locked-hash-table (*db-results*)
          (setf (gethash id *db-results*) result))
 
-       (with-locked-hash-table (*activity-person-index*)
-         (asetf (gethash by *activity-person-index*)
+       (with-locked-hash-table (*profile-activity-index*)
+         (asetf (gethash by *profile-activity-index*)
                 (sort (push result it) #'> :key #'result-time)))
 
        (if (eq type :offer)
@@ -182,8 +182,8 @@
                  (remove id it))))
 
       (unless (eq type :event)
-        (with-locked-hash-table (*activity-person-index*)
-          (asetf (gethash (getf data :by) *activity-person-index*)
+        (with-locked-hash-table (*profile-activity-index*)
+          (asetf (gethash (getf data :by) *profile-activity-index*)
                  (remove result it)))
         (geo-index-remove *activity-geo-index* result)
         (with-mutex (*recent-activity-mutex*)

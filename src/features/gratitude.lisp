@@ -58,9 +58,9 @@
        (with-locked-hash-table (*gratitude-index*)
          (push id (gethash author-id *gratitude-index*)))
 
-       (with-locked-hash-table (*activity-person-index*)
+       (with-locked-hash-table (*profile-activity-index*)
          (dolist (person people)
-           (asetf (gethash person *activity-person-index*)
+           (asetf (gethash person *profile-activity-index*)
                   (sort (push result it) #'> :key #'result-time))))
 
        (unless (< (result-time result) (- (get-universal-time) 15552000))
@@ -128,9 +128,9 @@
 
     (delete-comments id)
 
-    (with-locked-hash-table (*activity-person-index*)
+    (with-locked-hash-table (*profile-activity-index*)
       (dolist (person people)
-        (asetf (gethash person *activity-person-index*)
+        (asetf (gethash person *profile-activity-index*)
                (remove result it))))
 
     (when result (geo-index-remove *activity-geo-index* result))

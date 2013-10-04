@@ -39,9 +39,9 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (with-locked-hash-table (*activity-person-index*)
+    (with-locked-hash-table (*profile-activity-index*)
       (dolist (person people)
-        (asetf (gethash person *activity-person-index*)
+        (asetf (gethash person *profile-activity-index*)
                (sort (push result it) #'> :key #'result-time))))
 
 
@@ -66,9 +66,9 @@
     (with-locked-hash-table (*db-results*)
       (remhash id *db-results*))
 
-    (with-locked-hash-table (*activity-person-index*)
+    (with-locked-hash-table (*profile-activity-index*)
       (dolist (person people)
-        (asetf (gethash person *activity-person-index*)
+        (asetf (gethash person *profile-activity-index*)
                (remove result it))))
 
     (geo-index-remove *activity-geo-index* result)

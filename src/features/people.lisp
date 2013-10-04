@@ -82,8 +82,8 @@
         (unless (member id (gethash it *invited-index*))
           (push id (gethash it *invited-index*)))))
 
-    (with-locked-hash-table (*activity-person-index*)
-      (asetf (gethash id *activity-person-index*)
+    (with-locked-hash-table (*profile-activity-index*)
+      (asetf (gethash id *profile-activity-index*)
              (sort (push result it) #'> :key #'result-time)))
 
     (unless (< (result-time result) (- (get-universal-time) 2592000))
@@ -259,87 +259,6 @@
                   :notify-expired-invites t
                   :notify-kindista t)))
 
-(defun username-or-id (&optional (id *userid*))
-  (or (getf (db id) :username)
-      (write-to-string id)))
-
-(defun profile-activity-items (&key (userid *userid*) (page 0) (count 20) type)
-  (let ((items (gethash userid *activity-person-index*))
-        (start (* page count))
-        (i 0))
-    (html
-      (iter
-        (let ((item (car items)))
-          (when (or (not item)
-                    (>= i (+ count start)))
-            (finish))
-
-          (when (and (or (not type)
-                         (and (eql type :gratitude)
-                              (eql :gift (result-type item)))
-                         (eql type (result-type item)))
-                     (> (incf i) start))
-
-            (case (result-type item)
-              (:gratitude
-                (when (or (not type)
-                          (not (eql userid (first (result-people item)))))
-                  (str (gratitude-activity-item item))))
-              (:person
-                (str (joined-activity-item item)))
-              (:gift
-                (when (or (not type)
-                          (eql userid (first (result-people item))))
-                  (str (gift-activity-item item))))
-              (:offer
-                (str (inventory-activity-item "offer" item
-                                          :show-what (unless (eql type :offer) t))))
-              (:request
-                (str (inventory-activity-item "request" item
-                                            :show-what (unless (eql type :request) t)))))))
-
-          (setf items (cdr items))
-
-          (finally
-            (str (paginate-links page (cdr items))))))))
-
-(defun profile-tabs-html (userid &key tab)
-  (let* ((person (db userid))
-         (profile-p (or (getf person :bio-into)
-                        (getf person :bio-contact)
-                        (getf person :bio-skils)
-                        (getf person :bio-doing)
-                        (getf person :bio-summary)))
-         (self (eql userid *userid*))
-         (active (getf person :active))
-         (show-bio-tab (or profile-p self)))
-    (html
-      (:menu :class "bar"
-        (:h3 :class "label" "Profile Menu")
-        (when show-bio-tab
-          (if (eql tab :about)
-            (htm (:li :class "selected" "About"))
-            (htm (:li (:a :href (strcat *base-url* "/about") "About")))))
-
-        (if (eql tab :activity)
-          (htm (:li :class "selected" "Activity"))
-          (htm (:li (:a :href (strcat *base-url* "/activity") "Activity"))))
-        (if (eql tab :gratitude)
-          (htm (:li :class "selected" "Reputation"))
-          (htm (:li (:a :href (strcat *base-url* "/reputation") "Reputation"))))
-        (when (eq active t)
-          (if (eql tab :offer)
-            (htm (:li :class "selected" "Offers"))
-            (htm (:li (:a :href (strcat *base-url* "/offers") "Offers"))))
-          (if (eql tab :request)
-            (htm (:li :class "selected" "Requests"))
-            (htm (:li (:a :href (strcat *base-url* "/requests") "Requests")))))
-
-        (when (mutual-connections userid)
-          (if (eql tab :connections)
-            (htm (:li :class "selected" "Mutual Connections"))
-            (htm (:li :class "no-rightbar" (:a :href (strcat *base-url* "/connections") "Mutual Connections")))))))))
-
 (defun profile-bio-section-html (title content &key editing editable section-name)
   (when (string= content "")
     (setf content nil))
@@ -368,35 +287,6 @@
           (t
             (htm
               (:p (str (html-text content))))))))))
-
-(defun profile-top-html (userid)
-  (let ((user (db userid))
-        (is-contact (member userid (getf *user* :following))))
-    (html
-     (:img :class "bigavatar" :src (get-avatar-thumbnail userid 300 300))
-     (:div :class "basics"
-       (:h1 (str (getf user :name))
-            (cond
-              ((getf user :banned)
-               (htm (:span :class "help-text" " (deleted account)")))
-              ((eq (getf user :active) nil)
-               (htm (:span :class "help-text" " (inactive account)")))))
-       (when (getf user :city)
-         (htm (:p :class "city" (str (getf user :city)) ", " (str (getf user :state)))))
-     (unless (eql userid *userid*)
-       (when (and (db userid :active) (db *userid* :active))
-         (htm
-           (:form :method "post" :action "/conversations/new"
-             (:input :type "hidden" :name "next" :value (script-name*))
-             (:button :class "yes" :type "submit" :name "add" :value userid "Send a message"))))
-       (htm
-         (:form :method "GET" :action (strcat "/people/" (username-or-id userid) "/reputation")
-           (:button :class "yes" :type "submit" "Express gratitude"))
-
-         (:form :method "POST" :action "/contacts"
-           (:input :type "hidden" :name (if is-contact "remove" "add") :value userid)
-           (:input :type "hidden" :name "next" :value *base-url*)
-           (:button :class (if is-contact "cancel" "yes") :type "submit" (str (if is-contact "Remove from contacts" "Add to contacts"))))))))))
 
 (defun profile-bio-html (userid &key editing)
   ; is the user editing one of the sections?
@@ -467,44 +357,13 @@
      (:h3 "Mutual Connections")
      (str link-list))))
 
-(defun profile-activity-html (userid &key type)
-  (let* ((user (db userid))
-         (strid (username-or-id userid))
-         (mutuals (mutual-connections userid))
+(defun person-activity-html (userid &key type)
+  (let* ((mutuals (mutual-connections userid))
          (mutual-links (html (:ul (dolist (link (alpha-people-links mutuals))
-                                      (htm (:li (str link)))))))
-         (*base-url* (strcat "/people/" strid)))
-    (standard-page
-      (getf user :name)
-      (html
-        (when *user* (str (profile-tabs-html userid :tab (or type :activity))))
-        (when (and (eql type :request) (eql userid *userid*) )
-          (htm (str (simple-inventory-entry-html "a" "request"))))
-        (when (and (eql type :offer) (eql userid *userid*))
-          (htm (str (simple-inventory-entry-html "an" "offer"))))
-        (when (and (eql type :gratitude)
-                   (not (eql userid *userid*))
-                   (eql (getf user :active) t))
-          (htm
-            (:div :class "item"
-             (:h4 "Do you have gratitude to share for " (str (getf user :name)) "?")
-             (:form :method "post" :action "/gratitude/new"
-               (:input :type "hidden" :name "subject" :value userid)
-               (:input :type "hidden" :name "next" :value (strcat *base-url* "/reputation"))
-               (:table :class "post"
-                (:tr
-                  (:td (:textarea :cols "1000" :rows "4" :name "text"))
-                  (:td
-                    (:button :class "yes" :type "submit" :class "submit" :name "create" "Post"))))))))
-
-        (:div :class "activity"
-          (str (profile-activity-items :userid userid :type type :page (aif (get-parameter "p") (parse-integer it) 0)))))
-
-      :top (profile-top-html userid)
-
-      :right (when mutuals (mutual-connections-sidebar mutual-links))
-
-      :selected "people")))
+                                      (htm (:li (str link))))))))
+    (profile-activity-html userid :type type
+                                  :right (when mutuals
+                                           (mutual-connections-sidebar mutual-links)))))
 
 (defun profile-mutual-connections-html (userid)
   (let* ((user (db userid))
@@ -550,7 +409,7 @@
        ;     (not (eql id *userid*)))
        ; (if (getf (db id) :bio)
        ;   (profile-bio-html id)
-       ;   (profile-activity-html id)))
+       ;   (person-activity-html id)))
 
         ((string= editing "doing")
          (profile-bio-html id :editing 'doing))
@@ -573,12 +432,12 @@
              (getf *user* :bio-contact)
              (getf *user* :bio-skils)
              (getf *user* :bio-doing))
-         (profile-activity-html id))
+         (person-activity-html id))
 
         ((eql id *userid*)
          (profile-bio-html id))
 
-        (t (not-found))))))
+      (t (not-found))))))
 
 (defun get-person-about (id)
   (require-user
@@ -587,22 +446,22 @@
 
 (defun get-person-activity (id)
   (ensuring-userid (id "/people/~a/activity")
-    (profile-activity-html id)))
+    (person-activity-html id)))
 
 (defun get-person-reputation (id)
   (require-user
     (ensuring-userid (id "/people/~a/reputation")
-      (profile-activity-html id :type :gratitude))))
+      (person-activity-html id :type :gratitude))))
 
 (defun get-person-offers (id)
   (require-user
     (ensuring-userid (id "/people/~a/offers")
-      (profile-activity-html id :type :offer))))
+      (person-activity-html id :type :offer))))
 
 (defun get-person-requests (id)
   (require-user
     (ensuring-userid (id "/people/~a/requests")
-      (profile-activity-html id :type :request))))
+      (person-activity-html id :type :request))))
 
 (defun get-person-mutual-connections (id)
   (require-user
@@ -616,10 +475,6 @@
       (mapcar #'result-id
               (sort (remove *userid* (geo-index-query *people-geo-index* *latitude* *longitude* 50) :key #'result-id)
                     #'< :key #'distance)))))
-
-(defun mutual-connections (one &optional (two *userid*))
-  (intersection (gethash one *followers-index*)
-                (getf (db two) :following)))
 
 (defun contactp (id)
   (member id (getf *user* :following)))

@@ -36,8 +36,6 @@
         *active-people-index* ()))
 
 (defindex *activity-geo-index*)
-(defindex *activity-person-index*)
-(defindex *activity-group-index*)
 (defindex *comment-index*)
 (defindex *email-index* :test 'equalp)
 (defindex *banned-emails-index* :test 'equalp)
@@ -59,6 +57,7 @@
 (defindex *person-conversation-index*)
 (defindex *person-invitation-index*)
 (defindex *person-notification-index*)
+(defindex *profile-activity-index*)
 (defindex *request-geo-index*)
 (defindex *request-index*) ;should be called "person-request-index"
 (defindex *request-stem-index* :test 'equalp)

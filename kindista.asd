@@ -57,6 +57,8 @@
                                            (:file "geo")
                                            (:file "tags")
                                            (:file "timeline")
+                                           (:file "paginate")
+                                           (:file "profiles")
                                            (:file "time")))
                              (:module templates
                               :serial t
@@ -65,7 +67,6 @@
                                            (:file "menu-horiz")
                                            (:file "card")
                                            (:file "group-card")
-                                           (:file "paginate")
                                            (:file "person-card")))
                              (:module features
                               :serial t

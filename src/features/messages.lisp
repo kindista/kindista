@@ -46,7 +46,7 @@
   (sort (append (gethash id *person-conversation-index*)
                 (gethash id *person-notification-index*)
                 (remove-if-not #'result-gratitude-p
-                               (gethash id *activity-person-index*)))
+                               (gethash id *profile-activity-index*)))
     #'> :key #'result-time))
 
 (defun inbox-items (&key (page 0) (count 20))

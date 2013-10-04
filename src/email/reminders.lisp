@@ -80,7 +80,7 @@
                (recent-reminder-time (or (cdr recent-reminder) now))
                (recently-expired-invitations (recently-expired-invitations userid))
                (location (getf person :location))
-               (activity (gethash userid *activity-person-index*))
+               (activity (gethash userid *profile-activity-index*))
                (latest-gratitude (loop for result in activity
                                        when (and (eq (result-type result) :gratitude)
                                                  (= userid (first (result-people result))))
