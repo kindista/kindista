@@ -221,8 +221,12 @@
         ((not (string= email (post-parameter "email-2")))
          (try-again "Your email confirmation did not match the email you entered"))
         (t
-         (create-invitation email :host +kindista-id+
-                                  :name name
-                                  :expires (* 60 +day-in-seconds+))
+         (aif (find email (unconfirmed-invites +kindista-id+)
+                    :key #'(lambda (item) (getf item :email))
+                    :test #'string=)
+           (resend-invitation (getf it :id))
+           (create-invitation email :host +kindista-id+
+                                    :name name
+                                    :expires (* 90 +day-in-seconds+)))
          (flash "We have sent an invitation to the email address you entered. Please check your email and follow the instructions we sent you to complete the sign-up process.")
          (see-other "/home"))))))))

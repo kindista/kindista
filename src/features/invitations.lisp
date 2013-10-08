@@ -99,7 +99,8 @@
              (remove (rassoc id it)
                      it
                      :test #'equal))
-      (sort (push (cons now id) *invitation-reminder-timer-index*) #'< :key #'car))
+      (sort (push (cons now id) *invitation-reminder-timer-index*) #'<
+            :key #'car))
   (notice :send-invitation :time now :id id)))
 
 (defvar *auto-invite-reminder-timer* nil)
