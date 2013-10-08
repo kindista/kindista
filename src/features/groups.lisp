@@ -153,7 +153,7 @@
   (amodify-db groupid :admins (remove personid it)
                        :members (pushnew personid it)))
 
-(defun members-sidebar (groupid)
+(defun group-member-links (groupid &key ul-class)
   (let* ((group (db groupid))
          (admins (getf group :admins))
          (members (append admins (getf group :members))))
@@ -172,14 +172,31 @@
                (let ((name (db id :name)))
                  (list id name (person-link id)))))
       (html
-        (:div :class "people item right only"
-        (:h3 "Group members")
-        (:ul
+        (:ul :class (or ul-class "")
           (dolist (list (sort (mapcar #'triple members) #'member-less-p))
             (htm
               (:li (str (third list))
                (when (admin-p (first list))
-                 (htm " (admin)")))))))))))
+                 (htm " (admin)"))))))))))
+
+(defun members-sidebar (groupid)
+  (html
+    (:div :class "people item right only"
+    (:h3 "Group members")
+    (str (group-member-links groupid)))))
+
+(defun profile-group-members-html (groupid)
+  (let* ((group (db groupid))
+         (strid (username-or-id groupid))
+         (*base-url* (strcat "/groups/" strid)))
+    (standard-page
+      (getf group :name)
+      (html
+        (when *user* (str (profile-tabs-html groupid :tab :members)))
+        (:div :class "activity"
+          (str (group-member-links groupid :ul-class "mutuals-list"))))
+      :top (profile-top-html groupid)
+      :selected "groups")))
 
 (defun group-activity-html (groupid &key type)
   (profile-activity-html groupid :type type
@@ -188,3 +205,33 @@
 (defun get-group (id)
   (ensuring-userid (id "/groups/~a")
     (group-activity-html id)))
+
+(defun get-group-about (id)
+  (require-user
+    (ensuring-userid (id "/groups/~a/about")
+      (profile-bio-html id))))
+
+(defun get-group-activity (id)
+  (ensuring-userid (id "/groups/~a/activity")
+    (group-activity-html id)))
+
+(defun get-group-reputation (id)
+  (require-user
+    (ensuring-userid (id "/groups/~a/reputation")
+      (group-activity-html id :type :gratitude))))
+
+(defun get-group-offers (id)
+  (require-user
+    (ensuring-userid (id "/groups/~a/offers")
+      (group-activity-html id :type :offer))))
+
+(defun get-group-requests (id)
+  (require-user
+    (ensuring-userid (id "/groups/~a/requests")
+      (group-activity-html id :type :request))))
+
+(defun get-group-members (id)
+  (require-user
+    (ensuring-userid (id "/groups/~a/members")
+      (profile-group-members-html id))))
+

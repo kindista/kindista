@@ -17,6 +17,117 @@
 
 (in-package :kindista)
 
+(defun profile-bio-section-html (title content &key editing editable section-name)
+  (when (string= content "")
+    (setf content nil))
+  (when (or content editing editable)
+    (html
+      (:div :class "bio-section"
+        (:h2 (str title)
+             (when (and editable (not editing))
+               (htm (:a :href (strcat *base-url* "?edit=" section-name)
+                        (:img :class "icon" :src "/media/icons/pencil.png")))))
+        (cond
+          (editing
+            (htm
+              (:form :method "post" :action "/settings"
+                (:input :type "hidden" :name "next" :value (strcat *base-url* "/about"))
+                (:textarea :name (strcat "bio-" section-name)
+                           (awhen content (str (escape-for-html it))))
+                (:button :class "yes" :type "submit" :name "save" "Save")
+                (:a :class "cancel red" :href *base-url* "Cancel")
+                )))
+          ((not content)
+            (htm
+              (:p :class "empty" "I'm empty... fill me out!")))
+
+          (t
+            (htm
+              (:p (str (html-text content))))))))))
+
+(defun profile-bio-html (id &key editing)
+  ; is the user editing one of the sections?
+  ; should we show edit links for the sections?
+  ;  if the user is looking at their own bio
+  ;   and they are not currently editing another section
+  ;
+  (require-user
+    (let* ((strid (username-or-id id))
+           (entity (db id))
+           (name (getf entity :name))
+           (entity-type (getf entity :type))
+           (editable (when (not editing)
+                       (case entity-type
+                         (:person (eql id *userid*))
+                         (:group (member *userid* (getf entity :admins))))))
+           (profile-p (or (getf entity :bio-into)
+                          (getf entity :bio-contact)
+                          (getf entity :bio-skils)
+                          (getf entity :bio-doing)
+                          (getf entity :bio-summary)))
+           (mutuals (mutual-connections id))
+           (mutual-links (html (:ul (dolist (link (alpha-people-links mutuals))
+                                      (htm (:li (str link)))))))
+           (*base-url* (case entity-type
+                         (:person (strcat "/people/" strid))
+                         (:group (strcat "/groups/" strid)))))
+      (standard-page
+        name
+        (html
+          (str (profile-tabs-html id :tab :about))
+          (if (or (eql id *userid*) profile-p)
+            (htm
+              (:div :class "bio"
+                (str (profile-bio-section-html
+                       (case entity-type
+                         (:person "My self-summary")
+                         (:group (s+ "About " name)))
+                       (getf entity :bio-summary)
+                       :section-name "summary"
+                       :editing (eql editing 'summary)
+                       :editable editable))
+                (when (eql entity-type :person)
+                  (str (profile-bio-section-html
+                         "What I'm doing with my life"
+                         (getf entity :bio-doing)
+                         :section-name "doing"
+                         :editing (eql editing 'doing)
+                         :editable editable)))
+                (str (profile-bio-section-html
+                       (case entity-type
+                         (:person "What I'm really good at")
+                         (:group "What we're really good at"))
+                       (getf entity :bio-skills)
+                       :section-name "skills"
+                       :editing (eql editing 'skills)
+                       :editable editable))
+                (when (eql entity-type :person)
+                  (str (profile-bio-section-html
+                         "I'm also into"
+                         (getf entity :bio-into)
+                         :section-name "into"
+                         :editing (eql editing 'into)
+                         :editable editable)))
+                (str (profile-bio-section-html
+                       (case entity-type
+                         (:person "You should contact me if")
+                         (:group "Contact us if"))
+                       (getf entity :bio-contact)
+                       :section-name "contact"
+                       :editing (eql editing 'contact)
+                       :editable editable))))
+            (case entity-type
+              (:person (htm (:h3 "This person hasn't written anything here.")))
+              (:group (htm (:h3 "This group hasn't written anything here."))))))
+        :right (case entity-type
+                 (:person (when mutuals
+                            (mutual-connections-sidebar mutual-links)))
+                 (:group (members-sidebar id)))
+        :top (profile-top-html id)
+        :selected (if (eql entity-type :group)
+                    "groups"
+                    "people")))))
+
 (defun profile-activity-items (&key (id *userid*) (page 0) (count 20) type)
   (let ((items (gethash id *profile-activity-index*))
         (start (* page count))
@@ -58,8 +169,9 @@
             (str (paginate-links page (cdr items))))))))
 
 (defun profile-top-html (id)
-  (let ((entity (db id))
-        (is-contact (member id (getf *user* :following))))
+  (let* ((entity (db id))
+         (entity-type (getf entity :type))
+         (is-contact (member id (getf *user* :following))))
     (html
      (:img :class "bigavatar" :src (get-avatar-thumbnail id 300 300))
      (:div :class "basics"
@@ -78,7 +190,10 @@
              (:input :type "hidden" :name "next" :value (script-name*))
              (:button :class "yes" :type "submit" :name "add" :value id "Send a message"))))
        (htm
-         (:form :method "GET" :action (strcat "/people/" (username-or-id id) "/reputation")
+         (:form :method "GET"
+                :action (case entity-type
+                          (:person (strcat "/people/" (username-or-id id) "/reputation"))
+                          (:group (strcat "/groups/" (username-or-id id) "/reputation")))
            (:button :class "yes" :type "submit" "Express gratitude"))
 
          (:form :method "POST" :action "/contacts"
@@ -123,7 +238,12 @@
                    (mutual-connections id))
           (if (eql tab :connections)
             (htm (:li :class "selected" "Mutual Connections"))
-            (htm (:li :class "no-rightbar" (:a :href (strcat *base-url* "/connections") "Mutual Connections")))))))))
+            (htm (:li :class "no-rightbar" (:a :href (strcat *base-url* "/connections") "Mutual Connections")))))
+
+        (when (eql (getf entity :type) :group)
+          (if (eql tab :members)
+            (htm (:li :class "selected" "Group Members"))
+            (htm (:li :class "no-rightbar" (:a :href (strcat *base-url* "/members") "Group Members")))))))))
 
 (defun profile-activity-html (id &key type right)
   (let* ((entity (db id))

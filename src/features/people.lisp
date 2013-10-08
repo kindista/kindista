@@ -259,98 +259,6 @@
                   :notify-expired-invites t
                   :notify-kindista t)))
 
-(defun profile-bio-section-html (title content &key editing editable section-name)
-  (when (string= content "")
-    (setf content nil))
-
-  (when (or content editing editable)
-    (html
-      (:div :class "bio-section"
-        (:h2 (str title)
-             (when (and editable (not editing))
-               (htm (:a :href (strcat *base-url* "?edit=" section-name)
-                        (:img :class "icon" :src "/media/icons/pencil.png")))))
-        (cond
-          (editing
-            (htm
-              (:form :method "post" :action "/settings"
-                (:input :type "hidden" :name "next" :value (strcat *base-url* "/about"))
-                (:textarea :name (strcat "bio-" section-name)
-                           (awhen content (str (escape-for-html it))))
-                (:button :class "yes" :type "submit" :name "save" "Save")
-                (:a :class "cancel red" :href *base-url* "Cancel")
-                )))
-          ((not content)
-            (htm
-              (:p :class "empty" "I'm empty... fill me out!")))
-
-          (t
-            (htm
-              (:p (str (html-text content))))))))))
-
-(defun profile-bio-html (userid &key editing)
-  ; is the user editing one of the sections?
-  ; should we show edit links for the sections?
-  ;  if the user is looking at their own bio
-  ;   and they are not currently editing another section
-  ;
-  (require-user
-    (let* ((strid (username-or-id userid))
-           (editable (when (not editing) (eql userid *userid*)))
-           (user (db userid))
-           (profile-p (or (getf user :bio-into)
-                          (getf user :bio-contact)
-                          (getf user :bio-skils)
-                          (getf user :bio-doing)
-                          (getf user :bio-summary)))
-           (mutuals (mutual-connections userid))
-           (mutual-links (html (:ul (dolist (link (alpha-people-links mutuals))
-                                      (htm (:li (str link)))))))
-           (*base-url* (strcat "/people/" strid)))
-      (standard-page
-        (getf (db userid) :name)
-        (html
-          (str (profile-tabs-html userid :tab :about))
-          (if (or (eql userid *userid*) profile-p)
-            (htm
-              (:div :class "bio"
-                (str (profile-bio-section-html
-                       "My self-summary"
-                       (getf user :bio-summary)
-                       :section-name "summary"
-                       :editing (eql editing 'summary)
-                       :editable editable))
-                (str (profile-bio-section-html
-                       "What I'm doing with my life"
-                       (getf user :bio-doing)
-                       :section-name "doing"
-                       :editing (eql editing 'doing)
-                       :editable editable))
-                (str (profile-bio-section-html
-                       "What I'm really good at"
-                       (getf user :bio-skills)
-                       :section-name "skills"
-                       :editing (eql editing 'skills)
-                       :editable editable))
-                (str (profile-bio-section-html
-                       "I'm also into"
-                       (getf user :bio-into)
-                       :section-name "into"
-                       :editing (eql editing 'into)
-                       :editable editable))
-                (str (profile-bio-section-html
-                       "You should contact me if"
-                       (getf user :bio-contact)
-                       :section-name "contact"
-                       :editing (eql editing 'contact)
-                       :editable editable))))
-            (htm (:h3 "This person hasn't written anything here."))))
-        :right (if editing
-                 (when mutuals
-                   (mutual-connections-sidebar mutual-links)))
-        :top (profile-top-html userid)
-        :selected "people"))))
-
 (defun mutual-connections-sidebar (link-list)
   (html
     (:div :class "people item right only"
@@ -375,31 +283,13 @@
       (html
         (when *user* (str (profile-tabs-html userid :tab :connections)))
         (:div :class "activity"
-          (:ul :class "mutuals-list" (dolist (link (alpha-people-links mutuals))
-                 (htm (:li (str link)))))))
+          (:ul :class "mutuals-list"
+           (dolist (link (alpha-people-links mutuals))
+             (htm (:li (str link)))))))
 
       :top (profile-top-html userid)
 
       :selected "people")))
-
-(defmacro ensuring-userid ((user-id base-url) &body body)
-  (let ((is-number (gensym))
-        (user-name (gensym))
-        (user-data (gensym)))
-    `(let ((,is-number (scan +number-scanner+ ,user-id)))
-       (if ,is-number
-         (let* ((,user-id (parse-integer ,user-id))
-                (,user-data (db ,user-id))
-                (,user-name (getf ,user-data :username)))
-           (if ,user-data
-             (if ,user-name
-               (see-other (format nil ,base-url ,user-name))
-               (progn ,@body))
-             (not-found)))
-         (let ((,user-id (gethash ,user-id *username-index*)))
-           (if ,user-id
-             (progn ,@body)
-             (not-found)))))))
 
 (defun get-person (id)
   (ensuring-userid (id "/people/~a")
