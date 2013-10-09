@@ -17,6 +17,41 @@
 
 (in-package :kindista)
 
+(defun nearby-profiles (index)
+  (with-location
+    (labels ((distance (result)
+               (air-distance *latitude* *longitude* (result-latitude result) (result-longitude result))))
+      (mapcar #'result-id
+              (sort (remove *userid* (geo-index-query index *latitude* *longitude* 50) :key #'result-id)
+                    #'< :key #'distance)))))
+
+(defun get-nearby (type tabs)
+  (let* ((page (if (scan +number-scanner+ (get-parameter "p"))
+                (parse-integer (get-parameter "p"))
+                0))
+         (start (* page 20)))
+    (standard-page
+      (s+ "Nearby " type)
+      (html
+        (str tabs)
+        (multiple-value-bind (ids more)
+          (sublist (nearby-profiles (if (string= type "people")
+                                      *people-geo-index*
+                                      *groups-geo-index*))
+                   start 20)
+          (when (> page 0)
+            (str (paginate-links page more)))
+          (dolist (id ids)
+            (str (if (string= type "people")
+                   (person-card id (db id :name))
+                   (group-card id))))
+          (str (paginate-links page more))))
+      :selected type
+      :right (html
+               (str (login-sidebar))
+               (str (donate-sidebar))
+               (str (invite-sidebar))))))
+
 (defun profile-bio-section-html (title content &key editing editable section-name)
   (when (string= content "")
     (setf content nil))

@@ -123,8 +123,11 @@
 
 (defun change-person-to-group (groupid admin-id)
   (modify-db groupid :type :group
-                      :creator admin-id
-                      :admins (list admin-id)))
+                     :creator admin-id
+                     :admins (list admin-id))
+  (index-group groupid (db groupid))
+  (reindex-group-location groupid)
+  (reindex-group-name groupid))
 
 (defun group-members (groupid)
   (let ((group (db groupid)))
@@ -202,6 +205,15 @@
   (profile-activity-html groupid :type type
                                  :right (members-sidebar groupid)))
 
+(defun get-groups ()
+  (if (and *user*
+           (> (length (gethash *userid* *group-membership-index*)) 0))
+    (see-other "/groups/my-groups")
+    (see-other "/groups/nearby")))
+
+(defun get-groups-nearby ()
+  (get-nearby "groups" (groups-tabs-html :tab :nearby)))
+
 (defun get-group (id)
   (ensuring-userid (id "/groups/~a")
     (group-activity-html id)))
@@ -235,3 +247,24 @@
     (ensuring-userid (id "/groups/~a/members")
       (profile-group-members-html id))))
 
+(defun groups-tabs-html (&key (tab :my-groups))
+  (html
+    (:menu :class "bar"
+      (:h3 :class "label" "Groups Menu")
+
+      (if (eql tab :my-groups)
+        (htm (:li :class "selected" "My Groups"))
+        (htm (:li (:a :href "/groups/my-groups" "My Groups"))))
+
+      (if (eql tab :nearby)
+        (htm (:li :class "selected" "Nearby"))
+        (htm (:li (:a :href "/groups/nearby" "Nearby"))))
+
+     ;(if (eql tab :suggested)
+     ;  (htm (:li :class "selected" "Suggested"))
+     ;  (htm (:li (:a :href "/people/suggested" "Suggested"))))
+
+     ;(if (eql tab :invited)
+     ;  (htm (:li :class "selected" "Invited"))
+     ;  (htm (:li (:a :href "/people/invited" "Invited"))))
+      )))

@@ -175,6 +175,12 @@
   ("/groups"
     :get get-groups)
 
+  ("/groups/my-groups"
+    :get get-my-groups)
+
+  ("/groups/nearby"
+    :get get-groups-nearby)
+
   ("/groups/<id>"
     :get get-group)
 

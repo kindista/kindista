@@ -358,14 +358,6 @@
     (ensuring-userid (id "/people/~a/connections")
       (profile-mutual-connections-html id))))
 
-(defun nearby-people ()
-  (with-location
-    (labels ((distance (result)
-               (air-distance *latitude* *longitude* (result-latitude result) (result-longitude result))))
-      (mapcar #'result-id
-              (sort (remove *userid* (geo-index-query *people-geo-index* *latitude* *longitude* 50) :key #'result-id)
-                    #'< :key #'distance)))))
-
 (defun contactp (id)
   (member id (getf *user* :following)))
 
@@ -399,7 +391,7 @@
   (html
     (:menu :class "bar"
       (:h3 :class "label" "People Menu")
-      
+
       (if (eql tab :contacts)
         (htm (:li :class "selected" "Contacts"))
         (htm (:li (:a :href "/people/contacts" "Contacts"))))
@@ -455,27 +447,7 @@
     (see-other "/people/nearby")))
 
 (defun get-people-nearby ()
-  (let* ((page (if (scan +number-scanner+ (get-parameter "p"))
-                (parse-integer (get-parameter "p"))
-                0))
-         (start (* page 20)))
-    
-    (standard-page
-      "Nearby people"
-      (html
-        (when *user* (str (people-tabs-html :tab :nearby)))
-        (multiple-value-bind (ids more) (sublist (nearby-people) start 20)
-          (when (> page 0)
-            (str (paginate-links page more)))
-          (dolist (id ids)
-            (str (person-card id (db id :name))))
-          (str (paginate-links page more))))
-
-      :selected "people"
-      :right (html
-               (str (login-sidebar))
-               (str (donate-sidebar))
-               (str (invite-sidebar))))))
+  (get-nearby "people" (when *user* (people-tabs-html :tab :nearby))))
 
 (defun get-people-suggested ()
   (if *user*

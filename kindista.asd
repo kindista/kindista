@@ -48,7 +48,15 @@
                                                    (:file "metric-system")))
                              (:module http
                               :serial t
-                              :components ( (:file "main")))
+                              :components ((:file "main")))
+                             (:module templates
+                              :serial t
+                              :components ((:file "sidebar")
+                                           (:file "timestamp")
+                                           (:file "menu-horiz")
+                                           (:file "card")
+                                           (:file "group-card")
+                                           (:file "person-card")))
                              (:module shared
                               :serial t
                               :components ((:file "inventory")
@@ -60,14 +68,6 @@
                                            (:file "paginate")
                                            (:file "profiles")
                                            (:file "time")))
-                             (:module templates
-                              :serial t
-                              :components ((:file "sidebar")
-                                           (:file "timestamp")
-                                           (:file "menu-horiz")
-                                           (:file "card")
-                                           (:file "group-card")
-                                           (:file "person-card")))
                              (:module features
                               :serial t
                               :components ((:file "about")
