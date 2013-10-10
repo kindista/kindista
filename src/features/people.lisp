@@ -447,7 +447,7 @@
     (see-other "/people/nearby")))
 
 (defun get-people-nearby ()
-  (get-nearby "people" (when *user* (people-tabs-html :tab :nearby))))
+  (nearby-profiles-html "people" (when *user* (people-tabs-html :tab :nearby))))
 
 (defun get-people-suggested ()
   (if *user*

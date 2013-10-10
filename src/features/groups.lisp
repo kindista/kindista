@@ -124,7 +124,12 @@
 (defun change-person-to-group (groupid admin-id)
   (modify-db groupid :type :group
                      :creator admin-id
-                     :admins (list admin-id))
+                     :admins (list admin-id)
+                     :notify-gratitude (list admin-id)
+                     :notify-message (list admin-id)
+                     :notify-kindista nil
+                     :notify-expired-invites (list admin-id)
+                     :notify-reminders nil)
   (index-group groupid (db groupid))
   (reindex-group-location groupid)
   (reindex-group-name groupid))
@@ -211,8 +216,37 @@
     (see-other "/groups/my-groups")
     (see-other "/groups/nearby")))
 
+(defun get-my-groups ()
+  (if *user*
+    (let* ((my-groups (gethash *userid* *group-membership-index*))
+           (admin-groups (loop for id in my-groups
+                               with group
+                               do (setf group (db id))
+                               when (member *userid* (getf group :admins))
+                               collect (cons group (getf group :name))))
+           (member-groups (loop for group
+                                in (set-difference my-groups
+                                                   (mapcar #'car admin-groups))
+                                collect (cons group (db group :name)))))
+      (standard-page
+        "My Groups"
+        (html
+          (str (groups-tabs-html :tab :my-groups))
+          (unless my-groups
+            (htm (:h3 "You have not joined any groups yet.")))
+          (dolist (group (sort admin-groups #'< :key #'last))
+            (str (group-card (car group))))
+          (dolist (group (sort member-groups #'< :key #'last))
+            (str (group-card (car group)))))
+        :selected "groups"
+        :right (html
+                 (str (donate-sidebar))
+                 (str (invite-sidebar)))))
+
+      (see-other "groups/nearby")))
+
 (defun get-groups-nearby ()
-  (get-nearby "groups" (groups-tabs-html :tab :nearby)))
+  (nearby-profiles-html "groups" (groups-tabs-html :tab :nearby)))
 
 (defun get-group (id)
   (ensuring-userid (id "/groups/~a")

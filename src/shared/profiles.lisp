@@ -25,7 +25,7 @@
               (sort (remove *userid* (geo-index-query index *latitude* *longitude* 50) :key #'result-id)
                     #'< :key #'distance)))))
 
-(defun get-nearby (type tabs)
+(defun nearby-profiles-html (type tabs)
   (let* ((page (if (scan +number-scanner+ (get-parameter "p"))
                 (parse-integer (get-parameter "p"))
                 0))

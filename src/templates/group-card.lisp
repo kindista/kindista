@@ -19,18 +19,37 @@
 
 (defun group-card (id)
   (let* ((group (db id))
-         (members (length (getf group :members))) 
+         (members (length (group-members id)))
          (name (getf group :name))
-         (link (s+ "/groups/" (username-or-id id))))
-    (html
+         (link (s+ "/groups/" (username-or-id id)))
+         (distance (when (and (getf *user* :lat)
+                              (getf *user* :long)
+                              (getf group :lat)
+                              (getf group :long))
+                     (air-distance (getf *user* :lat) (getf *user* :long)
+                                   (getf group :lat) (getf group :long)))))
+    (labels ((show-different-location (place)
+               (unless (and (getf *user* place)
+                            (string= (getf group place)
+                                     (getf *user* place)))
+                 (s+ (unless (eql place :city) ", ")
+                     (getf group place)))))
+     (html
       (:div :class "card"
-        (:div :class "image" (:a :href link (:img :src (strcat "/media/avatar/" id ".jpg"))))
+        (:div :class "image" (:a :href link (:img :src (get-avatar-thumbnail id 300 300))))
         (:h3 (:a :href link
                (str name)))
 
-        (awhen (getf group :city) 
-          (htm (:p "In " (str it))))
+        (aif (show-different-location :city)
+          (htm
+            (:p "In "
+                (str (s+ it
+                       (show-different-location :state)
+                       (show-different-location :country)))))
+          (awhen distance
+            (htm
+              (:p "within " (str (distance-string it))))))
 
-        (htm (:p (:a :href (s+ link "/members" ) 
-                 (str (strcat members " member")) 
-                 (str (when (or (eql members 0) (> members 1)) "s")))))))))
+        (htm (:p (:a :href (s+ link "/members" )
+                 (str (strcat members " member"))
+                 (str (when (or (eql members 0) (> members 1)) "s"))))))))))
