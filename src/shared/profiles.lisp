@@ -206,7 +206,9 @@
 (defun profile-top-html (id)
   (let* ((entity (db id))
          (entity-type (getf entity :type))
-         (is-contact (member id (getf *user* :following))))
+         (is-contact (member id (getf *user* :following)))
+         (memberp (member *userid* (getf entity :members)))
+         (adminp (member *userid* (getf entity :admins))))
     (html
      (:img :class "bigavatar" :src (get-avatar-thumbnail id 300 300))
      (:div :class "basics"
@@ -219,7 +221,9 @@
        (when (getf entity :city)
          (htm (:p :class "city" (str (getf entity :city)) ", " (str (getf entity :state)))))
      (unless (eql id *userid*)
-       (when (and (db id :active) (db *userid* :active))
+       (when (and (db id :active)
+                  (db *userid* :active)
+                  (eql entity-type :person))
          (htm
            (:form :method "post" :action "/conversations/new"
              (:input :type "hidden" :name "next" :value (script-name*))
@@ -231,10 +235,12 @@
                           (:group (strcat "/groups/" (username-or-id id) "/reputation")))
            (:button :class "yes" :type "submit" "Express gratitude"))
 
-         (:form :method "POST" :action "/contacts"
-           (:input :type "hidden" :name (if is-contact "remove" "add") :value id)
-           (:input :type "hidden" :name "next" :value *base-url*)
-           (:button :class (if is-contact "cancel" "yes") :type "submit" (str (if is-contact "Remove from contacts" "Add to contacts"))))))))))
+         (when (eql entity-type :person)
+           (htm
+             (:form :method "POST" :action "/contacts"
+               (:input :type "hidden" :name (if is-contact "remove" "add") :value id)
+               (:input :type "hidden" :name "next" :value *base-url*)
+               (:button :class (if is-contact "cancel" "yes") :type "submit" (str (if is-contact "Remove from contacts" "Add to contacts"))))))))))))
 
 (defun profile-tabs-html (id &key tab)
   (let* ((entity (db id))

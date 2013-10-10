@@ -127,6 +127,7 @@
                      :admins (list admin-id)
                      :notify-gratitude (list admin-id)
                      :notify-message (list admin-id)
+                     :pass nil
                      :notify-kindista nil
                      :notify-expired-invites (list admin-id)
                      :notify-reminders nil)
