@@ -67,7 +67,8 @@
                                            (:file "timeline")
                                            (:file "paginate")
                                            (:file "profiles")
-                                           (:file "time")))
+                                           (:file "time")
+                                           (:file "settings")))
                              (:module features
                               :serial t
                               :components ((:file "about")
@@ -95,7 +96,6 @@
                                            (:file "reset-password")
                                            (:file "root")
                                            (:file "search")
-                                           (:file "settings")
                                            (:file "signup")
                                            (:file "splash")
                                            (:file "terms")))

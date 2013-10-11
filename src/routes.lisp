@@ -202,6 +202,26 @@
   ("/groups/<id>/members"
     :get get-group-members)
 
+  ("/groups/<id>/settings"
+    :post post-settings
+    :get go-settings)
+
+  ("/settings"
+    :post post-settings
+    :get go-settings)
+
+  ("/settings/personal"
+    :get get-settings)
+
+  ("/settings/error"
+    :get get-settings-error)
+
+  ("/settings/verify-address"
+    :get get-verify-address)
+
+  ("/settings/communication"
+    :get get-settings-communication)
+
   ("/conversations"
     :get get-conversations)
 
@@ -221,22 +241,6 @@
 
   ("/messages"
     :get get-messages)
-
-  ("/settings"
-    :post post-settings
-    :get go-settings)
-
-  ("/settings/personal"
-    :get get-settings)
-
-  ("/settings/error"
-    :get get-settings-error)
-
-  ("/settings/verify-address"
-    :get get-verify-address)
-
-  ("/settings/communication"
-    :get get-settings-communication)
 
   ("/deactivate-account"
     :get confirm-deactivation)

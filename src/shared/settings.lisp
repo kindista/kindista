@@ -17,17 +17,22 @@
 
 (in-package :kindista)
 
-(defun settings-tabs-html (tab)
+(defun settings-tabs-html (tab &optional groupid)
   (html
     (:menu :class "bar"
-      (if (equal tab "personal")
-        (htm (:li :class "selected" "Personal Settings"))
-        (htm (:li (:a :href "/settings/personal" "Personal Settings"))))
+      (unless groupid
+        (if (equal tab "personal")
+          (htm (:li :class "selected" "Personal Settings"))
+          (htm (:li (:a :href "/settings/personal" "Personal Settings")))))
+      (when groupid
+        (if (equal tab "profile")
+          (htm (:li :class "selected" "Profile Settings"))
+          (htm (:li (:a :href "/settings/public" "Personal Settings")))))
       (if (equal tab "communication")
         (htm (:li :class "selected" "Communication Settings"))
         (htm (:li (:a :href "/settings/communication" "Communication Settings")))))))
 
-(defun settings-item-html (base item title body &key help-text editable edit-text)
+(defun settings-item-html (item title body &key help-text editable edit-text)
   (html
     (:div :class "settings-item"
       (:div :class "settings-item title" (str title))
@@ -35,14 +40,14 @@
         (unless editable
           (htm
             (:div :class "button"
-              (:a :class "yes" :href (s+ base "?edit=" item)
+              (:a :class "yes" :href (s+ *base-url* "?edit=" item)
                                      (or (str edit-text) (htm "Edit"))))))
         (str body)
         (:p :class "help-text" (:em (str help-text)))))))
 
-(defun settings-avatar (base editable)
+(defun settings-avatar (editable)
   (settings-item-html
-    base "avatar" "Avatar"
+    "avatar" "Avatar"
     (cond
       (editable
         (new-image-form "/settings" "/settings/personal" :class "submit-settings"))
@@ -52,10 +57,10 @@
 
   :editable editable))
 
-(defun settings-name (base editable)
+(defun settings-name (editable)
   (let ((aliases (getf *user* :aliases)))
     (settings-item-html
-      base "name" "Name"
+      "name" "Name"
       (cond
         (editable
           (html
@@ -88,14 +93,14 @@
     :help-text (s+ "If you are known by multiple names or nicknames, "
                    "enter up to 5 to help people find you. "))))
 
-(defun settings-address (base editable)
+(defun settings-address (editable)
   (let ((address (getf *user* :address)))
-    (settings-item-html base "address" "Address"
+    (settings-item-html "address" "Address"
     (cond
       (editable
         (html
           (:form :method "post" :class "address" :action "/settings"
-           (:input :type "hidden" :name "next" :value "/settings/personal")
+           (:input :type "hidden" :name "next" :value *base-url*)
            (:div :class "submit-settings"
              (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
              (:button :class "yes" :type "submit" :class "submit" :name "confirm-address" "Submit"))
@@ -138,11 +143,11 @@
                        :value "1"
                        "Yes, this is correct"))))))))
 
-(defun settings-password (base)
-  (settings-item-html base "password" "Password"
+(defun settings-password ()
+  (settings-item-html "password" "Password"
     (html
       (:form :method "post" :class "password" :autocomplete "off" :action "/settings"
-       (:input :type "hidden" :name "next" :value "/settings/personal")
+       (:input :type "hidden" :name "next" :value *base-url*)
        (:div :class "submit-settings"
          (:button :class "yes" :type "submit" :class "submit" "Change password"))
        (:div
@@ -167,12 +172,12 @@
                  "lower-case letters, numbers, and symbols; or a sentence "
                  "of at least 8 words.")))
 
-(defun settings-donate (base)
+(defun settings-donate ()
   (let ((plan (getf *user* :plan)))
-    (settings-item-html base "donate" "Donate"
+    (settings-item-html "donate" "Donate"
       (html
         (:form :method "post" :class "password" :action "/settings"
-         (:input :type "hidden" :name "next" :value "/settings/personal")
+         (:input :type "hidden" :name "next" :value *base-url*)
          (:div :class "submit-settings"
            (:button :class "cancel" :type "submit" :class "submit" :name "cancel-plan" "Cancel plan")
            (:button :class "yes" :type "submit" :class "submit" "Change plan"))
@@ -192,11 +197,11 @@
                    "next monthly bill&mdash;we do not prorate plan changes. Thank you for your "
                    "financial support!"))))
 
-(defun settings-deactivate (base)
+(defun settings-deactivate ()
   (let ((action (if (eq (getf *user* :active) t)
                   "deactivate"
                   "reactivate"))) 
-    (settings-item-html base action (string-capitalize action)
+    (settings-item-html action (string-capitalize action)
       (html
         (:form :method "post" :action "/settings"
           (:button :class "link no-padding green" 
@@ -239,11 +244,11 @@
         ))
     :class "text"))
 
-(defun settings-emails (base editable &key activate)
+(defun settings-emails (editable &key activate)
   (let* ((emails (getf *user* :emails))
          (alternates (cdr emails))
          (pending (getf *user* :pending-alt-emails)))
-    (settings-item-html base "email" "Email"
+    (settings-item-html "email" "Email"
       (html
         (:form :method "post" :action "/settings"
           (:input :type "hidden" :name "next" :value "/settings/communication")
@@ -351,11 +356,11 @@
                 " to your Kindista account."))
      (see-other "/settings/communication")))))
 
-(defun settings-notifications (base)
-  (settings-item-html base "notifications" "Notify me"
+(defun settings-notifications ()
+  (settings-item-html "notifications" "Notify me"
     (html
       (:form :method "post" :action "/settings"
-        (:input :type "hidden" :name "next" :value "/settings/communication")
+        (:input :type "hidden" :name "next" :value *base-url*)
         (:div :class "submit-settings"
           (:button :class "yes" :type "submit" :class "submit" :name "save-notifications" "Save notification preferences"))
         (:ul
@@ -382,21 +387,31 @@
 
     :editable t))
 
-(defun get-settings ()
+(defun get-settings (&optional (id *userid*))
   (require-user
-    (let ((base "/settings/personal")
-          (edit (get-parameter "edit")))
-      (standard-page
-        "Personal settings"
-        (html
-          (str (settings-tabs-html "personal"))
-          (str (settings-avatar base (string= edit "avatar")))
-          (str (settings-name base (string= edit "name")))
-          (str (settings-address base (string= edit "address")))
-          (str (settings-password base))
-          (when (getf *user* :plan) (str (settings-donate base)))
-          (str (settings-deactivate base)))
-        :selected :settings))))
+    (let* ((edit (get-parameter "edit"))
+           (data (db id))
+           (groupid (when (eql (getf data :type) :group) id))
+           (strid (username-or-id groupid))
+           (*base-url* (if groupid
+                         (s+ strid "/settings/public")
+                         "/settings/personal")))
+      (if (or (not groupid)
+              (member *userid* (getf data :admins)))
+        (standard-page
+          (if (not groupid)
+            "Personal settings"
+            (s+ (getf data :name) " settings"))
+          (html
+            (str (settings-tabs-html "personal"))
+            (str (settings-avatar (string= edit "avatar")))
+            (str (settings-name (string= edit "name")))
+            (str (settings-address (string= edit "address")))
+            (str (settings-password))
+            (when (getf *user* :plan) (str (settings-donate)))
+            (str (settings-deactivate)))
+          :selected :settings)
+        (permission-denied)))))
 
 (defun get-settings-error ()
   (flash "The avatar you uploaded is too large. Please upload an image smaller than 10MB." :error t)
@@ -414,7 +429,7 @@
        (activate-email-address (parse-integer (get-parameter "invitation-id"))
                                (get-parameter "token")))
       (t
-       (let ((base "/settings/communication"))
+       (let ((*base-url* "/settings/communication"))
          (standard-page
            "Communication settings"
            (html
@@ -427,10 +442,8 @@
                  (:strong (str (car (getf *user* :emails)))))
 
 
-               (str (settings-notifications base))
-
-               (str (settings-emails base
-                                     (string= (get-parameter "edit") "email")
+               (str (settings-notifications))
+               (str (settings-emails (string= (get-parameter "edit") "email")
                                      :activate (get-parameter "activate")))))
            :selected :settings))))))
 
