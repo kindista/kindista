@@ -485,19 +485,21 @@
 
 (defun post-settings ()
   (require-user
-    (let* ((id (or (awhen (post-parameter "on") it)
-                   (awhen (post-parameter "groupid") it)
+    (let* ((groupid (or (post-parameter "on")
+                        (post-parameter "groupid")))
+           (id (or (when groupid
+                     (unless (string= groupid "")
+                       (parse-integer groupid)))
                    *userid*))
            (group (unless (eql id *userid*) (db id))))
 
       (if (or (eql id *userid*)
-              (member *userid* (getf id :admins)))
+              (member *userid* (getf group :admins)))
         (acond
           ((post-parameter "cancel")
            (see-other (or (post-parameter "next") "/home")))
 
           ((post-parameter "identity-selection")
-           (pprint it)
            (if (eql (parse-integer it) *userid*)
              (see-other "/settings/personal")
              (see-other (url-compose "/settings/public"
@@ -505,15 +507,20 @@
 
           ((post-parameter "name")
            (cond
-             ((unless group
+             ((if group
+                (scan +text-scanner+ it)
                 (validate-name it))
               (let ((aliases (remove-duplicates
-                               (loop for (x . y) in (post-parameters*) 
+                               (loop for (x . y) in (post-parameters*)
                                      when (and (string= x "aliases")
-                                               (not (string= y ""))) 
+                                               (not (string= y "")))
                                      collect y)
                                :test #'string=)))
                 (cond
+                  ((and group
+                        (not (equal (getf group :name) it)))
+                   (modify-db id :name it)
+                   (reindex-group-name id))
                   ((and (not (equal (getf *user* :aliases) aliases))
                         (equal (getf *user* :name) it))
                    (modify-db *userid* :aliases aliases)
@@ -527,7 +534,7 @@
                    (modify-db *userid* :name it :aliases aliases)
                    (reindex-person-names *userid*)))))
              (t
-               (flash "You must use your true full name (first and last) for your primary name on Kindista.  Single word names are permitted for your nicknames." :error t))) 
+               (flash "You must use your true full name (first and last) for your primary name on Kindista.  Single word names are permitted for your nicknames." :error t)))
            (see-other (or (post-parameter "next") "/home")))
 
           ((post-parameter "address")
@@ -766,4 +773,4 @@
            (reindex-person-location *userid*)
            (see-other (or (post-parameter "next") "/home"))))
 
-        (permission-denied)))))
+      (permission-denied)))))
