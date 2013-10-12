@@ -217,18 +217,22 @@
     (see-other "/groups/my-groups")
     (see-other "/groups/nearby")))
 
+(defun groups-with-user-as-admin (&optional (userid *userid*))
+"Returns an a-list of (groupid . group-name)"
+  (loop for id in (gethash userid *group-membership-index*)
+        with group
+        do (setf group (db id))
+        when (member userid (getf group :admins))
+        collect (cons id (getf group :name))))
+
 (defun get-my-groups ()
   (if *user*
     (let* ((my-groups (gethash *userid* *group-membership-index*))
-           (admin-groups (loop for id in my-groups
-                               with group
-                               do (setf group (db id))
-                               when (member *userid* (getf group :admins))
-                               collect (cons group (getf group :name))))
-           (member-groups (loop for group
+           (admin-groups (groups-with-user-as-admin))
+           (member-groups (loop for groupid
                                 in (set-difference my-groups
                                                    (mapcar #'car admin-groups))
-                                collect (cons group (db group :name)))))
+                                collect (cons groupid (db groupid :name)))))
       (standard-page
         "My Groups"
         (html

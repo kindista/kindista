@@ -202,15 +202,14 @@
   ("/groups/<id>/members"
     :get get-group-members)
 
-  ("/groups/<id>/settings"
-    :post post-settings
-    :get go-settings)
-
   ("/settings"
     :post post-settings
     :get go-settings)
 
   ("/settings/personal"
+    :get get-settings)
+
+  ("/settings/public"
     :get get-settings)
 
   ("/settings/error"

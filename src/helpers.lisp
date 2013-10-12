@@ -158,7 +158,18 @@
 
 (defun url-compose (base &rest params)
   (do ((param-strings ()))
-      ((not params) (format nil "~a~a~{~a~^&~}" base (if param-strings "?" "") param-strings))
+      ((not params)
+       (cond
+         ((not param-strings )
+          base)
+         ((and (find #\? base :test #'equal)
+               (find #\= base :test #'equal))
+          (format nil "~a&~{~a~^&~}" base
+                                     param-strings))
+         (t
+          (format nil "~a~a~{~a~^&~}" base
+                                      (if param-strings "?" "")
+                                      param-strings))))
       (when (cadr params)
         (push (if (consp (cadr params))
                 (format nil "~a=~{~a~^+~}" (car params) (cadr params))
