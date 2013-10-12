@@ -19,6 +19,7 @@
 
 (defparameter +number-scanner+ (create-scanner "^\\d+$"))
 (defparameter +full-name-scanner+ (create-scanner "^([a-zA-Z]+\\.? )[a-zA-Z]+"))
+(defparameter +text-scanner+ (create-scanner "[a-zA-Z]+"))
 (defparameter +email-scanner+ (create-scanner
                                  "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"))
 (defparameter *english-list*

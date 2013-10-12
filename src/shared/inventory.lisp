@@ -227,71 +227,82 @@
     (let ((tags (iter (for pair in (post-parameters*))
                       (when (and (string= (car pair) "tag")
                                  (scan *tag-scanner* (cdr pair)))
-                        (collect (cdr pair))))))
+                        (collect (cdr pair)))))
+          (text (when (scan +text-scanner+ (post-parameter "text"))
+                  (post-parameter "text"))))
+
       (iter (for tag in (tags-from-string (post-parameter "tags")))
             (setf tags (cons tag tags)))
 
-    (cond
-      ((post-parameter "cancel")
-       (see-other (or (post-parameter "next") "/home")))
+      (cond
+        ((post-parameter "cancel")
+         (see-other (or (post-parameter "next") "/home")))
 
-      ((or (not (getf *user* :location))
-           (not (getf *user* :long))
-           (not (getf *user* :lat)))
-       (flash "You must set your street address on your settings page before you can post an offer or a request." :error t)
-       (see-other (or (post-parameter "next") "/home")))
+        ((or (not (getf *user* :location))
+             (not (getf *user* :long))
+             (not (getf *user* :lat)))
+         (flash "You must set your street address on your settings page before you can post an offer or a request." :error t)
+         (see-other (or (post-parameter "next") "/home")))
 
-      ((post-parameter "back")
-       (enter-inventory-text :type type
-                             :text (post-parameter "text")
-                             :action url
-                             :tags tags
-                             :selected (s+ type "s")))
-
-      ((and (post-parameter "post")
-            (post-parameter "text"))
-        (enter-inventory-tags :title (s+ "Preview your " type)
-                              :text (post-parameter "text")
-                              :action url
-                              :tags tags
-                              :button-text (s+ "Post " type)
-                              :selected (s+ type "s")))
-
-      ((and (post-parameter "create")
-            (post-parameter "text"))
-
-       (if (intersection tags *top-tags* :test #'string=)
-         (let ((new-id (create-inventory-item
-                         :type (if (string= type "request") :request
-                                                            :offer)
-                         :text (post-parameter "text")
-                         :tags tags)))
-           (if (getf *user* :pending)
-             (progn
-               new-id
-               (contact-opt-out-flash (list *userid*) :item-type type)
-               (when (string= type "offer")
-                 (notice :new-pending-offer :id new-id))
-               (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
-               (see-other "/home"))
-             (progn
-               (contact-opt-out-flash (list *userid*) :item-type type)
-               (see-other (format nil (strcat "/" type "s/" new-id))))))
-
-         (enter-inventory-tags :title (s+ "Preview your " type)
-                               :text (post-parameter "text")
+        ((not text)
+         (flash (s+ "Please enter a better description of your " type ".")
+                :error t)
+         (enter-inventory-text :type type
                                :action url
-                               :button-text (s+ "Post " type)
                                :tags tags
-                               :error "You must select at least one keyword"
-                               :selected (s+ type "s"))))
+                               :selected (s+ type "s")))
 
-      (t
-       (enter-inventory-text :type type
-                             :text (post-parameter "text")
-                             :tags tags
-                             :action url
-                             :selected (s+ type "s")))))))
+        ((post-parameter "back")
+         (enter-inventory-text :type type
+                               :text text
+                               :action url
+                               :tags tags
+                               :selected (s+ type "s")))
+
+        ((and (post-parameter "post")
+              text)
+          (enter-inventory-tags :title (s+ "Preview your " type)
+                                :text text
+                                :action url
+                                :tags tags
+                                :button-text (s+ "Post " type)
+                                :selected (s+ type "s")))
+
+        ((and (post-parameter "create")
+              text)
+
+         (if (intersection tags *top-tags* :test #'string=)
+           (let ((new-id (create-inventory-item
+                           :type (if (string= type "request") :request
+                                                              :offer)
+                           :text text
+                           :tags tags)))
+             (if (getf *user* :pending)
+               (progn
+                 new-id
+                 (contact-opt-out-flash (list *userid*) :item-type type)
+                 (when (string= type "offer")
+                   (notice :new-pending-offer :id new-id))
+                 (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
+                 (see-other "/home"))
+               (progn
+                 (contact-opt-out-flash (list *userid*) :item-type type)
+                 (see-other (format nil (strcat "/" type "s/" new-id))))))
+
+           (enter-inventory-tags :title (s+ "Preview your " type)
+                                 :text text
+                                 :action url
+                                 :button-text (s+ "Post " type)
+                                 :tags tags
+                                 :error "You must select at least one keyword"
+                                 :selected (s+ type "s"))))
+
+        (t
+         (enter-inventory-text :type type
+                               :text text
+                               :tags tags
+                               :action url
+                               :selected (s+ type "s")))))))
 
 (defun post-existing-inventory-item (type &key id url)
   (require-user
