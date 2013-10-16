@@ -275,7 +275,9 @@
                                 :button-text (s+ "Post " type)
                                 :selected (s+ type "s")))
 
-        ((and text (post-parameter "identity-selection"))
+        ((and text
+              (not (post-parameter "create"))
+              (post-parameter "identity-selection"))
           (enter-inventory-tags :title (s+ "Preview your " type)
                                 :text text
                                 :action url
@@ -291,6 +293,7 @@
            (let ((new-id (create-inventory-item
                            :type (if (string= type "request") :request
                                                               :offer)
+                           :by (if adminp groupid *userid*)
                            :text text
                            :tags tags)))
              (if (getf *user* :pending)
