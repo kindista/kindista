@@ -52,6 +52,20 @@
                (str (donate-sidebar))
                (str (invite-sidebar))))))
 
+(defun identity-selection-html (selected groups)
+"Groups should be an a-list of (groupid . group-name)"
+  (html
+    (:select :name "identity-selection" :onchange "this.form.submit()"
+      (:option :value *userid*
+               :selected (when (eql selected *userid*) "")
+               (str (getf *user* :name)))
+      (dolist (group (sort groups #'< :key #'last))
+        (htm (:option :value (car group)
+                      :selected (when (eql selected (car group)) "")
+                      (str (cdr group))))))
+    " "
+    (:input :type "submit" :class "no-js" :value "apply")))
+
 (defun profile-bio-section-html (title content &key editing editable section-name)
   (when (string= content "")
     (setf content nil))
@@ -210,6 +224,11 @@
          (memberp (member *userid* (getf entity :members)))
          (adminp (member *userid* (getf entity :admins))))
     (html
+     (when adminp
+       (htm (:a :href (url-compose "/settings/public" "groupid" id)
+                :class "small blue float-right"
+                (:img :src "/media/icons/settings.png" :class "small")
+                "group settings")))
      (:img :class "bigavatar" :src (get-avatar-thumbnail id 300 300))
      (:div :class "basics"
        (:h1 (str (getf entity :name))

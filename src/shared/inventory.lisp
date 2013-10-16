@@ -224,12 +224,16 @@
 
 (defun post-new-inventory-item (type &key url)
   (require-active-user
-    (let ((tags (iter (for pair in (post-parameters*))
-                      (when (and (string= (car pair) "tag")
-                                 (scan *tag-scanner* (cdr pair)))
-                        (collect (cdr pair)))))
-          (text (when (scan +text-scanner+ (post-parameter "text"))
-                  (post-parameter "text"))))
+    (let* ((tags (iter (for pair in (post-parameters*))
+                       (when (and (string= (car pair) "tag")
+                                  (scan *tag-scanner* (cdr pair)))
+                         (collect (cdr pair)))))
+           (groupid (when (scan +number-scanner+ (post-parameter "identity-selection"))
+                     (parse-integer (post-parameter "identity-selection"))))
+           (group (when groupid (db groupid)))
+           (adminp (when (member *userid* (getf group :admins)) t))
+           (text (when (scan +text-scanner+ (post-parameter "text"))
+                   (post-parameter "text"))))
 
       (iter (for tag in (tags-from-string (post-parameter "tags")))
             (setf tags (cons tag tags)))
@@ -239,6 +243,7 @@
          (see-other (or (post-parameter "next") "/home")))
 
         ((not (confirmed-location))
+
          (flash "You must set your street address on your settings page before you can post an offer or a request." :error t)
          (see-other (or (post-parameter "next") "/home")))
 
@@ -257,11 +262,24 @@
                                :tags tags
                                :selected (s+ type "s")))
 
+        ((and group (not adminp))
+         (permission-denied))
+
         ((and (post-parameter "post")
               text)
           (enter-inventory-tags :title (s+ "Preview your " type)
                                 :text text
                                 :action url
+                                :groupid groupid
+                                :tags tags
+                                :button-text (s+ "Post " type)
+                                :selected (s+ type "s")))
+
+        ((and text (post-parameter "identity-selection"))
+          (enter-inventory-tags :title (s+ "Preview your " type)
+                                :text text
+                                :action url
+                                :groupid groupid
                                 :tags tags
                                 :button-text (s+ "Post " type)
                                 :selected (s+ type "s")))
@@ -292,6 +310,7 @@
                                  :action url
                                  :button-text (s+ "Post " type)
                                  :tags tags
+                                 :groupid groupid
                                  :error "You must select at least one keyword"
                                  :selected (s+ type "s"))))
 
@@ -445,7 +464,7 @@
            (:button :class "yes" :type "submit" :class "submit" :name "post" "Next"))))))
     :selected selected))
 
-(defun enter-inventory-tags (&key title action text error tags button-text selected next)
+(defun enter-inventory-tags (&key title action text groupid error tags button-text selected next)
   ; show the list of top-level tags
   ; show recommended tags
   ; show preview
@@ -471,6 +490,11 @@
             (:blockquote :class "review-text" (str (html-text text)))
             " "
             (:button :class "red" :type "submit" :class "cancel" :name "back" "edit"))
+          (awhen (groups-with-user-as-admin)
+            (htm
+              (:h2 "Posted by")
+                (str (identity-selection-html (or groupid *userid*) it))))
+
           (:h2 "Select at least one keyword")
           (dolist (tag *top-tags*)
             (htm 

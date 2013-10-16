@@ -23,6 +23,9 @@
                :creator ,creator
                :admins ,(list creator)
                :active t
+               :notify-gratitude ,(list creator)
+               :notify-reminders ,(list creator)
+               :notify-invite-request ,(list creator)
                :created ,(get-universal-time))))
 
 (defun index-group (id data)
@@ -126,11 +129,12 @@
                      :creator admin-id
                      :admins (list admin-id)
                      :notify-gratitude (list admin-id)
-                     :notify-message (list admin-id)
-                     :pass nil
+                     :notify-reminders (list admin-id)
+                     :notify-invite-request (list admin-id)
+                     :notify-message nil
                      :notify-kindista nil
-                     :notify-expired-invites (list admin-id)
-                     :notify-reminders nil)
+                     :notify-expired-invites nil
+                     :pass nil)
   (index-group groupid (db groupid))
   (reindex-group-location groupid)
   (reindex-group-name groupid))

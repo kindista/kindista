@@ -135,6 +135,10 @@ h4 {
  margin:0;
 }
 
+select {
+ max-width: 20em;
+}
+
 .unicon {
  font-size: 1.6em;
  vertical-align: middle;
@@ -676,17 +680,23 @@ button.cancel, input.cancel {
   padding: 0.5em 0.7em;
 }
 
-button.small {
- font-size: 0.8em;
- padding: 0.4em;
-}
-
 a.cancel, button.cancel {
  margin-right:1em;
 }
 
 a.cancel {
  padding: 0.55em;
+}
+
+button.small, a.small {
+ font-size: 0.8em;
+ line-height: 1.1em;
+ padding: 0.4em;
+}
+
+img.small {
+ height: 1.2em;
+ width: auto;
 }
 
 #splashlogin button {
@@ -1140,7 +1150,7 @@ a.cancel {
  /*background: #eee;*/
 }
 
-#menu li img {
+#menu li img, a > img {
  margin:0 0.625em 0 0;
  vertical-align:middle;
 }
@@ -1889,17 +1899,6 @@ menu.bar li a {
  margin-bottom: 0;
 }
 
-.anchor-button {
- border-radius:3px;
- background:#5c8a2f;
- border:0;
- padding:0.5em;
- color: #fff;
- font-weight: bold;
- margin:1em 1.6em 0 0;
- display:inline-block;
-}
-
 div.settings-item.content > a {
  margin: 0 0 1.3em 0.7em;
 }
@@ -2424,6 +2423,10 @@ input[name=reply] {
 #site-error {
  text-align: center;
  margin: 2em;
+}
+
+.float-right {
+ float: right;
 }
 
 .clear {

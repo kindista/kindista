@@ -412,68 +412,58 @@
                 " to your Kindista account."))
      (see-other "/settings/communication")))))
 
-(defun settings-notifications (&optional group)
+(defun settings-notifications (&optional groupid group)
   (let ((entity (or group *user*))
         (group-name (when group (getf group :name))))
-    (settings-item-html "notifications"
+    (labels ((checkbox-value (notify-key)
+               (when (or (and (not group)
+                              (getf *user* notify-key))
+                         (member *userid* (getf entity notify-key)))
+                             "checked")))
+     (settings-item-html "notifications"
       (html
-        (:p "We'll email you whenever something happens on Kindista that involves "
-            (str (or (getf group :name) "you"))". "
-            "You can specify which actions you would like to be notified about.")
-        (:p "Notifications will be sent to your primary email address: "
-          (:strong (str (car (getf *user* :emails)))))
-
         (:form :method "post" :action "/settings"
           (:input :type "hidden" :name "next" :value *base-url*)
+          (when groupid
+            (htm (:input :type "hidden" :name "groupid" :value groupid)))
           (:div :class "submit-settings"
             (:button :class "yes" :type "submit" :class "submit" :name "save-notifications" "Save notification preferences"))
           (:ul
             (:li (:input :type "checkbox"
                   :name "gratitude"
-                  :checked (when (getf entity :notify-gratitude) "checked"))
+                  :checked (checkbox-value :notify-gratitude))
                  "when someone posts gratitude about "
                  (str (if group group-name "me")))
-            (:li (:input :type "checkbox"
-                  :name "message"
-                  :checked (when (getf entity :notify-message) "checked"))
-                 "when someone sends "
-                 (str (if group group-name "me"))
-                 " a message")
-            (:li (:input :type "checkbox"
-                  :name "reminders"
-                  :checked (when (getf entity :notify-reminders) "checked"))
-                 "with occasional suggestions about how "
-                 (str (if group "our group" "I"))
-                 " can get the most out of Kindista")
             (unless group
               (htm
+                 (:li (:input :type "checkbox"
+                       :name "message"
+                       :checked (when (getf entity :notify-message) "checked"))
+                      "when someone sends me a message")
                 (:li (:input :type "checkbox"
                       :name "expired-invites"
                       :checked (when (getf entity :notify-expired-invites) "checked"))
                      "when invitatations I send for my friends to join Kindista expire")
+                (:li (:input :type "checkbox"
+                      :name "reminders"
+                      :checked (when (getf entity :notify-reminders) "checked"))
+                     "with occasional suggestions about how "
+                     (str (if group "our group" "I"))
+                     " can get the most out of Kindista")
                 (:li (:input :type "checkbox"
                        :name "kindista"
                        :checked (when (getf entity :notify-kindista) "checked"))
                       "with updates and information about Kindista"))))))
 
     :title "Notify me"
-    :editable t)))
+    :editable t))))
 
 (defun settings-identity-selection-html (selected groups)
 "Groups should be an a-list of (groupid . group-name)"
   (html
     (:form :method "post" :action "/settings"
       (:strong "Viewing settings for: ")
-      (:select :name "identity-selection" :onchange "this.form.submit()"
-        (:option :value *userid*
-                 :selected (when (eql selected *userid*) "")
-                 (str (getf *user* :name)))
-        (dolist (group (sort groups #'< :key #'last))
-          (htm (:option :value (car group)
-                        :selected (when (eql selected (car group)) "")
-                        (str (cdr group))))))
-      " "
-      (:input :type "submit" :class "no-js" :value "apply"))))
+      (str (identity-selection-html selected groups)))))
 
 (defun go-settings ()
   (aif (get-parameter "groupid")
@@ -517,6 +507,14 @@
         (html
           (str (settings-tabs-html (if (not groupid) "personal" "public")
                                    (awhen groupid it)))
+          (when groupid
+            (str (settings-item-html
+                   "profile"
+                   (html
+                     (:a :href (strcat "/groups/" (username-or-id groupid))
+                       (str (strcat +base-url+
+                                    "groups/"
+                                    (username-or-id groupid))))))))
           (str (settings-avatar (string= edit "avatar") groupid))
           (str (settings-name (string= edit "name")
                               groupid
@@ -544,7 +542,12 @@
            "/settings/communication")
          (html
           (str (settings-tabs-html "communication" (awhen groupid it)))
-          (str (settings-notifications group))
+          (:p "We'll email you whenever something happens on Kindista that involves "
+              (str (or group-name "you"))". "
+              "You can specify which actions you would like to be notified about.")
+          (:p "Notifications will be sent to your primary email address: "
+              (:strong (str (car (getf *user* :emails)))))
+          (str (settings-notifications groupid group))
           (unless groupid
             (str (settings-emails (string= (get-parameter "edit") "email")
                                   :activate (get-parameter "activate"))))))))))
@@ -735,13 +738,18 @@
 
           ((post-parameter "save-notifications")
            (when (and (getf *user* :notify-message)
+                      (not groupid)
                       (not (post-parameter "message")))
              (flash "Warning: You will not recieve any email notifications when people reply to your Offers and Requests unless you choose to be notified \"when someone sends me a message\"!" :error t))
-           (modify-db *userid* :notify-gratitude (when (post-parameter "gratitude") t)
-                               :notify-message (when (post-parameter "message") t)
-                               :notify-reminders (when (post-parameter "reminders") t)
-                               :notify-expired-invites (when (post-parameter "expired-invites") t)
-                               :notify-kindista (when (post-parameter "kindista") t))
+           (if groupid
+             (amodify-db id :notify-gratitude (if (post-parameter "gratitude")
+                                                (pushnew *userid* it)
+                                                (remove *userid* it)))
+             (modify-db *userid* :notify-gratitude (when (post-parameter "gratitude") t)
+                                 :notify-message (when (post-parameter "message") t)
+                                 :notify-reminders (when (post-parameter "reminders") t)
+                                 :notify-expired-invites (when (post-parameter "expired-invites") t)
+                                 :notify-kindista (when (post-parameter "kindista") t)))
            (flash "Your notification preferences have been saved.")
            (see-other (or (post-parameter "next") "/home")))
 
