@@ -238,9 +238,7 @@
         ((post-parameter "cancel")
          (see-other (or (post-parameter "next") "/home")))
 
-        ((or (not (getf *user* :location))
-             (not (getf *user* :long))
-             (not (getf *user* :lat)))
+        ((not (confirmed-location))
          (flash "You must set your street address on your settings page before you can post an offer or a request." :error t)
          (see-other (or (post-parameter "next") "/home")))
 

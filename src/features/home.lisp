@@ -161,7 +161,7 @@
 (defun get-home ()
   (with-user
     (cond
-      ((or (getf *user* :location) (not *user*))
+      ((or (confirmed-location) (not *user*))
        (notice :home)
        (standard-home))
 

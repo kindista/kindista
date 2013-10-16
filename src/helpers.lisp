@@ -243,6 +243,14 @@
              (progn ,@body)
              (not-found)))))))
 
+(defun confirmed-location (&optional (id *userid*))
+  (let* ((data (if (eq id *userid*) *user* (db id)))
+         (location-details (getf data :location))
+         (lat (getf data :lat))
+         (long (getf data :long)))
+    (when (and location-details lat long)
+      (values location-details lat long))))
+
 (defun username-or-id (&optional (id *userid*))
   (or (getf (db id) :username)
       (write-to-string id)))

@@ -17,20 +17,24 @@
 
 (in-package :kindista)
 
-(defun settings-tabs-html (tab &optional groupp)
+(defun settings-tabs-html (tab &optional groupid)
   (html
     (:menu :class "bar"
-      (unless groupp
+      (unless groupid
         (if (equal tab "personal")
           (htm (:li :class "selected" "Personal Settings"))
           (htm (:li (:a :href "/settings/personal" "Personal Settings")))))
-      (when groupp
+      (when groupid
         (if (equal tab "public")
           (htm (:li :class "selected" "Public Info"))
-          (htm (:li (:a :href "/settings/public" "Public Info")))))
+          (htm (:li (:a :href (url-compose "/settings/public"
+                                           "groupid" groupid)
+                        "Public Info")))))
       (if (equal tab "communication")
         (htm (:li :class "selected" "Communication Settings"))
-        (htm (:li (:a :href "/settings/communication" "Communication Settings")))))))
+        (htm (:li (:a :href (url-compose "/settings/communication"
+                                         "groupid" groupid)
+                      "Communication Settings")))))))
 
 (defun settings-item-html (item body &key title help-text editable edit-text)
   (html
@@ -98,55 +102,102 @@
                  (s+ "If you are known by multiple names or nicknames, "
                      "enter up to 5 to help people find you. ")))))
 
-(defun settings-address (editable &optional group)
-  (let ((address (getf *user* :address)))
+(defun settings-address (editable &optional groupid group)
+  (let* ((entity (or group *user*))
+         (address (getf entity :address))
+         (public-location (awhen (eql (getf group :location-privacy) :public) it)))
     (settings-item-html "address"
-    (cond
-      (editable
-        (html
-          (:form :method "post" :class "address" :action "/settings"
-           (:input :type "hidden" :name "next" :value *base-url*)
-           (:div :class "submit-settings"
-             (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
-             (:button :class "yes" :type "submit" :class "submit" :name "confirm-address" "Submit"))
-           (:input :type "text" :name "address" :value (str address)))))
-      (t
-        (aif address
-          (html (:p (str it)))
-          (html (:p (:strong "You have not set your address yet."))))
-            ))
+      (cond
+        (editable
+          (html
+            (:form :method "post" :class "address" :action "/settings"
+             (:input :type "hidden" :name "next" :value *base-url*)
+             (when groupid
+               (htm (:input :type "hidden" :name "groupid" :value groupid)))
+             (:div :class "submit-settings"
+               (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
+               (:button :class "yes" :type "submit" :class "submit" :name "confirm-address" "Submit"))
+             (:input :type "text" :name "address" :value (str address))
+             (when groupid
+               (htm
+                 (:br)
+                 (:input :type "checkbox"
+                         :name "public-location"
+                         :value (str (when public-location "checked")))
+                 "Display this address publicly to anyone looking at this group's profile page.")))))
+        (t
+          (if (and address (getf entity :location))
+            (html (:p (str address)))
+            (html (:p (:strong "You have not set your address yet."))))))
     :editable editable
     :edit-text (unless address "Add address")
-    :help-text (s+ "Addresses help people find nearby offers and requests. "
-                   "Your address will never be displayed or shared; "
-                   "it is used only to calculate distance. "))))
+    :help-text (cond
+                 (groupid
+                   (html
+                     (if public-location
+                       (htm "This address is currently "
+                             (:strong "set to be displayed publicly ")
+                             "to anyone viewing "
+                             (str (s+ (getf entity :name) "'s"))
+                             " profile. ")
+                       (htm "This address is currently "
+                             (:strong "set to be hidden. ")
+                             "It is not visible to other Kindista users and is only being "
+                             "used to calculate distances for offers, requests, "
+                             " and other activity."))
+                      (unless editable
+                        (htm "You can choose whether or not this address will be displayed "
+                              "publicly by clicking on the \"Edit\" button."))))
+                 (t
+                   (html "Addresses help people find nearby offers and requests. "
+                         "Your address will never be displayed or shared; "
+                         "it is used only to calculate distance. "))))))
 
 (defun get-verify-address (&key next-url)
-  (let ((next (or next-url (get-parameter "next"))))
-    (standard-page
-      "Please verify your location."
-      (html
-        (:div :class "item"
-          (:div :class "setup"
-            (:h2 "Verify your location")
-            (:p "We will never share your exact location with anyone else.
-                 If you would like to know more about how we use the information you share with us,
-                 please read our " (:a :href "/privacy" "privacy policy") ".")
-            (str (static-google-map :size "280x150" :zoom 12 :lat (getf *user* :lat) :long (getf *user* :long)))
+  (let* ((next (or next-url (get-parameter "next")))
+         (groupid (when (scan +number-scanner+ (get-parameter "groupid"))
+                    (parse-integer (get-parameter "groupid"))))
+         (group (when groupid (db groupid)))
+         (entity (or group *user*)))
+    (if (or (not groupid)
+            (member *userid* (getf group :admins)))
+      (standard-page
+        (s+ "Please verify "
+            (aif (getf group :name) (s+ it "'s") "your")
+            " location.")
+        (html
+          (:div :class "item"
+            (:div :class "setup"
+              (:h2 "Verify "
+                   (str (aif (getf group :name) (s+ it "'s") "your"))
+                   " location")
+              (:p (str
+                    (if groupid
+                      (s+ "The address for this group is currently set to be "
+                          (if (eql (getf entity :location-privacy) :public)
+                            "displayed publicly" "hidden")
+                          ". You can change the visibility of this address on your group's settings page. ")
+                    (s+ "We will never share your exact location with anyone else.")))
+                  "If you would like to know more about how we use the information you share with us,
+                   please read our " (:a :href "/privacy" "privacy policy") ".")
+              (str (static-google-map :size "280x150" :zoom 12 :lat (getf entity :lat) :long (getf entity :long)))
 
-            (:form :method "post" :action "/settings"
-              (:h3 "Is this location correct?")
-              (:input :type "hidden" :name "next" :value (str next))
-              (:button :class "cancel"
-                       :type "submit"
-                       :name "reset-location"
-                       :value (referer)
-                       "No, go back")
-              (:button :class "yes"
-                       :type "submit"
-                       :name "confirm-location"
-                       :value "1"
-                       "Yes, this is correct"))))))))
+              (:form :method "post" :action "/settings"
+                (:h3 "Is this location correct?")
+                (:input :type "hidden" :name "next" :value (str next))
+                (when groupid
+                  (htm (:input :type "hidden" :name "groupid" :value groupid)))
+                (:button :class "cancel"
+                         :type "submit"
+                         :name "reset-location"
+                         :value (referer)
+                         "No, go back")
+                (:button :class "yes"
+                         :type "submit"
+                         :name "confirm-location"
+                         :value "1"
+                         "Yes, this is correct"))))))
+        (permission-denied))))
 
 (defun settings-password ()
   (settings-item-html "password"
@@ -361,37 +412,52 @@
                 " to your Kindista account."))
      (see-other "/settings/communication")))))
 
-(defun settings-notifications ()
-  (settings-item-html "notifications"
-    (html
-      (:form :method "post" :action "/settings"
-        (:input :type "hidden" :name "next" :value *base-url*)
-        (:div :class "submit-settings"
-          (:button :class "yes" :type "submit" :class "submit" :name "save-notifications" "Save notification preferences"))
-        (:ul
-          (:li (:input :type "checkbox"
-                :name "gratitude"
-                :checked (when (getf *user* :notify-gratitude) "checked"))
-               "when someone posts gratitude about me")
-          (:li (:input :type "checkbox"
-                :name "message"
-                :checked (when (getf *user* :notify-message) "checked"))
-               "when someone sends me a message")
-          (:li (:input :type "checkbox"
-                :name "reminders"
-                :checked (when (getf *user* :notify-reminders) "checked"))
-               "with occasional suggestions about how I can get the most out of Kindista")
-          (:li (:input :type "checkbox"
-                :name "expired-invites"
-                :checked (when (getf *user* :notify-expired-invites) "checked"))
-               "when invitatations I send for my friends to join Kindista expire")
-          (:li (:input :type "checkbox"
-                :name "kindista"
-                :checked (when (getf *user* :notify-kindista) "checked"))
-               "with updates and information about Kindista"))))
+(defun settings-notifications (&optional group)
+  (let ((entity (or group *user*))
+        (group-name (when group (getf group :name))))
+    (settings-item-html "notifications"
+      (html
+        (:p "We'll email you whenever something happens on Kindista that involves "
+            (str (or (getf group :name) "you"))". "
+            "You can specify which actions you would like to be notified about.")
+        (:p "Notifications will be sent to your primary email address: "
+          (:strong (str (car (getf *user* :emails)))))
+
+        (:form :method "post" :action "/settings"
+          (:input :type "hidden" :name "next" :value *base-url*)
+          (:div :class "submit-settings"
+            (:button :class "yes" :type "submit" :class "submit" :name "save-notifications" "Save notification preferences"))
+          (:ul
+            (:li (:input :type "checkbox"
+                  :name "gratitude"
+                  :checked (when (getf entity :notify-gratitude) "checked"))
+                 "when someone posts gratitude about "
+                 (str (if group group-name "me")))
+            (:li (:input :type "checkbox"
+                  :name "message"
+                  :checked (when (getf entity :notify-message) "checked"))
+                 "when someone sends "
+                 (str (if group group-name "me"))
+                 " a message")
+            (:li (:input :type "checkbox"
+                  :name "reminders"
+                  :checked (when (getf entity :notify-reminders) "checked"))
+                 "with occasional suggestions about how "
+                 (str (if group "our group" "I"))
+                 " can get the most out of Kindista")
+            (unless group
+              (htm
+                (:li (:input :type "checkbox"
+                      :name "expired-invites"
+                      :checked (when (getf entity :notify-expired-invites) "checked"))
+                     "when invitatations I send for my friends to join Kindista expire")
+                (:li (:input :type "checkbox"
+                       :name "kindista"
+                       :checked (when (getf entity :notify-kindista) "checked"))
+                      "with updates and information about Kindista"))))))
 
     :title "Notify me"
-    :editable t))
+    :editable t)))
 
 (defun settings-identity-selection-html (selected groups)
 "Groups should be an a-list of (groupid . group-name)"
@@ -409,52 +475,58 @@
       " "
       (:input :type "submit" :class "no-js" :value "apply"))))
 
-(defun get-settings ()
-  (require-user
-    (let* ((edit (get-parameter "edit"))
-           (groupid (awhen (get-parameter "groupid") (parse-integer it)))
-           (group (db groupid))
-           (*base-url* (if groupid
-                         (url-compose "/settings/public"
-                                      "groupid" groupid)
-                         "/settings/personal")))
-      (when (and (not groupid)
-                 (string= (script-name*) "/settings/public"))
-        (see-other "/settings/personal"))
-      (if (or (not groupid)
-              (member *userid* (getf group :admins)))
-        (standard-page
-          (if (not groupid)
-            "Personal settings"
-            (s+ (getf group :name) " settings"))
-          (html
-            (awhen (groups-with-user-as-admin)
-              (str (settings-identity-selection-html (or groupid *userid*)
-                                                     it)))
-            (str (settings-tabs-html (if (not groupid) "personal" "public")
-                                     (when groupid t)))
-            (str (settings-avatar (string= edit "avatar") groupid))
-            (str (settings-name (string= edit "name")
-                                groupid
-                                (getf group :name)))
-            (str (settings-address (string= edit "address") group))
-            (when (not groupid)
-              (htm (str (settings-password))
-                   (when (getf *user* :plan)
-                     (str (settings-donate))))
-              (str (settings-deactivate))))
-          :selected :settings)
-        (permission-denied)))))
-
-(defun get-settings-error ()
-  (flash "The avatar you uploaded is too large. Please upload an image smaller than 10MB." :error t)
-  (go-settings))
-
 (defun go-settings ()
   (aif (get-parameter "groupid")
     (see-other (url-compose "/settings/public"
                             "groupid" it))
     (see-other "/settings/personal")))
+
+(defmacro settings-template-html (base-url &body body)
+  `(require-user
+     (let* ((edit (get-parameter "edit"))
+            (groupid (when (scan +number-scanner+ (get-parameter "groupid"))
+                       (parse-integer (get-parameter "groupid"))))
+            (group (db groupid))
+            (group-name (getf group :name))
+            (*base-url* ,base-url))
+       (declare (ignorable group-name edit))
+       (if (or (not groupid)
+               (member *userid* (getf group :admins)))
+         (standard-page
+           (if (not groupid)
+             "Personal settings"
+             (s+ (getf group :name) " settings"))
+           (html
+             (:div :class "settings"
+              (awhen (groups-with-user-as-admin)
+                (str (settings-identity-selection-html (or groupid *userid*)
+                                                       it)))
+              (str ,@body)))
+           :selected :settings)
+         (permission-denied)))))
+
+(defun get-settings ()
+  (settings-template-html
+    (aif (get-parameter "groupid")
+      (url-compose "/settings/public"
+                   "groupid" it)
+      "/settings/personal")
+    (if (and (not (get-parameter "groupid"))
+             (string= (script-name*) "/settings/public"))
+        (see-other "/settings/personal")
+        (html
+          (str (settings-tabs-html (if (not groupid) "personal" "public")
+                                   (awhen groupid it)))
+          (str (settings-avatar (string= edit "avatar") groupid))
+          (str (settings-name (string= edit "name")
+                              groupid
+                              (getf group :name)))
+          (str (settings-address (string= edit "address") groupid group))
+          (when (not groupid)
+            (htm (str (settings-password))
+                 (when (getf *user* :plan)
+                   (str (settings-donate))))
+            (str (settings-deactivate)))))))
 
 (defun get-settings-communication ()
   (require-user
@@ -465,23 +537,21 @@
        (activate-email-address (parse-integer (get-parameter "invitation-id"))
                                (get-parameter "token")))
       (t
-       (let ((*base-url* "/settings/communication"))
-         (standard-page
-           "Communication settings"
-           (html
-             (:div :class "settings"
-               (str (settings-tabs-html "communication"))
-               (:p "We'll email you whenever something happens on Kindista that "
-                   "involves you. You can specify which actions you would like "
-                   "to be notified about.")
-               (:p "Notifications will be sent to your primary email address: "
-                 (:strong (str (car (getf *user* :emails)))))
+       (settings-template-html
+         (aif (get-parameter "groupid")
+           (url-compose "/settings/communication"
+                        "groupid" it)
+           "/settings/communication")
+         (html
+          (str (settings-tabs-html "communication" (awhen groupid it)))
+          (str (settings-notifications group))
+          (unless groupid
+            (str (settings-emails (string= (get-parameter "edit") "email")
+                                  :activate (get-parameter "activate"))))))))))
 
-
-               (str (settings-notifications))
-               (str (settings-emails (string= (get-parameter "edit") "email")
-                                     :activate (get-parameter "activate")))))
-           :selected :settings))))))
+(defun get-settings-error ()
+  (flash "The avatar you uploaded is too large. Please upload an image smaller than 10MB." :error t)
+  (go-settings))
 
 (defun post-settings ()
   (require-user
@@ -491,10 +561,10 @@
                      (unless (string= groupid "")
                        (parse-integer groupid)))
                    *userid*))
-           (group (unless (eql id *userid*) (db id))))
+           (entity (if (eql id *userid*) *user* (db id))))
 
       (if (or (eql id *userid*)
-              (member *userid* (getf group :admins)))
+              (member *userid* (getf entity :admins)))
         (acond
           ((post-parameter "cancel")
            (see-other (or (post-parameter "next") "/home")))
@@ -505,9 +575,26 @@
              (see-other (url-compose "/settings/public"
                                      "groupid" it))))
 
+          ((post-parameter "image")
+           (let ((groupid (awhen (post-parameter "on") (parse-integer it))))
+             (handler-case
+               ;hunchentoot returns a list containing
+               ;(path file-name content-type)
+               ;when the post-parameter is a file, i.e. (first it) = path
+               (let* ((id (create-image (first it) (third it)))
+                      (old-avatar (or (db groupid :avatar) (getf *user* :avatar))))
+                 (when (integerp old-avatar)
+                   (delete-image old-avatar))
+                 (modify-db (or groupid *userid*) :avatar id))
+               (t () (flash "Please use a .jpg, .png, or .gif" :error t)))
+             (see-other (if groupid
+                          (url-compose "/settings/public"
+                                       "groupid" (post-parameter "on"))
+                          "/settings/personal"))))
+
           ((post-parameter "name")
            (cond
-             ((if group
+             ((if groupid
                 (scan +text-scanner+ it)
                 (validate-name it))
               (let ((aliases (remove-duplicates
@@ -517,8 +604,8 @@
                                      collect y)
                                :test #'string=)))
                 (cond
-                  ((and group
-                        (not (equal (getf group :name) it)))
+                  ((and groupid
+                        (not (equal (getf entity :name) it)))
                    (modify-db id :name it)
                    (reindex-group-name id))
                   ((and (not (equal (getf *user* :aliases) aliases))
@@ -538,31 +625,45 @@
            (see-other (or (post-parameter "next") "/home")))
 
           ((post-parameter "address")
-           (multiple-value-bind (lat long address city state country street zip)
-             (geocode-address it)
-             (modify-db *userid* :lat lat :long long :address address :city city :state state :street street :zip zip :country country :location nil))
-           (see-other (url-compose "/settings/verify-address" 
-                                   "next" (or (post-parameter "next") "/home")))) 
+           (cond
+             ((and groupid
+                    (string= it (getf entity :address))
+                    (getf entity :location)
+                    (getf entity :lat)
+                    (getf entity :long))
+              (modify-db id :location-privacy (if (post-parameter "public-location") :public :private))
+              (see-other (or (post-parameter "next") "/home")))
+             (t
+              (multiple-value-bind (lat long address city state country street zip)
+                (geocode-address it)
+                (modify-db id :lat lat
+                              :long long
+                              :address address
+                              :city city
+                              :state state
+                              :street street
+                              :zip zip
+                              :country country
+                              :location nil
+                              :location-privacy (if (post-parameter "public-location") :public :private)))
+              (see-other (if groupid
+                           (url-compose "/settings/verify-address"
+                                        "groupid" id
+                                        "next" (or (post-parameter "next") "/home"))
+                           (url-compose "/settings/verify-address"
+                                        "next" (or (post-parameter "next") "/home")))))))
 
-          ((post-parameter "image")
-           (let ((groupid (awhen (post-parameter "on") (parse-integer it))))
-             (handler-case
-               ;hunchentoot returns a list containing
-               ;(path file-name content-type)
-               ;when the post-parameter is a file, i.e. (first it) = path
-               (let* ((id (create-image (first it) (third it)))
-                      (old-avatar (or (db groupid :avatar) (getf *user* :avatar))))
-                 (when (integerp old-avatar)
-                   (delete-image old-avatar))
-                 (modify-db (or groupid *userid*) :avatar id))
-               (t () (flash "Please use a .jpg, .png, or .gif" :error t)))
-             (see-other (if groupid
-                          (url-compose "/settings/public"
-                                       "groupid" (post-parameter "on"))
-                          "/settings/personal"))))
+          ((and (post-parameter "confirm-location")
+                (getf entity :lat)
+                (getf entity :long))
+           (modify-db id :location t)
+           (case (getf entity :type)
+             (:person (reindex-person-location *userid*))
+             (:group (reindex-group-location id)))
+           (see-other (or (post-parameter "next") "/home")))
 
           ((post-parameter "reset-location")
-           (modify-db *userid* :lat nil :long nil :address nil :location nil)
+           (modify-db id :lat nil :long nil :address nil :location nil)
            (see-other (or it "/home")))
 
           ((post-parameter "password")
@@ -614,7 +715,6 @@
               (see-other "/settings/personal"))))
 
           ((post-parameter "plan")
-
            (acond
              ((and (getf *user* :plan)
                    (getf *user* :custid))
@@ -764,13 +864,6 @@
 
           ((equalp (post-parameter "help") "1")
            (modify-db *userid* :help t)
-           (see-other (or (referer) "/home")))
-
-          ((and (post-parameter "confirm-location")
-                (getf *user* :lat)
-                (getf *user* :long))
-           (modify-db *userid* :location t)
-           (reindex-person-location *userid*)
-           (see-other (or (post-parameter "next") "/home"))))
+           (see-other (or (referer) "/home"))))
 
       (permission-denied)))))

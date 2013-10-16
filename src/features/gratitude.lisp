@@ -225,9 +225,7 @@
       ((post-parameter "cancel")
        (see-other (or (post-parameter "next") "/home")))
 
-      ((or (not (getf *user* :location))
-           (not (getf *user* :lat))
-           (not (getf *user* :long)))
+      ((not (confirmed-location))
        (flash "You must set your street address on your settings page before you can post gratitude about someone." :error t)
        (see-other (or (post-parameter "next") "/home")))
 

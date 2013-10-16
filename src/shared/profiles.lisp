@@ -218,8 +218,14 @@
                (htm (:span :class "help-text" " (deleted account)")))
               ((eq (getf entity :active) nil)
                (htm (:span :class "help-text" " (inactive account)")))))
-       (when (getf entity :city)
-         (htm (:p :class "city" (str (getf entity :city)) ", " (str (getf entity :state)))))
+       (cond
+        ((eql (getf entity :location-privacy) :public)
+         (htm (:p :class "city"
+               (awhen (getf entity :street)
+                 (htm (str it) (:br)))
+               (str (getf entity :city)) ", " (str (getf entity :state)))))
+        ((getf entity :city)
+         (htm (:p :class "city" (str (getf entity :city)) ", " (str (getf entity :state))))))
      (unless (eql id *userid*)
        (when (and (db id :active)
                   (db *userid* :active)
