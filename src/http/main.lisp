@@ -336,6 +336,29 @@
                       "Kindista Error - Notifying Humans"
                       message))
 
+(defmethod acceptor-log-access ((acceptor k-acceptor) &key return-code)
+  "Kindista method for access logging.  It logs the information to the
+destination determined by (ACCEPTOR-ACCESS-LOG-DESTINATION ACCEPTOR)
+\(unless that value is NIL) in a format that can be parsed by most
+Apache log analysis tools.)"
+
+  (unless (can +bot-scanner+ (user-agent))
+    (with-log-stream (stream (acceptor-access-log-destination acceptor) *access-log-lock*)
+      (format stream "~:[-~@[ (~A)~]~;~:*~A~@[ (~A)~]~] ~:[-~;~:*~A~] [~A] \"~A ~A~@[?~A~] ~
+                      ~A\" ~D ~:[-~;~:*~D~] \"~:[-~;~:*~A~]\" \"~:[-~;~:*~A~]\"~%"
+              (remote-addr*)
+              (header-in* :x-forwarded-for)
+              (authorization)
+              (iso-time)
+              (request-method*)
+              (script-name*)
+              (query-string*)
+              (server-protocol*)
+              return-code
+              (content-length*)
+              (referer)
+              (user-agent)))))
+
 (defvar *acceptor* (make-instance 'k-acceptor
                                   :port 5000
                                   :address "127.0.0.1"
