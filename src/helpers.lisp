@@ -19,6 +19,7 @@
 
 (defparameter +number-scanner+ (create-scanner "^\\d+$"))
 (defparameter +full-name-scanner+ (create-scanner "^([a-zA-Z]+\\.? )[a-zA-Z]+"))
+(defparameter +bot-scanner+ (create-scanner "(/bot.html)|(/spider.html)|(.com/robot)"))
 (defparameter +text-scanner+ (create-scanner "[a-zA-Z]+"))
 (defparameter +email-scanner+ (create-scanner
                                  "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"))
