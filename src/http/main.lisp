@@ -342,7 +342,7 @@ destination determined by (ACCEPTOR-ACCESS-LOG-DESTINATION ACCEPTOR)
 \(unless that value is NIL) in a format that can be parsed by most
 Apache log analysis tools.)"
 
-  (unless (can +bot-scanner+ (user-agent))
+  (unless (scan +bot-scanner+ (user-agent))
     (with-log-stream (stream (acceptor-access-log-destination acceptor) *access-log-lock*)
       (format stream "~:[-~@[ (~A)~]~;~:*~A~@[ (~A)~]~] ~:[-~;~:*~A~] [~A] \"~A ~A~@[?~A~] ~
                       ~A\" ~D ~:[-~;~:*~D~] \"~:[-~;~:*~A~]\" \"~:[-~;~:*~A~]\"~%"
