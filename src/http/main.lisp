@@ -337,19 +337,14 @@
                       message))
 
 (defmethod acceptor-log-access ((acceptor k-acceptor) &key return-code)
-  "Kindista method for access logging.  It logs the information to the
-destination determined by (ACCEPTOR-ACCESS-LOG-DESTINATION ACCEPTOR)
-\(unless that value is NIL) in a format that can be parsed by most
-Apache log analysis tools.)"
-
   (unless (scan +bot-scanner+ (user-agent))
-    (with-log-stream (stream (acceptor-access-log-destination acceptor) *access-log-lock*)
+    (hunchentoot::with-log-stream (stream (acceptor-access-log-destination acceptor) hunchentoot::*access-log-lock*)
       (format stream "~:[-~@[ (~A)~]~;~:*~A~@[ (~A)~]~] ~:[-~;~:*~A~] [~A] \"~A ~A~@[?~A~] ~
                       ~A\" ~D ~:[-~;~:*~D~] \"~:[-~;~:*~A~]\" \"~:[-~;~:*~A~]\"~%"
               (remote-addr*)
               (header-in* :x-forwarded-for)
               (authorization)
-              (iso-time)
+              (hunchentoot::iso-time)
               (request-method*)
               (script-name*)
               (query-string*)
