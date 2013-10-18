@@ -139,6 +139,22 @@ select {
  max-width: 20em;
 }
 
+select.identity, select.distance-selection {
+  background: #fbfbfb;
+  border:1px solid #999;
+  padding: 0.3em 0.4em;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+  -webkit-box-shadow: 1px 1px 1px #ddd inset;
+  -moz-box-shadow: 1px 1px 1px #ddd inset;
+  box-shadow: 1px 1px 1px #ddd inset;
+}
+
+select.profile-gratitude {
+ margin-bottom: 0.3em;
+}
+
 .unicon {
  font-size: 1.6em;
  vertical-align: middle;
@@ -518,6 +534,36 @@ button.yes, a.yes {
   linear, left top, left bottom, 
   from(#96c42b),
   to(#6f9321));
+ border: 1px solid #474747;
+ text-shadow:
+  1px 1px 2px rgba(0,0,0,0.4);
+  padding: 0.5em 0.7em;
+}
+
+button.red  {
+ font-weight: bold;
+ color: #fff;
+ background: #f76959;
+ background: -moz-linear-gradient(
+  top,
+  #f76959 0%,
+  #c92020);
+ background: -ms-linear-gradient(
+  top,
+  #f76959 0%,
+  #c92020);
+ background: -o-linear-gradient(
+  top,
+  #f76959 0%,
+  #c92020);
+ background: -webkit-linear-gradient(
+  top,
+  #f76959 0%,
+  #c92020);
+ background: -webkit-gradient(
+  linear, left top, left bottom, 
+  from(#f76959),
+  to(#92020));
  border: 1px solid #474747;
  text-shadow:
   1px 1px 2px rgba(0,0,0,0.4);
@@ -2016,6 +2062,10 @@ form.recipients menu.recipients li {
 form.recipients button.x-remove {
  margin-left: 0.3em;
  vertical-align: top;
+}
+
+form.recipients:after {
+ clear: both;
 }
 
 .person-list img {

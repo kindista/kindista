@@ -52,19 +52,17 @@
                (str (donate-sidebar))
                (str (invite-sidebar))))))
 
-(defun identity-selection-html (selected groups)
+(defun identity-selection-html (selected groups &key (class "identity"))
 "Groups should be an a-list of (groupid . group-name)"
   (html
-    (:select :name "identity-selection" :onchange "this.form.submit()"
+    (:select :name "identity-selection" :class class
       (:option :value *userid*
                :selected (when (eql selected *userid*) "")
-               (str (getf *user* :name)))
+               (str (getf *user* :name))" ")
       (dolist (group (sort groups #'< :key #'last))
         (htm (:option :value (car group)
                       :selected (when (eql selected (car group)) "")
-                      (str (cdr group))))))
-    " "
-    (:input :type "submit" :class "no-js" :value "apply")))
+                      (str (cdr group))" "))))))
 
 (defun profile-bio-section-html (title content &key editing editable section-name)
   (when (string= content "")
@@ -315,6 +313,8 @@
   (let* ((entity (db id))
          (strid (username-or-id id))
          (entity-type (getf entity :type))
+         (groupid (when (eql entity-type :group) id))
+         (adminp (when (member *userid* (getf entity :admins)) t))
          (*base-url* (case entity-type
                        (:person (strcat "/people/" strid))
                        (:group (strcat "/groups/" strid)))))
@@ -322,10 +322,11 @@
       (getf entity :name)
       (html
         (when *user* (str (profile-tabs-html id :tab (or type :activity))))
-        (when (and (eql type :request) (eql id *userid*) )
-          (htm (str (simple-inventory-entry-html "a" "request"))))
-        (when (and (eql type :offer) (eql id *userid*))
-          (htm (str (simple-inventory-entry-html "an" "offer"))))
+        (when (or (eql id *userid*) adminp)
+          (when (eql type :request)
+            (htm (str (simple-inventory-entry-html "a" "request" (when adminp groupid)))))
+          (when (eql type :offer)
+            (htm (str (simple-inventory-entry-html "an" "offer" (when adminp groupid))))))
         (when (and (eql type :gratitude)
                    (not (eql id *userid*))
                    (eql (getf entity :active) t))
@@ -333,6 +334,13 @@
             (:div :class "item"
              (:h4 "Do you have gratitude to share for " (str (getf entity :name)) "?")
              (:form :method "post" :action "/gratitude/new"
+               (unless (member *userid* (getf entity :admins))
+                 (awhen (groups-with-user-as-admin)
+                   (htm
+                     (:strong :class "small" "Post gratitude from "))
+                     (str (identity-selection-html (or groupid *userid*)
+                                                   it
+                                                   :class "identity small profile-gratitude"))))
                (:input :type "hidden" :name "subject" :value id)
                (:input :type "hidden" :name "next" :value (strcat *base-url* "/reputation"))
                (:table :class "post"

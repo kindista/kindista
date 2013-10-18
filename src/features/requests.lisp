@@ -51,19 +51,6 @@
         :selected "requests"))
     (not-found)))
 
-(defun get-request-edit (id)
-  (require-user
-    (let* ((request (db (parse-integer id))))
-      (require-test ((or (eql *userid* (getf request :by))
-                         (getf *user* :admin))
-                   "You can only edit your own requests.")
-        (enter-inventory-tags :title "Edit your request"
-                              :action (s+ "/requests/" id "/edit")
-                              :text (getf request :text)
-                              :tags (getf request :tags)
-                              :button-text "Save request"
-                              :selected "requests")))))
-
 (defun get-request-reply (id)
   (require-user
     (let* ((id (parse-integer id))

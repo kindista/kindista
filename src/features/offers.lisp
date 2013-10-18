@@ -55,19 +55,6 @@
         :selected "offers"))
     (not-found)))
 
-(defun get-offer-edit (id)
-  (require-user
-    (let* ((offer (db (parse-integer id))))
-      (require-test ((or (eql *userid* (getf offer :by))
-                         (getf *user* :admin))
-                   "You can only edit offers you have posted.")
-        (enter-inventory-tags :title "Edit your offer"
-                              :action (s+ "/offers/" id "/edit")
-                              :text (getf offer :text)
-                              :tags (getf offer :tags)
-                              :button-text "Save offer"
-                              :selected "offers")))))
-
 (defun get-offer-reply (id)
   (require-user
     (let* ((id (parse-integer id))

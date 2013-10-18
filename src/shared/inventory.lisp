@@ -133,6 +133,7 @@
         (geo-index-insert *request-geo-index* result)))
 
     (if (and (getf *user* :admin)
+             (not (member *userid* (getf by :admins)))
              (not (eql *userid* by)))
 
       (if (and latitude longitude)
@@ -228,8 +229,8 @@
                        (when (and (string= (car pair) "tag")
                                   (scan *tag-scanner* (cdr pair)))
                          (collect (cdr pair)))))
-           (groupid (when (scan +number-scanner+ (post-parameter "identity-selection"))
-                     (parse-integer (post-parameter "identity-selection"))))
+           (groupid (when (scan +number-scanner+ (post-parameter "groupid"))
+                     (parse-integer (post-parameter "groupid"))))
            (group (when groupid (db groupid)))
            (adminp (when (member *userid* (getf group :admins)) t))
            (text (when (scan +text-scanner+ (post-parameter "text"))
@@ -247,11 +248,15 @@
          (flash "You must set your street address on your settings page before you can post an offer or a request." :error t)
          (see-other (or (post-parameter "next") "/home")))
 
+        ((and groupid (not adminp))
+         (permission-denied))
+
         ((not text)
          (flash (s+ "Please enter a better description of your " type ".")
                 :error t)
          (enter-inventory-text :type type
                                :action url
+                               :groupid groupid
                                :tags tags
                                :selected (s+ type "s")))
 
@@ -259,25 +264,12 @@
          (enter-inventory-text :type type
                                :text text
                                :action url
+                               :groupid groupid
                                :tags tags
                                :selected (s+ type "s")))
 
-        ((and group (not adminp))
-         (permission-denied))
-
         ((and (post-parameter "post")
               text)
-          (enter-inventory-tags :title (s+ "Preview your " type)
-                                :text text
-                                :action url
-                                :groupid groupid
-                                :tags tags
-                                :button-text (s+ "Post " type)
-                                :selected (s+ type "s")))
-
-        ((and text
-              (not (post-parameter "create"))
-              (post-parameter "identity-selection"))
           (enter-inventory-tags :title (s+ "Preview your " type)
                                 :text text
                                 :action url
@@ -321,6 +313,7 @@
          (enter-inventory-text :type type
                                :text text
                                :tags tags
+                               :groupid groupid
                                :action url
                                :selected (s+ type "s")))))))
 
@@ -328,7 +321,8 @@
   (require-user
     (let* ((id (parse-integer id))
            (item (db id))
-           (by (getf item :by)))
+           (by (getf item :by))
+           (adminp (member *userid* (db by :admins))))
       (cond
         ((post-parameter "reply")
          (see-other (s+ (script-name*) "/reply")))
@@ -349,7 +343,8 @@
 
         (t
          (require-test ((or (eql *userid* (getf item :by))
-                           (getf *user* :admin))
+                            adminp
+                            (getf *user* :admin))
                       (s+ "You can only edit your own " type "s."))
            (let ((tags (iter (for pair in (post-parameters*))
                              (when (and (string= (car pair) "tag")
@@ -365,6 +360,7 @@
                                       :text (getf item :text)
                                       :tags (or tags (getf item :tags))
                                       :next (or (post-parameter "next") (referer))
+                                      :existingp t
                                       :button-text (s+ "Save " type)
                                       :selected (s+ type "s")))
                ((post-parameter "delete")
@@ -396,6 +392,7 @@
                                       :text (post-parameter "text")
                                       :tags (or tags (getf item :tags))
                                       :next (or (post-parameter "next") (referer))
+                                      :existingp t
                                       :button-text (s+ "Save " type)
                                       :selected (s+ type "s")))
 
@@ -412,6 +409,7 @@
                                         :text (post-parameter "text")
                                         :tags (or tags (getf item :tags))
                                         :next (or (post-parameter "next") (referer))
+                                        :existingp t
                                         :button-text (s+ "Save " type)
                                         :error "You must select at least one keyword"
                                         :selected (s+ type "s"))))
@@ -422,21 +420,24 @@
                                        :action url
                                        :text (getf item :text)
                                        :tags (or tags (getf item :tags))
+                                       :existingp t
                                        :button-text (s+ "Save " type)
                                        :selected (s+ type "s")))))))))))
 
-(defun simple-inventory-entry-html (preposition type)
-  (html 
+(defun simple-inventory-entry-html (preposition type &optional groupid)
+  (html
     (:div :class "item"
       (:h4 (str (s+ "post " preposition " " type)))
       (:form :method "post" :action (s+ "/" type "s/new")
+        (awhen groupid
+          (htm (:input :type "hidden" :name "groupid" :value it)))
         (:table :class "post"
           (:tr
             (:td (:textarea :cols "150" :rows "4" :name "text"))
             (:td
               (:button :class "yes" :type "submit" :class "submit" :name "post" "Post"))))))))
 
-(defun enter-inventory-text (&key type title text action selected tags next)
+(defun enter-inventory-text (&key type title text groupid action selected tags next)
   (standard-page
     (or title (if (string= type "offer")
                   "Post an offer"
@@ -458,6 +459,8 @@
                 (:br)))
          (:h2 (str (s+ "Please describe your " type)))
          (:form :method "post" :action action
+           (when groupid
+             (htm (:input :type "hidden" :name "groupid" :value groupid)))
            (dolist (tag tags)
              (htm (:input :type "hidden" :name "tag" :value tag)))
            (when next
@@ -467,7 +470,7 @@
            (:button :class "yes" :type "submit" :class "submit" :name "post" "Next"))))))
     :selected selected))
 
-(defun enter-inventory-tags (&key title action text groupid error tags button-text selected next)
+(defun enter-inventory-tags (&key title action text existingp groupid error tags button-text selected next)
   ; show the list of top-level tags
   ; show recommended tags
   ; show preview
@@ -488,15 +491,20 @@
                :action action
           (when next
             (htm (:input :type "hidden" :name "next" :value next)))
+          (when groupid
+            (htm (:input :type "hidden" :name "groupid" :value groupid)))
           (:input :type "hidden" :name "text" :value (escape-for-html text))
           (:p 
             (:blockquote :class "review-text" (str (html-text text)))
             " "
             (:button :class "red" :type "submit" :class "cancel" :name "back" "edit"))
-          (awhen (groups-with-user-as-admin)
-            (htm
-              (:h2 "Posted by")
-                (str (identity-selection-html (or groupid *userid*) it))))
+          (unless (or groupid existingp)
+            (awhen (groups-with-user-as-admin)
+              (htm
+                (:h2 (str (s+ (if (string= selected "offers")
+                                "Offered" "Requested")
+                              " by")))
+                  (str (identity-selection-html *userid* it)))))
 
           (:h2 "Select at least one keyword")
           (dolist (tag *top-tags*)
