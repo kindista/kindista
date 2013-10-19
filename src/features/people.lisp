@@ -532,7 +532,7 @@
                            :type (s+ "invitation to " email)))
           ((post-parameter "really-delete")
            (delete-invitation id)
-           (flash (s+ "Your invitation to " email " has been deleted."))
+           (flash (s+ "Your invitation to " email "  has been deleted."))
            (see-other "/people/invited"))
           ((post-parameter "resend")
            (resend-invitation-html id))

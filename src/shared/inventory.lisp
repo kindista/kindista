@@ -231,8 +231,7 @@
                          (collect (cdr pair)))))
            (groupid (when (scan +number-scanner+ (post-parameter "groupid"))
                      (parse-integer (post-parameter "groupid"))))
-           (group (when groupid (db groupid)))
-           (adminp (when (member *userid* (getf group :admins)) t))
+           (adminp (group-admin-p groupid))
            (text (when (scan +text-scanner+ (post-parameter "text"))
                    (post-parameter "text"))))
 
@@ -322,7 +321,7 @@
     (let* ((id (parse-integer id))
            (item (db id))
            (by (getf item :by))
-           (adminp (member *userid* (db by :admins))))
+           (adminp (group-admin-p by)))
       (cond
         ((post-parameter "reply")
          (see-other (s+ (script-name*) "/reply")))

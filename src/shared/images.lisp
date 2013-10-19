@@ -99,10 +99,7 @@
                 (getf item :by))
                (:gratitude
                  (getf item :author))))
-         (adminp (when (and (member by (gethash *userid*
-                                                *group-membership-index*))
-                            (member *userid* (db by :admins)))
-                   t)))
+         (adminp (group-admin-p by)))
     (html
       (:div :class "activity images"
         (when (and (or (eql by *userid*) adminp)
@@ -139,10 +136,7 @@
                  ((or :offer :request)
                   (getf item :by))
                  (:gratitude (getf item :author))))
-           (adminp (when (and (member by (gethash *userid*
-                                                  *group-membership-index*))
-                              (member *userid* (db by :admins)))
-                     t)))
+           (adminp (group-admin-p by)))
 
       (require-test ((or (eql *userid* by)
                          adminp
@@ -179,10 +173,7 @@
                  ((or :offer :request)
                   (getf item :by))
                  (:gratitude (getf item :author))))
-           (adminp (when (and (member by (gethash *userid*
-                                                  *group-membership-index*))
-                              (member *userid* (db by :admins)))
-                     t)))
+           (adminp (group-admin-p by)))
 
       (require-test ((or (eql *userid* by)
                          adminp

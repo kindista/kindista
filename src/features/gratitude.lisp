@@ -237,8 +237,7 @@
     (let* ((groupid (when (scan +number-scanner+
                                 (post-parameter "identity-selection"))
                      (parse-integer (post-parameter "identity-selection"))))
-           (group (when groupid (db groupid)))
-           (adminp (when (member *userid* (getf group :admins)) t)))
+           (adminp (group-admin-p groupid)))
       (cond
         ((post-parameter "cancel")
          (see-other (or (post-parameter "next") "/home")))
@@ -330,7 +329,7 @@
 
         (t
          (require-test ((or (eql *userid* (getf it :author))
-                            (member *userid* (db (getf it :author) :admins))
+                            (group-admin-p (getf it :author))
                             (getf *user* :admin))
                        (s+ "You can only edit your own statatements of gratitude."))
            (cond
@@ -351,7 +350,7 @@
   (require-user
     (let* ((gratitude (db (parse-integer id)))
            (author (getf gratitude :author))
-           (adminp (member *userid* (db author :admins))))
+           (adminp (group-admin-p author)))
       (require-test ((or (eql *userid* author) adminp)
                      "You can only edit gratitudes you have written.")
         (gratitude-compose :subjects (getf gratitude :subjects)
@@ -362,8 +361,8 @@
   (require-user
     (let* ((gratitude (db (parse-integer id)))
            (author (getf gratitude :author)))
-      (require-test ((or (member *userid* (db author :admins))
-                         (eql *userid* author))
+      (require-test ((or (eql *userid* author)
+                         (group-admin-p author))
                      "You can only edit statements of gratitude that you have written.")
         (cond
 

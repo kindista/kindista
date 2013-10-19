@@ -46,6 +46,7 @@
 (defindex *gratitude-index*)
 (defindex *gratitude-results-index*)
 (defindex *group-membership-index*)
+(defindex *group-priviledges-index*)
 (defindex *groups-geo-index*)
 (defindex *invited-index*)
 (defindex *invitation-index* :test 'equalp)

@@ -315,8 +315,7 @@
            (groupid (when (scan +number-scanner+
                                 (post-parameter "identity-selection"))
                      (parse-integer (post-parameter "identity-selection"))))
-           (group (when groupid (db groupid)))
-           (adminp (when (member *userid* (getf group :admins)) t))
+           (adminp (group-admin-p groupid))
            (details (post-parameter "details"))
            (location (post-parameter "location"))
            (lat (awhen (post-parameter "lat")
@@ -425,14 +424,20 @@
   (require-active-user
     (let* ((id (parse-integer id))
            (item (db id))
+           (hosts (getf item :hosts))
+           (group-adminp (loop for host in hosts
+                               thereis (group-admin-p host)))
            (old-location (getf item :address))
            (old-title (getf item :title))
            (old-details (getf item :details))
            (old-local-time (getf item :local-time))
            (url (strcat "/events/" id)))
 
+      (pprint *user-group-priviledges*)
+      (pprint group-adminp)(terpri)
        (require-test ((or (member *userid* (getf item :hosts))
-                         (getf *user* :admin))
+                          group-adminp
+                          (getf *user* :admin))
                       (s+ "You can only edit your own events."))
 
          (multiple-value-bind (old-time date-name old-date)

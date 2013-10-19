@@ -103,9 +103,7 @@
   (let* ((host (first (result-people result)))
          (item-id (result-id result))
          (data (db item-id))
-         (group-adminp (when (and (member host
-                                    (gethash *userid* *group-membership-index*))
-                            (member *userid* (db host :admins))) t))
+         (group-adminp (group-admin-p host))
          (event-time (or time (humanize-exact-time (getf data :local-time)
                                                    :detailed t)))
          (item-url (strcat "/events/" item-id)))
@@ -169,9 +167,7 @@
          (item-id (result-id result))
          (data (db item-id))
          (author (getf data :author))
-         (adminp (when (and (member author
-                                    (gethash *userid* *group-membership-index*))
-                            (member *userid* (db author :admins))) t))
+         (adminp (group-admin-p author))
          (images (getf data :images))
          (item-url (strcat "/gratitude/" item-id)))
 
@@ -233,9 +229,7 @@
          (item-id (result-id result))
          (data (db item-id))
          (by (getf data :by))
-         (group-adminp (when (and (member by
-                                    (gethash *userid* *group-membership-index*))
-                            (member *userid* (db by :admins))) t))
+         (group-adminp (group-admin-p by))
          (images (getf data :images))
          (item-url (strcat "/" type "s/" item-id)))
 
