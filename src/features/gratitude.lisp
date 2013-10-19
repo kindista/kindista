@@ -93,7 +93,7 @@
                (setf subject (parse-integer subject))
                (awhen (db subject)
                  (when (or (eq (getf it :type) :person)
-                           (eq (getf it :type) :project))
+                           (eq (getf it :type) :group))
                    (collect subject at beginning))))
               ((gethash subject *username-index*)
                (collect it at beginning))
@@ -156,24 +156,27 @@
             (dolist (subject subjects)
               (htm
                 (:li
-                  (str (getf (db subject) :name))
+                  (str (db subject :name))
                   (unless (or single-recipient existing-url)
                     (htm
-                      (:button :class "text large x-remove" :type "submit" :name "remove" :value subject " ⨯ ")))))) 
+                      (:button :class "text large x-remove" :type "submit" :name "remove" :value subject " ⨯ "))))))
             (unless (or single-recipient existing-url)
               (htm
-                (:li (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or project")))))
+                (:li :class "recipients" (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or group")))))
 
           (when subjects
             (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" subjects))))
           (when next
             (htm (:input :type "hidden" :name "next" :value next)))
-          (awhen (groups-with-user-as-admin)
-            (htm
-              (:strong :class "small" "Post gratitude from "))
-              (str (identity-selection-html (or groupid *userid*)
-                                            it
-                                            :class "identity small profile-gratitude")))
+
+          (unless existing-url
+            (awhen (groups-with-user-as-admin)
+              (htm
+                (:div :class "clear"
+                  (:label :class "from" "From:")
+                  (str (identity-selection-html (or groupid *userid*)
+                                              it
+                                              :class "identity recipients profile-gratitude"))))))
           (:textarea :rows "8" :name "text" (str text))
           (:p  
             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
@@ -205,8 +208,10 @@
            (progn
              (htm
                (:h3 "Search results")
-               (dolist (person results)
-                 (str (person-button (car person) (cdr person) "add"))))))
+               (dolist (group (car results))
+                 (str (id-button (car group) "add")))
+               (dolist (person (cdr results))
+                 (str (id-button (car person) "add" (cdr person)))))))
 
          (:input :type "submit" :class "cancel" :value "Back")
 
@@ -246,8 +251,9 @@
          (let* ((subjects (parse-subject-list (post-parameter "subject")
                                               :remove (write-to-string *userid*)))
                 (text (post-parameter "text"))
-                (new-id (create-gratitude :author (if adminp groupid *userid*)
-                                          :subjects subjects
+                (author (if adminp groupid *userid*))
+                (new-id (create-gratitude :author author
+                                          :subjects (remove author subjects)
                                           :text text)))
            (cond
              ((and subjects text)
@@ -282,8 +288,8 @@
                                 :text (post-parameter "text")
                                 :groupid (when adminp groupid)
                                 :next (post-parameter "next")
-                                :results (append (search-groups (post-parameter "name"))
-                                                 (search-people (post-parameter "name")))))
+                                :results (cons (search-groups (post-parameter "name"))
+                                               (search-people (post-parameter "name")))))
         (t
          (gratitude-compose
            :text (post-parameter "text")
@@ -324,6 +330,7 @@
 
         (t
          (require-test ((or (eql *userid* (getf it :author))
+                            (member *userid* (db (getf it :author) :admins))
                             (getf *user* :admin))
                        (s+ "You can only edit your own statatements of gratitude."))
            (cond
@@ -342,8 +349,10 @@
 
 (defun get-gratitude-edit (id)
   (require-user
-    (let* ((gratitude (db (parse-integer id))))
-      (require-test ((eql *userid* (getf gratitude :author))
+    (let* ((gratitude (db (parse-integer id)))
+           (author (getf gratitude :author))
+           (adminp (member *userid* (db author :admins))))
+      (require-test ((or (eql *userid* author) adminp)
                      "You can only edit gratitudes you have written.")
         (gratitude-compose :subjects (getf gratitude :subjects)
                            :text (getf gratitude :text)
@@ -351,8 +360,10 @@
 
 (defun post-gratitude-edit (id)
   (require-user
-    (let* ((gratitude (db (parse-integer id))))
-      (require-test ((eql *userid* (getf gratitude :author))
+    (let* ((gratitude (db (parse-integer id)))
+           (author (getf gratitude :author)))
+      (require-test ((or (member *userid* (db author :admins))
+                         (eql *userid* author))
                      "You can only edit statements of gratitude that you have written.")
         (cond
 

@@ -155,6 +155,12 @@ select.profile-gratitude {
  margin-bottom: 0.3em;
 }
 
+.create-event select.event-host {
+ background: #fff;
+ padding-top: 0.55em;
+ max-width: none;
+}
+
 .unicon {
  font-size: 1.6em;
  vertical-align: middle;
@@ -568,6 +574,11 @@ button.red  {
  text-shadow:
   1px 1px 2px rgba(0,0,0,0.4);
   padding: 0.5em 0.7em;
+}
+
+button.red.simple-link {
+ background: none;
+ color: #900;
 }
 
 button.blue, a.blue {
@@ -1256,7 +1267,7 @@ menu .newcount {
  margin-top: .5em;
 }
 
-.create-event input[type=text], .create-event textarea {
+.create-event input[type=text], .create-event textarea, .create-event select {
  font-size: 1em;
  border: 1px solid #444;
  margin: .3em 0;
@@ -1267,7 +1278,7 @@ menu .newcount {
 
 }
 
-.create-event input[type=text] {
+.create-event input[type=text], .create-event select {
  width: 30em;
  white-space: nowrap;
  height: 2.5em;
@@ -1359,6 +1370,10 @@ h3.event-date, h3.my-invites {
  border-bottom: none;
 }
 
+.card-details {
+ overflow: hidden;
+}
+
 .card > .image {
  float: left;
  width: 7em;
@@ -1372,6 +1387,18 @@ h3.event-date, h3.my-invites {
  display: block;
  max-width: 7em;
  max-height: 7em;
+}
+
+button.card > div.details {
+ float: left;
+ width: 12em;
+ margin-right: .5em;
+}
+
+button.card > img {
+ max-height: 13.5em;
+ max-width: 20em;
+ min-width: 10em;
 }
 
 .card p {
@@ -1612,6 +1639,10 @@ input::-moz-focus-inner {
 
 .inline {
  display: inline;
+}
+
+.inline-block {
+ display: inline-block;
 }
 
 button.text.large {
@@ -2038,7 +2069,7 @@ form.post-next h2 {
  margin: 0.75em 0;
 }
 
-form.recipients div.recipients {
+form.recipients, div.recipients {
  overflow: hidden;
 }
 
@@ -2049,10 +2080,22 @@ form.recipients label {
  height: 100%;
 }
 
-form.recipients menu.recipients {
- float: left;
+form.recipients label.from {
+ position: relative;
+ top: 0.95em;
+}
+
+form.recipients, menu.recipients {
  display: block;
  margin: 0;
+}
+
+menu.recipients {
+ float: left;
+}
+
+li.recipients:last-child {
+ margin-top: -0.5em;
 }
 
 form.recipients menu.recipients li {
@@ -2064,8 +2107,8 @@ form.recipients button.x-remove {
  vertical-align: top;
 }
 
-form.recipients:after {
- clear: both;
+select.recipients {
+ margin-top: 0.5em;
 }
 
 .person-list img {
@@ -2223,6 +2266,12 @@ form.recipients:after {
  margin: 0 -0.25em;
  background: #eee;
  border-bottom: 2px solid #aaa;
+}
+
+form.rdist.search {
+ float: right;
+ position:relative;
+ top: -0.15em;
 }
 
 .more-results {

@@ -137,9 +137,10 @@
          (by (case type
                ((or :offer :request)
                 (getf item :by))
-               (:gratitude (getf item :author)))))
+               (:gratitude (getf item :author))))
+         (group-adminp (member *userid* (db by :admins))))
 
-    (when (and (eql *userid* by)
+    (when (and (or (eql *userid* by) group-adminp)
                (or (eq type :gratitude)
                    (eq type :offer)
                    (eq type :request)))
@@ -221,8 +222,13 @@
   (or (not string) (string= string "")))
 
 (defun mutual-connections (one &optional (two *userid*))
-  (intersection (gethash one *followers-index*)
-                (getf (db two) :following)))
+  (let ((one-data (db one)))
+   (intersection (if (eql (getf one-data :type) :person)
+                  (gethash one *followers-index*)
+                  (remove *userid*
+                          (union (getf one-data :admins)
+                                 (getf one-data :members))))
+                (getf (db two) :following))))
 
 (defmacro ensuring-userid ((user-id base-url) &body body)
   (let ((is-number (gensym))

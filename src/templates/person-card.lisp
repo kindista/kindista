@@ -17,22 +17,6 @@
 
 (in-package :kindista)
 
-(defun person-button (id alias button-name)
-  (let* ((mutuals (mutual-connections id))
-         (person (db id))
-         (name (getf person :name))) 
-    (html
-      (:button :class "card" :value id :name button-name
-        (:img :src (get-avatar-thumbnail id 300 300))
-        (:h3 (str name))
-        (unless (string= name alias)
-          (htm (:p "nickname: " (str alias))))
-        (awhen (getf person :city)
-          (htm (:p "Lives in " (str it))))
-        (when mutuals
-          (htm (:p (str (strcat (length mutuals) " mutual connection")) 
-                   (str (when (> (length mutuals) 1) "s")))))))))
-
 (defun person-card (id alias)
   (let* ((mutuals (mutual-connections id))
          (person (db id))
@@ -41,14 +25,15 @@
     (html
       (:div :class "card"
         (:div :class "image" (:a :href link (:img :src (get-avatar-thumbnail id 300 300))))
-        (:h3 (:a :href link
-               (str name)))
-        (unless (string= name alias)
-          (htm (:p "nickname: " (str alias))))
+        (:div :class "card-details"
+          (:h3 (:a :href link
+                 (str name)))
+          (unless (string= name alias)
+            (htm (:p "nickname: " (str alias))))
 
-        (awhen (getf person :city) 
-          (htm (:p "Lives in " (str it))))
-        (when mutuals
-          (htm (:p (:a :href (s+ link "/connections" ) 
-                   (str (strcat (length mutuals) " mutual connection")) 
-                   (str (when (> (length mutuals) 1) "s"))))))))))
+          (awhen (getf person :city) 
+            (htm (:p "Lives in " (str it))))
+          (when mutuals
+            (htm (:p (:a :href (s+ link "/connections" )
+                     (str (strcat (length mutuals) " mutual connection"))
+                     (str (when (> (length mutuals) 1) "s")))))))))))

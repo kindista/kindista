@@ -205,7 +205,7 @@
         (see-other (or (referer) "/home")))
       (enter-event-details))))
 
-(defun enter-event-details (&key error date time location title details existing-url)
+(defun enter-event-details (&key error date time location title groupid details existing-url)
   (standard-page
     (if existing-url "Edit your event details" "Create a new event")
     (html
@@ -224,6 +224,15 @@
                    :name "title"
                    :placeholder "ex: Community Garden Work Party"
                    :value (awhen title (escape-for-html it))))
+         (unless existing-url
+           (awhen (groups-with-user-as-admin)
+             (htm
+               (:div
+                 (:label "Posted by")
+                 (str (identity-selection-html (or groupid *userid*)
+                                               it
+                                               :class "identity event-host"))))))
+
          (:div
            (:label "Details")
            (:textarea :rows "8"
@@ -276,7 +285,7 @@
                          :name "confirm-location"
                          "Create")))))))))
 
-(defun verify-event-location (&key existing-url location lat long title details date time)
+(defun verify-event-location (&key existing-url groupid location lat long title details date time)
   (standard-page
     "Please verify the location of your event."
     (html
@@ -286,6 +295,7 @@
         (:form :method "post" :action (or existing-url "/events/new")
           (:h3 "Is this location correct?")
           (:input :type "hidden" :name "location" :value location)
+          (:input :type "hidden" :name "identity-selection" :value groupid)
           (:input :type "hidden" :name "lat" :value lat)
           (:input :type "hidden" :name "long" :value long)
           (:input :type "hidden" :name "title" :value (escape-for-html title))
@@ -302,6 +312,11 @@
 (defun post-events-new ()
   (require-active-user
     (let* ((title (post-parameter "title"))
+           (groupid (when (scan +number-scanner+
+                                (post-parameter "identity-selection"))
+                     (parse-integer (post-parameter "identity-selection"))))
+           (group (when groupid (db groupid)))
+           (adminp (when (member *userid* (getf group :admins)) t))
            (details (post-parameter "details"))
            (location (post-parameter "location"))
            (lat (awhen (post-parameter "lat")
@@ -318,6 +333,8 @@
 
       (labels ((try-again (e) (enter-event-details :title title
                                                    :details details
+                                                   :groupid (when adminp
+                                                              groupid)
                                                    :location location
                                                    :date date
                                                    :time time
@@ -363,6 +380,7 @@
 
          ((post-parameter "reset-location")
           (enter-event-details :title title
+                               :groupid (when adminp groupid)
                                :details details
                                :date date
                                :time time))
@@ -371,6 +389,7 @@
           (multiple-value-bind (latitude longitude address)
             (geocode-address location)
             (verify-event-location :location address
+                                   :groupid (when adminp groupid)
                                    :lat latitude
                                    :long longitude
                                    :title title
@@ -382,6 +401,7 @@
           (flash "Your event has been added to the calendar")
           (see-other (format nil "/events/~A"
                                  (create-event :lat lat
+                                               :host (when adminp groupid)
                                                :long long
                                                :local-time local-time
                                                :title title

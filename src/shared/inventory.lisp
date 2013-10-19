@@ -667,7 +667,7 @@
               (htm
                 (:span (:strong :class "small" (str (s+ "showing " type "s matching \"")) (str q) (:strong "\"")))))
             (str (rdist-selection-html (url-compose base-url "q" q "kw" base)
-                                       :style "display:inline;"
+                                       :class "inline"
                                        :text (if q " within "
                                                    "showing results within ")))
             (when (or base q)

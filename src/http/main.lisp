@@ -452,7 +452,10 @@
                               "Events")
                      (:option :value "people"
                               :selected (when (equalp search-scope "people") "selected")
-                              "People"))
+                              "People")
+                     (:option :value "groups"
+                              :selected (when (equalp search-scope "groups") "selected")
+                              "Groups"))
                    (:input :type "text" :size "14" :name "q" :value search)
                    (:input :type "submit" :value "Search"))
 

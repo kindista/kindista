@@ -103,7 +103,7 @@
              (htm
                (:h3 "Search results")
                (dolist (person results)
-                 (str (person-button (car person) (cdr person) "add"))))))
+                 (str (id-button (car person) "add" (cdr person)))))))
 
          (:input :type "submit" :class "cancel" :value "Back")
 

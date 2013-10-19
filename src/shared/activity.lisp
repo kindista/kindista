@@ -100,9 +100,12 @@
         ;    (str (flag-button url))))))))
 
 (defun event-activity-item (result &key sidebar truncate (show-distance nil) time)
-  (let* ((user-id (first (result-people result)))
+  (let* ((host (first (result-people result)))
          (item-id (result-id result))
          (data (db item-id))
+         (group-adminp (when (and (member host
+                                    (gethash *userid* *group-membership-index*))
+                            (member *userid* (db host :admins))) t))
          (event-time (or time (humanize-exact-time (getf data :local-time)
                                                    :detailed t)))
          (item-url (strcat "/events/" item-id)))
@@ -110,7 +113,9 @@
     (activity-item :id item-id
                    :url item-url
                    :class "event"
-                   :edit (when (or (eql user-id *userid*) (getf *user* :admin)) t)
+                   :edit (when (or (eql host *userid*)
+                                   group-adminp
+                                   (getf *user* :admin)) t)
                    :hearts (length (loves item-id))
                    ;:comments (length (comments item-id))
                    :content (html
@@ -127,7 +132,7 @@
                                     (str (if (getf data :editied)
                                            "Edited by "
                                            "Posted by "))
-                                    (str (person-link user-id))
+                                    (str (person-link host))
                                     "&nbsp;"
                                     (str (humanize-universal-time (getf data :created))))))
 
@@ -163,6 +168,10 @@
          (self (eql user-id *userid*))
          (item-id (result-id result))
          (data (db item-id))
+         (author (getf data :author))
+         (adminp (when (and (member author
+                                    (gethash *userid* *group-membership-index*))
+                            (member *userid* (db author :admins))) t))
          (images (getf data :images))
          (item-url (strcat "/gratitude/" item-id)))
 
@@ -170,8 +179,8 @@
                    :url item-url
                    :class "gratitude"
                    :time (result-time result)
-                   :edit (when (or self (getf *user* :admin)) t)
-                   :image-text (when self
+                   :edit (when (or self adminp (getf *user* :admin)) t)
+                   :image-text (when (or self adminp)
                                  (if images
                                    "Add/remove photos"
                                    "Add photos"))
@@ -223,13 +232,17 @@
          (self (eql user-id *userid*))
          (item-id (result-id result))
          (data (db item-id))
+         (by (getf data :by))
+         (group-adminp (when (and (member by
+                                    (gethash *userid* *group-membership-index*))
+                            (member *userid* (db by :admins))) t))
          (images (getf data :images))
          (item-url (strcat "/" type "s/" item-id)))
 
     (activity-item :id item-id
                    :url item-url
                    :time (result-time result)
-                   :edit (or self (getf *user* :admin))
+                   :edit (or self group-adminp (getf *user* :admin))
                    :image-text (when (and (string= type "offer") self)
                                  (if images
                                    "Add/remove photos"

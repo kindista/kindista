@@ -103,7 +103,7 @@
   (eq (result-type (alias-result alias)) :person))
 
 (defun alias-group-p (alias)
-  (eq (result-type (alias-result alias)) ::roup))
+  (eq (result-type (alias-result alias)) :group))
 
 (defun result-id-intersection (list1 list2)
   (intersection list1 list2 :key #'result-id))

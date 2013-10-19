@@ -718,9 +718,9 @@
   " "
   (:input :type "submit" :class "no-js" :value "apply"))))
 
-(defun rdist-selection-html (next-url &key text style)
+(defun rdist-selection-html (next-url &key text class)
   (html 
-    (:form :method "post" :action "/settings" :style style
+    (:form :method "post" :action "/settings" :class class
       (:strong :class "small" (str text))
       (:input :type "hidden" :name "next" :value next-url)
       (let ((distance (user-rdist)))
@@ -805,7 +805,7 @@
 
 (defun search-groups (query &key (userid *userid*))
   (let* ((aliases (remove-if-not #'alias-group-p (metaphone-index-query query)))
-         (user (db userid)) 
+         (user (db userid))
          (lat (getf user :lat))
          (long (getf user :long)))
     (flet ((group-rank (alias)
@@ -815,7 +815,8 @@
                (+ (* 9 member-count)
                   (/ 50 (log (+ 4 distance) 10)))))
            (group-id (alias)
-             (result-id (alias-result alias))))
+             (cons (result-id (alias-result alias))
+                   (alias-alias alias))))
 
       (mapcar #'group-id
             (sort aliases
@@ -846,9 +847,9 @@
 
 (defun groups-results-html (group-list)
   (html
-    (:div 
+    (:div
       (dolist (group group-list)
-        (str (group-card group))))))
+        (str (group-card (car group)))))))
 
 (defun search-nearby-people (query &key (userid *userid*) (distance 10))
   (let* ((user (db userid))
@@ -966,7 +967,7 @@
                        (:h2 (:a :href (s+ "/requests?q=" (url-encode q)) "Requests")
                          " "
                          (str (rdist-selection-html (request-uri*)
-                                                    :style "float:right;"
+                                                    :class "rdist search"
                                                     :text "show results within ")))
                        (str (request-results-html (sublist requests 0 5)))
                        (str (more-results-link "request"
@@ -978,7 +979,7 @@
                        (:h2 (:a :href (s+ "/offers?q=" (url-encode q)) "Offers")
                          " "
                          (str (rdist-selection-html (request-uri*)
-                                                    :style "float:right;"
+                                                    :class "rdist search"
                                                     :text "show results within ")))
                        (str (offer-results-html (sublist offers 0 5)))
                        (str (more-results-link "offer"
@@ -990,7 +991,7 @@
                        (:h2 (:a :href (s+ "/events?q=" (url-encode q)) "Events")
                          " "
                          (str (distance-selection-html (request-uri*)
-                                                       :style "float:right;"
+                                                       :class "rdist search"
                                                        :search t
                                                        :text "show results within ")))
                        (str (event-results-html (sublist events 0 5)))

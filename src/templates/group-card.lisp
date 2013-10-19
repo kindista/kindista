@@ -37,19 +37,20 @@
      (html
       (:div :class "card"
         (:div :class "image" (:a :href link (:img :src (get-avatar-thumbnail id 300 300))))
-        (:h3 (:a :href link
-               (str name)))
+        (:div :class "card-details"
+          (:h3 (:a :href link
+                 (str name)))
 
-        (aif (show-different-location :city)
-          (htm
-            (:p "In "
-                (str (s+ it
-                       (show-different-location :state)
-                       (show-different-location :country)))))
-          (awhen distance
+          (aif (show-different-location :city)
             (htm
-              (:p "within " (str (distance-string it))))))
+              (:p "In "
+                  (str (s+ it
+                         (show-different-location :state)
+                         (show-different-location :country)))))
+            (awhen distance
+              (htm
+                (:p "within " (str (distance-string it))))))
 
-        (htm (:p (:a :href (s+ link "/members" )
-                 (str (strcat members " member"))
-                 (str (when (or (eql members 0) (> members 1)) "s"))))))))))
+          (htm (:p (:a :href (s+ link "/members" )
+                   (str (strcat members " member"))
+                   (str (when (or (eql members 0) (> members 1)) "s")))))))))))

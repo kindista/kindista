@@ -30,6 +30,26 @@
         (htm (:input :type "hidden" :name "next" :value next-url)))
       (:input :type "submit" :value title))))
 
+(defun id-button (id button-name &optional alias)
+  (let* ((mutuals (mutual-connections id))
+         (entity (db id))
+         (name (getf entity :name))
+         (groupid (when (eq (getf entity :type) :group) id)))
+    (html
+      (:button :class "card" :value id :name button-name
+        (:img :src (get-avatar-thumbnail id 300 300))
+        (:div :class "details"
+          (:h3 (str name))
+            (unless groupid
+              (unless (string= name alias)
+                (htm (:p "nickname: " (str alias))))) 
+            (awhen (getf entity :city)
+              (htm (:p (str (s+ (if groupid "Located" "Lives") " in ")) (str it)))) 
+            (when mutuals
+              (htm (:p (str (strcat (length mutuals)
+                                    (unless groupid " mutual") " connection"))
+                       (str (when (> (length mutuals) 1) "s"))))))))))
+
 (defun feedback-card (id)
   (let* ((data (db id))
          (url (strcat "/feedback/" id))

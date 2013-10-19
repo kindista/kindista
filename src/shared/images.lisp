@@ -98,10 +98,14 @@
                ((or :offer :request)
                 (getf item :by))
                (:gratitude
-                 (getf item :author)))))
+                 (getf item :author))))
+         (adminp (when (and (member by (gethash *userid*
+                                                *group-membership-index*))
+                            (member *userid* (db by :admins)))
+                   t)))
     (html
       (:div :class "activity images"
-        (when (and (eql by *userid*)
+        (when (and (or (eql by *userid*) adminp)
                    (< (length images) 6))
           (htm (:div :class "post-image"
                  (str (new-image-form "/image/new" url :on item-id)))))
@@ -110,6 +114,7 @@
               (:div :class "activity-image"
                 (:img :src (get-image-thumbnail image-id 300 300))
                 (when (or (eql *userid* by)
+                          adminp
                           (getf *user* :admin))
                   (htm
                     (:form :method "post" :action (strcat "/image/" image-id)
@@ -133,8 +138,14 @@
            (by (case (getf item :type)
                  ((or :offer :request)
                   (getf item :by))
-                 (:gratitude (getf item :author)))))
+                 (:gratitude (getf item :author))))
+           (adminp (when (and (member by (gethash *userid*
+                                                  *group-membership-index*))
+                              (member *userid* (db by :admins)))
+                     t)))
+
       (require-test ((or (eql *userid* by)
+                         adminp
                          (getf *user* :admin))
                     (s+ "You can only add photos to items you have posted."))
         (cond
@@ -167,8 +178,14 @@
            (by (case (getf item :type)
                  ((or :offer :request)
                   (getf item :by))
-                 (:gratitude (getf item :author)))))
+                 (:gratitude (getf item :author))))
+           (adminp (when (and (member by (gethash *userid*
+                                                  *group-membership-index*))
+                              (member *userid* (db by :admins)))
+                     t)))
+
       (require-test ((or (eql *userid* by)
+                         adminp
                          (getf *user* :admin))
                     (s+ "You can only add photos to items you have posted."))
         (cond
