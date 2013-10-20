@@ -715,8 +715,8 @@
             (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
             (:option :value "100" :selected (when (eql distance 100) "") "100 miles")
             (:option :value "0" :selected (when (eql distance 0) "") "everywhere"))))
-  " "
-  (:input :type "submit" :class "no-js" :value "apply"))))
+      " "
+      (:input :type "submit" :class "no-js" :value "apply"))))
 
 (defun rdist-selection-html (next-url &key text class)
   (html 

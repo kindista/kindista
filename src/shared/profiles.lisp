@@ -175,10 +175,16 @@
                     "groups"
                     "people")))))
 
-(defun profile-activity-items (&key (id *userid*) (page 0) (count 20) type)
-  (let ((items (gethash id *profile-activity-index*))
+(defun profile-activity-items (&key (id *userid*) (page 0) (count 20) type display members)
+  (let ((items (cond
+                ((string= display "all")
+                 (group-member-activity (cons id members) :type type))
+                ((string= display "members")
+                 (group-member-activity members :type type))
+                (t (gethash id *profile-activity-index*))))
         (start (* page count))
         (i 0))
+
     (html
       (iter
         (let ((item (car items)))
@@ -186,23 +192,23 @@
                     (>= i (+ count start)))
             (finish))
 
-          (when (and (or (not type)
-                         (and (eql type :gratitude)
-                              (eql :gift (result-type item)))
-                         (eql type (result-type item)))
-                     (> (incf i) start))
+          (when
+            (and (or (not type)
+                     (if (eql type :gratitude)
+                       (or (and (eql :gratitude (result-type item))
+                                (not (eql id (first (result-people item)))))
+                           (and (eql :gift (result-type item))
+                                (not (eql id (car (last (result-people item)))))))
+                       (eql type (result-type item))))
+                 (> (incf i) start))
 
             (case (result-type item)
               (:gratitude
-                (when (or (not type)
-                          (not (eql id (first (result-people item)))))
-                  (str (gratitude-activity-item item))))
+                (str (gratitude-activity-item item)))
               (:person
                 (str (joined-activity-item item)))
               (:gift
-                (when (or (not type)
-                          (eql id (first (result-people item))))
-                  (str (gift-activity-item item))))
+                (str (gift-activity-item item)))
               (:offer
                 (str (inventory-activity-item "offer" item
                                           :show-what (unless (eql type :offer) t))))
@@ -213,7 +219,7 @@
           (setf items (cdr items))
 
           (finally
-            (str (paginate-links page (cdr items))))))))
+            (str (paginate-links page (cdr items) (s+ (url-compose (script-name*) "display" display)))))))))
 
 (defun profile-top-html (id)
   (let* ((entity (db id))
@@ -313,13 +319,16 @@
   (let* ((entity (db id))
          (strid (username-or-id id))
          (entity-type (getf entity :type))
+         (name (getf entity :name))
+         (display (or (get-parameter "display") "all"))
          (groupid (when (eql entity-type :group) id))
+         (members (when groupid (append (getf entity :admins) (getf entity :members))))
          (adminp (when (member *userid* (getf entity :admins)) t))
          (*base-url* (case entity-type
                        (:person (strcat "/people/" strid))
                        (:group (strcat "/groups/" strid)))))
     (standard-page
-      (getf entity :name)
+      name
       (html
         (when *user* (str (profile-tabs-html id :tab (or type :activity))))
         (when (or (eql id *userid*) adminp)
@@ -350,7 +359,18 @@
                     (:button :class "yes" :type "submit" :class "submit" :name "create" "Post"))))))))
 
         (:div :class "activity"
-          (str (profile-activity-items :id id :type type :page (aif (get-parameter "p") (parse-integer it) 0)))))
+          (str (group-activity-selection-html id name display (case type
+                                                                (:gratitude "reputation")
+                                                                (:offer "offers")
+                                                                (:request "requests")
+                                                                (t "activity"))))
+          (str (profile-activity-items :id id
+                                       :type type
+                                       :members (when (or (string= display "all")
+                                                          (string= display "members"))
+                                                  members)
+                                       :display display
+                                       :page (aif (get-parameter "p") (parse-integer it) 0)))))
 
       :top (profile-top-html id)
       :right right

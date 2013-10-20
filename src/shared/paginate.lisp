@@ -30,4 +30,4 @@
        "&nbsp;"
        (when more
          (htm
-           (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page &rarr;")))))))
+           (:a :style "float: right;" :href (url-compose url "p" (+ page 1)) "next page &rarr;")))))))

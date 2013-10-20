@@ -253,6 +253,50 @@
                            (gethash userid *group-priviledges-index*))))
        :admin))
 
+(defun group-activity-selection-html (groupid group-name selected tab)
+  (html
+    (:form :method "get" :action (strcat "/groups/" (username-or-id groupid) "/" tab)
+      (:strong :class "small"
+       "Display "
+       (str (cond
+             ((or (string= tab "activity")
+                  (string= tab "offers")
+                  (string= tab "requests"))
+              (s+ tab " from "))
+             ((string= tab "reputation")
+        "gratitude about "))))
+      (:select :class "group-activity" :name "display" :onchange "this.form.submit()"
+        (:option :value "all" :selected (when (string= selected "all") "")
+          (str (s+ group-name " and its members")))
+        (:option :value "group" :selected (when (string= selected "group") "")
+          (str group-name))
+        (:option :value "members" :selected (when (string= selected "members") "")
+          (str (s+ group-name "'s members"))))
+      " "
+      (:input :type "submit" :class "no-js" :value "apply"))))
+
+(defun group-member-activity (group-members &key type count)
+  (let ((count (or count (+ 20 (floor (/ 30 (length group-members))))))
+        (i 0)
+        (activity nil))
+    (dolist (person group-members)
+      (setf i 0)
+      (loop for result in (gethash person *profile-activity-index*)
+            while (< i count)
+            when (or (not type)
+                     (if (eql type :gratitude)
+                       (or (and (eql :gratitude (result-type result))
+                                (not (eql person (first (result-people result)))))
+                           (and (eql :gift (result-type result))
+                                (not (eql person (car (last (result-people result)))))))
+                       (eql type (result-type result))))
+            do (progn
+                 (if activity
+                   (asetf activity (sort (push result it) #'< :key #'activity-rank))
+                   (asetf activity (list result)))
+                 (incf i))))
+    activity))
+
 (defun get-my-groups ()
   (if *user*
     (let ((admin-groups (groups-with-user-as-admin))

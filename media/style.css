@@ -139,7 +139,7 @@ select {
  max-width: 20em;
 }
 
-select.identity, select.distance-selection {
+select.identity, select.distance-selection, select.group-activity {
   background: #fbfbfb;
   border:1px solid #999;
   padding: 0.3em 0.4em;
