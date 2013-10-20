@@ -52,10 +52,10 @@
                (str (donate-sidebar))
                (str (invite-sidebar))))))
 
-(defun identity-selection-html (selected groups &key (class "identity"))
+(defun identity-selection-html (selected groups &key (class "identity") onchange)
 "Groups should be an a-list of (groupid . group-name)"
   (html
-    (:select :name "identity-selection" :class class
+    (:select :name "identity-selection" :class class :onchange onchange
       (:option :value *userid*
                :selected (when (eql selected *userid*) "")
                (str (getf *user* :name))" ")

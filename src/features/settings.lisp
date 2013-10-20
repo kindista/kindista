@@ -463,7 +463,9 @@
   (html
     (:form :method "post" :action "/settings"
       (:strong "Viewing settings for: ")
-      (str (identity-selection-html selected groups)))))
+      (str (identity-selection-html selected groups :onchange "this.form.submit()"))
+      " "
+      (:input :type "submit" :class "no-js" :value "apply"))))
 
 (defun go-settings ()
   (aif (get-parameter "groupid")
