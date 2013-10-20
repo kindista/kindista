@@ -433,8 +433,6 @@
            (old-local-time (getf item :local-time))
            (url (strcat "/events/" id)))
 
-      (pprint *user-group-priviledges*)
-      (pprint group-adminp)(terpri)
        (require-test ((or (member *userid* (getf item :hosts))
                           group-adminp
                           (getf *user* :admin))

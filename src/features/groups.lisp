@@ -45,9 +45,9 @@
 
     (with-locked-hash-table (*group-priviledges-index*)
       (dolist (person (getf data :admins))
-        (push (cons id :admin) (gethash person *group-priviledges-index*)))
+        (push id (getf (gethash person *group-priviledges-index*) :admin)))
       (dolist (person (getf data :members))
-        (push (cons id :member) (gethash person *group-priviledges-index*))) )
+        (push id (getf (gethash person *group-priviledges-index*) :member))))
 
     (with-locked-hash-table (*profile-activity-index*)
       (asetf (gethash id *profile-activity-index*)
@@ -147,22 +147,23 @@
 
 (defun add-group-member (personid groupid)
   (with-locked-hash-table (*group-priviledges-index*)
-     (pushnew (cons groupid :member)
-              (gethash personid *group-priviledges-index*) :test #'equal))
+     (pushnew groupid (getf (gethash personid *group-priviledges-index*) :member)))
 
   (amodify-db groupid :members (pushnew personid it)) )
 
 (defun remove-group-member (personid groupid)
   (with-locked-hash-table (*group-priviledges-index*)
-     (asetf (gethash personid *group-priviledges-index*)
-       (remove (assoc groupid it) it :test #'equal)))
+     (asetf (getf (gethash personid *group-priviledges-index*) :member)
+       (remove groupid it)))
   (amodify-db groupid :members (remove personid it)) )
 
 (defun add-group-admin (personid groupid)
   (assert (eql (db personid :type) :person))
   (with-locked-hash-table (*group-priviledges-index*)
-     (asetf (gethash personid *group-priviledges-index*)
-       (cons (cons groupid :admin) (remove (assoc groupid it) it :test #'equal))))
+     (asetf (getf (gethash personid *group-priviledges-index*) :admin)
+            (pushnew groupid it))
+     (asetf (getf (gethash personid *group-priviledges-index*) :member)
+            (remove groupid it)))
   (if (member personid (db groupid :members))
     (amodify-db groupid :members (remove personid it)
                         :admins (pushnew personid it))
@@ -171,8 +172,10 @@
 (defun remove-group-admin (personid groupid)
   (assert (eql (db personid :type) :person))
   (with-locked-hash-table (*group-priviledges-index*)
-     (asetf (gethash personid *group-priviledges-index*)
-       (cons (cons groupid :member) (remove (assoc groupid it) it :test #'equal))))
+     (asetf (getf (gethash personid *group-priviledges-index*) :admin)
+            (remove groupid it))
+     (asetf (getf (gethash personid *group-priviledges-index*) :member)
+            (pushnew groupid it)))
   (amodify-db groupid :admins (remove personid it)
                       :members (pushnew personid it)))
 
@@ -227,31 +230,33 @@
 
 (defun get-groups ()
   (if (and *user*
-           (> (length *user-group-priviledges*) 0))
+           (> (+ (length (getf *user-group-priviledges* :admin))
+                 (length (getf *user-group-priviledges* :member)))
+              0))
     (see-other "/groups/my-groups")
     (see-other "/groups/nearby")))
 
 (defun groups-with-user-as-admin (&optional (userid *userid*))
 "Returns an a-list of (groupid . group-name)"
-  (loop for cell in (if (eql userid *userid*)
-                      *user-group-priviledges*
-                      (gethash userid *group-priviledges-index*))
-        when (eql (cdr cell) :admin)
-        collect (cons (car cell) (db (car cell) :name))))
+  (loop for id in (getf (if (eql userid *userid*)
+                          *user-group-priviledges*
+                          (gethash userid *group-priviledges-index*))
+                        :admin)
+        collect (cons id (db id :name))))
+
 
 (defun groups-with-user-as-member (&optional (userid *userid*))
 "Returns an a-list of (groupid . group-name)"
-  (loop for cell in (if (eql userid *userid*)
-                      *user-group-priviledges*
-                      (gethash userid *group-priviledges-index*))
-        when (eql (cdr cell) :member)
-        collect (cons (car cell) (db (car cell) :name))))
+  (loop for id in (getf (if (eql userid *userid*)
+                          *user-group-priviledges*
+                          (gethash userid *group-priviledges-index*))
+                        :member)
+        collect (cons id (db id :name))))
 
 (defun group-admin-p (groupid &optional (userid *userid*))
-  (eql (cdr (assoc groupid (if (eql userid *userid*)
-                           *user-group-priviledges*
-                           (gethash userid *group-priviledges-index*))))
-       :admin))
+  (member groupid (getf (if (eql userid *userid*)
+                          *user-group-priviledges*
+                          (gethash userid *group-priviledges-index*)) :admin)))
 
 (defun group-activity-selection-html (groupid group-name selected tab)
   (html
