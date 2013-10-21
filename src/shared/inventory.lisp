@@ -133,7 +133,7 @@
         (geo-index-insert *request-geo-index* result)))
 
     (if (and (getf *user* :admin)
-             (not (member *userid* (getf by :admins)))
+             (not (group-admin-p by))
              (not (eql *userid* by)))
 
       (if (and latitude longitude)

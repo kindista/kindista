@@ -148,7 +148,6 @@
 (defun add-group-member (personid groupid)
   (with-locked-hash-table (*group-priviledges-index*)
      (pushnew groupid (getf (gethash personid *group-priviledges-index*) :member)))
-
   (amodify-db groupid :members (pushnew personid it)) )
 
 (defun remove-group-member (personid groupid)
@@ -178,6 +177,32 @@
             (pushnew groupid it)))
   (amodify-db groupid :admins (remove personid it)
                       :members (pushnew personid it)))
+
+(defun group-activity-html (groupid &key type)
+  (profile-activity-html groupid :type type
+                                 :right (members-sidebar groupid)))
+
+(defun groups-with-user-as-admin (&optional (userid *userid*))
+"Returns an a-list of (groupid . group-name)"
+  (loop for id in (getf (if (eql userid *userid*)
+                          *user-group-priviledges*
+                          (gethash userid *group-priviledges-index*))
+                        :admin)
+        collect (cons id (db id :name))))
+
+
+(defun groups-with-user-as-member (&optional (userid *userid*))
+"Returns an a-list of (groupid . group-name)"
+  (loop for id in (getf (if (eql userid *userid*)
+                          *user-group-priviledges*
+                          (gethash userid *group-priviledges-index*))
+                        :member)
+        collect (cons id (db id :name))))
+
+(defun group-admin-p (groupid &optional (userid *userid*))
+  (member groupid (getf (if (eql userid *userid*)
+                          *user-group-priviledges*
+                          (gethash userid *group-priviledges-index*)) :admin)))
 
 (defun group-member-links (groupid &key ul-class)
   (let* ((group (db groupid))
@@ -224,40 +249,6 @@
       :top (profile-top-html groupid)
       :selected "groups")))
 
-(defun group-activity-html (groupid &key type)
-  (profile-activity-html groupid :type type
-                                 :right (members-sidebar groupid)))
-
-(defun get-groups ()
-  (if (and *user*
-           (> (+ (length (getf *user-group-priviledges* :admin))
-                 (length (getf *user-group-priviledges* :member)))
-              0))
-    (see-other "/groups/my-groups")
-    (see-other "/groups/nearby")))
-
-(defun groups-with-user-as-admin (&optional (userid *userid*))
-"Returns an a-list of (groupid . group-name)"
-  (loop for id in (getf (if (eql userid *userid*)
-                          *user-group-priviledges*
-                          (gethash userid *group-priviledges-index*))
-                        :admin)
-        collect (cons id (db id :name))))
-
-
-(defun groups-with-user-as-member (&optional (userid *userid*))
-"Returns an a-list of (groupid . group-name)"
-  (loop for id in (getf (if (eql userid *userid*)
-                          *user-group-priviledges*
-                          (gethash userid *group-priviledges-index*))
-                        :member)
-        collect (cons id (db id :name))))
-
-(defun group-admin-p (groupid &optional (userid *userid*))
-  (member groupid (getf (if (eql userid *userid*)
-                          *user-group-priviledges*
-                          (gethash userid *group-priviledges-index*)) :admin)))
-
 (defun group-activity-selection-html (groupid group-name selected tab)
   (html
     (:form :method "get" :action (strcat "/groups/" (username-or-id groupid) "/" tab)
@@ -302,6 +293,14 @@
                  (incf i))))
     activity))
 
+(defun get-groups ()
+  (if (and *user*
+           (> (+ (length (getf *user-group-priviledges* :admin))
+                 (length (getf *user-group-priviledges* :member)))
+              0))
+    (see-other "/groups/my-groups")
+    (see-other "/groups/nearby")))
+
 (defun get-my-groups ()
   (if *user*
     (let ((admin-groups (groups-with-user-as-admin))
@@ -309,6 +308,7 @@
       (standard-page
         "My Groups"
         (html
+          (str (menu-horiz "actions" (html (:a :href "/groups/new" "create a new group"))))
           (str (groups-tabs-html :tab :my-groups))
           (unless (or admin-groups member-groups)
             (htm (:h3 "You have not joined any groups yet.")))
@@ -325,6 +325,53 @@
 
 (defun get-groups-nearby ()
   (nearby-profiles-html "groups" (groups-tabs-html :tab :nearby)))
+
+(defun get-groups-new ()
+  (require-active-user
+    (if (getf *user* :pending)
+      (progn
+        (pending-flash "post events on Kindista")
+        (see-other (or (referer) "/home")))
+      (enter-new-group-details))))
+
+(defun enter-new-group-details (&key error location name public-location)
+  (standard-page
+    "Create a group profile"
+    (html
+      (when error
+        (flash error :error t))
+      (:div :class "item"
+        (:h2 "Create a Kindista profile for your group")
+        (:div :class "item create-group"
+          (:form :method "post" :action "/groups/new"
+            (:div :class "long"
+              (:label "Group name")
+              (:input :type "text"
+                      :name "name"
+                      :placeholder (escape-for-html "Enter your group's name")
+                      :value (awhen name (escape-for-html it))))
+            (:div :class "long"
+              (:label "Group location")
+              (:input :type "text"
+                      :name "location"
+                      :placeholder (escape-for-html "Enter your group's address")
+                      :value (awhen location (escape-for-html it)))
+              (:br)
+              (:input :type "checkbox"
+                      :name "public-location"
+                      :value (str (when public-location "checked")))
+              "Display this address publicly to anyone looking at this group's profile page.")
+            (:p (:em "Please note: you will be able to change the visibiity of your group's address on its settings page."))
+
+           (:button :class "cancel"
+                    :type "submit"
+                    :name "cancel"
+                    "Cancel")
+           (:button :class "yes"
+                    :type "submit"
+                    :value "1"
+                    :name "confirm-location"
+                    "Create")))))))
 
 (defun get-group (id)
   (ensuring-userid (id "/groups/~a")

@@ -33,6 +33,7 @@
     (standard-page
       (s+ "Nearby " type)
       (html
+        (str (menu-horiz "actions" (html (:a :href "/groups/new" "create a new group"))))
         (str tabs)
         (multiple-value-bind (ids more)
           (sublist (nearby-profiles (if (string= type "people")
@@ -359,11 +360,12 @@
                     (:button :class "yes" :type "submit" :class "submit" :name "create" "Post"))))))))
 
         (:div :class "activity"
-          (str (group-activity-selection-html id name display (case type
-                                                                (:gratitude "reputation")
-                                                                (:offer "offers")
-                                                                (:request "requests")
-                                                                (t "activity"))))
+          (when groupid
+            (str (group-activity-selection-html id name display (case type
+                                                                      (:gratitude "reputation")
+                                                                      (:offer "offers")
+                                                                      (:request "requests")
+                                                                      (t "activity")))))
           (str (profile-activity-items :id id
                                        :type type
                                        :members (when (or (string= display "all")

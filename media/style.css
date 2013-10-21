@@ -1261,13 +1261,13 @@ menu .newcount {
  border-bottom: 0;
 }
 
-.item.create-event label {
+.item.create-event label, .item.create-group label{
  display: block;
  font-weight: bold;
- margin-top: .5em;
+ margin-top: 0.5em;
 }
 
-.create-event input[type=text], .create-event textarea, .create-event select {
+.create-event input[type=text], .create-event textarea, .create-event select, .create-group input[type=text] {
  font-size: 1em;
  border: 1px solid #444;
  margin: .3em 0;
@@ -1278,18 +1278,18 @@ menu .newcount {
 
 }
 
-.create-event input[type=text], .create-event select {
+.create-event input[type=text], .create-event select, .create-group input[type=text] {
  width: 30em;
  white-space: nowrap;
  height: 2.5em;
 }
 
-.create-event p {
+.create-event p, .create-group p {
  margin-top: 0.3em;
 }
 
 @media (max-width:28em) {
- .create-event input[type=text] {
+ .create-event input[type=text], .create-group input[type=text] {
   width: 100%;
  }
 }
