@@ -202,7 +202,7 @@
       ((eql distance 1)
        "1 mile")
       ((typep distance 'ratio)
-       (format nil "~1$ miles" (coerce distance 'float)))    
+       (format nil "~1$ miles" (coerce distance 'float)))
       (t
        (format nil "~d miles" distance)))))
 

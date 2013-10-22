@@ -330,7 +330,7 @@
   (require-active-user
     (if (getf *user* :pending)
       (progn
-        (pending-flash "post events on Kindista")
+        (pending-flash "create group profiles on Kindista")
         (see-other (or (referer) "/home")))
       (enter-new-group-details))))
 
@@ -372,6 +372,110 @@
                     :value "1"
                     :name "confirm-location"
                     "Create")))))))
+
+(defun post-groups-new ()
+  (let ((location (post-parameter "location"))
+        (name (when (scan +text-scanner+ (post-parameter "name"))
+                (post-parameter "name")))
+        (lat (awhen (post-parameter "lat")
+               (unless (string= it "") (read-from-string it))))
+        (long (awhen (post-parameter "long")
+               (unless (string= it "") (read-from-string it))))
+        (city (awhen (post-parameter "city")
+               (unless (string= it "") it)))
+        (state (awhen (post-parameter "state")
+               (unless (string= it "") it)))
+        (country (awhen (post-parameter "country")
+               (unless (string= it "") it)))
+        (street (awhen (post-parameter "street")
+               (unless (string= it "") it)))
+        (zip (awhen (post-parameter "zip")
+               (unless (string= it "") it)))
+        (public (post-parameter "public-location")))
+
+    (labels ((try-again (e) (enter-new-group-details :name (post-parameter "name")
+                                                     :location location
+                                                     :error e)))
+      (cond
+        ((getf *user* :pending)
+         (pending-flash "create group profiles on Kindista")
+         (see-other (or (referer) "/home")))
+
+        ((post-parameter "cancel")
+         (see-other "/groups"))
+
+        ((< (length "name") 4)
+         (try-again "Please use a longer name for your group"))
+
+        ((or (not location)
+             (string= location ""))
+         (try-again "Please add a location for your group"))
+
+       ((post-parameter "reset-location")
+        (enter-new-group-details :name name))
+
+
+       ((not (and lat long))
+        (multiple-value-bind (lat long address city state country street zip)
+          (geocode-address location)
+          (verify-location "/groups/new"
+                           "Please verify your group's location."
+                           lat
+                           long
+                           "name" name
+                           "location" address
+                           "city" city
+                           "state" state
+                           "country" country
+                           "street" street
+                           "zip" zip
+                           (when public "public-location")
+                           (when public "t"))))
+
+       ((post-parameter "confirm-location")
+         (pprint lat) (pprint long) (pprint name) (terpri)
+        (aif (search-groups name :lat lat :long long)
+          (confirm-group-uniqueness it name lat long location city state country street zip :public-location public)
+          ))
+        ))
+    )
+  )
+
+(defun confirm-group-uniqueness (results name lat long address city state country street zip &key public-location)
+  (standard-page
+    "Is your group already on Kindista?"
+    (html
+      (:div :class "item"
+        (:h2 "Is your group already on Kindista?")
+        (:p "It looks like your group might already on Kindista. "
+         "Please do not create another profile for a group that is "
+         "already on Kindista. "
+         "If your group is listed below, please click the link to \"join\""
+         "it on the group's profile page. "
+         "If you believe you should included in the group's hosts, "
+         "please contact the current hosts and ask them to add you as a host. "
+         "Please "
+         (:a :href "/contact-us" "let us know")
+         " if you have any difficulty with this.")
+        (str (groups-results-html results))
+        (:form :method "post" :action "/groups/new"
+            (:input :type "hidden" :name "name" :value name)
+            (:input :type "hidden" :name "lat" :value lat)
+            (:input :type "hidden" :name "long" :value long)
+            (:input :type "hidden" :name "location" :value address)
+            (:input :type "hidden" :name "city" :value city)
+            (:input :type "hidden" :name "state" :value state)
+            (:input :type "hidden" :name "country" :value country)
+            (:input :type "hidden" :name "street" :value street)
+            (:input :type "hidden" :name "zip" :value zip)
+            (when public-location
+              (htm (:input :type "hidden" :name "public/location" :value lat)))
+            (:button :class "cancel"
+                     :type "submit"
+                     :name "cancel"
+                     "Nevermind, my group is alredy on Kindista!")
+            (:button :class "yes"
+                     :type "submit" :name "confirm-uniqueness" "My group is not already on Kindista, create a profile"))))))
 
 (defun get-group (id)
   (ensuring-userid (id "/groups/~a")

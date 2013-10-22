@@ -285,30 +285,6 @@
                          :name "confirm-location"
                          "Create")))))))))
 
-(defun verify-event-location (&key existing-url groupid location lat long title details date time)
-  (standard-page
-    "Please verify the location of your event."
-    (html
-      (:div :class "item"
-        (:h2 "Verify the location of your event")
-        (str (static-google-map :size "280x150" :zoom 12 :lat lat :long long))
-        (:form :method "post" :action (or existing-url "/events/new")
-          (:h3 "Is this location correct?")
-          (:input :type "hidden" :name "location" :value location)
-          (:input :type "hidden" :name "identity-selection" :value groupid)
-          (:input :type "hidden" :name "lat" :value lat)
-          (:input :type "hidden" :name "long" :value long)
-          (:input :type "hidden" :name "title" :value (escape-for-html title))
-          (:input :type "hidden" :name "details" :value (escape-for-html details))
-          (:input :type "hidden" :name "date" :value date)
-          (:input :type "hidden" :name "time" :value time)
-          (:button :class "cancel"
-                   :type "submit"
-                   :name "reset-location"
-                   "No, go back")
-          (:button :class "yes"
-                   :type "submit" :name "confirm-location" "Yes, this is correct"))))))
-
 (defun post-events-new ()
   (require-active-user
     (let* ((title (post-parameter "title"))
@@ -387,14 +363,16 @@
          ((not (and lat long))
           (multiple-value-bind (latitude longitude address)
             (geocode-address location)
-            (verify-event-location :location address
-                                   :groupid (when adminp groupid)
-                                   :lat latitude
-                                   :long longitude
-                                   :title title
-                                   :details details
-                                   :date date
-                                   :time time)))
+            (verify-location "/events/new"
+                             "Please verify the location of your event."
+                             latitude
+                             longitude
+                             "location" address
+                             "groupid" (when adminp groupid)
+                             "title" title
+                             "details" details
+                             "date" date
+                             "time" time)))
 
          ((post-parameter "confirm-location")
           (flash "Your event has been added to the calendar")
@@ -543,14 +521,15 @@
                        (modify-data)
                        (flash "Your event has been updated")
                        (see-other url))
-                     (verify-event-location :location address
-                                            :lat latitude
-                                            :long longitude
-                                            :title title
-                                            :existing-url url
-                                            :details details
-                                            :date date
-                                            :time time))))
+                     (verify-location url
+                                      "Please verify the location of your event."
+                                      latitude
+                                      longitude
+                                      "location" address
+                                      "title" title
+                                      "details" details
+                                      "date" date
+                                      "time" time))))
 
                 ((post-parameter "submit-edits")
                  (modify-data)

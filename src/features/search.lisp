@@ -803,11 +803,11 @@
               (sort aliases; (remove userid people :key #'result-id)
                     #'> :key #'person-rank)))))
 
-(defun search-groups (query &key (userid *userid*))
+(defun search-groups (query &key (userid *userid*) lat long)
   (let* ((aliases (remove-if-not #'alias-group-p (metaphone-index-query query)))
          (user (db userid))
-         (lat (getf user :lat))
-         (long (getf user :long)))
+         (lat (or lat (getf user :lat)))
+         (long (or long (getf user :long))))
     (flet ((group-rank (alias)
              (let* ((result (alias-result alias))
                     (member-count (length (db (result-id result) :members)))
@@ -938,7 +938,7 @@
                      (str (groups-results-html groups)))
                    (htm
                      (:p "no results"))))))
-            
+
             (t ; all
              (let ((requests (search-inventory :request q :distance (user-rdist)))
                    (offers (search-inventory :offer q :distance (user-rdist)))

@@ -177,7 +177,7 @@
 
   ("/groups/new"
     :get get-groups-new
-    :post post-groups)
+    :post post-groups-new)
 
   ("/groups/my-groups"
     :get get-my-groups)
