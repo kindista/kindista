@@ -481,7 +481,8 @@
                          (:table
                            (:tr
                              (:td :rowspan "2"
-                               (:a :href link (:img :src (get-avatar-thumbnail *userid* 100 100 :filetype "png"))))
+                               (:a :href link (:img :src (get-avatar-thumbnail *userid* 100 100 :filetype "png")
+                                                    :alt (getf *user* :name))))
                              (:td (:a :href link (str (getf *user* :name)))))
                            (:tr
                              (:td
@@ -526,7 +527,9 @@
       (when text
         (htm (:p (cl-who:esc text))))
       (when image-id
-        (htm (:img :class "activity-image" :src (get-image-thumbnail image-id 300 300))))
+        (htm (:img :class "activity-image"
+                   :src (get-image-thumbnail image-id 300 300)
+                   :alt type)))
       (:form :method "post" :action url
         (awhen item-id
           (htm (:input :type "hidden" :name "item-id" :value it)))

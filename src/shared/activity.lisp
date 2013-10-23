@@ -191,7 +191,7 @@
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))
-                                (str (activity-item-images images item-url)))))))
+                                (str (activity-item-images images item-url "gift")))))))
 
 (defun gift-activity-item (result)
   (let* ((user-id (first (result-people result)))
@@ -266,15 +266,16 @@
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))
-                                (str (activity-item-images images item-url)))))))
+                                (str (activity-item-images images item-url type)))))))
 
-(defun activity-item-images (images url)
+(defun activity-item-images (images url alt)
   (html
     (:div :class "small-activity-image"
       (dolist (image-id images)
         (htm
           (:div :class "border"
-           (:a :href url (:img :src (get-image-thumbnail image-id 70 70)))))))))
+           (:a :href url (:img :src (get-image-thumbnail image-id 70 70)
+                               :alt alt))))))))
 
 (defun activity-items (items &key (page 0) (count 20) (url "/home") (paginate t) (location t))
   (with-location

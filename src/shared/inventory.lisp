@@ -636,7 +636,7 @@
                                                  "showing results within ")))
           (when (or base q)
             (htm
-              (:p (:a :href (str base-url) (str (s+"show all " type "s")))))))
+              (:p (:a :href base-url (str (s+"show all " type "s")))))))
 
         (iter (for i from 0 to (+ start 20))
               (cond
@@ -689,13 +689,13 @@
         (if (string= (first tag) "etc")
           (htm
             (:div :class "category"
-             (:h3 (:a :href (str (s+ base-url "/all"))
+             (:h3 (:a :href (s+ base-url "/all")
                       (str (s+ "etc (" (write-to-string (second tag)) ")"))))
              (iter (for subtag in (third tag))
                    (for i downfrom (length (third tag)))
                    (htm
                      (:a :href (if (string= (first subtag) "more")
-                                 (str (s+ base-url "/all"))
+                                 (s+ base-url "/all")
                                  (url-compose "" "kw" (format nil "~{~a+~}~a" base (first subtag)) "q" q) )
                          (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
                      (unless (= i 1)
@@ -718,7 +718,7 @@
       (unless base
         (htm
           (:div :class "category"
-           (:h3 (:a :href (str (s+ base-url "/all")) "show all keywords"))))))))
+           (:h3 (:a :href (s+ base-url "/all") "show all keywords"))))))))
 
 (defun browse-all-inventory-tags (preposition type &key base tags)
   (html
@@ -730,7 +730,7 @@
         (:h2 "browse by keyword")
         (when base
           (htm
-            (:p (:a :href (str base-url) (str (s+ "show all " type "s"))))
+            (:p (:a :href base-url (str (s+ "show all " type "s"))))
             (:p (:strong "keywords selected: "))
             (:ul :class "keywords"
               (dolist (tag base)
