@@ -384,7 +384,7 @@
 
 (defun menu (items &optional selected)
   (html
-    (:menu
+    (:menu :type "toolbar"
       (iter (for (title slug count) in items)
             (when (and title slug)
               (str (menu-item title

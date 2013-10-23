@@ -19,7 +19,7 @@
 
 (defun menu-horiz (title &rest contents)
   (html
-    (:menu :class "horiz"
+    (:menu :type "toolbar" :class "horiz"
       (:strong (str title))
       (dolist (item contents)
         (htm (:li (str item)))))))

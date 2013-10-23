@@ -19,7 +19,7 @@
 
 (defun settings-tabs-html (tab)
   (html
-    (:menu :class "bar"
+    (:menu :type "toolbar" :class "bar"
       (if (equal tab "personal")
         (htm (:li :class "selected" "Personal Settings"))
         (htm (:li (:a :href "/settings/personal" "Personal Settings"))))

@@ -54,7 +54,7 @@
                :class "recipients"
           (:div :class "recipients"
             (:label "With:")
-            (:menu :class "recipients"
+            (:menu :type "toolbar" :class "recipients"
               (unless people
                 (htm (:li (:em "nobody yet"))))
               (dolist (person people)
@@ -96,7 +96,7 @@
            (progn
              (htm
                (:h3 "Select one of your contacts")
-               (:menu
+               (:menu :type "toolbar"
                  (dolist (contact (contacts-alphabetically *user*))
                    (htm (:li (:button :class "text" :type "submit" :value (car contact) :name "add" (str (cadr contact)))))))))
            (progn
