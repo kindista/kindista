@@ -199,6 +199,12 @@
     (delete-comments id)
     (remove-from-db id)))
 
+(defun delete-pending-inventory-item (id)
+  (let ((data (db id)))
+    (with-locked-hash-table (*pending-person-items-index*)
+      (remove id (gethash (getf data :by) *pending-person-items-index*)))
+    (remove-from-db id)))
+
 (defun create-reply (&key on text (user *userid*))
   (let* ((time (get-universal-time))
          (id (insert-db (list :type :reply
