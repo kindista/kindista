@@ -1261,6 +1261,10 @@ menu .newcount {
  border-bottom: 0;
 }
 
+.item.confirm-unique-group p {
+ max-width: 60em;
+}
+
 .item.create-event label, .item.create-group label{
  display: block;
  font-weight: bold;

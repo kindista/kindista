@@ -33,7 +33,8 @@
     (standard-page
       (s+ "Nearby " type)
       (html
-        (str (menu-horiz "actions" (html (:a :href "/groups/new" "create a new group"))))
+        (when (string= type "groups")
+          (str (menu-horiz "actions" (html (:a :href "/groups/new" "create a new group")))))
         (str tabs)
         (multiple-value-bind (ids more)
           (sublist (nearby-profiles (if (string= type "people")

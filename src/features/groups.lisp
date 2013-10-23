@@ -17,12 +17,23 @@
 
 (in-package :kindista)
 
-(defun create-group (&key name creator)
+(defun create-group (&key name creator lat long address street city state country zip location-privacy)
   (insert-db `(:type :group
                :name ,name
                :creator ,creator
                :admins ,(list creator)
                :active t
+               :location t
+               :lat ,lat
+               :long ,long
+               :address ,address
+               :street ,street
+               :city ,city
+               :state ,state
+               :country ,country
+               :zip ,zip
+               :location-privacy ,location-privacy
+               :notify-message ,(list creator)
                :notify-gratitude ,(list creator)
                :notify-reminders ,(list creator)
                :notify-invite-request ,(list creator)
@@ -312,9 +323,9 @@
           (str (groups-tabs-html :tab :my-groups))
           (unless (or admin-groups member-groups)
             (htm (:h3 "You have not joined any groups yet.")))
-          (dolist (group (sort admin-groups #'< :key #'last))
+          (dolist (group (sort admin-groups #'string-lessp :key #'cdr))
             (str (group-card (car group))))
-          (dolist (group (sort member-groups #'< :key #'last))
+          (dolist (group (sort member-groups #'string-lessp :key #'cdr))
             (str (group-card (car group)))))
         :selected "groups"
         :right (html
@@ -391,11 +402,50 @@
                (unless (string= it "") it)))
         (zip (awhen (post-parameter "zip")
                (unless (string= it "") it)))
-        (public (post-parameter "public-location")))
+        (public (when (post-parameter "public-location") t)))
 
-    (labels ((try-again (e) (enter-new-group-details :name (post-parameter "name")
-                                                     :location location
-                                                     :error e)))
+    (labels ((try-again (e)
+               (enter-new-group-details :name (post-parameter "name")
+                                        :location location
+                                        :error e))
+             (attempt-new-group ()
+               ;make sure the post parameters didn't get altered
+               (multiple-value-bind (clat clong caddress ccity cstate ccountry cstreet czip)
+                 (geocode-address location)
+                 (if (and (string= location caddress)
+                          (string= city ccity)
+                          (string= state cstate)
+                          (string= country ccountry)
+                          (string= street cstreet)
+                          (awhen czip (string= zip it))
+                          (eql lat clat)
+                          (eql long clong))
+                   (create-group :name name
+                                 :creator *userid*
+                                 :lat lat
+                                 :long long
+                                 :address location
+                                 :street street
+                                 :city city
+                                 :state state
+                                 :country country
+                                 :zip zip
+                                 :location-privacy (if public
+                                                     :public
+                                                     :private))
+                   (verify-location "/groups/new"
+                                    "Please verify your group's location."
+                                    clat
+                                    clong
+                                    "name" name
+                                    "location" caddress
+                                    "city" ccity
+                                    "state" cstate
+                                    "country" ccountry
+                                    "street" cstreet
+                                    "zip" czip
+                                    (when public "public-location")
+                                    (when public "t"))))))
       (cond
         ((getf *user* :pending)
          (pending-flash "create group profiles on Kindista")
@@ -414,49 +464,35 @@
        ((post-parameter "reset-location")
         (enter-new-group-details :name name))
 
-
-       ((not (and lat long))
-        (multiple-value-bind (lat long address city state country street zip)
-          (geocode-address location)
-          (verify-location "/groups/new"
-                           "Please verify your group's location."
-                           lat
-                           long
-                           "name" name
-                           "location" address
-                           "city" city
-                           "state" state
-                           "country" country
-                           "street" street
-                           "zip" zip
-                           (when public "public-location")
-                           (when public "t"))))
+       ((not (and lat long city state location country zip))
+        ;geocode the address
+        (attempt-new-group))
 
        ((post-parameter "confirm-location")
-         (pprint lat) (pprint long) (pprint name) (terpri)
         (aif (search-groups name :lat lat :long long)
           (confirm-group-uniqueness it name lat long location city state country street zip :public-location public)
-          ))
-        ))
-    )
-  )
+          (see-other (strcat "/groups/" (attempt-new-group)))))
+
+       ((post-parameter "confirm-uniqueness")
+        (see-other (strcat "/groups/" (attempt-new-group))))))))
 
 (defun confirm-group-uniqueness (results name lat long address city state country street zip &key public-location)
   (standard-page
     "Is your group already on Kindista?"
     (html
-      (:div :class "item"
+      (:div :class "item confirm-unique-group"
         (:h2 "Is your group already on Kindista?")
         (:p "It looks like your group might already on Kindista. "
          "Please do not create another profile for a group that is "
-         "already on Kindista. "
-         "If your group is listed below, please click the link to \"join\""
+         "already on Kindista. ")
+        (:p "If your group is listed below, please click the link to \"join\""
          "it on the group's profile page. "
-         "If you believe you should included in the group's hosts, "
-         "please contact the current hosts and ask them to add you as a host. "
+         "If you believe you should included in the group's admins, "
+         "please contact the current admin(s) and ask them to add you as an admin. "
          "Please "
          (:a :href "/contact-us" "let us know")
-         " if you have any difficulty with this.")
+         " if you have any difficulty with this." )
+         (:br)
         (str (groups-results-html results))
         (:form :method "post" :action "/groups/new"
             (:input :type "hidden" :name "name" :value name)

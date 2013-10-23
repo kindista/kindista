@@ -20,7 +20,7 @@
 (defun create-conversation (&key people subject text (user *userid*) public)
   (let* ((time (get-universal-time))
          (id (insert-db (list :type :conversation
-                              :people people
+                              :people (mapcar #'list people)
                               :public public
                               :subject subject
                               :created time))))
@@ -153,7 +153,7 @@
             (contact-opt-out-flash (append (list *userid*) people))
             (see-other (format nil (or (post-parameter "next")
                                        "/conversations/~A")
-                               (create-conversation :people (mapcar #'list (cons *userid* people))
+                               (create-conversation :people (cons *userid* people)
                                                     :public nil
                                                     :subject subject
                                                     :text text))))
@@ -205,6 +205,7 @@
   (moved-permanently (strcat "/conversations/" id)))
 
 (defun get-conversation (id)
+"when called, (modify-db conversation-id :people '((userid . this-comment-id) (other-user-id . whatever)))"
   (require-user
     (setf id (parse-integer id))
     (let* ((it (db id))
@@ -274,7 +275,7 @@
                       (card
                         (html
                           (str (h3-timestamp (getf data :created)))
-                          (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
+                          (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name))))
                           (:p :class (when (>= (or latest-seen 0) comment-id) "new") 
                             (str (regex-replace-all "\\n" (db comment-id :text) "<br>"))))))))
 
@@ -285,10 +286,14 @@
                       (:tr
                         (:td (:textarea :cols "150" :rows "4" :name "text"))
                         (:td
-                          (:button :class "yes" :type "submit" :class "submit" "Send")))))) 
+                          (:button :class "yes" :type "submit" :class "submit" "Send"))))))
 
-                (unless (eql (cdr (assoc *userid* (db id :people))) (latest-comment id))
-                  (amodify-db id :people (progn (setf (cdr (assoc *userid* it)) (latest-comment id)) it)))
+                (unless (eql (cdr (assoc *userid* (db id :people)))
+                             (latest-comment id))
+                  (amodify-db id :people (progn
+                                           (setf (cdr (assoc *userid* it))
+                                                 (latest-comment id))
+                                           it)))
 
                 ; get most recent comment seen
                 ; get comments for 
@@ -322,7 +327,7 @@
 
             :selected "messages")
 
-          (permission-denied)) 
+          (permission-denied))
         (not-found)))))
 
 (defun post-conversation (id)
@@ -343,7 +348,7 @@
             (flash "Your message has been sent.")
             (contact-opt-out-flash people)
             (send-metric* :message-sent
-                          (create-comment :on id :text (post-parameter "text"))) 
+                          (create-comment :on id :text (post-parameter "text")))
             (see-other (script-name*))))
 
          (permission-denied)))

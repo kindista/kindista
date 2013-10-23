@@ -292,7 +292,7 @@
                   (appending (iter (for code in codes)
                                   (unless (string= code "")
                                     (reducing (gethash code *metaphone-index*)
-                                              by #'intersection))))))
+                                              by #'union))))))
           #'< :key #'lev-distance)
         :key #'alias-result))))
 

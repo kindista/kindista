@@ -21,10 +21,9 @@
   (eq (result-type result) :gratitude))
 
 (defun users-with-new-mail ()
-  (iter (for id in (hash-table-keys *db*))
+  (iter (for id in *active-people-index*)
         (let ((new-items (new-inbox-items id)))
-          (when (and (eq (db id :type) :person)
-                     (> new-items 0))
+          (when (> new-items 0)
             (collect id)))))
 
 (defun new-inbox-items (&optional (userid *userid*))
