@@ -246,7 +246,7 @@
                                 (when show-what
                                   (str (if (getf data :edited) " edited " " posted "))
                                   (str (if (eq (getf data :type) :offer) "an " "a "))
-                                  (htm (:a :href (str item-url)
+                                  (htm (:a :href item-url
                                            (str type))))
                                 (when show-distance
                                   (htm (:small
