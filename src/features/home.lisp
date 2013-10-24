@@ -55,18 +55,18 @@
           (htm
             (:div :class "item right only"
               (:h3 (:a :href "/people" "People") " with mutual connections")
-              (:menu
+              (:menu :type "toolbar"
                 (dolist (data (suggested-people))
                   (htm
                     (:li (:a :href (strcat "/people/" (username-or-id (cdr data)))
-                             (str (getf (db (cdr data)) :name))))))))))))))  
+                             (str (getf (db (cdr data)) :name))))))))))))))
 
 (defun standard-home ()
   (standard-page
     "Home"
     (html
       (:div :class "activity"
-        (str 
+        (str
           (menu-horiz "actions"
                       (html (:a :href "/gratitude/new" "express gratitude"))
                       (html (:a :href "/offers/new" "post an offer"))

@@ -314,7 +314,7 @@
          (active (getf person :active))
          (show-bio-tab (or profile-p self)))
     (html
-      (:menu :class "bar"
+      (:menu :type "toolbar" :class "bar"
         (:h3 :class "label" "Profile Menu")
         (when show-bio-tab
           (if (eql tab :about)
@@ -373,7 +373,9 @@
   (let ((user (db userid))
         (is-contact (member userid (getf *user* :following))))
     (html
-     (:img :class "bigavatar" :src (get-avatar-thumbnail userid 300 300))
+     (:img :class "bigavatar"
+           :src (get-avatar-thumbnail userid 300 300)
+           :alt (getf user :name))
      (:div :class "basics"
        (:h1 (str (getf user :name))
             (cond
@@ -652,9 +654,9 @@
 
 (defun people-tabs-html (&key (tab :contacts))
   (html
-    (:menu :class "bar"
+    (:menu :type "toolbar" :class "bar"
       (:h3 :class "label" "People Menu")
-      
+
       (if (eql tab :contacts)
         (htm (:li :class "selected" "Contacts"))
         (htm (:li (:a :href "/people/contacts" "Contacts"))))

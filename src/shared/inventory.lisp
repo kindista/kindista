@@ -620,63 +620,60 @@
          (values (sort top-tags #'string< :key #'first) items))))))
 
 (defun inventory-body-html (type &key base q items start page preposition)
-  (html
-    (let ((base-url (s+ "/" type "s")))
-      (htm
-        (:div :class "activity"
-          (when *user*
+  (let ((base-url (s+ "/" type "s")))
+    (html
+      (:div :class "activity"
+        (when *user*
+          (menu-horiz "actions"
+            (html (:a :href (s+ "/people/" (username-or-id) "/" type "s") (str (s+ "show my " type "s"))))))
+        (:div :class "item"
+          (unless (or (not *user*)
+                      (eq (getf *user* :active) nil)
+                      base
+                      q)
+            (str (simple-inventory-entry-html preposition type)))
+
+          (when q
             (htm
-              (:menu :class "horiz"
-                (:strong "actions")
-                (:li (:a :href (s+ "/people/" (username-or-id) "/" type "s") (str (s+ "show my " type "s")))))))
-          (:div :class "item"
-            (unless (or (not *user*)
-                        (eq (getf *user* :active) nil)
-                        base
-                        q)
-              (str (simple-inventory-entry-html preposition type)))
+              (:span (:strong :class "small" (str (s+ "showing " type "s matching \"")) (str q) (:strong "\"")))))
+          (str (rdist-selection-html (url-compose base-url "q" q "kw" base)
+                                     :style "display:inline;"
+                                     :text (if q " within "
+                                                 "showing results within ")))
+          (when (or base q)
+            (htm
+              (:p (:a :href base-url (str (s+"show all " type "s")))))))
 
-            (when q
-              (htm
-                (:span (:strong :class "small" (str (s+ "showing " type "s matching \"")) (str q) (:strong "\"")))))
-            (str (rdist-selection-html (url-compose base-url "q" q "kw" base)
-                                       :style "display:inline;"
-                                       :text (if q " within "
-                                                   "showing results within ")))
-            (when (or base q)
-              (htm
-                (:p (:a :href (str base-url) (str (s+"show all " type "s")))))))
+        (iter (for i from 0 to (+ start 20))
+              (cond
+                ((< i start)
+                 (pop items))
 
-          (iter (for i from 0 to (+ start 20))
-                (cond
-                  ((< i start)
-                   (pop items))
+                ((and (>= i start) items)
+                 (str (inventory-activity-item type
+                                               (pop items)
+                                               :show-distance t
+                                               :truncate t)))
+                (t
+                 (when (< (user-rdist) 100)
+                   (htm
+                     (:div :class "item small"
+                      (:em "Increasing the ")(:strong "show results within")(:em " distance may yield more results."))))
+                 (finish)))
 
-                  ((and (>= i start) items)
-                   (str (inventory-activity-item type
-                                                 (pop items)
-                                                 :show-distance t
-                                                 :truncate t)))
-                  (t
-                   (when (< (user-rdist) 100)
-                     (htm
-                       (:div :class "item small"
-                        (:em "Increasing the ")(:strong "show results within")(:em " distance may yield more results."))))
-                   (finish)))
-
-                (finally
-                  (when (or (> page 0) (cdr items))
-                    (htm
-                      (:div :class "item"
-                       (when (> page 0)
-                         (htm
-                           (:a :href (url-compose base-url "p" (- page 1) "kw" base) "< previous page")))
-                       "&nbsp;"
-                       (when (cdr items)
-                         (htm
-                           (:a :style "float: right;"
-                               :href (url-compose base-url "p" (+ page 1) "kw" base) 
-                               "next page >")))))))))))))
+              (finally
+                (when (or (> page 0) (cdr items))
+                  (htm
+                    (:div :class "item"
+                     (when (> page 0)
+                       (htm
+                         (:a :href (url-compose base-url "p" (- page 1) "kw" base) "< previous page")))
+                     "&nbsp;"
+                     (when (cdr items)
+                       (htm
+                         (:a :style "float: right;"
+                             :href (url-compose base-url "p" (+ page 1) "kw" base) 
+                             "next page >"))))))))))))
 
 (defun browse-inventory-tags (type &key q base tags)
   (let ((base-url (s+ "/" type "s")))
@@ -698,13 +695,13 @@
         (if (string= (first tag) "etc")
           (htm
             (:div :class "category"
-             (:h3 (:a :href (str (s+ base-url "/all"))
+             (:h3 (:a :href (s+ base-url "/all")
                       (str (s+ "etc (" (write-to-string (second tag)) ")"))))
              (iter (for subtag in (third tag))
                    (for i downfrom (length (third tag)))
                    (htm
                      (:a :href (if (string= (first subtag) "more")
-                                 (str (s+ base-url "/all"))
+                                 (s+ base-url "/all")
                                  (url-compose "" "kw" (format nil "~{~a+~}~a" base (first subtag)) "q" q) )
                          (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
                      (unless (= i 1)
@@ -727,7 +724,7 @@
       (unless base
         (htm
           (:div :class "category"
-           (:h3 (:a :href (str (s+ base-url "/all")) "show all keywords"))))))))
+           (:h3 (:a :href (s+ base-url "/all") "show all keywords"))))))))
 
 (defun browse-all-inventory-tags (preposition type &key base tags)
   (html
@@ -739,7 +736,7 @@
         (:h2 "browse by keyword")
         (when base
           (htm
-            (:p (:a :href (str base-url) (str (s+ "show all " type "s"))))
+            (:p (:a :href base-url (str (s+ "show all " type "s"))))
             (:p (:strong "keywords selected: "))
             (:ul :class "keywords"
               (dolist (tag base)

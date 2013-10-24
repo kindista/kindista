@@ -30,7 +30,6 @@
   (load-tokens)
   (make-thread #'(lambda () (start *acceptor*)))
   (start (acceptor-metric-system *acceptor*))
-  (automatic-invitation-reminders)
   (start-notice-thread))
 
 (defun load-notice-handlers ()

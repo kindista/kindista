@@ -297,6 +297,9 @@
   ("/send-all-reminders"
    :get get-send-all-reminders)
 
+  ("/automatic-invitation-reminders"
+   :get get-automatic-invitation-reminders)
+
   ;js
 
   ("/kindista.js"

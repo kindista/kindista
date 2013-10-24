@@ -91,7 +91,6 @@
                                            (:file "requests")
                                            (:file "request-invitation")
                                            (:file "reset-password")
-                                           (:file "root")
                                            (:file "search")
                                            (:file "settings")
                                            (:file "signup")

@@ -150,7 +150,7 @@
                :action (or existing-url "/gratitude/new") 
                :class "recipients"
           (:label "About:")
-          (:menu :class "recipients"
+          (:menu :type "toolbar" :class "recipients"
             (unless subjects
               (htm (:li (:em "nobody yet"))))
             (dolist (subject subjects)
@@ -169,7 +169,7 @@
           (when next
             (htm (:input :type "hidden" :name "next" :value next)))
           (:textarea :rows "8" :name "text" (str text))
-          (:p  
+          (:p
             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
             (:button :class "yes" :type "submit" 
                      :name "create" 
@@ -193,7 +193,7 @@
            (progn
              (htm
                (:h3 "Select one of your contacts")
-               (:menu
+               (:menu :type "toolbar"
                  (dolist (contact (contacts-alphabetically *user*))
                    (htm (:li (:button :class "text" :type "submit" :value (car contact) :name "add" (str (cadr contact)))))))))
            (progn

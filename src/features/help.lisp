@@ -59,13 +59,13 @@
 
 (defun help-tabs-html (&key tab)
   (html
-    (:menu :class "horiz"
-      (:strong "actions")
-      (:li (:a :href (strcat "/people/" +kindista-id+ "/reputation") "express gratitude"))
-      (:li
-        (if *userid*
-          (htm (:a :href "/contact-us" "contact us"))
-          (htm (:a :href "mailto:info@kindista.org" "contact us")))))
+    (str
+      (menu-horiz "actions"
+        (html (:a :href (strcat "/people/" +kindista-id+ "/reputation") "express gratitude"))
+        (html
+          (if *userid*
+            (htm (:a :href "/contact-us" "contact us"))
+            (htm (:a :href "mailto:info@kindista.org" "contact us"))))))
     (:menu :class "bar"
       (if (eql tab :faq)
    (htm (:li :class "selected" "Frequent Questions"))

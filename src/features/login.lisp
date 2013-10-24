@@ -33,9 +33,9 @@
             (awhen (get-parameter "next")
               (htm (:input :type "hidden" :name "next" :value it)))
             (:label :for "username" "Username or email")
-            (:input :type "text" :name "username" :value (get-parameter "retry"))
+            (:input :type "text" :id "username" :name "username" :value (get-parameter "retry"))
             (:label :for "password" "Password")
-            (:input :type "password" :name "password")
+            (:input :type "password" :id "password" :name "password")
             (:button :type "submit" :class "yes" "Log in")
             (:span (:a :href "/reset" "Forgot your password?"))))))))
 
