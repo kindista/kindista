@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class)
+(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -83,7 +83,9 @@
                   " &middot; "
                   (:input :type "submit" :name "edit" :value "Edit")
                   " &middot; "
-                  (:input :type "submit" :name "delete" :value "Delete"))))
+                  (if admin-delete
+                    (htm (:input :type "submit" :name "inappropriate-item" :value "Inappropriate"))
+                    (htm (:input :type "submit" :name "delete" :value "Delete"))))))
             (when (and image-text
                        (not (string= url (script-name*))))
               (htm
@@ -230,6 +232,8 @@
                    :url item-url
                    :time (result-time result)
                    :edit (or self (getf *user* :admin))
+                   :admin-delete (and (getf *user* :admin)
+                                      (not (eql *userid* user-id)))
                    :image-text (when (and (string= type "offer") self)
                                  (if images
                                    "Add/remove photos"

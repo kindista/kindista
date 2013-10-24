@@ -208,6 +208,12 @@
          (active-status-required))
        (login-required))))
 
+(defmacro require-admin (&body body)
+  `(with-user
+     (if (getf *user* :admin)
+       (progn ,@body)
+       (not-found))))
+
 (defmacro require-test ((test &optional message) &body body)
   `(if ,test
      (progn ,@body)
@@ -519,23 +525,30 @@
                         (right "right")
                         (class class))))
 
-(defun confirm-delete (&key url next-url (type "item") class text image-id item-id)
+(defun confirm-delete (&key url next-url (type "item") class text image-id item-id inappropriate-item)
   (standard-page
     "Confirm Delete"
     (html
       (:h2 "Are you sure you want to delete this " (str type) "?")
       (when text
-        (htm (:p (cl-who:esc text))))
+        (htm (:p
+               (:blockquote :class "review-text " (cl-who:esc text)))))
       (when image-id
         (htm (:img :class "activity-image"
                    :src (get-image-thumbnail image-id 300 300)
                    :alt type)))
-      (:form :method "post" :action url
+      (:form :method "post" :action url :class "item confirm-delete"
         (awhen item-id
           (htm (:input :type "hidden" :name "item-id" :value it)))
         (awhen next-url
           (htm (:input :type "hidden" :name "next" :value it)))
-        (:a :href next-url "No, I didn't mean it!")  
+        (when inappropriate-item
+          (htm
+            (:input :type "hidden" :name "delete-inappropriate-item")
+            (:label :for "explanation"
+             "Do you want to include a comment or explanation about deleting this item (optional)?")
+            (:textarea :cols 300 :rows 5 :name "explanation" :id "explanation")))
+        (:a :href next-url "No, I didn't mean it!")
         (:button :class "yes" :type "submit" :class "submit" :name "really-delete" "Yes")))
     :class class))
 

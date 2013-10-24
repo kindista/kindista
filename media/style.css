@@ -1194,13 +1194,16 @@ menu .newcount {
  border-bottom: 0;
 }
 
-.item.create-event label {
+.item.create-event label,
+.item.confirm-delete label {
  display: block;
  font-weight: bold;
  margin-top: .5em;
 }
 
-.create-event input[type=text], .create-event textarea {
+.create-event input[type=text],
+.create-event textarea,
+.confirm-delete textarea {
  font-size: 1em;
  border: 1px solid #444;
  margin: .3em 0;

@@ -202,16 +202,53 @@
 (defun delete-pending-inventory-item (id)
   (let ((data (db id)))
     (with-locked-hash-table (*pending-person-items-index*)
-      (remove id (gethash (getf data :by) *pending-person-items-index*)))
+      (asetf (gethash (getf data :by) *pending-person-items-index*)
+             (remove id it)))
     (remove-from-db id)))
 
-(defun create-reply (&key on text (user *userid*))
+(defun deleted-invalid-item-reply-text (to-name from-name type &optional explanation)
+  (strcat "Greetings " to-name ","
+        #\linefeed
+        #\linefeed
+        "Your " type
+        " violated Kindista's Terms of Use and we had to remove it. "
+        "Please list multiple offers and requests separately (not in the same item). "
+        "Kindista is for giving and receiving freely; please avoid any language which implies that you are expecting barter or money in exchange for your offer or request. "
+        #\linefeed
+        (aif explanation
+          (strcat #\linefeed it #\linefeed)
+          "")
+        #\linefeed
+        "To ensure that this doesn't happen again, please review Kindista's Sharing Guidelines before posting any additional offers or requests:"
+        #\linefeed
+        "https://kindista.org/faq#sharing-guidelines"
+        #\linefeed
+        #\linefeed
+        "Please let me know if you have any questions with this policy."
+        #\linefeed
+        #\linefeed
+        "In gratitude,"
+        #\linefeed
+        from-name ", Kindista"))
+
+(defun create-reply (&key on text pending-deletion (user *userid*))
   (let* ((time (get-universal-time))
-         (id (insert-db (list :type :reply
-                              :on on
-                              :by user
-                              :people (list (cons user nil) (cons (db on :by) nil))
-                              :created time))))
+         (on-item (db on))
+         (id (insert-db (if pending-deletion
+                          (list :type :reply
+                                :on on
+                                :deleted-item-text (getf on-item :text)
+                                :deleted-item-type (getf on-item :type)
+                                :by user
+                                :people (list (cons user nil)
+                                              (cons (getf on-item :by) nil))
+                                :created time)
+                          (list :type :reply
+                                :on on
+                                :by user
+                                :people (list (cons user nil)
+                                              (cons (getf on-item :by) nil))
+                                :created time)))))
 
     (create-comment :on id :by user :text text)
 
@@ -359,12 +396,36 @@
                                 :text (getf item :text)
                                 :next-url (referer)))
 
-               ((post-parameter "really-delete")
+               ((and (post-parameter "really-delete")
+                     (not (post-parameter "delete-inappropriate-item")))
                 (delete-inventory-item id)
                 (flash (s+ "Your " type " has been deleted!"))
                 (if (equal (fourth (split "/" (post-parameter "next") :limit 4)) (subseq (script-name*) 1))
-                  (see-other "/home") 
+                  (see-other "/home")
                   (see-other (or (post-parameter "next") "/home"))))
+
+               ((post-parameter "delete-pending-item")
+                (require-admin
+                  (delete-pending-inventory-item id))
+                (flash (strcat (string-capitalize type) " " id " has been deleted."))
+                (see-other (script-name*)))
+
+               ((post-parameter "inappropriate-item")
+                (require-admin
+                  (confirm-delete :url url
+                                  :next-url (referer)
+                                  :type type
+                                  :text (getf item :text)
+                                  :inappropriate-item t)))
+
+               ((post-parameter "delete-inappropriate-item")
+                (require-admin
+                  (create-reply :on id
+                                :pending-deletion t
+                                :text (post-parameter "explanation"))
+                  (delete-pending-inventory-item id)
+                  (flash (strcat (string-capitalize type) " " id " has been deleted."))
+                  (see-other (post-parameter "next"))))
 
                ((post-parameter "back")
                 (enter-inventory-text :type type
@@ -412,7 +473,7 @@
                                        :selected (s+ type "s")))))))))))
 
 (defun simple-inventory-entry-html (preposition type)
-  (html 
+  (html
     (:div :class "item"
       (:h4 (str (s+ "post " preposition " " type)))
       (:form :method "post" :action (s+ "/" type "s/new")

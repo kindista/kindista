@@ -26,10 +26,15 @@
          (inventory-type (if (eq (getf inventory-item :type) :request)
                            "request" "offer"))
          (inventory-text (getf inventory-item :text))
-         (text (getf comment :text))
          (sender-id (getf comment :by))
          (sender-name (db sender-id :name))
          (inventory-poster (getf inventory-item :by))
+         (text (if (getf on-item :deleted-item-type)
+                 (deleted-invalid-item-reply-text (db (car (second (getf on-item :people))) :name)
+                                                  sender-name
+                                                  inventory-type
+                                                  (getf comment :text))
+                 (getf comment :text)))
          (subject (if (eq on-type :reply)
                     (if (eql sender-id inventory-poster)
                       (s+ sender-name " has replied to your question about their " inventory-type ":")
@@ -43,7 +48,7 @@
         +mail-server+
         "Kindista <noreply@kindista.org>"
         (car (db to :emails))
-        (s+ "New message from " sender-name)
+        (or subject (s+ "New message from " sender-name))
         (comment-notification-email-text on-id
                                          sender-name
                                          subject
@@ -65,39 +70,29 @@
 (defun comment-notification-email-text (on-id from subject people text &key inventory-text)
   (strcat 
 (no-reply-notice)
-
+#\linefeed #\linefeed
 "You can also reply to this message by clicking on the link below."
-"
-
-A conversation with " people
-"
-
-Subject: " subject
-(awhen inventory-text (strcat 
-"
-"it))
-"
-
-"
-from " says:
-
-"
-"\"" text "\" "
-"
-
-You can see the conversation on Kindista here:
-"
+#\linefeed #\linefeed
+"A conversation with " people
+#\linefeed
+"Subject: " subject
+(awhen inventory-text
+  (strcat #\linefeed it #\linefeed))
+#\linefeed
+from " says:"
+#\linefeed #\linefeed
+"\"" text "\""
+#\linefeed #\linefeed
+"You can see the conversation on Kindista here:"
 (strcat +base-url+ "conversations/" on-id)
 
-"
-
-If you no longer wish to receive notifications when people send you messages, please edit your communication settings:
+#\linefeed #\linefeed
+"You can see the conversation on Kindista here:"
+"If you no longer wish to receive notifications when people send you messages, please edit your communication settings:
 "
 (strcat +base-url+ "settings/communication")
-
-"
-
-Thank you for sharing your gifts with us!
+#\linefeed #\linefeed
+"Thank you for sharing your gifts with us!
 -The Kindista Team"))
 
 
@@ -118,7 +113,8 @@ Thank you for sharing your gifts with us!
                      :cellpadding 0
                      :style *style-quote-box*
                (:tr (:td :style "padding: 4px 12px;"
-                        "\"" (str (html-text it)) "\"")))))
+                        "\"" (str (html-text it)) "\"")))
+             (:br)))
 
       (:p :style *style-p*
         (str from) " says:")

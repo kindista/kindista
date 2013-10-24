@@ -67,9 +67,9 @@
                 (htm (:li (:button :type "submit" :class "text" :name "add" :value "new" "+ Add someone"))))))
 
           (when people
-            (htm (:input :type "hidden" :name "people" :value (format nil "~{~A~^,~}" people)))) 
+            (htm (:input :type "hidden" :name "people" :value (format nil "~{~A~^,~}" people))))
           (when next
-              (htm (:input :type "hidden" :name "next" :value next))) 
+              (htm (:input :type "hidden" :name "next" :value next)))
           (:p (:label "Subject: ") (:input :type "text" :name "subject" :value subject))
           (:textarea :rows "8" :name "text" (str text))
           (:p
@@ -250,36 +250,55 @@
                                    (htm (:a :href (strcat "/offers/" (getf it :on)) "offer")))
                                   (:request
                                    (htm (:a :href (strcat "/requests/" (getf it :on)) "request")))
-                                  (t (str "deleted offer or request"))) 
+                                  (t (case (getf it :deleted-item-type)
+                                       (:offer (htm "offer"))
+                                       (:request (htm"request"))
+                                       (t (str "deleted offer or request")))))
                                 ":"))
                               (htm
                                 (:p
                                   "A conversation with "
-                                  (str (person-link (getf it :by))) 
+                                  (str (person-link (getf it :by)))
                                   " about your "
                                   (case (getf item :type)
                                     (:offer
                                      (htm (:a :href (strcat "/offers/" (getf it :on)) "offer")))
                                     (:request
                                      (htm (:a :href (strcat "/requests/" (getf it :on)) "request")))
-                                    (t (str "deleted offer or request")))
+                                    (t (case (getf it :deleted-item-type)
+                                         (:offer (htm "offer"))
+                                         (:request (htm"request"))
+                                         (t (str "deleted offer or request")))) )
                                   ":")))
-                            (htm (:blockquote (str (html-text (getf item :text)))))))))))
+                            (htm (:blockquote :class "review-text"
+                                   (str (html-text (or (getf item :text)
+                                                       (getf it :deleted-item-text))))))))))))
 
-                (dolist (comment-id (gethash id *comment-index*))
-                  (let* ((data (db comment-id))
-                         (by (getf data :by))
-                         (bydata (db by)))
-                    (str
-                      (card
-                        (html
-                          (str (h3-timestamp (getf data :created)))
-                          (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
-                          (:p :class (when (>= (or latest-seen 0) comment-id) "new") 
-                            (str (regex-replace-all "\\n" (db comment-id :text) "<br>"))))))))
+                (let ((comments (gethash id *comment-index*)))
+                  (dolist (comment-id comments)
+                    (let* ((data (db comment-id))
+                           (text (if (and (= comment-id (first comments))
+                                          (getf it :deleted-item-type))
+                                   (deleted-invalid-item-reply-text
+                                     (db (second people) :name)
+                                     (db (first people) :name)
+                                     (case (getf it :deleted-item-type)
+                                       (:offer "offer")
+                                       (:request "request"))
+                                     (getf data :text))
+                                   (getf data :text)))
+                           (by (getf data :by))
+                           (bydata (db by)))
+                      (str
+                        (card
+                          (html
+                            (str (h3-timestamp (getf data :created)))
+                            (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name))))
+                            (:p :class (when (>= (or latest-seen 0) comment-id) "new") 
+                              (str (regex-replace-all "\\n" text "<br>")))))))))
 
                 (:div :class "item" :id "reply"
-                  (:h4 "post a reply") 
+                  (:h4 "post a reply")
                   (:form :method "post" :action (script-name*)
                     (:table :class "post"
                       (:tr

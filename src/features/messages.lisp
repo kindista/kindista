@@ -101,10 +101,23 @@
                             (latest-seen (cdr (assoc *userid* (getf item-data :people))))
                             (comment-data (db latest))
                             (original-item (db (getf item-data :on)))
+                            (deleted-type (getf item-data :deleted-item-type))
+                            (original-item-type (or (getf original-item :type)
+                                                    deleted-type))
+                            (people (mapcar #'car (db id :people)))
                             (with (or (getf original-item :by)
-                                      (first (remove *userid*
-                                                     (mapcar #'car (db id :people))))))
-                            (comments (length (gethash id *comment-index*))))
+                                      (first (remove *userid* people))))
+                            (comments (length (gethash id *comment-index*)))
+                            (text (if (and (= comments 1)
+                                           deleted-type)
+                                    (deleted-invalid-item-reply-text
+                                      (db (second people) :name)
+                                      (db (first people) :name)
+                                      (case deleted-type
+                                        (:offer "offer")
+                                        (:request "request"))
+                                      (getf comment-data :text))
+                                    (getf comment-data :text))))
                        (str
                          (card
                            (html
@@ -121,21 +134,27 @@
                                    "You replied to "
                                    (str (person-link with))
                                    "'s "
-                                   (case (getf original-item :type)
+                                   (case original-item-type
                                      (:offer
                                       (htm (:a :href (strcat "/offers/" (getf item-data :on)) "offer")))
                                      (:request
                                       (htm (:a :href (strcat "/requests/" (getf item-data :on)) "request")))
-                                     (t (htm (:span :class "none" "deleted offer or request")))))
+                                     (t (case deleted-type
+                                          (:offer (htm "offer"))
+                                          (:request (htm "request"))
+                                          (t (htm (:span :class "none" "deleted offer or request")))))))
                                  (htm
                                    (str (person-link (getf item-data :by)))
                                    " replied to your "
-                                   (case (getf original-item :type)
+                                   (case original-item-type
                                      (:offer
                                       (htm (:a :href (strcat "/offers/" (getf item-data :on)) "offer")))
                                      (:request
                                       (htm (:a :href (strcat "/requests/" (getf item-data :on)) "request")))
-                                     (t (htm (:span :class "none" "deleted offer or request")))))))
+                                     (t (case deleted-type
+                                          (:offer (htm "offer"))
+                                          (:request (htm "request"))
+                                          (t (htm (:span :class "none" "deleted offer or request")))))))))
 
                              (:p :class "text"
                                (:span :class "title"
@@ -146,7 +165,7 @@
                                      " (" (str comments) ") "))
                                  " - ")
                                (:a :href (strcat "/conversations/" id)
-                                (str (ellipsis (getf comment-data :text))))))))))
+                                (str (ellipsis text)))))))))
                    (:contact-n
                      (str
                       (card
