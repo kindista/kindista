@@ -373,7 +373,7 @@
         (t
          (require-test ((or (eql *userid* (getf item :by))
                            (getf *user* :admin))
-                      (s+ "You can only edit your own " type "s."))
+                       (s+ "You can only edit your own " type "s."))
            (let ((tags (iter (for pair in (post-parameters*))
                              (when (and (string= (car pair) "tag")
                                         (scan *tag-scanner* (cdr pair)))
@@ -394,7 +394,9 @@
                 (confirm-delete :url url
                                 :type type
                                 :text (getf item :text)
-                                :next-url (referer)))
+                                :next-url (if (string= (referer) (strcat "/" type "/" id))
+                                            "/home"
+                                            (referer))))
 
                ((and (post-parameter "really-delete")
                      (not (post-parameter "delete-inappropriate-item")))
