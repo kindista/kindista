@@ -347,7 +347,7 @@
     (hunchentoot::with-log-stream (stream (acceptor-access-log-destination acceptor) hunchentoot::*access-log-lock*)
       (format stream "~:[-~@[ (~A)~]~;~:*~A~@[ (~A)~]~] ~:[-~;~:*~A~] [~A] \"~A ~A~@[?~A~] ~
                       ~A\" ~D ~:[-~;~:*~D~] \"~:[-~;~:*~A~]\" \"~:[-~;~:*~A~]\"~%"
-              (remote-addr*)
+              (header-in* :x-real-ip)
               (header-in* :x-forwarded-for)
               (authorization)
               (hunchentoot::iso-time)
