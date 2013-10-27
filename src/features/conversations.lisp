@@ -29,14 +29,25 @@
     id))
 
 (defun index-conversation (id data)
-  (let ((result (make-result :id id
-                             :time (db (getf data :latest-comment) :created)
-                             :people (getf data :people)
-                             :type :conversation)))
+"The people field for a conversation is a p-list of the status of the conversation for each participant: (:unread ((personid . comment)) ... "
+  (let* ((result (make-result :id id
+                              :time (db (getf data :latest-comment) :created)
+                              :people (getf data :people)
+                              :type :conversation))
+         (people (result-people result)))
     (setf (gethash id *db-results*) result)
-    (with-locked-hash-table (*person-conversation-index*)
-      (dolist (pair (getf data :people))
-        (push result (gethash (car pair) *person-conversation-index*))))))
+    (with-locked-hash-table (*person-mailbox-index*)
+      (flet ((index-mailbox-state (state &optional (groupid nil))
+               (when (getf people state)
+                 (dolist (pair (getf people state))
+                  (setf (getf (gethash (cons (car pair) groupid) *person-mailbox-index*)
+                               state)
+                         (push result (getf (gethash (cons (car pair) groupid) *person-mailbox-index*)
+                               state)))))))
+        (index-mailbox-state :read)
+        (index-mailbox-state :unread)
+        (index-mailbox-state :archived)
+        (index-mailbox-state :deleted)))))
 
 (defun get-conversations ()
   (see-other "/messages"))
