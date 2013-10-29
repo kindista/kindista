@@ -54,9 +54,9 @@
 (defindex *people-geo-index*)
 (defindex *person-alias-index*)
 (defindex *person-conversation-index*)
-(defindex *person-mailbox-index* :test 'equlap)
+(defindex *person-mailbox-index* :test 'equalp)
 (defindex *person-invitation-index*)
-(defindex *person-notification-ndex*)
+(defindex *person-notification-index*)
 (defindex *request-geo-index*)
 (defindex *request-index*) ;should be called "person-request-index"
 (defindex *request-stem-index* :test 'equalp)

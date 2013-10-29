@@ -254,17 +254,6 @@
 
     id))
 
-(defun index-reply (id data)
-  (let ((result (make-result :id id
-                             :time (db (getf data :latest-comment) :created)
-                             :people (getf data :people)
-                             :type :reply)))
-
-    (setf (gethash id *db-results*) result)
-    (with-locked-hash-table (*person-conversation-index*)
-      (dolist (pair (getf data :people))
-        (push result (gethash (car pair) *person-conversation-index*))))))
-
 (defun post-new-inventory-item (type &key url)
   (require-active-user
     (let ((tags (iter (for pair in (post-parameters*))

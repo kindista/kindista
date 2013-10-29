@@ -23,10 +23,11 @@
 (defun create-gratitude (&key author subjects text)
   (let* ((time (get-universal-time))
          (gratitude (insert-db `(:type :gratitude
-                                       :author ,author
-                                       :subjects ,subjects
-                                       :text ,text
-                                       :created ,time))))
+                                 :author ,author
+                                 :subjects ,subjects
+                                 :mailboxes '(:unread (maphash #'list (mailbox-ids ,subjects)))
+                                 :text ,text
+                                 :created ,time))))
     (unless (getf *user* :pending)
       (notice :new-gratitude :time time
                              :id gratitude))
@@ -44,7 +45,11 @@
                               :people people
                               :time created
                               :type :gratitude
-                              :id id)))
+                              :id id))
+         (message (make-message :id id
+                                :time created
+                                :mailboxes (getf data :mailboxes)
+                                :type :gratitude)))
 
     (cond
       (pending
@@ -54,6 +59,9 @@
       (t
        (with-locked-hash-table (*db-results*)
          (setf (gethash id *db-results*) result))
+
+       (with-locked-hash-table (*db-messages*)
+         (setf (gethash id *db-messages*) message))
 
        (with-locked-hash-table (*gratitude-index*)
          (push id (gethash author-id *gratitude-index*)))

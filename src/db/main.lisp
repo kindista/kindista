@@ -23,6 +23,7 @@
 (defvar *db-log* nil)
 (defvar *db-log-lock* (make-mutex :name "db log"))
 (defvar *db-results* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
+(defvar *db-messages* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
 
 ;(defvar *auth-tokens* (make-hash-table :test 'equal :synchronized t :size 200 :rehash-size 1.25))
 (defvar *tokens* (make-hash-table :test 'equal :synchronized t :size 200 :rehash-size 1.25))
@@ -95,6 +96,9 @@
 
 (defstruct result
   latitude longitude time tags people id type)
+
+(defstruct message
+  id mailboxes time type)
 
 (defstruct alias
   alias result)
@@ -394,6 +398,14 @@
   (with-locked-hash-table (*db*)
     (setf (gethash id *db*) data)))
 
+(defun remove-db-property (id property)
+  (assert (gethash id *db*))
+  (assert (keywordp property))
+  (with-locked-hash-table (*db*)
+    (let ((data (db id)))
+      (setf data (remove-from-plist data property))
+      (update-db id data))))
+
 (defun modify-db (id &rest items)
   (assert (gethash id *db*))
   (with-locked-hash-table (*db*)
@@ -451,9 +463,8 @@
     (:gratitude (index-gratitude id data))
     ((or :offer :request) (index-inventory-item id data))
     (:person (index-person id data))
-    (:reply (index-reply id data))
     (:contact-n (index-contact-notification id data))
-    (:conversation (index-conversation id data))))
+    ((or :reply :conversation) (index-message id data))))
 
 (defun contacts-alphabetically (&optional (user *user*))
   (sort (iter (for contact in (getf user :following))
