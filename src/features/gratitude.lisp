@@ -45,11 +45,7 @@
                               :people people
                               :time created
                               :type :gratitude
-                              :id id))
-         (message (make-message :id id
-                                :time created
-                                :mailboxes (getf data :mailboxes)
-                                :type :gratitude)))
+                              :id id)))
 
     (cond
       (pending
@@ -57,11 +53,10 @@
         (push id (gethash author-id *pending-person-items-index*))))
 
       (t
+       (index-message id data)
+
        (with-locked-hash-table (*db-results*)
          (setf (gethash id *db-results*) result))
-
-       (with-locked-hash-table (*db-messages*)
-         (setf (gethash id *db-messages*) message))
 
        (with-locked-hash-table (*gratitude-index*)
          (push id (gethash author-id *gratitude-index*)))

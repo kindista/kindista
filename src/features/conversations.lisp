@@ -21,6 +21,7 @@
   (let* ((time (get-universal-time))
          (id (insert-db (list :type :conversation
                               :people people
+                              :mailboxes (mapcar #'list people)
                               :public public
                               :subject subject
                               :created time))))

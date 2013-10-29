@@ -124,6 +124,7 @@
 (defvar *donate-info* nil) ; current donation page data
 (defvar *user* nil) ; current user
 (defvar *userid* nil) ; current user
+(defvar *user-mailbox* nil) ;current user's mailbox
 (defvar *latitude* 0.0)
 (defvar *longitude* 0.0)
 
@@ -170,7 +171,9 @@
 (defmacro with-user (&body body)
   `(with-token
     (let* ((*userid* (or *userid* (token-userid *token*)))
-           (*user* (or *user* (db *userid*))))
+           (*user* (or *user* (db *userid*)))
+           (*user-mailbox*) (or *user-mailbox*
+                                (gethash (list *userid* *person-mailbox-index*l))))
        ,@body)))
 
 (defmacro with-location (&body body)
