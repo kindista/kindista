@@ -240,14 +240,12 @@
                                 :deleted-item-text (getf on-item :text)
                                 :deleted-item-type (getf on-item :type)
                                 :by user
-                                :people (list (cons user nil)
-                                              (cons (getf on-item :by) nil))
+                                :people (list user (getf on-item :by))
                                 :created time)
                           (list :type :reply
                                 :on on
                                 :by user
-                                :people (list (cons user nil)
-                                              (cons (getf on-item :by) nil))
+                                :people (list user (getf on-item :by))
                                 :created time)))))
 
     (create-comment :on id :by user :text text)

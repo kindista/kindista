@@ -28,12 +28,10 @@
                              :created time)))
         (on-type (db on :type)))
 
-    (modify-db on :latest-comment id)
+    (index-message on (modify-db on :latest-comment id))
 
     (when (or (eq on-type :conversation)
               (eq on-type :reply))
-      (with-locked-hash-table (*db-results*)
-        (setf (result-time (gethash on *db-results*)) time))
       (notice :new-comment :time time :id id))
     id))
 

@@ -21,7 +21,7 @@
   (let* ((comment (db comment-id))
          (on-id (getf comment :on))
          (on-item (db on-id))
-         (on-type (getf on-item :type))
+         (on-type (getf on-item :type)) ; :converation or :reply
          (inventory-item (db (getf on-item :on)))
          (inventory-type (if (eq (getf inventory-item :type) :request)
                            "request" "offer"))
@@ -40,7 +40,7 @@
                       (s+ sender-name " has replied to your question about their " inventory-type ":")
                       (s+ sender-name " has replied to your " inventory-type ":"))
                     (getf on-item :subject)))
-         (people (mapcar #'car (getf on-item :people))))
+         (people (getf on-item :people)))
     (dolist (to (iter (for person in (remove sender-id people))
                       (when (db person :notify-message)
                         (collect person))))

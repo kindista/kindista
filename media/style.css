@@ -1286,6 +1286,10 @@ h3.event-date, h3.my-invites {
  vertical-align: top;
 }
 
+.unread-mail .card {
+
+}
+
 .card {
  display: block;
  background: none;

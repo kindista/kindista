@@ -19,9 +19,13 @@
 
 (defun create-conversation (&key people subject text (user *userid*) public)
   (let* ((time (get-universal-time))
+         (read-box (list (list (list user))))
+         (unread-box (mapcar #'list (mapcar #'list people)))
+         (mailboxes (list :read read-box
+                          :unread unread-box))
          (id (insert-db (list :type :conversation
-                              :people people
-                              :mailboxes (mapcar #'list people)
+                              :people (cons user people)
+                              :mailboxes mailboxes
                               :public public
                               :subject subject
                               :created time))))
@@ -144,7 +148,7 @@
             (contact-opt-out-flash (append (list *userid*) people))
             (see-other (format nil (or (post-parameter "next")
                                        "/conversations/~A")
-                               (create-conversation :people (mapcar #'list (cons *userid* people))
+                               (create-conversation :people people
                                                     :public nil
                                                     :subject subject
                                                     :text text))))
