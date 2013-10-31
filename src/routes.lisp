@@ -190,7 +190,8 @@
     :get get-conversation-leave)
 
   ("/messages"
-    :get get-messages)
+    :get get-messages
+    :post post-messages)
 
   ("/settings"
     :post post-settings

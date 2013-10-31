@@ -1286,8 +1286,47 @@ h3.event-date, h3.my-invites {
  vertical-align: top;
 }
 
-.unread-mail .card {
+.mail.card {
+ margin: 0 -0.5em;
+ padding: 0 0.5em 1em;
+ cursor: pointer;
+}
 
+.mail.card.menu {
+ margin: 1em -0.5em 0;
+}
+
+.mail.card input[type=checkbox] {
+ float:left;
+ position: relative;
+ top: 1.6em;
+ margin-right: 1em;
+}
+
+.mail.card > div.message-content {
+ overflow: hidden;
+}
+
+.mail.card p.people {
+ margin-bottom: 0.5em;
+}
+
+.mail.card p.text {
+ height: 1.2em;
+ margin-top: 0.5em;
+ overflow: hidden;
+}
+
+.read.mail.card {
+ background: #faf8f0;
+}
+
+.read.mail.card p.text > a {
+ color: #666666;
+}
+
+.read.mail.card p.text > a {
+ color: #666666;
 }
 
 .card {

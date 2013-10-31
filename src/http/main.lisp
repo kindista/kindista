@@ -501,14 +501,14 @@
 
                    (when *user*
                      (let ((inbox-count (new-inbox-items)))
-                       (str (menu (list `("Inbox" "messages" ,(when (> inbox-count 0) inbox-count)))
+                       (str (menu (list `("Messages" "messages" ,(when (> inbox-count 0) inbox-count)))
                                   selected)))) 
 
                    (str (menu (list '("News" "home")
                                     '("Offers" "offers")
                                     '("Requests" "requests")
-                                    '("People" "people") 
-                                    '("Events" "events") 
+                                    '("People" "people")
+                                    '("Events" "events")
                                     '("Help & Feedback" "faq")
                                     (when (getf *user* :admin)
                                       '("Admin" "admin")))

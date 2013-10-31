@@ -208,6 +208,23 @@
       (htm
         (:option :value state :selected (if (equalp selected state) "selected" nil) (str state))))))
 
+(defun cons-assoc (cell a-list)
+  (assoc cell a-list :test #'equal))
+
+(defun cons-to-string (cell)
+  (strcat (car cell) (aif (cdr cell) (strcat "." it) "")))
+
+(defun parse-cons (string)
+"Returns a cons cell from a string. ex. 6 > (6) or 6.5 > (6 . 5)"
+  (loop for i = 0 then (1+ j)
+        as j = (position #\. string :start i)
+        with current = nil
+        do (setf current (subseq string i j))
+        when (scan +number-scanner+ current)
+        collect (parse-integer current) into ids
+        while (and j (< (length ids) 3))
+        finally (return (cons (car ids) (cadr ids)))))
+
 (defun empty-string-p (string)
   (or (not string) (string= string "")))
 
