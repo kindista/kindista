@@ -209,7 +209,7 @@
         (:option :value state :selected (if (equalp selected state) "selected" nil) (str state))))))
 
 (defun cons-assoc (cell a-list)
-  (assoc cell a-list :test #'equal))
+  (assoc cell a-list :test #'equalp))
 
 (defun cons-to-string (cell)
   (strcat (car cell) (aif (cdr cell) (strcat "." it) "")))

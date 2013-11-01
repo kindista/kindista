@@ -21,14 +21,27 @@
   (send-comment-notification-email (getf (cddddr *notice*) :id)))
 
 (defun create-comment (&key on (by *userid*) text (time (get-universal-time)))
-  (let ((id (insert-db (list :type :comment
+  (let* ((id (insert-db (list :type :comment
                              :on on
                              :by by
                              :text text
                              :created time)))
-        (on-type (db on :type)))
+         (on-type (db on :type))
+         (mailbox-states (message-mailboxes (gethash on *db-messages*)))
+         (mailboxes (all-message-mailboxes mailbox-states))
+         (sender-mailbox (assoc by mailboxes)))
 
-    (index-message on (modify-db on :latest-comment id))
+    (flet ((unread-box (mailbox)
+             (let ((current-unread-status (cons-assoc mailbox
+                                                      (getf mailbox-states
+                                                            :unread))))
+              (if (cdr current-unread-status)
+                current-unread-status
+                (cons mailbox id)))))
+
+     (index-message on (modify-db on :latest-comment id
+                                     :mailboxes (list :read (list (list sender-mailbox))
+                                                      :unread (mapcar #'unread-box (remove sender-mailbox mailboxes :test #'equal))))))
 
     (when (or (eq on-type :conversation)
               (eq on-type :reply))

@@ -1308,21 +1308,18 @@ h3.event-date, h3.my-invites {
 }
 
 .mail.card p.people {
- margin-bottom: 0.5em;
+ margin-bottom: 0.2em;
 }
 
 .mail.card p.text {
- height: 1.2em;
- margin-top: 0.5em;
+ height: 1.7em;
+ line-height: 1.5em;
+ margin-top: 0;
  overflow: hidden;
 }
 
 .read.mail.card {
  background: #faf8f0;
-}
-
-.read.mail.card p.text > a {
- color: #666666;
 }
 
 .read.mail.card p.text > a {

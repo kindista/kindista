@@ -203,12 +203,15 @@
   (require-user
     (setf id (parse-integer id))
     (let* ((it (db id))
-           (people (mapcar #'car (getf it :people)))
+           (people (getf it :people))
            (type (getf it :type)))
       (if (or (eq type :reply)
               (eq type :conversation))
         (if (member *userid* people)
-          (let ((latest-seen (cdr (assoc *userid* (getf it :people))))
+          (let ((latest-seen (or (cdr (cons-assoc (list *userid*)
+                                                  (getf (getf it :mailboxes)
+                                                        :unread)))
+                                 (getf it :latest-comment)))
                 (with (remove *userid* people)))
             (standard-page
               (aif (getf it :subject)
