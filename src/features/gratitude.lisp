@@ -25,7 +25,7 @@
          (gratitude (insert-db `(:type :gratitude
                                  :author ,author
                                  :subjects ,subjects
-                                 :mailboxes '(:unread (maphash #'list (mailbox-ids ,subjects)))
+                                 :status '(:unread (mailbox-ids ,subjects))
                                  :text ,text
                                  :created ,time))))
     (unless (getf *user* :pending)

@@ -19,13 +19,15 @@
 
 (defun create-conversation (&key people subject text (user *userid*) public)
   (let* ((time (get-universal-time))
-         (read-box (list (list (list user))))
-         (unread-box (mapcar #'list (mapcar #'list people)))
-         (mailboxes (list :read read-box
-                          :unread unread-box))
+         (read-box (mailbox-ids user))
+         (unread-box (mailbox-ids people))
+         (status (list :read read-box
+                       :unread unread-box))
+         (mailboxes (mapcar #'list (append read-box unread-box)))
          (id (insert-db (list :type :conversation
-                              :people (cons user people)
+                              :participants (cons user people)
                               :mailboxes mailboxes
+                              :status status
                               :public public
                               :subject subject
                               :created time))))

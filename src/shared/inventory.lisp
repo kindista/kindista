@@ -234,18 +234,29 @@
 (defun create-reply (&key on text pending-deletion (user *userid*))
   (let* ((time (get-universal-time))
          (on-item (db on))
+         (by (getf on-item :by))
+         (participants (list user by))
+         (read-box (mailbox-ids user))
+         (unread-box (mailbox-ids by))
+         (mailboxes (mapcar #'list (append read-box unread-box)))
+         (status (list :read read-box
+                       :unread unread-box))
          (id (insert-db (if pending-deletion
                           (list :type :reply
                                 :on on
                                 :deleted-item-text (getf on-item :text)
                                 :deleted-item-type (getf on-item :type)
                                 :by user
-                                :people (list user (getf on-item :by))
+                                :participants participants
+                                :mailboxes mailboxes
+                                :status status
                                 :created time)
                           (list :type :reply
                                 :on on
                                 :by user
-                                :people (list user (getf on-item :by))
+                                :participants participants
+                                :mailboxes mailboxes
+                                :status status
                                 :created time)))))
 
     (create-comment :on id :by user :text text)

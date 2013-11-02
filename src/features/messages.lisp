@@ -36,42 +36,51 @@
 (defun migrate-to-new-inboxes ()
   (dolist (id (hash-table-keys *db*))
     (let* ((data (db id))
+           (latest-comment (getf data :latest-comment))
            (type (getf data :type))
-           (old-people (getf data :people))
-           (new-people nil)
-           (mailboxes (list :read nil :unread nil)))
+           (people (getf data :people))
+           (participants nil)
+           (mailboxes nil)
+           (status (list :read nil :unread nil)))
       (when (or (eq type :conversation)
                 (eq type :reply)
                 (eq type :gratitude))
         (case type
           ((or :conversation :reply)
-           (dolist (person old-people)
-             (if (or (and (cdr person)
-                          (>= (cdr person) (getf data :latest-comment)))
-                     (= (db (getf data :latest-comment) :by) (car person))
-                     (<= (db (getf data :latest-comment) :created)
-                         (or (db (car person) :last-checked-mail)
-                             0)))
-               (asetf (getf mailboxes :read)
-                      (push (cons (list (car person))
-                                  (getf data :latest-comment))
-                            it))
-               (asetf (getf mailboxes :unread)
-                      (push (cons (list (car person))
-                                  (or (cdr person) nil))
-                            it))))
-           (setf new-people (mapcar #'car old-people))
-           (modify-db id :mailboxes mailboxes
-                         :people new-people))
+           (dolist (person people)
+             (let ((mailbox (list (car person))))
+               (if (or (and (cdr person)
+                           (= (cdr person) latest-comment))
+                      (= (db latest-comment :by) (car person))
+                      (<= (db latest-comment :created)
+                          (or (db (car person) :last-checked-mail) 0)))
+                 (progn
+                   (asetf mailboxes
+                         (push (cons mailbox latest-comment) it))
+                   (asetf (getf status :read)
+                          (push mailbox it)))
+                 (progn
+                   (asetf mailboxes
+                          (push (cons mailbox (cdr person)) it))
+                   (asetf (getf status :unread)
+                          (push mailbox it))))))
+           (setf participants (mapcar #'car people))
+           (modify-db id :status status
+                         :mailboxes mailboxes
+                         :participants participants))
           (:gratitude
            (dolist (subject (getf data :subjects))
-             (if (<= (getf data :created) (or (db subject :last-checked-mail) 0))
-               (asetf (getf mailboxes :read)
-                      (push (list '(subject)) it))
-               (asetf (getf mailboxes :unread)
-                      (push (list '(subject)) it))))
-           (modify-db id :mailboxes mailboxes)))
-        (setf mailboxes (list :read nil :unread nil))))))
+             (let ((mailbox (list subject)))
+                (if (<= (getf data :created)
+                        (or (db subject :last-checked-mail) 0))
+                 (asetf (getf status :read)
+                        (push mailbox it))
+                 (asetf (getf status :unread)
+                        (push mailbox it)))))
+           (modify-db id :status status)))
+        (setf status (list :read nil :unread nil)
+              mailboxes nil
+              participants nil)))))
 
 (defun mailbox-ids (id-list)
 "Takes a list of group/people ids and returns their mailboxes."
@@ -120,39 +129,38 @@
                         (make-message :id id
                                       :time time
                                       :mailboxes (getf data :mailboxes)
+                                      :status (getf data :status)
                                       :type (getf data :type)))))
     (aif new-message
       (with-locked-hash-table (*db-messages*)
         (setf (gethash id *db-messages*) it))
       (progn
         (setf (message-time existing-message) time)
-        (setf (message-mailboxes existing-message) (getf data :mailboxes))))
-    (index-message-inbox-state (or existing-message new-message))))
+        (setf (message-status existing-message) (getf data :status))))
+    (index-message-status (or existing-message new-message))))
 
 (defun all-message-mailboxes (message)
 "a list of all mailboxes for a given message"
   (let (all-mailboxes)
-    (doplist (state mailboxes (message-mailboxes message))
+    (doplist (status mailboxes (message-status message))
       (asetf all-mailboxes
-             (remove-duplicates (append (mapcar #'car mailboxes) it))))
+             (remove-duplicates (append mailboxes it))))
     all-mailboxes))
 
-(defun index-message-inbox-state (message)
+(defun index-message-status (message)
 "*person-mailbox-index* is a hashtable whose key is a mailbox (personid . groupid) and whose value is a plist such as :read (message ids) :unread ((message-id . last-read-comment-id) ..."
   (with-locked-hash-table (*person-mailbox-index*)
     (let ((all-mailboxes (all-message-mailboxes message)))
-      (doplist (state mailboxes-in-state (message-mailboxes message))
+      (doplist (status mailboxes-with-status (message-status message))
       ;;delete message from mailboxes not in each state
         (dolist (mailbox all-mailboxes)
-          (unless (assoc mailbox mailboxes-in-state :test #'equal)
-            (asetf (getf (gethash mailbox *person-mailbox-index*) state)
+          (unless (member mailbox mailboxes-with-status :test #'equal)
+            (asetf (getf (gethash mailbox *person-mailbox-index*) status)
                    (remove message it))))
-       (dolist (mailbox mailboxes-in-state)
-         ;;add message to mailboxes in each given state
-         (let ((mailbox-id (car mailbox)))
-           (if (assoc mailbox-id mailboxes-in-state :test #'equal)
-             (asetf (getf (gethash mailbox-id *person-mailbox-index*) state)
-                    (pushnew message it)))))))))
+        (dolist (mailbox mailboxes-with-status)
+          ;;add message to mailboxes in each given state
+          (asetf (getf (gethash mailbox *person-mailbox-index*) status)
+                 (pushnew message it)))))))
 
 (defun message-filter (&key (selected "all") mailbox)
   (html
@@ -208,16 +216,16 @@
             ((and (>= i start) items)
              (let* ((item (car items))
                     (item-data (db (message-id item)))
-                    (mailboxes (message-mailboxes item))
-                    (message-status (cond
-                                      ((cons-assoc mailbox
-                                                   (getf mailboxes :read))
-                                       :read)
-                                      ((cons-assoc mailbox
-                                                   (getf mailboxes :unread))
-                                       :unread))))
+                    (mailboxes (message-status item))
+                    (status (cond
+                              ((member mailbox (getf mailboxes :read)
+                                       :test #'equal)
+                               :read)
+                              ((member mailbox (getf mailboxes :unread)
+                                       :test #'equal)
+                               :unread))))
                (htm
-                 (:div :class (s+ (case message-status
+                 (:div :class (s+ (case status
                                     (:read "read")
                                     (:unread "unread"))
                                   " mail card")
@@ -227,9 +235,9 @@
                    (:div :class "message-content"
                      (case (message-type item)
                        (:conversation
-                         (str (conversation-inbox-item item item-data message-status)))
+                         (str (conversation-inbox-item item item-data)))
                        (:reply
-                         (str (reply-inbox-item item item-data message-status)))
+                         (str (reply-inbox-item item item-data)))
                        (:contact-n
                          (htm
                            (str (h3-timestamp (message-time item)))
@@ -267,18 +275,16 @@
                    (htm
                      (:a :style "float: right;" :href (strcat "/messages?p=" (+ page 1)) "next page >"))))))))))))
 
-(defun conversation-inbox-item (message message-data message-status &key mailbox)
+(defun conversation-inbox-item (message message-data &key mailbox)
   (let* ((id (message-id message))
          (latest (latest-comment id))
-         (latest-seen (cdr (assoc (list *userid*)
-                                  (getf (message-mailboxes message)
-                                        message-status))))
+         (latest-seen (cdr (assoc (list *userid*) (message-mailboxes message))))
          (comment-data (db latest))
          (comments (length (gethash id *comment-index*)))
          (people (remove *userid*
                          (cons (getf comment-data :by)
                                (remove (getf comment-data :by)
-                                       (getf message-data :people))))))
+                                       (getf message-data :participants))))))
     (flet ((url (text)
              (html
                (:a :href (url-compose (strcat "/conversations/" id)
@@ -306,18 +312,16 @@
           " - "
           (str (url (ellipsis (getf comment-data :text)))))))))
 
-(defun reply-inbox-item (message message-data message-status)
+(defun reply-inbox-item (message message-data &key mailbox)
   (let* ((id (message-id message))
          (latest (latest-comment id))
-         (latest-seen (cdr (assoc (list *userid*)
-                                  (getf (message-mailboxes message)
-                                        message-status))))
+         (latest-seen (cdr (assoc (list *userid*) (message-mailboxes message))))
          (comment-data (db latest))
          (original-message (db (getf message-data :on)))
          (deleted-type (getf message-data :deleted-message-type))
          (original-message-type (or (getf original-message :type)
                                  deleted-type))
-         (people (db id :people))
+         (people (db id :participants))
          (with (or (getf original-message :by)
                    (first (remove *userid* people))))
          (comments (length (gethash id *comment-index*)))
@@ -345,7 +349,8 @@
                       (:request (htm "request"))
                       (t (htm (:span :class "none" "deleted offer or request"))))))))
            (reply-url (text)
-             (html (:a :href (url-compose(strcat "/conversations/" id))
+             (html (:a :href (url-compose (strcat "/conversations/" id)
+                                          "mailbox" mailbox)
                      (str text)))))
 
       (html

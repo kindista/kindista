@@ -98,7 +98,7 @@
   latitude longitude time tags people id type)
 
 (defstruct message
-  id mailboxes time type)
+  id mailboxes status time type)
 
 (defstruct alias
   alias result)
