@@ -223,7 +223,7 @@
         when (scan +number-scanner+ current)
         collect (parse-integer current) into ids
         while (and j (< (length ids) 3))
-        finally (return (cons (car ids) (cadr ids)))))
+        finally (return (awhen (car ids) (cons it (cadr ids))))))
 
 (defun empty-string-p (string)
   (or (not string) (string= string "")))

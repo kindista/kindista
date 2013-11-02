@@ -202,26 +202,17 @@
 (defun get-conversation (id)
   (require-user
     (setf id (parse-integer id))
-    (let* ((message (gethash id *db-messages*))
-           (mailboxes (message-mailboxes message))
-           (get-mailbox (parse-cons (get-parameter "mailbox")))
-           (unverified-mailbox (if (eql (car get-mailbox) *userid*)
-                                 get-mailbox
-                                 (list *userid*)))
-           (mailbox (member unverified-mailbox
-                            (all-message-mailboxes message) :test #'equal))
-
-           (type (message-type message)))
-
+    (let* ((it (db id))
+           (people (getf it :people))
+           (type (getf it :type)))
       (if (or (eq type :reply)
               (eq type :conversation))
-        (if mailbox
-          (let* ((it (db id))
-                 (people (getf it :people))
-                 (latest-seen (or (cdr (cons-assoc (list *userid*)
-                                                   (getf mailboxes :unread)))
-                                  (getf it :latest-comment)))
-                 (with (remove *userid* people)))
+        (if (member *userid* people)
+          (let ((latest-seen (or (cdr (cons-assoc (list *userid*)
+                                                  (getf (getf it :mailboxes)
+                                                        :unread)))
+                                 (getf it :latest-comment)))
+                (with (remove *userid* people)))
             (standard-page
               (aif (getf it :subject)
                 (ellipsis it 24)
@@ -230,7 +221,7 @@
                 (str (menu-horiz "actions"
                                  (html (:a :href "/messages" "back to messages"))
                                  (html (:a :href "#reply" "reply"))
-                                 (when (eq type :conversation)
+                                 (when (eq (getf it :type) :conversation)
                                    (html (:a :href (strcat "/conversations/" id "/leave") "leave conversation")))))
                 (str
                   (card
@@ -300,8 +291,7 @@
                         (card
                           (html
                             (str (h3-timestamp (getf data :created)))
-                            (:p (:a :href (s+ "/people/" (username-or-id by))
-                                 (str (getf bydata :name))))
+                            (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name))))
                             (:p :class (when (>= (or latest-seen 0) comment-id) "new") 
                               (str (regex-replace-all "\\n" text "<br>")))))))))
 
@@ -314,19 +304,17 @@
                         (:td
                           (:button :class "yes" :type "submit" :class "submit" "Send")))))) 
 
-               ;(unless
-               ;  (eql latest-seen (latest-comment id))
+                (unless (eql (cdr (assoc *userid* (db id :people))) (latest-comment id))
+                  (amodify-db id :people (progn (setf (cdr (assoc *userid* it)) (latest-comment id)) it)))
 
-               ;  (amodify-db id :people (progn
-               ;                           (setf (cdr (assoc *userid* it))
-               ;                                 (latest-comment id)) it)))
                 ; get most recent comment seen
-                ; get comments for
+                ; get comments for 
+
               )
 
               :selected "messages"))
 
-          (permission-denied))
+          (permission-denied)) 
       (not-found)))))
 
 (defun get-conversation-leave (id)

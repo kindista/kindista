@@ -267,7 +267,7 @@
                    (htm
                      (:a :style "float: right;" :href (strcat "/messages?p=" (+ page 1)) "next page >"))))))))))))
 
-(defun conversation-inbox-item (message message-data message-status)
+(defun conversation-inbox-item (message message-data message-status &key mailbox)
   (let* ((id (message-id message))
          (latest (latest-comment id))
          (latest-seen (cdr (assoc (list *userid*)
@@ -279,28 +279,32 @@
                          (cons (getf comment-data :by)
                                (remove (getf comment-data :by)
                                        (getf message-data :people))))))
-    (html
-      (str (h3-timestamp (message-time message)))
-      (:p :class "people"
-        (cond
-          ((eql (getf comment-data :by) *userid*)
-           (str "↪ "))
-          ((not (eql latest latest-seen))
-           (str "• ")))
+    (flet ((url (text)
+             (html
+               (:a :href (url-compose (strcat "/conversations/" id)
+                                     "mailbox" mailbox)
+                   (str text)))))
+     (html
+        (str (h3-timestamp (message-time message)))
+        (:p :class "people"
+          (cond
+            ((eql (getf comment-data :by) *userid*)
+             (str "↪ "))
+            ((not (eql latest latest-seen))
+             (str "• ")))
 
-        (if people
-          (str (name-list people))
-          (htm (:span :class "nobody" "Empty conversation"))))
+          (if people
+            (str (name-list people))
+            (htm (:span :class "nobody" "Empty conversation"))))
 
-      (:p :class "text"
-        (:span :class "title"
-          (:a :href (strcat "/conversations/" id) (str (ellipsis (getf message-data :subject) 30)))
-          (when (> comments 1)
-            (htm
-              " (" (str comments) ")")))
-        " - "
-        (:a :href (strcat "/conversations/" id)
-         (str (ellipsis (getf comment-data :text))))))))
+        (:p :class "text"
+          (:span :class "title"
+           (str (url (ellipsis (getf message-data :subject) 30)))
+            (when (> comments 1)
+              (htm
+                " (" (str comments) ")")))
+          " - "
+          (str (url (ellipsis (getf comment-data :text)))))))))
 
 (defun reply-inbox-item (message message-data message-status)
   (let* ((id (message-id message))
@@ -327,56 +331,51 @@
                      (:request "request"))
                    (getf comment-data :text))
                  (getf comment-data :text))))
-    (html
-      (str (h3-timestamp (message-time message)))
-      (:p :class "people"
-        (cond
-          ((eql (getf comment-data :by) *userid*)
-           (str "↪ "))
-          ((not (eql latest latest-seen))
-           (str "• ")))
+    (flet ((inventory-url ()
+             (html
+               (case original-message-type
+                 (:offer
+                  (htm (:a :href (strcat "/offers/" (getf message-data :on))
+                        "offer")))
+                 (:request
+                  (htm (:a :href (strcat "/requests/" (getf message-data :on))
+                        "request")))
+                 (t (case deleted-type
+                      (:offer (htm "offer"))
+                      (:request (htm "request"))
+                      (t (htm (:span :class "none" "deleted offer or request"))))))))
+           (reply-url (text)
+             (html (:a :href (url-compose(strcat "/conversations/" id))
+                     (str text)))))
 
-        (if (eql (db id :by) *userid*)
-          (htm
-            "You replied to "
-            (str (person-link with))
-            "'s "
-            (case original-message-type
-              (:offer
-               (htm (:a :href (strcat "/offers/" (getf message-data :on))
-                     "offer")))
-              (:request
-               (htm (:a :href (strcat "/requests/" (getf message-data :on))
-                     "request")))
-              (t (case deleted-type
-                   (:offer (htm "offer"))
-                   (:request (htm "request"))
-                   (t (htm (:span :class "none" "deleted offer or request")))))))
-          (htm
-            (str (person-link (getf message-data :by)))
-            " replied to your "
-            (case original-message-type
-              (:offer
-               (htm (:a :href (strcat "/offers/" (getf message-data :on))
-                     "offer")))
-              (:request
-               (htm (:a :href (strcat "/requests/" (getf message-data :on))
-                     "request")))
-              (t (case deleted-type
-                   (:offer (htm "offer"))
-                   (:request (htm "request"))
-                   (t (htm (:span :class "none" "deleted offer or request")))))))))
+      (html
+        (str (h3-timestamp (message-time message)))
+        (:p :class "people"
+          (cond
+            ((eql (getf comment-data :by) *userid*)
+             (str "↪ "))
+            ((not (eql latest latest-seen))
+             (str "• ")))
 
-      (:p :class "text"
-        (:span :class "title"
-          (:a :href (strcat "/conversations/" id)
-            (str (ellipsis (getf original-message :text) 30)))
-          (when (> comments 1)
+          (if (eql (db id :by) *userid*)
             (htm
-              " (" (str comments) ") "))
-          " - ")
-        (:a :href (strcat "/conversations/" id)
-         (str (ellipsis text)))))))
+              "You replied to "
+              (str (person-link with))
+              "'s "
+              (str (inventory-url)))
+            (htm
+              (str (person-link (getf message-data :by)))
+              " replied to your "
+              (str (inventory-url)))))
+
+        (:p :class "text"
+          (:span :class "title"
+            (str (reply-url (ellipsis (getf original-message :text) 30)))
+            (when (> comments 1)
+              (htm
+                " (" (str comments) ") "))
+            " - ")
+          (str (reply-url (ellipsis text))))))))
 
 (defun get-messages ()
   (require-user
