@@ -423,7 +423,9 @@
                   (create-reply :on id
                                 :pending-deletion t
                                 :text (post-parameter "explanation"))
-                  (delete-pending-inventory-item id)
+                  (if (db by :pending)
+                    (delete-pending-inventory-item id)
+                    (delete-inventory-item id))
                   (flash (strcat (string-capitalize type) " " id " has been deleted."))
                   (see-other (post-parameter "next"))))
 
