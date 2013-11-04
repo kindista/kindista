@@ -48,7 +48,6 @@
   (save-tokens)
   (stop *acceptor*)
   (stop (acceptor-metric-system *acceptor*))
-  (when *auto-invite-reminder-timer* (unschedule-timer *auto-invite-reminder-timer*))
   (stop-notice-thread))
 
 (defun quit ()

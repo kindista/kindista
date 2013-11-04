@@ -107,7 +107,6 @@
   (when (or *productionp*
             ; only use on the live server or with test data
             (< (length *invitation-reminder-timer-index*) 10))
-    (setf *auto-invite-reminder-timer* (make-timer #'automatic-invitation-reminders))
     (loop for (time . id) in *invitation-reminder-timer-index*
         with now = (get-universal-time)
         while (< (+ (car (db id :times-sent))
