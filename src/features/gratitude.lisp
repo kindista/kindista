@@ -22,10 +22,12 @@
 
 (defun create-gratitude (&key author subjects text)
   (let* ((time (get-universal-time))
+         (mailboxes (mailbox-ids subjects))
          (gratitude (insert-db `(:type :gratitude
                                  :author ,author
                                  :subjects ,subjects
-                                 :status '(:unread (mailbox-ids ,subjects))
+                                 :mailboxes (mapcar #'list ,mailboxes)
+                                 :status '(:unread ,mailboxes)
                                  :text ,text
                                  :created ,time))))
     (unless (getf *user* :pending)

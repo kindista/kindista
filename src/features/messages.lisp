@@ -77,7 +77,8 @@
                         (push mailbox it))
                  (asetf (getf status :unread)
                         (push mailbox it)))))
-           (modify-db id :status status)))
+           (modify-db id :status status
+                         :mailboxes mailboxes)))
         (setf status (list :read nil :unread nil)
               mailboxes nil
               participants nil)))))
@@ -93,29 +94,34 @@
                     (asetf mailboxes (push (cons admin-id id) it)))))))
     mailboxes))
 
-(defun update-mailbox-data (message-id mailbox new-state &key last-read-comment)
+(defun update-mailbox-data (message-id mailbox new-status &key last-read-comment)
+"Update *db-messages* and (db message-id) when the state changes for a mailbox associated with that message."
   (with-locked-hash-table (*db-messages*)
     (let* ((message (gethash message-id *db-messages*))
-           (mailboxes (message-mailboxes message))
-           (new-value-stored-p nil))
-      (doplist (state mailboxes-in-state mailboxes)
-        (cond
-          ((eql state new-state)
-           (asetf (getf (message-mailboxes message) state)
-                  (remove (cons-assoc mailbox it) it :test #'equal))
-           (push (if (eql new-state :unread)
-                   (cons mailbox last-read-comment)
-                   (list mailbox))
-                 (getf (message-mailboxes message) state))
-           (setf new-value-stored-p t))
-          (t
-           (asetf (getf (message-mailboxes message) state)
-                  (remove (cons-assoc mailbox it) it :test #'equal)))))
-      (unless new-value-stored-p
-        (setf (message-mailboxes message)
-              (append (list new-state (list (list mailbox))) mailboxes)))
-      (modify-db message-id :mailboxes (message-mailboxes message))
-      (index-message-inbox-state message))))
+           (statuses (message-status message))
+           (new-value-stored-p nil)
+           (valid-mailbox (cons-assoc mailbox (message-mailboxes message))))
+
+      (when valid-mailbox
+
+        (when last-read-comment
+          (asetf (cdr valid-mailbox) last-read-comment))
+
+        (doplist (status mailboxes-with-status statuses)
+          (asetf (getf (message-status message) status)
+                 (if (eql status new-status)
+                   (progn
+                     (setf new-value-stored-p t)
+                     (pushnew mailbox it :test #'equal))
+                   (remove mailbox it :test #'equal))))
+
+        (unless new-value-stored-p
+          (asetf (message-status message)
+                 (append (list new-status (list mailbox)) it)))
+
+        (modify-db message-id :mailboxes (message-mailboxes message)
+                              :status (message-status message))
+        (index-mailbox-status message)))))
 
 (defun index-message (id data)
 "The people field for a conversation is a p-list of the status of the conversation for each participant: (:unread ((personid . last-read-comment)) ... "
@@ -137,7 +143,7 @@
       (progn
         (setf (message-time existing-message) time)
         (setf (message-status existing-message) (getf data :status))))
-    (index-message-status (or existing-message new-message))))
+    (index-mailbox-status (or existing-message new-message))))
 
 (defun all-message-mailboxes (message)
 "a list of all mailboxes for a given message"
@@ -147,7 +153,7 @@
              (remove-duplicates (append mailboxes it))))
     all-mailboxes))
 
-(defun index-message-status (message)
+(defun index-mailbox-status (message)
 "*person-mailbox-index* is a hashtable whose key is a mailbox (personid . groupid) and whose value is a plist such as :read (message ids) :unread ((message-id . last-read-comment-id) ..."
   (with-locked-hash-table (*person-mailbox-index*)
     (let ((all-mailboxes (all-message-mailboxes message)))
@@ -175,8 +181,8 @@
          "all mail")
        (:option :value "unread" :selected (when (string= selected "unread") "")
          "unread mail")
-       (:option :value "deleted" :selected (when (string= selected "deleted") "")
-         "deleted mail"))
+       (:option :value "compost" :selected (when (string= selected "compost") "")
+         "compost"))
       (:input :type "submit" :class "no-js" :value "apply"))))
 
 (defun all-inbox-items (&key (id *userid*) filter)
@@ -190,8 +196,8 @@
                 (copy-list (getf mailbox :unread))))
        ((string= "unread" filter)
         (getf mailbox :unread))
-       ((string= "deleted" filter)
-        (getf mailbox :deleted)))
+       ((string= "comboxt" filter)
+        (getf mailbox :compost)))
     #'> :key #'message-time)))
 
 (defun inbox-items (&key (page 0) (count 20))
@@ -208,7 +214,7 @@
         (:div :class "mail card menu"
           (:button :class "cancel small" :type "submit" :name "mark-read" "mark read")
           (:button :class "cancel small" :type "submit" :name "mark-unread" "mark unread")
-          (:button :class "cancel small" :type "submit" :name "delete" "delete"))
+          (:button :class "cancel small" :type "submit" :name "discard" "discard"))
         (iter (for i from 0 to (+ start count))
           (cond
             ((< i start)
@@ -409,6 +415,7 @@
                                     (scan +number-scanner+ (cdr pair)))
                           collect (parse-integer (cdr pair))))
           (next (or (post-parameter "next") (referer))))
+
       (unless (= (car mailbox) *userid*) (permission-denied))
 
       (cond
@@ -418,18 +425,34 @@
 
         ((post-parameter "mark-read")
          (dolist (id messages)
-           (unless (cons-assoc mailbox (getf (db id :mailboxes) :read))
-             (update-mailbox-data id mailbox :read)))
+           (let ((data (db id)))
+             (unless (member mailbox (getf (getf data :status) :read)
+                            :test #'equal)
+             (update-mailbox-data id mailbox :read :last-read-comment (getf data :latest-comment)))))
          (see-other next))
 
         ((post-parameter "mark-unread")
          (dolist (id messages)
-           (unless (cons-assoc mailbox (getf (db id :mailboxes) :unread))
-             (update-mailbox-data id mailbox :unread)))
+           (let ((data (db id)))
+             (unless (member mailbox (getf (getf data :status) :unread)
+                             :test #'equal)
+             (update-mailbox-data id mailbox :unread))))
+         (see-other next))
+
+        ((post-parameter "discard")
+         (dolist (id messages)
+           (let ((data (db id)))
+             (unless (member mailbox (getf (getf data :status) :compost)
+                             :test #'equal)
+             (update-mailbox-data id mailbox :compost))))
          (see-other next))
 
         ((post-parameter "delete")
          (dolist (id messages)
-           (unless (cons-assoc mailbox (getf (db id :mailboxes) :deleted))
-             (update-mailbox-data id mailbox :deleted)))
-         (see-other next))))))
+           (let ((data (db id)))
+             (unless (member mailbox (getf (getf data :status) :deleted)
+                             :test #'equal)
+             (update-mailbox-data id mailbox :deleted))))
+         (see-other next))
+
+        ))))

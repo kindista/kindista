@@ -98,7 +98,12 @@
   latitude longitude time tags people id type)
 
 (defstruct message
-  id mailboxes status time type)
+  id ; message-id
+  mailboxes ; an a-list of (mailbox-id . last-read-comment)
+  status ; a p-list of mailboxes in each status (:read, :unread,
+  time ; time of the most recent comment, otherwise time created
+  type ; :conversation, :reply, or :gratitude
+)
 
 (defstruct alias
   alias result)
