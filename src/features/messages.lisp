@@ -76,7 +76,9 @@
                  (asetf (getf status :read)
                         (push mailbox it))
                  (asetf (getf status :unread)
-                        (push mailbox it)))))
+                        (push mailbox it)))
+                 (asetf mailboxes
+                       (push (list mailbox) it))))
            (modify-db id :status status
                          :mailboxes mailboxes)))
         (setf status (list :read nil :unread nil)
@@ -196,7 +198,7 @@
                 (copy-list (getf mailbox :unread))))
        ((string= "unread" filter)
         (getf mailbox :unread))
-       ((string= "comboxt" filter)
+       ((string= "compost" filter)
         (getf mailbox :compost)))
     #'> :key #'message-time)))
 
@@ -212,9 +214,19 @@
         (:input :type "hidden" :name "mailbox" :value string-mailbox)
         (:input :type "hidden" :name "filter" :value filter)
         (:div :class "mail card menu"
-          (:button :class "cancel small" :type "submit" :name "mark-read" "mark read")
-          (:button :class "cancel small" :type "submit" :name "mark-unread" "mark unread")
-          (:button :class "cancel small" :type "submit" :name "discard" "discard"))
+          (if (string= filter "compost")
+            (htm
+              (:button :class "cancel small" :type "submit" :name "mark-read"
+                "move to inbox")
+              (:button :class "cancel small" :type "submit" :name "delete"
+                "delete"))
+            (htm
+              (:button :class "cancel small" :type "submit" :name "mark-read"
+                "mark read")
+              (:button :class "cancel small" :type "submit" :name "mark-unread"
+                "mark unread")
+              (:button :class "cancel small" :type "submit" :name "discard"
+                "discard"))))
         (iter (for i from 0 to (+ start count))
           (cond
             ((< i start)
@@ -231,35 +243,38 @@
                                        :test #'equal)
                                :unread))))
                (htm
-                 (:div :class (s+ (case status
+                 (:table :class "messages"
+                   (:tr :class (s+ (case status
                                     (:read "read")
                                     (:unread "unread"))
                                   " mail card")
-                   (:input :type "checkbox"
-                           :name "message-id"
-                           :value (message-id item))
-                   (:div :class "message-content"
-                     (case (message-type item)
-                       (:conversation
-                         (str (conversation-inbox-item item item-data)))
-                       (:reply
-                         (str (reply-inbox-item item item-data)))
-                       (:contact-n
-                         (htm
-                           (str (h3-timestamp (message-time item)))
-                           (:p (str (person-link (getf item-data :subject)))
-                            " added you as a contact.")))
-
-                       (:gratitude
-                         (unless (eql (getf item-data :author) *userid*)
+                     (:td :class "message-selector"
+                       (:input :type "checkbox"
+                              :name "message-id"
+                              :value (message-id item)))
+                     (:td :class "message-content"
+                       (case (message-type item)
+                         (:conversation
+                           (str (conversation-inbox-item item item-data)))
+                         (:reply
+                           (str (reply-inbox-item item item-data)))
+                         (:contact-n
                            (htm
                              (str (h3-timestamp (message-time item)))
-                             (:p (str (person-link (getf item-data :author)))
-                                 " shared "
-                                 (:a :href (strcat "/gratitude/"
-                                                   (message-id item))
-                                     "gratitude")
-                                 " for you.")))))))))
+                             (:p (str (person-link (getf item-data :subject)))
+                              " added you as a contact.")))
+
+                         (:gratitude
+                           (unless (eql (getf item-data :author) *userid*)
+                             (htm
+                               (str (h3-timestamp (message-time item)))
+                               (:p :class "people"
+                                 (str (person-link (getf item-data :author)))
+                                   " shared "
+                                   (:a :href (strcat "/gratitude/"
+                                                     (message-id item))
+                                       "gratitude")
+                                   " for you."))))))))))
              (setf items (cdr items)))
 
             ((and (eql i start)
