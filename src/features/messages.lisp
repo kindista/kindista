@@ -58,7 +58,7 @@
                    (setf (cdr new-person) latest-comment))
                (asetf new-people (push new-person it))
                (asetf participants (push (car person) it))
-               (asetf inbox (push person it))))
+               (asetf inbox (push (car person) it))))
            (modify-db id :people new-people
                          :folders (list :inbox inbox)
                          :participants participants))
