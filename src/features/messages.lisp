@@ -149,9 +149,7 @@
         (setf (message-latest-comment existing-message) latest-comment)
         (setf (message-people existing-message) people)
         (setf (message-folders existing-message) folders)))
-   ;(index-message-folders (or existing-message new-message))
-    
-    ))
+    (index-message-folders (or existing-message new-message))))
 
 (defun all-message-people (message)
 "a list of people with access to a given message"
@@ -161,15 +159,15 @@
 "*person-mailbox-index* is a hashtable whose key is a userid and whose value is a plist such as :inbox (messages) :unread (messages) ..."
   (with-locked-hash-table (*person-mailbox-index*)
     (let ((all-people (all-message-people message)))
-      (doplist (status mailboxes-with-status (message-folders message))
-      ;;delete message from mailboxes not in each state
-        (dolist (mailbox all-mailboxes)
-          (unless (member mailbox mailboxes-with-status :test #'equal)
-            (asetf (getf (gethash mailbox *person-mailbox-index*) status)
+      (doplist (folder people-in-folder (message-folders message))
+      ;;delete message from people not in each folder
+        (dolist (person all-people)
+          (unless (member person people-in-folder)
+            (asetf (getf (gethash person *person-mailbox-index*) folder)
                    (remove message it))))
-        (dolist (mailbox mailboxes-with-status)
-          ;;add message to mailboxes in each given state
-          (asetf (getf (gethash mailbox *person-mailbox-index*) status)
+        (dolist (person people-in-folder)
+          ;;add message to people in each given folder
+          (asetf (getf (gethash person *person-mailbox-index*) folder)
                  (pushnew message it)))))))
 
 (defun message-filter (&key (selected "all") mailbox)
