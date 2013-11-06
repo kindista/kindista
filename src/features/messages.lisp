@@ -59,7 +59,7 @@
                (asetf participants (push (car person) it))
                (asetf inbox (push (car person) it))))
            (modify-db id :people new-people
-                         :folders (list :inbox inbox)
+                         :message-folders (list :inbox inbox)
                          :participants participants))
           (:gratitude
            (dolist (subject (getf data :subjects))
@@ -71,7 +71,7 @@
                 (asetf inbox (push subject it))
                 (asetf new-people (push new-person it))))
            (modify-db id :people new-people
-                         :folders (list :inbox inbox)))
+                         :message-folders (list :inbox inbox)))
          (:comment
            (amodify-db id :by (list it))))
 
@@ -149,21 +149,19 @@
         (setf (message-latest-comment existing-message) latest-comment)
         (setf (message-people existing-message) people)
         (setf (message-folders existing-message) folders)))
-    (index-mailbox-status (or existing-message new-message))))
+   ;(index-message-folders (or existing-message new-message))
+    
+    ))
 
-(defun all-message-mailboxes (message)
-"a list of all mailboxes for a given message"
-  (let (all-mailboxes)
-    (doplist (status mailboxes (message-status message))
-      (asetf all-mailboxes
-             (remove-duplicates (append mailboxes it))))
-    all-mailboxes))
+(defun all-message-people (message)
+"a list of people with access to a given message"
+  (mapcar #'caar (message-people message)))
 
-(defun index-mailbox-status (message)
-"*person-mailbox-index* is a hashtable whose key is a mailbox (personid . groupid) and whose value is a plist such as :read (message ids) :unread ((message-id . last-read-comment-id) ..."
+(defun index-message-folders (message)
+"*person-mailbox-index* is a hashtable whose key is a userid and whose value is a plist such as :inbox (messages) :unread (messages) ..."
   (with-locked-hash-table (*person-mailbox-index*)
-    (let ((all-mailboxes (all-message-mailboxes message)))
-      (doplist (status mailboxes-with-status (message-status message))
+    (let ((all-people (all-message-people message)))
+      (doplist (status mailboxes-with-status (message-folders message))
       ;;delete message from mailboxes not in each state
         (dolist (mailbox all-mailboxes)
           (unless (member mailbox mailboxes-with-status :test #'equal)
