@@ -44,8 +44,7 @@
            (inbox nil))
       (when (or (eq type :conversation)
                 (eq type :reply)
-                (eq type :gratitude)
-                (eq type :comment))
+                (eq type :gratitude))
         (case type
           ((or :conversation :reply)
            (dolist (person old-people)
@@ -78,7 +77,11 @@
 
         (setf inbox nil
               new-people nil
-              participants nil)))))
+              participants nil))))
+
+  (dolist (id (hash-table-keys *db*))
+    (when (eql (db id :type) :comment)
+      (amodify-db id :by (list it)))))
 
 (defun mailbox-ids (id-list)
 "Takes a list of group/people ids and returns their mailboxes."
