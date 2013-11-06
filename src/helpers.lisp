@@ -214,6 +214,9 @@
 (defun cons-to-string (cell)
   (strcat (car cell) (aif (cdr cell) (strcat "." it) "")))
 
+(defun list-list (data)
+  (list (list data)))
+
 (defun parse-cons (string)
 "Returns a cons cell from a string. ex. 6 > (6) or 6.5 > (6 . 5)"
   (loop for i = 0 then (1+ j)

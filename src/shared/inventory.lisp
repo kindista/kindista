@@ -236,11 +236,16 @@
          (on-item (db on))
          (by (getf on-item :by))
          (participants (list user by))
-         (read-box (mailbox-ids user))
-         (unread-box (mailbox-ids by))
-         (mailboxes (mapcar #'list (append read-box unread-box)))
-         (status (list :read read-box
-                       :unread unread-box))
+         (senders (mailbox-ids (list user)))
+         (bys (mailbox-ids (list by)))
+         (sender-boxes (mapcar #'(lambda (id)
+                                   (cons (list id) :read))
+                               senders))
+         (by-boxes (mapcar #'(lambda (id)
+                                   (cons (list id) :unread))
+                               bys))
+         (people (append by-boxes sender-boxes))
+         (message-folders (list :inbox (append senders bys)))
          (id (insert-db (if pending-deletion
                           (list :type :reply
                                 :on on
@@ -248,15 +253,15 @@
                                 :deleted-item-type (getf on-item :type)
                                 :by user
                                 :participants participants
-                                :mailboxes mailboxes
-                                :status status
+                                :message-folders message-folders
+                                :people people
                                 :created time)
                           (list :type :reply
                                 :on on
                                 :by user
                                 :participants participants
-                                :mailboxes mailboxes
-                                :status status
+                                :message-folders message-folders
+                                :people people
                                 :created time)))))
 
     (create-comment :on id :by user :text text)

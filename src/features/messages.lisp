@@ -38,51 +38,46 @@
     (let* ((data (db id))
            (latest-comment (getf data :latest-comment))
            (type (getf data :type))
-           (people (getf data :people))
+           (old-people (getf data :people))
+           (new-people nil)
            (participants nil)
-           (mailboxes nil)
-           (status (list :read nil :unread nil)))
+           (inbox nil))
       (when (or (eq type :conversation)
                 (eq type :reply)
-                (eq type :gratitude))
+                (eq type :gratitude)
+                (eq type :comment))
         (case type
           ((or :conversation :reply)
-           (dolist (person people)
-             (let ((mailbox (list (car person))))
-               (if (or (and (cdr person)
-                           (= (cdr person) latest-comment))
-                      (= (db latest-comment :by) (car person))
-                      (<= (db latest-comment :created)
-                          (or (db (car person) :last-checked-mail) 0)))
-                 (progn
-                   (asetf mailboxes
-                         (push (cons mailbox latest-comment) it))
-                   (asetf (getf status :read)
-                          (push mailbox it)))
-                 (progn
-                   (asetf mailboxes
-                          (push (cons mailbox (cdr person)) it))
-                   (asetf (getf status :unread)
-                          (push mailbox it))))))
-           (setf participants (mapcar #'car people))
-           (modify-db id :status status
-                         :mailboxes mailboxes
+           (dolist (person old-people)
+             (let ((new-person (cons (list (car person)) (cdr person))))
+               (when (or (and (cdr person)
+                            (= (cdr person) latest-comment))
+                       (= (db latest-comment :by) (car person))
+                       (<= (db latest-comment :created)
+                           (or (db (car person) :last-checked-mail) 0)))
+                   (setf (cdr new-person) latest-comment))
+               (asetf new-people (push new-person it))
+               (asetf participants (push (car person) it))
+               (asetf inbox (push person it))))
+           (modify-db id :people new-people
+                         :folders (list :inbox inbox)
                          :participants participants))
           (:gratitude
            (dolist (subject (getf data :subjects))
-             (let ((mailbox (list subject)))
+             (let ((new-person (cons (list subject) nil)))
                 (if (<= (getf data :created)
                         (or (db subject :last-checked-mail) 0))
-                 (asetf (getf status :read)
-                        (push mailbox it))
-                 (asetf (getf status :unread)
-                        (push mailbox it)))
-                 (asetf mailboxes
-                       (push (list mailbox) it))))
-           (modify-db id :status status
-                         :mailboxes mailboxes)))
-        (setf status (list :read nil :unread nil)
-              mailboxes nil
+                  (setf (cdr new-person) :read)
+                  (setf (cdr new-person) :unread))
+                (asetf inbox (push subject it))
+                (asetf new-people (push new-person it))))
+           (modify-db id :people new-people
+                         :folders (list :inbox inbox)))
+         (:comment
+           (amodify-db id :by (list it))))
+
+        (setf inbox nil
+              new-people nil
               participants nil)))))
 
 (defun mailbox-ids (id-list)
@@ -132,19 +127,25 @@
                   (db (getf data :latest-comment) :created))
                  (:gratitude (or (getf data :edited)
                                  (getf data :created)))))
+         (latest-comment (getf data :latest-comment))
+         (folders (getf data :message-folders))
+         (people (getf data :people))
          (existing-message (gethash id *db-messages*))
          (new-message (unless existing-message
                         (make-message :id id
                                       :time time
-                                      :mailboxes (getf data :mailboxes)
-                                      :status (getf data :status)
+                                      :latest-comment latest-comment
+                                      :people people
+                                      :folders folders
                                       :type (getf data :type)))))
     (aif new-message
       (with-locked-hash-table (*db-messages*)
         (setf (gethash id *db-messages*) it))
       (progn
         (setf (message-time existing-message) time)
-        (setf (message-status existing-message) (getf data :status))))
+        (setf (message-latest-comment existing-message) latest-comment)
+        (setf (message-people existing-message) people)
+        (setf (message-folders existing-message) folders)))
     (index-mailbox-status (or existing-message new-message))))
 
 (defun all-message-mailboxes (message)

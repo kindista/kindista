@@ -99,8 +99,9 @@
 
 (defstruct message
   id ; message-id
-  mailboxes ; an a-list of (mailbox-id . last-read-comment)
-  status ; a p-list of mailboxes in each status (:read, :unread,
+  latest-comment ; latest comment on the conversation/reply
+  people ; an a-list of ((person-id . groupid) . (or last-read-comment :read))
+  folders ; a p-list of folders for people e.g. (:inbox (userids) etc,
   time ; time of the most recent comment, otherwise time created
   type ; :conversation, :reply, or :gratitude
 )

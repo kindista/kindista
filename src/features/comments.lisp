@@ -23,7 +23,7 @@
 (defun create-comment (&key on (by *userid*) text (time (get-universal-time)))
   (let* ((id (insert-db (list :type :comment
                              :on on
-                             :by by
+                             :by (list by) ;(personid . groupid)
                              :text text
                              :created time)))
          (on-type (db on :type))
