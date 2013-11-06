@@ -60,10 +60,6 @@
   (with-locked-hash-table (*comment-index*)
     (remhash id *comment-index*)))
 
-
-(defun latest-comment (id)
-  (or (getf (db id) :latest-comment) 0))
-
 (defun index-comment (id data)
   (with-locked-hash-table (*comment-index*)
     (asetf (gethash (getf data :on) *comment-index*) (sort (push id it) #'<))))

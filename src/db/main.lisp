@@ -101,7 +101,7 @@
   id ; message-id
   latest-comment ; latest comment on the conversation/reply
   people ; an a-list of ((person-id . groupid) . (or last-read-comment :read))
-  folders ; a p-list of folders for people e.g. (:inbox (userids) etc,
+  folders ; a p-list of folders for people e.g. (:inbox (userids) etc,)
   time ; time of the most recent comment, otherwise time created
   type ; :conversation, :reply, or :gratitude
 )

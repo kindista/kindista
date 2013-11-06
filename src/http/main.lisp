@@ -173,7 +173,7 @@
     (let* ((*userid* (or *userid* (token-userid *token*)))
            (*user* (or *user* (db *userid*)))
            (*user-mailbox* (or *user-mailbox*
-                               (gethash (list *userid*) *person-mailbox-index*))))
+                               (gethash *userid* *person-mailbox-index*))))
        ,@body)))
 
 (defmacro with-location (&body body)

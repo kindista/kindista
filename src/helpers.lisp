@@ -217,6 +217,9 @@
 (defun list-list (data)
   (list (list data)))
 
+(defun assoc-assoc (id a-list)
+  (assoc (assoc id (mapcar #'car a-list)) a-list))
+
 (defun parse-cons (string)
 "Returns a cons cell from a string. ex. 6 > (6) or 6.5 > (6 . 5)"
   (loop for i = 0 then (1+ j)
