@@ -626,7 +626,7 @@
          (amodify-db *userid* :emails
                               (cons new-primary
                                     (remove new-primary it :test #'string=)))
-         (flash (s+ new-primary " is now your primary email addrss."))
+         (flash (s+ new-primary " is now your primary email address."))
          (see-other "/settings/communication")))
 
       ((post-parameter "remove-email")
