@@ -22,26 +22,32 @@
 
 (defun create-comment (&key on (by *userid*) text (time (get-universal-time)))
   (let* ((id (insert-db (list :type :comment
-                             :on on
-                             :by (list by) ;(personid . groupid)
-                             :text text
-                             :created time)))
-         (on-type (db on :type))
-         (mailbox-states (message-mailboxes (gethash on *db-messages*)))
-         (mailboxes (all-message-mailboxes mailbox-states))
-         (sender-mailbox (assoc by mailboxes)))
+                              :on on
+                              :by (list by) ;(personid . groupid)
+                              :text text
+                              :created time)))
+         (on-message (gethash on *db-messages*))
+         (on-type (message-type on-message))
+         (people (message-people on-message))
+         (people-list (all-message-people on-message))
+         (others (remove by people-list))
+         (user-boxes (loop for person in people
+                           when (eql by (caar person))
+                           collect person)))
 
-    (flet ((unread-box (mailbox)
-             (let ((current-unread-status (cons-assoc mailbox
-                                                      (getf mailbox-states
-                                                            :unread))))
-              (if (cdr current-unread-status)
-                current-unread-status
-                (cons mailbox id)))))
+    (when user-boxes
+      (dolist (box user-boxes)
+        (asetf (cdr (assoc (car box) people :test #'equal)) id)))
 
-     (index-message on (modify-db on :latest-comment id
-                                     :mailboxes (list :read (list (list sender-mailbox))
-                                                      :unread (mapcar #'unread-box (remove sender-mailbox mailboxes :test #'equal))))))
+    (setf (message-folders on-message)
+          (list :inbox people-list
+                :unread others
+                :compost nil
+                :deleted nil))
+
+    (index-message on (modify-db on :latest-comment id
+                                    :folders (message-folders on-message)
+                                    :people people))
 
     (when (or (eq on-type :conversation)
               (eq on-type :reply))

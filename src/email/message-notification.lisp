@@ -22,17 +22,19 @@
          (on-id (getf comment :on))
          (on-item (db on-id))
          (on-type (getf on-item :type)) ; :converation or :reply
+         (participants (getf on-item :participants))
          (inventory-item (db (getf on-item :on)))
          (inventory-type (if (eq (getf inventory-item :type) :request)
                            "request" "offer"))
-         (inventory-text (getf inventory-item :text))
-         (sender-id (getf comment :by))
+         (inventory-text (or (getf inventory-item :text)
+                             (getf on-item :deleted-item-text)))
+         (sender-id (car (getf comment :by)))
          (sender-name (db sender-id :name))
          (inventory-poster (getf inventory-item :by))
-         (text (if (getf on-item :deleted-item-type)
-                 (deleted-invalid-item-reply-text (db (car (second (getf on-item :people))) :name)
+         (text (aif (getf on-item :deleted-item-type)
+                 (deleted-invalid-item-reply-text (db (car (remove sender-id participants)) :name)
                                                   sender-name
-                                                  inventory-type
+                                                  it
                                                   (getf comment :text))
                  (getf comment :text)))
          (subject (if (eq on-type :reply)
@@ -40,10 +42,10 @@
                       (s+ sender-name " has replied to your question about their " inventory-type ":")
                       (s+ sender-name " has replied to your " inventory-type ":"))
                     (getf on-item :subject)))
-         (people (getf on-item :people)))
-    (dolist (to (iter (for person in (remove sender-id people))
-                      (when (db person :notify-message)
-                        (collect person))))
+         (people (mapcar #'caar (getf on-item :people))))
+    (dolist (to (loop for person in (remove sender-id people)
+                      when (db person :notify-message)
+                      collect person))
       (cl-smtp:send-email
         +mail-server+
         "Kindista <noreply@kindista.org>"
@@ -52,7 +54,7 @@
         (comment-notification-email-text on-id
                                          sender-name
                                          subject
-                                         (name-list (remove to people)
+                                         (name-list (remove to participants)
                                                     :func #'person-name
                                                     :minimum-links 5)
                                          text
@@ -61,7 +63,7 @@
                         on-id
                         (person-email-link sender-id)
                         subject
-                        (name-list (remove to people)
+                        (name-list (remove to participants)
                                    :func #'person-email-link
                                    :minimum-links 5)
                         text
