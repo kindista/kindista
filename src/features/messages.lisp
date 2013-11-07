@@ -94,34 +94,52 @@
                     (asetf mailboxes (push (cons admin-id id) it)))))))
     mailboxes))
 
-(defun update-mailbox-data (message-id new-status &key last-read-comment)
+(defun update-folder-data (message new-status &key last-read-comment)
 "Update *db-messages* and (db message-id) when the state changes for a mailbox associated with that message."
   (with-locked-hash-table (*db-messages*)
-    (let* ((message (gethash message-id *db-messages*))
-           (statuses (message-status message))
-           (new-value-stored-p nil)
-           (valid-mailbox (cons-assoc mailbox (message-mailboxes message))))
+    (let* ((id (message-id message))
+           (people (message-people message))
+           (valid-participants (loop for person in people
+                                     when (eql *userid* (caar person))
+                                     collect person)))
 
-      (when valid-mailbox
-
+      (when valid-participants
         (when last-read-comment
-          (asetf (cdr valid-mailbox) last-read-comment))
+          (dolist (participant valid-participants)
+            (asetf (cdr (assoc (car participant) people :test #'equal)) last-read-comment))))
 
-        (doplist (status mailboxes-with-status statuses)
-          (asetf (getf (message-status message) status)
-                 (if (eql status new-status)
-                   (progn
-                     (setf new-value-stored-p t)
-                     (pushnew mailbox it :test #'equal))
-                   (remove mailbox it :test #'equal))))
 
-        (unless new-value-stored-p
-          (asetf (message-status message)
-                 (append (list new-status (list mailbox)) it)))
+      (flet ((remove-from-folders (folders)
+               (dolist (folder folders)
+                 (asetf (getf (message-folders message) folder)
+                        (remove *userid* it))))
+             (add-to-folder (folder)
+               (asetf (getf (message-folders message) folder)
+                      (pushnew *userid* it))))
 
-        (modify-db message-id :mailboxes (message-mailboxes message)
-                              :status (message-status message))
-        (index-mailbox-status message)))))
+        (case new-status
+          (:inbox
+            (add-to-folder :inbox)
+            (remove-from-folders (list :compost)))
+          (:read
+            (remove-from-folders (list :unread)))
+          (:unread
+            (add-to-folder :unread))
+          (:compost
+            (case (message-type message)
+              (:gratitude
+                 (add-to-folder :deleted)
+                 (remove-from-folders (list :inbox :compost :unread)))
+              (t
+               (remove-from-folders (list :inbox :unread))
+               (add-to-folder :compost))))
+          (:deleted
+            (add-to-folder :deleted)
+            (remove-from-folders (list :inbox :compost :unread)))))
+
+  (modify-db id :message-folders (message-folders message)
+                :people (message-people message))
+  (index-message-folders message))))
 
 (defun index-message (id data)
 "The people field for a conversation is a p-list of the status of the conversation for each participant: (:unread ((personid . last-read-comment)) ... "
@@ -222,7 +240,7 @@
         (:div :class "mail card menu"
           (if (string= filter "compost")
             (htm
-              (:button :class "cancel small" :type "submit" :name "mark-read"
+              (:button :class "cancel small" :type "submit" :name "move-to-inbox"
                 "move to inbox")
               (:button :class "cancel small" :type "submit" :name "delete"
                 "delete"))
@@ -418,54 +436,59 @@
 
 (defun post-messages ()
   (require-user
-    (let ((mailbox (or (parse-cons (post-parameter "mailbox"))
-                       (list *userid*)))
-          (messages (loop for pair in (post-parameters*)
+    (let ((messages (loop for pair in (post-parameters*)
                           when (and (string= (car pair) "message-id")
                                     (scan +number-scanner+ (cdr pair)))
                           collect (parse-integer (cdr pair))))
           (next (or (post-parameter "next") (referer))))
-
-      (unless (= (car mailbox) *userid*) (permission-denied))
 
       (cond
         ((not (post-parameter "message-id"))
          (flash "Please select at least one message first")
          (see-other next))
 
+        ((post-parameter "move-to-inbox")
+         (dolist (id messages)
+           (let ((message (gethash id *db-messages*)))
+             (when (or (not (member *userid* (getf (message-folders message) :inbox)))
+                       (member *userid* (getf (message-folders message) :compost)))
+               (update-folder-data message :inbox))))
+         (see-other next))
+
         ((post-parameter "mark-read")
          (dolist (id messages)
-           (let ((data (db id)))
-             (unless (member mailbox (getf (getf data :status) :read)
-                            :test #'equal)
-             (update-mailbox-data id mailbox :read :last-read-comment (getf data :latest-comment)))))
+           (let ((message (gethash id *db-messages*)))
+             (when (or (not (eql (message-latest-comment message)
+                              (cdr (assoc-assoc *userid* (message-people message)))))
+                       (member *userid* (getf (message-folders message) :unread)))
+               (update-folder-data message :read :last-read-comment (message-latest-comment message)))))
          (see-other next))
 
         ((post-parameter "mark-unread")
          (dolist (id messages)
-           (let ((data (db id)))
-             (unless (member mailbox (getf (getf data :status) :unread)
-                             :test #'equal)
-             (update-mailbox-data id mailbox :unread))))
+           (let ((message (gethash id *db-messages*)))
+             (unless (member *userid* (getf (message-folders message) :unread))
+               (update-folder-data message :unread :last-read-comment :unread))))
          (see-other next))
 
         ((post-parameter "discard")
          (dolist (id messages)
-           (let ((data (db id)))
-             (unless (member mailbox (getf (getf data :status) :compost)
-                             :test #'equal)
-             (update-mailbox-data id mailbox :compost))))
+           (let ((message (gethash id *db-messages*)))
+             (when (or (member *userid* (getf (message-folders message) :inbox))
+                       (member *userid* (getf (message-folders message) :unread))
+                       (not (member *userid* (getf (message-folders message) :compost))))
+               (update-folder-data message :compost))))
          (see-other next))
 
         ((post-parameter "delete")
          (dolist (id messages)
-           (let ((data (db id)))
-             (unless (member mailbox (getf (getf data :status) :deleted)
-                             :test #'equal)
-             (update-mailbox-data id mailbox :deleted))))
-         (see-other next))
-
-        ))))
+           (let ((message (gethash id *db-messages*)))
+             (when (or (member *userid* (getf (message-folders message) :inbox))
+                       (member *userid* (getf (message-folders message) :unread))
+                       (member *userid* (getf (message-folders message) :compost))
+                       (not (member *userid* (getf (message-folders message) :deleted))))
+               (update-folder-data message :deleted))))
+         (see-other next))))))
 
 
 

@@ -204,25 +204,21 @@
   (require-user
     (setf id (parse-integer id))
     (let* ((message (gethash id *db-messages*))
-           (mailboxes (message-mailboxes message))
-           (get-mailbox (parse-cons (get-parameter "mailbox")))
-           (unverified-mailbox (if (eql (car get-mailbox) *userid*)
-                                 get-mailbox
-                                 (list *userid*)))
-           (mailbox (member unverified-mailbox
-                            (all-message-mailboxes message) :test #'equal))
-
+           (people (message-people message))
+           (valid-mailboxes (loop for person in people
+                                  when (eql *userid* (caar person))
+                                  collect person))
            (type (message-type message)))
 
       (if (or (eq type :reply)
               (eq type :conversation))
-        (if mailbox
+        (if valid-mailboxes
           (let* ((it (db id))
-                 (people (getf it :people))
-                 (latest-seen (or (cdr (cons-assoc (list *userid*)
-                                                   (getf mailboxes :unread)))
+                 (person (assoc-assoc *userid* people))
+                 (latest-seen (or (when (numberp (cdr person))
+                                    (cdr person))
                                   (getf it :latest-comment)))
-                 (with (remove *userid* people)))
+                 (with (remove *userid* (getf it :participants))))
             (standard-page
               (aif (getf it :subject)
                 (ellipsis it 24)
@@ -245,39 +241,39 @@
                             (htm (:p "with " (str (name-list-all with))))
                             (htm (:p :class "error" "Everybody else has left this conversation."))))
                         (:reply
-                          (let ((item (db (getf it :on))))
-                            (if (eql (getf it :by) *userid*)
-                              (htm
-                                (:p
-                                "You replied to "
-                                (str (person-link (or (getf item :by)
-                                                      (first with))))
-                                "'s "
-                                (case (getf item :type)
-                                  (:offer
-                                   (htm (:a :href (strcat "/offers/" (getf it :on)) "offer")))
-                                  (:request
-                                   (htm (:a :href (strcat "/requests/" (getf it :on)) "request")))
-                                  (t (case (getf it :deleted-item-type)
-                                       (:offer (htm "offer"))
-                                       (:request (htm"request"))
-                                       (t (str "deleted offer or request")))))
-                                ":"))
-                              (htm
-                                (:p
-                                  "A conversation with "
-                                  (str (person-link (getf it :by)))
-                                  " about your "
-                                  (case (getf item :type)
-                                    (:offer
-                                     (htm (:a :href (strcat "/offers/" (getf it :on)) "offer")))
-                                    (:request
-                                     (htm (:a :href (strcat "/requests/" (getf it :on)) "request")))
-                                    (t (case (getf it :deleted-item-type)
-                                         (:offer (htm "offer"))
-                                         (:request (htm"request"))
-                                         (t (str "deleted offer or request")))) )
-                                  ":")))
+                          (let* ((item (db (getf it :on)))
+                                 (deleted-type (getf it :deleted-item-type))
+                                 (original-message-type (getf it :type)))
+                            (flet ((inventory-url ()
+                                    (html
+                                      (case original-message-type
+                                        (:offer
+                                         (htm (:a :href (strcat "/offers/" (getf it :on))
+                                               "offer")))
+                                        (:request
+                                         (htm (:a :href (strcat "/requests/" (getf it :on))
+                                               "request")))
+                                        (t (case deleted-type
+                                             (:offer (htm "offer"))
+                                             (:request (htm "request"))
+                                             (t (htm (:span :class "none" "deleted offer or request")))))))))
+
+                              (if (eql (getf it :by) *userid*)
+                                (htm
+                                  (:p
+                                  "You replied to "
+                                  (str (person-link (or (getf item :by)
+                                                        (first with))))
+                                  "'s "
+                                  (str (inventory-url))
+                                  ":"))
+                                (htm
+                                  (:p
+                                    "A conversation with "
+                                    (str (person-link (getf it :by)))
+                                    " about your "
+                                    (str (inventory-url))
+                                    ":"))))
                             (htm (:blockquote :class "review-text"
                                    (str (html-text (or (getf item :text)
                                                        (getf it :deleted-item-text))))))))))))
@@ -285,25 +281,26 @@
                 (let ((comments (gethash id *comment-index*)))
                   (dolist (comment-id comments)
                     (let* ((data (db comment-id))
+                           (participants (getf it :participants))
+                           (by (car (getf data :by)))
+                           (bydata (db by))
                            (text (if (and (= comment-id (first comments))
                                           (getf it :deleted-item-type))
                                    (deleted-invalid-item-reply-text
-                                     (db (second people) :name)
-                                     (db (first people) :name)
+                                     (db (car (remove by participants)) :name)
+                                     (getf bydata :name)
                                      (case (getf it :deleted-item-type)
                                        (:offer "offer")
                                        (:request "request"))
                                      (getf data :text))
-                                   (getf data :text)))
-                           (by (getf data :by))
-                           (bydata (db by)))
+                                   (getf data :text))))
                       (str
                         (card
                           (html
                             (str (h3-timestamp (getf data :created)))
                             (:p (:a :href (s+ "/people/" (username-or-id by))
                                  (str (getf bydata :name))))
-                            (:p :class (when (>= (or latest-seen 0) comment-id) "new") 
+                            (:p :class (when (>= (or latest-seen 0) comment-id) "new")
                               (str (regex-replace-all "\\n" text "<br>")))))))))
 
                 (:div :class "item" :id "reply"
@@ -313,14 +310,12 @@
                       (:tr
                         (:td (:textarea :cols "150" :rows "4" :name "text"))
                         (:td
-                          (:button :class "yes" :type "submit" :class "submit" "Send")))))) 
+                          (:button :class "yes" :type "submit" :class "submit" "Send"))))))
 
-               ;(unless
-               ;  (eql latest-seen (latest-comment id))
-
-               ;  (amodify-db id :people (progn
-               ;                           (setf (cdr (assoc *userid* it))
-               ;                                 (latest-comment id)) it)))
+                (when (or (not (eql (message-latest-comment message)
+                                 (cdr (assoc-assoc *userid* (message-people message)))))
+                          (member *userid* (getf (message-folders message) :unread)))
+                  (update-folder-data message :read :last-read-comment (message-latest-comment message))) 
                 ; get most recent comment seen
                 ; get comments for
               )
