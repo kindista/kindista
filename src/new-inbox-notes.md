@@ -1,3 +1,10 @@
+# Testing needed
+
+- sending gratitude/message notifications
+
+
+
+
 # Migration steps
 
 (stop *acceptor*)

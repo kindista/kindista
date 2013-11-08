@@ -238,14 +238,16 @@
          (participants (list user by))
          (senders (mailbox-ids (list user)))
          (bys (mailbox-ids (list by)))
-         (sender-boxes (mapcar #'(lambda (id)
-                                   (cons (list id) :read))
+         (sender-boxes (mapcar #'(lambda (mailbox)
+                                   (cons mailbox :read))
                                senders))
-         (by-boxes (mapcar #'(lambda (id)
-                                   (cons (list id) :unread))
+         (by-boxes (mapcar #'(lambda (mailbox)
+                                   (cons mailbox :unread))
                                bys))
          (people (append by-boxes sender-boxes))
-         (message-folders (list :inbox (append senders bys)))
+         (people-ids (mapcar #'car (remove-duplicates (append senders bys))))
+         (message-folders (list :inbox people-ids
+                                :unread (remove user people-ids)))
          (id (insert-db (if pending-deletion
                           (list :type :reply
                                 :on on

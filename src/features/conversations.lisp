@@ -21,11 +21,13 @@
   (let* ((time (get-universal-time))
          (senders (mailbox-ids (list user)))
          (recipients (mailbox-ids people))
-         (people (mapcar #'list-list (append senders recipients)))
-         (message-folders (list :inbox (append senders recipients)))
+         (mailboxes (append senders recipients))
+         (people-data (mapcar #'list mailboxes))
+         (people-ids (remove-duplicates (mapcar #'car mailboxes)))
+         (message-folders (list :inbox people-ids))
          (id (insert-db (list :type :conversation
                               :participants (cons user people)
-                              :people people
+                              :people people-data
                               :message-folders message-folders
                               :public public
                               :subject subject
@@ -368,7 +370,7 @@
             (flash "Your message has been sent.")
             (contact-opt-out-flash people)
             (send-metric* :message-sent
-                          (create-comment :on id :text (post-parameter "text"))) 
+                          (create-comment :on id :text (post-parameter "text")))
             (see-other (script-name*))))
 
          (permission-denied)))

@@ -23,10 +23,10 @@
 (defun create-gratitude (&key author subjects text)
   (let* ((time (get-universal-time))
          (people-list (mailbox-ids subjects))
-         (people (mapcar #'(lambda (id)
-                             (cons (list id) :unread))
-                         subjects))
-         (message-folders (list :inbox people-list))
+         (people (mapcar #'(lambda (mailbox)
+                             (cons mailbox :unread))
+                         people-list))
+         (message-folders (list :inbox (remove-duplicates (mapcar #'car people-list))))
          (gratitude (insert-db `(:type :gratitude
                                  :author ,author
                                  :subjects ,subjects
