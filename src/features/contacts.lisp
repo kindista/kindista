@@ -17,13 +17,24 @@
 
 (in-package :kindista)
 
+(defun create-contact-notification (&key follower contact)
+  (let* ((time (get-universal-time))
+         (recipient-mailboxes (maphash #'list (mailbox-ids contact)))
+         (id (insert-db (list :type :contact-n
+                              :follower follower
+                              :mailboxes (list :unread recipient-mailboxes)
+                              :time time))))
+
+
+    id))
+
 (defun add-contact (new-contact-id userid)
   (amodify-db userid :following (cons new-contact-id it))
   (with-locked-hash-table (*followers-index*)
     (push userid (gethash new-contact-id *followers-index*)))
   ;at some point we can start notifing people when oters add them to their 
   ;contacts
-  ;(create-contact-notification :subject userid :object new-contact-id)
+  ;(create-contact-notification :follower userid :contact new-contact-id)
   )
 
 (defun remove-contact (contact-id userid)

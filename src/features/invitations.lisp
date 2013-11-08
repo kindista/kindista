@@ -103,13 +103,10 @@
             :key #'car))
   (notice :send-invitation :time now :id id)))
 
-(defvar *auto-invite-reminder-timer* nil)
-
-(defun automatic-invitation-reminders ()
+(defun get-automatic-invitation-reminders ()
   (when (or *productionp*
             ; only use on the live server or with test data
             (< (length *invitation-reminder-timer-index*) 10))
-    (setf *auto-invite-reminder-timer* (make-timer #'automatic-invitation-reminders))
     (loop for (time . id) in *invitation-reminder-timer-index*
         with now = (get-universal-time)
         while (< (+ (car (db id :times-sent))
@@ -121,14 +118,7 @@
                  (asetf *invitation-reminder-timer-index*
                         (remove (rassoc id it)
                                 it
-                                :test #'equal))))
-        ; schedule timer for the first invitation that is less than 5 weeks old
-        ; if no invitations are present, check daily
-        finally (schedule-timer *auto-invite-reminder-timer*
-                                (if time
-                                  (+ time (* 5 +week-in-seconds+))
-                                  (+ now +day-in-seconds+))
-                                :absolute-p t))))
+                                :test #'equal)))))))
 
 (defun send-automatic-invitation-reminder (id)
   (let ((invitation (db id))

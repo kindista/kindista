@@ -153,7 +153,7 @@
             (:message-sent (record 'messages-sent (second message)))
             (:daily
               (save-metrics metric-system)
-              (clear 'active-today 'checked-mailbox 'used-search 'got-offers 'got-requests)
+              (clear 'active-today 'checked-mailbox 'used-search 'got-offers 'got-requests 'messages-sent)
               (schedule-timer (slot-value metric-system 'timer)
                               (local-time:timestamp-to-universal
                                 (local-time:adjust-timestamp (local-time:now)

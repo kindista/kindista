@@ -27,176 +27,467 @@
             (collect id)))))
 
 (defun new-inbox-items (&optional (userid *userid*))
-  (loop for item in (all-inbox-items :id userid)
-        while (< (or (db userid :last-checked-mail) 0) (result-time item))
-        unless (case (result-type item)
-                 (:conversation
-                   (eql (db (db (result-id item) :latest-comment) :by)
-                        userid))
-                 (:reply
-                   (eql (db (db (result-id item) :latest-comment) :by)
-                        userid))
-                 (:gratitude
-                   (eql (db (result-id item) :author) userid)))
-        counting item into new-items
-        finally (return new-items)))
+  (length (getf (if *userid*
+                  *user-mailbox*
+                  (gethash userid *person-mailbox-index*))
+                :unread)))
 
-(defun all-inbox-items (&key (id *userid*))
-  (sort (append (gethash id *person-conversation-index*)
-                (gethash id *person-notification-index*)
-                (remove-if-not #'result-gratitude-p
-                               (gethash id *profile-activity-index*)))
-    #'> :key #'result-time))
+(defun migrate-to-new-inboxes ()
+  (dolist (id (hash-table-keys *db*))
+    (let* ((data (db id))
+           (latest-comment (getf data :latest-comment))
+           (type (getf data :type))
+           (old-people (getf data :people))
+           (new-people nil)
+           (participants nil)
+           (inbox nil))
+      (when (or (eq type :conversation)
+                (eq type :reply)
+                (eq type :gratitude))
+        (case type
+          ((or :conversation :reply)
+           (dolist (person old-people)
+             (let ((new-person (cons (list (car person)) (cdr person))))
+               (when (or (and (cdr person)
+                            (= (cdr person) latest-comment))
+                       (= (db latest-comment :by) (car person))
+                       (<= (db latest-comment :created)
+                           (or (db (car person) :last-checked-mail) 0)))
+                   (setf (cdr new-person) latest-comment))
+               (asetf new-people (push new-person it))
+               (asetf participants (push (car person) it))
+               (asetf inbox (push (car person) it))))
+           (modify-db id :people new-people
+                         :message-folders (list :inbox inbox)
+                         :participants participants))
+          (:gratitude
+           (dolist (subject (getf data :subjects))
+             (let ((new-person (cons (list subject) nil)))
+                (if (<= (getf data :created)
+                        (or (db subject :last-checked-mail) 0))
+                  (setf (cdr new-person) :read)
+                  (setf (cdr new-person) :unread))
+                (asetf inbox (push subject it))
+                (asetf new-people (push new-person it))))
+           (modify-db id :people new-people
+                         :message-folders (list :inbox inbox)))
+         (:comment
+           (amodify-db id :by (list it))))
+
+        (setf inbox nil
+              new-people nil
+              participants nil))))
+
+  (dolist (id (hash-table-keys *db*))
+    (when (eql (db id :type) :comment)
+      (amodify-db id :by (list it)))))
+
+(defun mailbox-ids (id-list)
+"Takes a list of group/people ids and returns their mailboxes."
+  (let (mailboxes)
+    (dolist (id id-list)
+      (let ((data (db id)))
+        (case (getf data :type)
+          (:person (asetf mailboxes (push (list id) it)))
+          (:group (dolist (admin-id (getf data :admins))
+                    (asetf mailboxes (push (cons admin-id id) it)))))))
+    mailboxes))
+
+(defun update-folder-data (message new-status &key last-read-comment)
+"Update *db-messages* and (db message-id) when the state changes for a mailbox associated with that message."
+  (with-locked-hash-table (*db-messages*)
+    (let* ((id (message-id message))
+           (people (message-people message))
+           (valid-participants (loop for person in people
+                                     when (eql *userid* (caar person))
+                                     collect person)))
+
+      (when valid-participants
+        (when last-read-comment
+          (dolist (participant valid-participants)
+            (asetf (cdr (assoc (car participant) people :test #'equal)) last-read-comment))))
+
+
+      (flet ((remove-from-folders (folders)
+               (dolist (folder folders)
+                 (asetf (getf (message-folders message) folder)
+                        (remove *userid* it))))
+             (add-to-folder (folder)
+               (asetf (getf (message-folders message) folder)
+                      (pushnew *userid* it))))
+
+        (case new-status
+          (:inbox
+            (add-to-folder :inbox)
+            (remove-from-folders (list :compost)))
+          (:read
+            (remove-from-folders (list :unread)))
+          (:unread
+            (add-to-folder :unread))
+          (:compost
+            (case (message-type message)
+              (:gratitude
+                 (add-to-folder :deleted)
+                 (remove-from-folders (list :inbox :compost :unread)))
+              (t
+               (remove-from-folders (list :inbox :unread))
+               (add-to-folder :compost))))
+          (:deleted
+            (add-to-folder :deleted)
+            (remove-from-folders (list :inbox :compost :unread)))))
+
+  (modify-db id :message-folders (message-folders message)
+                :people (message-people message))
+  (index-message-folders message))))
+
+(defun index-message (id data)
+"The people field for a conversation is a p-list of the status of the conversation for each participant: (:unread ((personid . last-read-comment)) ... "
+  (let* ((time (case (getf data :type)
+                 ((or :conversation :reply)
+                  (db (getf data :latest-comment) :created))
+                 (:gratitude (or (getf data :edited)
+                                 (getf data :created)))))
+         (latest-comment (getf data :latest-comment))
+         (folders (getf data :message-folders))
+         (people (case (getf data :type)
+                   (:gratitude (remove (assoc-assoc (getf data :author)
+                                                    (getf data :people))
+                                       (getf data :people)
+                                       :test #'equal))
+                   (t (getf data :people))))
+         (existing-message (gethash id *db-messages*))
+         (new-message (unless existing-message
+                        (make-message :id id
+                                      :time time
+                                      :latest-comment latest-comment
+                                      :people people
+                                      :folders folders
+                                      :type (getf data :type)))))
+    (aif new-message
+      (with-locked-hash-table (*db-messages*)
+        (setf (gethash id *db-messages*) it))
+      (progn
+        (setf (message-time existing-message) time)
+        (setf (message-latest-comment existing-message) latest-comment)
+        (setf (message-people existing-message) people)
+        (setf (message-folders existing-message) folders)))
+    (index-message-folders (or existing-message new-message))))
+
+(defun all-message-people (message)
+"a list of people with access to a given message"
+  (mapcar #'caar (message-people message)))
+
+(defun index-message-folders (message)
+"*person-mailbox-index* is a hashtable whose key is a userid and whose value is a plist such as :inbox (messages) :unread (messages) ..."
+  (with-locked-hash-table (*person-mailbox-index*)
+    (dolist (person (message-people message))
+      ;; add message to people's unread folder as necessary
+      (asetf (getf (gethash (caar person) *person-mailbox-index*) :unread)
+             (if (or (eql (cdr person) :read)
+                     (eql (cdr person) (message-latest-comment message)))
+               (remove message it)
+               (pushnew message it))))
+    (let ((all-people (all-message-people message)))
+      (doplist (folder people-in-folder (message-folders message))
+      ;;delete message from people's folders as necessary
+        (dolist (person all-people)
+          (unless (member person people-in-folder)
+            (asetf (getf (gethash person *person-mailbox-index*) folder)
+                   (remove message it))))
+        (dolist (person people-in-folder)
+          ;;add message to people's folders as necessary
+          (asetf (getf (gethash person *person-mailbox-index*) folder)
+                 (pushnew message it)))))))
+
+(defun message-filter (&optional (selected "all"))
+  (html
+    (:form :method "get" :action "/messages"
+     (:label :for "filter" "display")
+     (:select :name "filter"
+              :id "filter"
+              :onchange "this.form.submit()"
+       (:option :value "all" :selected (when (string= selected "all") "")
+         "all mail")
+       (:option :value "unread" :selected (when (string= selected "unread") "")
+         "unread mail")
+       (:option :value "compost" :selected (when (string= selected "compost") "")
+         "compost"))
+      (:input :type "submit" :class "no-js" :value "apply"))))
+
+(defun filter-inbox-items (filter &key (id *userid*))
+  (let ((message-index (if *userid*
+                         *user-mailbox*
+                         (gethash id *person-mailbox-index*))))
+   (sort
+     (cond
+       ((string= "all" filter)
+        (getf message-index :inbox))
+       ((string= "unread" filter)
+        (getf message-index :unread))
+       ((string= "compost" filter)
+        (getf message-index :compost)))
+    #'> :key #'message-time)))
 
 (defun inbox-items (&key (page 0) (count 20))
-  (let ((start (* page count))
-        (items (all-inbox-items)))
+  (let* ((start (* page count))
+         (filter (or (get-parameter "filter") "all"))
+         (items (filter-inbox-items filter)))
     (html
-      (iter (for i from 0 to (+ start count))
-            (cond
-              ((< i start)
-               (setf items (cdr items)))
-              ((and (>= i start) items)
-               (let* ((item (car items))
-                      (item-data (db (result-id item))))
-                 (case (result-type item)
-                   (:conversation
-                     (let* ((id (result-id item))
-                            (latest (latest-comment id))
-                            (latest-seen (cdr (assoc *userid* (getf item-data :people))))
-                            (comment-data (db latest))
-                            (comments (length (gethash id *comment-index*)))
-                            (people (remove *userid*
-                                            (cons (getf comment-data :by)
-                                                  (remove (getf comment-data :by)
-                                                          (mapcar #'car (getf item-data :people)))))))
-                       (str
-                         (card
-                           (html
-                             (str (h3-timestamp (result-time item)))
-                             (:p :class "people"
-                               (cond
-                                 ((eql (getf comment-data :by) *userid*)
-                                  (str "↪ "))
-                                 ((not (eql latest latest-seen))
-                                  (str "• ")))
-
-                               (if people
-                                 (str (name-list people))
-                                 (htm (:span :class "nobody" "Empty conversation"))))
-
-                             (:p :class "text"
-                               (:span :class "title"
-                                 (:a :href (strcat "/conversations/" id) (str (ellipsis (getf item-data :subject) 30)))
-                                 (when (> comments 1)
-                                   (htm
-                                     " (" (str comments) ")")))
-                               " - "
-                               (:a :href (strcat "/conversations/" id)
-                                (str (ellipsis (getf comment-data :text))))))))))
-                   (:reply
-                     (let* ((id (result-id item))
-                            (latest (latest-comment id))
-                            (latest-seen (cdr (assoc *userid* (getf item-data :people))))
-                            (comment-data (db latest))
-                            (original-item (db (getf item-data :on)))
-                            (with (or (getf original-item :by)
-                                      (first (remove *userid*
-                                                     (mapcar #'car (db id :people))))))
-                            (comments (length (gethash id *comment-index*))))
-                       (str
-                         (card
-                           (html
-                             (str (h3-timestamp (result-time item)))
-                             (:p :class "people"
-                               (cond
-                                 ((eql (getf comment-data :by) *userid*)
-                                  (str "↪ "))
-                                 ((not (eql latest latest-seen))
-                                  (str "• ")))
-
-                               (if (eql (db id :by) *userid*)
-                                 (htm
-                                   "You replied to "
-                                   (str (person-link with))
-                                   "'s "
-                                   (case (getf original-item :type)
-                                     (:offer
-                                      (htm (:a :href (strcat "/offers/" (getf item-data :on)) "offer")))
-                                     (:request
-                                      (htm (:a :href (strcat "/requests/" (getf item-data :on)) "request")))
-                                     (t (htm (:span :class "none" "deleted offer or request")))))
-                                 (htm
-                                   (str (person-link (getf item-data :by)))
-                                   " replied to your "
-                                   (case (getf original-item :type)
-                                     (:offer
-                                      (htm (:a :href (strcat "/offers/" (getf item-data :on)) "offer")))
-                                     (:request
-                                      (htm (:a :href (strcat "/requests/" (getf item-data :on)) "request")))
-                                     (t (htm (:span :class "none" "deleted offer or request")))))))
-
-                             (:p :class "text"
-                               (:span :class "title"
-                                 (:a :href (strcat "/conversations/" id)
-                                   (str (ellipsis (getf original-item :text) 30)))
-                                 (when (> comments 1)
-                                   (htm
-                                     " (" (str comments) ") "))
-                                 " - ")
-                               (:a :href (strcat "/conversations/" id)
-                                (str (ellipsis (getf comment-data :text))))))))))
-                   (:contact-n
-                     (str
-                      (card
-                        (html
-                          (str (h3-timestamp (result-time item)))
-                          (:p (str (person-link (getf item-data :subject))) " added you as a contact.")))))
-
-                   (:gratitude
-                     (unless (eql (getf item-data :author) *userid*)
-                       (str
-                        (card
-                          (html
-                            (str (h3-timestamp (result-time item)))
-                            (:p (str (person-link (getf item-data :author))) " shared " (:a :href (strcat "/gratitude/" (result-id item)) "gratitude") " for you."))))))))
-               (setf items (cdr items)))
-
-              ((and (eql i start)
-                    (not items))
+      (str (message-filter filter))
+      (:form :method "post" :action "/messages"
+        (:input :type "hidden" :name "filter" :value filter)
+        (:div :class "mail card menu"
+          (if (string= filter "compost")
+            (htm
+              (:button :class "cancel small" :type "submit" :name "move-to-inbox"
+                "move to inbox")
+              (:button :class "cancel small" :type "submit" :name "delete"
+                "delete"))
+            (htm
+              (:button :class "cancel small" :type "submit" :name "mark-read"
+                "mark read")
+              (:button :class "cancel small" :type "submit" :name "mark-unread"
+                "mark unread")
+              (:button :class "cancel small" :type "submit" :name "discard"
+                "discard"))))
+        (iter (for i from 0 to (+ start count))
+          (cond
+            ((< i start)
+             (setf items (cdr items)))
+            ((and (>= i start) items)
+             (let* ((item (car items))
+                    (item-id (message-id item))
+                    (folders *user-mailbox*)
+                    (status (if (member item (getf folders :unread))
+                               :unread
+                               :read)))
                (htm
-                 (:div :class "small card"
-                   (:em "No results")))
-               (finish)))
+                 (:table :class "messages"
+                   (:tr :class (s+ (case status
+                                    (:read "read")
+                                    (:unread "unread"))
+                                  " mail card")
+                     (:td :class "message-selector"
+                       (:input :type "checkbox"
+                              :name "message-id"
+                              :value item-id))
+                     (:td :class "message-content"
+                       (case (message-type item)
+                         (:conversation
+                           (str (conversation-inbox-item item)))
+                         (:reply
+                           (str (reply-inbox-item item)))
+                         (:contact-n
+                           (htm
+                             (str (h3-timestamp (message-time item)))
+                             (:p (str (person-link (getf (db item-id)
+                                                         :subject)))
+                              " added you as a contact.")))
 
-            (finally
-              (when (or (> page 0) (cdr items))
-                (htm
-                  (:div :class "item"
-                   (when (> page 0)
-                     (htm
-                       (:a :href (strcat "/messages?p=" (- page 1)) "< previous page")))
-                   "&nbsp;"
-                   (when (cdr items)
-                     (htm
-                       (:a :style "float: right;" :href (strcat "/messages?p=" (+ page 1)) "next page >")))))))))))
+                         (:gratitude
+                           (htm
+                             (str (h3-timestamp (message-time item)))
+                             (:p :class "people"
+                               (str (person-link (getf (db item-id) :author)))
+                                 " shared "
+                                 (:a :href (strcat "/gratitude/" item-id)
+                                     "gratitude")
+                                 " for you.")))))))))
+             (setf items (cdr items)))
+
+            ((and (eql i start)
+                  (not items))
+             (htm
+               (:div :class "small card"
+                 (:em "No messages")))
+             (finish)))
+
+          (finally
+            (when (or (> page 0) (cdr items))
+              (htm
+                (:div :class "item"
+                 (when (> page 0)
+                   (htm
+                     (:a :href (strcat "/messages?p=" (- page 1)) "< previous page")))
+                 "&nbsp;"
+                 (when (cdr items)
+                   (htm
+                     (:a :style "float: right;" :href (strcat "/messages?p=" (+ page 1)) "next page >"))))))))))))
+
+(defun conversation-inbox-item (message)
+  (let* ((id (message-id message))
+         (conversation (db id))
+         (latest (message-latest-comment message))
+         (comment-data (db latest))
+         (comment-by (car (getf comment-data :by)))
+         (comments (length (gethash id *comment-index*)))
+         (participants (remove *userid*
+                         (cons comment-by
+                               (remove comment-by
+                                       (getf conversation :participants))))))
+    (flet ((url (text)
+             (html
+               (:a :href (strcat "/conversations/" id)
+                   (str text)))))
+     (html
+        (str (h3-timestamp (message-time message)))
+        (:p :class "people"
+          (when (eql comment-by *userid*)
+            (str "↪ "))
+
+          (aif participants
+            (str (name-list it))
+            (htm (:span :class "nobody" "Empty conversation"))))
+
+        (:p :class "text"
+          (:span :class "title"
+           (str (url (ellipsis (getf conversation :subject) 30)))
+            (when (> comments 1)
+              (htm
+                " (" (str comments) ")")))
+          " - "
+          (str (url (ellipsis (getf comment-data :text)))))))))
+
+(defun reply-inbox-item (message)
+  (let* ((id (message-id message))
+         (reply (db id))
+         (latest (message-latest-comment message))
+         (comment-data (db latest))
+         (comment-by (car (getf comment-data :by)))
+         (original-message (db (getf reply :on)))
+         (deleted-type (getf reply :deleted-message-type))
+         (original-message-type (or (getf original-message :type)
+                                 deleted-type))
+         (participants (db id :participants))
+         (with (or (getf original-message :by)
+                   (first (remove *userid* participants))))
+         (comments (length (gethash id *comment-index*)))
+         (text (if (and (= comments 1)
+                        deleted-type)
+                 (deleted-invalid-item-reply-text
+                   (db (second participants) :name)
+                   (db (first participants) :name)
+                   (case deleted-type
+                     (:offer "offer")
+                     (:request "request"))
+                   (getf comment-data :text))
+                 (getf comment-data :text))))
+    (flet ((inventory-url ()
+             (html
+               (case original-message-type
+                 (:offer
+                  (htm (:a :href (strcat "/offers/" (getf reply :on))
+                        "offer")))
+                 (:request
+                  (htm (:a :href (strcat "/requests/" (getf reply :on))
+                        "request")))
+                 (t (case deleted-type
+                      (:offer (htm "offer"))
+                      (:request (htm "request"))
+                      (t (htm (:span :class "none" "deleted offer or request"))))))))
+           (reply-url (text)
+             (html (:a :href (strcat "/conversations/" id)
+                     (str text)))))
+
+      (html
+        (str (h3-timestamp (message-time message)))
+        (:p :class "people"
+          (when (eql comment-by *userid*)
+            (str "↪ "))
+
+          (if (eql (getf reply :by) *userid*)
+            (htm
+              "You replied to "
+              (str (person-link with))
+              "'s "
+              (str (inventory-url)))
+            (htm
+              (str (person-link (getf reply :by)))
+              " replied to your "
+              (str (inventory-url)))))
+
+        (:p :class "text"
+          (:span :class "title"
+            (str (reply-url (ellipsis (getf original-message :text) 30)))
+            (when (> comments 1)
+              (htm
+                " (" (str comments) ") "))
+            " - ")
+          (str (reply-url (ellipsis text))))))))
 
 (defun get-messages ()
   (require-user
-    (modify-db *userid* :last-checked-mail (get-universal-time))
-    (send-metric* :checked-mailbox *userid*)
-    (standard-page
-
-      "Messages"
-
-      (html
-        (:div :class "card"
+    (let ((mailbox (or (awhen (get-parameter "mailbox")
+                         (parse-cons it))
+                       (list *userid*))))
+      (unless (= (car mailbox) *userid*) (permission-denied))
+      (modify-db *userid* :last-checked-mail (get-universal-time))
+      (send-metric* :checked-mailbox *userid*)
+      (standard-page
+        "Messages"
+        (html
           (str (menu-horiz "actions"
-                           (html (:a :href "/conversations/new" "start a new conversation")))))
+                           (html (:a :href "/conversations/new" "start a new conversation"))))
+          (str (inbox-items :page (if (scan +number-scanner+ (get-parameter "p"))
+                                    (parse-integer (get-parameter "p"))
+                                    0))))
+        :selected "messages"))))
+
+(defun post-messages ()
+  (require-user
+    (let ((messages (loop for pair in (post-parameters*)
+                          when (and (string= (car pair) "message-id")
+                                    (scan +number-scanner+ (cdr pair)))
+                          collect (parse-integer (cdr pair))))
+          (next (or (post-parameter "next") (referer))))
+
+      (cond
+        ((not (post-parameter "message-id"))
+         (flash "Please select at least one message first")
+         (see-other next))
+
+        ((post-parameter "move-to-inbox")
+         (dolist (id messages)
+           (let ((message (gethash id *db-messages*)))
+             (when (or (not (member *userid* (getf (message-folders message) :inbox)))
+                       (member *userid* (getf (message-folders message) :compost)))
+               (update-folder-data message :inbox))))
+         (see-other next))
+
+        ((post-parameter "mark-read")
+         (dolist (id messages)
+           (let ((message (gethash id *db-messages*)))
+             (when (or (not (eql (message-latest-comment message)
+                              (cdr (assoc-assoc *userid* (message-people message)))))
+                       (member *userid* (getf (message-folders message) :unread)))
+               (update-folder-data message :read :last-read-comment (message-latest-comment message)))))
+         (see-other next))
+
+        ((post-parameter "mark-unread")
+         (dolist (id messages)
+           (let ((message (gethash id *db-messages*)))
+             (unless (member *userid* (getf (message-folders message) :unread))
+               (update-folder-data message :unread :last-read-comment :unread))))
+         (see-other next))
+
+        ((post-parameter "discard")
+         (dolist (id messages)
+           (let ((message (gethash id *db-messages*)))
+             (when (or (member *userid* (getf (message-folders message) :inbox))
+                       (member *userid* (getf (message-folders message) :unread))
+                       (not (member *userid* (getf (message-folders message) :compost))))
+               (update-folder-data message :compost))))
+         (see-other next))
+
+        ((post-parameter "delete")
+         (dolist (id messages)
+           (let ((message (gethash id *db-messages*)))
+             (when (or (member *userid* (getf (message-folders message) :inbox))
+                       (member *userid* (getf (message-folders message) :unread))
+                       (member *userid* (getf (message-folders message) :compost))
+                       (not (member *userid* (getf (message-folders message) :deleted))))
+               (update-folder-data message :deleted))))
+         (see-other next))))))
 
 
-        (str (inbox-items :page (if (scan +number-scanner+ (get-parameter "p"))
-                                  (parse-integer (get-parameter "p"))
-                                  0))))
 
-      :selected "messages")))

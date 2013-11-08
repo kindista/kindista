@@ -109,7 +109,11 @@
           (dolist (image-id images)
             (htm
               (:div :class "activity-image"
-                (:img :src (get-image-thumbnail image-id 300 300))
+                (:img :src (get-image-thumbnail image-id 300 300)
+                      :alt (case (getf item :type)
+                             (:offer "offer")
+                             (:request "request")
+                             (:gratitude "gift")))
                 (when (or (eql *userid* by)
                           adminp
                           (getf *user* :admin))

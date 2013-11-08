@@ -19,7 +19,7 @@
 
 (defun settings-tabs-html (tab &optional groupid)
   (html
-    (:menu :class "bar"
+    (:menu :type "toolbar ":class "bar"
       (unless groupid
         (if (equal tab "personal")
           (htm (:li :class "selected" "Personal Settings"))

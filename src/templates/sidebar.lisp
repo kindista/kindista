@@ -24,9 +24,9 @@
         (:h3 "Log in")
         (:form :method "POST" :action "/login" :id "login"
           (:label :for "username" "Email")
-          (:input :type "text" :name "username" :value (get-parameter "retry"))
+          (:input :type "text" :id "username" :name "username" :value (get-parameter "retry"))
           (:label :for "password" "Password")
-          (:input :type "password" :name "password")
+          (:input :type "password" :id "password" :name "password")
           (:button :type "submit" :class "yes" "Log in")
           (:a :href "/reset" "Forgot your password?"))))))
 

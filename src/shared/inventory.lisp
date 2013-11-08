@@ -200,28 +200,76 @@
     (delete-comments id)
     (remove-from-db id)))
 
-(defun create-reply (&key on text (user *userid*))
+(defun delete-pending-inventory-item (id)
+  (let ((data (db id)))
+    (with-locked-hash-table (*pending-person-items-index*)
+      (asetf (gethash (getf data :by) *pending-person-items-index*)
+             (remove id it)))
+    (remove-from-db id)))
+
+(defun deleted-invalid-item-reply-text (to-name from-name type &optional explanation)
+  (strcat "Greetings " to-name ","
+        #\linefeed
+        #\linefeed
+        "Your " type
+        " violated Kindista's Terms of Use and we had to remove it. "
+        "Please list multiple offers and requests separately (not in the same item). "
+        "Kindista is for giving and receiving freely; please avoid any language which implies that you are expecting barter or money in exchange for your offer or request. "
+        #\linefeed
+        (aif explanation
+          (strcat #\linefeed it #\linefeed)
+          "")
+        #\linefeed
+        "To ensure that this doesn't happen again, please review Kindista's Sharing Guidelines before posting any additional offers or requests:"
+        #\linefeed
+        "https://kindista.org/faq#sharing-guidelines"
+        #\linefeed
+        #\linefeed
+        "Please let me know if you have any questions with this policy."
+        #\linefeed
+        #\linefeed
+        "In gratitude,"
+        #\linefeed
+        from-name ", Kindista"))
+
+(defun create-reply (&key on text pending-deletion (user *userid*))
   (let* ((time (get-universal-time))
-         (id (insert-db (list :type :reply
-                              :on on
-                              :by user
-                              :people (list (cons user nil) (cons (db on :by) nil))
-                              :created time))))
+         (on-item (db on))
+         (by (getf on-item :by))
+         (participants (list user by))
+         (senders (mailbox-ids (list user)))
+         (bys (mailbox-ids (list by)))
+         (sender-boxes (mapcar #'(lambda (mailbox)
+                                   (cons mailbox :read))
+                               senders))
+         (by-boxes (mapcar #'(lambda (mailbox)
+                                   (cons mailbox :unread))
+                               bys))
+         (people (append by-boxes sender-boxes))
+         (people-ids (mapcar #'car (remove-duplicates (append senders bys))))
+         (message-folders (list :inbox people-ids
+                                :unread (remove user people-ids)))
+         (id (insert-db (if pending-deletion
+                          (list :type :reply
+                                :on on
+                                :deleted-item-text (getf on-item :text)
+                                :deleted-item-type (getf on-item :type)
+                                :by user
+                                :participants participants
+                                :message-folders message-folders
+                                :people people
+                                :created time)
+                          (list :type :reply
+                                :on on
+                                :by user
+                                :participants participants
+                                :message-folders message-folders
+                                :people people
+                                :created time)))))
 
     (create-comment :on id :by user :text text)
 
     id))
-
-(defun index-reply (id data)
-  (let ((result (make-result :id id
-                             :time (db (getf data :latest-comment) :created)
-                             :people (getf data :people)
-                             :type :reply)))
-
-    (setf (gethash id *db-results*) result)
-    (with-locked-hash-table (*person-conversation-index*)
-      (dolist (pair (getf data :people))
-        (push result (gethash (car pair) *person-conversation-index*))))))
 
 (defun post-new-inventory-item (type &key url)
   (require-active-user
@@ -366,14 +414,42 @@
                 (confirm-delete :url url
                                 :type type
                                 :text (getf item :text)
-                                :next-url (referer)))
+                                :next-url (if (string= (referer) (strcat "/" type "/" id))
+                                            "/home"
+                                            (referer))))
 
-               ((post-parameter "really-delete")
+               ((and (post-parameter "really-delete")
+                     (not (post-parameter "delete-inappropriate-item")))
                 (delete-inventory-item id)
                 (flash (s+ "Your " type " has been deleted!"))
                 (if (equal (fourth (split "/" (post-parameter "next") :limit 4)) (subseq (script-name*) 1))
-                  (see-other "/home") 
+                  (see-other "/home")
                   (see-other (or (post-parameter "next") "/home"))))
+
+               ((post-parameter "delete-pending-item")
+                (require-admin
+                  (delete-pending-inventory-item id))
+                (flash (strcat (string-capitalize type) " " id " has been deleted."))
+                (see-other (script-name*)))
+
+               ((post-parameter "inappropriate-item")
+                (require-admin
+                  (confirm-delete :url url
+                                  :next-url (referer)
+                                  :type type
+                                  :text (getf item :text)
+                                  :inappropriate-item t)))
+
+               ((post-parameter "delete-inappropriate-item")
+                (require-admin
+                  (create-reply :on id
+                                :pending-deletion t
+                                :text (post-parameter "explanation"))
+                  (if (db by :pending)
+                    (delete-pending-inventory-item id)
+                    (delete-inventory-item id))
+                  (flash (strcat (string-capitalize type) " " id " has been deleted."))
+                  (see-other (post-parameter "next"))))
 
                ((post-parameter "back")
                 (enter-inventory-text :type type
@@ -646,63 +722,61 @@
          (values (sort top-tags #'string< :key #'first) items))))))
 
 (defun inventory-body-html (type &key base q items start page preposition)
-  (html
-    (let ((base-url (s+ "/" type "s")))
-      (htm
-        (:div :class "activity"
-          (when *user*
+  (let ((base-url (s+ "/" type "s")))
+    (html
+      (:div :class "activity"
+        (when *user*
+          (menu-horiz "actions"
+            (html (:a :href (s+ "/people/" (username-or-id) "/" type "s") (str (s+ "show my " type "s"))))))
+        (:div :class "item"
+          (unless (or (not *user*)
+                      (eq (getf *user* :active) nil)
+                      base
+                      q)
+            (str (simple-inventory-entry-html preposition type)))
+
+          (when q
             (htm
-              (:menu :class "horiz"
-                (:strong "actions")
-                (:li (:a :href (s+ "/people/" (username-or-id) "/" type "s") (str (s+ "show my " type "s")))))))
-          (:div :class "item"
-            (unless (or (not *user*)
-                        (eq (getf *user* :active) nil)
-                        base
-                        q)
-              (str (simple-inventory-entry-html preposition type)))
+              (:span (:strong :class "small" (str (s+ "showing " type "s matching \"")) (str q) (:strong "\"")))))
 
-            (when q
-              (htm
-                (:span (:strong :class "small" (str (s+ "showing " type "s matching \"")) (str q) (:strong "\"")))))
-            (str (rdist-selection-html (url-compose base-url "q" q "kw" base)
-                                       :class "inline"
-                                       :text (if q " within "
-                                                   "showing results within ")))
-            (when (or base q)
-              (htm
-                (:p (:a :href (str base-url) (str (s+"show all " type "s")))))))
+          (str (rdist-selection-html (url-compose base-url "q" q "kw" base)
+                                     :class "inline"
+                                     :text (if q " within "
+                                                 "showing results within ")))
+          (when (or base q)
+            (htm
+              (:p (:a :href base-url (str (s+"show all " type "s")))))))
 
-          (iter (for i from 0 to (+ start 20))
-                (cond
-                  ((< i start)
-                   (pop items))
+        (iter (for i from 0 to (+ start 20))
+              (cond
+                ((< i start)
+                 (pop items))
 
-                  ((and (>= i start) items)
-                   (str (inventory-activity-item type
-                                                 (pop items)
-                                                 :show-distance t
-                                                 :truncate t)))
-                  (t
-                   (when (< (user-rdist) 100)
-                     (htm
-                       (:div :class "item small"
-                        (:em "Increasing the ")(:strong "show results within")(:em " distance may yield more results."))))
-                   (finish)))
+                ((and (>= i start) items)
+                 (str (inventory-activity-item type
+                                               (pop items)
+                                               :show-distance t
+                                               :truncate t)))
+                (t
+                 (when (< (user-rdist) 100)
+                   (htm
+                     (:div :class "item small"
+                      (:em "Increasing the ")(:strong "show results within")(:em " distance may yield more results."))))
+                 (finish)))
 
-                (finally
-                  (when (or (> page 0) (cdr items))
-                    (htm
-                      (:div :class "item"
-                       (when (> page 0)
-                         (htm
-                           (:a :href (url-compose base-url "p" (- page 1) "kw" base) "< previous page")))
-                       "&nbsp;"
-                       (when (cdr items)
-                         (htm
-                           (:a :style "float: right;"
-                               :href (url-compose base-url "p" (+ page 1) "kw" base) 
-                               "next page >")))))))))))))
+              (finally
+                (when (or (> page 0) (cdr items))
+                  (htm
+                    (:div :class "item"
+                     (when (> page 0)
+                       (htm
+                         (:a :href (url-compose base-url "p" (- page 1) "kw" base) "< previous page")))
+                     "&nbsp;"
+                     (when (cdr items)
+                       (htm
+                         (:a :style "float: right;"
+                             :href (url-compose base-url "p" (+ page 1) "kw" base) 
+                             "next page >"))))))))))))
 
 (defun browse-inventory-tags (type &key q base tags)
   (let ((base-url (s+ "/" type "s")))
@@ -724,13 +798,13 @@
         (if (string= (first tag) "etc")
           (htm
             (:div :class "category"
-             (:h3 (:a :href (str (s+ base-url "/all"))
+             (:h3 (:a :href (s+ base-url "/all")
                       (str (s+ "etc (" (write-to-string (second tag)) ")"))))
              (iter (for subtag in (third tag))
                    (for i downfrom (length (third tag)))
                    (htm
                      (:a :href (if (string= (first subtag) "more")
-                                 (str (s+ base-url "/all"))
+                                 (s+ base-url "/all")
                                  (url-compose "" "kw" (format nil "~{~a+~}~a" base (first subtag)) "q" q) )
                          (str (s+ (car subtag) " (" (write-to-string (cdr subtag)) ")")))
                      (unless (= i 1)
@@ -753,7 +827,7 @@
       (unless base
         (htm
           (:div :class "category"
-           (:h3 (:a :href (str (s+ base-url "/all")) "show all keywords"))))))))
+           (:h3 (:a :href (s+ base-url "/all") "show all keywords"))))))))
 
 (defun browse-all-inventory-tags (preposition type &key base tags)
   (html
@@ -765,7 +839,7 @@
         (:h2 "browse by keyword")
         (when base
           (htm
-            (:p (:a :href (str base-url) (str (s+ "show all " type "s"))))
+            (:p (:a :href base-url (str (s+ "show all " type "s"))))
             (:p (:strong "keywords selected: "))
             (:ul :class "keywords"
               (dolist (tag base)

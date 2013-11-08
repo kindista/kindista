@@ -22,11 +22,18 @@
 
 (defun create-gratitude (&key author subjects text)
   (let* ((time (get-universal-time))
+         (people-list (mailbox-ids subjects))
+         (people (mapcar #'(lambda (mailbox)
+                             (cons mailbox :unread))
+                         people-list))
+         (message-folders (list :inbox (remove-duplicates (mapcar #'car people-list))))
          (gratitude (insert-db `(:type :gratitude
-                                       :author ,author
-                                       :subjects ,subjects
-                                       :text ,text
-                                       :created ,time))))
+                                 :author ,author
+                                 :subjects ,subjects
+                                 :people ,people
+                                 :message-folders ,message-folders
+                                 :text ,text
+                                 :created ,time))))
     (unless (getf *user* :pending)
       (notice :new-gratitude :time time
                              :id gratitude))
@@ -52,6 +59,8 @@
         (push id (gethash author-id *pending-person-items-index*))))
 
       (t
+       (index-message id data)
+
        (with-locked-hash-table (*db-results*)
          (setf (gethash id *db-results*) result))
 
@@ -150,7 +159,7 @@
                :action (or existing-url "/gratitude/new")
                :class "recipients"
           (:label "About:")
-          (:menu :class "recipients"
+          (:menu :type "toolbar" :class "recipients"
             (unless subjects
               (htm (:li (:em "nobody yet"))))
             (dolist (subject subjects)
@@ -178,7 +187,7 @@
                                               it
                                               :class "identity recipients profile-gratitude"))))))
           (:textarea :rows "8" :name "text" (str text))
-          (:p  
+          (:p
             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
             (:button :class "yes" :type "submit" 
                      :name "create" 
@@ -202,7 +211,7 @@
            (progn
              (htm
                (:h3 "Select one of your contacts")
-               (:menu
+               (:menu :type "toolbar"
                  (dolist (contact (contacts-alphabetically *user*))
                    (htm (:li (:button :class "text" :type "submit" :value (car contact) :name "add" (str (cadr contact)))))))))
            (progn

@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class)
+(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -83,7 +83,9 @@
                   " &middot; "
                   (:input :type "submit" :name "edit" :value "Edit")
                   " &middot; "
-                  (:input :type "submit" :name "delete" :value "Delete"))))
+                  (if admin-delete
+                    (htm (:input :type "submit" :name "inappropriate-item" :value "Inappropriate"))
+                    (htm (:input :type "submit" :name "delete" :value "Delete"))))))
             (when (and image-text
                        (not (string= url (script-name*))))
               (htm
@@ -196,7 +198,7 @@
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))
-                                (str (activity-item-images images item-url)))))))
+                                (str (activity-item-images images item-url "gift")))))))
 
 (defun gift-activity-item (result)
   (let* ((user-id (first (result-people result)))
@@ -237,6 +239,8 @@
                    :url item-url
                    :time (result-time result)
                    :edit (or self group-adminp (getf *user* :admin))
+                   :admin-delete (and (getf *user* :admin)
+                                      (not (eql *userid* user-id)))
                    :image-text (when (and (string= type "offer") self)
                                  (if images
                                    "Add/remove photos"
@@ -253,7 +257,7 @@
                                 (when show-what
                                   (str (if (getf data :edited) " edited " " posted "))
                                   (str (if (eq (getf data :type) :offer) "an " "a "))
-                                  (htm (:a :href (str item-url)
+                                  (htm (:a :href item-url
                                            (str type))))
                                 (when show-distance
                                   (htm (:small
@@ -273,15 +277,16 @@
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))
-                                (str (activity-item-images images item-url)))))))
+                                (str (activity-item-images images item-url type)))))))
 
-(defun activity-item-images (images url)
+(defun activity-item-images (images url alt)
   (html
     (:div :class "small-activity-image"
       (dolist (image-id images)
         (htm
           (:div :class "border"
-           (:a :href url (:img :src (get-image-thumbnail image-id 70 70)))))))))
+           (:a :href url (:img :src (get-image-thumbnail image-id 70 70)
+                               :alt alt))))))))
 
 (defun activity-items (items &key (page 0) (count 20) (url "/home") (paginate t) (location t))
   (with-location

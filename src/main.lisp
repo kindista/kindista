@@ -30,7 +30,6 @@
   (load-tokens)
   (make-thread #'(lambda () (start *acceptor*)))
   (start (acceptor-metric-system *acceptor*))
-  (automatic-invitation-reminders)
   (start-notice-thread))
 
 (defun load-notice-handlers ()
@@ -49,7 +48,6 @@
   (save-tokens)
   (stop *acceptor*)
   (stop (acceptor-metric-system *acceptor*))
-  (when *auto-invite-reminder-timer* (unschedule-timer *auto-invite-reminder-timer*))
   (stop-notice-thread))
 
 (defun quit ()

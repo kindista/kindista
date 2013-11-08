@@ -19,6 +19,8 @@
 
 (defparameter +number-scanner+ (create-scanner "^\\d+$"))
 (defparameter +full-name-scanner+ (create-scanner "^([a-zA-Z]+\\.? )[a-zA-Z]+"))
+(defparameter +bot-scanner+ (create-scanner "(spider)|(bot)" :case-insensitive-mode t))
+
 (defparameter +text-scanner+ (create-scanner "[a-zA-Z]+"))
 (defparameter +email-scanner+ (create-scanner
                                  "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"))
@@ -217,6 +219,29 @@
     (dolist (state '("AL" "AK" "AZ" "AR" "CA" "CO" "CT" "DE" "DC" "FL" "GA" "HI" "ID" "IL" "IN" "IA" "KS" "KY" "LA" "ME" "MD" "MA" "MI" "MN" "MS" "MO" "MT" "NE" "NV" "NH" "NJ" "NM" "NY" "NC" "ND" "OH" "OK" "OR" "PA" "RI" "SC" "SD" "TN" "TX" "UT" "VT" "VA" "WA" "WV" "WI" "WY"))
       (htm
         (:option :value state :selected (if (equalp selected state) "selected" nil) (str state))))))
+
+(defun cons-assoc (cell a-list)
+  (assoc cell a-list :test #'equalp))
+
+(defun cons-to-string (cell)
+  (strcat (car cell) (aif (cdr cell) (strcat "." it) "")))
+
+(defun list-list (data)
+  (list (list data)))
+
+(defun assoc-assoc (id a-list)
+  (assoc (assoc id (mapcar #'car a-list)) a-list))
+
+(defun parse-cons (string)
+"Returns a cons cell from a string. ex. 6 > (6) or 6.5 > (6 . 5)"
+  (loop for i = 0 then (1+ j)
+        as j = (position #\. string :start i)
+        with current = nil
+        do (setf current (subseq string i j))
+        when (scan +number-scanner+ current)
+        collect (parse-integer current) into ids
+        while (and j (< (length ids) 3))
+        finally (return (awhen (car ids) (cons it (cadr ids))))))
 
 (defun empty-string-p (string)
   (or (not string) (string= string "")))

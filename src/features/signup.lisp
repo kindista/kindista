@@ -37,13 +37,13 @@
         (when error
           (flash error :error t))
         (:label :for "name" "Full Name")
-        (:input :type "text" :name "name" :value name)
+        (:input :type "text" :id "name" :name "name" :value name)
         (:br)
         (:label :for "email" "Email")
-        (:input :type "text" :name "email" :value email)
+        (:input :type "text" :id "email" :name "email" :value email)
         (:br)
         (:label :for "email-2" "Confirm email")
-        (:input :type "text" :name "email-2")
+        (:input :type "text" :id "email-2" :name "email-2")
 
         (:p :class "fineprint" "By creating an account, you are agreeing to our "
           (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
@@ -71,14 +71,14 @@
           (htm (:h2 "Create an account")))
         (when error
           (flash error :error t))
-        (:label :for "name" "Full Name") 
-        (:input :type "text" :name "name" :value name) 
+        (:label :for "name" "Full Name")
+        (:input :type "text" :id "name" :name "name" :value name)
         (:br)
-        (:label :for "password" "Password") 
-        (:input :type "password" :name "password") 
+        (:label :for "password" "Password")
+        (:input :type "password" :id "password" :name "password")
         (:br)
-        (:label :for "password-2" "Confirm Password") 
-        (:input :type "password" :name "password-2") 
+        (:label :for "password-2" "Confirm Password")
+        (:input :type "password" :id "password" :name "password-2")
         (:p :class "fineprint" "By creating an account, you are agreeing to our "
           (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
 

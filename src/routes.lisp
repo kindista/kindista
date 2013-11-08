@@ -206,6 +206,10 @@
   ("/groups/<id>/members"
     :get get-group-members)
 
+  ("/messages"
+    :get get-messages
+    :post post-messages)
+
   ("/settings"
     :post post-settings
     :get go-settings)
@@ -333,6 +337,9 @@
 
   ("/send-all-reminders"
    :get get-send-all-reminders)
+
+  ("/automatic-invitation-reminders"
+   :get get-automatic-invitation-reminders)
 
   ;js
 

@@ -125,6 +125,7 @@
 (defvar *user* nil) ; current user
 (defvar *userid* nil) ; current user
 (defvar *user-group-priviledges* nil) ; current user's group priviledges
+(defvar *user-mailbox* nil) ;current user's mailbox
 (defvar *latitude* 0.0)
 (defvar *longitude* 0.0)
 
@@ -173,7 +174,9 @@
     (let* ((*userid* (or *userid* (token-userid *token*)))
            (*user* (or *user* (db *userid*)))
            (*user-group-priviledges* (or *user-group-priviledges*
-                                         (gethash *userid* *group-priviledges-index*))))
+                                         (gethash *userid* *group-priviledges-index*)))
+           (*user-mailbox* (or *user-mailbox*
+                               (gethash *userid* *person-mailbox-index*))))
        ,@body)))
 
 (defmacro with-location (&body body)
@@ -210,6 +213,12 @@
          (progn ,@body)
          (active-status-required))
        (login-required))))
+
+(defmacro require-admin (&body body)
+  `(with-user
+     (if (getf *user* :admin)
+       (progn ,@body)
+       (not-found))))
 
 (defmacro require-test ((test &optional message) &body body)
   `(if ,test
@@ -339,6 +348,24 @@
                       "Kindista Error - Notifying Humans"
                       message))
 
+(defmethod acceptor-log-access ((acceptor k-acceptor) &key return-code)
+  (unless (scan +bot-scanner+ (user-agent))
+    (hunchentoot::with-log-stream (stream (acceptor-access-log-destination acceptor) hunchentoot::*access-log-lock*)
+      (format stream "~:[-~@[ (~A)~]~;~:*~A~@[ (~A)~]~] ~:[-~;~:*~A~] [~A] \"~A ~A~@[?~A~] ~
+                      ~A\" ~D ~:[-~;~:*~D~] \"~:[-~;~:*~A~]\" \"~:[-~;~:*~A~]\"~%"
+              (header-in* :x-real-ip)
+              (header-in* :x-forwarded-for)
+              (authorization)
+              (hunchentoot::iso-time)
+              (request-method*)
+              (script-name*)
+              (query-string*)
+              (server-protocol*)
+              return-code
+              (content-length*)
+              (referer)
+              (user-agent)))))
+
 (defvar *acceptor* (make-instance 'k-acceptor
                                   :port 5000
                                   :address "127.0.0.1"
@@ -369,7 +396,7 @@
 
 (defun menu (items &optional selected)
   (html
-    (:menu
+    (:menu :type "toolbar"
       (iter (for (title slug count) in items)
             (when (and title slug)
               (str (menu-item title
@@ -469,7 +496,8 @@
                          (:table
                            (:tr
                              (:td :rowspan "2"
-                               (:a :href link (:img :src (get-avatar-thumbnail *userid* 100 100 :filetype "png"))))
+                               (:a :href link (:img :src (get-avatar-thumbnail *userid* 100 100 :filetype "png")
+                                                    :alt (getf *user* :name))))
                              (:td (:a :href link (str (getf *user* :name)))))
                            (:tr
                              (:td
@@ -479,7 +507,7 @@
 
                    (when *user*
                      (let ((inbox-count (new-inbox-items)))
-                       (str (menu (list `("Inbox" "messages" ,(when (> inbox-count 0) inbox-count)))
+                       (str (menu (list `("Messages" "messages" ,(when (> inbox-count 0) inbox-count)))
                                   selected)))) 
 
                    (str (menu (list '("News" "home")
@@ -507,21 +535,30 @@
                         (right "right")
                         (class class))))
 
-(defun confirm-delete (&key url next-url (type "item") class text image-id item-id)
+(defun confirm-delete (&key url next-url (type "item") class text image-id item-id inappropriate-item)
   (standard-page
     "Confirm Delete"
     (html
       (:h2 "Are you sure you want to delete this " (str type) "?")
       (when text
-        (htm (:p (cl-who:esc text))))
+        (htm (:p
+               (:blockquote :class "review-text " (cl-who:esc text)))))
       (when image-id
-        (htm (:img :class "activity-image" :src (get-image-thumbnail image-id 300 300))))
-      (:form :method "post" :action url
+        (htm (:img :class "activity-image"
+                   :src (get-image-thumbnail image-id 300 300)
+                   :alt type)))
+      (:form :method "post" :action url :class "item confirm-delete"
         (awhen item-id
           (htm (:input :type "hidden" :name "item-id" :value it)))
         (awhen next-url
           (htm (:input :type "hidden" :name "next" :value it)))
-        (:a :href next-url "No, I didn't mean it!")  
+        (when inappropriate-item
+          (htm
+            (:input :type "hidden" :name "delete-inappropriate-item")
+            (:label :for "explanation"
+             "Do you want to include a comment or explanation about deleting this item (optional)?")
+            (:textarea :cols 300 :rows 5 :name "explanation" :id "explanation")))
+        (:a :href next-url "No, I didn't mean it!")
         (:button :class "yes" :type "submit" :class "submit" :name "really-delete" "Yes")))
     :class class))
 

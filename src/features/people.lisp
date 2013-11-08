@@ -389,7 +389,7 @@
 
 (defun people-tabs-html (&key (tab :contacts))
   (html
-    (:menu :class "bar"
+    (:menu :type "toolbar" :class "bar"
       (:h3 :class "label" "People Menu")
 
       (if (eql tab :contacts)

@@ -22,12 +22,6 @@
    (send-account-approval-email (getf data :id)
                                :text (getf data :text))))
 
-(defmacro require-admin (&body body)
-  `(with-user
-     (if (getf *user* :admin)
-       (progn ,@body)
-       (not-found))))
-
 (defun get-admin ()
   (require-admin
     (standard-page
@@ -63,60 +57,67 @@
                  (email (first (getf person :emails)))
                  (link (person-link id))
                  (items (gethash id *pending-person-items-index*)))
-            (str
-              (card
-                (html
-                  (:p (str link)
-                    " joined "
-                    (str (humanize-universal-time (getf person :created))))
-                  (:p (:strong "ID: ") (str id))
-                  (:p (:strong "Email: ")
-                   (:a :href (s+ "mailto:" email) (str email)))
-                  (:p (:strong "Location: ") (str (awhen (getf person :address) it)))
-                  (dolist (item items)
-                    (let ((data (db item)))
-                      (htm
-                        (:div :class "item pending-account"
-                          (case (getf data :type)
-                            (:gratitude
-                              (htm
-                                (str (timestamp (getf data :created)))
-                                (:p (str link)
-                                 " posted a statement of gratitude about "
-                                 (str (name-list-all (getf data :subjects))))
-                                (:blockquote :class "review-text"
-                                  (str (getf data :text)))))
-                            (:offer
-                              (htm
-                                (str (timestamp (getf data :created)))
-                                (:p (str link)
-                                 " posted an offer")
-                                (:blockquote :class "review-text"
-                                  (str (getf data :text)))
-                                (:p (:strong "Tags: ")
-                                 (str (format nil *english-list* (getf data :tags))))))
-                            (:request
-                              (htm
-                                (str (timestamp (getf data :created)))
-                                (:p (str link)
-                                 " posted a request")
-                                (:blockquote :class "review-text"
-                                  (str (getf data :text)))
-                                (:p (:strong "Tags: ")
-                                 (str (format nil *english-list* (getf data :tags)))))))))))
-                  (:div :class "confirm-invite"
-                    (:form :method "post" 
-                           :action (strcat "/admin/pending-accounts/" id)
-                      (:textarea :cols "150" :rows "5" :name "message" :placeholder "Personal message to this person along with the approval... (optional)")
-                      (:p (:strong (:em "Please email the user with the email link above before deleting their account!")))
-                      (:button :type "submit"
-                               :name "delete"
-                               :class "cancel"
-                               "Delete spammer")
-                      (:button :type "submit"
-                               :name "approve"
-                               :class "yes"
-                               "Approve account"))))))))))))
+            (labels ((inventory-item (id data preposition type)
+                       (html
+                         (str (timestamp (getf data :created)))
+                         (:p (str link)
+                           (str (s+ " posted " preposition " " type)))
+                         (:blockquote :class "review-text"
+                           (str (getf data :text)))
+                         (:p (:strong "Tags: ")
+                          (str (format nil *english-list* (getf data :tags))))
+                         (:form :method "post"
+                                :action (strcat "/" type "s/" id)
+                           (:button :type "submit"
+                                    :class "cancel"
+                                    :name "delete-pending-item"
+                                    (str (s+ "Delete junk data")))
+                           (:button :type "submit"
+                                    :class "cancel"
+                                    :name "inappropriate-item"
+                                    (str (s+ "Inappropriate " type)))))))
+
+              (when items
+                (str
+                  (card
+                    (html
+                      (:p (str link)
+                        " joined "
+                        (str (humanize-universal-time (getf person :created))))
+                      (:p (:strong "ID: ") (str id))
+                      (:p (:strong "Email: ")
+                       (:a :href (s+ "mailto:" email) (str email)))
+                      (:p (:strong "Location: ") (str (awhen (getf person :address) it)))
+                      (dolist (item items)
+                        (let ((data (db item)))
+                          (htm
+                            (:div :class "item pending-account"
+                              (case (getf data :type)
+                                (:gratitude
+                                  (htm
+                                    (str (timestamp (getf data :created)))
+                                    (:p (str link)
+                                     " posted a statement of gratitude about "
+                                     (str (name-list-all (getf data :subjects))))
+                                    (:blockquote :class "review-text"
+                                      (str (getf data :text)))))
+                                (:offer
+                                  (str (inventory-item item data "an" "offer")))
+                                (:request
+                                  (str (inventory-item item data "a" "request"))))))))
+                      (:div :class "confirm-invite"
+                        (:form :method "post"
+                               :action (strcat "/admin/pending-accounts/" id)
+                          (:textarea :cols "150" :rows "5" :name "message" :placeholder "Personal message to this person along with the approval... (optional)")
+                          (:p (:strong (:em "Please email the user with the email link above before deleting their account!")))
+                          (:button :type "submit"
+                                   :name "delete"
+                                   :class "cancel"
+                                   "Delete spammer")
+                          (:button :type "submit"
+                                   :name "approve"
+                                   :class "yes"
+                                   "Approve account"))))))))))))))
 
 (defun post-admin-pending-account (id)
   (require-admin
