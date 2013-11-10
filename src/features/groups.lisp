@@ -148,6 +148,39 @@
                      :notify-kindista nil
                      :notify-expired-invites nil
                      :pass nil)
+  ;move all the group's messages into the admin's mailbox
+  (flet ((remove-groupid (item)
+           (if (listp item)
+             (remove groupid item)
+             item)))
+    (let (completed)
+      (doplist (folder messages (gethash groupid *person-mailbox-index*))
+        (dolist (message messages)
+          (unless (member message completed)
+            (let ((id (message-id message))
+                  (new-mailbox (cons admin-id groupid))
+                  (people (mapcar #'caar (message-people message)))
+                  (mailboxes (copy-list (message-people message)))
+                  (folders (copy-list (message-folders message))))
+
+              (asetf (car (assoc (list groupid) mailboxes :test #'equal))
+                     new-mailbox)
+              (asetf mailboxes
+                     (remove (assoc (list admin-id) it :test #'equal)
+                              it :test #'equal))
+
+              (if (and (member groupid people)
+                       (member admin-id people))
+                (asetf folders (mapcar #'remove-groupid it))
+                (subst admin-id groupid folders))
+
+              (index-message id (modify-db id :message-folders folders
+                                              :people mailboxes))
+              (dolist (comment (gethash id *comment-index*))
+                (when (eq (car (db comment :by)) groupid)
+                  (modify-db comment :by new-mailbox)))
+             (push message completed)))))))
+
   (index-group groupid (db groupid))
   (reindex-group-location groupid)
   (reindex-group-name groupid))
