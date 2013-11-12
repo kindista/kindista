@@ -230,6 +230,9 @@
 
 (defun inbox-items (&key (page 0) (count 20))
   (let* ((start (* page count))
+         (groups (mapcar #'(lambda (id)
+                             (cons id (db id :name)))
+                         (getf *user-group-priviledges* :admin)))
          (filter (or (get-parameter "filter") "all"))
          (items (filter-inbox-items filter)))
     (html
@@ -274,9 +277,9 @@
                      (:td :class "message-content"
                        (case (message-type item)
                          (:conversation
-                           (str (conversation-inbox-item item)))
+                           (str (conversation-inbox-item item groups)))
                          (:reply
-                           (str (reply-inbox-item item)))
+                           (str (reply-inbox-item item groups)))
                          (:contact-n
                            (htm
                              (str (h3-timestamp (message-time item)))
@@ -286,13 +289,7 @@
 
                          (:gratitude
                            (htm
-                             (str (h3-timestamp (message-time item)))
-                             (:p :class "people"
-                               (str (person-link (getf (db item-id) :author)))
-                                 " shared "
-                                 (:a :href (strcat "/gratitude/" item-id)
-                                     "gratitude")
-                                 " for you.")))))))))
+                             (str (gratitude-inbox-item item groups))))))))))
              (setf items (cdr items)))
 
             ((and (eql i start)
@@ -314,7 +311,35 @@
                    (htm
                      (:a :style "float: right;" :href (strcat "/messages?p=" (+ page 1)) "next page >"))))))))))))
 
-(defun conversation-inbox-item (message)
+(defun group-message-indicator (message groups)
+  (let ((my-groups (loop for person in (message-people message)
+                         when (and (caadr person) (eq (caar person) *userid*))
+                         collect (caadr person))))
+    (when my-groups
+      (dolist (group my-groups)
+        (html
+          (:div :class "group-indicator" (str (cdr (assoc group groups)))))))) )
+
+(defun gratitude-inbox-item (message groups)
+  (let* ((id (message-id message))
+         (mailboxes (loop for person in (message-people message)
+                         when (eq (caar person) *userid*)
+                         collect (car person)))
+         (self (when (member (list *userid*) mailboxes :test #'equal) "you"))
+         (my-groups (mapcar #'(lambda (mailbox) (db (cdr mailbox) :name))
+                            mailboxes)))
+    (html
+      (str (h3-timestamp (message-time message)))
+      (:p :class "people"
+        (str (person-link (getf (db id) :author)))
+          " shared "
+          (:a :href (strcat "/gratitude/" id)
+              "gratitude")
+          " for "
+          (str (format nil *english-list* (remove nil (push self my-groups))))
+          (str (group-message-indicator message groups))))))
+
+(defun conversation-inbox-item (message groups)
   (let* ((id (message-id message))
          (conversation (db id))
          (latest (message-latest-comment message))
@@ -337,7 +362,9 @@
 
           (aif participants
             (str (name-list it))
-            (htm (:span :class "nobody" "Empty conversation"))))
+            (htm (:span :class "nobody" "Empty conversation")))
+
+          (str (group-message-indicator message groups)))
 
         (:p :class "text"
           (:span :class "title"
@@ -348,7 +375,7 @@
           " - "
           (str (url (ellipsis (getf comment-data :text)))))))))
 
-(defun reply-inbox-item (message)
+(defun reply-inbox-item (message groups)
   (let* ((id (message-id message))
          (reply (db id))
          (latest (message-latest-comment message))
@@ -404,7 +431,8 @@
             (htm
               (str (person-link (getf reply :by)))
               " replied to your "
-              (str (inventory-url)))))
+              (str (inventory-url))))
+          (str (group-message-indicator message groups)) )
 
         (:p :class "text"
           (:span :class "title"

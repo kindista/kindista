@@ -1388,6 +1388,12 @@ table.messages {
  padding-right: 1em;
 }
 
+.mail.card .group-indicator {
+ display: inline-block;
+ color: #fcfbf5;
+ background: #ae9fcd;
+}
+
 .mail.card input[type=checkbox] {
  vertical-align: middle;
 }

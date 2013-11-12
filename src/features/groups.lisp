@@ -165,14 +165,14 @@
 
               (asetf (car (assoc (list groupid) mailboxes :test #'equal))
                      new-mailbox)
-              (asetf mailboxes
-                     (remove (assoc (list admin-id) it :test #'equal)
-                              it :test #'equal))
+             ;(asetf mailboxes
+             ;       (remove (assoc (list admin-id) it :test #'equal)
+             ;                it :test #'equal))
 
               (if (and (member groupid people)
                        (member admin-id people))
                 (asetf folders (mapcar #'remove-groupid it))
-                (subst admin-id groupid folders))
+                (asetf folders (subst admin-id groupid it)))
 
               (index-message id (modify-db id :message-folders folders
                                               :people mailboxes))
