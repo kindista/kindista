@@ -45,6 +45,7 @@
 (defindex *geo-index-index* :test 'equal)
 (defindex *gratitude-index*)
 (defindex *gratitude-results-index*)
+(defindex *group-membership-requests-index*) ;(personid . requestid)
 (defindex *group-priviledges-index*)
 (defindex *groups-geo-index*)
 (defindex *invited-index*)

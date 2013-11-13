@@ -2,6 +2,9 @@
 
 - prevent people from signing in as a group (group username/password)
 
+- messages
+  - change wording for gratitudes in message box
+
 
 # Testing needed
 

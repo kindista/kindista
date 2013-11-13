@@ -139,7 +139,7 @@ select {
  max-width: 20em;
 }
 
-select.identity, select.distance-selection, select.group-activity {
+select.identity, select.distance-selection, select.group-activity, select.message-filter {
   background: #fbfbfb;
   border:1px solid #999;
   padding: 0.3em 0.4em;
@@ -1360,6 +1360,15 @@ h3.event-date, h3.my-invites {
  vertical-align: top;
 }
 
+form.message-filter {
+ margin-top: 1em;
+}
+
+form.message-filter label {
+ font-weight: bold;
+ margin-right: 0.8em;
+}
+
 .mail.card {
  margin: 0 -0.5em;
  padding: 0 0.5em;
@@ -1376,7 +1385,11 @@ table.messages {
 }
 
 .mail.card.menu {
- margin: 1em -0.5em 0.5em;
+ margin: 0.5em -0.5em 0.5em;
+}
+
+.mail.card.menu button.cancel {
+ margin-right: 0.7em;
 }
 
 .mail.card h3.timestamp {
@@ -1389,6 +1402,9 @@ table.messages {
 }
 
 .mail.card .group-indicator {
+ margin-left: 0.55em;
+ border-radius:3px;
+ padding: 0 0.3em;
  display: inline-block;
  color: #fcfbf5;
  background: #ae9fcd;

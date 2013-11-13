@@ -56,7 +56,8 @@
                                            (:file "menu-horiz")
                                            (:file "card")
                                            (:file "group-card")
-                                           (:file "person-card")))
+                                           (:file "person-card")
+                                           (:file "verify-location")))
                              (:module shared
                               :serial t
                               :components ((:file "inventory")

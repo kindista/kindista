@@ -186,7 +186,8 @@
     :get get-groups-nearby)
 
   ("/groups/<id>"
-    :get get-group)
+    :get get-group
+    :post post-existing-group)
 
   ("/groups/<id>/about"
     :get get-group-about)

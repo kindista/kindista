@@ -509,6 +509,52 @@
        ((post-parameter "confirm-uniqueness")
         (see-other (strcat "/groups/" (attempt-new-group))))))))
 
+(defun post-existing-group (id)
+  (require-user
+    (let* ((id (parse-integer id))
+           (group (db id))
+           (url (strcat "/groups/" (username-or-id id))))
+      (cond
+        ((post-parameter "request-membership")
+         (unless (or (member *userid* (getf group :members))
+                     (member *userid* (getf group :admins)))
+           (let ((current-invitation (assoc *userid*
+                                            (gethash id *group-membership-requests-index*))))
+             (aif current-invitation
+               (resend-group-membership-request (cdr it))
+               (create-group-membership-request id))))
+         (flash (s+ "Your membership request has been forwarded to the "
+                    (getf group :name)
+                    " admins."))
+         (see-other (or (post-parameter "next") url))
+         )))))
+
+(defun resend-group-membership-request (request-id)
+  (index-message request-id
+                 (modify-db request-id :resent (get-universal-time))))
+
+(defun create-group-membership-request (groupid &key (person *userid*))
+  (let* ((time (get-universal-time))
+         (mailboxes (mailbox-ids (list groupid)))
+         (people (mapcar #'(lambda (mailbox) (cons mailbox :unread))
+                         mailboxes))
+         (id (insert-db (list :type :group-membership-request
+                              :group-id groupid
+                              :admins people
+                              :message-folders (list :inbox
+                                                     (mapcar #'car mailboxes))
+                              :requested-by person
+                              :created time))))
+
+    (index-group-membership-request id (db id))))
+
+(defun index-group-membership-request (id data)
+  (let ((groupid (getf data :group-id)))
+    (with-locked-hash-table (*group-membership-requests-index*)
+      (asetf (gethash groupid *group-membership-requests-index*)
+             (push (cons (getf data :requested-by) id) it)))
+    (index-message id data)))
+
 (defun confirm-group-uniqueness (results name lat long address city state country street zip &key public-location)
   (standard-page
     "Is your group already on Kindista?"

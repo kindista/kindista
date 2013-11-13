@@ -230,8 +230,13 @@
                 (str (menu-horiz "actions"
                                  (html (:a :href "/messages" "back to messages"))
                                  (html (:a :href "#reply" "reply"))
-                                 (when (eq type :conversation)
-                                   (html (:a :href (strcat "/conversations/" id "/leave") "leave conversation")))))
+                                ;(when (eq type :conversation)
+                                ;  (html (:a :href (strcat "/conversations/" id "/leave") "leave conversation")))
+                                ;  removed until we add the ability for
+                                ;  individual members of a group to leave the
+                                ;  conversation and for the group to leave
+                                ;  when its members have
+                                 ))
                 (str
                   (card
                     (html
@@ -246,7 +251,7 @@
                         (:reply
                           (let* ((item (db (getf it :on)))
                                  (deleted-type (getf it :deleted-item-type))
-                                 (original-message-type (getf it :type)))
+                                 (original-message-type (getf item :type)))
                             (flet ((inventory-url ()
                                     (html
                                       (case original-message-type
@@ -274,7 +279,11 @@
                                   (:p
                                     "A conversation with "
                                     (str (person-link (getf it :by)))
-                                    " about your "
+                                    " about "
+                                    (if (eq (getf item :by) *userid*)
+                                      (str "your ")
+                                      (str (s+ (db (getf item :by) :name)
+                                               "'s ")))
                                     (str (inventory-url))
                                     ":"))))
                             (htm (:blockquote :class "review-text"
@@ -286,6 +295,7 @@
                     (let* ((data (db comment-id))
                            (participants (getf it :participants))
                            (by (car (getf data :by)))
+                           (for (cdr (getf data :by)))
                            (bydata (db by))
                            (text (if (and (= comment-id (first comments))
                                           (getf it :deleted-item-type))
@@ -302,7 +312,13 @@
                           (html
                             (str (h3-timestamp (getf data :created)))
                             (:p (:a :href (s+ "/people/" (username-or-id by))
-                                 (str (getf bydata :name))))
+                                 (str (getf bydata :name)))
+                                (when for
+                                  (htm
+                                    " for "
+                                    (:a :href (s+ "/groups/" (username-or-id ))
+                                     (str (db for :name))))))
+
                             (:p :class (when (>= (or latest-seen 0) comment-id) "new")
                               (str (regex-replace-all "\\n" text "<br>")))))))))
 
@@ -357,21 +373,24 @@
   (require-active-user
     (setf id (parse-integer id))
     (aif (db id)
-      (let ((people (mapcar #'first (getf it :people))))
-        (if (member *userid* people)
+      (let* ((people (getf it :people))
+             (participant (car (assoc-assoc *userid* people))))
+        (if participant
          (cond
            ((post-parameter "leave")
             (with-locked-hash-table (*person-conversation-index*)
               (asetf (gethash *userid* *person-conversation-index*)
                      (remove id it :key #'result-id)))
-            (amodify-db id :people (remove *userid* it :key #'car))
+            (amodify-db id :people (remove *userid* it :key #'caar))
             (see-other "/messages"))
 
            ((post-parameter "text")
             (flash "Your message has been sent.")
             (contact-opt-out-flash people)
             (send-metric* :message-sent
-                          (create-comment :on id :text (post-parameter "text")))
+                          (create-comment :on id
+                                          :text (post-parameter "text")
+                                          :by participant))
             (see-other (script-name*))))
 
          (permission-denied)))

@@ -20,19 +20,19 @@
 (defun new-comment-notice-handler ()
   (send-comment-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-comment (&key on (by *userid*) text (time (get-universal-time)))
+(defun create-comment (&key on (by (list *userid*)) text (time (get-universal-time)))
   (let* ((id (insert-db (list :type :comment
                               :on on
-                              :by (list by) ;(personid . groupid)
+                              :by by ;(personid . groupid)
                               :text text
                               :created time)))
          (on-message (gethash on *db-messages*))
          (on-type (message-type on-message))
          (people (message-people on-message))
          (people-list (all-message-people on-message))
-         (others (remove by people-list))
+         (others (remove (car by) people-list))
          (user-boxes (loop for person in people
-                           when (eql by (caar person))
+                           when (eql (car by) (caar person))
                            collect person)))
 
     (when user-boxes
@@ -46,7 +46,7 @@
                 :deleted nil))
 
     (index-message on (modify-db on :latest-comment id
-                                    :folders (message-folders on-message)
+                                    :message-folders (message-folders on-message)
                                     :people people))
 
     (when (or (eq on-type :conversation)

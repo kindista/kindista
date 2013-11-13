@@ -145,8 +145,10 @@
   (let* ((time (case (getf data :type)
                  ((or :conversation :reply)
                   (db (getf data :latest-comment) :created))
-                 (:gratitude (or (getf data :edited)
-                                 (getf data :created)))))
+                 (:group-membership-request (or (getf data :resent)
+                                                (getf data :created)))
+                 (:gratitude (or (getf data :created)
+                                 (getf data :edited)))))
          (latest-comment (getf data :latest-comment))
          (folders (getf data :message-folders))
          (people (case (getf data :type)
@@ -154,6 +156,7 @@
                                                     (getf data :people))
                                        (getf data :people)
                                        :test #'equal))
+                   (:group-membership-request (getf data :admins))
                    (t (getf data :people))))
          (existing-message (gethash id *db-messages*))
          (new-message (unless existing-message
@@ -169,6 +172,7 @@
       (progn
         (setf (message-time existing-message) time)
         (setf (message-latest-comment existing-message) latest-comment)
+
         (setf (message-people existing-message) people)
         (setf (message-folders existing-message) folders)))
     (index-message-folders (or existing-message new-message))))
@@ -201,9 +205,10 @@
 
 (defun message-filter (&optional (selected "all"))
   (html
-    (:form :method "get" :action "/messages"
-     (:label :for "filter" "display")
+    (:form :method "get" :action "/messages" :class "message-filter"
+     (:label :for "filter" "show")
      (:select :name "filter"
+              :class "message-filter"
               :id "filter"
               :onchange "this.form.submit()"
        (:option :value "all" :selected (when (string= selected "all") "")
@@ -313,12 +318,16 @@
 
 (defun group-message-indicator (message groups)
   (let ((my-groups (loop for person in (message-people message)
-                         when (and (caadr person) (eq (caar person) *userid*))
-                         collect (caadr person))))
+                         when (and (cdr (car person))
+                                   (eq (caar person) *userid*))
+                         collect (cdr (car person)))))
     (when my-groups
-      (dolist (group my-groups)
-        (html
-          (:div :class "group-indicator" (str (cdr (assoc group groups)))))))) )
+      (html
+        (dolist (group my-groups)
+          (htm (:span :class "group-indicator"
+                  (str (or (cdr (assoc group groups))
+                           ;in case they are no longer an admin for the group
+                           (db group :name))))))))))
 
 (defun gratitude-inbox-item (message groups)
   (let* ((id (message-id message))
@@ -332,12 +341,12 @@
       (str (h3-timestamp (message-time message)))
       (:p :class "people"
         (str (person-link (getf (db id) :author)))
-          " shared "
-          (:a :href (strcat "/gratitude/" id)
-              "gratitude")
-          " for "
-          (str (format nil *english-list* (remove nil (push self my-groups))))
-          (str (group-message-indicator message groups))))))
+        " shared "
+        (:a :href (strcat "/gratitude/" id)
+            "gratitude")
+        " for "
+        (str (format nil *english-list* (remove nil (push self my-groups))))
+        (str (group-message-indicator message groups))))))
 
 (defun conversation-inbox-item (message groups)
   (let* ((id (message-id message))

@@ -476,6 +476,7 @@
     ((or :offer :request) (index-inventory-item id data))
     (:person (index-person id data))
     (:group (index-group id data))
+    (:group-membership-request (index-group-membership-request id data))
     (:contact-n (index-contact-notification id data))
     ((or :reply :conversation) (index-message id data))))
 

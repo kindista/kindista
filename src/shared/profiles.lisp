@@ -227,6 +227,7 @@
   (let* ((entity (db id))
          (entity-type (getf entity :type))
          (is-contact (member id (getf *user* :following)))
+         (pendingp (member *userid* (getf entity :membership-requests)))
          (memberp (member *userid* (getf entity :members)))
          (adminp (member *userid* (getf entity :admins))))
     (html
@@ -251,6 +252,7 @@
                (str (getf entity :city)) ", " (str (getf entity :state)))))
         ((getf entity :city)
          (htm (:p :class "city" (str (getf entity :city)) ", " (str (getf entity :state))))))
+
      (unless (eql id *userid*)
        (when (and (db id :active)
                   (db *userid* :active)
@@ -266,7 +268,14 @@
                           (:group (strcat "/groups/" (username-or-id id) "/reputation")))
            (:button :class "yes" :type "submit" "Express gratitude"))
 
-         (when (eql entity-type :person)
+         (when (eql entity-type :group)
+           (htm
+             (:form :method "POST" :action (strcat "/groups/" (username-or-id id))
+               (:input :type "hidden" :name (if memberp "leave-group" "request-membership") :value id)
+               (:input :type "hidden" :name "next" :value *base-url*)
+               (:button :class (if memberp "cancel" "yes") :type "submit" (str (if memberp "Leave group" "Join group"))))))
+
+         (when (and *userid* (eql entity-type :person))
            (htm
              (:form :method "POST" :action "/contacts"
                (:input :type "hidden" :name (if is-contact "remove" "add") :value id)

@@ -318,7 +318,9 @@
 
 (defun contact-opt-out-flash (people-list &key (item-type "message"))
   (let* ((opt-outs (loop for id in people-list
-                         when (not (db id :notify-message))
+                         when (let ((person (db id)))
+                                (and (not (getf person :notify-message))
+                                     (eql (getf person :type) :person)))
                          collect id))
          (self-opt-out (member *userid* opt-outs))
          (other-opt-outs (remove *userid* opt-outs))
