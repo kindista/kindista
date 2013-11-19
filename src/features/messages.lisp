@@ -156,7 +156,6 @@
                                                     (getf data :people))
                                        (getf data :people)
                                        :test #'equal))
-                   (:group-membership-request (getf data :admins))
                    (t (getf data :people))))
          (existing-message (gethash id *db-messages*))
          (new-message (unless existing-message
@@ -202,6 +201,16 @@
           ;;add message to people's folders as necessary
           (asetf (getf (gethash person *person-mailbox-index*) folder)
                  (pushnew message it)))))))
+
+(defun remove-message-from-indexes (id)
+  (let ((message (gethash id *db-messages*)))
+    (with-locked-hash-table (*person-mailbox-index*)
+      (doplist (folder people-in-folder (message-folders message))
+        (dolist (person people-in-folder)
+          (asetf (getf (gethash person *person-mailbox-index*) folder)
+                 (remove message it))))))
+  (with-locked-hash-table (*db-messages*)
+    (remhash id *db-messages*)))
 
 (defun message-filter (&optional (selected "all"))
   (html
@@ -291,7 +300,8 @@
                              (:p (str (person-link (getf (db item-id)
                                                          :subject)))
                               " added you as a contact.")))
-
+                         (:group-membership-request
+                           (str (group-membership-request-inbox-item item)))
                          (:gratitude
                            (htm
                              (str (gratitude-inbox-item item groups))))))))))
@@ -328,6 +338,20 @@
                   (str (or (cdr (assoc group groups))
                            ;in case they are no longer an admin for the group
                            (db group :name))))))))))
+
+(defun group-membership-request-inbox-item (message)
+  (let* ((id (message-id message))
+         (data (db id)))
+    (html
+      (str (h3-timestamp (message-time message)))
+      (:p :class "people middle"
+        (str (person-link (getf data :requested-by)))
+        " is requesting to join "
+        (str (db (getf data :group-id) :name))
+        (:span
+          (:input :type "hidden" :name "message-id" :value id)
+          (:button :class "cancel small" :type "submit" :name "deny-group-membership-request" "deny request")
+          (:button :class "yes small" :type "submit" :name "approve-group-membership-request" "approve request"))))))
 
 (defun gratitude-inbox-item (message groups)
   (let* ((id (message-id message))
@@ -490,6 +514,24 @@
                        (member *userid* (getf (message-folders message) :compost)))
                (update-folder-data message :inbox))))
          (see-other next))
+
+        ((post-parameter "deny-group-membership-request")
+         (let* ((message-id (parse-integer (post-parameter "message-id")))
+                (group-id (db message-id :group-id)))
+           (if (group-admin-p group-id)
+             (progn
+               (delete-group-membership-request message-id)
+               (see-other next))
+             (permission-denied))))
+
+        ((post-parameter "approve-group-membership-request")
+         (let* ((message-id (parse-integer (post-parameter "message-id")))
+                (group-id (db message-id :group-id)))
+           (if (group-admin-p group-id)
+             (progn
+               (approve-group-membership-request message-id)
+               (see-other next))
+             (permission-denied))))
 
         ((post-parameter "mark-read")
          (dolist (id messages)

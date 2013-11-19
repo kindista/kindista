@@ -270,7 +270,7 @@
 
          (when (eql entity-type :group)
            (htm
-             (:form :method "POST" :action (strcat "/groups/" (username-or-id id))
+             (:form :method "POST" :action (strcat "/groups/" id)
                (:input :type "hidden" :name (if memberp "leave-group" "request-membership") :value id)
                (:input :type "hidden" :name "next" :value *base-url*)
                (:button :class (if memberp "cancel" "yes") :type "submit" (str (if memberp "Leave group" "Join group"))))))

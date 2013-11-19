@@ -540,7 +540,7 @@
                          mailboxes))
          (id (insert-db (list :type :group-membership-request
                               :group-id groupid
-                              :admins people
+                              :people people ;group admins at time of request
                               :message-folders (list :inbox
                                                      (mapcar #'car mailboxes))
                               :requested-by person
@@ -554,6 +554,22 @@
       (asetf (gethash groupid *group-membership-requests-index*)
              (push (cons (getf data :requested-by) id) it)))
     (index-message id data)))
+
+(defun delete-group-membership-request (id)
+  (let* ((request (db id))
+         (group (getf request :group-id)))
+    (with-locked-hash-table (*group-membership-requests-index*)
+      (asetf (gethash group *group-membership-requests-index*)
+             (remove (cons (getf request :requested-by) id)
+                     it :test #'equal)))
+    (remove-message-from-indexes id)
+    (remove-from-db id)))
+
+(defun approve-group-membership-request (id)
+  (let* ((request (db id))
+         (group (getf request :group-id)))
+    (amodify-db group :members (pushnew (getf request :requested-by) it))
+    (delete-group-membership-request id)))
 
 (defun confirm-group-uniqueness (results name lat long address city state country street zip &key public-location)
   (standard-page
