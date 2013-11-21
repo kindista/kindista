@@ -2619,6 +2619,10 @@ input[name=reply] {
  clear: both;
 }
 
+.middle {
+ vertical-align: middle;
+}
+
 .spinner {
    height:30px;
    width:30px;
