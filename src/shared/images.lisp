@@ -28,7 +28,8 @@
                   (t
                    (error "~S is not a supported content type" content-type))))
          (image (insert-db `(:type :image
-                             :content-type ,content-type)))
+                             :content-type ,content-type
+                             :modified ,(get-universal-time))))
          (filename (strcat image "." suffix)))
    (copy-file path (merge-pathnames *original-images* filename))
    (modify-db image :filename filename)
@@ -54,6 +55,7 @@
          (original-file (strcat *original-images* (getf image :filename))))
     (run-program *convert-path*
                  (list original-file "-rotate"  "90" original-file))
+    (modify-db id :modified (get-universal-time))
     (dolist (path (directory (strcat *images-path* id "-*.*")))
       (delete-file path))))
 
@@ -65,7 +67,8 @@
 
 (defun get-image-thumbnail (id maxwidth maxheight &key (filetype "jpg"))
   (let* ((image (db id))
-         (filename (format nil "~d-~d-~d.~a" id maxwidth maxheight filetype))
+         (modified (or (getf image :modified) 0))
+         (filename (format nil "~d-~d-~d-~d.~a" id modified maxwidth maxheight filetype))
          (filepath (merge-pathnames *images-path* filename)))
     (assert image)
     (unless (file-exists-p filepath)
