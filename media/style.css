@@ -1627,6 +1627,36 @@ button.card > img {
  }
 }
 
+.membership-requests {
+ overflow: hidden;
+}
+
+.membership-requests img {
+ margin-right: 0.4em;
+}
+
+.membership-requests span {
+ max-width: 9em;
+ max-height: 2.3em;
+ overflow: hidden;
+ vertical-align: middle;
+}
+
+.membership-requests button:last-child {
+ margin-right: 0;
+}
+
+.membership-requests button {
+ height: 2em;
+ line-height: 1em;
+ padding-bottom: 0.6em;
+ margin-right: 0.3em;
+}
+
+.membership-requests:after {
+ clear: both;
+}
+
 .card blockquote {
  position:relative;
  margin:1em 0;
@@ -2613,6 +2643,10 @@ input[name=reply] {
 
 .float-right {
  float: right;
+}
+
+.float-left {
+ float: left;
 }
 
 .clear {

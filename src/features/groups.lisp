@@ -224,7 +224,7 @@
 
 (defun group-activity-html (groupid &key type)
   (profile-activity-html groupid :type type
-                                 :right (members-sidebar groupid)))
+                                 :right (group-sidebar groupid)))
 
 (defun groups-with-user-as-admin (&optional (userid *userid*))
 "Returns an a-list of (groupid . group-name)"
@@ -273,6 +273,31 @@
               (:li (str (third list))
                (when (admin-p (first list))
                  (htm " (admin)"))))))))))
+
+(defun group-sidebar (groupid)
+  (html
+    (when (group-admin-p groupid)
+      (str (member-requests-sidebar groupid)))
+    (str (members-sidebar groupid))))
+
+(defun member-requests-sidebar (groupid)
+  (let ((requests (gethash groupid *group-membership-requests-index*)))
+    (html
+      (:div :class "people item right only"
+       (:h3 "Membership requests")
+       (dolist (request requests)
+         (let* ((personid (car request))
+                (link (s+ "/people/" (username-or-id personid))))
+           (htm
+            (:div :class "membership-requests"
+              (:div :class "image float-left"
+                (:a :href link (:img :src (get-avatar-thumbnail personid 30 30))))
+              (:span :class "float-left" (str (person-link personid)))
+              (:form :class "float-right"
+                (:input :type "hidden" :name "membership-request-id" :value (cdr request))
+                (:button :class "yes small" :type "submit" :name "approve-group-membership-request" "approve")
+                (:button :class "cancel small" :type "submit" :name "deny-group-membership-request" "deny")
+                  )))))))))
 
 (defun members-sidebar (groupid)
   (html
@@ -546,14 +571,13 @@
                               :requested-by person
                               :created time))))
 
-    (index-group-membership-request id (db id))))
+    (index-message id (db id))))
 
 (defun index-group-membership-request (id data)
   (let ((groupid (getf data :group-id)))
     (with-locked-hash-table (*group-membership-requests-index*)
       (asetf (gethash groupid *group-membership-requests-index*)
-             (push (cons (getf data :requested-by) id) it)))
-    (index-message id data)))
+             (acons (getf data :requested-by) id it)))))
 
 (defun delete-group-membership-request (id)
   (let* ((request (db id))
