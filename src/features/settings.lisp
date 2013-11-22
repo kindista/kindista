@@ -48,8 +48,17 @@
         (new-image-form "/settings" "/settings/personal" :class "submit-settings"))
       (t
         (html
-          (:img :class "bigavatar" :src (get-avatar-thumbnail *userid* 300 300)))))
-
+          (:div :class "settings-avatar"
+            (:img :class "bigavatar"
+                  :src (get-avatar-thumbnail *userid* 300 300)
+                  :alt (getf *user* :name))
+            (:form :method "post"
+                   :action "/settings"
+                   :class "activity-image"
+              (:button :class "simple-link green"
+                       :type "submit"
+                       :name "rotate-avatar"
+                       "Rotate"))))))
   :editable editable))
 
 (defun settings-name (base editable)
@@ -484,6 +493,10 @@
            (modify-db *userid* :avatar id))
          (t () (flash "Please use a .jpg, .png, or .gif" :error t)))
        (see-other "/settings/personal"))
+
+      ((post-parameter "rotate-avatar")
+       (rotate-image (getf *user* :avatar))
+       (see-other (referer)))
 
       ((post-parameter "reset-location")
        (modify-db *userid* :lat nil :long nil :address nil :location nil)
