@@ -301,6 +301,10 @@
   (html
     (:a :href (s+ "/people/" (username-or-id id)) (str (getf (db id) :name)))))
 
+(defun group-link (id)
+  (html
+    (:a :href (s+ "/groups/" (username-or-id id)) (str (getf (db id) :name)))))
+
 (defun name-list (ids &key (func #'person-link) (minimum-links 3))
   (let ((links (mapcar func (subseq ids 0 (min minimum-links (length ids))))))
     (format nil *english-list* (cond

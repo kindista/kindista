@@ -1406,8 +1406,12 @@ table.messages {
  border-radius:3px;
  padding: 0 0.3em;
  display: inline-block;
- color: #fcfbf5;
  background: #ae9fcd;
+}
+
+.mail.card .group-indicator a {
+ color: #fcfbf5;
+ text-decoration: none;
 }
 
 .mail.card input[type=checkbox] {
@@ -1627,19 +1631,31 @@ button.card > img {
  }
 }
 
-.membership-requests {
- overflow: hidden;
+.mail.card .membership-requests .request-name {
+ padding-right: 0.4em;
+}
+
+.membership-requests td {
+ padding: 0;
+}
+
+td.member-approval {
+ width: 7em;
+}
+
+.mail.card td.member-approval {
+ width: 13.4em;
 }
 
 .membership-requests img {
- margin-right: 0.4em;
+ width: 3em;
+ height: auto;
+ margin-right: 0.3em;
 }
 
-.membership-requests span {
- max-width: 9em;
- max-height: 2.3em;
+.membership-requests .request-name  div {
  overflow: hidden;
- vertical-align: middle;
+ max-height: 3.4em;
 }
 
 .membership-requests button:last-child {

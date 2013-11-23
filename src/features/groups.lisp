@@ -282,22 +282,33 @@
 
 (defun member-requests-sidebar (groupid)
   (let ((requests (gethash groupid *group-membership-requests-index*)))
-    (html
-      (:div :class "people item right only"
-       (:h3 "Membership requests")
-       (dolist (request requests)
-         (let* ((personid (car request))
-                (link (s+ "/people/" (username-or-id personid))))
-           (htm
-            (:div :class "membership-requests"
-              (:div :class "image float-left"
-                (:a :href link (:img :src (get-avatar-thumbnail personid 30 30))))
-              (:span :class "float-left" (str (person-link personid)))
-              (:form :class "float-right"
-                (:input :type "hidden" :name "membership-request-id" :value (cdr request))
-                (:button :class "yes small" :type "submit" :name "approve-group-membership-request" "approve")
-                (:button :class "cancel small" :type "submit" :name "deny-group-membership-request" "deny")
-                  )))))))))
+    (when requests
+      (html
+        (:div :class "people item right only"
+         (:h3 "Membership requests")
+         (:table :class "membership-requests"
+           (dolist (request requests)
+             (let* ((personid (car request))
+                    (link (s+ "/people/" (username-or-id personid))))
+               (htm
+                 (:tr
+                   (:td
+                     (:a :href link (:img :src (get-avatar-thumbnail personid 70 70))))
+                   (:td :class "request-name"
+                     (:div (str (person-link personid))))
+                   (:td :class "member-approval"
+                     (:form :method "post" :action (strcat "/groups/" groupid)
+                       (:input :type "hidden"
+                               :name "membership-request-id"
+                               :value (cdr request))
+                       (:button :class "yes small"
+                                :type "submit"
+                                :name "approve-group-membership-request"
+                                "approve")
+                       (:button :class "cancel small"
+                                :type "submit"
+                                :name "deny-group-membership-request"
+                                "deny")))))))))))))
 
 (defun members-sidebar (groupid)
   (html
@@ -551,8 +562,20 @@
          (flash (s+ "Your membership request has been forwarded to the "
                     (getf group :name)
                     " admins."))
-         (see-other (or (post-parameter "next") url))
-         )))))
+         (see-other (or (post-parameter "next") url)))
+        (t
+          (if (group-admin-p id)
+            (cond
+              ((post-parameter "approve-group-membership-request")
+               (approve-group-membership-request
+                 (parse-integer (post-parameter "membership-request-id")))
+               (see-other (referer)))
+
+              ((post-parameter "deny-group-membership-request")
+               (delete-group-membership-request
+                 (parse-integer (post-parameter "membership-request-id")))
+               (see-other (referer))))
+            (permission-denied)))))))
 
 (defun resend-group-membership-request (request-id)
   (index-message request-id
@@ -571,13 +594,14 @@
                               :requested-by person
                               :created time))))
 
-    (index-message id (db id))))
+    id))
 
 (defun index-group-membership-request (id data)
   (let ((groupid (getf data :group-id)))
     (with-locked-hash-table (*group-membership-requests-index*)
       (asetf (gethash groupid *group-membership-requests-index*)
-             (acons (getf data :requested-by) id it)))))
+             (acons (getf data :requested-by) id it))))
+  (index-message id data))
 
 (defun delete-group-membership-request (id)
   (let* ((request (db id))

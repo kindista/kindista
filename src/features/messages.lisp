@@ -335,23 +335,26 @@
       (html
         (dolist (group my-groups)
           (htm (:span :class "group-indicator"
-                  (str (or (cdr (assoc group groups))
-                           ;in case they are no longer an admin for the group
-                           (db group :name))))))))))
+                  (:a :href (s+ "/groups/" (username-or-id group))
+                    (str (or (cdr (assoc group groups))
+                            ;in case they are no longer an admin for the group
+                            (db group :name)))))))))))
 
 (defun group-membership-request-inbox-item (message)
   (let* ((id (message-id message))
          (data (db id)))
     (html
       (str (h3-timestamp (message-time message)))
-      (:p :class "people middle"
-        (str (person-link (getf data :requested-by)))
-        " is requesting to join "
-        (str (db (getf data :group-id) :name))
-        (:span
-          (:input :type "hidden" :name "message-id" :value id)
-          (:button :class "cancel small" :type "submit" :name "deny-group-membership-request" "deny request")
-          (:button :class "yes small" :type "submit" :name "approve-group-membership-request" "approve request"))))))
+      (:table :class "membership-requests"
+        (:tr
+          (:td :class "request-name"
+            (str (person-link (getf data :requested-by)))
+            " is requesting to join "
+            (str (group-link (getf data :group-id))))
+          (:td :class "member-approval"
+            (:input :type "hidden" :name "message-id" :value id)
+            (:button :class "yes small" :type "submit" :name "approve-group-membership-request" "approve request")
+            (:button :class "cancel small" :type "submit" :name "deny-group-membership-request" "deny request")))))))
 
 (defun gratitude-inbox-item (message groups)
   (let* ((id (message-id message))
