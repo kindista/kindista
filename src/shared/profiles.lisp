@@ -171,7 +171,7 @@
         :right (case entity-type
                  (:person (when mutuals
                             (mutual-connections-sidebar mutual-links)))
-                 (:group (members-sidebar id)))
+                 (:group (group-sidebar id)))
         :top (profile-top-html id)
         :selected (if (eql entity-type :group)
                     "groups"
