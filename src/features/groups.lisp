@@ -277,55 +277,60 @@
 (defun group-sidebar (groupid)
   (html
     (when (group-admin-p groupid)
-      (str (member-requests-sidebar groupid)))
+      (str (member-requests groupid :class "people item right only")))
     (str (members-sidebar groupid))))
 
-(defun member-requests-sidebar (groupid)
+(defun member-requests (groupid &key (class ""))
   (let ((requests (gethash groupid *group-membership-requests-index*)))
     (when requests
       (html
-        (:div :class "people item right only"
-         (:h3 "Membership requests")
-         (:table :class "membership-requests"
-           (dolist (request requests)
-             (let* ((personid (car request))
-                    (link (s+ "/people/" (username-or-id personid))))
-               (htm
-                 (:tr
-                   (:td
-                     (:a :href link (:img :src (get-avatar-thumbnail personid 70 70))))
-                   (:td :class "request-name"
-                     (:div (str (person-link personid))))
-                   (:td :class "member-approval"
-                     (:form :method "post" :action (strcat "/groups/" groupid)
-                       (:input :type "hidden"
-                               :name "membership-request-id"
-                               :value (cdr request))
-                       (:button :class "yes small"
-                                :type "submit"
-                                :name "approve-group-membership-request"
-                                "approve")
-                       (:button :class "cancel small"
-                                :type "submit"
-                                :name "deny-group-membership-request"
-                                "deny")))))))))))))
+        (:div :class (s+ "membership-requests " class)
+          (:h3 "Membership requests")
+            (dolist (request requests)
+              (let* ((personid (car request))
+                     (link (s+ "/people/" (username-or-id personid))))
+                (htm
+                  (:div :class "membership-request"
+                    (:div :class "avatar"
+                      (:a :href link (:img :src (get-avatar-thumbnail personid 70 70))))
+                    (:div :class "request-name"
+                      (:div (str (person-link personid))))
+                    (:form :class "member-approval"
+                           :method "post"
+                           :action (strcat "/groups/" groupid)
+                        (:input :type "hidden"
+                                :name "membership-request-id"
+                                :value (cdr request))
+                        (:button :class "yes small"
+                                 :type "submit"
+                                 :name "approve-group-membership-request"
+                                 "approve")
+                        (:button :class "cancel small"
+                                 :type "submit"
+                                 :name "deny-group-membership-request"
+                                 "deny")))))))))))
 
 (defun members-sidebar (groupid)
   (html
     (:div :class "people item right only"
-    (:h3 "Group members")
-    (str (group-member-links groupid)))))
+      (:h3 "Group members")
+      (str (group-member-links groupid)))))
 
 (defun profile-group-members-html (groupid)
   (let* ((group (db groupid))
          (strid (username-or-id groupid))
+         (membership-requests (member-requests groupid :class "item members-tab"))
          (*base-url* (strcat "/groups/" strid)))
     (standard-page
       (getf group :name)
       (html
         (when *user* (str (profile-tabs-html groupid :tab :members)))
         (:div :class "activity"
-          (str (group-member-links groupid :ul-class "mutuals-list"))))
+          (when (and membership-requests
+                     (group-admin-p groupid))
+            (str membership-requests)
+            (htm (:h3 "Current Members")))
+          (str (group-member-links groupid :ul-class "members-tab current-members"))))
       :top (profile-top-html groupid)
       :selected "groups")))
 
