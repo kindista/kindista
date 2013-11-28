@@ -277,8 +277,26 @@
 (defun group-sidebar (groupid)
   (html
     (when (group-admin-p groupid)
+      (str (invite-group-members groupid :class "item right only"))
       (str (member-requests groupid :class "people item right only")))
     (str (members-sidebar groupid))))
+
+(defun invite-group-members (groupid &key (class ""))
+  (html
+    (:div :class (s+ "invite-members " class)
+      (:h3 "+Add group members")
+      (:form :method "get" :action (strcat "/groups/" groupid)
+       (:input :type "text"
+               :name "search-name"
+               :placeholder "Search by name")
+       (:button :class "submit yes" :name "add-member" :type "submit" "Search"))
+      (awhen (get-parameter "search-name")
+        (let ((results (search-people it)))
+          (dolist (result results)
+            (htm
+              (:form :method "post" :action (strcat "/groups/" groupid)
+               (str (person-card (car result) (cdr result)))
+               (:button :class "submit yes" :name "invite-member" :type "submit" "Invite")))))))))
 
 (defun member-requests (groupid &key (class ""))
   (let ((requests (gethash groupid *group-membership-requests-index*)))
@@ -557,38 +575,6 @@
        ((post-parameter "confirm-uniqueness")
         (see-other (strcat "/groups/" (attempt-new-group))))))))
 
-(defun post-existing-group (id)
-  (require-user
-    (let* ((id (parse-integer id))
-           (group (db id))
-           (url (strcat "/groups/" (username-or-id id))))
-      (cond
-        ((post-parameter "request-membership")
-         (unless (or (member *userid* (getf group :members))
-                     (member *userid* (getf group :admins)))
-           (let ((current-invitation (assoc *userid*
-                                            (gethash id *group-membership-requests-index*))))
-             (aif current-invitation
-               (resend-group-membership-request (cdr it))
-               (create-group-membership-request id))))
-         (flash (s+ "Your membership request has been forwarded to the "
-                    (getf group :name)
-                    " admins."))
-         (see-other (or (post-parameter "next") url)))
-        (t
-          (if (group-admin-p id)
-            (cond
-              ((post-parameter "approve-group-membership-request")
-               (approve-group-membership-request
-                 (parse-integer (post-parameter "membership-request-id")))
-               (see-other (referer)))
-
-              ((post-parameter "deny-group-membership-request")
-               (delete-group-membership-request
-                 (parse-integer (post-parameter "membership-request-id")))
-               (see-other (referer))))
-            (permission-denied)))))))
-
 (defun resend-group-membership-request (request-id)
   (index-message request-id
                  (modify-db request-id :resent (get-universal-time))))
@@ -722,3 +708,37 @@
      ;  (htm (:li :class "selected" "Invited"))
      ;  (htm (:li (:a :href "/people/invited" "Invited"))))
       )))
+
+(defun post-existing-group (id)
+  (require-user
+    (let* ((id (parse-integer id))
+           (group (db id))
+           (url (strcat "/groups/" (username-or-id id))))
+      (cond
+        ((post-parameter "request-membership")
+         (unless (or (member *userid* (getf group :members))
+                     (member *userid* (getf group :admins)))
+           (let ((current-invitation (assoc *userid*
+                                            (gethash id *group-membership-requests-index*))))
+             (aif current-invitation
+               (resend-group-membership-request (cdr it))
+               (create-group-membership-request id))))
+         (flash (s+ "Your membership request has been forwarded to the "
+                    (getf group :name)
+                    " admins."))
+         (see-other (or (post-parameter "next") url)))
+        (t
+          (if (group-admin-p id)
+            (cond
+              ((post-parameter "invite-member")
+               )
+              ((post-parameter "approve-group-membership-request")
+               (approve-group-membership-request
+                 (parse-integer (post-parameter "membership-request-id")))
+               (see-other (referer)))
+
+              ((post-parameter "deny-group-membership-request")
+               (delete-group-membership-request
+                 (parse-integer (post-parameter "membership-request-id")))
+               (see-other (referer))))
+            (permission-denied)))))))

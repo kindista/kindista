@@ -1631,6 +1631,16 @@ button.card > img {
  }
 }
 
+.invite-members.right input[type=text] {
+ width: 14.3em;
+ margin: 0 0.4em 0 0;
+}
+
+.invite-members.right button {
+ font-size: 0.85em;
+ margin: 0;
+}
+
 div .members-tab {
  padding-left: 0;
  font-size: 1.2em;
