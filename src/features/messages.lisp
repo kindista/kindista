@@ -340,7 +340,7 @@
                             ;in case they are no longer an admin for the group
                             (db group :name)))))))))))
 
-(defun group-membership-request-inbox-item (message)
+(defun group-membership-request-inbox-item-old (message)
   (let* ((id (message-id message))
          (data (db id)))
     (html
@@ -355,6 +355,27 @@
             (:input :type "hidden" :name "message-id" :value id)
             (:button :class "yes small" :type "submit" :name "approve-group-membership-request" "approve request")
             (:button :class "cancel small" :type "submit" :name "deny-group-membership-request" "deny request")))))))
+
+(defun group-membership-request-inbox-item (message)
+  (let* ((id (message-id message))
+         (data (db id)))
+    (html
+      (str (h3-timestamp (message-time message)))
+      (:div :class "membership-request"
+        (:div :class "member-approval"
+          (str
+            (v-align-middle
+              (:div :class "member-approval-ui"
+                (:input :type "hidden" :name "message-id" :value id)
+                (:button :class "yes small" :type "submit" :name "approve-group-membership-request" "approve request")
+                (:button :class "cancel small" :type "submit" :name "deny-group-membership-request" "deny request")))))
+        (:div :class "request-name"
+          (str
+            (v-align-middle
+              (:p :class "member-request-details"
+                (str (person-link (getf data :requested-by)))
+                " is requesting to join "
+                (str (group-link (getf data :group-id)))))))))))
 
 (defun gratitude-inbox-item (message groups)
   (let* ((id (message-id message))

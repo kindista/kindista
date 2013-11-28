@@ -292,23 +292,30 @@
                 (htm
                   (:div :class "membership-request"
                     (:div :class "avatar"
-                      (:a :href link (:img :src (get-avatar-thumbnail personid 70 70))))
+                      (str
+                        (v-align-middle
+                          (:a :href link
+                            (:img :src (get-avatar-thumbnail personid 70 70))))))
+                    (:div :class "member-approval"
+                      (str
+                        (v-align-middle
+                          (:form :class "member-approval-ui"
+                                 :method "post"
+                                 :action (strcat "/groups/" groupid)
+                             (:input :type "hidden"
+                                     :name "membership-request-id"
+                                     :value (cdr request))
+                             (:button :class "yes small"
+                                      :type "submit"
+                                      :name "approve-group-membership-request"
+                                      "approve")
+                             (:button :class "cancel small"
+                                      :type "submit"
+                                      :name "deny-group-membership-request"
+                                      "deny")))))
                     (:div :class "request-name"
-                      (:div (str (person-link personid))))
-                    (:form :class "member-approval"
-                           :method "post"
-                           :action (strcat "/groups/" groupid)
-                        (:input :type "hidden"
-                                :name "membership-request-id"
-                                :value (cdr request))
-                        (:button :class "yes small"
-                                 :type "submit"
-                                 :name "approve-group-membership-request"
-                                 "approve")
-                        (:button :class "cancel small"
-                                 :type "submit"
-                                 :name "deny-group-membership-request"
-                                 "deny")))))))))))
+                      (str (v-align-middle
+                             (str (person-link personid))))))))))))))
 
 (defun members-sidebar (groupid)
   (html

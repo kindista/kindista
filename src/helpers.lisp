@@ -369,3 +369,9 @@
           "until you post some offers and we have a chance to review your "
           "initial activity.")))
       (:br))))
+
+(defmacro v-align-middle (content)
+  `(html
+     (:div :class "v-align-container"
+       (:div :class "v-align-cell"
+         ,content))))

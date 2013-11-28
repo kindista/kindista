@@ -1631,25 +1631,6 @@ button.card > img {
  }
 }
 
-.mail.card  td.request-name {
- padding-right: 0.4em;
- min-width: 20em;
-}
-
-.mail.card td.member-approval {
- width: 13.4em;
-}
-
-table.membership-requests {
- table-layout: fixed;
- width: 100%;
- border-collapse: collapse;
-}
-
-.membership-requests td {
- padding: 0;
-}
-
 div .members-tab {
  padding-left: 0;
  font-size: 1.2em;
@@ -1660,121 +1641,114 @@ div .current-members {
 }
 
 div.membership-request {
+ width: 100%;
  clear: both;
  overflow: hidden;
  max-height: 4.8em;
 }
 
-div.membership-requests div.avatar {
- width: 4em;
- max-height: 4em;
- margin-top: 0.3em;
- margin-right: 0.3em;
- display: inline-block;
- vertical-align: middle;
+div.membership-request:after {
+ clear: both;
 }
 
-div.membership-requests div.request-name div:before,
-div.membership-requests form:before {
- content:'';
- display:inline-block;
- height: 100%;
- vertical-align: middle;
- margin-right: -.025em;
+div.membership-request div.avatar {
+  display: inline-block;
+  height: 100%;
+  float: left;
+  margin-right: 0.3em;
 }
 
-div.membership-requests div.request-name {
- display: inline-block;
- max-height: 3.4em;
- vertical-align: middle;
-}
-
-.members-tab div.request-name div {
- vertical-align: middle;
- width: 15em;
- min-width: 10em;
-}
-
-.right div.request-name div {
- width: 7.55em;
- min-width: auto;
-}
-
-div.membership-requests form.member-approval {
- vertical-align: -45%;
- width: 7em;
- display: inline-block;
-}
-
-.membership-requests td.avatar div {
- overflow: hidden;
- width: 4em;
- max-height: 4em;
- margin-top: 0.3em;
- margin-right: 0.3em;
-}
-
-.membership-requests img {
- max-width: 100%;
+div.membership-request img {
+ width: 100%;
  max-height: 100%;
 }
 
-.membership-requests button:last-child {
- margin-right: 0;
+div.membership-request div.request-name {
+  height: 100%;
+  overflow: hidden;
 }
 
-.membership-requests button {
+div.membership-request div.member-approval {
+  height: 100%;
+  float: right;
+}
+
+div.membership-request button {
  height: 2em;
  line-height: 1em;
  padding-bottom: 0.6em;
  margin-right: 0.3em;
 }
 
-.membership-requests:after {
- clear: both;
+div.membership-request button:last-child {
+ margin-right: 0;
+}
+
+.mail.card div.membership-request {
+ max-width: 50em;
+}
+
+.mail.card div.membership-request div.member-approval-ui {
+ width: 13.4em;
+}
+
+.mail.card div.membership-request p.member-request-details {
+ margin-top: 0;
+}
+
+.right div.membership-request {
+ margin-top: 0.2em;
+ height: 4em;
+}
+
+.right div.membership-request div.avatar {
+ width: 4em;
+ max-height: 4em;
+}
+
+.right div.request-name {
+ width: 7.55em;
+}
+
+.right div.membership-request div.request-name a {
+ display: inline-block;
+ max-height: 3.4em;
+ overflow: hidden;
+}
+
+.members-tab div.membership-request {
+  margin-top: 0.5em;
+  height: 4.5em;
+  max-width: 30em;
+}
+
+.members-tab div.avatar {
+  width: 4.5em;
+}
+
+.members-tab div.request-name {
+  min-width: 6em;
+  margin-right: 0.2em;
 }
 
 @media (max-width:30em) {
  div.membership-request {
   border-bottom: 1px solid #eeeeee;
-  margin-top: 0.5em;
-  position: relative;
-  padding-bottom: 0.5em;
-  max-height: none;
-  min-height: 4.6em;
-  width: 100%;
+  min-width: 15em;
  }
  div.membership-request:last-child {
   border-bottom: none;
  }
- div.request-name {
-  margin-right: 5em;
-  max-width: 18em;
-  width: auto;
-  min-width:5em;
- }
- div.request-name div {
-  max-width: none
-  width: auto;
-  min-width:none;
- }
- div.membership-requests form.member-approval:before {
-  content:none;
- }
- div.membership-requests form.member-approval {
+ div.membership-requests .member-approval-ui {
   width: 3.93em;
   overflow: visible;
-  position: absolute;
-  top: -0.15em;
-  right: 0;
  }
- .mail.card td.member-approval {
-   max-width: 6em;
+ .mail.card div.member-approval-ui {
+   max-width: 7.2em;
    overflow: visible;
  }
- .mail.card .membership-requests td.request-name {
-   width: 11em;
-   min-width: 9em;
+ .mail.card div.membership-request {
+   min-width: 17em;
  }
 }
 
@@ -2776,6 +2750,18 @@ input[name=reply] {
 
 .middle {
  vertical-align: middle;
+}
+
+.v-align-container {
+ display: table;
+ width: 100%;
+ height: 100%;
+}
+
+.v-align-cell {
+ display: table-cell;
+ vertical-align: middle;
+ height: 100%;
 }
 
 .spinner {
