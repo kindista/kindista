@@ -192,7 +192,7 @@
          (if (eq results 'none)
            (progn
              (htm
-               (:h3 "Select one of your contacts")
+               (:h3 "Or, select one of your contacts")
                (:menu :type "toolbar"
                  (dolist (contact (contacts-alphabetically *user*))
                    (htm (:li (:button :class "text" :type "submit" :value (car contact) :name "add" (str (cadr contact)))))))))
