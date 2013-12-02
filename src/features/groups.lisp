@@ -285,7 +285,7 @@
   (html
     (:div :class (s+ "invite-members " class)
       (:h3 "+Add group members")
-      (:form :method "get" :action (strcat "/groups/" groupid)
+      (:form :method "get" :action (strcat "/groups/" (username-or-id groupid) "/invite-members")
        (:input :type "text"
                :name "search-name"
                :placeholder "Search by name")
@@ -686,6 +686,19 @@
   (require-user
     (ensuring-userid (id "/groups/~a/members")
       (profile-group-members-html id))))
+
+(defun get-invite-group-members (id)
+  (ensuring-userid (id "/groups/~a/invite-members")
+    (if (group-admin-p id)
+      (invite-group-members-page id)
+      (permission-denied))))
+
+(defun invite-group-members-page (id)
+  (standard-page
+    "Invite group members"
+    (html
+      (str (invite-group-members id)))
+    :selected "groups"))
 
 (defun groups-tabs-html (&key (tab :my-groups))
   (html

@@ -207,6 +207,9 @@
   ("/groups/<id>/members"
     :get get-group-members)
 
+  ("/groups/<id>/invite-members"
+    :get get-invite-group-members)
+
   ("/messages"
     :get get-messages
     :post post-messages)
