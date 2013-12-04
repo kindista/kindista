@@ -145,8 +145,10 @@
   (let* ((time (case (getf data :type)
                  ((or :conversation :reply)
                   (db (getf data :latest-comment) :created))
-                 (:group-membership-request (or (getf data :resent)
-                                                (getf data :created)))
+                 ((or :group-membership-invitaiton
+                      :group-membership-request)
+                  (or (getf data :resent)
+                      (getf data :created)))
                  (:gratitude (or (getf data :created)
                                  (getf data :edited)))))
          (latest-comment (getf data :latest-comment))

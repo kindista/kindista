@@ -277,26 +277,52 @@
 (defun group-sidebar (groupid)
   (html
     (when (group-admin-p groupid)
-      (str (invite-group-members groupid :class "item right only"))
+      (htm (:div :class "item right only"
+             (:a :href (strcat "/groups/" groupid "/invite-members")
+              "+add group members")))
       (str (member-requests groupid :class "people item right only")))
     (str (members-sidebar groupid))))
 
-(defun invite-group-members (groupid &key (class ""))
-  (html
-    (:div :class (s+ "invite-members " class)
-      (:h3 "+Add group members")
-      (:form :method "get" :action (strcat "/groups/" (username-or-id groupid) "/invite-members")
-       (:input :type "text"
-               :name "search-name"
-               :placeholder "Search by name")
-       (:button :class "submit yes" :name "add-member" :type "submit" "Search"))
-      (awhen (get-parameter "search-name")
-        (let ((results (search-people it)))
-          (dolist (result results)
-            (htm
-              (:form :method "post" :action (strcat "/groups/" groupid)
-               (str (person-card (car result) (cdr result)))
-               (:button :class "submit yes" :name "invite-member" :type "submit" "Invite")))))))))
+(defun invite-group-members (groupid)
+  (standard-page
+    "Invite group members"
+    (html
+      (:div :class "invite-members"
+        (:h3 "Invite people to join "
+         (str
+           (if (eq groupid +kindista-id+)
+             "Kindista's group account"
+             (db groupid :name))))
+        (:form :method "get"
+               :action (strcat "/groups/" groupid "/invite-members")
+         (:input :type "text"
+                 :name "search-name"
+                 :placeholder "Search by name")
+         (:button :class "submit yes" :name "add-member" :type "submit" "Search"))
+        (awhen (get-parameter "search-name")
+          (let ((results (search-people it)))
+            (if results
+              (dolist (result results)
+                (htm
+                  (:form :method "post"
+                         :class "invite-member-result"
+                         :action (strcat "/groups/" groupid)
+                   (:div :class "float-right"
+                     (str
+                       (v-align-middle
+                         (:button :class "submit yes"
+                                  :name "invite-member"
+                                  :value (car result)
+                                  :type "submit"
+                                  "Invite"))))
+                   (str (person-card (car result) (cdr result))))))
+              (htm
+                (:p
+                  "There are no Kindista members with the name "
+                  (str it)
+                  " .  Please try again.")))))))
+    :top (simple-profile-top groupid)
+    :selected "groups"))
 
 (defun member-requests (groupid &key (class ""))
   (let ((requests (gethash groupid *group-membership-requests-index*)))
@@ -617,6 +643,19 @@
     (amodify-db group :members (pushnew (getf request :requested-by) it))
     (delete-group-membership-request id)))
 
+(defun create-group-membership-invitation (groupid invitee &key (host *userid*))
+  (let ((id (insert-db (list :type :group-membership-invitation
+                             :group-id groupid
+                             :people '(((invitee) . :unread))
+                             :message-folders (list :inbox (list invitee))
+                             :invited-by host
+                             :created (get-universal-time)))))
+    id))
+
+(defun resend-group-membership-invitation (invitation-id)
+  (index-message invitation-id
+                 (modify-db invitation-id :resent (get-universal-time))))
+
 (defun confirm-group-uniqueness (results name lat long address city state country street zip &key public-location)
   (standard-page
     "Is your group already on Kindista?"
@@ -690,15 +729,8 @@
 (defun get-invite-group-members (id)
   (ensuring-userid (id "/groups/~a/invite-members")
     (if (group-admin-p id)
-      (invite-group-members-page id)
+      (invite-group-members id)
       (permission-denied))))
-
-(defun invite-group-members-page (id)
-  (standard-page
-    "Invite group members"
-    (html
-      (str (invite-group-members id)))
-    :selected "groups"))
 
 (defun groups-tabs-html (&key (tab :my-groups))
   (html
@@ -731,9 +763,9 @@
         ((post-parameter "request-membership")
          (unless (or (member *userid* (getf group :members))
                      (member *userid* (getf group :admins)))
-           (let ((current-invitation (assoc *userid*
-                                            (gethash id *group-membership-requests-index*))))
-             (aif current-invitation
+           (let ((current-membership-request (assoc *userid*
+                                                    (gethash id *group-membership-requests-index*))))
+             (aif current-membership-request
                (resend-group-membership-request (cdr it))
                (create-group-membership-request id))))
          (flash (s+ "Your membership request has been forwarded to the "
@@ -744,7 +776,18 @@
           (if (group-admin-p id)
             (cond
               ((post-parameter "invite-member")
-               )
+               (unless (or (member *userid* (getf group :members))
+                           (member *userid* (getf group :admins)))
+                 (let ((current-invitation (assoc *userid*
+                                                  (gethash id *group-membership-invitations-index*))))
+                   (aif current-invitation
+                     (resend-group-membership-request (cdr it))
+                     (create-group-membership-request id))))
+               (flash (s+ "Your membership request has been forwarded to the "
+                          (getf group :name)
+                          " admins."))
+               (see-other (or (post-parameter "next") url)) 
+                     )
               ((post-parameter "approve-group-membership-request")
                (approve-group-membership-request
                  (parse-integer (post-parameter "membership-request-id")))

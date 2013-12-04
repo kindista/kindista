@@ -477,6 +477,7 @@
     (:person (index-person id data))
     (:group (index-group id data))
     (:group-membership-request (index-group-membership-request id data))
+    (:group-membership-invitation (index-group-membership-invitation id data))
     (:contact-n (index-contact-notification id data))
     ((or :reply :conversation) (index-message id data))))
 

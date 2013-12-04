@@ -1631,14 +1631,37 @@ button.card > img {
  }
 }
 
-.invite-members.right input[type=text] {
+.invite-members h3 {
+ margin-bottom: 1em;
+}
+
+.invite-members input[type=text] {
  width: 14.3em;
  margin: 0 0.4em 0 0;
 }
 
-.invite-members.right button {
+.invite-members button {
  font-size: 0.85em;
  margin: 0;
+}
+
+form.invite-member-result {
+ clear: both;
+ max-width: 30em;
+ border-bottom: 1px solid #eee;
+ height: 9.5em;
+}
+
+form.invite-member-result .card {
+ max-width:30em;
+ clear: none;
+ padding-bottom: 0;
+ padding-right: 4.6em;
+}
+
+form.invite-member-result div.float-right {
+ width: 4.5em;
+ height: 100%;
 }
 
 div .members-tab {
@@ -1742,6 +1765,18 @@ div.membership-request button:last-child {
 }
 
 @media (max-width:30em) {
+ div.invite-members .card .image {
+ width:30%;
+ max-width: 10em;
+ margin-right: 0.75em;
+ }
+ div.invite-members .card .image  img {
+ max-width:100%;
+ max-height: auto;
+ }
+ div.invite-members .card .details {
+ width:70%;
+ }
  div.membership-request {
   border-bottom: 1px solid #eeeeee;
   min-width: 15em;
@@ -1966,6 +2001,23 @@ div.activity-image {
 
 .activity-image img {
  max-height: 280px;
+}
+
+.id-bar {
+ background: #fafafa;
+ padding: 0.7em 0.7em 0.7em 1em;
+ border-bottom: 1px solid #eee;
+ font-size: 1.3em;
+ font-weight: bold;
+}
+
+.id-bar a {
+ text-decoration: none;
+}
+
+.id-bar img {
+ max-height: 2em;
+ width: auto;
 }
 
 .basics h1 {

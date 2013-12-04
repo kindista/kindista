@@ -46,6 +46,7 @@
 (defindex *gratitude-index*)
 (defindex *gratitude-results-index*)
 (defindex *group-membership-requests-index*) ;(personid . requestid)
+(defindex *group-membership-invitations-index*) ;(personid . invitationid)
 (defindex *group-priviledges-index*)
 (defindex *groups-geo-index*)
 (defindex *invited-index*)

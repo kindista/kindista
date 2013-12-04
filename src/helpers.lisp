@@ -266,7 +266,9 @@
                 (,user-name (getf ,user-data :username)))
            (if ,user-data
              (if ,user-name
-               (see-other (format nil ,base-url ,user-name))
+               (see-other (apply #'url-compose
+                                 (format nil ,base-url ,user-name)
+                                 (flatten (get-parameters*))))
                (progn ,@body))
              (not-found)))
          (let ((,user-id (gethash ,user-id *username-index*)))

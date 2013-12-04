@@ -282,6 +282,17 @@
                (:input :type "hidden" :name "next" :value *base-url*)
                (:button :class (if is-contact "cancel" "yes") :type "submit" (str (if is-contact "Remove from contacts" "Add to contacts"))))))))))))
 
+(defun simple-profile-top (id)
+  (let* ((entity (db id))
+         (type (getf entity :type))
+         (link (case type
+                 (:person (s+ "/people/" (username-or-id id)))
+                 (:group (s+ "/groups/" (username-or-id id))))))
+    (html
+      (:div :class "id-bar"
+        (:a :href link (:img :src (get-avatar-thumbnail id 70 70)))
+        (:a :href link (str (getf entity :name)))))))
+
 (defun profile-tabs-html (id &key tab)
   (let* ((entity (db id))
          (profile-p (or (getf entity :bio-into)
