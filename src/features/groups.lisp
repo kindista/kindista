@@ -800,6 +800,20 @@
                     (getf group :name)
                     " admins."))
          (see-other (or (post-parameter "next") url)))
+
+        ((post-parameter "leave-group")
+         (when (member *userid* (getf group :members))
+           (confirm-action "Leave group"
+                           (s+ "Are you sure you want to leave the group " (getf group :name) "?")
+                           :url (strcat "/groups/" (username-or-id id))
+                           :post-parameter "really-leave-group"
+                           :details "If you leave this group, you will not be able to rejoin again without being re-approved by the groups admin.")))
+
+        ((post-parameter "really-leave-group")
+         (when (member *userid* (getf group :members))
+           (remove-group-member *userid* id)
+           (see-other url)))
+
         (t
           (if (group-admin-p id)
             (cond

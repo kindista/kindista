@@ -562,3 +562,19 @@
         (:button :class "yes" :type "submit" :class "submit" :name "really-delete" "Yes")))
     :class class))
 
+(defun confirm-action (title text &key url next-url class item-id details (post-parameter "confirm-action"))
+  (standard-page
+    title
+    (html
+      (:h2 (str text))
+      (when details
+        (htm (:p (str details))))
+      (:form :method "post" :action url :class "item confirm-delete"
+        (awhen item-id
+          (htm (:input :type "hidden" :name "item-id" :value it)))
+        (awhen next-url
+          (htm (:input :type "hidden" :name "next" :value it)))
+        (:a :href next-url "No, I didn't mean it!")
+        (:button :class "yes" :type "submit" :class "submit" :name post-parameter "Yes")))
+    :class class))
+
