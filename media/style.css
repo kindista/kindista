@@ -712,7 +712,7 @@ button.link:hover {
  text-decoration: underline;
 }
 
-button.cancel, input.cancel {
+button.cancel, input.cancel, div.cancel {
  font-weight: bold;
  color: #fff;
  background: -moz-linear-gradient(
@@ -1657,16 +1657,30 @@ form.invite-member-result .card {
  clear: none;
  padding-bottom: 0;
  padding-right: 4.6em;
+ z-index: -1;
+ position: relative;
 }
 
 form.invite-member-result div.float-right {
  width: 4.5em;
  height: 100%;
+ z-index: 10;
+ position: relative;
 }
 
 div .members-tab {
  padding-left: 0;
  font-size: 1.2em;
+}
+
+div.members-tab.invite-members {
+ max-width: 31em;
+ padding-right: 1em;
+}
+
+div.members-tab.membership-requests h3 {
+ clear: both;
+ white-space: nowrap;
 }
 
 div .current-members {

@@ -145,12 +145,12 @@
   (let* ((time (case (getf data :type)
                  ((or :conversation :reply)
                   (db (getf data :latest-comment) :created))
-                 ((or :group-membership-invitaiton
+                 ((or :group-membership-invitation
                       :group-membership-request)
                   (or (getf data :resent)
                       (getf data :created)))
-                 (:gratitude (or (getf data :created)
-                                 (getf data :edited)))))
+                 (:gratitude (or (getf data :edited)
+                                 (getf data :created)))))
          (latest-comment (getf data :latest-comment))
          (folders (getf data :message-folders))
          (people (case (getf data :type)
@@ -167,15 +167,16 @@
                                       :people people
                                       :folders folders
                                       :type (getf data :type)))))
-    (aif new-message
-      (with-locked-hash-table (*db-messages*)
-        (setf (gethash id *db-messages*) it))
-      (progn
-        (setf (message-time existing-message) time)
-        (setf (message-latest-comment existing-message) latest-comment)
 
-        (setf (message-people existing-message) people)
-        (setf (message-folders existing-message) folders)))
+    (with-locked-hash-table (*db-messages*)
+      (aif new-message
+        (setf (gethash id *db-messages*) it)
+        (progn
+          (setf (message-time existing-message) time)
+          (setf (message-latest-comment existing-message) latest-comment)
+
+          (setf (message-people existing-message) people)
+          (setf (message-folders existing-message) folders))))
     (index-message-folders (or existing-message new-message))))
 
 (defun all-message-people (message)
@@ -304,6 +305,8 @@
                               " added you as a contact.")))
                          (:group-membership-request
                            (str (group-membership-request-inbox-item item)))
+                         (:group-membership-invitation
+                           (str (group-membership-invitation-inbox-item item)))
                          (:gratitude
                            (htm
                              (str (gratitude-inbox-item item groups))))))))))
@@ -378,6 +381,33 @@
                 (str (person-link (getf data :requested-by)))
                 " is requesting to join "
                 (str (group-link (getf data :group-id)))))))))))
+
+(defun group-membership-invitation-inbox-item (message)
+  (let* ((id (message-id message))
+         (data (db id))
+         (group-id (getf data :group-id)))
+    (html
+      (str (h3-timestamp (message-time message)))
+      (:div :class "membership-request"
+        (:div :class "member-approval"
+          (str
+            (v-align-middle
+              (:div :class "member-approval-ui"
+                (:input :type "hidden" :name "message-id" :value id)
+                (:button :class "yes small" :type "submit" :name "accept-group-membership-invitation" "join group")
+                (:button :class "cancel small" :type "submit" :name "decline-group-membership-invitation" "decline")))))
+        (:div :class "request-name"
+          (str
+            (v-align-middle
+              (:p :class "member-request-details"
+                (str (person-link (getf data :invited-by)))
+                " has invited you to join "
+                (if (eq group-id +kindista-id+)
+                  (htm "Kindista's " (:a :href "/groups/kindista"
+                                         "group account") ".")
+                  (htm "the group "
+                       (str (group-link group-id))
+                       " on Kindista."))))))))))
 
 (defun gratitude-inbox-item (message groups)
   (let* ((id (message-id message))
@@ -541,24 +571,6 @@
                (update-folder-data message :inbox))))
          (see-other next))
 
-        ((post-parameter "deny-group-membership-request")
-         (let* ((message-id (parse-integer (post-parameter "message-id")))
-                (group-id (db message-id :group-id)))
-           (if (group-admin-p group-id)
-             (progn
-               (delete-group-membership-request message-id)
-               (see-other next))
-             (permission-denied))))
-
-        ((post-parameter "approve-group-membership-request")
-         (let* ((message-id (parse-integer (post-parameter "message-id")))
-                (group-id (db message-id :group-id)))
-           (if (group-admin-p group-id)
-             (progn
-               (approve-group-membership-request message-id)
-               (see-other next))
-             (permission-denied))))
-
         ((post-parameter "mark-read")
          (dolist (id messages)
            (let ((message (gethash id *db-messages*)))
@@ -592,7 +604,45 @@
                        (member *userid* (getf (message-folders message) :compost))
                        (not (member *userid* (getf (message-folders message) :deleted))))
                (update-folder-data message :deleted))))
-         (see-other next))))))
+         (see-other next))
+
+        (t
+         (let* ((message-id (parse-integer (post-parameter "message-id")))
+                (message (db message-id))
+                (group-id (getf message :group-id)))
+           (cond
+             ((post-parameter "deny-group-membership-request")
+              (if (group-admin-p group-id)
+                (progn
+                  (delete-group-membership-request message-id)
+                  (see-other next))
+                (permission-denied)))
+
+             ((post-parameter "approve-group-membership-request")
+              (if (group-admin-p group-id)
+                (progn
+                  (approve-group-membership-request message-id)
+                  (see-other next))
+                (permission-denied)))
+
+             ((post-parameter "decline-group-membership-invitation")
+              (if (eq (caaar (getf message :people)) *userid*)
+                (progn
+                  (update-folder-data (gethash message-id *db-messages*)
+                                      :deleted)
+                  (see-other next))
+                (permission-denied)))
+
+             ((post-parameter "accept-group-membership-invitation")
+              (if (eq (caaar (getf message :people)) *userid*)
+                (progn
+                  (update-folder-data (gethash message-id *db-messages*)
+                                      :deleted)
+                  (see-other next))
+                (permission-denied)))
+             )))
+        
+        ))))
 
 
 

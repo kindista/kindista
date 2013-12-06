@@ -227,7 +227,7 @@
   (let* ((entity (db id))
          (entity-type (getf entity :type))
          (is-contact (member id (getf *user* :following)))
-         (pendingp (member *userid* (getf entity :membership-requests)))
+         (pendingp (assoc *userid* (gethash id *group-membership-requests-index*)))
          (memberp (member *userid* (getf entity :members)))
          (adminp (member *userid* (getf entity :admins))))
     (html
@@ -269,11 +269,25 @@
            (:button :class "yes" :type "submit" "Express gratitude"))
 
          (when (eql entity-type :group)
-           (htm
-             (:form :method "POST" :action (strcat "/groups/" id)
-               (:input :type "hidden" :name (if memberp "leave-group" "request-membership") :value id)
-               (:input :type "hidden" :name "next" :value *base-url*)
-               (:button :class (if memberp "cancel" "yes") :type "submit" (str (if memberp "Leave group" "Join group"))))))
+           (cond
+             (adminp
+               (htm (:form :method "get"
+                           :action (strcat "/groups/" (username-or-id id) "/invite-members")
+                       (:button :class "yes" :type "subit"  "+add members"))))
+             (memberp
+               (htm (:form :method "POST" :action (strcat "/groups/" id)
+                      (:input :type "hidden" :name "next" :value *base-url*)
+                      (:button :class "cancel" :name "leave-group" :value id :type "submit"
+                        (str "Leave group")))))
+             (pendingp
+               (htm
+                 (:div :class "cancel"
+                    "Membership request awaiting admin appoval")))
+             (t
+               (htm (:form :method "POST" :action (strcat "/groups/" id)
+                      (:input :type "hidden" :name "next" :value *base-url*)
+                      (:button :class "yes" :type "submit" :name "request-membership" :value id
+                        (str "Join group")))))))
 
          (when (and *userid* (eql entity-type :person))
            (htm

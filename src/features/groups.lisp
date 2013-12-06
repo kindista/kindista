@@ -288,7 +288,10 @@
     "Invite group members"
     (html
       (:div :class "invite-members"
-        (:h3 "Invite people to join "
+        (:h3 "Invite "
+             (when (get-parameter "add-another")
+               (htm "more "))
+             "people to join "
          (str
            (if (eq groupid +kindista-id+)
              "Kindista's group account"
@@ -377,9 +380,14 @@
       (html
         (when *user* (str (profile-tabs-html groupid :tab :members)))
         (:div :class "activity"
-          (when (and membership-requests
-                     (group-admin-p groupid))
-            (str membership-requests)
+          (when (group-admin-p groupid)
+            (htm
+              (:div :class "members-tab invite-members"
+               (:a :href (strcat "/groups/" groupid "/invite-members")
+                   :class "float-right"
+                  "+add group members")))
+            (when membership-requests
+              (str membership-requests))
             (htm (:h3 "Current Members")))
           (str (group-member-links groupid :ul-class "members-tab current-members"))))
       :top (profile-top-html groupid)
@@ -646,7 +654,7 @@
 (defun create-group-membership-invitation (groupid invitee &key (host *userid*))
   (let ((id (insert-db (list :type :group-membership-invitation
                              :group-id groupid
-                             :people '(((invitee) . :unread))
+                             :people (list (cons (list invitee)  :unread))
                              :message-folders (list :inbox (list invitee))
                              :invited-by host
                              :created (get-universal-time)))))
@@ -655,6 +663,24 @@
 (defun resend-group-membership-invitation (invitation-id)
   (index-message invitation-id
                  (modify-db invitation-id :resent (get-universal-time))))
+
+(defun index-group-membership-invitation (id data)
+  (let ((groupid (getf data :group-id)))
+    (with-locked-hash-table (*group-membership-invitations-index*)
+      (asetf (gethash groupid *group-membership-invitations-index*)
+             (acons (caaar (getf data :people)) id it))))
+  (index-message id data))
+
+(defun accept-group-membership-invitation (id)
+  (let* ((invitation (db id))
+         (group (getf invitation :group-id))
+         (invitee (caaar (getf invitation :people))))
+    (amodify-db group :members (pushnew invitee it))
+    (with-locked-hash-table (*group-membership-invitations-index*)
+      (asetf (gethash group *group-membership-invitations-index*)
+             (remove (cons invitee id) it :test #'equal)))
+    (remove-message-from-indexes id)
+    (remove-from-db id)))
 
 (defun confirm-group-uniqueness (results name lat long address city state country street zip &key public-location)
   (standard-page
@@ -758,7 +784,9 @@
   (require-user
     (let* ((id (parse-integer id))
            (group (db id))
-           (url (strcat "/groups/" (username-or-id id))))
+           (url (strcat "/groups/" (username-or-id id)))
+           (invitee (awhen (post-parameter "invite-member")
+                      (parse-integer it))))
       (cond
         ((post-parameter "request-membership")
          (unless (or (member *userid* (getf group :members))
@@ -775,19 +803,30 @@
         (t
           (if (group-admin-p id)
             (cond
-              ((post-parameter "invite-member")
-               (unless (or (member *userid* (getf group :members))
-                           (member *userid* (getf group :admins)))
-                 (let ((current-invitation (assoc *userid*
-                                                  (gethash id *group-membership-invitations-index*))))
-                   (aif current-invitation
-                     (resend-group-membership-request (cdr it))
-                     (create-group-membership-request id))))
-               (flash (s+ "Your membership request has been forwarded to the "
-                          (getf group :name)
-                          " admins."))
-               (see-other (or (post-parameter "next") url)) 
-                     )
+              (invitee
+               (unless (or (member invitee (getf group :members))
+                           (member invitee (getf group :admins)))
+                 (let ((invitationp (assoc invitee
+                                           (gethash id *group-membership-invitations-index*))))
+                   (acond
+                     ((assoc invitee
+                             (gethash id *group-membership-requests-index*))
+                      (approve-group-membership-request (cdr it))
+                      (flash (s+ "You have approved "
+                                 (db invitee :name)
+                                 "'s request to join "
+                                 (getf group :name) ".")))
+                     (invitationp
+                      (resend-group-membership-invitation (cdr it))
+                      (flash (s+ (db invitee :name)
+                                  "'s invitation has been resent.")))
+                     (t
+                      (create-group-membership-invitation id invitee)
+                      (flash (s+ "An invitation has been sent to "
+                                 (db invitee :name) "."))))))
+               (see-other (or (post-parameter "next")
+                              (url-compose (s+ url "/invite-members")
+                                           "add-another" ""))))
               ((post-parameter "approve-group-membership-request")
                (approve-group-membership-request
                  (parse-integer (post-parameter "membership-request-id")))
