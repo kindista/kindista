@@ -1465,6 +1465,13 @@ table.messages {
  overflow: hidden;
 }
 
+.person.card .card-button {
+ float: right;
+ height: 100%;
+ position: relative;
+ z-index: 10;
+}
+
 .card > .image {
  float: left;
  width: 7em;
@@ -1632,7 +1639,7 @@ button.card > img {
 }
 
 .invite-members h3 {
- margin-bottom: 1em;
+ margin-bottom: 0.75em;
 }
 
 .invite-members input[type=text] {
@@ -1645,9 +1652,11 @@ button.card > img {
  margin: 0;
 }
 
-form.invite-member-result {
+form.invite-member-result,
+.invite-members form.member-to-admin {
  clear: both;
  max-width: 30em;
+ min-width: 20em;
  border-bottom: 1px solid #eee;
  height: 9.5em;
 }
@@ -1665,28 +1674,34 @@ div.admin-roles div.current-admin {
  border-bottom: 1px solid #eee;
 }
 
-div.admin-roles .card {
+div.current-admin .card {
  border-bottom: none;
+ padding-right: 4.6em;
+ z-index: -1;
 }
 
 form.invite-member-result .card,
+form.member-to-admin .card,
 div.admin-roles .card {
  max-width:30em;
  clear: none;
- padding-right: 4.6em;
- z-index: -1;
  position: relative;
 }
 
+form.member-to-admin .card,
 form.invite-member-result .card {
  padding-bottom: 0;
+ height: 100%;
 }
 
-form.invite-member-result div.float-right {
- width: 4.5em;
- height: 100%;
- z-index: 10;
- position: relative;
+form.invite-member-result .image {
+ margin: 1em 0.75em 0.5em 0;
+}
+
+form.member-to-admin .card-details,
+form.invite-member-result .card-details {
+ max-width: 17.6em;
+ min-width: 7em;
 }
 
 div .members-tab {

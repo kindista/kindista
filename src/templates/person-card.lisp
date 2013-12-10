@@ -17,14 +17,18 @@
 
 (in-package :kindista)
 
-(defun person-card (id alias)
+(defun person-card (id alias &key button)
   (let* ((mutuals (mutual-connections id))
          (person (db id))
          (name (getf person :name))
          (link (s+ "/people/" (username-or-id id))))
     (html
-      (:div :class "card"
+      (:div :class "person card"
         (:div :class "image" (:a :href link (:img :src (get-avatar-thumbnail id 300 300))))
+        (when button
+          (htm
+            (:div :class "card-button"
+              (str (v-align-middle (str button))))))
         (:div :class "card-details"
           (:h3 (:a :href link
                  (str name)))

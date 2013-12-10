@@ -669,48 +669,50 @@
                  (htm
                    (:form :method "get"
                           :action "/settings/admin-roles"
-                    (:input :type "hidden" :name "groupid" :value (str groupid))
-                    (:input :type "text"
-                            :name "search-name"
-                            :placeholder "search by name")
-                    (:button :class "submit yes" :name "add-admin" :type "submit" "search"))
-                   (aif (get-parameter "search-name")
-                     (let* ((q (search-people it))
-                            (results (remove-if-not #'(lambda (x) (member x (getf group :members)))
-                                                    q
-                                                    :key #'car)))
-                       (if results
-                         (dolist (result results)
+                     (:input :type "hidden" :name "groupid" :value (str groupid))
+                     (:input :type "text"
+                             :name "search-name"
+                             :placeholder "search by name")
+                     (:button :class "submit yes" :type "submit" "search"))
+                   (flet ((member-card (person-cons)
+                            (html
+                              (:form :method "get"
+                                     :class "invite-member-result"
+                                     :action (strcat "/settings/admin-roles" )
+                                 (:input :type "hidden" :name "groupid" :value (str groupid))
+                                 (str
+                                   (person-card
+                                     (car person-cons)
+                                     (cdr person-cons)
+                                     :button (html
+                                               (:button :class "yes submit"
+                                                        :name "add-admin"
+                                                        :value (car person-cons)
+                                                        :type "submit"
+                                                        "Make admin"))))))))
+                     (if (and (get-parameter "search-name")
+                              (scan +text-scanner+
+                                    (get-parameter "search-name")))
+                       (let* ((q (search-people (get-parameter "search-name")))
+                              (results (remove-if-not #'(lambda (x)(member x (getf group :members)))
+                                                      q
+                                                      :key #'car)))
+                         (if results
+                           (dolist (result results)
+                             (str (member-card result)))
                            (htm
-                             (:form :method "get"
-                                    :class "invite-member-result"
-                                    :action (strcat "/settings/admin-roles" )
-                              (:input :type "hidden" :name "groupid" :value (str groupid))
-                              (:div :class "float-right"
-                                (str
-                                  (v-align-middle
-                                    (:button :class "submit yes"
-                                             :name "add-admin"
-                                             :value (car result)
-                                             :type "submit"
-                                             "make admin"))))
-                              (str (person-card (car result) (cdr result))))))
-                         (htm
-                           (:p
-                             "there are no kindista members with the name "
-                             (str it)
-                             " .  please try again."))))
-                     (dolist (person (getf group :members))
-                       (htm
-                         (:form :method "get"
-                                :class "invite-member-result"
-                                :action (strcat "/settings/admin-roles" )
-                          (:input :type "hidden" :name "groupid" :value (str groupid))
-                          (:button :class "submit yes"
-                                   :name "add-admin"
-                                   :value person
-                                   :type "submit"
-                                   (str (db person :name)))))))))
+                             (:p
+                               "there are no members in this group  with the name "
+                               (str (get-parameter "search-name"))
+                               " .  please try again."))))
+                       (let* ((members (mapcar #'(lambda (id)
+                                                   (cons id (db id :name)))
+                                               (getf group :members)))
+                              (alpha-members (sort members
+                                                   #'string-lessp
+                                                   :key #'cdr)))
+                         (dolist (person alpha-members)
+                           (str (member-card person))))))))
 
                 (t
                  (htm

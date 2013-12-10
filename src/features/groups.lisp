@@ -280,7 +280,7 @@
       (htm (:div :class "item right only"
              (:a :href (strcat "/groups/" groupid "/invite-members")
               "+add group members")))
-      (str (member-requests groupid :class "people item right only")))
+      (str (membership-requests groupid :class "people item right only")))
     (str (members-sidebar groupid))))
 
 (defun invite-group-members (groupid)
@@ -308,17 +308,17 @@
               (dolist (result results)
                 (htm
                   (:form :method "post"
-                         :class "invite-member-result"
-                         :action (strcat "/groups/" groupid)
-                   (:div :class "float-right"
+                       :class "invite-member-result"
+                       :action (strcat "/groups/" groupid)
                      (str
-                       (v-align-middle
-                         (:button :class "submit yes"
-                                  :name "invite-member"
-                                  :value (car result)
-                                  :type "submit"
-                                  "Invite"))))
-                   (str (person-card (car result) (cdr result))))))
+                       (person-card
+                         (car result)
+                         (cdr result)
+                         :button (html (:button :class "submit yes"
+                                                :name "invite-member"
+                                                :value (car result)
+                                                :type "submit"
+                                                "Invite")))))))
               (htm
                 (:p
                   "There are no Kindista members with the name "
@@ -327,7 +327,7 @@
     :top (simple-profile-top groupid)
     :selected "groups"))
 
-(defun member-requests (groupid &key (class ""))
+(defun membership-requests (groupid &key (class ""))
   (let ((requests (gethash groupid *group-membership-requests-index*)))
     (when requests
       (html
@@ -373,7 +373,7 @@
 (defun profile-group-members-html (groupid)
   (let* ((group (db groupid))
          (strid (username-or-id groupid))
-         (membership-requests (member-requests groupid :class "item members-tab"))
+         (membership-requests (membership-requests groupid :class "item members-tab"))
          (*base-url* (strcat "/groups/" strid)))
     (standard-page
       (getf group :name)
@@ -648,7 +648,7 @@
 (defun approve-group-membership-request (id)
   (let* ((request (db id))
          (group (getf request :group-id)))
-    (amodify-db group :members (pushnew (getf request :requested-by) it))
+    (add-group-member (getf request :requested-by) group)
     (delete-group-membership-request id)))
 
 (defun create-group-membership-invitation (groupid invitee &key (host *userid*))
@@ -675,7 +675,7 @@
   (let* ((invitation (db id))
          (group (getf invitation :group-id))
          (invitee (caaar (getf invitation :people))))
-    (amodify-db group :members (pushnew invitee it))
+    (add-group-member invitee group)
     (with-locked-hash-table (*group-membership-invitations-index*)
       (asetf (gethash group *group-membership-invitations-index*)
              (remove (cons invitee id) it :test #'equal)))

@@ -61,7 +61,7 @@
       (:option :value *userid*
                :selected (when (eql selected *userid*) "")
                (str (getf *user* :name))" ")
-      (dolist (group (sort groups #'< :key #'last))
+      (dolist (group (sort groups #'string< :key #'cdr))
         (htm (:option :value (car group)
                       :selected (when (eql selected (car group)) "")
                       (str (cdr group))" "))))))

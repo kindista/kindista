@@ -636,13 +636,10 @@
              ((post-parameter "accept-group-membership-invitation")
               (if (eq (caaar (getf message :people)) *userid*)
                 (progn
-                  (update-folder-data (gethash message-id *db-messages*)
-                                      :deleted)
+                  (accept-group-membership-invitation message-id)
+                  (flash (s+ "You have joined " (db group-id :name)))
                   (see-other next))
-                (permission-denied)))
-             )))
-        
-        ))))
+                (permission-denied))))))))))
 
 
 
