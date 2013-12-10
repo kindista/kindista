@@ -1652,13 +1652,34 @@ form.invite-member-result {
  height: 9.5em;
 }
 
-form.invite-member-result .card {
+div.revoke-admin-role li {
+ list-style-type: disc;
+}
+
+div.admin-roles div.invite-members {
+ margin-top: 1.25em;
+}
+
+div.admin-roles div.current-admin {
+ max-width: 45em;
+ border-bottom: 1px solid #eee;
+}
+
+div.admin-roles .card {
+ border-bottom: none;
+}
+
+form.invite-member-result .card,
+div.admin-roles .card {
  max-width:30em;
  clear: none;
- padding-bottom: 0;
  padding-right: 4.6em;
  z-index: -1;
  position: relative;
+}
+
+form.invite-member-result .card {
+ padding-bottom: 0;
 }
 
 form.invite-member-result div.float-right {
@@ -1754,12 +1775,13 @@ div.membership-request button:last-child {
 }
 
 .right div.request-name {
- width: 7.55em;
+ max-width: 7.55em;
 }
 
 .right div.membership-request div.request-name a {
  display: inline-block;
- max-height: 3.4em;
+ max-height: 3em;
+ line-height: 1em;
  overflow: hidden;
 }
 
@@ -2521,8 +2543,9 @@ select.recipients {
  padding: .3em .5em;
 }
 
-.settings-item p.help-text {
+div.settings p.help-text {
  margin-top: 0.4em;
+ max-width: 55em;
 }
 
 .help-text {

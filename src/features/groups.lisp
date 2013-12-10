@@ -841,6 +841,7 @@
                (see-other (or (post-parameter "next")
                               (url-compose (s+ url "/invite-members")
                                            "add-another" ""))))
+
               ((post-parameter "approve-group-membership-request")
                (approve-group-membership-request
                  (parse-integer (post-parameter "membership-request-id")))
@@ -849,5 +850,24 @@
               ((post-parameter "deny-group-membership-request")
                (delete-group-membership-request
                  (parse-integer (post-parameter "membership-request-id")))
-               (see-other (referer))))
+               (see-other (referer)))
+
+              ((post-parameter "confirm-new-admin")
+               (if (< (length (getf group :admins)) 3)
+                 (add-group-admin (parse-integer (post-parameter "item-id")) id)
+                 (flash (s+ "This account already has the maximum of three administrators. "
+                            "If you would like to add an additional admin for this account, one "
+                            "of the current admins must first revoke their admin priviledges.")
+                        :error t))
+               (see-other (url-compose "/settings/admin-roles"
+                                       "groupid" id)))
+
+              ((post-parameter "confirm-revoke-admin-role")
+               (if (member *userid* (getf group :admins))
+                 (progn
+                   (remove-group-admin *userid* id)
+                   (flash (s+ "You are no longer an admin for " (getf group :name) "'s account")))
+                 (permission-denied))
+               (see-other url)))
+
             (permission-denied)))))))

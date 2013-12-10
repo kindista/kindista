@@ -27,14 +27,18 @@
       (when groupid
         (if (equal tab "public")
           (htm (:li :class "selected" "Public Info"))
-          (htm (:li (:a :href (url-compose "/settings/public"
-                                           "groupid" groupid)
-                        "Public Info")))))
+          (htm (:li (:a :href (url-compose "/settings/public" "groupid" groupid)
+                        "Public Info"))))
+        (if (equal tab "admin")
+          (htm (:li :class "selected" "Admin Roles"))
+          (htm (:li (:a :href (url-compose "/settings/admin-roles" "groupid" groupid)
+                        "Admin Roles")))))
       (if (equal tab "communication")
         (htm (:li :class "selected" "Communication Settings"))
-        (htm (:li (:a :href (url-compose "/settings/communication"
-                                         "groupid" groupid)
-                      "Communication Settings")))))))
+        (htm (:li (:a :href (url-compose "/settings/communication" "groupid" groupid)
+                      "Communication Settings"))))
+
+         )))
 
 (defun settings-item-html (item body &key title help-text editable edit-text)
   (html
@@ -554,8 +558,169 @@
             (str (settings-emails (string= (get-parameter "edit") "email")
                                   :activate (get-parameter "activate"))))))))))
 
+(defun get-settings-admin-roles ()
+  (require-user
+    (aif (get-parameter "groupid")
+      (let* ((groupid (parse-integer it))
+             (adminp (group-admin-p groupid)) )
+        (cond
+          ((not groupid)
+           (flash "Your request could not be processed" :error t)
+           (see-other "/settings"))
+
+          ((not adminp)
+           (permission-denied))
+
+          ((get-parameter "add-admin")
+           (confirm-add-admin groupid (parse-integer (get-parameter "add-admin"))))
+
+          ((get-parameter "revoke-admin-role")
+           (confirm-revoke-admin-role groupid))
+
+          (t
+           (settings-admin-roles-html))))
+      (see-other "settings"))))
+
+(defun confirm-add-admin (groupid new-admin)
+  (let ((admin-name (db new-admin :name)))
+    (confirm-action
+      (s+ "Make " admin-name " an admin?")
+      (strcat "Are you sure you want to make "
+              admin-name
+              " an administrator for "
+              (db groupid :name)
+              "'s group account?" )
+      :url (strcat "/groups/" groupid)
+      :item-id new-admin
+      :post-parameter "confirm-new-admin"
+      :details (s+ "At this time, each group account can have a maximum of three admins. "
+                   "We recommend that you only give admin priviledges to people who are "
+                   "actually in leadership or administrative roles within this group. "
+                   "Once you make "
+                   admin-name
+                   " an admin, you will not have the ability to "
+                   "remove their admin priviledges (however they may revoke their admin "
+                   "status themselves). " 
+                   "<strong>Therefore, we strongly recommend that you confirm that "
+                   admin-name
+                   " is willing to act as an admin for this account before you give them "
+                   "admin priviledges.</strong>" ))))
+
+(defun confirm-revoke-admin-role (groupid)
+  (let ((group-name (db groupid :name)))
+    (confirm-action
+      (s+ "Revoke your admin role for " group-name "'s account?")
+      (strcat "Are you sure you want to revoke your admin role for "
+              group-name
+              "'s account?" )
+      :url (strcat "/groups/" groupid)
+      :post-parameter "confirm-revoke-admin-role"
+      :class "revoke-admin-role"
+      :details (html
+                 (:p "If you revoke your admin role for this group, you will no longer be "
+                     "able to take any of the following actions:")
+                 (:ul
+                   (:li "post offers, requests, events, or statements of gratitude on behalf of the group")
+                   (:li "respond to messages sent to the group")
+                   (:li "approve or invite new members to join the group"))))))
+
+(defun settings-admin-roles-html ()
+  (settings-template-html
+        "/settings/admin-roles"
+        (html
+          (:div :class "admin-roles"
+            (str (settings-tabs-html "admin" groupid))
+            (:p :class "help-text"
+              "Admins have the ability to post offers, requests, events, and statements of "
+              "gratitude on behalf of your group. They receive and respond to messages on behalf "
+              "of the group.  And they can invite people to become members of the group.")
+            (:h3 "Current admins for " (str group-name))
+            (dolist (admin (getf group :admins))
+              ;; when there is another admin to fulfil admin duties,
+              ;; user can step down from admin role
+              (htm
+                (:div :class "current-admin"
+                  (when (and (eq admin *userid*)
+                            (> (length (getf group :admins)) 1))
+                   (htm
+                     (:form :method "get" :action "/settings/admin-roles" :class "float-right"
+                      (:input :type "hidden" :name "groupid" :value groupid)
+                      (:button :type "submit"
+                               :class "submit yes"
+                               :name "revoke-admin-role"
+                               "revoke admin role"))))
+                 (str (person-card admin (db admin :name))))))
+            (:div :class "invite-members"
+              (:h3 "Add another admin for "
+               (str
+                 (if (eq groupid +kindista-id+)
+                   "Kindista's group account"
+                   (db groupid :name))))
+              (cond
+                ((eql 0 (length (getf group :members)))
+                 (htm
+                   (:p (str (getf group :name))
+                       " does not have any members who are not already admins for its group "
+                       "account.")
+                   (:p (:a :href (strcat "/groups/" groupid "/invite-members")
+                         "+add group members"))))
+
+                ((< (length (getf group :admins)) 3)
+                 (htm
+                   (:form :method "get"
+                          :action "/settings/admin-roles"
+                    (:input :type "hidden" :name "groupid" :value (str groupid))
+                    (:input :type "text"
+                            :name "search-name"
+                            :placeholder "search by name")
+                    (:button :class "submit yes" :name "add-admin" :type "submit" "search"))
+                   (aif (get-parameter "search-name")
+                     (let* ((q (search-people it))
+                            (results (remove-if-not #'(lambda (x) (member x (getf group :members)))
+                                                    q
+                                                    :key #'car)))
+                       (if results
+                         (dolist (result results)
+                           (htm
+                             (:form :method "get"
+                                    :class "invite-member-result"
+                                    :action (strcat "/settings/admin-roles" )
+                              (:input :type "hidden" :name "groupid" :value (str groupid))
+                              (:div :class "float-right"
+                                (str
+                                  (v-align-middle
+                                    (:button :class "submit yes"
+                                             :name "add-admin"
+                                             :value (car result)
+                                             :type "submit"
+                                             "make admin"))))
+                              (str (person-card (car result) (cdr result))))))
+                         (htm
+                           (:p
+                             "there are no kindista members with the name "
+                             (str it)
+                             " .  please try again."))))
+                     (dolist (person (getf group :members))
+                       (htm
+                         (:form :method "get"
+                                :class "invite-member-result"
+                                :action (strcat "/settings/admin-roles" )
+                          (:input :type "hidden" :name "groupid" :value (str groupid))
+                          (:button :class "submit yes"
+                                   :name "add-admin"
+                                   :value person
+                                   :type "submit"
+                                   (str (db person :name)))))))))
+
+                (t
+                 (htm
+                   (:p :class "help-text"
+                    "this account already has the maximum of three administrators. "
+                    "if you would like to add an additional admin for this account, "
+                    "one of the current admins must first revoke their admin priviledges." )))))))))
+
 (defun get-settings-error ()
-  (flash "The avatar you uploaded is too large. Please upload an image smaller than 10MB." :error t)
+  (flash "the avatar you uploaded is too large. please upload an image smaller than 10mb." :error t)
   (go-settings))
 
 (defun post-settings ()

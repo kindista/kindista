@@ -233,6 +233,9 @@
   ("/settings/communication"
     :get get-settings-communication)
 
+  ("/settings/admin-roles"
+    :get get-settings-admin-roles)
+
   ("/conversations"
     :get get-conversations)
 
