@@ -16,7 +16,7 @@
 
 (stop *acceptor*)
 (save-db)
-,c on (migrate-to-new-inboxes)
+,d on (migrate-to-new-inboxes)
 (migrate-to-new-inboxes)
 (ql:quickload :kindista)
 (load-db)
