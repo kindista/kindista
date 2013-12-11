@@ -449,6 +449,10 @@
                       :checked (when (getf entity :notify-expired-invites) "checked"))
                      "when invitatations I send for my friends to join Kindista expire")
                 (:li (:input :type "checkbox"
+                      :name "group-membership-invites"
+                      :checked (when (getf entity :notify-group-membership-invites) "checked"))
+                     "when someone invites me to join a group on Kindista (e.g. a business, non-profit, or other organization I belong to within my community)")
+                (:li (:input :type "checkbox"
                       :name "reminders"
                       :checked (when (getf entity :notify-reminders) "checked"))
                      "with occasional suggestions about how "
@@ -674,6 +678,7 @@
                              :name "search-name"
                              :placeholder "search by name")
                      (:button :class "submit yes" :type "submit" "search"))
+                   (:p "Or, select from the list of current members below:")
                    (flet ((member-card (person-cons)
                             (html
                               (:form :method "get"
@@ -918,6 +923,7 @@
                                  :notify-message (when (post-parameter "message") t)
                                  :notify-reminders (when (post-parameter "reminders") t)
                                  :notify-expired-invites (when (post-parameter "expired-invites") t)
+                                 :notify-group-membership-invites (when (post-parameter "group-membership-invites") t)
                                  :notify-kindista (when (post-parameter "kindista") t)))
            (flash "Your notification preferences have been saved.")
            (see-other (or (post-parameter "next") "/home")))
