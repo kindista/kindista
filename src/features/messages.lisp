@@ -41,46 +41,39 @@
            (new-people nil)
            (participants nil)
            (inbox nil))
-      (when (or (eq type :conversation)
-                (eq type :reply)
-                (eq type :gratitude))
-        (case type
-          ((or :conversation :reply)
-           (dolist (person old-people)
-             (let ((new-person (cons (list (car person)) (cdr person))))
-               (when (or (and (cdr person)
-                            (= (cdr person) latest-comment))
-                       (= (db latest-comment :by) (car person))
-                       (<= (db latest-comment :created)
-                           (or (db (car person) :last-checked-mail) 0)))
-                   (setf (cdr new-person) latest-comment))
-               (asetf new-people (push new-person it))
-               (asetf participants (push (car person) it))
-               (asetf inbox (push (car person) it))))
-           (modify-db id :people new-people
-                         :message-folders (list :inbox inbox)
-                         :participants participants))
-          (:gratitude
-           (dolist (subject (getf data :subjects))
-             (let ((new-person (cons (list subject) nil)))
-                (if (<= (getf data :created)
-                        (or (db subject :last-checked-mail) 0))
-                  (setf (cdr new-person) :read)
-                  (setf (cdr new-person) :unread))
-                (asetf inbox (push subject it))
-                (asetf new-people (push new-person it))))
-           (modify-db id :people new-people
-                         :message-folders (list :inbox inbox)))
-         (:comment
-           (amodify-db id :by (list it))))
+      (case type
+        ((or :conversation :reply)
+         (dolist (person old-people)
+           (let ((new-person (cons (list (car person)) (cdr person))))
+             (when (or (and (cdr person)
+                          (= (cdr person) latest-comment))
+                     (equal (db latest-comment :by) (car person))
+                     (equal (db latest-comment :by) (list (car person)))
+                     (<= (db latest-comment :created)
+                         (or (db (car person) :last-checked-mail) 0)))
+                 (setf (cdr new-person) latest-comment))
+             (asetf new-people (push new-person it))
+             (asetf participants (push (car person) it))
+             (asetf inbox (push (car person) it))))
+         (modify-db id :people new-people
+                       :message-folders (list :inbox inbox)
+                       :participants participants))
+        (:gratitude
+         (dolist (subject (getf data :subjects))
+           (let ((new-person (cons (list subject) nil)))
+              (if (<= (getf data :created)
+                      (or (db subject :last-checked-mail) 0))
+                (setf (cdr new-person) :read)
+                (setf (cdr new-person) :unread))
+              (asetf inbox (push subject it))
+              (asetf new-people (push new-person it))))
+         (modify-db id :people new-people
+                       :message-folders (list :inbox inbox)))
+       (:comment
+         (amodify-db id :by (list it)))
 
-        (setf inbox nil
-              new-people nil
-              participants nil))))
-
-  (dolist (id (hash-table-keys *db*))
-    (when (eql (db id :type) :comment)
-      (amodify-db id :by (list it)))))
+       (:person
+         (modify-db id :notify-group-membership-invites t))))))
 
 (defun mailbox-ids (id-list)
 "Takes a list of group/people ids and returns their mailboxes."
