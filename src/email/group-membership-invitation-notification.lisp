@@ -46,8 +46,10 @@
   (s+
      (no-reply-notice)
      #\linefeed #\linefeed
+
      "Dear " (getf person :name) ","
      #\linefeed #\linefeed
+
      host-name
      " has invited you to join "
      (if (eq +kindista-id+ groupid)
@@ -55,26 +57,10 @@
        (s+ "the group " (getf group :name)))
          " on Kindista"
      #\linefeed #\linefeed
-"
-To reset your password and access your account please click on
-the following link or cut and paste it into the address bar of your browser:
 
-"
-(url-compose (s+ +base-url+ "reset")
-             "token" token
-             "email" email)
-"
-
-If you did not request this email, you can safely ignore it.
-"
-"
-Your security code is " (write-to-string token) ".
-This code will expire " expiration ". "
-
-"
-Thank you for sharing your gifts with us!
-"
-      "-The Kindista Team"))
+     "Thank you for sharing your gifts with us!"
+     #\linefeed #\linefeed
+     "-The Kindista Team"))
 
 
 (defun reset-password-html (name token email expiration)

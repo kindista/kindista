@@ -33,7 +33,7 @@
                               :subject subject
                               :created time))))
 
-    (create-comment :on id :by user :text text)
+    (create-comment :on id :by (list user) :text text)
     id))
 
 (defun get-conversations ()

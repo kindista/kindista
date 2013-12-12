@@ -267,7 +267,7 @@
                                 :people people
                                 :created time)))))
 
-    (create-comment :on id :by user :text text)
+    (create-comment :on id :by (list user) :text text)
 
     id))
 

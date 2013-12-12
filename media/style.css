@@ -139,7 +139,7 @@ select {
  max-width: 20em;
 }
 
-select.identity, select.distance-selection, select.group-activity, select.message-filter {
+select.identity, select.distance-selection, select.message-filter {
   background: #fbfbfb;
   border:1px solid #999;
   padding: 0.3em 0.4em;
@@ -149,6 +149,24 @@ select.identity, select.distance-selection, select.group-activity, select.messag
   -webkit-box-shadow: 1px 1px 1px #ddd inset;
   -moz-box-shadow: 1px 1px 1px #ddd inset;
   box-shadow: 1px 1px 1px #ddd inset;
+}
+
+form.group-activity-selection div {
+ margin-top: 0.4em;
+ display: inline-block;
+}
+
+form.group-activity-selection strong {
+ margin-right: 0.7em;
+}
+
+form.group-activity-selection input[type=checkbox] {
+ margin-left: 0;
+ vertical-align: middle;
+}
+
+form.group-activity-selection label {
+ margin-right: 0.5em;;
 }
 
 select.profile-gratitude {

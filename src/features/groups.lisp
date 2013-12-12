@@ -395,25 +395,34 @@
 
 (defun group-activity-selection-html (groupid group-name selected tab)
   (html
-    (:form :method "get" :action (strcat "/groups/" (username-or-id groupid) "/" tab)
-      (:strong :class "small"
-       "Display "
-       (str (cond
-             ((or (string= tab "activity")
-                  (string= tab "offers")
-                  (string= tab "requests"))
-              (s+ tab " from "))
-             ((string= tab "reputation")
-        "gratitude about "))))
-      (:select :class "group-activity" :name "display" :onchange "this.form.submit()"
-        (:option :value "all" :selected (when (string= selected "all") "")
-          (str (s+ group-name " and its members")))
-        (:option :value "group" :selected (when (string= selected "group") "")
-          (str group-name))
-        (:option :value "members" :selected (when (string= selected "members") "")
-          (str (s+ group-name "'s members"))))
-      " "
-      (:input :type "submit" :class "no-js" :value "apply"))))
+    (:form :method "get"
+           :class "group-activity-selection small"
+           :action (strcat "/groups/" (username-or-id groupid) "/" tab)
+      (:strong "Display "
+               (str (cond
+                     ((or (string= tab "activity")
+                          (string= tab "offers")
+                          (string= tab "requests"))
+                      (s+ tab " from "))
+                     ((string= tab "reputation")
+               "gratitude about "))))
+      (:div
+        (:input :type "checkbox"
+              :name "group"
+              :onchange "this.form.submit()"
+              :value (str (when (or (string= selected "all")
+                                    (string= selected "group"))
+                             "checked")))
+         (:label :for "group" (str group-name))
+         (:input :type "checkbox"
+                 :name "members"
+                 :onchange "this.form.submit()"
+                 :value (str (when (or (string= selected "all")
+                                       (string= selected "members"))
+                               "checked"))) 
+         (:label :for "group" (str (s+ "members of " group-name))))
+       " "
+       (:input :type "submit" :class "no-js" :value "apply"))))
 
 (defun group-member-activity (group-members &key type count)
   (let ((count (or count (+ 20 (floor (/ 30 (length group-members))))))
@@ -532,7 +541,9 @@
         (country (awhen (post-parameter "country")
                (unless (string= it "") it)))
         (street (awhen (post-parameter "street")
-               (unless (string= it "") it)))
+               (unless (or (string= it "")
+                           (equalp it "nil nil"))
+                 it)))
         (zip (awhen (post-parameter "zip")
                (unless (string= it "") it)))
         (public (when (post-parameter "public-location") t)))
@@ -545,27 +556,26 @@
                ;make sure the post parameters didn't get altered
                (multiple-value-bind (clat clong caddress ccity cstate ccountry cstreet czip)
                  (geocode-address location)
-                 (if (and (string= location caddress)
-                          (string= city ccity)
+                 (if (and (string= city ccity)
                           (string= state cstate)
                           (string= country ccountry)
-                          (string= street cstreet)
-                          (awhen czip (string= zip it))
                           (eql lat clat)
                           (eql long clong))
-                   (create-group :name name
-                                 :creator *userid*
-                                 :lat lat
-                                 :long long
-                                 :address location
-                                 :street street
-                                 :city city
-                                 :state state
-                                 :country country
-                                 :zip zip
-                                 :location-privacy (if public
-                                                     :public
-                                                     :private))
+                   (see-other (strcat
+                                "/groups/"
+                                (create-group :name name
+                                              :creator *userid*
+                                              :lat clat
+                                              :long clong
+                                              :address caddress
+                                              :street cstreet
+                                              :city ccity
+                                              :state cstate
+                                              :country ccountry
+                                              :zip czip
+                                              :location-privacy (if public
+                                                                  :public
+                                                                  :private))))
                    (verify-location "/groups/new"
                                     "Please verify your group's location."
                                     clat
@@ -604,10 +614,10 @@
        ((post-parameter "confirm-location")
         (aif (search-groups name :lat lat :long long)
           (confirm-group-uniqueness it name lat long location city state country street zip :public-location public)
-          (see-other (strcat "/groups/" (attempt-new-group)))))
+          (attempt-new-group)))
 
        ((post-parameter "confirm-uniqueness")
-        (see-other (strcat "/groups/" (attempt-new-group))))))))
+          (attempt-new-group))))))
 
 (defun resend-group-membership-request (request-id)
   (index-message request-id
