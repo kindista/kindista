@@ -475,6 +475,20 @@
       " "
       (:input :type "submit" :class "no-js" :value "apply"))))
 
+
+(defun privacy-selection-html (item-type selected groups &key (class "identity") onchange)
+"Groups should be an a-list of (groupid . group-name)"
+  (html
+    (:h2  "Who can see this " (str item-type) "?")
+    (:select :name "privacy-selection" :class class :onchange onchange
+      (:option :value ""
+               :selected (when (string= selected "") "")
+               "Anyone")
+      (dolist (group (sort groups #'string< :key #'cdr))
+        (htm (:option :value (car group)
+                      :selected (when (eql selected (car group)) "")
+                      (str (cdr group))" group members "))))))
+
 (defun go-settings ()
   (aif (get-parameter "groupid")
     (see-other (url-compose "/settings/public"

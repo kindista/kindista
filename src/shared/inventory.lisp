@@ -20,9 +20,10 @@
 (defun new-pending-offer-notice-handler ()
   (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-inventory-item (&key type (by *userid*) text tags)
+(defun create-inventory-item (&key type (by *userid*) text tags privacy)
   (insert-db (list :type type
                    :by by
+                   :privacy privacy
                    :text text
                    :tags tags
                    :created (get-universal-time))))
@@ -279,6 +280,10 @@
                          (collect (cdr pair)))))
            (groupid (when (scan +number-scanner+ (post-parameter "groupid"))
                      (parse-integer (post-parameter "groupid"))))
+           (identity-selection (when (scan +number-scanner+ (post-parameter "identity-selection"))
+                       (parse-integer (post-parameter "identity-selection"))))
+           (privacy (when (scan +number-scanner+ (post-parameter "privacy-selection"))
+                      (parse-integer (post-parameter "privacy-selection"))))
            (adminp (group-admin-p groupid))
            (text (when (scan +text-scanner+ (post-parameter "text"))
                    (post-parameter "text"))))
@@ -286,83 +291,78 @@
       (iter (for tag in (tags-from-string (post-parameter "tags")))
             (setf tags (cons tag tags)))
 
-      (cond
-        ((post-parameter "cancel")
-         (see-other (or (post-parameter "next") "/home")))
+      (flet ((inventory-text ()
+               (enter-inventory-text :type type
+                                     :text text
+                                     :action url
+                                     :privacy privacy
+                                     :identity-selection identity-selection
+                                     :groupid groupid
+                                     :tags tags
+                                     :selected (s+ type "s")))
+             (inventory-tags (&key error)
+               (enter-inventory-tags :title (s+ "Preview your " type)
+                                     :text text
+                                     :action url
+                                     :privacy privacy
+                                     :identity-selection identity-selection
+                                     :groupid groupid
+                                     :tags tags
+                                     :error error
+                                     :button-text (s+ "Post " type)
+                                     :selected (s+ type "s"))))
 
-        ((not (confirmed-location))
+        (cond
+         ((post-parameter "cancel")
+          (see-other (or (post-parameter "next") "/home")))
 
-         (flash "You must set your street address on your settings page before you can post an offer or a request." :error t)
-         (see-other (or (post-parameter "next") "/home")))
+         ((not (confirmed-location))
+          (flash "You must set your street address on your settings page before you can post an offer or a request." :error t)
+          (see-other (or (post-parameter "next") "/home")))
 
-        ((and groupid (not adminp))
-         (permission-denied))
+         ((and groupid (not adminp))
+          (permission-denied))
 
-        ((not text)
-         (flash (s+ "Please enter a better description of your " type ".")
-                :error t)
-         (enter-inventory-text :type type
-                               :action url
-                               :groupid groupid
-                               :tags tags
-                               :selected (s+ type "s")))
+         ((not text)
+          (flash (s+ "Please enter a better description of your " type ".")
+                 :error t)
+          (inventory-text))
 
-        ((post-parameter "back")
-         (enter-inventory-text :type type
-                               :text text
-                               :action url
-                               :groupid groupid
-                               :tags tags
-                               :selected (s+ type "s")))
+         ((post-parameter "back")
+          (inventory-text))
 
-        ((and (post-parameter "post")
-              text)
-          (enter-inventory-tags :title (s+ "Preview your " type)
-                                :text text
-                                :action url
-                                :groupid groupid
-                                :tags tags
-                                :button-text (s+ "Post " type)
-                                :selected (s+ type "s")))
+         ((and (not (post-parameter "create"))
+               text)
+           (inventory-tags))
 
-        ((and (post-parameter "create")
-              text)
+         ((and (post-parameter "create")
+               text)
+          (if (intersection tags *top-tags* :test #'string=)
+            (let ((new-id (create-inventory-item
+                            :type (if (string= type "request") :request
+                                                               :offer)
+                            :by (if adminp groupid *userid*)
+                            :privacy privacy
+                            :text text
+                            :tags tags)))
+              (if (getf *user* :pending)
+                (progn
+                  new-id
+                  (contact-opt-out-flash (list *userid*) :item-type type)
+                  (when (string= type "offer")
+                    (notice :new-pending-offer :id new-id))
+                  (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
+                  (see-other "/home"))
+                (progn
+                  (contact-opt-out-flash (list *userid*) :item-type type)
+                  (see-other (format nil (strcat "/" type "s/" new-id))))))
 
-         (if (intersection tags *top-tags* :test #'string=)
-           (let ((new-id (create-inventory-item
-                           :type (if (string= type "request") :request
-                                                              :offer)
-                           :by (if adminp groupid *userid*)
-                           :text text
-                           :tags tags)))
-             (if (getf *user* :pending)
-               (progn
-                 new-id
-                 (contact-opt-out-flash (list *userid*) :item-type type)
-                 (when (string= type "offer")
-                   (notice :new-pending-offer :id new-id))
-                 (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
-                 (see-other "/home"))
-               (progn
-                 (contact-opt-out-flash (list *userid*) :item-type type)
-                 (see-other (format nil (strcat "/" type "s/" new-id))))))
+            (inventory-tags :error "You must select at least one keyword")))
 
-           (enter-inventory-tags :title (s+ "Preview your " type)
-                                 :text text
-                                 :action url
-                                 :button-text (s+ "Post " type)
-                                 :tags tags
-                                 :groupid groupid
-                                 :error "You must select at least one keyword"
-                                 :selected (s+ type "s"))))
-
-        (t
-         (enter-inventory-text :type type
-                               :text text
-                               :tags tags
-                               :groupid groupid
-                               :action url
-                               :selected (s+ type "s")))))))
+         (t
+          (if (and text (or identity-selection privacy))
+            (inventory-tags)
+            (inventory-text))))))))
 
 (defun post-existing-inventory-item (type &key id url)
   (require-user
@@ -512,7 +512,7 @@
             (:td
               (:button :class "yes" :type "submit" :class "submit" :name "post" "Post"))))))))
 
-(defun enter-inventory-text (&key type title text groupid action selected tags next)
+(defun enter-inventory-text (&key type title text groupid action selected tags next privacy identity-selection)
   (standard-page
     (or title (if (string= type "offer")
                   "Post an offer"
@@ -536,6 +536,10 @@
          (:form :method "post" :action action
            (when groupid
              (htm (:input :type "hidden" :name "groupid" :value groupid)))
+           (awhen identity-selection
+             (htm (:input :type "hidden" :name "identity-selection" :value it)))
+           (when privacy
+             (htm (:input :type "hidden" :name "privacy-selection" :value privacy)))
            (dolist (tag tags)
              (htm (:input :type "hidden" :name "tag" :value tag)))
            (when next
@@ -545,13 +549,7 @@
            (:button :class "yes" :type "submit" :class "submit" :name "post" "Next"))))))
     :selected selected))
 
-(defun enter-inventory-tags (&key title action text existingp groupid error tags button-text selected next)
-  ; show the list of top-level tags
-  ; show recommended tags
-  ; show preview
-  ; cancel button
-  ; edit (back) button
-  ; create button
+(defun enter-inventory-tags (&key title action text existingp groupid identity-selection privacy error tags button-text selected next)
   (let ((suggested (or tags (get-tag-suggestions text))))
     (standard-page title
      (html
@@ -569,7 +567,7 @@
           (when groupid
             (htm (:input :type "hidden" :name "groupid" :value groupid)))
           (:input :type "hidden" :name "text" :value (escape-for-html text))
-          (:p 
+          (:p
             (:blockquote :class "review-text" (str (html-text text)))
             " "
             (:button :class "red" :type "submit" :class "cancel" :name "back" "edit"))
@@ -579,7 +577,20 @@
                 (:h2 (str (s+ (if (string= selected "offers")
                                 "Offered" "Requested")
                               " by")))
-                  (str (identity-selection-html *userid* it)))))
+                  (str (identity-selection-html identity-selection it :onchange "this.form.submit()")))))
+
+          (when *user-group-priviledges*
+            (str (privacy-selection-html (if (string= selected "offers") "offer" "request")
+                                         privacy
+                                         (if (or (and identity-selection
+                                                      (not (= identity-selection *userid*)) )
+                                                 groupid)
+                                           (list (aif identity-selection
+                                                   (cons it (db it :name))
+                                                   (cons groupid (db groupid :name))))
+                                           (append (groups-with-user-as-member)
+                                                   (groups-with-user-as-admin)))
+                                         :onchange "this.form.submit()")))
 
           (:h2 "Select at least one keyword")
           (dolist (tag *top-tags*)
@@ -598,13 +609,13 @@
                   :value (format nil "~{~a~^,~^ ~}" suggested))
 
           (:p
-            (:strong "Important: ") 
-            "Please read the "
+            (:strong :class "red" "Important: ")
+            "You must read the "
             (:a :href "/faq#sharing-guidelines" 
                 :target "_blank"
                 "Guidelines for Sharing on Kindista")
             " before posting any offers or requests. "
-            "All offers and requests on Kindista are subject to these guidelines.")
+            "Failure to adhere to these guidelines may result in account suspension.")
 
           (:p (:button :class "yes"
                        :type "submit"

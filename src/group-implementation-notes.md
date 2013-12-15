@@ -5,38 +5,52 @@
 - messages
   - change wording for gratitudes in message box
 
+- group-type for new groups and group settings 
+  - dropdown
+    - community organization
+    - nonprofit
+    - business
+    - intentional community
+    - church/spiritual community
+    - other ... (this.form.submit)
+      - hidden field for other specificatoin
+
+- how can members join dialog
+  - anyone can ask to join; admins can invite people to join and  approve/deny membership requests
+  - by invitation only
+
+- privacy dialog for offers, requests, and gratitudes
+  - new slot in results struct for privacy
+  - in search, add an unless clause before calculating search rank
+
+- email templates
+  - group membership invitation
+  - group membership request
+  - edit conversation/reply template to reflect groups
+
+- comments
+  - as a group administrator
+
+- debug avatars for new account (maybe just rsync with server images first)
 
 # Testing needed
 
 - sending gratitude/message notifications
-
+- test on IE
 
 
 # Migration steps
 
 (stop *acceptor*)
 (save-db)
+back-up db
 ,d on (migrate-to-new-inboxes)
 (migrate-to-new-inboxes)
 (ql:quickload :kindista)
 (load-db)
 
+
 ## Data Needed
-
-# Unread count
--  http/main.lisp for new message count
--  view selecter
-
-# Latest message in conversation
-
-# Latest message read by person
-
-# Whether message has been read by person
-
-# Mailboxes associated with a group
-
-
--  
 
 # Message DB items need:
 - participants
@@ -55,7 +69,7 @@ New format
 
 
 Comment data change:
-- :by personid -> (personid .groupid)
+  :by personid -> (personid .groupid)
 
 # Inbox needs:
 - list of:
@@ -63,41 +77,3 @@ Comment data change:
     :unread inbox items
     :read status for each message
     :compost items
-
-      ADMIN-ID = 1
-      COMMENT = :<NOT-AVAILABLE>
-      COMPLETED = (#S(MESSAGE :ID 10083 :LATEST-COMMENT 10084 :PEOPLE ((# . 10084)) :FOLDERS (:INBOX (1)) :TIME 3592840624 :TYPE :CONVERSATION) ..)
-      FOLDERS = (:INBOX (2 253))
-      #:G13 = :<NOT-AVAILABLE>
-      #:G15 = :<NOT-AVAILABLE>
-      #:G159 = :<NOT-AVAILABLE>
-      #:G16 = :<NOT-AVAILABLE>
-      #:G29 = :<NOT-AVAILABLE>
-      #:G31 = :<NOT-AVAILABLE>
-      #:G32 = :<NOT-AVAILABLE>
-      #:G41 = :<NOT-AVAILABLE>
-      #:G43 = :<NOT-AVAILABLE>
-      #:G45 = :<NOT-AVAILABLE>
-      #:G47 = :<NOT-AVAILABLE>
-      #:G7 = NIL
-      GROUPID = 2
-      ID = 10052
-      MAILBOXES = (((1 . 2) . 10054) ((253) . 10055))
-      MESSAGE = #S(MESSAGE :ID 10052 :LATEST-COMMENT 10055 :PEOPLE (((1 . 2) . 10054) ((253) . 10055)) :FOLDERS (:INBOX (2 253)) :TIME 3592264024 :TYPE :REPLY)
-      MESSAGES = (#S(MESSAGE :ID 10089 :LATEST-COMMENT 10090 :PEOPLE ((# . 10090)) :FOLDERS (:INBOX (1) :UNREAD (1)) :TIME 3592841551 :TYPE :REPLY) ..)
-      #:N-LIST24 = :<NOT-AVAILABLE>
-      #:N-LIST3 = (#S(MESSAGE :ID 10016 :LATEST-COMMENT NIL :PEOPLE ((# . :READ)) :FOLDERS (:INBOX (2)) :TIME 3592219415 :TYPE :GRATITUDE) ..)
-      #:N-X20 = :<NOT-AVAILABLE>
-      #:N-X36 = :<NOT-AVAILABLE>
-      NEW-MAILBOX = (1 . 2)
-      #:NEW11 = :<NOT-AVAILABLE>
-      #:NEW23 = :<NOT-AVAILABLE>
-      #:NEW26 = :<NOT-AVAILABLE>
-      #:NEW39 = :<NOT-AVAILABLE>
-      #:NEW40 = :<NOT-AVAILABLE>
-      #:NEW42 = :<NOT-AVAILABLE>
-      #:NEW44 = :<NOT-AVAILABLE>
-      #:NEW46 = :<NOT-AVAILABLE>
-      #:NEW9 = :<NOT-AVAILABLE>
-      PEOPLE = (1 253)
-      #:TAIL0 = (:UNREAD NIL)
