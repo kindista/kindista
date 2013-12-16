@@ -54,6 +54,31 @@
                (str (donate-sidebar))
                (str (invite-sidebar))))))
 
+(defun privacy-selection-html (item-type selected groups &key (class "identity") onchange)
+"Groups should be an a-list of (groupid . group-name)"
+  (html
+    (:h2  "Who can see this " (str item-type) "?")
+    (:select :name "privacy-selection" :class class :onchange onchange
+      (:option :value ""
+               :selected (when (null selected) "")
+               "Anyone")
+      (dolist (group (sort groups #'string< :key #'cdr))
+        (htm (:option :value (car group)
+                      :selected (when (= selected (car group)) "")
+                      (str (cdr group))" group members "))))))
+
+(defun identity-selection-html (selected groups &key (class "identity") onchange)
+"Groups should be an a-list of (groupid . group-name)"
+  (html
+    (:select :name "identity-selection" :class class :onchange onchange
+      (:option :value *userid*
+               :selected (when (eql selected *userid*) "")
+               (str (getf *user* :name))" ")
+      (dolist (group (sort groups #'string< :key #'cdr))
+        (htm (:option :value (car group)
+                      :selected (when (eql selected (car group)) "")
+                      (str (cdr group))" "))))))
+
 (defun profile-bio-section-html (title content &key editing editable section-name)
   (when (string= content "")
     (setf content nil))

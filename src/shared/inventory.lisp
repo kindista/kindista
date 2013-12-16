@@ -551,6 +551,9 @@
 
 (defun enter-inventory-tags (&key title action text existingp groupid identity-selection privacy error tags button-text selected next)
   (let ((suggested (or tags (get-tag-suggestions text))))
+    (pprint *userid*)
+    (pprint identity-selection)
+    (terpri)
     (standard-page title
      (html
        (:div :class "item" :id "edit-tags"
@@ -583,7 +586,7 @@
             (str (privacy-selection-html (if (string= selected "offers") "offer" "request")
                                          privacy
                                          (if (or (and identity-selection
-                                                      (not (= identity-selection *userid*)) )
+                                                      (not (= identity-selection *userid*)))
                                                  groupid)
                                            (list (aif identity-selection
                                                    (cons it (db it :name))

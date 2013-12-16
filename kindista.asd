@@ -60,7 +60,8 @@
                                            (:file "verify-location")))
                              (:module shared
                               :serial t
-                              :components ((:file "inventory")
+                              :components ((:file "drop-downs")
+                                           (:file "inventory")
                                            (:file "images")
                                            (:file "activity")
                                            (:file "geo")
