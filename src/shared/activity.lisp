@@ -81,6 +81,7 @@
               (when edit
                 (htm
                   " &middot; "
+                  (:input :type "hidden" :name "next" :value (script-name*))
                   (:input :type "submit" :name "edit" :value "Edit")
                   " &middot; "
                   (if admin-delete

@@ -366,9 +366,11 @@
         (when *user* (str (profile-tabs-html id :tab (or type :activity))))
         (when (or (eql id *userid*) adminp)
           (when (eql type :request)
-            (htm (str (simple-inventory-entry-html "a" "request" (when adminp groupid)))))
+            (htm (str (simple-inventory-entry-html "a" "request"
+                                                   :groupid (when adminp groupid)))))
           (when (eql type :offer)
-            (htm (str (simple-inventory-entry-html "an" "offer" (when adminp groupid))))))
+            (htm (str (simple-inventory-entry-html "an" "offer"
+                                                   :groupid (when adminp groupid))))))
         (when (and (eql type :gratitude)
                    (not (eql id *userid*))
                    (eql (getf entity :active) t))

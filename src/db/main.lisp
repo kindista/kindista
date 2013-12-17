@@ -396,7 +396,7 @@
 
 (defun db (id &optional key)
   (if key
-    (getf (gethash id *db*) key) 
+    (getf (gethash id *db*) key)
     (gethash id *db*)))
 
 (defun created (id)

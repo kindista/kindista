@@ -309,6 +309,7 @@
                                      :text text
                                      :action url
                                      :restrictedp restrictedp
+                                     :next (or (post-parameter "next") (referer))
                                      :identity-selection identity-selection
                                      :groupid groupid
                                      :groups-selected groups-selected
@@ -317,6 +318,7 @@
              (inventory-tags (&key error)
                (enter-inventory-tags :title (s+ "Preview your " type)
                                      :text text
+                                     :next (post-parameter "next")
                                      :action url
                                      :restrictedp restrictedp
                                      :identity-selection identity-selection
@@ -387,6 +389,9 @@
       (cond
         ((item-view-denied (result-privacy (gethash id *db-results*)))
          (permission-denied))
+
+        ((post-parameter "cancel")
+         (see-other (or (post-parameter "next") "/home")))
 
         ((post-parameter "reply")
          (see-other (s+ (script-name*) "/reply")))
@@ -506,11 +511,12 @@
                 (t
                   (inventory-tags)))))))))))
 
-(defun simple-inventory-entry-html (preposition type &optional groupid)
+(defun simple-inventory-entry-html (preposition type &key groupid)
   (html
     (:div :class "item"
       (:h4 (str (s+ "post " preposition " " type)))
       (:form :method "post" :action (s+ "/" type "s/new")
+        (:input :type "hidden" :name "next" :value (script-name*))
         (awhen groupid
           (htm (:input :type "hidden" :name "groupid" :value it)))
         (:table :class "post"
@@ -559,7 +565,7 @@
              (htm (:input :type "hidden" :name "next" :value next)))
            (:textarea :cols "40" :rows "5" :name "text" (str text))
            (:p  (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
-           (:button :class "yes" :type "submit" :class "submit" :name "post" "Next"))))))
+                (:button :class "yes" :type "submit" :class "submit" :name "post" "Next"))))))
     :selected selected))
 
 (defun enter-inventory-tags (&key title action text existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next)
@@ -636,11 +642,8 @@
             " before posting any offers or requests. "
             "Failure to adhere to these guidelines may result in account suspension.")
 
-          (:p (:button :class "yes"
-                       :type "submit"
-                       :class "submit"
-                       :name "create"
-                       (str button-text))))))
+          (:p (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
+              (:button :class "yes" :type "submit" :class "submit" :name "create" (str button-text))))))
      :selected selected)))
 
 ; author
