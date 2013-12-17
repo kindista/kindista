@@ -60,6 +60,12 @@
       (dolist (person (getf data :members))
         (push id (getf (gethash person *group-priviledges-index*) :member))))
 
+    (with-locked-hash-table (*group-members-index*)
+      (dolist (person (getf data :admins))
+        (push person (gethash id *group-members-index*)))
+      (dolist (person (getf data :members))
+        (push person (gethash id *group-members-index*))))
+
     (with-locked-hash-table (*profile-activity-index*)
       (asetf (gethash id *profile-activity-index*)
              (sort (push result it) #'> :key #'result-time)))
@@ -186,19 +192,23 @@
   (reindex-group-name groupid))
 
 (defun group-members (groupid)
-  (let ((group (db groupid)))
-    (append (getf group :admins) (getf group :members))))
+  (gethash groupid *group-members-index*))
 
 (defun add-group-member (personid groupid)
+  (amodify-db groupid :members (pushnew personid it))
+  (with-locked-hash-table (*group-members-index*)
+     (pushnew personid (gethash personid *group-members-index*)))
   (with-locked-hash-table (*group-priviledges-index*)
-     (pushnew groupid (getf (gethash personid *group-priviledges-index*) :member)))
-  (amodify-db groupid :members (pushnew personid it)) )
+     (pushnew groupid (getf (gethash personid *group-priviledges-index*) :member))))
 
 (defun remove-group-member (personid groupid)
+  (amodify-db groupid :members (remove personid it))
   (with-locked-hash-table (*group-priviledges-index*)
      (asetf (getf (gethash personid *group-priviledges-index*) :member)
-       (remove groupid it)))
-  (amodify-db groupid :members (remove personid it)) )
+            (remove groupid it)))
+  (with-locked-hash-table (*group-members-index*)
+     (asetf (gethash groupid *group-members-index*)
+            (remove personid it))))
 
 (defun add-group-admin (personid groupid)
   (assert (eql (db personid :type) :person))
@@ -430,7 +440,8 @@
         (activity nil))
     (dolist (person group-members)
       (setf i 0)
-      (loop for result in (gethash person *profile-activity-index*)
+      (loop for result in (remove-private-items
+                            (gethash person *profile-activity-index*))
             while (< i count)
             when (or (not type)
                      (if (eql type :gratitude)

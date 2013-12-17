@@ -139,7 +139,10 @@ select {
  max-width: 20em;
 }
 
-select.identity, select.distance-selection, select.message-filter {
+select.identity,
+select.privacy-selection,
+select.distance-selection,
+select.message-filter {
   background: #fbfbfb;
   border:1px solid #999;
   padding: 0.3em 0.4em;
@@ -2356,6 +2359,7 @@ div.activity-image {
  margin: .5em 0 .5em 0;
 }
 
+div.privacy-selection-details,
 blockquote.review-text {
  margin: 0;
  background: #f8f8f8;
@@ -2366,10 +2370,19 @@ blockquote.review-text {
  border-color: #bbb;
 }
 
-div.tag {
- display: inline-block;
- width: 11em;
+div.privacy-selection-details {
+ display:inline-block;
+ padding-right: 0.8em;
+}
+
+div.tag,
+div.item-group-privacy {
  margin: 0.5em 0;
+ display: inline-block;
+}
+
+div.tag {
+ width: 11em;
 }
 
 div.tag input:checked + span {

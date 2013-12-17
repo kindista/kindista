@@ -17,19 +17,6 @@
 
 (in-package :kindista)
 
-(defun privacy-selection-html (item-type selected groups &key (class "identity") onchange)
-"Groups should be an a-list of (groupid . group-name)"
-  (html
-    (:h2  "Who can see this " (str item-type) "?")
-    (:select :name "privacy-selection" :class class :onchange onchange
-      (:option :value ""
-               :selected (when (null selected) "")
-               "Anyone")
-      (dolist (group (sort groups #'string< :key #'cdr))
-        (htm (:option :value (car group)
-                      :selected (when (eql selected (car group)) "")
-                      (str (cdr group))" group members "))))))
-
 (defun identity-selection-html (selected groups &key (class "identity") onchange)
 "Groups should be an a-list of (groupid . group-name)"
   (html
@@ -41,4 +28,41 @@
         (htm (:option :value (car group)
                       :selected (when (eql selected (car group)) "")
                       (str (cdr group))" "))))))
+
+(defun privacy-selection-html (item-type restrictedp groups groups-selected &key (class "privacy-selection") onchange)
+"Groups should be an a-list of (groupid . group-name)"
+  (html
+    (:h2  "Who can see this " (str item-type) "?")
+    (:div :class (s+ class (when (and restrictedp (> (length groups) 1))
+                             " privacy-selection-details"))
+      (:select :name "privacy-selection" :class class :onchange onchange
+        (:option :value "public"
+                 :selected (unless restrictedp "")
+                 "Anyone")
+        (:option :value "restricted"
+                 :selected (when restrictedp "")
+                 (str
+                   (if (= 1 (length groups))
+                     (s+ (cdar groups)
+                         (when (= (caar groups) +kindista-id+)
+                           " account group")
+                          " members ")
+                     "People in my groups"))))
+      (when restrictedp
+        (if (> (length groups) 1)
+          (dolist (group (sort groups #'string-lessp :key #'cdr))
+            (htm
+              (:br)
+              (:div :class "item-group-privacy"
+                (:input :type "checkbox"
+                        :name "groups-selected"
+                        :checked (when (or (not groups-selected)
+                                           (member (car group) groups-selected))
+                                   "checked")
+                        :value (car group)
+                        (str (cdr group))
+                        (str (when (= (car group) +kindista-id+)
+                             " group account "))
+                        " members"))))
+          (htm (:input :type "hidden" :name "groups-selected" :value (caar groups))))))))
 

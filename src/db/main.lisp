@@ -95,7 +95,7 @@
   (setf (donate-info-token donate-info) new-value))
 
 (defstruct result
-  latitude longitude time tags people id type)
+  latitude longitude time tags people id type privacy)
 
 (defstruct message
   id ; message-id
@@ -204,14 +204,15 @@
 (defun geo-index-query (index lat long distance)
   (declare (optimize (speed 3) (safety 0) (debug 0))
            (type integer distance))
-  (let ((geocode-distance (min 10 (ceiling (/ distance 12.4274)))))
-    (iter (for item in (delete-duplicates
-                         (iter (for code in (geocode-neighbors (geocode lat long) geocode-distance))
-                               (appending (gethash code index)))
-                         :key #'result-id))
-          (let ((item-distance (air-distance lat long (result-latitude item) (result-longitude item))))
-            (when (<= item-distance distance)
-              (collect item at beginning))))))
+   (let ((geocode-distance (min 10 (ceiling (/ distance 12.4274)))))
+     (iter (for item in (delete-duplicates
+                          (iter (for code in (geocode-neighbors (geocode lat long) geocode-distance))
+                                (appending (gethash code index)))
+                          :key #'result-id))
+           (let ((item-distance (air-distance lat long (result-latitude item) (result-longitude item))))
+             (when (and (<= item-distance distance)
+                        (not (item-view-denied (result-privacy item))))
+               (collect item at beginning))))))
 
 (defun geo-index-insert (index item)
   (let ((geocode (geocode (result-latitude item) (result-longitude item))))

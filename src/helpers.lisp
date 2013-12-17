@@ -99,6 +99,15 @@
         (when (ppcre:scan +email-scanner+ email)
           (collect email))))
 
+(defun item-view-denied (result-privacy &optional (userid *userid*))
+  (and result-privacy
+       (not (member userid
+                    (apply #'append
+                           (mapcar #'group-members result-privacy))))))
+
+(defun remove-private-items (items)
+  (remove-if #'item-view-denied items :key #'result-privacy))
+
 (defun activity-rank (item)
   (let ((contacts (getf *user* :following))
         (age (- (get-universal-time) (or (result-time item) 0)))
@@ -233,13 +242,14 @@
   (assoc (assoc id (mapcar #'car a-list)) a-list))
 
 (defun parse-cons (string)
-"Returns a cons cell from a string. ex. 6 > (6) or 6.5 > (6 . 5)"
+"Returns a cons cell from a string. Integers are parsed, other elements returned as strings. ex. '6' -> (6), '6.5' -> (6 . 5), '2.string' -> (2 . 'string')"
   (loop for i = 0 then (1+ j)
         as j = (position #\. string :start i)
         with current = nil
         do (setf current (subseq string i j))
-        when (scan +number-scanner+ current)
+        if (scan +number-scanner+ current)
         collect (parse-integer current) into ids
+        else collect current into ids
         while (and j (< (length ids) 3))
         finally (return (awhen (car ids) (cons it (cadr ids))))))
 

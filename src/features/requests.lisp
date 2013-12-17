@@ -42,13 +42,15 @@
 (defun get-request (id)
   (setf id (parse-integer id))
   (aif (db id)
-    (with-location
-      (standard-page
-        "Requests"
-        (html
-          (:div :class "activity"
-            (str (inventory-activity-item "request" (gethash id *db-results*) :show-distance t))))
-        :selected "requests"))
+    (if (item-view-denied (result-privacy (gethash id *db-results*)))
+      (permission-denied)
+      (with-location
+        (standard-page
+          "Requests"
+          (html
+            (:div :class "activity"
+              (str (inventory-activity-item "request" (gethash id *db-results*) :show-distance t))))
+          :selected "requests")))
     (not-found)))
 
 (defun get-request-reply (id)

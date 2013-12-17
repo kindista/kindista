@@ -45,14 +45,16 @@
 (defun get-offer (id)
   (setf id (parse-integer id))
   (aif (db id)
-    (with-location
-      (standard-page
-        "Offers"
-        (html
-          (:div :class "activity item"
-            (str (inventory-activity-item "offer" (gethash id *db-results*) :show-distance t)))
-          (str (item-images-html id)))
-        :selected "offers"))
+    (if (item-view-denied (result-privacy (gethash id *db-results*)))
+      (permission-denied)
+      (with-location
+        (standard-page
+          "Offers"
+          (html
+            (:div :class "activity item"
+              (str (inventory-activity-item "offer" (gethash id *db-results*) :show-distance t)))
+            (str (item-images-html id)))
+          :selected "offers")))
     (not-found)))
 
 (defun get-offer-reply (id)

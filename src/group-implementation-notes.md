@@ -19,9 +19,8 @@
   - anyone can ask to join; admins can invite people to join and  approve/deny membership requests
   - by invitation only
 
-- privacy dialog for offers, requests, and gratitudes
-  - new slot in results struct for privacy
-  - in search, add an unless clause before calculating search rank
+- privacy dialog for offers, requests
+  - cancel button for inventory items
 
 - email templates
   - group membership invitation

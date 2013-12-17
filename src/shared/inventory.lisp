@@ -23,7 +23,7 @@
 (defun create-inventory-item (&key type (by *userid*) text tags privacy)
   (insert-db (list :type type
                    :by by
-                   :privacy privacy
+                   :privacy privacy ;a list of groups who can see the item
                    :text text
                    :tags tags
                    :created (get-universal-time))))
@@ -37,6 +37,7 @@
                               :id id
                               :type type
                               :people (list by)
+                              :privacy (getf data :privacy)
                               :time (or (getf data :edited) (getf data :created))
                               :tags (getf data :tags))))
 
@@ -73,7 +74,7 @@
 
          (if (eq type :offer)
            (geo-index-insert *offer-geo-index* result)
-           (geo-index-insert *request-geo-index* result)) 
+           (geo-index-insert *request-geo-index* result))
 
          (unless (< (result-time result) (- (get-universal-time) 15552000))
            (unless (< (result-time result) (- (get-universal-time) 2592000))
@@ -81,7 +82,7 @@
                (push result *recent-activity-index*)))
            (geo-index-insert *activity-geo-index* result)))))))
 
-(defun modify-inventory-item (id &key text tags latitude longitude)
+(defun modify-inventory-item (id &key text tags privacy latitude longitude)
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
@@ -133,17 +134,19 @@
         (geo-index-insert *offer-geo-index* result)
         (geo-index-insert *request-geo-index* result)))
 
+    (setf (result-privacy result) privacy)
+
     (if (and (getf *user* :admin)
              (not (group-admin-p by))
              (not (eql *userid* by)))
 
       (if (and latitude longitude)
-        (modify-db id :text text :tags tags :lat latitude :long longitude)
-        (modify-db id :text text :tags tags))
+        (modify-db id :text text :tags tags :privacy privacy :lat latitude :long longitude)
+        (modify-db id :text text :tags tags :privacy privacy))
 
       (progn
         (refresh-item-time-in-indexes id :time now)
-        (modify-db id :text text :tags tags :lat latitude :long longitude :edited now)))))
+        (modify-db id :text text :tags tags :privacy privacy :lat latitude :long longitude :edited now)))))
 
 (defun delete-inventory-item (id)
   (let* ((result (gethash id *db-results*))
@@ -278,12 +281,22 @@
                        (when (and (string= (car pair) "tag")
                                   (scan *tag-scanner* (cdr pair)))
                          (collect (cdr pair)))))
+           (groups-selected (iter (for pair in (post-parameters*))
+                                  (when (string= (car pair) "groups-selected")
+                                    (awhen (parse-integer (cdr pair))
+                                      (collect it)))))
            (groupid (when (scan +number-scanner+ (post-parameter "groupid"))
                      (parse-integer (post-parameter "groupid"))))
-           (identity-selection (when (scan +number-scanner+ (post-parameter "identity-selection"))
-                       (parse-integer (post-parameter "identity-selection"))))
-           (privacy (when (scan +number-scanner+ (post-parameter "privacy-selection"))
-                      (parse-integer (post-parameter "privacy-selection"))))
+           (identity-selection (when (scan +number-scanner+
+                                           (post-parameter "identity-selection"))
+                                 (parse-integer (post-parameter "identity-selection"))))
+           ;reset to public when changing identity
+           (restrictedp (when
+                          (and (string= (post-parameter "privacy-selection")
+                                        "restricted")
+                               (= identity-selection
+                                  (parse-integer (post-parameter "prior-identity"))))
+                          t))
            (adminp (group-admin-p groupid))
            (text (when (scan +text-scanner+ (post-parameter "text"))
                    (post-parameter "text"))))
@@ -295,18 +308,20 @@
                (enter-inventory-text :type type
                                      :text text
                                      :action url
-                                     :privacy privacy
+                                     :restrictedp restrictedp
                                      :identity-selection identity-selection
                                      :groupid groupid
+                                     :groups-selected groups-selected
                                      :tags tags
                                      :selected (s+ type "s")))
              (inventory-tags (&key error)
                (enter-inventory-tags :title (s+ "Preview your " type)
                                      :text text
                                      :action url
-                                     :privacy privacy
+                                     :restrictedp restrictedp
                                      :identity-selection identity-selection
                                      :groupid groupid
+                                     :groups-selected groups-selected
                                      :tags tags
                                      :error error
                                      :button-text (s+ "Post " type)
@@ -328,12 +343,14 @@
                  :error t)
           (inventory-text))
 
-         ((post-parameter "back")
-          (inventory-text))
-
          ((and (not (post-parameter "create"))
                text)
            (inventory-tags))
+
+         ((and restrictedp
+               (post-parameter "create")
+               (not groups-selected))
+          (inventory-tags :error (s+ "Please allow at least one group to see this " type)))
 
          ((and (post-parameter "create")
                text)
@@ -342,7 +359,7 @@
                             :type (if (string= type "request") :request
                                                                :offer)
                             :by (if adminp groupid *userid*)
-                            :privacy privacy
+                            :privacy groups-selected
                             :text text
                             :tags tags)))
               (if (getf *user* :pending)
@@ -359,10 +376,7 @@
 
             (inventory-tags :error "You must select at least one keyword")))
 
-         (t
-          (if (and text (or identity-selection privacy))
-            (inventory-tags)
-            (inventory-text))))))))
+         (t (inventory-tags)))))))
 
 (defun post-existing-inventory-item (type &key id url)
   (require-user
@@ -371,6 +385,9 @@
            (by (getf item :by))
            (adminp (group-admin-p by)))
       (cond
+        ((item-view-denied (result-privacy (gethash id *db-results*)))
+         (permission-denied))
+
         ((post-parameter "reply")
          (see-other (s+ (script-name*) "/reply")))
 
@@ -393,111 +410,101 @@
                             adminp
                             (getf *user* :admin))
                       (s+ "You can only edit your own " type "s."))
-           (let ((tags (iter (for pair in (post-parameters*))
-                             (when (and (string= (car pair) "tag")
-                                        (scan *tag-scanner* (cdr pair)))
-                               (collect (cdr pair))))))
+           (let* ((tags (iter (for pair in (post-parameters*))
+                              (when (and (string= (car pair) "tag")
+                                         (scan *tag-scanner* (cdr pair)))
+                                (collect (cdr pair)))))
+
+                  (groups-selected (or (iter (for pair in (post-parameters*))
+                                         (when (string= (car pair) "groups-selected")
+                                           (awhen (parse-integer (cdr pair))
+                                             (collect it))))
+                                       (getf item :privacy)))
+
+                  (restrictedp (when
+                                 (aif (post-parameter "privacy-selection")
+                                   (string= "restricted" it)
+                                   (getf item :privacy))
+                                  t)))
+
              (iter (for tag in (tags-from-string (post-parameter "tags")))
                    (setf tags (cons tag tags)))
 
-             (cond
-               ((post-parameter "edit")
-                (enter-inventory-tags :title (s+ "Edit your " type)
-                                      :action url
-                                      :text (getf item :text)
-                                      :tags (or tags (getf item :tags))
-                                      :next (or (post-parameter "next") (referer))
-                                      :existingp t
-                                      :button-text (s+ "Save " type)
-                                      :selected (s+ type "s")))
-               ((post-parameter "delete")
-                (confirm-delete :url url
-                                :type type
-                                :text (getf item :text)
-                                :next-url (if (string= (referer) (strcat "/" type "/" id))
-                                            "/home"
-                                            (referer))))
+             (flet ((inventory-tags (&key error)
+                      (enter-inventory-tags :title (s+ "Edit your " type)
+                                            :action url
+                                            :text (getf item :text)
+                                            :tags (or tags (getf item :tags))
+                                            :groups-selected groups-selected
+                                            :restrictedp restrictedp
+                                            :next (or (post-parameter "next") (referer))
+                                            :existingp t
+                                            :error error
+                                            :button-text (s+ "Save " type)
+                                            :selected (s+ type "s"))))
 
-               ((and (post-parameter "really-delete")
-                     (not (post-parameter "delete-inappropriate-item")))
-                (delete-inventory-item id)
-                (flash (s+ "Your " type " has been deleted!"))
-                (if (equal (fourth (split "/" (post-parameter "next") :limit 4)) (subseq (script-name*) 1))
-                  (see-other "/home")
-                  (see-other (or (post-parameter "next") "/home"))))
+               (pprint groups-selected)
+               (terpri)
+               (cond
+                ((post-parameter "edit")
+                 (inventory-tags))
 
-               ((post-parameter "delete-pending-item")
-                (require-admin
-                  (delete-pending-inventory-item id))
-                (flash (strcat (string-capitalize type) " " id " has been deleted."))
-                (see-other (script-name*)))
+                ((post-parameter "delete")
+                 (confirm-delete :url url
+                                 :type type
+                                 :text (getf item :text)
+                                 :next-url (if (string= (referer) (strcat "/" type "/" id))
+                                             "/home"
+                                             (referer))))
 
-               ((post-parameter "inappropriate-item")
-                (require-admin
-                  (confirm-delete :url url
-                                  :next-url (referer)
-                                  :type type
-                                  :text (getf item :text)
-                                  :inappropriate-item t)))
+                ((and (post-parameter "really-delete")
+                      (not (post-parameter "delete-inappropriate-item")))
+                 (delete-inventory-item id)
+                 (flash (s+ "Your " type " has been deleted!"))
+                 (if (equal (fourth (split "/" (post-parameter "next") :limit 4)) (subseq (script-name*) 1))
+                   (see-other "/home")
+                   (see-other (or (post-parameter "next") "/home"))))
 
-               ((post-parameter "delete-inappropriate-item")
-                (require-admin
-                  (create-reply :on id
-                                :pending-deletion t
-                                :text (post-parameter "explanation"))
-                  (if (db by :pending)
-                    (delete-pending-inventory-item id)
-                    (delete-inventory-item id))
-                  (flash (strcat (string-capitalize type) " " id " has been deleted."))
-                  (see-other (post-parameter "next"))))
+                ((post-parameter "delete-pending-item")
+                 (require-admin
+                   (delete-pending-inventory-item id))
+                 (flash (strcat (string-capitalize type) " " id " has been deleted."))
+                 (see-other (script-name*)))
 
-               ((post-parameter "back")
-                (enter-inventory-text :type type
-                                      :text (post-parameter "text")
-                                      :action url
-                                      :tags (or tags (getf item :tags))
-                                      :next (or (post-parameter "next") (referer))
-                                      :selected (s+ type "s")))
+                ((post-parameter "inappropriate-item")
+                 (require-admin
+                   (confirm-delete :url url
+                                   :next-url (referer)
+                                   :type type
+                                   :text (getf item :text)
+                                   :inappropriate-item t)))
 
-               ((and (post-parameter "post")
-                     (post-parameter "text"))
+                ((post-parameter "delete-inappropriate-item")
+                 (require-admin
+                   (create-reply :on id
+                                 :pending-deletion t
+                                 :text (post-parameter "explanation"))
+                   (if (db by :pending)
+                     (delete-pending-inventory-item id)
+                     (delete-inventory-item id))
+                   (flash (strcat (string-capitalize type) " " id " has been deleted."))
+                   (see-other (post-parameter "next"))))
 
-                (enter-inventory-tags :title (s+ "Edit your " type)
-                                      :action url
-                                      :text (post-parameter "text")
-                                      :tags (or tags (getf item :tags))
-                                      :next (or (post-parameter "next") (referer))
-                                      :existingp t
-                                      :button-text (s+ "Save " type)
-                                      :selected (s+ type "s")))
+                ((and (post-parameter "create")
+                      (post-parameter "text"))
 
-               ((and (post-parameter "create")
-                     (post-parameter "text"))
+                 (if (intersection tags *top-tags* :test #'string=)
+                   (progn
+                     (modify-inventory-item id :text (post-parameter "text")
+                                               :tags tags
+                                               :privacy (when restrictedp
+                                                          groups-selected))
+                     (see-other (or (post-parameter "next") (strcat "/" type "s/" id))))
 
-                (if (intersection tags *top-tags* :test #'string=)
-                  (progn
-                    (modify-inventory-item id :text (post-parameter "text") :tags tags)
-                    (see-other (or (post-parameter "next") (strcat "/" type "s/" id))))
+                   (inventory-tags :error "You must select at least one keyword")))
 
-                  (enter-inventory-tags :title (s+ "Edit your " type)
-                                        :action url
-                                        :text (post-parameter "text")
-                                        :tags (or tags (getf item :tags))
-                                        :next (or (post-parameter "next") (referer))
-                                        :existingp t
-                                        :button-text (s+ "Save " type)
-                                        :error "You must select at least one keyword"
-                                        :selected (s+ type "s"))))
-
-
-               (t
-                 (enter-inventory-tags :title (s+ "Edit your " type)
-                                       :action url
-                                       :text (getf item :text)
-                                       :tags (or tags (getf item :tags))
-                                       :existingp t
-                                       :button-text (s+ "Save " type)
-                                       :selected (s+ type "s")))))))))))
+                (t
+                  (inventory-tags)))))))))))
 
 (defun simple-inventory-entry-html (preposition type &optional groupid)
   (html
@@ -512,7 +519,7 @@
             (:td
               (:button :class "yes" :type "submit" :class "submit" :name "post" "Post"))))))))
 
-(defun enter-inventory-text (&key type title text groupid action selected tags next privacy identity-selection)
+(defun enter-inventory-text (&key type title text groupid action selected tags next restrictedp identity-selection groups-selected)
   (standard-page
     (or title (if (string= type "offer")
                   "Post an offer"
@@ -538,42 +545,49 @@
              (htm (:input :type "hidden" :name "groupid" :value groupid)))
            (awhen identity-selection
              (htm (:input :type "hidden" :name "identity-selection" :value it)))
-           (when privacy
-             (htm (:input :type "hidden" :name "privacy-selection" :value privacy)))
+           (when restrictedp
+             (htm (:input :type "hidden" :name "privacy-selection" :value "restricted")))
+           (:input :type "hidden"
+                   :name "prior-identity"
+                   :value (or identity-selection groupid *userid*))
+           (when groups-selected
+             (dolist (group groups-selected)
+               (htm (:input :type "hidden" :name "groups-selected" :value group))))
            (dolist (tag tags)
              (htm (:input :type "hidden" :name "tag" :value tag)))
            (when next
              (htm (:input :type "hidden" :name "next" :value next)))
-           (:textarea :cols "40" :rows "8" :name "text" (str text))
+           (:textarea :cols "40" :rows "5" :name "text" (str text))
            (:p  (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
            (:button :class "yes" :type "submit" :class "submit" :name "post" "Next"))))))
     :selected selected))
 
-(defun enter-inventory-tags (&key title action text existingp groupid identity-selection privacy error tags button-text selected next)
+(defun enter-inventory-tags (&key title action text existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next)
   (let ((suggested (or tags (get-tag-suggestions text))))
-    (pprint *userid*)
-    (pprint identity-selection)
-    (terpri)
     (standard-page title
      (html
        (:div :class "item" :id "edit-tags"
         (str (pending-disclaimer))
-        (:h2 (str title) )
         (when error
           (htm
             (:p :class "error" (str error))))
+        (:h2 (str title) )
         (:form :class "post-next"
                :method "post"
                :action action
-          (when next
-            (htm (:input :type "hidden" :name "next" :value next)))
-          (when groupid
-            (htm (:input :type "hidden" :name "groupid" :value groupid)))
-          (:input :type "hidden" :name "text" :value (escape-for-html text))
-          (:p
-            (:blockquote :class "review-text" (str (html-text text)))
-            " "
-            (:button :class "red" :type "submit" :class "cancel" :name "back" "edit"))
+          (awhen next
+            (htm (:input :type "hidden" :name "next" :value it)))
+          (awhen groupid
+            (htm (:input :type "hidden" :name "groupid" :value it)))
+          (:input :type "hidden"
+                  :name "prior-identity"
+                  :value (or identity-selection groupid *userid*))
+
+          (:textarea :class "review-text"
+                     :name "text"
+                     :rows "5"
+                     (str text))
+
           (unless (or groupid existingp)
             (awhen (groups-with-user-as-admin)
               (htm
@@ -583,17 +597,19 @@
                   (str (identity-selection-html identity-selection it :onchange "this.form.submit()")))))
 
           (when *user-group-priviledges*
-            (str (privacy-selection-html (if (string= selected "offers") "offer" "request")
-                                         privacy
-                                         (if (or (and identity-selection
-                                                      (not (= identity-selection *userid*)))
-                                                 groupid)
-                                           (list (aif identity-selection
-                                                   (cons it (db it :name))
-                                                   (cons groupid (db groupid :name))))
-                                           (append (groups-with-user-as-member)
-                                                   (groups-with-user-as-admin)))
-                                         :onchange "this.form.submit()")))
+            (str (privacy-selection-html
+                   (if (string= selected "offers") "offer" "request")
+                   restrictedp
+                   (if (or (and identity-selection
+                                (not (= identity-selection *userid*)))
+                           groupid)
+                     (list (aif identity-selection
+                             (cons it (db it :name))
+                             (cons groupid (db groupid :name))))
+                     (append (groups-with-user-as-member)
+                             (groups-with-user-as-admin)))
+                   groups-selected
+                   :onchange "this.form.submit()")))
 
           (:h2 "Select at least one keyword")
           (dolist (tag *top-tags*)
@@ -624,8 +640,7 @@
                        :type "submit"
                        :class "submit"
                        :name "create"
-                       (str button-text)
-                       )))))
+                       (str button-text))))))
      :selected selected)))
 
 ; author
@@ -881,17 +896,19 @@
                        (str ", ")))))))))))))
 
 (defun inventory-item-reply (type id data)
-  (standard-page
-    "Reply"
-    (html
-      (:h1 "Reply to " (str type))
-      (:p (str (getf data :text)))
-      (:h4 "Write your reply:")
-      (:div :class "item"
-        (:form :method "post" :action (strcat "/" type "s/" id)
-          (:table :class "post"
-           (:tr
-             (:td (:textarea :cols "1000" :rows "4" :name "reply-text"))
-             (:td
-               (:button :class "yes" :type "submit" :class "submit" "Reply")))))))
-    :selected (s+ type "s")))
+  (if (item-view-denied (result-privacy (gethash id *db-results*)))
+    (permission-denied)
+    (standard-page
+      "Reply"
+      (html
+        (:h1 "Reply to " (str type))
+        (:p (str (getf data :text)))
+        (:h4 "Write your reply:")
+        (:div :class "item"
+          (:form :method "post" :action (strcat "/" type "s/" id)
+            (:table :class "post"
+             (:tr
+               (:td (:textarea :cols "1000" :rows "4" :name "reply-text"))
+               (:td
+                 (:button :class "yes" :type "submit" :class "submit" "Reply")))))))
+      :selected (s+ type "s"))))

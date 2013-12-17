@@ -250,15 +250,6 @@
                            (not (getf data :long))))
               (collect id)))) #'<))
 
-(defun reset-communication-settings ()
-"To fix a bug possibly introduced by using a multi-threaded taskmaster on *acceptor*"
-  (dolist (id *active-people-index*)
-    (modify-db id :notify-gratitude t
-                  :notify-message t
-                  :notify-reminders t
-                  :notify-expired-invites t
-                  :notify-kindista t)))
-
 (defun mutual-connections-sidebar (link-list)
   (html
     (:div :class "people item right only"
