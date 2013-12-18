@@ -524,12 +524,27 @@
                      (:a :href (strcat "/groups/" (username-or-id groupid))
                        (str (strcat +base-url+
                                     "groups/"
-                                    (username-or-id groupid))))))))
+                                    (username-or-id groupid)))))
+                   :editable t)))
           (str (settings-avatar (string= edit "avatar") groupid))
           (str (settings-name (string= edit "name")
                               groupid
                               (getf group :name)))
           (str (settings-address (string= edit "address") groupid group))
+          (when groupid
+            (str (settings-item-html
+                   "membership"
+                   (html
+                     (:form :method "post"
+                            :class "membership-settings"
+                            :action (strcat "/groups/" groupid)
+                       (str (group-membership-method-selection
+                              (if (eql (getf group :membership-method) :invite-only)
+                                "invite-only"
+                                "admin-approval")
+                              :auto-submit t))
+                       (:input :type "submit" :class "no-js" :value "apply")))
+                   :editable t)))
           (when (not groupid)
             (htm (str (settings-password))
                  (when (getf *user* :plan)

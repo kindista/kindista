@@ -11,16 +11,10 @@
     - nonprofit
     - business
     - intentional community
+    - school/educational group
     - church/spiritual community
     - other ... (this.form.submit)
       - hidden field for other specificatoin
-
-- how can members join dialog
-  - anyone can ask to join; admins can invite people to join and  approve/deny membership requests
-  - by invitation only
-
-- privacy dialog for offers, requests
-  - cancel button for inventory items
 
 - email templates
   - group membership invitation
@@ -36,7 +30,7 @@
 
 - sending gratitude/message notifications
 - test on IE
-
+- test permissions when people are leave admin/member roles
 
 # Migration steps
 

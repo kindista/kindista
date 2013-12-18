@@ -244,47 +244,49 @@
                  (htm (str it) (:br)))
                (str (getf entity :city)) ", " (str (getf entity :state)))))
         ((getf entity :city)
-         (htm (:p :class "city" (str (getf entity :city)) ", " (str (getf entity :state))))))
+         (htm (:p :class "city" (str (getf entity :city)) ", " (str (getf entity :state)))))))
 
      (unless (eql id *userid*)
-       (when (and (db id :active)
+       (htm
+         (:div :class "profile-buttons"
+           (when (and (db id :active)
                   (db *userid* :active)
                   (eql entity-type :person))
-         (htm
-           (:form :method "post" :action "/conversations/new"
-             (:input :type "hidden" :name "next" :value (script-name*))
-             (:button :class "yes" :type "submit" :name "add" :value id "Send a message"))))
-       (htm
-         (:form :method "GET"
-                :action (case entity-type
-                          (:person (strcat "/people/" (username-or-id id) "/reputation"))
-                          (:group (strcat "/groups/" (username-or-id id) "/reputation")))
-           (:button :class "yes" :type "submit" "Express gratitude"))
+             (htm
+               (:form :method "post" :action "/conversations/new"
+                 (:input :type "hidden" :name "next" :value (script-name*))
+                 (:button :class "yes small" :type "submit" :name "add" :value id "Send a message"))))
 
-         (when (eql entity-type :group)
-           (cond
-             (adminp
-              (htm (:form :method "get"
-                          :action (strcat "/groups/" (username-or-id id) "/invite-members")
-                      (:button :class "yes" :type "subit"  "+add members"))))
-             (memberp
-              (htm (:form :method "POST" :action (strcat "/groups/" id)
-                     (:input :type "hidden" :name "next" :value *base-url*)
-                     (:button :class "cancel" :name "leave-group" :value id :type "submit"
-                       (str "Leave group")))))
+             (:form :method "GET"
+                    :action (case entity-type
+                              (:person (strcat "/people/" (username-or-id id) "/reputation"))
+                              (:group (strcat "/groups/" (username-or-id id) "/reputation")))
+               (:button :class "yes small" :type "submit" "Express gratitude"))
 
-             ((not pendingp)
-              (htm (:form :method "POST" :action (strcat "/groups/" id)
-                     (:input :type "hidden" :name "next" :value *base-url*)
-                     (:button :class "yes" :type "submit" :name "request-membership" :value id
-                       (str "Join group")))))))
+             (when (eql entity-type :group)
+               (cond
+                 (adminp
+                  (htm (:form :method "get"
+                              :action (strcat "/groups/" (username-or-id id) "/invite-members")
+                          (:button :class "yes small" :type "subit"  "+add members"))))
+                 (memberp
+                  (htm (:form :method "POST" :action (strcat "/groups/" id)
+                         (:input :type "hidden" :name "next" :value *base-url*)
+                         (:button :class "cancel small" :name "leave-group" :value id :type "submit"
+                           (str "Leave group")))))
 
-         (when (and *userid* (eql entity-type :person))
-           (htm
-             (:form :method "POST" :action "/contacts"
-               (:input :type "hidden" :name (if is-contact "remove" "add") :value id)
-               (:input :type "hidden" :name "next" :value *base-url*)
-               (:button :class (if is-contact "cancel" "yes") :type "submit" (str (if is-contact "Remove from contacts" "Add to contacts"))))))))))))
+                 ((and (not pendingp) (not (eql (getf entity :membership-method) :invite-only)))
+                  (htm (:form :method "POST" :action (strcat "/groups/" id)
+                         (:input :type "hidden" :name "next" :value *base-url*)
+                         (:button :class "yes small" :type "submit" :name "request-membership" :value id
+                           (str "Join group")))))))
+
+             (when *userid*
+               (htm
+                 (:form :method "POST" :action "/contacts"
+                   (:input :type "hidden" :name (if is-contact "remove" "add") :value id)
+                   (:input :type "hidden" :name "next" :value *base-url*)
+                 (:button :class (if is-contact "cancel small" "yes small") :type "submit" (str (if is-contact "Remove from contacts" "Add to contacts"))))))))))))
 
 (defun simple-profile-top (id)
   (let* ((entity (db id))

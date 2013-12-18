@@ -169,7 +169,8 @@ form.group-activity-selection input[type=checkbox] {
 }
 
 form.group-activity-selection label {
- margin-right: 0.5em;;
+ margin-right: 0.5em;
+ white-space: nowrap;
 }
 
 select.profile-gratitude {
@@ -688,10 +689,6 @@ button.yes:first-child {
  margin-left:0.4em;
 }
 
-.basics button.yes:first-child {
- margin-left: 0;
-}
-
 a + button.yes {
  vertical-align: middle;
  margin-left:1em;
@@ -1108,6 +1105,12 @@ img.small {
  display: none;
 }
 
+#full {
+ overflow: auto;
+ margin-top: 0.8em;
+ padding-left: 0.8em;
+}
+
 #right {
  margin: 1em;
 }
@@ -1317,6 +1320,10 @@ menu .newcount {
 
 .create-event p, .create-group p {
  margin-top: 0.3em;
+}
+
+div.create-group button {
+ margin-top: 1em;
 }
 
 @media (max-width:28em) {
@@ -1654,7 +1661,7 @@ button.card > img {
 }
 
 @media (max-width:56em) {
- .item.right.only {
+ .item.right.only, #right {
   display:none;
  }
 }
@@ -1934,15 +1941,34 @@ input::-moz-focus-inner {
  margin:0 0.8em 0 0;
 }
 
-.actions > form, .basics > form, menu.horiz form {
+.actions > form, .profile-buttons form, menu.horiz form {
  display:inline;
 }
 
-.basics form {
- margin-right: 0.5em;
+.profile-buttons form {
+ margin-right: 0.25em;
 }
 
-.basics form:last-child {
+.profile-buttons form:last-child {
+ margin-right: 0;
+}
+
+.profile-buttons {
+ margin-right: 0.5em;
+ float: right;
+}
+
+.profile-buttons button.small {
+ height:auto;
+ padding: 0.3em;
+ margin-left: 0;
+}
+
+.profile-buttons:after {
+ clear: both;
+}
+
+.profile-buttons button.cancel {
  margin-right: 0;
 }
 
@@ -2020,7 +2046,8 @@ img.bigavatar {
  -o-transform:rotate(-2deg);
  border:0.5em solid #fff;
  box-shadow:2px 2px 3px #c0c0c0;
- margin: 0 1em 1em;
+ margin-right:1em;
+ margin-bottom:0.5em;
  max-width:14em;
  max-height:14em;
  float:left;
@@ -2095,7 +2122,7 @@ div.activity-image {
 .basics h1 {
  font-size: 1.8em;
  font-weight:normal;
- margin: 0.85em 0 0.25em;
+ margin: 0.25em 0.25em 0.25em;
 }
 
 .new-gratitude button.yes {
@@ -2240,8 +2267,8 @@ menu.bar li {
  background:#eee;
  border:1px solid #eee;
  border-bottom: none;
- margin: 1em 0 0 0.5em;
- padding:0.5em;
+ margin: 0 0.15em;
+ padding:0.4em;
  border-top-left-radius:3px;
  border-top-right-radius:3px;
  font-weight:bold;
@@ -2530,7 +2557,7 @@ select.recipients {
 }
 
 .settings-item .title {
- width: 6.25em;
+ width: em;
  background: #f2f2f2;
  font-weight: 500;
  font-size: 1em;
@@ -2612,6 +2639,10 @@ div.settings p.help-text {
 
 .settings-item .password input[type=text] {
  width: 20em
+}
+
+input.membership-settings {
+ margin: 0.6em 0.5em 0 0;
 }
 
 .reset-password button {

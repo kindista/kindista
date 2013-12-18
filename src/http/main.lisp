@@ -446,7 +446,7 @@
   (header-page title
                (html
                  (:div
-                   (:a :href "#search" (:img :alt "Search" :src "/media/icons/search.png"))  
+                   (:a :href "#search" (:img :alt "Search" :src "/media/icons/search.png"))
                    " "
                    (:a :href "#menu" (:img :alt "Menu" :src "/media/icons/menu.png"))))
                (html
@@ -486,7 +486,8 @@
                      (:option :value "groups"
                               :selected (when (equalp search-scope "groups") "selected")
                               "Groups"))
-                   (:input :type "text" :size "14" :name "q" :value search)
+                   (:input :type "text" :size "14" :name "q" :value (awhen search
+                                                                      (escape-for-html it)))
                    (:input :type "submit" :value "Search"))
 
                  (:div :id "menu"
@@ -508,7 +509,7 @@
                    (when *user*
                      (let ((inbox-count (new-inbox-items)))
                        (str (menu (list `("Messages" "messages" ,(when (> inbox-count 0) inbox-count)))
-                                  selected)))) 
+                                  selected))))
 
                    (str (menu (list '("News" "home")
                                     '("Offers" "offers")

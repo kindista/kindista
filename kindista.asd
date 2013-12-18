@@ -57,10 +57,9 @@
                                            (:file "card")
                                            (:file "group-card")
                                            (:file "person-card")
-                                           (:file "verify-location")))
                              (:module shared
                               :serial t
-                              :components ((:file "drop-downs")
+                              :components ((:file "form-elements")
                                            (:file "inventory")
                                            (:file "images")
                                            (:file "activity")
@@ -69,6 +68,7 @@
                                            (:file "timeline")
                                            (:file "paginate")
                                            (:file "profiles")
+                                           (:file "verify-location")))
                                            (:file "time")))
                              (:module features
                               :serial t

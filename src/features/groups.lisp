@@ -17,7 +17,7 @@
 
 (in-package :kindista)
 
-(defun create-group (&key name creator lat long address street city state country zip location-privacy)
+(defun create-group (&key name creator lat long address street city state country zip location-privacy membership-method)
   (insert-db `(:type :group
                :name ,name
                :creator ,creator
@@ -32,6 +32,7 @@
                :state ,state
                :country ,country
                :zip ,zip
+               :membership-method ,membership-method
                :location-privacy ,location-privacy
                :notify-message ,(list creator)
                :notify-gratitude ,(list creator)
@@ -417,20 +418,22 @@
                      ((string= tab "reputation")
                "gratitude about "))))
       (:div
-        (:input :type "checkbox"
-              :name "group"
-              :onchange "this.form.submit()"
-              :value (str (when (or (string= selected "all")
-                                    (string= selected "group"))
-                             "checked")))
-         (:label :for "group" (str group-name))
-         (:input :type "checkbox"
-                 :name "members"
-                 :onchange "this.form.submit()"
-                 :value (str (when (or (string= selected "all")
-                                       (string= selected "members"))
-                               "checked"))) 
-         (:label :for "group" (str (s+ "members of " group-name))))
+        (:div
+          (:input :type "checkbox"
+                :name "group"
+                :onchange "this.form.submit()"
+                :value (str (when (or (string= selected "all")
+                                      (string= selected "group"))
+                               "checked")))
+           (:label :for "group" (str group-name)))
+         (:div
+           (:input :type "checkbox"
+                   :name "members"
+                   :onchange "this.form.submit()"
+                   :value (str (when (or (string= selected "all")
+                                         (string= selected "members"))
+                                 "checked")))
+           (:label :for "group" (str (s+ "members of " group-name)))))
        " "
        (:input :type "submit" :class "no-js" :value "apply"))))
 
@@ -498,7 +501,7 @@
         (see-other (or (referer) "/home")))
       (enter-new-group-details))))
 
-(defun enter-new-group-details (&key error location name public-location)
+(defun enter-new-group-details (&key error location name public-location membership-method)
   (standard-page
     "Create a group profile"
     (html
@@ -526,6 +529,9 @@
                       :value (str (when public-location "checked")))
               "Display this address publicly to anyone looking at this group's profile page.")
             (:p (:em "Please note: you will be able to change the visibiity of your group's address on its settings page."))
+
+            (:div :class "long"
+              (str (group-membership-method-selection membership-method)))
 
            (:button :class "cancel"
                     :type "submit"
@@ -557,49 +563,53 @@
                  it)))
         (zip (awhen (post-parameter "zip")
                (unless (string= it "") it)))
+        (membership-method (awhen (post-parameter "membership-method")
+                             (unless (string= it "") it)))
         (public (when (post-parameter "public-location") t)))
 
     (labels ((try-again (e)
                (enter-new-group-details :name (post-parameter "name")
                                         :location location
+                                        :membership-method membership-method
                                         :error e))
-             (attempt-new-group ()
-               ;make sure the post parameters didn't get altered
+             (new-group ()
+               (see-other
+                 (strcat "/groups/"
+                         (create-group :name name
+                                       :creator *userid*
+                                       :lat lat
+                                       :long long
+                                       :address location
+                                       :street street
+                                       :city city
+                                       :state state
+                                       :country country
+                                       :zip zip
+                                       :membership-method (if (string= membership-method
+                                                                       "invite-only")
+                                                            :invite-only
+                                                            :group-admin-approval)
+                                       :location-privacy (if public
+                                                           :public
+                                                           :private)))))
+
+             (confirm-location ()
                (multiple-value-bind (clat clong caddress ccity cstate ccountry cstreet czip)
                  (geocode-address location)
-                 (if (and (string= city ccity)
-                          (string= state cstate)
-                          (string= country ccountry)
-                          (eql lat clat)
-                          (eql long clong))
-                   (see-other (strcat
-                                "/groups/"
-                                (create-group :name name
-                                              :creator *userid*
-                                              :lat clat
-                                              :long clong
-                                              :address caddress
-                                              :street cstreet
-                                              :city ccity
-                                              :state cstate
-                                              :country ccountry
-                                              :zip czip
-                                              :location-privacy (if public
-                                                                  :public
-                                                                  :private))))
-                   (verify-location "/groups/new"
-                                    "Please verify your group's location."
-                                    clat
-                                    clong
-                                    "name" name
-                                    "location" caddress
-                                    "city" ccity
-                                    "state" cstate
-                                    "country" ccountry
-                                    "street" cstreet
-                                    "zip" czip
-                                    (when public "public-location")
-                                    (when public "t"))))))
+                 (verify-location "/groups/new"
+                                  "Please verify your group's location."
+                                  clat
+                                  clong
+                                  "name" name
+                                  "location" caddress
+                                  "city" ccity
+                                  "state" cstate
+                                  "country" ccountry
+                                  "street" cstreet
+                                  "zip" czip
+                                  "membership-method" membership-method
+                                  (when public "public-location")
+                                  (when public "t")))))
       (cond
         ((getf *user* :pending)
          (pending-flash "create group profiles on Kindista")
@@ -616,19 +626,20 @@
          (try-again "Please add a location for your group"))
 
        ((post-parameter "reset-location")
-        (enter-new-group-details :name name))
+        (enter-new-group-details :name name
+                                 :membership-method membership-method))
 
        ((not (and lat long city state location country zip))
         ;geocode the address
-        (attempt-new-group))
+        (confirm-location))
 
        ((post-parameter "confirm-location")
         (aif (search-groups name :lat lat :long long)
-          (confirm-group-uniqueness it name lat long location city state country street zip :public-location public)
-          (attempt-new-group)))
+          (confirm-group-uniqueness it name lat long location city state country street zip membership-method :public-location public)
+          (new-group)))
 
-       ((post-parameter "confirm-uniqueness")
-          (attempt-new-group))))))
+       ((and lat long city state location country zip (post-parameter "confirm-uniqueness"))
+        (new-group))))))
 
 (defun resend-group-membership-request (request-id)
   (index-message request-id
@@ -703,7 +714,7 @@
     (remove-message-from-indexes id)
     (remove-from-db id)))
 
-(defun confirm-group-uniqueness (results name lat long address city state country street zip &key public-location)
+(defun confirm-group-uniqueness (results name lat long address city state country street zip membership-method &key public-location)
   (standard-page
     "Is your group already on Kindista?"
     (html
@@ -722,15 +733,16 @@
          (:br)
         (str (groups-results-html results))
         (:form :method "post" :action "/groups/new"
-            (:input :type "hidden" :name "name" :value name)
+            (:input :type "hidden" :name "name" :value (escape-for-html name))
             (:input :type "hidden" :name "lat" :value lat)
             (:input :type "hidden" :name "long" :value long)
-            (:input :type "hidden" :name "location" :value address)
-            (:input :type "hidden" :name "city" :value city)
+            (:input :type "hidden" :name "location" :value (escape-for-html address))
+            (:input :type "hidden" :name "city" :value (escape-for-html city))
             (:input :type "hidden" :name "state" :value state)
-            (:input :type "hidden" :name "country" :value country)
-            (:input :type "hidden" :name "street" :value street)
+            (:input :type "hidden" :name "country" :value (escape-for-html country))
+            (:input :type "hidden" :name "street" :value (escape-for-html street))
             (:input :type "hidden" :name "zip" :value zip)
+            (:input :type "hidden" :name "membership-method" :value membership-method)
             (when public-location
               (htm (:input :type "hidden" :name "public/location" :value lat)))
             (:button :class "cancel"
@@ -810,13 +822,16 @@
                       (parse-integer it))))
       (cond
         ((post-parameter "request-membership")
-         (unless (or (member *userid* (getf group :members))
-                     (member *userid* (getf group :admins)))
-           (let ((current-membership-request (assoc *userid*
-                                                    (gethash id *group-membership-requests-index*))))
-             (aif current-membership-request
-               (resend-group-membership-request (cdr it))
-               (create-group-membership-request id))))
+         (if (eql (getf group :membership-method) :invite-only)
+           (permission-denied)
+           (unless (or (member *userid* (getf group :members))
+                       (member *userid* (getf group :admins)))
+             (let ((current-membership-request (assoc *userid*
+                                                      (gethash id
+                                                               *group-membership-requests-index*))))
+               (aif current-membership-request
+                 (resend-group-membership-request (cdr it))
+                 (create-group-membership-request id)))))
          (flash (s+ "Your membership request has been forwarded to the "
                     (getf group :name)
                     " admins."))
@@ -863,6 +878,12 @@
                               (url-compose (s+ url "/invite-members")
                                            "add-another" ""))))
 
+              ((post-parameter "membership-method")
+               (modify-db id :membership-method (if (string= (post-parameter "membership-method")
+                                                             "invite-only")
+                                                  :invite-only
+                                                  :group-admin-approval))
+               (see-other (referer)))
               ((post-parameter "approve-group-membership-request")
                (approve-group-membership-request
                  (parse-integer (post-parameter "membership-request-id")))
