@@ -175,7 +175,7 @@
       (delete-inventory-item offer-id))
     (modify-db id :active nil
                   :notify-message nil
-                  :notify-kindist nil
+                  :notify-kindista nil
                   :notify-reminders nil
                   :notify-expired-invites nil
                   :notify-gratitude nil)))
