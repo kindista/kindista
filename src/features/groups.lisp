@@ -17,7 +17,7 @@
 
 (in-package :kindista)
 
-(defun create-group (&key name creator lat long address street city state country zip location-privacy membership-method)
+(defun create-group (&key name creator lat long address street city state country zip location-privacy category membership-method)
   (insert-db `(:type :group
                :name ,name
                :creator ,creator
@@ -32,6 +32,7 @@
                :state ,state
                :country ,country
                :zip ,zip
+               :category ,category
                :membership-method ,membership-method
                :location-privacy ,location-privacy
                :notify-message ,(list creator)
@@ -191,6 +192,19 @@
   (index-group groupid (db groupid))
   (reindex-group-location groupid)
   (reindex-group-name groupid))
+
+(defun change-group-category (groupid &key new-type)
+  (let* ((standard-category (awhen (post-parameter "group-type")
+                              (unless (string= it "") it)))
+         (custom-category (awhen (post-parameter "custom-group-category")
+                            (unless (string= it "") it)))
+         ;;new-type is a way to change group-type from the back end
+         (next (post-parameter "next")) (newtype (or new-type custom-category standard-category)))
+    (if (and (string= standard-category "other")
+             (not custom-category))
+      (see-other (url-compose (or next (referer)) "group-type" "other")) 
+      (progn (modify-db groupid :category newtype)
+             (see-other next)))))
 
 (defun group-members (groupid)
   (gethash groupid *group-members-index*))
@@ -530,12 +544,21 @@
               "Display this address publicly to anyone looking at this group's profile page.")
             (:p (:em "Please note: you will be able to change the visibiity of your group's address on its settings page."))
 
+            (:h3 "What kind of a group is this?")
+            (:div :class "group-category-selection"
+              (str
+                (group-category-selection :auto-submit 'onclick
+                                          :submit-buttons nil
+                                          :selected (or (post-parameter "group-type")
+
+                                                    (post-parameter "custom-group-category")))))
             (:div :class "long"
               (str (group-membership-method-selection membership-method)))
 
            (:button :class "cancel"
                     :type "submit"
                     :name "cancel"
+
                     "Cancel")
            (:button :class "yes"
                     :type "submit"
@@ -563,6 +586,10 @@
                  it)))
         (zip (awhen (post-parameter "zip")
                (unless (string= it "") it)))
+        (group-category (or (awhen (post-parameter "custom-group-type")
+                              (unless (string= it "") it))
+                            (awhen (post-parameter "group-type")
+                              (unless (string= it "") it))))
         (membership-method (awhen (post-parameter "membership-method")
                              (unless (string= it "") it)))
         (public (when (post-parameter "public-location") t)))
@@ -585,6 +612,10 @@
                                        :state state
                                        :country country
                                        :zip zip
+                                       :category (awhen group-category
+                                                   (unless (string= "other"
+                                                                    it)
+                                                     it))
                                        :membership-method (if (string= membership-method
                                                                        "invite-only")
                                                             :invite-only
@@ -877,6 +908,10 @@
                (see-other (or (post-parameter "next")
                               (url-compose (s+ url "/invite-members")
                                            "add-another" ""))))
+
+              ((and (post-parameter "group-type")
+                    (not (string= "" (post-parameter "group-type"))))
+               (change-group-category id))
 
               ((post-parameter "membership-method")
                (modify-db id :membership-method (if (string= (post-parameter "membership-method")

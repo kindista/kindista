@@ -56,7 +56,7 @@
                                            (:file "menu-horiz")
                                            (:file "card")
                                            (:file "group-card")
-                                           (:file "person-card")
+                                           (:file "person-card")))
                              (:module shared
                               :serial t
                               :components ((:file "form-elements")
@@ -68,7 +68,7 @@
                                            (:file "timeline")
                                            (:file "paginate")
                                            (:file "profiles")
-                                           (:file "verify-location")))
+                                           (:file "verify-location")
                                            (:file "time")))
                              (:module features
                               :serial t

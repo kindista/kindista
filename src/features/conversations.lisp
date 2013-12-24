@@ -83,17 +83,19 @@
     "Add person to conversation"
     (html
       (:div :class "item"
-       (:h2 "Who would you like to add to the conversation?")
-       (:form :method "post" :action "/conversations/new"
-         (:button :type "submit" :class "cancel" :name "cancel-add" "Cancel")
+       (:form :method "post"
+              :class "recipients"
+              :action "/conversations/new"
+         (:button :type "submit" :class "simple-link green" :name "cancel-add" "↩ go back")
+         (:h2 "Who would you like to add to the conversation?")
          (:h3 "Search for a person")
          (:input :type "text" :name "name")
-         (:input :type "submit" :class "submit" :name "search" :value "Search")
+         (:button :type "submit" :class "yes input-height" :name "search" "Search")
 
          (if (eq results 'none)
            (progn
              (htm
-               (:h3 "Select one of your contacts")
+               (:h3 "Or, select one of your contacts:")
                (:menu :type "toolbar"
                  (dolist (contact (contacts-alphabetically *user*))
                    (htm (:li (:button :class "text" :type "submit" :value (car contact) :name "add" (str (cadr contact)))))))))

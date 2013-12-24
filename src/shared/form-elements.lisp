@@ -17,6 +17,55 @@
 
 (in-package :kindista)
 
+(defun group-category-selection (&key next selected auto-submit submit-buttons (class "identity"))
+  (let* ((default-options '("business"
+                            "church/spiritual community"
+                            "community organization"
+                            "government agency"
+                            "intentional community"
+                            "nonprofit organization"
+                            "school/educational organization"))
+         (custom (unless (member selected
+                                 (cons "other" default-options)
+                                 :test #'equalp)
+                   selected)))
+    (html
+      (awhen next (htm (:input :type "hidden" :name "next" :value it)))
+      (:select :name "group-category"
+               :class class
+               :onchange (when (eq auto-submit 'onchange)
+                           "this.form.submit()")
+         (unless selected
+           (htm (:option :value ""
+                         :style "display:none;"
+                         :selected "selected"
+                   "Please select ...")))
+         (dolist (option default-options)
+           (htm (:option :value option
+                         :selected (when (string= selected option) "")
+                         (str (string-capitalize option)))))
+         (:option :value "other"
+                  :onclick (when (eq auto-submit 'onclick)
+                             "this.form.submit()")
+                  :selected (when (or (string= selected "other")
+                                      custom)
+                              "")
+                  "Other ..."))
+
+      (when (or (string= selected "other") custom)
+        (htm
+          (:br)
+          (:input :type "text"
+                  :class "float-left"
+                  :name "custom-group-category"
+                  :placeholder "What type of group is this?"
+                  :value (awhen custom (escape-for-html it)))
+          (when submit-buttons
+            (htm
+              (:div :class "group-category-buttons float-left"
+               (:button :type "input" :class "yes input-height" "Save Changes")
+               (:button :type "input" :class "cancel input-height" :name "cancel" "Cancel")))))))))
+
 (defun group-membership-method-selection (current &key auto-submit)
   (html
     (:h3 "How can members join this group?")

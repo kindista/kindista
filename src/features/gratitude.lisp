@@ -205,7 +205,7 @@
        (:h3 "Search for a person")
        (:form :method "post" :class "new-gratitude" :action "/gratitude/new"
          (:input :type "text" :name "name")
-         (:button :type "submit" :class "submit yes" :name "search" "Search")
+         (:button :type "submit" :class "yes input-height" :name "search" "Search")
 
          (if (eq results 'none)
            (progn

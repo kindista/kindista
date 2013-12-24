@@ -42,17 +42,36 @@
 
 (defun settings-item-html (item body &key title help-text editable edit-text)
   (html
-    (:div :class "settings-item"
+    (:div :class "settings-item item"
       (:div :class "settings-item title" (str (or title
                                                   (string-capitalize item))))
       (:div :class "settings-item content"
         (unless editable
           (htm
             (:div :class "button"
-              (:a :class "yes" :href (url-compose *base-url* "edit" item)
-                                     (or (str edit-text) (htm "Edit"))))))
+              (:a :class "yes small" :href (url-compose *base-url* "edit" item)
+                                             (or (str edit-text) (htm "Edit"))))))
         (str body)
         (:p :class "help-text" (:em (str help-text)))))))
+
+(defun settings-group-category (editable groupid group)
+ (settings-item-html
+   "category"
+   (if (or editable (not (getf group :category)))
+     (html
+       (:form :method "post"
+              :class "group-category-selection"
+              :action (strcat "/groups/" groupid)
+          (str (group-type-selection
+                 :auto-submit 'onchange
+                 :next *base-url*
+                 :submit-buttons t
+                 :selected (or (get-parameter "group-category")
+                               (getf group :category))))
+        ;(:input :type "submit" :class "no-js" :value "apply")
+           ))
+       (html (str (getf group :category))))
+   :editable editable ))
 
 (defun settings-avatar (editable &optional groupid)
   (settings-item-html "avatar"
@@ -517,6 +536,9 @@
         (html
           (str (settings-tabs-html (if (not groupid) "personal" "public")
                                    (awhen groupid it)))
+          (str (settings-name (string= edit "name")
+                              groupid
+                              (getf group :name)))
           (when groupid
             (str (settings-item-html
                    "profile"
@@ -525,11 +547,12 @@
                        (str (strcat +base-url+
                                     "groups/"
                                     (username-or-id groupid)))))
-                   :editable t)))
+                   :editable t))
+            (str (settings-group-category (string= edit "category")
+                                          groupid
+                                          group)))
+
           (str (settings-avatar (string= edit "avatar") groupid))
-          (str (settings-name (string= edit "name")
-                              groupid
-                              (getf group :name)))
           (str (settings-address (string= edit "address") groupid group))
           (when groupid
             (str (settings-item-html

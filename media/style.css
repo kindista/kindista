@@ -1,6 +1,7 @@
 /* Copyright 2013 CommonGoods Network, Inc.
  
    This file is part of Kindista.
+
  
    Kindista is free software: you can redistribute it and/or modify
    it under the terms of the GNU Affero General Public License as published by
@@ -218,6 +219,7 @@ input[type=text], input[type=password] {
  border: 1px solid #444;
  margin: .3em 0;
  padding: 0.4em 0.4em;
+ height: 2.05em;
  border-radius: 0.25em;
  box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);
 }
@@ -766,6 +768,12 @@ a.cancel {
 button.small, a.small {
  font-size: 0.8em;
  line-height: 1.1em;
+ padding: 0.4em;
+}
+
+button.input-height {
+ font-size: 0.9em;
+ height: 2.25em;
  padding: 0.4em;
 }
 
@@ -2349,10 +2357,6 @@ menu.bar li a {
  margin-bottom: 0;
 }
 
-div.settings-item.content > a {
- margin: 0 0 1.3em 0.7em;
-}
-
 .actions input[type=submit]:hover, button:hover {
  text-decoration:underline;
 }
@@ -2456,6 +2460,15 @@ form.recipients, div.recipients {
  overflow: hidden;
 }
 
+form.recipients input[type=text] {
+ margin-right: 0.4em;
+}
+
+form.recipients button.simple-link {
+ padding: 0;
+ margin-bottom: 0.8em;
+}
+
 form.recipients label {
  display: block;
  float: left;
@@ -2516,7 +2529,7 @@ select.recipients {
  opacity: 1.0;
 }
 
-.bio .empty {
+.bio .emptyyy
  font-style: italic;
  color: #888;
 }
@@ -2544,11 +2557,15 @@ select.recipients {
  top: -.5em;
 }
 
+div.settings menu.bar {
+ margin-top: 1em;
+}
+
 .settings p {
  margin: 1.1em 0;
 }
 
-.address input[type=text]{
+.address input[type=text] {
  width: 20em;
 }
 
@@ -2557,7 +2574,7 @@ select.recipients {
 }
 
 .settings-item .title {
- width: em;
+ width: 7em;
  background: #f2f2f2;
  font-weight: 500;
  font-size: 1em;
@@ -2598,6 +2615,10 @@ select.recipients {
  margin-left: .8em;
 }
 
+div.settings-item.content > a {
+ margin-bottom: 1.3em;
+}
+
 .settings-item li > button.simple-link {
  margin-left:0;
  font-weight: 500;
@@ -2624,6 +2645,27 @@ div.settings p.help-text {
 .help-text {
  color: #777;
  clear: both;
+}
+
+.group-category-selection {
+ overflow: hidden;
+}
+
+.group-category-selection input[type=text] {
+ margin-right: 0.5em;
+}
+
+.group-category-selection button.yes {
+ margin-right: 0.5em;
+ margin-left: 0;
+}
+
+.group-category-selection div.group-category-buttons {
+ display: inline-block;
+}
+
+.group-category-selection:after {
+ clear:both;
 }
 
 .settings-item .password label {
