@@ -549,7 +549,7 @@
               (str
                 (group-category-selection :auto-submit 'onclick
                                           :submit-buttons nil
-                                          :selected (or (post-parameter "group-type")
+                                          :selected (or (post-parameter "group-category")
 
                                                     (post-parameter "custom-group-category")))))
             (:div :class "long"
@@ -567,34 +567,25 @@
                     "Create")))))))
 
 (defun post-groups-new ()
-  (let ((location (post-parameter "location"))
+  (let ((location (post-parameter-string "location"))
         (name (when (scan +text-scanner+ (post-parameter "name"))
                 (post-parameter "name")))
-        (lat (awhen (post-parameter "lat")
-               (unless (string= it "") (read-from-string it))))
-        (long (awhen (post-parameter "long")
-               (unless (string= it "") (read-from-string it))))
-        (city (awhen (post-parameter "city")
-               (unless (string= it "") it)))
-        (state (awhen (post-parameter "state")
-               (unless (string= it "") it)))
-        (country (awhen (post-parameter "country")
-               (unless (string= it "") it)))
+        (lat (post-parameter-float "lat"))
+        (long (post-parameter-float "long"))
+        (city (post-parameter-string "city"))
+        (state (post-parameter-string  "state"))
+        (country (post-parameter-string "country"))
         (street (awhen (post-parameter "street")
-               (unless (or (string= it "")
-                           (equalp it "nil nil"))
+                  (unless (or (string= it "")
+                              (equalp it "nil nil"))
                  it)))
-        (zip (awhen (post-parameter "zip")
-               (unless (string= it "") it)))
-        (group-category (or (awhen (post-parameter "custom-group-type")
-                              (unless (string= it "") it))
-                            (awhen (post-parameter "group-type")
-                              (unless (string= it "") it))))
-        (membership-method (awhen (post-parameter "membership-method")
-                             (unless (string= it "") it)))
+        (zip (post-parameter-string "zip"))
+        (group-category (or (post-parameter-string "custom-group-category")
+                            (post-parameter-string "group-category")))
+        (membership-method (post-parameter-string "membership-method"))
         (public (when (post-parameter "public-location") t)))
 
-    (labels ((try-again (e)
+    (labels ((try-again (&optional e)
                (enter-new-group-details :name (post-parameter "name")
                                         :location location
                                         :membership-method membership-method
@@ -638,9 +629,15 @@
                                   "country" ccountry
                                   "street" cstreet
                                   "zip" czip
+                                  "group-category" group-category
                                   "membership-method" membership-method
                                   (when public "public-location")
                                   (when public "t")))))
+
+      (pprint group-category)
+      (pprint name)
+      (pprint location)
+      (terpri)
       (cond
         ((getf *user* :pending)
          (pending-flash "create group profiles on Kindista")
@@ -649,7 +646,12 @@
         ((post-parameter "cancel")
          (see-other "/groups"))
 
-        ((< (length "name") 4)
+        ((and group-category
+              (not name)
+              (not location))
+         (try-again))
+
+        ((< (length name) 4)
          (try-again "Please use a longer name for your group"))
 
         ((or (not location)

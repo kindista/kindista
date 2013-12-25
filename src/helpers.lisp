@@ -387,3 +387,9 @@
      (:div :class "v-align-container"
        (:div :class "v-align-cell"
          ,content))))
+
+(defun post-parameter-string (name)
+  (awhen (post-parameter name) (unless (string= it "") it)))
+
+(defun post-parameter-float (name)
+  (awhen (post-parameter name) (unless (string= it "") (read-from-string it))))
