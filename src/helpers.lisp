@@ -228,14 +228,20 @@
   (html
     (:a :href (s+ "/people/" (username-or-id id)) (str (getf (db id) :name)))))
 
-(defun name-list (ids &key (func #'person-link) (minimum-links 3))
-  (let ((links (mapcar func (subseq ids 0 (min minimum-links (length ids))))))
-    (format nil *english-list* (cond
-                                ((> (length ids) (+ minimum-links 1))
-                                 (append links (list (strcat "and " (- (length ids) minimum-links) " others"))))
-                                ((eql (length ids) (+ minimum-links 1))
-                                 (append links (list (funcall func (nth 3 ids)))))
-                                (t links)))))
+(defun name-list (ids &key (func #'person-link) (maximum-links 3))
+  (let* ((name-count (length ids))
+         (count-displayed (cond
+                            ((= name-count (+ maximum-links 1))
+                             (- name-count 2))
+                            ((> name-count maximum-links)
+                             maximum-links)
+                            (t name-count)))
+         (display-ids (subseq ids 0 count-displayed))
+         (others (when (> name-count count-displayed)
+                   (strcat (- name-count count-displayed) " others"))))
+    (format nil *english-list* (aif others
+                                 (append (mapcar func display-ids ) (list it))
+                                 (mapcar func display-ids)))))
 
 (defun name-list-all (ids &key stringp)
   (format nil *english-list* (if stringp

@@ -54,7 +54,7 @@
                                          subject
                                          (name-list (remove to people)
                                                     :func #'person-name
-                                                    :minimum-links 5)
+                                                    :maximum-links 5)
                                          text
                                          :inventory-text inventory-text)
         :html-message (comment-notification-email-html
@@ -63,7 +63,7 @@
                         subject
                         (name-list (remove to people)
                                    :func #'person-email-link
-                                   :minimum-links 5)
+                                   :maximum-links 5)
                         text
                         :inventory-text inventory-text)))))
 

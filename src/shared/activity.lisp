@@ -196,10 +196,7 @@
                                   (str (if (getf data :edited) " edited " " shared "))
                                   (:a :href item-url "gratitude")
                                   " for "
-                                  ;name-list returns a formatted string
-                                  ;(getf data :subjects) returns a list
-                                  ; of subject user-ids.
-                                  (str (name-list (getf data :subjects) :minimum-links 100)))
+                                  (str (name-list (getf data :subjects) :maximum-links 100)))
                               (:p
                                 (str
                                   (if truncate

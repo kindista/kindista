@@ -52,13 +52,14 @@
             (:img :class "bigavatar"
                   :src (get-avatar-thumbnail *userid* 300 300)
                   :alt (getf *user* :name))
-            (:form :method "post"
-                   :action "/settings"
-                   :class "activity-image"
-              (:button :class "simple-link green"
-                       :type "submit"
-                       :name "rotate-avatar"
-                       "Rotate"))))))
+            (when (getf *user* :avatar)
+              (htm (:form :method "post"
+                          :action "/settings"
+                          :class "activity-image"
+                     (:button :class "simple-link green"
+                              :type "submit"
+                              :name "rotate-avatar"
+                              "Rotate"))))))))
   :editable editable))
 
 (defun settings-name (base editable)
