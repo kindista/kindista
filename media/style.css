@@ -1345,6 +1345,10 @@ h3.event-date, h3.my-invites {
  margin: 0;
 }
 
+.card.gratitude div.subject-requests {
+ clear:both;
+}
+
 .login.item {
 }
 
@@ -1490,6 +1494,17 @@ h3.event-date, h3.my-invites {
  padding-top:5px;*/
  color:#aaa;
  text-align: right;
+}
+
+.card .reqboxbottom {
+ clear: left;
+ /*margin-top: 2em;
+ position:relative;
+ /*border-top:1px solid #dfdfdf;
+ padding-top:5px;*/
+ color:#5c8a2f;
+ text-align: left;
+ font-weight: normal;
 }
 
 .card a {
