@@ -46,7 +46,6 @@
           (acond
             ((stripe:sstruct-get result :id)
              (setf (gethash amount *donation-plans*) it))
-            
             (t nil)))
         (stripe::stripe-error (err)
                               (cond
@@ -280,9 +279,7 @@
                              "error")
                     :id "lcvc"
                     "*CVC " (:a :href "http://en.wikipedia.org/wiki/Card_security_code" :target "_blank" "(?)"))
-            (:input :id "cvc" :type "text")
-           
-           )
+            (:input :id "cvc" :type "text"))
           (:li :class "half"
             (:label :class (when (and show-error
                                       (empty-string-p (donate-info-token*)))
@@ -319,7 +316,7 @@
               (:option :value "2020" "2020")
               (:option :value "2021" "2021")
               (:option :value "2022" "2022")
-              (:option :value "2023" "2022"))))
+              (:option :value "2023" "2023"))))
 
         (:button :id "ccnext" :class "nav" :type "submit" "Next >")
 
@@ -342,13 +339,12 @@
       (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
      ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
       )))
-    
+
 (defun donate-page (dialog)
   (base-page
     "Donate"
     (html
-      (str dialog)
-      )
+      (str dialog))
     :class "donate"))
 
 
@@ -442,12 +438,11 @@
                                       :amount (* 100 (donate-info-amount*))
                                       :currency "USD"
                                       :description (donate-info-email*))
-                (modify-db *userid* :donated t)
+                (when *user* (modify-db *userid* :donated t))
                 (flash "Thank you so much for your donation! You will receive email from us shortly.")
                 (see-other "/"))
-               
-               ((string= (donate-info-type*) "monthly")
 
+               ((string= (donate-info-type*) "monthly")
                 (aif (getf *user* :custid)
                   (progn
                     (stripe:update-subscription it

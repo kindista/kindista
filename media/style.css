@@ -2367,7 +2367,13 @@ div.activity-image {
  display: inline-block;
 }
 
-.activity-image form {
+div.settings-avatar {
+ position: relative;
+ width: 10.5em;
+}
+
+.activity-image form,
+.settings-avatar form {
  position: absolute;
  top: .5em;
  right: .4em;

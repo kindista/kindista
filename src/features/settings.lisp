@@ -74,15 +74,29 @@
    :editable editable ))
 
 (defun settings-avatar (editable &optional groupid)
-  (settings-item-html "avatar"
+  (let ((id (or groupid *userid*))
+        (entity (aif groupid
+                  (db it)
+                  *user*)))
+   (settings-item-html "avatar"
     (cond
       (editable
         (new-image-form "/settings" "/settings/personal" :class "submit-settings" :on groupid))
       (t
         (html
-          (:img :class "bigavatar" :src (get-avatar-thumbnail (or groupid *userid*) 300 300)))))
-
-  :editable editable))
+          (:div :class "settings-avatar"
+            (:img :class "bigavatar"
+                  :src (get-avatar-thumbnail id 300 300)
+                  :alt (getf entity :name))
+            (when (getf entity :avatar)
+              (htm (:form :method "post"
+                          :action "/settings"
+                          :class "activity-image"
+                     (:button :class "simple-link green"
+                              :type "submit"
+                              :name "rotate-avatar"
+                              "Rotate"))))))))
+  :editable editable)))
 
 (defun settings-name (editable &optional groupid group-name)
   (let ((aliases (unless groupid (getf *user* :aliases))))
@@ -770,6 +784,7 @@
 
 (defun post-settings ()
   (require-user
+<<<<<<< HEAD
     (let* ((groupid (or (post-parameter "on")
                         (post-parameter "groupid")))
            (id (or (when groupid
@@ -1088,3 +1103,269 @@
            (see-other (or (referer) "/home"))))
 
       (permission-denied)))))
+=======
+    (acond
+      ((post-parameter "cancel")
+       (see-other (or (post-parameter "next") "/home")))
+
+      ((post-parameter "name")
+       (cond
+         ((validate-name it)
+          (let ((aliases (remove-duplicates
+                           (loop for (x . y) in (post-parameters*) 
+                                 when (and (string= x "aliases")
+                                           (not (string= y ""))) 
+                                 collect y)
+                           :test #'string=)))
+            (cond
+              ((and (not (equal (getf *user* :aliases) aliases))
+                    (equal (getf *user* :name) it))
+               (modify-db *userid* :aliases aliases)
+               (reindex-person-names *userid*))
+              ((and (equal (getf *user* :aliases) aliases)
+                    (not (equal (getf *user* :name) it)))
+               (modify-db *userid* :name it)
+               (reindex-person-names *userid*))
+              ((and (not (equal (getf *user* :aliases) aliases))
+                    (not (equal (getf *user* :name) it)))
+               (modify-db *userid* :name it :aliases aliases)
+               (reindex-person-names *userid*)))))
+         (t
+           (flash "You must use your true full name (first and last) for your primary name on Kindista.  Single word names are permitted for your nicknames." :error t))) 
+       (see-other (or (post-parameter "next") "/home")))
+
+      ((post-parameter "address")
+       (multiple-value-bind (lat long address city state country street zip)
+         (geocode-address it)
+         (modify-db *userid* :lat lat :long long :address address :city city :state state :street street :zip zip :country country :location nil))
+       (see-other (url-compose "/settings/verify-address" 
+                               "next" (or (post-parameter "next") "/home")))) 
+
+      ((post-parameter "image")
+       (handler-case
+         ;hunchentoot returns a list containing (path file-name content-type)
+         ;when the post-parameter is a file, i.e. (first it) = path
+         (let ((id (create-image (first it) (third it)))
+               (old-avatar (getf *user* :avatar)))
+           (when (integerp old-avatar)
+             (delete-image old-avatar))
+           (modify-db *userid* :avatar id))
+         (t () (flash "Please use a .jpg, .png, or .gif" :error t)))
+       (see-other "/settings/personal"))
+
+      ((post-parameter "rotate-avatar")
+       (rotate-image (getf *user* :avatar))
+       (see-other (referer)))
+
+      ((post-parameter "reset-location")
+       (modify-db *userid* :lat nil :long nil :address nil :location nil)
+       (see-other (or it "/home")))
+
+      ((post-parameter "password")
+       (cond
+         ((not (password-match-p *userid* (post-parameter "password")))
+          (flash "The password you entered is incorrect. Please try again." :error t)
+          (see-other (post-parameter "next")))
+         ((< (length (post-parameter "new-password-1")) 8)
+          (flash "Your new password is too short. Please use at least 8 characters." :error t)
+          (see-other (post-parameter "next")))
+         ((not (string= (post-parameter "new-password-1")
+                        (post-parameter "new-password-2")))
+          (flash "The confirmation text you entered does not match the new password you entered. Please try again." :error t)
+          (see-other (post-parameter "next")))
+         (t
+          (modify-db *userid* :pass (new-password (post-parameter "new-password-1")))
+          (flash "You have successfully changed your password.")
+          (see-other (or (post-parameter "next") "/home")))))
+
+      ((post-parameter "deactivate")
+       (flash "Please confirm your choice to deactivate your account." :error t)
+       (see-other "/deactivate-account"))
+
+      ((post-parameter "confirm-deactivation")
+       (deactivate-person *userid*)
+       (flash "You have deactivated you account. If you change your mind you can reactivate your account on the settings page.")
+
+       (see-other "/settings/personal"))
+
+      ((post-parameter "cancel-plan")
+
+       (acond
+         ((and (getf *user* :plan)
+               (getf *user* :custid))
+
+          (handler-case
+            (progn (stripe:delete-subscription it)
+                   (flash "Your plan has been cancelled, effective immediately. Thank you for your financial support!") 
+                   (notice :cancel-plan :plan (getf *user* :plan) :custid (getf *user* :custid)) 
+                   (modify-db *userid* :plan nil) 
+                   (see-other "/settings/personal"))
+            (t (err)
+               (declare (ignore err))
+               (flash "There was an error deleting your subscription. Humans have been notified!" :error t)
+               (notice :error :on :cancel-plan :custid (getf *user* :custid)))))
+
+         (t
+          (flash "You do not currently have an active subscription.")
+          (see-other "/settings/personal"))))
+
+      ((post-parameter "plan")
+
+       (acond
+         ((and (getf *user* :plan)
+               (getf *user* :custid))
+
+          (let ((plan (parse-integer (post-parameter "plan"))))
+            (stripe:update-subscription it
+              :plan (make-donation-plan (* 100 plan))
+              :prorate nil)
+            (notice :change-plan :old (getf *user* :plan) :new plan :custid (getf *user* :custid))
+            (modify-db *userid* :plan plan) 
+            (flash "We've updated your subscription. Thank you very much for your financial support!") 
+            (see-other "/settings/personal")))))
+
+      ((post-parameter "reactivate")
+       (reactivate-person *userid*)
+       (flash "You have reactivated your Kindista account.")
+       (see-other "/settings/personal"))
+
+      ((post-parameter "save-notifications")
+       (when (and (getf *user* :notify-message)
+                  (not (post-parameter "message")))
+         (flash "Warning: You will not recieve any email notifications when people reply to your Offers and Requests unless you choose to be notified \"when someone sends me a message\"!" :error t))
+       (modify-db *userid* :notify-gratitude (when (post-parameter "gratitude") t)
+                           :notify-message (when (post-parameter "message") t)
+                           :notify-reminders (when (post-parameter "reminders") t)
+                           :notify-expired-invites (when (post-parameter "expired-invites") t)
+                           :notify-kindista (when (post-parameter "kindista") t))
+       (flash "Your notification preferences have been saved.")
+       (see-other (or (post-parameter "next") "/home")))
+
+      ((post-parameter "new-email")
+       (let* ((new-email (post-parameter "new-email"))
+              (id (gethash new-email *email-index*))
+              (emails (getf *user* :emails))
+              (pending (awhen (getf *user* :pending-alt-emails) it)))
+         (cond
+           ((equal (car emails) new-email)
+            (flash (s+ new-email " is already your primary email address. "
+                       "If you want to use " new-email
+                       " as an alternate email address, you must first "
+                       "set another email to be your primary email "
+                       "address.") :error t)
+            (see-other "/settings/communication?edit=email")) 
+           ((member new-email emails)
+            (see-other "/settings/communication?edit=email")) 
+           (id
+            (flash (s+ "The email address you have submitted, " new-email
+                       ", already belongs to another Kindista member. "
+                       "Please contact us if " new-email
+                       " is actually your email address.") :error t)
+            (see-other "/settings/communication?edit=email")) 
+           ((not (scan +email-scanner+ new-email))
+            (flash (s+ new-email " is not a valid email address. "
+                       "Please try again.") :error t)
+            (see-other "/settings/communication?edit=email"))
+           (t
+            (let ((confirmation nil))
+              (setf confirmation (create-invitation new-email :self t))
+              (modify-db *userid* :pending-alt-emails (cons confirmation pending)))
+            (flash (s+ "A verification email has been sent to " new-email
+                       ". Please click on the link provided in that email "
+                       "to complete the email verification process."))
+            (see-other "/settings/communication")))))
+
+      ((and (post-parameter "invitation-id")
+            (post-parameter "token"))
+       (activate-email-address (parse-integer (post-parameter "invitation-id"))
+                               (post-parameter "token")))
+
+      ((post-parameter "resend-code")
+       (let* ((id (parse-integer (post-parameter "invitation-id")))
+              (invitation (db id))
+              (email (getf invitation :recipient-email)))
+         (cond
+           ((< (getf invitation :valid-until) (get-universal-time))
+            (modify-db id :valid-until (+ (get-universal-time) 2592000))
+            (send-email-verification id))
+           (t
+            (send-email-verification id)))
+       (flash (s+ "Your activation code has been resent to " email "."))
+       (see-other "/settings/communication")))
+
+      ((post-parameter "make-email-primary")
+       (let ((new-primary (post-parameter "make-email-primary")))
+         (amodify-db *userid* :emails
+                              (cons new-primary
+                                    (remove new-primary it :test #'string=)))
+         (flash (s+ new-primary " is now your primary email address."))
+         (see-other "/settings/communication")))
+
+      ((post-parameter "remove-email")
+       (let ((email (post-parameter "remove-email")))
+         (amodify-db *userid* :emails (remove email it :test #'string=))
+         (remhash email *email-index*)
+         (flash (s+ email " has been removed from your Kindista account."))
+         (see-other "/settings/communication")))
+
+      ((post-parameter "bio-doing")
+       (unless (getf *user* :bio)
+         (modify-db *userid* :bio t))
+       (modify-db *userid* :bio-doing (post-parameter "bio-doing"))
+       (see-other (or (post-parameter "next") "/home")))
+
+      ((post-parameter "bio-summary")
+       (unless (getf *user* :bio)
+         (modify-db *userid* :bio t))
+       (modify-db *userid* :bio-summary (post-parameter "bio-summary"))
+       (see-other (or (post-parameter "next") "/home")))
+
+      ((post-parameter "bio-into")
+       (unless (getf *user* :bio)
+         (modify-db *userid* :bio t))
+       (modify-db *userid* :bio-into (post-parameter "bio-into"))
+       (see-other (or (post-parameter "next") "/home")))
+
+      ((post-parameter "bio-contact")
+       (unless (getf *user* :bio)
+         (modify-db *userid* :bio t)) (modify-db *userid* :bio-contact (post-parameter "bio-contact"))
+       (see-other (or (post-parameter "next") "/home")))
+
+      ((post-parameter "bio-skills")
+       (unless (getf *user* :bio)
+         (modify-db *userid* :bio t))
+       (modify-db *userid* :bio-skills (post-parameter "bio-skills"))
+       (see-other (or (post-parameter "next") "/home")))
+
+      ((scan +number-scanner+ (post-parameter "rdist"))
+       (modify-db *userid* :rdist (parse-integer (post-parameter "rdist")))
+       (flash "Your search distance for offers and requests has been changed!")
+       (see-other (or (post-parameter "next") "/requests")))
+
+      ((scan +number-scanner+ (post-parameter "sdist"))
+       (modify-db *userid* :rdist (parse-integer (post-parameter "sdist")))
+       (flash "Your default search distance has been changed!")
+       (see-other (or (post-parameter "next") "/requests")))
+
+      ((scan +number-scanner+ (post-parameter "distance"))
+       (modify-db *userid* :distance (parse-integer (post-parameter "distance")))
+       (if (string= (post-parameter "distance") "0")
+         (flash "Now showing world-wide activity.")
+         (flash (format nil "Now showing activity within ~a miles." (post-parameter "distance"))))
+       (see-other (or (post-parameter "next") "/home")))
+
+      ((equalp (post-parameter "help") "0")
+       (modify-db *userid* :help nil)
+       (see-other (or (referer) "/home")))
+
+      ((equalp (post-parameter "help") "1")
+       (modify-db *userid* :help t)
+       (see-other (or (referer) "/home")))
+
+      ((and (post-parameter "confirm-location")
+            (getf *user* :lat)
+            (getf *user* :long))
+       (modify-db *userid* :location t)
+       (reindex-person-location *userid*)
+       (see-other (or (post-parameter "next") "/home"))))))
+>>>>>>> master
