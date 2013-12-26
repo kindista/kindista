@@ -227,16 +227,16 @@
     (:a :href (s+ "/people/" (username-or-id id)) (str (getf (db id) :name)))))
 
 (defun name-list (ids &key (func #'person-link) (maximum-links 3))
-  (let* ((count-displayed (cond
-                            ((= (length ids) maximum-links)
-                             (length ids))
-                            ((= (length ids) (+ maximum-links 1))
-                             (- (length ids) 2))
-                            ((> (length ids) maximum-links)
-                             maximum-links)))
+  (let* ((name-count (length ids))
+         (count-displayed (cond
+                            ((= name-count (+ maximum-links 1))
+                             (- name-count 2))
+                            ((> name-count maximum-links)
+                             maximum-links)
+                            (t name-count)))
          (display-ids (subseq ids 0 count-displayed))
-         (others (when (> (length ids) maximum-links)
-                   (strcat (- (length ids) count-displayed) " others"))))
+         (others (when (> name-count count-displayed)
+                   (strcat (- name-count count-displayed) " others"))))
     (format nil *english-list* (aif others
                                  (append (mapcar func display-ids ) (list it))
                                  (mapcar func display-ids)))))
