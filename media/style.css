@@ -1113,8 +1113,8 @@ img.small {
  display: none;
 }
 
-#full {
- overflow: auto;
+#profile-top {
+ overflow: hidden;
  margin-top: 0.8em;
  padding-left: 0.8em;
 }
@@ -1953,6 +1953,10 @@ input::-moz-focus-inner {
  display:inline;
 }
 
+div.profile-buttons {
+ overflow: hidden;
+}
+
 .profile-buttons form {
  margin-right: 0.25em;
 }
@@ -1961,15 +1965,15 @@ input::-moz-focus-inner {
  margin-right: 0;
 }
 
-.profile-buttons {
+div.profile-buttons div.float-right {
  margin-right: 0.5em;
- float: right;
 }
 
 .profile-buttons button.small {
  height:auto;
  padding: 0.3em;
  margin-left: 0;
+ margin-bottom: 0;
 }
 
 .profile-buttons:after {
@@ -2059,6 +2063,7 @@ img.bigavatar {
  max-width:14em;
  max-height:14em;
  float:left;
+ position: relative;
 }
 
 .small-activity-image div.border {
