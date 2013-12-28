@@ -152,7 +152,7 @@
     (string= crypted-password crypted-password2)))
 
 (defun password-match-p (id password)
-  (let ((crypted-password (getf (db id) :pass)))
+  (let ((crypted-password (db id :pass)))
     (if crypted-password
       (password= password crypted-password)
       nil)))

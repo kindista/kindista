@@ -1305,9 +1305,14 @@ menu .newcount {
  margin-top: 0.5em;
 }
 
+.item.create-group label {
+ font-size: 1.1em;
+}
+
 .create-event input[type=text],
 .create-event textarea,
 .create-event select,
+.create-group select,
 .create-group input[type=text],
 .confirm-delete textarea {
  font-size: 1em;
@@ -1320,10 +1325,14 @@ menu .newcount {
 
 }
 
-.create-event input[type=text], .create-event select, .create-group input[type=text] {
+.create-event input[type=text],
+.create-event select,
+.create-group select,
+.create-group input[type=text] {
  width: 30em;
  white-space: nowrap;
  height: 2.5em;
+ max-width: none;
 }
 
 .create-event p, .create-group p {
@@ -1334,8 +1343,14 @@ div.create-group button {
  margin-top: 1em;
 }
 
+div.create-group div.group-category-selection {
+ margin-bottom: 1em;
+}
+
 @media (max-width:28em) {
- .create-event input[type=text], .create-group input[type=text] {
+ .create-event input[type=text],
+ .create-group select,
+ .create-group input[type=text] {
   width: 100%;
  }
 }
@@ -2658,6 +2673,10 @@ div.settings p.help-text {
  clear: both;
 }
 
+#groups-tabs {
+ margin-top: 0.8em;
+}
+
 .group-category-selection {
  overflow: hidden;
 }
@@ -2695,7 +2714,11 @@ div.settings p.help-text {
 }
 
 input.membership-settings {
- margin: 0.6em 0.5em 0 0;
+ margin: 0 0.5em 0 0;
+}
+
+input.membership-settings:last-child {
+ margin-top: 0.6em;
 }
 
 .reset-password button {

@@ -448,8 +448,6 @@
                                             :button-text (s+ "Save " type)
                                             :selected (s+ type "s"))))
 
-               (pprint groups-selected)
-               (terpri)
                (cond
                 ((post-parameter "edit")
                  (inventory-tags))

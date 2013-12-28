@@ -241,6 +241,9 @@
 (defun assoc-assoc (id a-list)
   (assoc (assoc id (mapcar #'car a-list)) a-list))
 
+(defun nor (&rest items)
+ (every #'identity (mapcar #'not items)))
+
 (defun parse-cons (string)
 "Returns a cons cell from a string. Integers are parsed, other elements returned as strings. ex. '6' -> (6), '6.5' -> (6 . 5), '2.string' -> (2 . 'string')"
   (loop for i = 0 then (1+ j)

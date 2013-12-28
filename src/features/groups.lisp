@@ -146,6 +146,12 @@
                           (gethash id *db-results*)))
 
 (defun change-person-to-group (groupid admin-id)
+
+  (awhen (db groupid :emails)
+    (with-locked-hash-table (*email-index*)
+      (dolist (email it)
+        (remhash email *email-index*))))
+
   (modify-db groupid :type :group
                      :creator admin-id
                      :admins (list admin-id)
@@ -155,6 +161,7 @@
                      :notify-message nil
                      :notify-kindista nil
                      :notify-expired-invites nil
+                     :emails nil
                      :pass nil)
   ;move all the group's messages into the admin's mailbox
   (flet ((remove-groupid (item)
@@ -194,15 +201,17 @@
   (reindex-group-name groupid))
 
 (defun change-group-category (groupid &key new-type)
-  (let* ((standard-category (awhen (post-parameter "group-type")
-                              (unless (string= it "") it)))
-         (custom-category (awhen (post-parameter "custom-group-category")
-                            (unless (string= it "") it)))
+  (let* ((standard-category (post-parameter-string "group-category"))
+         (custom-category (post-parameter-string "custom-group-category"))
          ;;new-type is a way to change group-type from the back end
-         (next (post-parameter "next")) (newtype (or new-type custom-category standard-category)))
+         (next (or (post-parameter "next")
+                   (referer)))
+         (newtype (or new-type custom-category standard-category)))
+    (pprint next)
+    (terpri)
     (if (and (string= standard-category "other")
              (not custom-category))
-      (see-other (url-compose (or next (referer)) "group-type" "other")) 
+      (see-other (url-compose next "group-category" "other"))
       (progn (modify-db groupid :category newtype)
              (see-other next)))))
 
@@ -525,13 +534,13 @@
         (:h2 "Create a Kindista profile for your group")
         (:div :class "item create-group"
           (:form :method "post" :action "/groups/new"
-            (:div :class "long"
+            (:div
               (:label "Group name")
               (:input :type "text"
                       :name "name"
                       :placeholder (escape-for-html "Enter your group's name")
                       :value (awhen name (escape-for-html it))))
-            (:div :class "long"
+            (:div
               (:label "Group location")
               (:input :type "text"
                       :name "location"
@@ -549,9 +558,9 @@
               (str
                 (group-category-selection :auto-submit 'onclick
                                           :submit-buttons nil
+                                          :class "new-group identity"
                                           :selected (or (post-parameter "group-category")
-
-                                                    (post-parameter "custom-group-category")))))
+                                                        (post-parameter "custom-group-category")))))
             (:div :class "long"
               (str (group-membership-method-selection membership-method)))
 
@@ -563,7 +572,7 @@
            (:button :class "yes"
                     :type "submit"
                     :value "1"
-                    :name "confirm-location"
+                    :name "create-group"
                     "Create")))))))
 
 (defun post-groups-new ()
@@ -634,10 +643,6 @@
                                   (when public "public-location")
                                   (when public "t")))))
 
-      (pprint group-category)
-      (pprint name)
-      (pprint location)
-      (terpri)
       (cond
         ((getf *user* :pending)
          (pending-flash "create group profiles on Kindista")
@@ -647,8 +652,8 @@
          (see-other "/groups"))
 
         ((and group-category
-              (not name)
-              (not location))
+              (nor (post-parameter "create-group")
+                   (post-parameter "confirm-location")))
          (try-again))
 
         ((< (length name) 4)
@@ -827,6 +832,7 @@
 (defun groups-tabs-html (&key (tab :my-groups))
   (html
     (:menu :class "bar"
+           :id "groups-tabs"
       (:h3 :class "label" "Groups Menu")
 
       (if (eql tab :my-groups)
@@ -911,8 +917,7 @@
                               (url-compose (s+ url "/invite-members")
                                            "add-another" ""))))
 
-              ((and (post-parameter "group-type")
-                    (not (string= "" (post-parameter "group-type"))))
+              ((post-parameter-string "group-category")
                (change-group-category id))
 
               ((post-parameter "membership-method")

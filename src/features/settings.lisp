@@ -67,10 +67,8 @@
                  :next *base-url*
                  :submit-buttons t
                  :selected (or (get-parameter "group-category")
-                               (getf group :category))))
-        ;(:input :type "submit" :class "no-js" :value "apply")
-           ))
-       (html (str (getf group :category))))
+                               (getf group :category))))))
+     (html (str (getf group :category))))
    :editable editable ))
 
 (defun settings-avatar (editable &optional groupid)
@@ -109,8 +107,8 @@
               (when groupid
                 (htm (:input :type "hidden" :name "groupid" :value groupid)))
               (:div :class "submit-settings"
-                (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
-                (:button :class "yes" :type "submit" :class "submit" :name "submit" "Submit"))
+                (:button :class "cancel small" :type "submit" :class "submit" :name "cancel" "Cancel")
+                (:button :class "yes small" :type "submit" :class "submit" :name "submit" "Submit"))
               (:ul
                 (:li (:span (:input :type "text"
                                     :name "name"
@@ -152,8 +150,8 @@
              (when groupid
                (htm (:input :type "hidden" :name "groupid" :value groupid)))
              (:div :class "submit-settings"
-               (:button :class "cancel" :type "submit" :class "submit" :name "cancel" "Cancel")
-               (:button :class "yes" :type "submit" :class "submit" :name "confirm-address" "Submit"))
+               (:button :class "cancel small" :type "submit" :class "submit" :name "cancel" "Cancel")
+               (:button :class "yes small" :type "submit" :class "submit" :name "confirm-address" "Submit"))
              (:input :type "text" :name "address" :value (str address))
              (when groupid
                (htm
@@ -562,9 +560,11 @@
                                     "groups/"
                                     (username-or-id groupid)))))
                    :editable t))
-            (str (settings-group-category (string= edit "category")
-                                          groupid
-                                          group)))
+            (str (settings-group-category
+                   (or (string= (get-parameter "group-category") "other")
+                       (string= edit "category"))
+                   groupid
+                   group)))
 
           (str (settings-avatar (string= edit "avatar") groupid))
           (str (settings-address (string= edit "address") groupid group))

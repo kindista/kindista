@@ -42,14 +42,16 @@
                    "Please select ...")))
          (dolist (option default-options)
            (htm (:option :value option
+                         :onclick (when (eq auto-submit 'onclick)
+                                    "this.form.submit()")
                          :selected (when (string= selected option) "")
                          (str (string-capitalize option)))))
          (:option :value "other"
-                  :onclick (when (eq auto-submit 'onclick)
-                             "this.form.submit()")
                   :selected (when (or (string= selected "other")
                                       custom)
                               "")
+                  :onclick (when (eq auto-submit 'onclick)
+                             "this.form.submit()")
                   "Other ..."))
 
       (when (or (string= selected "other") custom)
@@ -58,7 +60,9 @@
           (:input :type "text"
                   :class "float-left"
                   :name "custom-group-category"
-                  :placeholder "What type of group is this?"
+                  :placeholder (if (eq auto-submit 'onclick)
+                                 "Please specify..."
+                                 "What type of group is this?")
                   :value (awhen custom (escape-for-html it)))
           (when submit-buttons
             (htm
