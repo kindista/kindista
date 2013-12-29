@@ -38,7 +38,8 @@
                :notify-message ,(list creator)
                :notify-gratitude ,(list creator)
                :notify-reminders ,(list creator)
-               :notify-invite-request ,(list creator)
+               :notify-membership-request ,(list creator)
+
                :created ,(get-universal-time))))
 
 (defun index-group (id data)
@@ -157,8 +158,8 @@
                      :admins (list admin-id)
                      :notify-gratitude (list admin-id)
                      :notify-reminders (list admin-id)
-                     :notify-invite-request (list admin-id)
-                     :notify-message nil
+                     :notify-membership-request (list admin-id)
+                     :notify-message (list admin-id)
                      :notify-kindista nil
                      :notify-expired-invites nil
                      :emails nil

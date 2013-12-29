@@ -468,6 +468,7 @@
          (original-message-type (or (getf original-message :type)
                                  deleted-type))
          (participants (db id :participants))
+         (group-name (cdr (assoc (cadr participants) groups)))
          (with (or (getf original-message :by)
                    (first (remove *userid* participants))))
          (comments (length (gethash id *comment-index*)))
@@ -481,6 +482,7 @@
                      (:request "request"))
                    (getf comment-data :text))
                  (getf comment-data :text))))
+
     (flet ((inventory-url ()
              (html
                (case original-message-type
@@ -512,7 +514,8 @@
               (str (inventory-url)))
             (htm
               (str (person-link (getf reply :by)))
-              " replied to your "
+              " replied to "
+              (str (or (s+ group-name "'s ") "your "))
               (str (inventory-url))))
           (str (group-message-indicator message groups)) )
 

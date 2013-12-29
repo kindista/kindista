@@ -1,30 +1,11 @@
 # To do
 
-- prevent people from signing in as a group (group username/password)
-
-- messages
-  - change wording for gratitudes in message box
-
-- group-type for new groups and group settings 
-  - dropdown
-    - community organization
-    - nonprofit
-    - business
-    - intentional community
-    - school/educational group
-    - church/spiritual community
-    - other ... (this.form.submit)
-      - hidden field for other specificatoin
-
 - email templates
   - group membership invitation
   - group membership request
+  - gratitude notification
   - edit conversation/reply template to reflect groups
 
-- comments
-  - as a group administrator
-
-- debug avatars for new account (maybe just rsync with server images first)
 
 # Testing needed
 

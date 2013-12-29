@@ -59,9 +59,9 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (awhen (getf data :emails) 
+    (awhen (getf data :emails)
       (with-locked-hash-table (*email-index*)
-        (dolist (email it) 
+        (dolist (email it)
           (setf (gethash email *email-index*) id))))
 
     (setf (gethash (getf data :username) *username-index*) id)

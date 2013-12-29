@@ -448,8 +448,9 @@
      (see-other "/settings/communication")))))
 
 (defun settings-notifications (&optional groupid group)
-  (let ((entity (or group *user*))
-        (group-name (when group (getf group :name))))
+  (let* ((entity (or group *user*))
+         (group-name (when group (getf group :name)))
+         (subject (or group-name "me")))
     (labels ((checkbox-value (notify-key)
                (when (or (and (not group)
                               (getf *user* notify-key))
@@ -468,13 +469,13 @@
                   :name "gratitude"
                   :checked (checkbox-value :notify-gratitude))
                  "when someone posts gratitude about "
-                 (str (if group group-name "me")))
+                 (str subject))
+            (:li (:input :type "checkbox"
+                  :name "message"
+                  :checked (checkbox-value :notify-message))
+                 (str (s+ "when someone sends " subject " a message")))
             (unless group
               (htm
-                 (:li (:input :type "checkbox"
-                       :name "message"
-                       :checked (when (getf entity :notify-message) "checked"))
-                      "when someone sends me a message")
                 (:li (:input :type "checkbox"
                       :name "expired-invites"
                       :checked (when (getf entity :notify-expired-invites) "checked"))
@@ -492,7 +493,15 @@
                 (:li (:input :type "checkbox"
                        :name "kindista"
                        :checked (when (getf entity :notify-kindista) "checked"))
-                      "with updates and information about Kindista"))))))
+                      "with updates and information about Kindista")))
+            (when group
+              (htm
+                (:li (:input :type "checkbox"
+                       :name "group-membership-request"
+                       :checked (when (member *userid*
+                                              (getf entity :notify-membership-request))
+                                  "checked"))
+                      (str (s+ "when someone wants to join " group-name))))))))
 
     :title "Notify me"
     :editable t))))

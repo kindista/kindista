@@ -313,8 +313,11 @@
      #'string-lessp :key #'car)))
 
 (defun person-link (id)
-  (html
-    (:a :href (s+ "/people/" (username-or-id id)) (str (getf (db id) :name)))))
+  (let ((entity (db id)))
+    (html
+      (:a :href (s+ (if (eql (getf entity :type) :person) "/people/" "groups/")
+                    (username-or-id id))
+          (str (getf entity :name))))))
 
 (defun group-link (id)
   (html
@@ -341,34 +344,54 @@
                                      collect (db id :name))
                                (mapcar #'person-link ids))))
 
-(defun contact-opt-out-flash (people-list &key (item-type "message"))
-  (let* ((opt-outs (loop for id in people-list
-                         when (let ((person (db id)))
-                                (and (not (getf person :notify-message))
-                                     (eql (getf person :type) :person)))
-                         collect id))
-         (self-opt-out (member *userid* opt-outs))
-         (other-opt-outs (remove *userid* opt-outs))
-         (pluralize (and opt-outs (> (length opt-outs) 1))))
-    (when self-opt-out
-      (flash (s+ "<p>You have chosen not to be notified when people send "
-                 "messages to you through Kindista.</p>"
-                 "<p>In order to be notified when someone replies "
-                 "to this " item-type
-                 " you must change your "
-                 "<a href=\"/settings/communication\">"
-                 "communication settings</a>.</p>") :error t))
-    (when other-opt-outs
-      (flash (s+ "<p>"
-                 (name-list-all other-opt-outs)
-                 (if pluralize " have " " has ")
-                 "chosen not to recieve email notifications when other "
-                 " Kindista members send them messages.</p>"
-                 "<p>They will recieve your message next time they log into "
-                 "Kindista. "
-                 "If this is an urgent matter, please use other means to " 
-                 "contact them.</p>")
-             :error t))))
+(defun pluralize (list singular-string plural-string)
+  (let ((list-length (length list)))
+    (if (or (= 0 list-length) (< 1 list-length))
+      plural-string singular-string)))
+
+(defun contact-opt-out-flash (id-list &key (userid *userid*) (item-type "message"))
+  (let ((people-opt-outs)
+        (group-opt-outs))
+    (dolist (id id-list)
+      (let ((entity (db id)))
+        (when (not (getf entity :notify-message))
+          (if (eql (getf entity :type) :person)
+            (push id people-opt-outs)
+            (push id group-opt-outs)))))
+    (let ((my-group-opt-outs (intersection group-opt-outs
+                                           (mapcar #'car (groups-with-user-as-admin userid))))
+          (self-opt-out (member userid people-opt-outs))
+          (other-opt-outs (remove userid people-opt-outs)))
+      (cond
+        (my-group-opt-outs
+         (flash (s+ "<p>" (name-list-all my-group-opt-outs)
+                    (pluralize my-group-opt-outs " does " " do ")
+                    "not have any admins who have chosen to be notified when "
+                    "people send messages to them through Kindista.</p>"
+                    "<p>In order to be notified when someone replies "
+                    "to this " item-type
+                    " you must change your "
+                    "<a href=\"/settings/communication\">"
+                    "communication settings</a>.</p>")  :error t))
+        (self-opt-out
+          (flash (s+ "<p>You have chosen not to be notified when people send "
+                     "messages to you through Kindista.</p>"
+                     "<p>In order to be notified when someone replies "
+                     "to this " item-type
+                     " you must change your "
+                     "<a href=\"/settings/communication\">"
+                     "communication settings</a>.</p>") :error t))
+        (other-opt-outs
+          (flash (s+ "<p>"
+                     (name-list-all other-opt-outs)
+                     (pluralize other-opt-outs " has " " have ")
+                     "chosen not to recieve email notifications when other "
+                     " Kindista members send them messages.</p>"
+                     "<p>They will recieve your message next time they log into "
+                     "Kindista. "
+                     "If this is an urgent matter, please use other means to " 
+                     "contact them.</p>")
+                 :error t))))))
 
 (defun pending-flash (action)
   (flash (s+ "Your account hasn't been fully activated yet. "
