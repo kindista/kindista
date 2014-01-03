@@ -2522,6 +2522,7 @@ input[name=reply] {
 .recip-reply {
   float:right;
   margin-top:0.3em;
+  font-size:0.9em;
 }
 
 .recip-reply :first-child {

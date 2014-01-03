@@ -232,8 +232,8 @@
        (see-other (or (post-parameter "next") "/home")))
 
       ((post-parameter "create")
-       (let* ((subjects (parse-subject-list (post-parameter "subject")
-                                            :remove (write-to-string *userid*)))
+       (let* ((subjects (reverse (parse-subject-list (post-parameter "subject")
+                                            :remove (write-to-string *userid*))))
               (text (post-parameter "text"))
               (new-id (create-gratitude :author *userid*
                                         :subjects subjects
