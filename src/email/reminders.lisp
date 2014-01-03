@@ -148,7 +148,7 @@
                            (not latest-request)
                            (not latest-gratitude)
                            (not avatar)
-                           (< invitee-count 1))
+                           (= invitee-count 0))
                        (or (not (assoc :minimal-activity reminders))
                            (> (- now (cdr (assoc :minimal-activity reminders)))
                               (* 5 +week-in-seconds+))))

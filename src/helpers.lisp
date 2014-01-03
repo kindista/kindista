@@ -177,10 +177,10 @@
           base)
          ((and (find #\? base :test #'equal)
                (find #\= base :test #'equal))
-          (format nil "~a&~{~a~^&~}" base
-                                     param-strings))
+          (format nil "~a&amp;~{~a~^&amp;~}" base
+                                         param-strings))
          (t
-          (format nil "~a~a~{~a~^&~}" base
+          (format nil "~a~a~{~a~^&amp;~}" base
                                       (if param-strings "?" "")
                                       param-strings))))
       (when (cadr params)
@@ -242,7 +242,8 @@
   (assoc (assoc id (mapcar #'car a-list)) a-list))
 
 (defun nor (&rest items)
- (every #'identity (mapcar #'not items)))
+"Returns true if none of the items are true."
+ (notany #'identity items))
 
 (defun parse-cons (string)
 "Returns a cons cell from a string. Integers are parsed, other elements returned as strings. ex. '6' -> (6), '6.5' -> (6 . 5), '2.string' -> (2 . 'string')"

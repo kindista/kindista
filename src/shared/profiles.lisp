@@ -168,9 +168,9 @@
 (defun profile-activity-items (&key (id *userid*) (page 0) (count 20) type display members)
   (let ((items (cond
                 ((string= display "all")
-                 (group-member-activity (cons id members) :type type))
+                 (group-members-activity (cons id members) :type type))
                 ((string= display "members")
-                 (group-member-activity members :type type))
+                 (group-members-activity members :type type))
                 (t (remove-private-items
                      (gethash id *profile-activity-index*)))))
         (start (* page count))
@@ -238,6 +238,10 @@
                   (htm (:span :class "help-text" " (deleted account)")))
                  ((eq (getf entity :active) nil)
                   (htm (:span :class "help-text" " (inactive account)")))))
+
+          (awhen (getf entity :category)
+            (htm (str it)))
+
           (cond
            ((eql (getf entity :location-privacy) :public)
             (htm (:p :class "city"
@@ -270,7 +274,7 @@
                   (adminp
                    (htm (:form :method "get"
                                :action (strcat "/groups/" (username-or-id id) "/invite-members")
-                           (:button :class "yes small" :type "subit"  "+add members"))))
+                           (:button :class "yes small" :type "submit"  "+add members"))))
                   (memberp
                    (htm (:form :method "POST" :action (strcat "/groups/" id)
                           (:input :type "hidden" :name "next" :value *base-url*)

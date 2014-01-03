@@ -444,14 +444,16 @@
       (:div
         (:div
           (:input :type "checkbox"
-                :name "group"
-                :onchange "this.form.submit()"
-                :value (str (when (or (string= selected "all")
-                                      (string= selected "group"))
-                               "checked")))
+                  :name "group"
+                  :id "group"
+                  :onchange "this.form.submit()"
+                  :value (str (when (or (string= selected "all")
+                                        (string= selected "group"))
+                                 "checked")))
            (:label :for "group" (str group-name)))
          (:div
            (:input :type "checkbox"
+                   :id "members"
                    :name "members"
                    :onchange "this.form.submit()"
                    :value (str (when (or (string= selected "all")
@@ -461,8 +463,10 @@
        " "
        (:input :type "submit" :class "no-js" :value "apply"))))
 
-(defun group-member-activity (group-members &key type count)
+(defun group-members-activity (group-members &key type count)
   (let ((count (or count (+ 20 (floor (/ 30 (length group-members))))))
+        ;; unless count is specified, limit the number of activity items calculated
+        ;; for a given member to be from 20 (in a big group) to 50.
         (i 0)
         (activity nil))
     (dolist (person group-members)
@@ -470,19 +474,20 @@
       (loop for result in (remove-private-items
                             (gethash person *profile-activity-index*))
             while (< i count)
-            when (or (not type)
-                     (if (eql type :gratitude)
-                       (or (and (eql :gratitude (result-type result))
-                                (not (eql person (first (result-people result)))))
-                           (and (eql :gift (result-type result))
-                                (not (eql person (car (last (result-people result)))))))
-                       (eql type (result-type result))))
+            when (and (not (member result activity)) ; prevent duplicates
+                      (or (not type)
+                          (if (eql type :gratitude)
+                            (or (and (eql :gratitude (result-type result))
+                                     (not (eql person (first (result-people result)))))
+                                (and (eql :gift (result-type result))
+                                     (not (eql person (car (last (result-people result)))))))
+                            (eql type (result-type result)))))
             do (progn
                  (if activity
-                   (asetf activity (sort (push result it) #'< :key #'activity-rank))
+                   (asetf activity (push result it))
                    (asetf activity (list result)))
                  (incf i))))
-    activity))
+    (sort activity #'< :key #'activity-rank)))
 
 (defun get-groups ()
   (if (and *user*
@@ -651,6 +656,9 @@
 
         ((post-parameter "cancel")
          (see-other "/groups"))
+
+        ((> (length group-category) 48)
+         (try-again "Please use a shorter custom group category name"))
 
         ((and group-category
               (nor (post-parameter "create-group")

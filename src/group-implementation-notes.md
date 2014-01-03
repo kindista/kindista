@@ -3,8 +3,12 @@
 - email templates
   - group membership invitation
   - group membership request
-  - gratitude notification
   - edit conversation/reply template to reflect groups
+  - gratitude notification
+
+- remove duplicates from group activity views
+
+- update item privacies when a user joins/leaves a group
 
 
 # Testing needed
@@ -12,6 +16,7 @@
 - sending gratitude/message notifications
 - test on IE
 - test permissions when people are leave admin/member roles
+- w3c validation
 
 # Migration steps
 
