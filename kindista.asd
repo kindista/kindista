@@ -65,7 +65,8 @@
                                            (:file "menu-horiz")
                                            (:file "card")
                                            (:file "paginate")
-                                           (:file "person-card")))
+                                           (:file "person-card")
+                                           (:file "reciprocity")))
                              (:module features
                               :serial t
                               :components ((:file "about")

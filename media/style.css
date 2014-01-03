@@ -1495,18 +1495,6 @@ h3.event-date, h3.my-invites {
  color:#aaa;
  text-align: right;
 }
-
-.card .reqboxbottom {
- clear: left;
- /*margin-top: 2em;
- position:relative;
- /*border-top:1px solid #dfdfdf;
- padding-top:5px;*/
- color:#5c8a2f;
- text-align: left;
- font-weight: normal;
-}
-
 .card a {
  font-weight: bold;
 }
@@ -2483,6 +2471,63 @@ input[name=reply] {
    border-right:6px solid transparent;
    border-radius:100%;
 }
+
+/* 
+ * RECIPROCITY CLASSES
+ *
+ * for use in the boxes that appear below items on the home page
+ * div structure:
+ * -reciprocity - contains all boxes and the header
+ *    -recip-container - contains everything in one box
+ *      -recip-header - "So-and-so is requesting..."
+ *      -recip-details -  <request text>
+ *        -recip-reply - Reply . See x more requests
+ */
+
+
+.reciprocity {
+  font-size:0.9em;
+  background-color:#FFFFFF;
+}
+
+.reciprocity h3 {
+ line-height:2em;
+ color:#333333;
+}
+
+.reciprocity a {
+ font-weight:normal;
+}
+
+.recip-container {
+  font-weight:normal;
+  background-color:#F0F0F0;
+  padding:0.5em;
+  overflow:hidden;
+  margin-bottom:0.4em;
+}
+
+.recip-header a {
+ font-weight:bold;
+}
+
+.recip-details {
+ margin-top:0.3em;
+}
+
+.recip-details a {
+ font-weight:normal;
+}
+
+.recip-reply {
+  float:right;
+  margin-top:0.3em;
+}
+
+.recip-reply :first-child {
+ font-weight:bold;
+}
+/* end reciprocity classes */
 
 @-webkit-keyframes rotation {
    from {-webkit-transform: rotate(0deg);}

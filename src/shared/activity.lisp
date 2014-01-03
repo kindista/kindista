@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete)
+(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete reciprocity incentive)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -95,15 +95,7 @@
               (htm
                 " &middot; "
                 (str (comment-button url)))))))
-      ;; NOTE: class here is not the same as :class (css).
-      ;;
-      ;; HERE IS WHERE I'M TRYING TO INSERT THE REQUEST-BOX.
-      ;; this way it shows up after the pictures, after the loves/reply,
-      ;; before the horizontal rule separating items.
-      (when (string= class "gratitude")
-        (str (display-request-boxes (getf (db id) :subjects))))
-        
-      )))
+      (awhen reciprocity (str it)))))
 
         ;(unless (eql user-id *userid*)
         ;  (htm
@@ -169,8 +161,12 @@
                                               :see-more item-url)
                                     (html-text (getf data :details)))))))))
 
-(defun gratitude-activity-item (result &key truncate)
+(defun gratitude-activity-item (result &key truncate reciprocity)
+         ; result-people is a list
+         ; car of list is person showing gratitude
+         ; cdr of list is subjects
   (let* ((user-id (first (result-people result)))
+         ; tests to see if the user is the author of this item
          (self (eql user-id *userid*))
          ;item-id is derived from "result" which is passed in.
          (item-id (result-id result))
@@ -179,8 +175,8 @@
          (data (db item-id))
          (images (getf data :images))
          (item-url (strcat "/gratitude/" item-id)))
-
-    (activity-item :id item-id
+    (html
+    (str (activity-item :id item-id
                    :url item-url
                    :class "gratitude"
                    :time (result-time result)
@@ -205,101 +201,11 @@
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))
-                                (str (activity-item-images images item-url "gift")))))))
-
-;; DISPLAY-REQUEST-BOXES
-;;
-;;receives a list of user-ids that correspond to the users shown
-;;gratitude.
-;; local variables:
-;; - a list of plists with relevant information
-;;   (subject id, a random request, and whether they have more requests)
-;; - a simple list of subject ids to display.
-;;   this differs from the subject-ids argument in that, depending
-;;   on what is done in GET-REQUEST-INFO-PLIST, the list of users
-;;   to display request boxes for may be shorter
-;;   (i.e. if a user has no requests, they won't be in this list)
-;; 
-;; function then displays the header
-;; "Can you share with Kindista User?" or
-;; "Can you share with Kindista User, Another User, or Yet Another?"
-;; then calls DISPLAY-REQUEST-BOX for each subject with a snippet 
-;; of the random request and a possible link to more of their requests.
-
-(defun display-request-boxes (subject-ids)
-  (let* ((request-info-plists (get-request-info-plists subject-ids))
-         (users-to-display 
-           (mapcar #'(lambda (plist) (getf plist :userid)) request-info-plists))) 
-    ;; if there are no subjects with outstanding requsts, nothing will
-    ;; appear.
-    (when (> (length users-to-display) 0)
-      (html 
-        (:div :class "small"
-          (:p
-            "Can you share with "
-            (str (format nil *english-list-or* (loop for id in users-to-display
-                                                 collect (db id :name)))) 
-            "?"
-            (str (dolist (request-plist request-info-plists)
-              (display-request-box request-plist))))))))) 
+                                (str (activity-item-images images item-url "gift"))))
+                   :reciprocity (when reciprocity
+                                  (display-gratitude-reciprocities result)))))))
 
 
-;; GET-REQUEST-INFO-PLISTS
-
-;; Does two things:
-;; - possibly whittles down the list of people to show request boxes
-;;   for. Exact algorithm TBD. For now it removes users who have no
-;;   requests.
-;; - returns a list of plists in format:
-;;   (:id <userid> :req <random request> :more <t if they have more
-;;   requests>)
-
-(defun get-request-info-plists (id-list)
-  (loop for i in id-list
-        for request-list = (gethash i *request-index*)
-        when request-list
-        collect (list :userid i
-                      :req (nth (random (length request-list)) request-list)
-                      :more (when (> (length request-list) 1)
-                              (- (length request-list) 1))))) 
-
-
-;; DISPLAY-REQUEST-BOX
-;;
-;; displays a box with a random request from specified user,
-;; and optionally a link to more of their requests.
-;; also a "reply" link.
-(defun display-request-box (plist)
-  (let* ((user-id (getf plist :userid))
-         (user-name (db user-id :name))
-         (request-id (getf plist :req))
-         (more-requests (getf plist :more)))
-         
-    (html 
-      (:div :class "small"
-        (:table :border "0" :cellpadding "2" :width "100%"
-          (:tr
-            (:td :bgcolor "F2F2F2"
-              "Here is a request from " 
-              (str (person-link user-id))
-              ":"
-              (:br)
-              (str (ellipsis (db request-id :text) 
-                             80 :see-more (strcat "/requests/" request-id)))
-              (:div :class "regboxbottom"
-              (:a :class "reqboxbottom" :href (strcat "/requests/" request-id "/reply") "Reply") 
-              " &middot; "
-              (when more-requests
-                (htm
-              (:a :class "reqboxbottom" :href (strcat "/people/" user-id "/requests")
-                (str (cond ((= more-requests 1)
-                      " One more request from ")
-                      ((> more-requests 1)
-                      (str more-requests) 
-                      " more requests from ")))
-                (str user-name)))))))))))) 
-            
-                          
 (defun gift-activity-item (result)
   (let* ((user-id (first (result-people result)))
          (item-id (result-id result))
@@ -375,7 +281,9 @@
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))
-                                (str (activity-item-images images item-url type)))))))
+                                (str (activity-item-images images item-url type))))
+                   :incentive (if (string= type "request") 
+                                (display-request-incentive result)))))
 
 (defun activity-item-images (images url alt)
   (html
@@ -386,7 +294,8 @@
            (:a :href url (:img :src (get-image-thumbnail image-id 70 70)
                                :alt alt))))))))
 
-(defun activity-items (items &key (page 0) (count 20) (url "/home") (paginate t) (location t))
+(defun activity-items (items &key (page 0) (count 20) (url "/home")
+                             (paginate t) (location t) reciprocity)
   (with-location
     (let ((start (* page count)))
       (html
@@ -399,7 +308,9 @@
                  (let* ((item (car items)))
                    (case (result-type item)
                      (:gratitude
-                       (str (gratitude-activity-item item :truncate t)))
+                       (str (gratitude-activity-item item :truncate t
+                                                          :reciprocity
+                                                          reciprocity))) 
                      (:gift
                        (str (gift-activity-item item)))
                      (:person
@@ -429,16 +340,25 @@
                        (htm
                          (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >"))))))))))))
 
-(defun local-activity-items (&key (user *user*) (page 0) (count 20) (url "/home"))
+
+
+
+
+; variable USER is defined but never used???
+(defun local-activity-items (&key (page 0) (count 20) (url "/home"))
   (let ((distance (user-distance)))
     (if (= distance 0)
       (activity-items (sort (copy-list *recent-activity-index*) #'> :key #'result-time)
                       :page page
                       :count count
+                      :reciprocity t
                       :url url)
       (let ((items (sort (geo-index-query *activity-geo-index*
                                         *latitude*
                                         *longitude*
                                         distance)
                        #'< :key #'activity-rank)))
-        (activity-items items :page page :count count :url url)))))
+        (activity-items items :page page 
+                              :count count
+                              :reciprocity t 
+                              :url url)))))
