@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete reciprocity incentive)
+(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete reciprocity)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -281,9 +281,9 @@
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))
-                                (str (activity-item-images images item-url type))))
-                   :incentive (if (string= type "request") 
-                                (display-request-incentive result)))))
+                                (str (activity-item-images images
+                                                           item-url
+                                                           type)))))))
 
 (defun activity-item-images (images url alt)
   (html
