@@ -282,8 +282,8 @@
                                   " mail card")
                      (:td :class "message-selector"
                        (:input :type "checkbox"
-                              :name "message-id"
-                              :value item-id))
+                               :name "message-id"
+                               :value item-id))
                      (:td :class "message-content"
                        (case (message-type item)
                          (:conversation

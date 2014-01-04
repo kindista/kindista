@@ -78,8 +78,7 @@
              :class "membership-settings"
              :value "group-admin-approval"
              :onclick (when auto-submit "this.form.submit()")
-             :checked (unless (string= current "invite-only")
-                        "checked")
+             :checked (unless (string= current "invite-only") "")
       "Anyone can request to join this group. Admins can invite people to join and approve/deny membership requests.")
      (:br)
      (:input :type "radio"

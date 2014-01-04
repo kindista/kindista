@@ -447,21 +447,19 @@
                   :name "group"
                   :id "group"
                   :onchange "this.form.submit()"
-                  :value (str (when (or (string= selected "all")
+                  :checked (when (or (string= selected "all")
                                         (string= selected "group"))
-                                 "checked")))
+                                 ""))
            (:label :for "group" (str group-name)))
          (:div
            (:input :type "checkbox"
                    :id "members"
                    :name "members"
                    :onchange "this.form.submit()"
-                   :value (str (when (or (string= selected "all")
-                                         (string= selected "members"))
-                                 "checked")))
-           (:label :for "group" (str (s+ "members of " group-name)))))
-       " "
-       (:input :type "submit" :class "no-js" :value "apply"))))
+                   :checked (when (or (string= selected "all")
+                                          (string= selected "members"))
+                               ""))
+           (:label :for "group" (str (s+ "members of " group-name))))))))
 
 (defun group-members-activity (group-members &key type count)
   (let ((count (or count (+ 20 (floor (/ 30 (length group-members))))))

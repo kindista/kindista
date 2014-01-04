@@ -455,7 +455,7 @@
                (when (or (and (not group)
                               (getf *user* notify-key))
                          (member *userid* (getf entity notify-key)))
-                             "checked")))
+                 "")))
      (settings-item-html "notifications"
       (html
         (:form :method "post" :action "/settings"
@@ -478,21 +478,21 @@
               (htm
                 (:li (:input :type "checkbox"
                       :name "expired-invites"
-                      :checked (when (getf entity :notify-expired-invites) "checked"))
+                      :checked (when (getf entity :notify-expired-invites) ""))
                      "when invitatations I send for my friends to join Kindista expire")
                 (:li (:input :type "checkbox"
                       :name "group-membership-invites"
-                      :checked (when (getf entity :notify-group-membership-invites) "checked"))
+                      :checked (when (getf entity :notify-group-membership-invites) ""))
                      "when someone invites me to join a group on Kindista (e.g. a business, non-profit, or other organization I belong to within my community)")
                 (:li (:input :type "checkbox"
                       :name "reminders"
-                      :checked (when (getf entity :notify-reminders) "checked"))
+                      :checked (when (getf entity :notify-reminders) ""))
                      "with occasional suggestions about how "
                      (str (if group "our group" "I"))
                      " can get the most out of Kindista")
                 (:li (:input :type "checkbox"
                        :name "kindista"
-                       :checked (when (getf entity :notify-kindista) "checked"))
+                       :checked (when (getf entity :notify-kindista) ""))
                       "with updates and information about Kindista")))
             (when group
               (htm
@@ -500,7 +500,7 @@
                        :name "group-membership-request"
                        :checked (when (member *userid*
                                               (getf entity :notify-membership-request))
-                                  "checked"))
+                                  ""))
                       (str (s+ "when someone wants to join " group-name))))))))
 
     :title "Notify me"
@@ -983,9 +983,16 @@
                       (not (post-parameter "message")))
              (flash "Warning: You will not recieve any email notifications when people reply to your Offers and Requests unless you choose to be notified \"when someone sends me a message\"!" :error t))
            (if groupid
-             (amodify-db id :notify-gratitude (if (post-parameter "gratitude")
+             (amodify-db id
+                         :notify-gratitude (if (post-parameter "gratitude")
                                                 (pushnew *userid* it)
-                                                (remove *userid* it)))
+                                                (remove *userid* it))
+                         :notify-message (if (post-parameter "gratitude")
+                                                (pushnew *userid* it)
+                                                (remove *userid* it))
+                         :notify-membership-request (if (post-parameter "group-membership-request")
+                                                      (pushnew *userid* it)
+                                                      (remove *userid* it)))
              (modify-db *userid* :notify-gratitude (when (post-parameter "gratitude") t)
                                  :notify-message (when (post-parameter "message") t)
                                  :notify-reminders (when (post-parameter "reminders") t)

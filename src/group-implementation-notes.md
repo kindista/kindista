@@ -10,6 +10,7 @@
 
 - update item privacies when a user joins/leaves a group
 
+- add :notify-group-membership-invites t to all users
 
 # Testing needed
 
