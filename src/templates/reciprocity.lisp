@@ -59,7 +59,7 @@
         until (= counter 5)
         for request-list = (gethash i *request-index*)
         for num-requests = (length request-list)
-        unless (= i *userid*)
+        unless (and *userid* (= i *userid*))
         when request-list
         do (incf counter)
         and
