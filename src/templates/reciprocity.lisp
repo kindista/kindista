@@ -33,12 +33,13 @@
     (when selected-subject-ids
       (html
         (:div :class "reciprocity"
-          (:h3
-            "Can you share with "
-            (str (format nil *english-list-or*
-                         (mapcar #'(lambda (x) (db x :name))
-                           selected-subject-ids)))
-            "?")
+          (when *userid*
+            (htm
+              (:h3 "Can you share with "
+                   (str (format nil *english-list-or*
+                                (mapcar #'(lambda (x) (db x :name))
+                                  selected-subject-ids)))
+                   "?")))
           (dolist (one-item details)
             (str (display-gratitude-reciprocity one-item))))))))
 
@@ -86,13 +87,15 @@
           (str (ellipsis (db request-id :text)
                          120
                          :see-more (strcat "/requests/" request-id)))
-          (:div :class "recip-reply"
-            (:a :href (strcat "/requests/" request-id "/reply") "Reply")
-            (when more-requests
-              (htm
-                " &middot; "
-                (:a :href (strcat "/people/" (username-or-id user-id) "/requests")
-                 "See "
-                 (str (if (= more-requests 1)
-                        "one more request"
-                        (strcat more-requests " more requests"))))))))))))
+          (when *userid*
+            (htm
+              (:div :class "recip-reply"
+                (:a :href (strcat "/requests/" request-id "/reply") "Reply")
+                (when more-requests
+                  (htm
+                    " &middot; "
+                    (:a :href (strcat "/people/" (username-or-id user-id) "/requests")
+                     "See "
+                     (str (if (= more-requests 1)
+                            "one more request"
+                            (strcat more-requests " more requests"))))))))))))))
