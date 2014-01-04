@@ -2477,6 +2477,7 @@ input[name=reply] {
 }
 
 .reciprocity h3 {
+ margin-top: 0.1em;
  line-height:2em;
  color:#333333;
 }
