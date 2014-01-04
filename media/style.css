@@ -2472,22 +2472,8 @@ input[name=reply] {
    border-radius:100%;
 }
 
-/* 
- * RECIPROCITY CLASSES
- *
- * for use in the boxes that appear below items on the home page
- * div structure:
- * -reciprocity - contains all boxes and the header
- *    -recip-container - contains everything in one box
- *      -recip-header - "So-and-so is requesting..."
- *      -recip-details -  <request text>
- *        -recip-reply - Reply . See x more requests
- */
-
-
 .reciprocity {
   font-size:0.9em;
-  background-color:#FFFFFF;
 }
 
 .reciprocity h3 {
@@ -2528,7 +2514,6 @@ input[name=reply] {
 .recip-reply :first-child {
  font-weight:bold;
 }
-/* end reciprocity classes */
 
 @-webkit-keyframes rotation {
    from {-webkit-transform: rotate(0deg);}
