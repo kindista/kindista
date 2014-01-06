@@ -39,7 +39,6 @@
                :notify-gratitude ,(list creator)
                :notify-reminders ,(list creator)
                :notify-membership-request ,(list creator)
-
                :created ,(get-universal-time))))
 
 (defun index-group (id data)
