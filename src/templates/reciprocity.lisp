@@ -33,7 +33,7 @@
     (when selected-subject-ids
       (html
         (:div :class "reciprocity"
-          (when *userid*
+          (when (and *userid* (not (member *userid* selected-subject-ids)))
             (htm
               (:h3 "Can you share with "
                    (str (format nil *english-list-or*
@@ -60,7 +60,6 @@
         until (= counter 5)
         for request-list = (gethash i *request-index*)
         for num-requests = (length request-list)
-        unless (and *userid* (= i *userid*))
         when request-list
         do (incf counter)
         and
@@ -87,7 +86,7 @@
           (str (ellipsis (db request-id :text)
                          120
                          :see-more (strcat "/requests/" request-id)))
-          (when *userid*
+          (when (and *userid* (not (= *userid* user-id)))
             (htm
               (:div :class "recip-reply"
                 (:a :href (strcat "/requests/" request-id "/reply") "Reply")

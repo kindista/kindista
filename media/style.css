@@ -1495,6 +1495,12 @@ h3.event-date, h3.my-invites {
  color:#aaa;
  text-align: right;
 }
+
+.card .actions form {
+ display: block;
+ margin-bottom: 0.2em;
+}
+
 .card a {
  font-weight: bold;
 }
@@ -2477,7 +2483,7 @@ input[name=reply] {
 }
 
 .reciprocity h3 {
- margin-top: 0.1em;
+ margin-top: 0;
  line-height:2em;
  color:#333333;
 }
@@ -2487,11 +2493,12 @@ input[name=reply] {
 }
 
 .recip-container {
-  font-weight:normal;
-  background-color:#F0F0F0;
-  padding:0.5em;
-  overflow:hidden;
-  margin-bottom:0.4em;
+ border-radius: 0.2em;
+ font-weight:normal;
+ background-color:#F0F0F0;
+ padding:0.6em;
+ overflow:hidden;
+ margin-bottom:0.4em;
 }
 
 .recip-header a {
