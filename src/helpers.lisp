@@ -359,10 +359,11 @@
           (if (eql (getf entity :type) :person)
             (push id people-opt-outs)
             (push id group-opt-outs)))))
-    (let ((my-group-opt-outs (intersection group-opt-outs
+    (let* ((my-group-opt-outs (intersection group-opt-outs
                                            (mapcar #'car (groups-with-user-as-admin userid))))
-          (self-opt-out (member userid people-opt-outs))
-          (other-opt-outs (remove userid people-opt-outs)))
+           (self-opt-out (member userid people-opt-outs))
+           (other-opt-outs (remove userid people-opt-outs))
+           (other-group-opt-outs (set-difference group-opt-outs my-group-opt-outs)))
       (cond
         (my-group-opt-outs
          (flash (s+ "<p>" (name-list-all my-group-opt-outs)
@@ -391,6 +392,17 @@
                      "<p>They will recieve your message next time they log into "
                      "Kindista. "
                      "If this is an urgent matter, please use other means to " 
+                     "contact them.</p>")
+                 :error t))
+        (other-group-opt-outs
+          (flash (s+ "<p>The admins for "
+
+                     (name-list-all other-group-opt-outs)
+                     " have chosen not to recieve email notifications when"
+                     " other Kindista members send them messages.</p>"
+                     "<p>They will recieve your message next time they log into "
+                     "Kindista. "
+                     "If this is an urgent matter, please use other means to "
                      "contact them.</p>")
                  :error t))))))
 

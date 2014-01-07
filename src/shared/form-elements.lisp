@@ -72,22 +72,22 @@
 
 (defun group-membership-method-selection (current &key auto-submit)
   (html
-    (:h3 "How can members join this group?")
+    (:h3 :class "membership-settings" "How can members join this group?")
     (:input :type "radio"
-             :name "membership-method"
-             :class "membership-settings"
-             :value "group-admin-approval"
-             :onclick (when auto-submit "this.form.submit()")
-             :checked (unless (string= current "invite-only") "")
-      "Anyone can request to join this group. Admins can invite people to join and approve/deny membership requests.")
-     (:br)
-     (:input :type "radio"
-             :name "membership-method"
-             :class "membership-settings"
-             :value "invite-only"
-             :onclick (when auto-submit "this.form.submit()")
-             :checked (when (string= current "invite-only") "checked")
-       "By invitaion only. Members must be invited by group admins and cannot request membership.")))
+            :name "membership-method"
+            :class "membership-settings"
+            :value "group-admin-approval"
+            :onclick (when auto-submit "this.form.submit()")
+            :checked (unless (string= current "invite-only") ""))
+    "Anyone can request to join this group. Admins can invite people to join and approve/deny membership requests."
+    (:br)
+    (:input :type "radio"
+            :name "membership-method"
+            :class "membership-settings"
+            :value "invite-only"
+            :onclick (when auto-submit "this.form.submit()")
+            :checked (when (string= current "invite-only") "checked"))
+    "By invitaion only. Members must be invited by group admins and cannot request membership."))
 
 (defun identity-selection-html (selected groups &key (class "identity") onchange)
 "Groups should be an a-list of (groupid . group-name)"

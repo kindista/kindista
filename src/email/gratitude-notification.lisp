@@ -20,50 +20,71 @@
 (defun send-gratitude-notification-email (gratitude-id)
   (let* ((gratitude (db gratitude-id))
          (from (getf gratitude :author))
-         (to-list (iter (for subject in (getf gratitude :subjects))
-                        (when (db subject :notify-gratitude)
-                          (collect subject)))))
-    (dolist (to to-list)
-      (cl-smtp:send-email +mail-server+
-                          "Kindista <noreply@kindista.org>"
-                          (car (getf (db to) :emails))
-                          (s+ (getf (db from) :name) " has posted a statement of gratitude about you")
-                          (gratitude-notification-email-text gratitude-id
-                                                             gratitude
-                                                             from)
-                          :html-message (gratitude-notification-email-html gratitude-id gratitude from)))))
+         (author-name (db from :name))
+         (recipients))
 
-(defun gratitude-notification-email-text (gratitude-id gratitude from)
+    (dolist (subject (getf gratitude :subjects))
+      (let* ((data (db subject))
+             (name (getf data :name)))
+        (awhen (getf data :notify-gratitude)
+          (if (eql (getf data :type) :person)
+            (push (list :id subject) recipients)
+            (dolist (member it)
+              (push (list :group-name name
+                          :group-id
+                          :id member)
+                    recipients))))))
+
+    (dolist (recipient recipients)
+      (let ((group-name (getf recipient :group-name))
+            (group-id (getf recipient :group-id)))
+        (cl-smtp:send-email +mail-server+
+                            "Kindista <noreply@kindista.org>"
+                            (car (db (getf recipient :id) :emails))
+                            (s+ author-name
+                                " has posted a statement of gratitude about "
+                                (aif group-name it "you"))
+                            (gratitude-notification-email-text
+                              author-name
+                              gratitude-id
+                              gratitude
+                              :group-name group-name
+                              :group-id group-id)
+                            :html-message (gratitude-notification-email-html
+                                            gratitude-id
+                                            gratitude
+                                            from
+                                            :group-name group-name
+                                            :group-id group-id))))))
+
+(defun gratitude-notification-email-text (author-name gratitude-id gratitude &key group-name group-id)
   (strcat
 (no-reply-notice)
-(getf (db from) :name)
-" has shared a statement of gratitude about you on Kindista.
-
-"
+#\linefeed #\linefeed
+author-name
+" has shared a statement of gratitude about "
+(or group-name "you")
+" on Kindista."
+#\linefeed #\linefeed
 (getf gratitude :text)
-"
-
-You can see the statement on Kindista here:
-"
+#\linefeed #\linefeed
+"You can see the statement on Kindista here:"
+#\linefeed
 +base-url+ "gratitude/" gratitude-id
-
-"
-If you no longer wish to receive notifications when people post gratitude about you, please edit your settings:
-"
-+base-url+ "settings/communication"
-"
-
-Thank you for sharing your gifts with us!
+#\linefeed #\linefeed
+" If you no longer wish to receive notifications when people post gratitude about you, please edit your settings:"
+#\linefeed
++base-url+ "settings/communication" (awhen group-id (strcat "?groupid=" it))
+#\linefeed #\linefeed
+"Thank you for sharing your gifts with us!
 -The Kindista Team"))
 
 
-(defun gratitude-notification-email-html (gratitude-id gratitude from)
+(defun gratitude-notification-email-html (gratitude-id gratitude from &key group-name group-id)
   (html-email-base
     (html
-      (:p :style *style-p* (str (no-reply-notice)))
+      (:p :style *style-p* (:strong (str (no-reply-notice))))
       (:p :style *style-p*
-        "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER."
-        (:br)
         "If you want to reply to the message, please click on the link below.")
 
       (:p :style *style-p* 
@@ -71,7 +92,9 @@ Thank you for sharing your gifts with us!
             " has shared a "
             (:a :href (strcat +base-url+ "gratitude/" gratitude-id)
                           "statement of gratitude")
-                " about you on Kindista.")
+                " about "
+                (or group-name "you")
+                " on Kindista.")
 
       (:table :cellspacing 0 :cellpadding 0
               :style *style-quote-box*
@@ -82,7 +105,10 @@ Thank you for sharing your gifts with us!
       (:p :style *style-p* 
           "If you no longer wish to receive notifications when people post gratitude about you, please edit your settings:"
        (:br)
-       (:a :href (strcat +base-url+ "settings/communication") (strcat +base-url+ "settings/communication")))
+       (:a :href (s+ +base-url+
+                     "settings/communication"
+                     (awhen group-id (strcat "?groupid=" it)))
+           (s+ +base-url+ "settings/communication")))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
       (:p "-The Kindista Team"))))

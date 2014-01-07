@@ -251,7 +251,7 @@
            ((getf entity :city)
             (htm (:p :class "city" (str (getf entity :city)) ", " (str (getf entity :state))))))))
 
-      (unless (eql id *userid*)
+      (unless (or (eql id *userid*) (not *userid*))
         (htm
           (:div :class "profile-buttons"
             (:div :class "float-right"
@@ -399,7 +399,7 @@
                 (:tr
                   (:td (:textarea :cols "1000" :rows "4" :name "text"))
                   (:td
-                    (:button :class "yes" :type "submit" :class "submit" :name "create" "Post"))))))))
+                    (:button :class "yes submit" :type "submit" :name "create" "Post"))))))))
 
         (:div :class "activity"
           (when groupid

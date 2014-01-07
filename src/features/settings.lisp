@@ -107,8 +107,8 @@
               (when groupid
                 (htm (:input :type "hidden" :name "groupid" :value groupid)))
               (:div :class "submit-settings"
-                (:button :class "cancel small" :type "submit" :class "submit" :name "cancel" "Cancel")
-                (:button :class "yes small" :type "submit" :class "submit" :name "submit" "Submit"))
+                (:button :class "cancel small" :type "submit" :name "cancel" "Cancel")
+                (:button :class "yes small" :type "submit" :name "submit" "Submit"))
               (:ul
                 (:li (:span (:input :type "text"
                                     :name "name"
@@ -150,8 +150,8 @@
              (when groupid
                (htm (:input :type "hidden" :name "groupid" :value groupid)))
              (:div :class "submit-settings"
-               (:button :class "cancel small" :type "submit" :class "submit" :name "cancel" "Cancel")
-               (:button :class "yes small" :type "submit" :class "submit" :name "confirm-address" "Submit"))
+               (:button :class "cancel small" :type "submit" :name "cancel" "Cancel")
+               (:button :class "yes small" :type "submit" :name "confirm-address" "Submit"))
              (:input :type "text" :name "address" :value (str address))
              (when groupid
                (htm
@@ -240,7 +240,7 @@
       (:form :method "post" :class "password" :autocomplete "off" :action "/settings"
        (:input :type "hidden" :name "next" :value *base-url*)
        (:div :class "submit-settings"
-         (:button :class "yes" :type "submit" :class "submit" "Change password"))
+         (:button :class "yes" :type "submit" "Change password"))
        (:div
          (:label "Current password:")
          (:input :type "password"
@@ -270,8 +270,8 @@
         (:form :method "post" :class "password" :action "/settings"
          (:input :type "hidden" :name "next" :value *base-url*)
          (:div :class "submit-settings"
-           (:button :class "cancel" :type "submit" :class "submit" :name "cancel-plan" "Cancel plan")
-           (:button :class "yes" :type "submit" :class "submit" "Change plan"))
+           (:button :class "cancel" :type "submit" :name "cancel-plan" "Cancel plan")
+           (:button :class "yes" :type "submit" "Change plan"))
          (:div
            (:label "Current monthly donation: " (:strong "$" (str plan)))
            (:select :name "plan"
@@ -317,20 +317,19 @@
         (:h1 "Are you sure you want to deactivate your account?")
         (:p
           (:strong "Warning: ")
-          "Deactivating your account will delete all of your current offers " 
+          "Deactivating your account will delete all of your current offers "
           "and requests, and prevent people from "
           "contacting you through Kindista or finding you using the search bar. "
           "Deactivating your account will not remove any statements of gratitude "
           "you have given or received. "
           "You may reactivate your account anytime by logging into Kindista and "
-          "clicking \"Reactivate account\" on this page.")  
+          "clicking \"Reactivate account\" on this page.")
         (:form :method "post" :action "/settings"
           (:input :type "hidden" :name "next" :value "/settings")
           (:a :class "cancel" :href "/settings" "No, I didn't mean it!")
-          (:button :class "yes" 
-                   :type "submit" 
-                   :class "submit" 
-                   :name "confirm-deactivation" 
+          (:button :class "yes"
+                   :type "submit"
+                   :name "confirm-deactivation"
                    "Yes, deactivate my Kindista account."))
         ))
     :class "text"))
@@ -376,7 +375,6 @@
                                    :placeholder "please enter your activation code"))
                          (:button :class "yes"
                                   :type "submit"
-                                  :class "submit"
                                   "Activate")
                          (:a :class "red" :href "/settings/communication" "Cancel")))
                       (t
@@ -404,7 +402,7 @@
                   (:input :type "text"
                           :name "new-email"
                           :placeholder "new alternate email")
-                  (:button :class "yes" :type "submit" :class "submit" :name "submit" "Confirm new email")   
+                  (:button :class "yes" :type "submit" :name "submit" "Confirm new email")
                   (:a :class "red" :href "/settings/communication" "Cancel"))) ))))
 
       :editable T
@@ -463,7 +461,7 @@
           (when groupid
             (htm (:input :type "hidden" :name "groupid" :value groupid)))
           (:div :class "submit-settings"
-            (:button :class "yes" :type "submit" :class "submit" :name "save-notifications" "Save notification preferences"))
+            (:button :class "yes" :type "submit" :name "save-notifications" "Save notification preferences"))
           (:ul
             (:li (:input :type "checkbox"
                   :name "gratitude"
@@ -711,7 +709,7 @@
                      (:form :method "get" :action "/settings/admin-roles" :class "float-right"
                       (:input :type "hidden" :name "groupid" :value groupid)
                       (:button :type "submit"
-                               :class "submit yes"
+                               :class "yes"
                                :name "revoke-admin-role"
                                "revoke admin role"))))
                  (str (person-card admin (db admin :name))))))
@@ -738,7 +736,7 @@
                      (:input :type "text"
                              :name "search-name"
                              :placeholder "search by name")
-                     (:button :class "submit yes" :type "submit" "search"))
+                     (:button :class "yes" :type "submit" "search"))
                    (:p "Or, select from the list of current members below:")
                    (flet ((member-card (person-cons)
                             (html
@@ -751,7 +749,7 @@
                                      (car person-cons)
                                      (cdr person-cons)
                                      :button (html
-                                               (:button :class "yes submit"
+                                               (:button :class "yes"
                                                         :name "add-admin"
                                                         :value (car person-cons)
                                                         :type "submit"
@@ -987,7 +985,7 @@
                          :notify-gratitude (if (post-parameter "gratitude")
                                                 (pushnew *userid* it)
                                                 (remove *userid* it))
-                         :notify-message (if (post-parameter "gratitude")
+                         :notify-message (if (post-parameter "message")
                                                 (pushnew *userid* it)
                                                 (remove *userid* it))
                          :notify-membership-request (if (post-parameter "group-membership-request")

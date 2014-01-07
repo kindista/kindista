@@ -2713,12 +2713,12 @@ div.settings p.help-text {
  width: 20em
 }
 
-input.membership-settings {
- margin: 0 0.5em 0 0;
+h3.membership-settings {
+ line-height: 1.2em;
 }
 
-input.membership-settings:last-child {
- margin-top: 0.6em;
+input.membership-settings {
+ margin: 0.6em 0.5em 0 0;
 }
 
 .reset-password button {

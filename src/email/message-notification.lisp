@@ -18,12 +18,12 @@
 (in-package :kindista)
 
 (defun send-comment-notification-email (comment-id)
-  (let* ((comment (db comment-id))
+  (let* ((comment (db comment-id)) ; get the comment
          (on-id (getf comment :on))
-         (on-item (db on-id))
+         (on-item (db on-id))  ; get the conversation
          (on-type (getf on-item :type)) ; :converation or :reply
          (participants (getf on-item :participants))
-         (inventory-item (db (getf on-item :on)))
+         (inventory-item (db (getf on-item :on))) ; when reply, get inventory item
          (inventory-type (if (eq (getf inventory-item :type) :request)
                            "request" "offer"))
          (inventory-text (or (getf inventory-item :text)
@@ -31,43 +31,68 @@
          (sender-id (car (getf comment :by)))
          (sender-name (db sender-id :name))
          (inventory-poster (getf inventory-item :by))
+         (inventory-poster-data (db inventory-poster))
+         (notify-group-admins (when (eql (getf inventory-poster-data :type)
+                                         :group)
+                                (getf inventory-poster-data :notify-message)))
          (text (aif (getf on-item :deleted-item-type)
                  (deleted-invalid-item-reply-text (db (car (remove sender-id participants)) :name)
                                                   sender-name
                                                   it
                                                   (getf comment :text))
                  (getf comment :text)))
-         (subject (if (eq on-type :reply)
-                    (if (eql sender-id inventory-poster)
-                      (s+ sender-name " has replied to your question about their " inventory-type ":")
-                      (s+ sender-name " has replied to your " inventory-type ":"))
-                    (getf on-item :subject)))
-         (people (mapcar #'caar (getf on-item :people))))
-    (dolist (to (loop for person in (remove sender-id people)
-                      when (db person :notify-message)
-                      collect person))
-      (cl-smtp:send-email
-        +mail-server+
-        "Kindista <noreply@kindista.org>"
-        (car (db to :emails))
-        (or subject (s+ "New message from " sender-name))
-        (comment-notification-email-text on-id
-                                         sender-name
-                                         subject
-                                         (name-list (remove to participants)
-                                                    :func #'person-name
-                                                    :maximum-links 5)
-                                         text
-                                         :inventory-text inventory-text)
-        :html-message (comment-notification-email-html
-                        on-id
-                        (person-email-link sender-id)
-                        subject
-                        (name-list (remove to participants)
-                                   :func #'person-email-link
-                                   :maximum-links 5)
-                        text
-                        :inventory-text inventory-text)))))
+
+         ;; get an a list of (person-id . group-id)
+         (people (mapcar #'car (getf on-item :people))))
+
+    (flet ((subject (groupid)
+             (if (eq on-type :reply)
+               (if (eql sender-id inventory-poster)
+                 (s+ sender-name " has replied to your question about their " inventory-type ":")
+                 (s+ sender-name " has replied to "
+                     (aif groupid
+                       (s+ (db it :name) "'s ")
+                       "your ")
+                     inventory-type ":"))
+               (getf on-item :subject))))
+
+      (dolist (recipient (loop for person in (remove (assoc sender-id people)
+                                                     people
+                                                     :test #'equalp)
+                               when (or (and (member (car person) participants)
+                                             (db (car person) :notify-message))
+                                        ; or when it's to a group
+                                        (member (car person)
+                                                notify-group-admins))
+                               collect person))
+
+        (cl-smtp:send-email
+          +mail-server+
+          "Kindista <noreply@kindista.org>"
+          (car (db (car recipient) :emails))
+          (or (subject (cdr recipient))
+              (s+ "New message from " sender-name))
+          (comment-notification-email-text on-id
+                                           sender-name
+                                           (or (subject (cdr recipient))
+                                               (s+ "New message from "
+                                                   sender-name))
+                                           (name-list (remove (car recipient)
+                                                              participants)
+                                                      :func #'person-name
+                                                      :maximum-links 5)
+                                           text
+                                           :inventory-text inventory-text)
+          :html-message (comment-notification-email-html
+                          on-id
+                          (person-email-link sender-id)
+                          (or (subject (cdr recipient))
+                              (s+ "New message from " sender-name))
+                          (name-list (remove (car recipient) participants)
+                                     :func #'person-email-link
+                                     :maximum-links 5)
+                          text
+                          :inventory-text inventory-text))))))
 
 (defun comment-notification-email-text (on-id from subject people text &key inventory-text)
   (strcat 
@@ -101,7 +126,7 @@ from " says:"
 (defun comment-notification-email-html (on-id from subject people text &key inventory-text)
   (html-email-base
     (html
-      (:p :style *style-p* (str (no-reply-notice)))
+      (:p :style *style-p* (:strong (str (no-reply-notice))))
       (:p :style *style-p* "You can also reply to this message by clicking on the link below." )
 
       (:p :style *style-p*

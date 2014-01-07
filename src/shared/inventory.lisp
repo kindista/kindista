@@ -521,7 +521,7 @@
           (:tr
             (:td (:textarea :cols "150" :rows "4" :name "text"))
             (:td
-              (:button :class "yes" :type "submit" :class "submit" :name "post" "Post"))))))))
+              (:button :class "yes submit" :type "submit" :name "post" "Post"))))))))
 
 (defun enter-inventory-text (&key type title text groupid action selected tags next restrictedp identity-selection groups-selected)
   (standard-page

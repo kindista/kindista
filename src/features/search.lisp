@@ -951,18 +951,18 @@
                  (progn
                    (when people
                      (htm
-                       (:h2 (:a :href (s+ "/search?scope=people&q=" (url-encode q)) "People"))
+                       (:h2 (:a :href (s+ "/search?scope=people&amp;q=" (url-encode q)) "People"))
                        (str (people-results-html (sublist people 0 5)))
                        (when (> (length people) 5)
                          (htm
-                           (:div :class "more-results" (:a :href (s+ "/search?scope=people&q=" (url-encode q)) (fmt "see ~d more people" (- (length people) 5))))))))
+                           (:div :class "more-results" (:a :href (s+ "/search?scope=people&amp;q=" (url-encode q)) (fmt "see ~d more people" (- (length people) 5))))))))
                    (when groups
                      (htm
-                       (:h2 (:a :href (s+ "/search?scope=groups&q=" (url-encode q)) "Groups"))
+                       (:h2 (:a :href (s+ "/search?scope=groups&amp;q=" (url-encode q)) "Groups"))
                        (str (groups-results-html (sublist groups 0 5)))
                        (when (> (length groups) 5)
                          (htm
-                           (:div :class "more-results" (:a :href (s+ "/search?scope=groups&q=" (url-encode q)) (fmt "see ~d more groups" (- (length groups) 5))))))))
+                           (:div :class "more-results" (:a :href (s+ "/search?scope=groups&amp;q=" (url-encode q)) (fmt "see ~d more groups" (- (length groups) 5))))))))
                    (when requests
                      (htm
                        (:h2 (:a :href (s+ "/requests?q=" (url-encode q)) "Requests")
@@ -997,7 +997,7 @@
                                                        :text "show results within ")))
                        (str (event-results-html (sublist events 0 5)))
                        (str (more-results-link "event"
-                                               (s+ "/search?scope=events&q="
+                                               (s+ "/search?scope=events&amp;q="
                                                    (url-encode q))
                                                (length events))))))
                  (htm
