@@ -17,83 +17,77 @@
 
 (in-package :kindista)
 
-(defun send-group-membership-invitation-notification (invitation-id)
+(defun send-group-membership-invitation-notification-email (invitation-id)
   (let* ((invitation (db invitation-id))
-         (personid (caaar (getf invitation :people)))
-         (person (db personid))
-         (groupid (getf invitation :group-id))
-         (group (db groupid))
-         (host-name (db (getf invitation :invited-by) :name)))
-    (cl-smtp:send-email +mail-server+
-                        "Kindista <noreply@kindista.org>"
-                        (car (getf person :emails))
-                        (s+ host-name " has invited you to join "
-                            (if (eq +kindista-id+ groupid)
-                              "Kindista's group account"
-                              (s+ "the group " (getf group :name)))
-                            " on Kindista")
-                        "Forgotten Password"
-                        (group-membership-invitation-notification-text
-                          person
-                          host-name
-                          group)
-                        :html-message (group-membership-invitation-notification-html
-                                        person
-                                        host-name
-                                        group))))
+         (from (getf invitation :invited-by))
+         (host-name (db from :name))
+         (group-id (getf invitation :group-id))
+         (group-name (db group-id :name))
+         (recipient (caaar (getf invitation :people))))
 
-(defun group-membership-invitation-notification-text (person host-name group)
-  (s+
-     (no-reply-notice)
-     #\linefeed #\linefeed
+     (cl-smtp:send-email +mail-server+
+                         "DoNotReply <noreply@kindista.org>"
+                         (car (db recipient :emails))
+                         (s+ host-name
+                             " has invited you to join their group, "
+                             group-name
+                             ", on Kindista")
+                         (group-membership-invitation-notification-email-text
+                           host-name
+                           group-id
+                           group-name)
+                         :html-message (group-membership-invitation-notification-email-html
+                                         from
+                                         group-id
+                                         group-name))))
 
-     "Dear " (getf person :name) ","
-     #\linefeed #\linefeed
+(defun group-membership-invitation-notification-email-text (host-name group-id group-name)
+  (strcat
+(no-reply-notice)
+#\linefeed #\linefeed
+host-name
+" invited you to join their group, "
+group-name
+", on Kindista."
+#\linefeed #\linefeed
+#\linefeed #\linefeed
+"You can accept the invitation here:"
+#\linefeed
++base-url+ "groups/" (username-or-id group-id)
+#\linefeed #\linefeed
+" If you no longer wish to receive notifications when people invite you to join groups on Kindista, please edit your settings:"
+#\linefeed
++base-url+ "settings/communication"
+#\linefeed #\linefeed
+"Thank you for sharing your gifts with us!
+-The Kindista Team"))
 
-     host-name
-     " has invited you to join "
-     (if (eq +kindista-id+ groupid)
-       "Kindista's group account"
-       (s+ "the group " (getf group :name)))
-         " on Kindista"
-     #\linefeed #\linefeed
 
-     "Thank you for sharing your gifts with us!"
-     #\linefeed #\linefeed
-     "-The Kindista Team"))
-
-
-(defun reset-password-html (name token email expiration)
+(defun group-membership-invitation-notification-email-html (from group-id group-name)
   (html-email-base
     (html
+      (:p :style *style-p* (:strong (str (no-reply-notice))))
+
       (:p :style *style-p* 
-       "Dear " (str name) ",")
-      (:p :style *style-p*
-       "This email was sent automatically by Kindista in response to "
-       "your request to reset your password.")
-      (:p :style *style-p*
-       "To reset your password and access your account please click "
-       "on the following link or cut and paste it into the address bar of "
-       "your browser:")
+          (str (person-email-link from))
+            " has invited you to join their group, "
+            (str (person-link group-id))
+                ", on Kindista.")
 
       (:p :style *style-p*
-        (:a :href (url-compose (s+ +base-url+ "reset")
-                               "token" token
-                               "email" email)
-                  (str (url-compose (s+ +base-url+ "reset")
-                                    "token" token
-                                    "email" email))))
+        "You can join " (str group-name) " here:"
+        (:br)
+        (:a :href (s+ +base-url+ "groups/" (username-or-id group-id))
+            (str (s+ +base-url+ "groups/" (username-or-id group-id)))))
 
-
-      (:p :style *style-p*
-       "If you did not request this email, you can safely ignore it.")
-
-      (:p :style *style-p*
-       "Your security code is " (:strong (str (write-to-string token)) ".")
+      (:p :style *style-p* 
+          "If you no longer wish to receive notifications when people invite you to join groups on Kindista, please edit your settings:"
        (:br)
-       "This code will expire " (str expiration) ".")
+       (:a :href (s+ +base-url+
+                     "settings/communication")
+           (str (s+ +base-url+
+                    "settings/communication"))))
 
-      (:p :style *style-p*
-        "Thank you for sharing your gifts with us! ")
-
+      (:p :style *style-p* "Thank you for sharing your gifts with us!")
       (:p "-The Kindista Team"))))
+

@@ -31,7 +31,7 @@
             (push (list :id subject) recipients)
             (dolist (member it)
               (push (list :group-name name
-                          :group-id
+                          :group-id subject
                           :id member)
                     recipients))))))
 
@@ -39,7 +39,7 @@
       (let ((group-name (getf recipient :group-name))
             (group-id (getf recipient :group-id)))
         (cl-smtp:send-email +mail-server+
-                            "Kindista <noreply@kindista.org>"
+                            "DoNotReply <noreply@kindista.org>"
                             (car (db (getf recipient :id) :emails))
                             (s+ author-name
                                 " has posted a statement of gratitude about "
@@ -93,7 +93,7 @@ author-name
             (:a :href (strcat +base-url+ "gratitude/" gratitude-id)
                           "statement of gratitude")
                 " about "
-                (or group-name "you")
+                (str (or group-name "you"))
                 " on Kindista.")
 
       (:table :cellspacing 0 :cellpadding 0
@@ -108,7 +108,9 @@ author-name
        (:a :href (s+ +base-url+
                      "settings/communication"
                      (awhen group-id (strcat "?groupid=" it)))
-           (s+ +base-url+ "settings/communication")))
+           (str (s+ +base-url+
+                    "settings/communication"
+                    (awhen group-id (strcat "?groupid=" it))))))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
       (:p "-The Kindista Team"))))

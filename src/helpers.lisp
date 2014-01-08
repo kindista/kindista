@@ -177,10 +177,10 @@
           base)
          ((and (find #\? base :test #'equal)
                (find #\= base :test #'equal))
-          (format nil "~a&amp;~{~a~^&amp;~}" base
+          (format nil "~a&~{~a~^&~}" base
                                          param-strings))
          (t
-          (format nil "~a~a~{~a~^&amp;~}" base
+          (format nil "~a~a~{~a~^&~}" base
                                       (if param-strings "?" "")
                                       param-strings))))
       (when (cadr params)
@@ -316,7 +316,9 @@
 (defun person-link (id)
   (let ((entity (db id)))
     (html
-      (:a :href (s+ (if (eql (getf entity :type) :person) "/people/" "groups/")
+      (:a :href (s+ (if (eql (getf entity :type) :person)
+                      "/people/"
+                      "/groups/")
                     (username-or-id id))
           (str (getf entity :name))))))
 

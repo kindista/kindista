@@ -32,7 +32,7 @@
     (html
       (awhen next (htm (:input :type "hidden" :name "next" :value it)))
       (:select :name "group-category"
-               :class class
+               :class (s+ "group-category-selection " class)
                :onchange (when (eq auto-submit 'onchange)
                            "this.form.submit()")
          (unless selected
@@ -42,27 +42,25 @@
                    "Please select ...")))
          (dolist (option default-options)
            (htm (:option :value option
-                         :onclick (when (eq auto-submit 'onclick)
-                                    "this.form.submit()")
                          :selected (when (string= selected option) "")
                          (str (string-capitalize option)))))
          (:option :value "other"
                   :selected (when (or (string= selected "other")
                                       custom)
                               "")
-                  :onclick (when (eq auto-submit 'onclick)
-                             "this.form.submit()")
                   "Other ..."))
+
+      (:input :type "submit" :class "no-js" :value "apply")
 
       (when (or (string= selected "other") custom)
         (htm
           (:br)
           (:input :type "text"
-                  :class "float-left"
+                  :class "group-category-selection float-left"
                   :name "custom-group-category"
-                  :placeholder (if (eq auto-submit 'onclick)
-                                 "Please specify..."
-                                 "What type of group is this?")
+                  :placeholder (if submit-buttons
+                                 "What type of group is this?" 
+                                 "Please specify...")
                   :value (awhen custom (escape-for-html it)))
           (when submit-buttons
             (htm

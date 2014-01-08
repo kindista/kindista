@@ -17,6 +17,12 @@
 
 (in-package :kindista)
 
+(defun new-group-membership-request-notice-handler ()
+  (send-group-membership-request-notification-email (getf (cddddr *notice*) :id)))
+
+(defun new-group-membership-invitation-notice-handler ()
+  (send-group-membership-invitation-notification-email (getf (cddddr *notice*) :id)))
+
 (defun create-group (&key name creator lat long address street city state country zip location-privacy category membership-method)
   (insert-db `(:type :group
                :name ,name
@@ -207,8 +213,6 @@
          (next (or (post-parameter "next")
                    (referer)))
          (newtype (or new-type custom-category standard-category)))
-    (pprint next)
-    (terpri)
     (if (and (string= standard-category "other")
              (not custom-category))
       (see-other (url-compose next "group-category" "other"))
@@ -559,8 +563,7 @@
             (:h3 "What kind of a group is this?")
             (:div :class "group-category-selection"
               (str
-                (group-category-selection :auto-submit 'onclick
-                                          :submit-buttons nil
+                (group-category-selection :submit-buttons nil
                                           :class "new-group identity"
                                           :selected (or (post-parameter "group-category")
                                                         (post-parameter "custom-group-category")))))
@@ -702,6 +705,8 @@
                               :requested-by person
                               :created time))))
 
+    (notice :new-group-membership-request :time time :id id)
+
     id))
 
 (defun index-group-membership-request (id data)
@@ -728,12 +733,16 @@
     (delete-group-membership-request id)))
 
 (defun create-group-membership-invitation (groupid invitee &key (host *userid*))
-  (let ((id (insert-db (list :type :group-membership-invitation
-                             :group-id groupid
-                             :people (list (cons (list invitee)  :unread))
-                             :message-folders (list :inbox (list invitee))
-                             :invited-by host
-                             :created (get-universal-time)))))
+  (let* ((time (get-universal-time))
+         (id (insert-db (list :type :group-membership-invitation
+                              :group-id groupid
+                              :people (list (cons (list invitee)  :unread))
+                              :message-folders (list :inbox (list invitee))
+                              :invited-by host
+                              :created time))))
+
+    (notice :new-group-membership-invitation :time time :id id)
+
     id))
 
 (defun resend-group-membership-invitation (invitation-id)

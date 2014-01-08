@@ -63,7 +63,6 @@
               :class "group-category-selection"
               :action (strcat "/groups/" groupid)
           (str (group-category-selection
-                 :auto-submit 'onchange
                  :next *base-url*
                  :submit-buttons t
                  :selected (or (get-parameter "group-category")

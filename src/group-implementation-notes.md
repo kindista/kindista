@@ -1,19 +1,12 @@
 # To do
 
-- email templates
-  - group membership invitation
-  - group membership request
-  - edit conversation/reply template to reflect groups
-  - gratitude notification
-
 - update item privacies when a user joins/leaves a group
 
 
 # Testing needed
 
-- sending gratitude/message notifications
 - test on IE
-- test permissions when people are leave admin/member roles
+- test permissions when people are added or leave admin/member roles
 - w3c validation
 
 # Migration steps

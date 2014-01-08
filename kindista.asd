@@ -113,6 +113,8 @@
                                                    (:file "pending-account-approval")
                                                    (:file "reminders")
                                                    (:file "reset-password")
+                                                   (:file "group-membership-invitation-notification")
+                                                   (:file "group-membership-request-notification")
                                                    (:module invitations
                                                             :serial t
                                                             :components ((:file "standard-invite")

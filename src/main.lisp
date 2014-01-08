@@ -41,6 +41,10 @@
   (add-notice-handler :send-invitation #'send-invitation-notice-handler)
   (add-notice-handler :new-pending-offer #'new-pending-offer-notice-handler)
   (add-notice-handler :new-invite-request #'new-invite-request-notice-handler)
+  (add-notice-handler :new-group-membership-request
+                      #'new-group-membership-request-notice-handler)
+  (add-notice-handler :new-group-membership-invitation
+                      #'new-group-membership-invitation-notice-handler)
   (add-notice-handler :new-gratitude #'new-gratitude-notice-handler))
 
 (defun end ()
