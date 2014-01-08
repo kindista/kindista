@@ -2920,6 +2920,7 @@ body.donate {
 }
 
 #questions li {
+ margin-top: 0.2em;
  list-style-type: none;
  padding-bottom: .35em;
 }

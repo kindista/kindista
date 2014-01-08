@@ -4,6 +4,7 @@
 - [What are the guidelines for posting offers and requests?](#sharing-guidelines)
 - [What kinds of things can be offered and requested on Kindista?](#what-can-i-offer-and-request)
 - [Do I have to give to anyone who requests my offer?](#am-i-obligated-to-give-an-offer)
+- [Can I limit who can see the offers and requests I post?](#sharing-privacy)
 - [Should I request things that I can afford to buy myself?](#can-i-request-things-i-can-afford-to-buy)
 - [Can I use Kindista to barter with other members?](#can-i-barter-on-kindista)
 - [Are resources shared using Kindista taxable?](#are-resources-taxable)
@@ -16,6 +17,10 @@
 - [What are mutual connections on a person's profile?](#what-are-mutual-connections)
 - [How do invitations work?](#how-do-invitations-work)
 - [How do I know I can trust someone on Kindista?](#can-i-trust-someone-on-kindista)
+
+### Groups
+- [What are groups?](#what-are-groups)
+- [How do I join a group?](#joining-groups)
 
 ### Expressing Gratitude
 - [What is a statement of gratitude?](#what-is-gratitude)
@@ -121,6 +126,20 @@ to someone.
 
 <small><a href="#questions">Return to questions</a></small>
 
+<a id="sharing-privacy"></a>
+
+### Can I limit who can see tye offers and requests I post?
+
+To limit who can see your offers and requests, 
+you must first join one or more [groups](#joining-groups). 
+After your membership to a group has been approved by one of the group's 
+administrators, you will be able to limit who can see an offer or 
+request. 
+To do so, edit the offer or request and select from your available 
+groups under "**Who can see this offer/request?**".
+
+<small><a href="#questions">Return to questions</a></small>
+
 <a id="can-i-request-things-i-can-afford-to-buy"></a>
 
 ### Should I request things that I can afford to buy myself?
@@ -205,6 +224,7 @@ and you will be able to see any content that they
 are sharing exclusively with their contacts.
 Adding someone as a contact also makes it easier to send them messages
 and find them in the search bar.
+You can see all of your contacts [here](/people/contacts).
 
 <small><a href="#questions">Return to questions</a></small>
 <a id="what-are-mutual-connections"></a>
@@ -261,6 +281,39 @@ But at the same time, we want you to feel safe.
 Always check in with your gut and your heart when 
 considering meeting up with someone you don't already know
 in the real world.
+
+<small><a href="#questions">Return to questions</a></small>
+
+## Groups
+
+<a id="what-are-groups"></a>
+
+### What are groups?
+
+Groups are Kindista accounts for local organizations. 
+You can create a group profile for any business, non-profit, 
+faith community, or organization in which you have a leadership 
+or administrative role. 
+_We want to prevent confusion to other Kindista users by preventing 
+the creation of duplicate group accouts.
+Please make sure that someone hasn't already created a group 
+profile for your group, before creating a new group account._
+
+<small><a href="#questions">Return to questions</a></small>
+
+<a id="joining-groups"></a>
+
+### How do I join a group?
+
+It is up to a group's administrator(s) to determine how members can join 
+a group. 
+If the administrators have allowed people to request membership, 
+there will be a button on the group's profile page that says "**Join
+group**".
+If that button is not on the group's profile page, membership for the 
+group is _by invitation only_.
+
+<small><a href="#questions">Return to questions</a></small>
 
 ## Expressing Gratitude
 
