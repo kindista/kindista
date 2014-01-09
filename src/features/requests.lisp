@@ -42,7 +42,8 @@
 (defun get-request (id)
   (setf id (parse-integer id))
   (aif (db id)
-    (if (item-view-denied (result-privacy (gethash id *db-results*)))
+    (if (and (not (eql *userid* (getf it :by)))
+             (item-view-denied (result-privacy (gethash id *db-results*))))
       (permission-denied)
       (with-location
         (standard-page

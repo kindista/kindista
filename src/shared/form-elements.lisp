@@ -17,7 +17,7 @@
 
 (in-package :kindista)
 
-(defun group-category-selection (&key next selected auto-submit submit-buttons (class "identity"))
+(defun group-category-selection (&key next selected submit-buttons (class "identity"))
   (let* ((default-options '("business"
                             "church/spiritual community"
                             "community organization"
@@ -33,8 +33,7 @@
       (awhen next (htm (:input :type "hidden" :name "next" :value it)))
       (:select :name "group-category"
                :class (s+ "group-category-selection " class)
-               :onchange (when (eq auto-submit 'onchange)
-                           "this.form.submit()")
+               :onchange "this.form.submit()"
          (unless selected
            (htm (:option :value ""
                          :style "display:none;"
@@ -59,7 +58,7 @@
                   :class "group-category-selection float-left"
                   :name "custom-group-category"
                   :placeholder (if submit-buttons
-                                 "What type of group is this?" 
+                                 "What type of group is this?"
                                  "Please specify...")
                   :value (awhen custom (escape-for-html it)))
           (when submit-buttons
@@ -101,38 +100,73 @@
 
 (defun privacy-selection-html (item-type restrictedp groups groups-selected &key (class "privacy-selection") onchange)
 "Groups should be an a-list of (groupid . group-name)"
-  (html
-    (:h2  "Who can see this " (str item-type) "?")
-    (:div :class (s+ class (when (and restrictedp (> (length groups) 1))
-                             " privacy-selection-details"))
-      (:select :name "privacy-selection" :class class :onchange onchange
-        (:option :value "public"
-                 :selected (unless restrictedp "")
-                 "Anyone")
-        (:option :value "restricted"
-                 :selected (when restrictedp "")
-                 (str
-                   (if (= 1 (length groups))
-                     (s+ (cdar groups)
-                         (when (= (caar groups) +kindista-id+)
-                           " account group")
-                          " members ")
-                     "People in my groups"))))
-      (when restrictedp
-        (if (> (length groups) 1)
-          (dolist (group (sort groups #'string-lessp :key #'cdr))
-            (htm
-              (:br)
-              (:div :class "item-group-privacy"
-                (:input :type "checkbox"
-                        :name "groups-selected"
-                        :checked (when (or (not groups-selected)
-                                           (member (car group) groups-selected))
-                                   "checked")
-                        :value (car group)
-                        (str (cdr group))
-                        (str (when (= (car group) +kindista-id+)
-                             " group account "))
-                        " members"))))
-          (htm (:input :type "hidden" :name "groups-selected" :value (caar groups))))))))
+  (let* ((my-group-ids (mapcar #'car groups))
+         (groups-user-is-still-in (intersection my-group-ids groups-selected))
+         (groups-user-has-left (set-difference groups-selected my-group-ids)))
+    (html
+      (:h2  "Who can see this " (str item-type) "?")
+      (:div :class (s+ class (when (or (and restrictedp (> (length groups) 1))
+                                       groups-user-has-left)
+                               " privacy-selection-details"))
+        (:select :name "privacy-selection" :class class :onchange onchange
+          (:option :value "public"
+                   :selected (unless restrictedp "")
+                   "Anyone")
+          (:option :value "restricted"
+                   :selected (when restrictedp "")
+                   (str
+                     (cond
+                      ((= 1 (length groups))
+                       (s+ (cdar groups)
+                           (when (= (caar groups) +kindista-id+)
+                             " account group")
+                            " members "))
+                      (groups-user-has-left
+                       "Groups I'm no longer a member of")
+                      (t "People in my groups")))))
+        (when restrictedp
+          (if (or groups-user-has-left
+                  (> (length groups) 1))
+            (progn
+              (dolist (group (sort groups #'string-lessp :key #'cdr))
+                (htm
+                  (:br)
+                  (:div :class "item-group-privacy"
+                    (:input :type "checkbox"
+                            :name "groups-selected"
+                            :checked (when (or (not groups-selected)
+                                               (member (car group) groups-selected))
+                                       "checked")
+                            :value (car group)
+                            (str (cdr group))
+                            (str (when (= (car group) +kindista-id+)
+                                 " group account "))
+                            " members"))))
+              ;; for groups the user has left but are still being shown 
+              ;; this item
+              (dolist (group groups-user-has-left)
+                (let ((group-name (db group :name)))
+                 (htm
+                  (:br)
+                  (:div :class "item-group-privacy"
+                    (:input :type "checkbox"
+                            :name "groups-selected"
+                            :checked (when (member group groups-selected)
+                                       "checked")
+                            :value group
+                            (str group-name)
+                            (str (when (= group +kindista-id+)
+                                 " group account "))
+                            " members"))))))
+            (htm (:input :type "hidden" :name "groups-selected" :value (caar groups))))))
+      (unless groups-user-is-still-in
+        (htm
+          (:br)
+          (:strong
+            (:span :class "red" "Warning: ")
+            "You are no longer in the group(s) you have allowed to see this "
+            (str item-type)
+            ". "
+            "You must resave this " (str item-type)
+            " for any changes to take effect."))))))
 

@@ -294,8 +294,9 @@
            (restrictedp (when
                           (and (string= (post-parameter "privacy-selection")
                                         "restricted")
-                               (= identity-selection
-                                  (parse-integer (post-parameter "prior-identity"))))
+                               (or (not identity-selection)
+                                   (eql identity-selection
+                                        (parse-integer (post-parameter "prior-identity")))))
                           t))
            (adminp (group-admin-p groupid))
            (text (when (scan +text-scanner+ (post-parameter "text"))
@@ -387,7 +388,8 @@
            (by (getf item :by))
            (adminp (group-admin-p by)))
       (cond
-        ((item-view-denied (result-privacy (gethash id *db-results*)))
+        ((and (not (eql by *userid*))
+              (item-view-denied (result-privacy (gethash id *db-results*))))
          (permission-denied))
 
         ((post-parameter "cancel")
@@ -600,7 +602,9 @@
                               " by")))
                   (str (identity-selection-html identity-selection it :onchange "this.form.submit()")))))
 
-          (when *user-group-priviledges*
+          (when (or (getf *user-group-priviledges* :member)
+                    (getf *user-group-priviledges* :admin)
+                    groups-selected)
             (str (privacy-selection-html
                    (if (string= selected "offers") "offer" "request")
                    restrictedp
@@ -756,8 +760,9 @@
     (html
       (:div :class "activity"
         (when *user*
-          (menu-horiz "actions"
-            (html (:a :href (s+ "/people/" (username-or-id) "/" type "s") (str (s+ "show my " type "s"))))))
+          (str
+            (menu-horiz "actions"
+              (html (:a :href (s+ "/people/" (username-or-id) "/" type "s") (str (s+ "show my " type "s")))))))
         (:div :class "item"
           (unless (or (not *user*)
                       (eq (getf *user* :active) nil)

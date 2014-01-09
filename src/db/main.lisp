@@ -224,7 +224,7 @@
 (defun geo-index-remove (index item)
   (with-locked-hash-table (*geo-index-index*)
     (with-locked-hash-table (index)
-      (dolist (geocode (delete-duplicates (gethash (cons index item) *geo-index-index*))) 
+      (dolist (geocode (delete-duplicates (gethash (cons index item) *geo-index-index*)))
         (asetf (gethash geocode index)
                (remove item it))))
     (remhash (cons index item) *geo-index-index*)))
@@ -232,7 +232,6 @@
 (defun stem-index-query (index query)
   (iter (for stem in (stem-text query))
         (reducing (gethash stem index) by #'result-id-intersection)))
-          
 ; }}}
 
 ; {{{ metaphone

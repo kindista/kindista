@@ -254,7 +254,6 @@
                                                  ((string= type "offer") "offered")))
                    :content (html
                               (:p
-                                (str user-id)
                                 (str (person-link user-id))
                                 (when show-what
                                   (str (if (getf data :edited) " edited " " posted "))
