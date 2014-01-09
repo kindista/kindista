@@ -161,6 +161,7 @@
   (modify-db groupid :type :group
                      :creator admin-id
                      :admins (list admin-id)
+                     :membership-method :invite-only
                      :notify-gratitude (list admin-id)
                      :notify-reminders (list admin-id)
                      :notify-membership-request (list admin-id)
@@ -225,7 +226,7 @@
 (defun add-group-member (personid groupid)
   (amodify-db groupid :members (pushnew personid it))
   (with-locked-hash-table (*group-members-index*)
-     (pushnew personid (gethash personid *group-members-index*)))
+     (pushnew personid (gethash groupid *group-members-index*)))
   (with-locked-hash-table (*group-priviledges-index*)
      (pushnew groupid (getf (gethash personid *group-priviledges-index*) :member))))
 
@@ -462,7 +463,7 @@
                    :checked (when (or (string= selected "all")
                                           (string= selected "members"))
                                ""))
-           (:label :for "group" (str (s+ "members of " group-name))))))))
+           (:label :for "group" "group members" ))))))
 
 (defun group-members-activity (group-members &key type count)
   (let ((count (or count (+ 20 (floor (/ 30 (length group-members))))))
@@ -519,6 +520,11 @@
                  (str (invite-sidebar)))))
 
       (see-other "groups/nearby")))
+
+(defun get-groups-contacts ()
+  (if *user*
+    (my-contacts :group (groups-tabs-html :tab :contacts) "groups")
+    (see-other "/groups/nearby")))
 
 (defun get-groups-nearby ()
   (nearby-profiles-html "groups" (groups-tabs-html :tab :nearby)))
@@ -853,6 +859,10 @@
       (if (eql tab :my-groups)
         (htm (:li :class "selected" "My Groups"))
         (htm (:li (:a :href "/groups/my-groups" "My Groups"))))
+
+      (if (eql tab :contacts)
+              (htm (:li :class "selected" "Contacts"))
+              (htm (:li (:a :href "/groups/contacts" "Contacts"))))
 
       (if (eql tab :nearby)
         (htm (:li :class "selected" "Nearby"))

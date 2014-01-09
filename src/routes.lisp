@@ -182,6 +182,9 @@
   ("/groups/my-groups"
     :get get-my-groups)
 
+  ("/groups/contacts"
+    :get get-groups-contacts)
+
   ("/groups/nearby"
     :get get-groups-nearby)
 

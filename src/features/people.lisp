@@ -370,11 +370,6 @@
                 (collect person))))
       #'> :key #'mutuals)))
 
-(defun sorted-contacts (&optional (userid *userid*))
-  (sort
-    (copy-list (db userid :following))
-    #'string-lessp :key #'person-name))
-
 (defun go-people ()
   (moved-permanently "/people"))
 
@@ -406,35 +401,7 @@
 
 (defun get-people-contacts ()
   (if *user*
-    (let ((contacts (sorted-contacts)))
-      (standard-page
-      "Contacts"
-      (html
-        (str (people-tabs-html))
-        (unless contacts
-          (htm (:h3 "No contacts")))
-        (let ((letters ()))
-          (dolist (id contacts)
-            (let ((char (char-upcase (elt (db id :name) 0))))
-              (unless (member char letters)
-                (push char letters))))
-          (htm
-            (:a :name "index")
-            (:p (fmt "~{<a href=#~(~:C~)>~:*~:C</a>~^ | ~}" (nreverse letters)))))
-
-        (let ((letter nil))
-          (dolist (id contacts)
-            (let ((char (char-upcase (elt (db id :name) 0))))
-              (unless (eq char letter)
-                (htm (:a :name (char-downcase char))
-                     (:h3 (str char) (:small " (" (htm (:a :href "#index" " back to index ")) ")")))
-                (setf letter char))
-              (str (person-card id (db id :name)))))))
-
-      :selected "people"
-      :right (html
-               (str (donate-sidebar))
-               (str (invite-sidebar)))))
+    (my-contacts :person (people-tabs-html) "people")
     (see-other "/people/nearby")))
 
 (defun get-people-nearby ()

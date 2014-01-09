@@ -54,6 +54,45 @@
                (str (donate-sidebar))
                (str (invite-sidebar))))))
 
+(defun sorted-contacts ( &key (userid *userid*) (contact-type :person))
+  (sort
+    (remove-if-not #'(lambda (id) (eql (result-type (gethash id *db-results*))
+                                       contact-type))
+                   (copy-list (db userid :following)))
+    #'string-lessp :key #'person-name))
+
+(defun my-contacts (contact-type tabs selected)
+  (let ((contacts (sorted-contacts :contact-type contact-type)))
+      (standard-page
+      "Contacts"
+      (html
+        (str tabs)
+        (unless contacts
+          (htm (:h3 "No contacts")))
+        (let ((letters ()))
+          (dolist (id contacts)
+            (let ((char (char-upcase (elt (db id :name) 0))))
+              (unless (member char letters)
+                (push char letters))))
+          (htm
+            (:a :name "index")
+            (:p (fmt "~{<a href=#~(~:C~)>~:*~:C</a>~^ | ~}" (nreverse letters)))))
+
+        (let ((letter nil))
+          (dolist (id contacts)
+            (let ((char (char-upcase (elt (db id :name) 0))))
+              (unless (eq char letter)
+                (htm (:a :name (char-downcase char))
+                     (:h3 (str char) (:small " (" (htm (:a :href "#index" " back to index ")) ")")))
+                (setf letter char))
+              (str (person-card id (db id :name)))))))
+
+      :selected selected
+      :right (html
+               (str (donate-sidebar))
+               (str (invite-sidebar)))))
+  )
+
 (defun profile-bio-section-html (title content &key editing editable section-name)
   (when (string= content "")
     (setf content nil))
@@ -171,6 +210,8 @@
                  (group-members-activity (cons id members) :type type))
                 ((string= display "members")
                  (group-members-activity members :type type))
+                ((eql id *userid*)
+                 (gethash id *profile-activity-index*))
                 (t (remove-private-items
                      (gethash id *profile-activity-index*)))))
         (start (* page count))
@@ -361,7 +402,8 @@
                     ((and (get-parameter "members")
                           (not (get-parameter "group")))
                      "members")
-                    (t "all")))
+                    ((eql entity-type :group)
+                     "all")))
          (groupid (when (eql entity-type :group) id))
          (members (when groupid (append (getf entity :admins) (getf entity :members))))
          (adminp (when (member *userid* (getf entity :admins)) t))
