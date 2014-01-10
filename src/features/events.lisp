@@ -226,62 +226,7 @@
                    :value (awhen title (escape-for-html it))))
          (unless existing-url
            (awhen (groups-with-user-as-admin)
-
- (defun get-settings ()
-  (settings-template-html
-    (aif (get-parameter "groupid")
-      (url-compose "/settings/public"
-                   "groupid" it)
-      "/settings/personal")
-    (if (and (not (get-parameter "groupid"))
-             (string= (script-name*) "/settings/public"))
-        (see-other "/settings/personal")
-        (html
-          (str (settings-tabs-html (if (not groupid) "personal" "public")
-                                   (awhen groupid it)))
-          (when groupid
-            (str (settings-item-html
-                   "profile"
-                   (html
-                     (:a :href (strcat "/groups/" (username-or-id groupid))
-                       (str (strcat +base-url+
-                                    "groups/"
-                                    (username-or-id groupid)))))
-                   :editable t))
-            (str (settings-item-html
-                   "category"
-                   (html
-                     (:form :method "post"
-                            :class "group-type"
-                            :action (strcat "/groups/" groupid)
-                        (str (group-type-selection :auto-submit nil))
-                       (:input :type "submit" :class "no-js" :value "apply")))
-                   :editable t )))
-
-          (str (settings-avatar (string= edit "avatar") groupid))
-          (str (settings-name (string= edit "name")
-                              groupid
-                              (getf group :name)))
-          (str (settings-address (string= edit "address") groupid group))
-          (when groupid
-            (str (settings-item-html
-                   "membership"
-                   (html
-                     (:form :method "post"
-                            :class "membership-settings"
-                            :action (strcat "/groups/" groupid)
-                       (str (group-membership-method-selection
-                              (if (eql (getf group :membership-method) :invite-only)
-                                "invite-only"
-                                "admin-approval")
-                              :auto-submit t))
-                       (:input :type "submit" :class "no-js" :value "apply")))
-                   :editable t)))
-          (when (not groupid)
-            (htm (str (settings-password))
-                 (when (getf *user* :plan)
-                   (str (settings-donate))))
-            (str (settings-deactivate)))))))            (htm
+             (htm
                (:div
                  (:label "Posted by")
                  (str (identity-selection-html (or groupid *userid*)
@@ -304,7 +249,7 @@
          (:p (:em "Please note: the address you enter for your event will be visible to anyone using Kindista."))
 
          (:div
-           (:label "When")
+           (:label "When (date & time)")
            (:input :type "text"
                    :name "date"
                    :placeholder "mm/dd/yyyy"

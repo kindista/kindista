@@ -158,6 +158,9 @@
       (dolist (email it)
         (remhash email *email-index*))))
 
+  (with-mutex (*active-people-mutex*)
+    (asetf *active-people-index* (remove groupid it)))
+
   (modify-db groupid :type :group
                      :creator admin-id
                      :admins (list admin-id)

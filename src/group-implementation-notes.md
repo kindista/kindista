@@ -1,8 +1,3 @@
-# To do
-
-- update item privacies when a user joins/leaves a group
-
-
 # Testing needed
 
 - test on IE

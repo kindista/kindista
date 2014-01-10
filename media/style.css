@@ -960,6 +960,14 @@ img.small {
 }
 
 
+#body {
+ padding: 1em;
+}
+
+#body > h2 {
+ margin-bottom: 1.1em;
+}
+
 @media (min-width:47em) {
  #header div {
   display:none;
@@ -981,31 +989,27 @@ img.small {
  font-size: 1em;
  color:#666;
  border:0;
- background:none;
-}
-
-#body {
- padding: 1em;
-}
-
-#body > h2 {
- margin-bottom: 1.1em;
+ background: #f6f6f6;
+ border:1px solid #999;
+ border-right: 1px solid #ccc;
+ padding: 0.4em;
 }
 
 #search input[type=text] {
- margin:0;
- border-top-right-radius: 3px;
- border-bottom-right-radius: 3px;
- border-top-left-radius: 3px;
- border-bottom-left-radius: 3px;
- margin: 0.5em;
+ border-left: none;
+ border-right: none;
+ margin: 0;
+ -webkit-border-radius: 0;
+ -moz-border-radius: 0;
+ border-radius: 0;
+ height: 2.2em;
 }
 
 #search input {
- padding:0.5em;
  border: 1px solid #999;
  font-size: 1em;
  background: #fff;
+ height: 2.4em;
 }
 
 #search input[type=submit] {
@@ -1026,9 +1030,8 @@ img.small {
  color:#666;
  /*background:#375497;*/
  background:#eee;
- margin-left:0.2em;
+ margin-left: 0;
  border: 1px solid #999;
- border-left: none;
 }
 
 @media (min-width:47em) {
@@ -1041,30 +1044,24 @@ img.small {
   z-index:10;
   text-align: right;
   background:none;
+  height: 2.5em;
  }
  #search strong {
   display: none;
  }
  #search select {
-  background: #f6f6f6;
-  border:1px solid #999;
-  border-right: 1px solid #ccc;
-  padding: 0.5em;
   -webkit-border-top-left-radius: 3px;
   -webkit-border-bottom-left-radius: 3px;
   -moz-border-radius-topleft: 3px;
   -moz-border-radius-bottomleft: 3px;
   border-top-left-radius: 3px;
   border-bottom-left-radius: 3px;
+  vertical-align: middle;
+  height: 2.4em;
  }
  #search input[type=text] {
   width:22em;
-  border-left: none;
-  border-right: none;
-  margin: 0;
-  -webkit-border-radius: 0;
-  -moz-border-radius: 0;
-  border-radius: 0;
+  vertical-align: middle;
  }
  #search input[type=submit] {
   -webkit-border-top-right-radius: 3px;
@@ -1079,7 +1076,8 @@ img.small {
   -moz-border-radius-bottomleft: 0;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
-  margin-left: 0;
+  height: 2.4em;
+  vertical-align: middle;
  }
 }
 
@@ -2414,6 +2412,15 @@ div.settings-avatar {
 
 #edit-tags blockquote.review-text {
  margin: .5em 0 .5em 0;
+}
+
+div.privacy-selection-warning {
+ margin-top: 0.4em;
+ font-weight: bold;
+}
+
+div.privacy-selection-warning p {
+ margin: 0.4em 0;
 }
 
 div.privacy-selection-details,

@@ -168,7 +168,7 @@
     (geo-index-remove *people-geo-index* result)
     (geo-index-remove *activity-geo-index* result)
     (with-mutex (*active-people-mutex*)
-      (asetf *active-people-index* (remove it *active-people-index*)))
+      (asetf *active-people-index* (remove id it)))
     (dolist (request-id (gethash id *request-index*))
       (delete-inventory-item request-id))
     (dolist (offer-id (gethash id *offer-index*))

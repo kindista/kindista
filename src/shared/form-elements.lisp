@@ -101,8 +101,9 @@
 (defun privacy-selection-html (item-type restrictedp groups groups-selected &key (class "privacy-selection") onchange)
 "Groups should be an a-list of (groupid . group-name)"
   (let* ((my-group-ids (mapcar #'car groups))
-         (groups-user-is-still-in (intersection my-group-ids groups-selected))
-         (groups-user-has-left (set-difference groups-selected my-group-ids)))
+         (group-ids-user-has-left (set-difference groups-selected my-group-ids))
+         (groups-user-has-left (mapcar #'(lambda (id) (cons id (db id :name)))
+                                       group-ids-user-has-left)))
     (html
       (:h2  "Who can see this " (str item-type) "?")
       (:div :class (s+ class (when (or (and restrictedp (> (length groups) 1))
@@ -145,28 +146,36 @@
               ;; for groups the user has left but are still being shown 
               ;; this item
               (dolist (group groups-user-has-left)
-                (let ((group-name (db group :name)))
-                 (htm
+                (htm
                   (:br)
                   (:div :class "item-group-privacy"
                     (:input :type "checkbox"
                             :name "groups-selected"
-                            :checked (when (member group groups-selected)
+                            :checked (when (member (car group) groups-selected)
                                        "checked")
-                            :value group
-                            (str group-name)
-                            (str (when (= group +kindista-id+)
+                            :value (car group)
+                            (str (cdr group))
+                            (str (when (= (car group) +kindista-id+)
                                  " group account "))
-                            " members"))))))
+                            " members")))))
             (htm (:input :type "hidden" :name "groups-selected" :value (caar groups))))))
-      (unless groups-user-is-still-in
-        (htm
-          (:br)
-          (:strong
-            (:span :class "red" "Warning: ")
-            "You are no longer in the group(s) you have allowed to see this "
-            (str item-type)
-            ". "
-            "You must resave this " (str item-type)
-            " for any changes to take effect."))))))
+      (awhen groups-user-has-left
+        (let ((plural (> (length it) 1)))
+          (htm
+            (:br)
+            (:div :class "privacy-selection-warning"
+              (:p
+                (:span :class "red" "Warning: ")
+                "You are no longer a member of the following group"
+                (when plural (str "s"))
+                ":"
+                (:br)
+              (str (format nil *english-list* (mapcar #'cdr it))))
+              (:p "Members of "
+                  (str (if plural "those groups" "that group"))
+                  " will be able to continue to see this "
+                  (str item-type)
+                  " until you edit this privacy setting and resave your "
+                  (str item-type)
+                  "."))))))))
 
