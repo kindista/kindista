@@ -76,7 +76,9 @@
            (geo-index-insert *offer-geo-index* result)
            (geo-index-insert *request-geo-index* result))
 
+         ;; unless item is older than 180 days
          (unless (< (result-time result) (- (get-universal-time) 15552000))
+           ;; unless item is older than 30 days
            (unless (< (result-time result) (- (get-universal-time) 2592000))
              (with-mutex (*recent-activity-mutex*)
                (push result *recent-activity-index*)))

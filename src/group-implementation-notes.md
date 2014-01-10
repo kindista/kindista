@@ -1,7 +1,5 @@
 # Testing needed
 
-- test on IE
-- test permissions when people are added or leave admin/member roles
 - w3c validation
 
 # Migration steps

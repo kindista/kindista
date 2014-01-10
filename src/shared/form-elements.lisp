@@ -98,16 +98,17 @@
                       :selected (when (eql selected (car group)) "")
                       (str (cdr group))" "))))))
 
-(defun privacy-selection-html (item-type restrictedp groups groups-selected &key (class "privacy-selection") onchange)
+(defun privacy-selection-html (item-type restrictedp my-groups groups-selected &key (class "privacy-selection") onchange)
 "Groups should be an a-list of (groupid . group-name)"
-  (let* ((my-group-ids (mapcar #'car groups))
+  (let* ((my-group-ids (mapcar #'car my-groups))
          (group-ids-user-has-left (set-difference groups-selected my-group-ids))
          (groups-user-has-left (mapcar #'(lambda (id) (cons id (db id :name)))
                                        group-ids-user-has-left)))
     (html
       (:h2  "Who can see this " (str item-type) "?")
-      (:div :class (s+ class (when (or (and restrictedp (> (length groups) 1))
-                                       groups-user-has-left)
+      (:div :class (s+ class (when (and restrictedp
+                                        (or groups-user-has-left
+                                            (> (length my-groups) 1)))
                                " privacy-selection-details"))
         (:select :name "privacy-selection" :class class :onchange onchange
           (:option :value "public"
@@ -117,19 +118,19 @@
                    :selected (when restrictedp "")
                    (str
                      (cond
-                      ((= 1 (length groups))
-                       (s+ (cdar groups)
-                           (when (= (caar groups) +kindista-id+)
+                      ((= 1 (length my-groups))
+                       (s+ (cdar my-groups)
+                           (when (= (caar my-groups) +kindista-id+)
                              " account group")
-                            " members "))
+                           " members "))
                       (groups-user-has-left
                        "Groups I'm no longer a member of")
                       (t "People in my groups")))))
         (when restrictedp
           (if (or groups-user-has-left
-                  (> (length groups) 1))
+                  (> (length my-groups) 1))
             (progn
-              (dolist (group (sort groups #'string-lessp :key #'cdr))
+              (dolist (group (sort my-groups #'string-lessp :key #'cdr))
                 (htm
                   (:br)
                   (:div :class "item-group-privacy"
@@ -158,9 +159,9 @@
                             (str (when (= (car group) +kindista-id+)
                                  " group account "))
                             " members")))))
-            (htm (:input :type "hidden" :name "groups-selected" :value (caar groups))))))
-      (awhen groups-user-has-left
-        (let ((plural (> (length it) 1)))
+            (htm (:input :type "hidden" :name "groups-selected" :value (caar my-groups))))))
+      (when (and groups-user-has-left restrictedp)
+        (let ((plural (> (length groups-user-has-left) 1)))
           (htm
             (:br)
             (:div :class "privacy-selection-warning"
@@ -170,7 +171,7 @@
                 (when plural (str "s"))
                 ":"
                 (:br)
-              (str (format nil *english-list* (mapcar #'cdr it))))
+              (str (format nil *english-list* (mapcar #'cdr groups-user-has-left))))
               (:p "Members of "
                   (str (if plural "those groups" "that group"))
                   " will be able to continue to see this "
