@@ -46,6 +46,11 @@
 (defun validate-email (string)
   (scan +email-scanner+ string))
 
+(defun find-nil-ids ()
+  (loop for id from 0 to *db-top*
+        when (null (db id))
+        collect id))
+
 (defun fsync (stream)
   (finish-output stream)
   (sb-posix:fsync (sb-posix:file-descriptor stream)))
