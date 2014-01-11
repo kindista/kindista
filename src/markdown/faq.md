@@ -21,6 +21,7 @@
 ### Groups
 - [What are groups?](#what-are-groups)
 - [How do I join a group?](#joining-groups)
+- [Can I add multiple locations for our group?](#multiple-group-locations)
 
 ### Expressing Gratitude
 - [What is a statement of gratitude?](#what-is-gratitude)
@@ -312,6 +313,16 @@ there will be a button on the group's profile page that says "**Join
 group**".
 If that button is not on the group's profile page, membership for the 
 group is _by invitation only_.
+
+<small><a href="#questions">Return to questions</a></small>
+
+<a id="multiple-group-locations"></a>
+
+### Can I add multiple locations for our group?
+
+For technical reasons, groups are not able to have multiple locations at this time.
+However, if your group has multiple locations, you are permitted to create separate group profiles for each location.
+
 
 <small><a href="#questions">Return to questions</a></small>
 
