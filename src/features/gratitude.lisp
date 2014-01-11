@@ -72,10 +72,12 @@
            (asetf (gethash person *profile-activity-index*)
                   (sort (push result it) #'> :key #'result-time))))
 
+       ;; unless gratitude is older than 180 days
        (unless (< (result-time result) (- (get-universal-time) 15552000))
 
          (geo-index-insert *activity-geo-index* result)
 
+         ;;unless gratitude is older than 30 days
          (unless (< (result-time result) (- (get-universal-time) 2592000))
            (with-mutex (*recent-activity-mutex*)
              (push result *recent-activity-index*)))
