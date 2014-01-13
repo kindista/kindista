@@ -56,6 +56,7 @@
                                            (:file "menu-horiz")
                                            (:file "card")
                                            (:file "group-card")
+                                           (:file "reciprocity")
                                            (:file "person-card")))
                              (:module shared
                               :serial t
@@ -69,8 +70,7 @@
                                            (:file "paginate")
                                            (:file "profiles")
                                            (:file "verify-location")
-                                           (:file "time")
-                                           (:file "reciprocity")))
+                                           (:file "time")))
                              (:module features
                               :serial t
                               :components ((:file "about")
