@@ -279,6 +279,7 @@
               "no subject")
              (t
               "totally blank"))))
+
         ((post-parameter "add")
          (if (string= (post-parameter "add") "new")
            (gratitude-add-subject :subjects (parse-subject-list (post-parameter "subject"))

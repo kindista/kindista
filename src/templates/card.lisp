@@ -46,9 +46,12 @@
             (awhen (getf entity :city)
               (htm (:p (str (s+ (if groupid "Located" "Lives") " in ")) (str it)))) 
             (when mutuals
-              (htm (:p (str (strcat (length mutuals)
-                                    (unless groupid " mutual") " connection"))
-                       (str (when (> (length mutuals) 1) "s"))))))))))
+              (htm (:p (str (length mutuals))
+                       (unless groupid
+                         (htm " mutual"))
+                       " connection"
+                       (when (> (length mutuals) 1)
+                         (htm "s"))))))))))
 
 (defun feedback-card (id)
   (let* ((data (db id))

@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete)
+(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete reciprocity)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -95,7 +95,8 @@
             (when comments
               (htm
                 " &middot; "
-                (str (comment-button url))))))))))
+                (str (comment-button url)))))))
+      (awhen reciprocity (str it)))))
 
         ;(unless (eql user-id *userid*)
         ;  (htm
@@ -164,17 +165,24 @@
                                               :see-more item-url)
                                     (html-text (getf data :details)))))))))
 
-(defun gratitude-activity-item (result &key truncate)
+(defun gratitude-activity-item (result &key truncate reciprocity)
+         ; result-people is a list
+         ; car of list is person showing gratitude
+         ; cdr of list is subjects
   (let* ((user-id (first (result-people result)))
+         ; tests to see if the user is the author of this item
          (self (eql user-id *userid*))
+         ;item-id is derived from "result" which is passed in.
          (item-id (result-id result))
+         ; data is a plist with all relevant info about the gratitude
+         ; item.
          (data (db item-id))
          (author (getf data :author))
          (adminp (group-admin-p author))
          (images (getf data :images))
          (item-url (strcat "/gratitude/" item-id)))
-
-    (activity-item :id item-id
+    (html
+    (str (activity-item :id item-id
                    :url item-url
                    :class "gratitude"
                    :time (result-time result)
@@ -199,7 +207,10 @@
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))
-                                (str (activity-item-images images item-url "gift")))))))
+                                (str (activity-item-images images item-url "gift"))))
+                   :reciprocity (when reciprocity
+                                  (display-gratitude-reciprocities result)))))))
+
 
 (defun gift-activity-item (result)
   (let* ((user-id (first (result-people result)))
@@ -278,7 +289,9 @@
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))
-                                (str (activity-item-images images item-url type)))))))
+                                (str (activity-item-images images
+                                                           item-url
+                                                           type)))))))
 
 (defun activity-item-images (images url alt)
   (html
@@ -289,7 +302,8 @@
            (:a :href url (:img :src (get-image-thumbnail image-id 70 70)
                                :alt alt))))))))
 
-(defun activity-items (items &key (page 0) (count 20) (url "/home") (paginate t) (location t))
+(defun activity-items (items &key (page 0) (count 20) (url "/home")
+                             (paginate t) (location t) reciprocity)
   (with-location
     (let ((start (* page count)))
       (html
@@ -302,7 +316,9 @@
                  (let* ((item (car items)))
                    (case (result-type item)
                      (:gratitude
-                       (str (gratitude-activity-item item :truncate t)))
+                       (str (gratitude-activity-item item :truncate t
+                                                          :reciprocity
+                                                          reciprocity))) 
                      (:gift
                        (str (gift-activity-item item)))
                      (:person
@@ -341,10 +357,14 @@
                             :key #'result-time)
                       :page page
                       :count count
+                      :reciprocity t
                       :url url)
       (let ((items (sort (geo-index-query *activity-geo-index*
                                           *latitude*
                                           *longitude*
                                           distance)
                        #'< :key #'activity-rank)))
-        (activity-items items :page page :count count :url url)))))
+        (activity-items items :page page 
+                              :count count
+                              :reciprocity t 
+                              :url url)))))

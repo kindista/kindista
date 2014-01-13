@@ -69,7 +69,8 @@
                                            (:file "paginate")
                                            (:file "profiles")
                                            (:file "verify-location")
-                                           (:file "time")))
+                                           (:file "time")
+                                           (:file "reciprocity")))
                              (:module features
                               :serial t
                               :components ((:file "about")
