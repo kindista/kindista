@@ -469,7 +469,7 @@
          (original-message-type (or (getf original-message :type)
                                  deleted-type))
          (participants (db id :participants))
-         (group-name (cdr (assoc (cadr participants) groups)))
+         (group-name (cdr (assoc (car participants) groups)))
          (with (or (getf original-message :by)
                    (first (remove *userid* participants))))
          (comments (length (gethash id *comment-index*)))
