@@ -1686,7 +1686,7 @@ button.card > img {
 }
 
 @media (max-width:56em) {
- .item.right.only, #right {
+ .item.right.only {
   display:none;
  }
 }
@@ -2382,6 +2382,10 @@ menu.bar li a {
 
 .welcome p {
  margin-bottom: 0;
+}
+
+.welcome a {
+ text-decoration: underline;
 }
 
 .actions input[type=submit]:hover, button:hover {

@@ -20,7 +20,7 @@
 (defun login-sidebar ()
   (unless *user*
     (html
-      (:div :class "login item"
+      (:div :class "login item right"
         (:h3 "Log in")
         (:form :method "POST" :action "/login" :id "login"
           (:label :for "username" "Email")
