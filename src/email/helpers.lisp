@@ -40,6 +40,21 @@
 
 "))
 
+(defun unsubscribe-notice-ps-text ()
+(strcat
+#\linefeed #\linefeed
+"P.S. If you no longer wish to receive occasional updates like this from Kindista, please edit your communication settings: "
+#\linefeed
+(strcat +base-url+ "settings/communication")))
+
+(defun unsubscribe-notice-ps-html ()
+(html
+  (:p :style *style-p*
+    "P.S. If you no longer wish to receive occasional updates like this from Kindista, please edit your communication settings: "
+    (:br)
+    (:a :href (strcat +base-url+ "settings/communication")
+        (str (strcat +base-url+ "settings/communication"))))))
+
 (defun html-email-base (content)
   (html
     (:html

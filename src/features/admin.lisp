@@ -307,8 +307,10 @@
              (post-parameter "from")
              (post-parameter "subject"))
       (let* ((text (post-parameter "markdown"))
-             (html (html-email-base (nth-value 1 (markdown text :stream nil))))
+             (html (html-email-base (strcat (nth-value 1 (markdown text :stream nil))
+                                            (unsubscribe-notice-ps-html))))
              (subject (post-parameter "subject"))
+             (text-with-unsubscribe (s+ text (unsubscribe-notice-ps)))
              (from (post-parameter "from")))
         (cond
           ((post-parameter "test")
@@ -316,7 +318,7 @@
                                from
                                from
                                subject
-                               text
+                               text-with-unsubscribe
                                :html-message html))
           ((post-parameter "unread-mail")
            (dolist (id (users-with-new-mail))
@@ -331,7 +333,7 @@
                                     text
                                     :html-message html)))))
 
-          ((< *last-broadcast-email-time* (- (get-universal-time) 300))
+          ((< *last-broadcast-email-time* (- (get-universal-time) 900))
            (setf *last-broadcast-email-time* (get-universal-time))
            (flet ((send-mail (id)
                     (let ((data (db id)))
@@ -343,9 +345,12 @@
                                                 from
                                                 (format nil "\"~A\" <~A>" name email)
                                                 subject
-                                                text
+                                                text-with-unsubscribe
                                                 :html-message html)))))))
-             (dolist (id (remove-duplicates *active-people-index*))
+             (dolist (id (if *productionp*
+                           (remove-duplicates *active-people-index*)
+                           (when (getf *user* :admin)
+                             (list *userid*))))
                (send-mail id)))))
         (flash "your message has been sent"))
 
