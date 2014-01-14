@@ -886,7 +886,8 @@
            (group (db id))
            (url (strcat "/groups/" (username-or-id id)))
            (invitee (awhen (post-parameter "invite-member")
-                      (parse-integer it))))
+                      (parse-integer it)))
+           (next (or (post-parameter "next") url)))
       (cond
         ((post-parameter "request-membership")
          (if (eql (getf group :membership-method) :invite-only)
@@ -902,7 +903,16 @@
          (flash (s+ "Your membership request has been forwarded to the "
                     (getf group :name)
                     " admins."))
-         (see-other (or (post-parameter "next") url)))
+         (see-other next))
+
+        ((post-parameter "accept-group-membership-invitation")
+         (aif (assoc *userid*
+                     (gethash id *group-membership-invitations-index*))
+           (progn
+             (accept-group-membership-invitation (cdr it))
+             (flash (s+ "You have joined " (getf group :name)))
+             (see-other next))
+           (permission-denied)))
 
         ((post-parameter "leave-group")
          (when (member *userid* (getf group :members))
