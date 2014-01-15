@@ -72,7 +72,7 @@ group-name
       (:p :style *style-p* 
           (str (person-email-link from))
             " is requesting to join your group, "
-            (str (person-link group-id))
+            (str (person-email-link group-id))
                 ", on Kindista.")
 
       (:p :style *style-p*

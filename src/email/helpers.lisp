@@ -29,8 +29,14 @@
                            border: thin solid #bac2b2;")
 
 (defun person-email-link (id)
-  (html
-    (:a :href (strcat +base-url+ "people/" (username-or-id id)) (str (getf (db id) :name)))))
+  (let ((entity (db id)))
+    (html
+      (:a :href (strcat +base-url+
+                        (if (eql (getf entity :type) :person)
+                          "/people/"
+                          "/groups/")
+                        (username-or-id id))
+          (str (getf entity :name))))))
 
 (defun person-name (id)
   (db id :name))

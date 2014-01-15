@@ -71,7 +71,7 @@ group-name
       (:p :style *style-p* 
           (str (person-email-link from))
             " has invited you to join their group, "
-            (str (person-link group-id))
+            (str (person-email-link group-id))
                 ", on Kindista.")
 
       (:p :style *style-p*
