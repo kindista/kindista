@@ -1934,7 +1934,7 @@ div.membership-request button:last-child {
 }
 
 .card .actions form {
- display: block;
+ display: inline-block;
  margin-bottom: 0.2em;
 }
 
