@@ -706,11 +706,12 @@
          (mailboxes (mailbox-ids (list groupid)))
          (people (mapcar #'(lambda (mailbox) (cons mailbox :unread))
                          mailboxes))
+         (admin-ids (mapcar #'car mailboxes))
          (id (insert-db (list :type :group-membership-request
                               :group-id groupid
                               :people people ;group admins at time of request
-                              :message-folders (list :inbox
-                                                     (mapcar #'car mailboxes))
+                              :message-folders (list :inbox admin-ids
+                                                     :unread admin-ids)
                               :requested-by person
                               :created time))))
 
@@ -746,7 +747,8 @@
          (id (insert-db (list :type :group-membership-invitation
                               :group-id groupid
                               :people (list (cons (list invitee)  :unread))
-                              :message-folders (list :inbox (list invitee))
+                              :message-folders (list :inbox (list invitee)
+                                                     :unread (list invitee))
                               :invited-by host
                               :created time))))
 
@@ -773,6 +775,16 @@
     (with-locked-hash-table (*group-membership-invitations-index*)
       (asetf (gethash group *group-membership-invitations-index*)
              (remove (cons invitee id) it :test #'equal)))
+    (remove-message-from-indexes id)
+    (remove-from-db id)))
+
+(defun delete-group-membership-invitation (id)
+  (let* ((invitation (db id))
+         (group (getf invitation :group-id)))
+    (with-locked-hash-table (*group-membership-invitations-index*)
+      (asetf (gethash group *group-membership-invitations-index*)
+             (remove (cons (caaar (getf invitation :people)) id)
+                     it :test #'equal)))
     (remove-message-from-indexes id)
     (remove-from-db id)))
 
