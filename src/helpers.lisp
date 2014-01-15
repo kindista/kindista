@@ -201,8 +201,8 @@
   (let ((newtext (subseq text 0 (min (length text) length))))
     (if (> (length text) length)
       (html
-        (str newtext)
-        "..." 
+        (str (html-text newtext))
+        "..."
         (when see-more
           (htm (:a :href see-more " see more"))))
       newtext)))

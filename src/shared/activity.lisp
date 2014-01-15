@@ -125,7 +125,7 @@
                                              (str
                                                (if truncate
                                                  (ellipsis
-                                                   (html-text (getf data :title))
+                                                   (getf data :title)
                                                    :length (if sidebar 33 50))
                                                  (html-text (getf data :title))))))
                               (unless sidebar
@@ -160,7 +160,7 @@
                               (:p
                                 (str
                                   (if truncate
-                                    (ellipsis (html-text (getf data :details))
+                                    (ellipsis (getf data :details)
                                               :length (if sidebar 150 500)
                                               :see-more item-url)
                                     (html-text (getf data :details)))))))))
@@ -202,7 +202,7 @@
                               (:p
                                 (str
                                   (if truncate
-                                    (ellipsis (html-text (getf data :text))
+                                    (ellipsis (getf data :text)
                                               :length 500
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
@@ -284,7 +284,7 @@
                               (:p
                                 (str
                                   (if truncate
-                                    (ellipsis (html-text (getf data :text))
+                                    (ellipsis (getf data :text)
                                               :length 500
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
