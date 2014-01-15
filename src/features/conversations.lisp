@@ -226,7 +226,7 @@
                  (with (remove *userid* (getf it :participants))))
             (standard-page
               (aif (getf it :subject)
-                (ellipsis it 24)
+                (ellipsis it :length 24)
                 "Conversation")
               (html
                 (str (menu-horiz "actions"

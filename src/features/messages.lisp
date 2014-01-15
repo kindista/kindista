@@ -452,7 +452,7 @@
 
         (:p :class "text"
           (:span :class "title"
-           (str (url (ellipsis (getf conversation :subject) 30)))
+           (str (url (ellipsis (getf conversation :subject) :length 30)))
             (when (> comments 1)
               (htm
                 " (" (str comments) ")")))
@@ -523,7 +523,7 @@
 
         (:p :class "text"
           (:span :class "title"
-            (str (reply-url (ellipsis (getf original-message :text) 30)))
+            (str (reply-url (ellipsis (getf original-message :text) :length 30)))
             (when (> comments 1)
               (htm
                 " (" (str comments) ") "))

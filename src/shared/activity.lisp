@@ -121,13 +121,13 @@
                    :hearts (length (loves item-id))
                    ;:comments (length (comments item-id))
                    :content (html
-                                (:h3 (:a :href item-url
-                                               (str
-                                                 (if truncate
-                                                   (ellipsis
-                                                     (html-text (getf data :title))
-                                                     (if sidebar 33 50))
-                                                   (html-text (getf data :title))))))
+                              (:h3 (:a :href item-url
+                                             (str
+                                               (if truncate
+                                                 (ellipsis
+                                                   (html-text (getf data :title))
+                                                   :length (if sidebar 33 50))
+                                                 (html-text (getf data :title))))))
                               (unless sidebar
                                 (htm
                                   (:p
@@ -161,7 +161,7 @@
                                 (str
                                   (if truncate
                                     (ellipsis (html-text (getf data :details))
-                                              (if sidebar 150 500)
+                                              :length (if sidebar 150 500)
                                               :see-more item-url)
                                     (html-text (getf data :details)))))))))
 
@@ -203,7 +203,7 @@
                                 (str
                                   (if truncate
                                     (ellipsis (html-text (getf data :text))
-                                              500
+                                              :length 500
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))
@@ -285,7 +285,7 @@
                                 (str
                                   (if truncate
                                     (ellipsis (html-text (getf data :text))
-                                              500
+                                              :length 500
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))

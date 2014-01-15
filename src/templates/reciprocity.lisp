@@ -84,7 +84,7 @@
           " is requesting:")
         (:div :class "recip-details"
           (str (ellipsis (db request-id :text)
-                         120
+                         :length 120
                          :see-more (strcat "/requests/" request-id)))
           (when (and *userid* (not (= *userid* user-id)))
             (htm

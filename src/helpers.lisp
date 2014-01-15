@@ -197,7 +197,7 @@
               param-strings))
       (setf params (cddr params))))
 
-(defun ellipsis (text &optional (length 160) &key see-more)
+(defun ellipsis (text &key (length 160) see-more)
   (let ((newtext (subseq text 0 (min (length text) length))))
     (if (> (length text) length)
       (html
