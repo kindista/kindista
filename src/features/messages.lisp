@@ -517,7 +517,7 @@
             (htm
               (str (person-link (getf reply :by)))
               " replied to "
-              (str (or (s+ group-name "'s ") "your "))
+              (str (if group-name (s+ group-name "'s ") "your "))
               (str (inventory-url))))
           (str (group-message-indicator message groups)) )
 
