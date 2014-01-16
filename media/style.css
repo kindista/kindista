@@ -2167,10 +2167,11 @@ div.activity-image {
  vertical-align: baseline;
 }
 
-.profile .city {
- font-size:0.9em;
- color:#666;
- margin:0.5em 0;
+#profile-top .city {
+ display: inline-block;
+ font-size: 1em;
+ color:#555;
+ margin-bottom: 1em;
 }
 
 .profile .bio {
@@ -2575,7 +2576,7 @@ select.recipients {
  opacity: 1.0;
 }
 
-.bio .emptyyy
+.bio .empty {
  font-style: italic;
  color: #888;
 }
