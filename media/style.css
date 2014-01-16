@@ -3139,7 +3139,15 @@ input[name=reply] {
  font-size:0.95em;
 }
 
+.tags {
+ color:#777;
+ font-size:0.9em;
+ margin-bottom:1em;
 }
+.tags a {
+ font-weight:normal;
+}
+
 @-webkit-keyframes rotation {
    from {-webkit-transform: rotate(0deg);}
    to {-webkit-transform: rotate(359deg);}

@@ -50,7 +50,7 @@
           "Requests"
           (html
             (:div :class "activity"
-              (str (inventory-activity-item "request" (gethash id *db-results*) :show-distance t))))
+              (str (inventory-activity-item "request" (gethash id *db-results*) :show-distance t :show-tags t))))
           :selected "requests")))
     (not-found)))
 
