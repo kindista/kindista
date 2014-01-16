@@ -448,6 +448,7 @@
                  (:div
                    (:a :href "#search" (:img :alt "Search" :src "/media/icons/search.png"))
                    " "
+                   (:a :href "#messages" (:img :alt "Messages" :src "/media/icons/messages.png"))
                    (:a :href "#menu" (:img :alt "Menu" :src "/media/icons/menu.png"))))
                (html
                  (dolist (flash (flashes))
