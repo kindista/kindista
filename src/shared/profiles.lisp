@@ -285,12 +285,12 @@
 
           (cond
            ((eql (getf entity :location-privacy) :public)
-            (htm (:p :class "city"
+            (htm (:div :class "city"
                   (awhen (getf entity :street)
                     (htm (str it) (:br)))
                   (str (getf entity :city)) ", " (str (getf entity :state)))))
            ((getf entity :city)
-            (htm (:p :class "city" (str (getf entity :city)) ", " (str (getf entity :state))))))))
+            (htm (:div :class "city" (str (getf entity :city)) ", " (str (getf entity :state))))))))
 
       (unless (or (eql id *userid*) (not *userid*))
         (htm
