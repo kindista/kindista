@@ -288,9 +288,8 @@
 (defun post-events-new ()
   (require-active-user
     (let* ((title (post-parameter "title"))
-           (groupid (when (scan +number-scanner+
-                                (post-parameter "identity-selection"))
-                     (parse-integer (post-parameter "identity-selection"))))
+           (groupid (or (post-parameter-integer "identity-selection")
+                        (post-parameter-integer "groupid")))
            (adminp (group-admin-p groupid))
            (details (post-parameter "details"))
            (location (post-parameter "location"))
@@ -314,6 +313,8 @@
                                                    :date date
                                                    :time time
                                                    :error e)))
+        (pprint adminp)
+        (terpri)
         (cond
          ((getf *user* :pending)
           (pending-flash "post events on Kindista")

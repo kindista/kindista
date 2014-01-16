@@ -447,3 +447,6 @@
 
 (defun post-parameter-float (name)
   (awhen (post-parameter name) (unless (string= it "") (read-from-string it))))
+
+(defun post-parameter-integer (name)
+  (awhen (post-parameter name) (unless (string= it "") (parse-integer it))))
