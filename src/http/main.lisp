@@ -447,7 +447,14 @@
                (html
                  (:div
                    (:a :href "#search" (:img :alt "Search" :src "/media/icons/search.png"))
-                   " "
+                   (:div :class "message-icon"
+                    (:a :href "/messages"
+                     (:img :alt "Messages" :src "/media/icons/messages.png")
+                      (let ((inbox-count (new-inbox-items)))
+                        (when (> inbox-count 0)
+                         (htm
+                           (:span :class "newcount" (str inbox-count)))))))
+
                    (:a :href "#menu" (:img :alt "Menu" :src "/media/icons/menu.png"))))
                (html
                  (dolist (flash (flashes))
