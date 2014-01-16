@@ -947,7 +947,7 @@ img.small {
  margin: 0.5em 1em 0;
 }
 
-#header div {
+#header > div {
  /*float:right;*/
  position:absolute;
  top:0;
@@ -3116,6 +3116,24 @@ input[name=reply] {
  font-weight:bold;
 }
 
+.message-icon {
+ position:relative;
+ display:inline;
+}
+
+.message-icon > a >.newcount {
+ border-radius: 0.4em;
+ position:absolute;
+ padding:0.2em;
+ background-color: #a6ddf3;
+ color: #fff;
+ text-align:center;
+ right:0.6em;
+ top:-0.7em;
+ font-size:0.95em;
+}
+
+}
 @-webkit-keyframes rotation {
    from {-webkit-transform: rotate(0deg);}
    to {-webkit-transform: rotate(359deg);}
