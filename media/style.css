@@ -2154,10 +2154,15 @@ div.activity-image {
  width: auto;
 }
 
+#profile-top .basics {
+ display: inline-block;
+ margin-left: 0.25em;
+}
+
 .basics h1 {
  font-size: 1.8em;
  font-weight:normal;
- margin: 0.25em 0.25em 0.25em;
+ margin: 0 0.25em 0.15em 0;
 }
 
 .new-gratitude button.yes {
@@ -2171,7 +2176,7 @@ div.activity-image {
  display: inline-block;
  font-size: 1em;
  color:#555;
- margin-bottom: 1em;
+ margin: 0.4em 0 1em 0;
 }
 
 .profile .bio {

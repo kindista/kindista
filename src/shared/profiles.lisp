@@ -281,7 +281,8 @@
                   (htm (:span :class "help-text" " (inactive account)")))))
 
           (awhen (getf entity :category)
-            (htm (str it)))
+            (htm (str it)
+                 (:br)))
 
           (cond
            ((eql (getf entity :location-privacy) :public)
@@ -290,7 +291,7 @@
                     (htm (str it) (:br)))
                   (str (getf entity :city)) ", " (str (getf entity :state)))))
            ((getf entity :city)
-            (htm (:div :class "city" (str (getf entity :city)) ", " (str (getf entity :state))))))))
+            (htm (:p :class "city" (str (getf entity :city)) ", " (str (getf entity :state))))))))
 
       (unless (or (eql id *userid*) (not *userid*))
         (htm
