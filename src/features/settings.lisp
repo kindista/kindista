@@ -1062,7 +1062,8 @@
           ((post-parameter "remove-email")
            (let ((email (post-parameter "remove-email")))
              (amodify-db *userid* :emails (remove email it :test #'string=))
-             (remhash email *email-index*)
+             (with-locked-hash-table (*email-index*)
+               (remhash email *email-index*))
              (flash (s+ email " has been removed from your Kindista account."))
              (see-other "/settings/communication")))
 
