@@ -152,21 +152,22 @@
                        (or (not (assoc :minimal-activity reminders))
                            (> (- now (cdr (assoc :minimal-activity reminders)))
                               (* 5 +week-in-seconds+))))
-                  (send-reminder-email userid
-                                       "Making Kindista work for you"
-                                       (concatenate 'string greeting
-                                                            minimal-activity
-                                                            (or (unless latest-offer
-                                                                        first-offers)
-                                                                (unless latest-request
-                                                                        first-requests))
-                                                            (unless (> invitee-count
-                                                                       0)
-                                                              first-invitations)
-                                                            (unless latest-gratitude
-                                                                    first-gratitude)
-                                                            (unless avatar no-avatar)
-                                                            closing))
+                  (send-reminder-email
+                    userid
+                    "Making Kindista work for you"
+                    (concatenate 'string greeting
+                                         minimal-activity
+                                         (or (unless latest-offer
+                                                     first-offers)
+                                             (unless latest-request
+                                                     first-requests))
+                                         (unless (> invitee-count
+                                                    0)
+                                           first-invitations)
+                                         (unless latest-gratitude
+                                                 first-gratitude)
+                                         (unless avatar no-avatar)
+                                         closing))
                     (update-reminder-log userid :minimal-activity))
 
                  ; more-gratitude
