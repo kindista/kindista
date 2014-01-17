@@ -320,14 +320,15 @@
               (collect (cons name link))))
      #'string-lessp :key #'car)))
 
-(defun person-link (id)
+(defun person-link (id &key possesive)
   (let ((entity (db id)))
     (html
       (:a :href (s+ (if (eql (getf entity :type) :person)
                       "/people/"
                       "/groups/")
                     (username-or-id id))
-          (str (getf entity :name))))))
+          (str (getf entity :name))
+          (when possesive (htm "'s "))))))
 
 (defun group-link (id)
   (html

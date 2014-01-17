@@ -910,7 +910,9 @@
     (standard-page
       "Reply"
       (html
-        (:h1 "Reply to " (str type))
+        (:h2 "Reply to "
+             (str (person-link (getf data :by) :possesive t))
+             (str type))
         (:p (str (getf data :text)))
         (:h4 "Write your reply:")
         (:div :class "item"
