@@ -166,6 +166,7 @@
                                     (html-text (getf data :details)))))))))
 
 (defun gratitude-activity-item (result &key truncate reciprocity)
+  ; we should probably get rid of these comments -DJB
          ; result-people is a list
          ; car of list is person showing gratitude
          ; cdr of list is subjects
@@ -237,7 +238,7 @@
       (str (timestamp (result-time result)))
       (:p (str (person-link (first (result-people result)))) " joined Kindista"))))
 
-(defun inventory-activity-item (type result &key truncate show-distance show-what)
+(defun inventory-activity-item (type result &key truncate show-distance show-what show-tags)
   (let* ((user-id (first (result-people result)))
          (self (eql user-id *userid*))
          (item-id (result-id result))
@@ -245,7 +246,8 @@
          (by (getf data :by))
          (group-adminp (group-admin-p by))
          (images (getf data :images))
-         (item-url (strcat "/" type "s/" item-id)))
+         (item-url (strcat "/" type "s/" item-id))
+         (tags (getf data :tags))) ;DJB
 
     (activity-item :id item-id
                    :url item-url
@@ -288,10 +290,24 @@
                                               :length 500
                                               :see-more item-url)
                                     (html-text (getf data :text)))))
-                              (unless (string= item-url (script-name*))
+                              (when (and show-tags tags) 
+                                (htm
+                                  (:div :class "tags"
+                                   (str (display-tags type tags)))))
+                              (unless (string= item-url (script-name*));image?
                                 (str (activity-item-images images
                                                            item-url
                                                            type)))))))
+
+(defun display-tags (type tags)
+  (html
+    "Tags:  "
+    (dolist (tag tags)
+      (htm
+        (:a :href (url-compose (strcat type "s") "kw" tag) (str tag))
+        (unless (eql tag (car (last tags)))
+          (htm
+            " &middot "))))))
 
 (defun activity-item-images (images url alt)
   (html
@@ -303,7 +319,7 @@
                                :alt alt))))))))
 
 (defun activity-items (items &key (page 0) (count 20) (url "/home")
-                             (paginate t) (location t) reciprocity)
+                             (paginate t) (location t) reciprocity show-tags)
   (with-location
     (let ((start (* page count)))
       (html
@@ -324,9 +340,9 @@
                      (:person
                        (str (joined-activity-item item)))
                      (:offer
-                       (str (inventory-activity-item "offer" item :show-what t :show-distance location)))
+                       (str (inventory-activity-item "offer" item :show-what t :show-distance location :show-tags show-tags)))
                      (:request
-                       (str (inventory-activity-item "request" item :show-what t :show-distance location :truncate t)))))
+                       (str (inventory-activity-item "request" item :show-what t :show-distance location :truncate t :show-tags show-tags)))))
                  (setf items (cdr items)))
 
                 (t
@@ -348,7 +364,7 @@
                        (htm
                          (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >"))))))))))))
 
-(defun local-activity-items (&key (page 0) (count 20) (url "/home"))
+(defun local-activity-items (&key (page 0) (count 20) (url "/home") show-tags)
   (let ((distance (user-distance)))
     (if (= distance 0)
       (activity-items (sort (remove-private-items
@@ -358,7 +374,8 @@
                       :page page
                       :count count
                       :reciprocity t
-                      :url url)
+                      :url url
+                      :show-tags show-tags)
       (let ((items (sort (geo-index-query *activity-geo-index*
                                           *latitude*
                                           *longitude*
@@ -367,4 +384,6 @@
         (activity-items items :page page 
                               :count count
                               :reciprocity t 
-                              :url url)))))
+                              :url url
+                              :show-tags show-tags)))))
+

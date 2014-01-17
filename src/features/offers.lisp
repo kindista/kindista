@@ -53,7 +53,7 @@
           "Offers"
           (html
             (:div :class "activity item"
-              (str (inventory-activity-item "offer" (gethash id *db-results*) :show-distance t)))
+              (str (inventory-activity-item "offer" (gethash id *db-results*) :show-distance t :show-tags t)))
             (str (item-images-html id)))
           :selected "offers")))
     (not-found)))

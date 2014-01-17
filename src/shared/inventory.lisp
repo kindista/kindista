@@ -793,7 +793,8 @@
                  (str (inventory-activity-item type
                                                (pop items)
                                                :show-distance t
-                                               :truncate t)))
+                                               :truncate t
+                                               :show-tags t)))
                 (t
                  (when (< (user-rdist) 100)
                    (htm
