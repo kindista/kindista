@@ -89,7 +89,7 @@
    (declare (ignore seconds))
    (let* ((month-name (nth (- month 1) +month-names+))
           (day-name (nth day-of-week +day-names+))
-          (m (if (> hours 12) "PM" "AM"))
+          (m (if (> hours 11) "PM" "AM"))
           (hour (cond 
                   ((= hours 0) 12)
                   ((> hours 12) (- hours 12))
