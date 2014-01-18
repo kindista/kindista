@@ -302,7 +302,7 @@
            (time (post-parameter "time"))
            (local-time (when (and date time)
                          (handler-case
-                             (parse-datetime date time)
+                           (parse-datetime date time)
                            (local-time::invalid-time-specification () nil)))))
 
       (labels ((try-again (e) (enter-event-details :title title
@@ -313,8 +313,6 @@
                                                    :date date
                                                    :time time
                                                    :error e)))
-        (pprint adminp)
-        (terpri)
         (cond
          ((getf *user* :pending)
           (pending-flash "post events on Kindista")
