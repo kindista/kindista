@@ -417,7 +417,7 @@
          (love id)
          (see-other (or (post-parameter "next") (referer))))
 
-        (((post-parameter "unlove"))
+        ((post-parameter "unlove")
          (unlove id)
          (see-other (or (post-parameter "next") (referer))))
 
