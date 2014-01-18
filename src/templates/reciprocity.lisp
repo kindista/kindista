@@ -89,7 +89,9 @@
           (when (and *userid* (not (= *userid* user-id)))
             (htm
               (:div :class "recip-reply"
-                (:a :href (strcat "/requests/" request-id "/reply") "Reply")
+                (:a :href (url-compose (strcat "/requests/" request-id "/reply")
+                                       "next" (request-uri*))
+                    "Reply")
                 (when more-requests
                   (htm
                     " &middot; "
