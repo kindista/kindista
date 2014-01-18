@@ -339,7 +339,7 @@
                      (:person
                        (str (joined-activity-item item)))
                      (:offer
-                       (str (inventory-activity-item "offer" item :show-what t :show-distance location :show-tags show-tags)))
+                       (str (inventory-activity-item "offer" item :show-what t :show-distance location :show-tags show-tags :truncate t)))
                      (:request
                        (str (inventory-activity-item "request" item :show-what t :show-distance location :truncate t :show-tags show-tags)))))
                  (setf items (cdr items)))
