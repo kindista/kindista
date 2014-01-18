@@ -413,11 +413,11 @@
          (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
          (see-other (or next (script-name*))))
 
-        ((and (post-parameter "love"))
+        ((post-parameter "love")
          (love id)
          (see-other (or (post-parameter "next") (referer))))
 
-        ((and (post-parameter "unlove"))
+        (((post-parameter "unlove"))
          (unlove id)
          (see-other (or (post-parameter "next") (referer))))
 
