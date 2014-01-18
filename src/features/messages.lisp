@@ -204,7 +204,6 @@
     (with-locked-hash-table (*person-mailbox-index*)
       (doplist (folder people-in-folder (message-folders message))
         (dolist (person people-in-folder)
-          (pprint folder)
           (asetf (getf (gethash person *person-mailbox-index*) folder)
                  (remove message it))))))
   (with-locked-hash-table (*db-messages*)
