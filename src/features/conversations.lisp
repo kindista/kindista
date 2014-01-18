@@ -388,7 +388,7 @@
 
            ((post-parameter "text")
             (flash "Your message has been sent.")
-            (contact-opt-out-flash people)
+            (contact-opt-out-flash (mapcar #'caar people))
             (send-metric* :message-sent
                           (create-comment :on id
                                           :text (post-parameter "text")
