@@ -2290,6 +2290,10 @@ a:visited {
  /*font-size:0.9em;*/
 }
 
+.item > p.error {
+ margin-bottom: 1em;
+}
+
 h3.label {
  display:none;
 }

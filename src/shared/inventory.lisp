@@ -348,6 +348,10 @@
                  :error t)
           (inventory-text))
 
+         ((> (length text) 1000)
+          (flash (s+ "Please shorten your description. Offers and Requests must be no longer than 1000 characters including line breaks."))
+          (inventory-text))
+
          ((and (not (post-parameter "create"))
                text)
            (inventory-tags))
@@ -460,6 +464,10 @@
                                             :selected (s+ type "s"))))
 
                (cond
+
+                ((> (length (post-parameter "text")) 1000)
+                 (inventory-tags :error  "Please shorten your description. Offers and Requests must be no longer than 1000 characters including line breaks."))
+
                 ((post-parameter "edit")
                  (inventory-tags))
 
