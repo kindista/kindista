@@ -66,7 +66,7 @@
           (:div :class "actions"
             (str (activity-icons :hearts hearts :comments comments :url url))
             (:form :method "post" :action url
-              (:input :type "hidden" :name "next" :value (script-name*))
+              (:input :type "hidden" :name "next" :value (request-uri*))
               (if (member *userid* (gethash id *love-index*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
                 (htm (:input :type "submit" :name "love" :value "Love")))
@@ -81,7 +81,6 @@
               (when edit
                 (htm
                   " &middot; "
-                  (:input :type "hidden" :name "next" :value (script-name*))
                   (:input :type "submit" :name "edit" :value "Edit")
                   " &middot; "
                   (if admin-delete

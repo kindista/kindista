@@ -388,23 +388,30 @@
     (let* ((id (parse-integer id))
            (item (db id))
            (by (getf item :by))
-           (adminp (group-admin-p by)))
+           (adminp (group-admin-p by))
+           (next (post-parameter "next")))
+
       (cond
         ((and (not (eql by *userid*))
               (item-view-denied (result-privacy (gethash id *db-results*))))
          (permission-denied))
 
         ((post-parameter "cancel")
-         (see-other (or (post-parameter "next") "/home")))
+         (see-other (or next "/home")))
 
         ((post-parameter "reply")
-         (see-other (s+ (script-name*) "/reply")))
+         (flet ((reply-html (type)
+                  (inventory-item-reply type id item :next next)))
+           (case (getf item :type)
+             (:offer (reply-html "offer"))
+             (:request (reply-html "request"))
+             (t (not-found)))))
 
         ((post-parameter "reply-text")
          (create-reply :on id :text (post-parameter "reply-text"))
          (flash "Your reply has been sent.")
          (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
-         (see-other (script-name*)))
+         (see-other (or next (script-name*))))
 
         ((and (post-parameter "love"))
          (love id)
@@ -904,22 +911,24 @@
                      (unless (= i 1)
                        (str ", ")))))))))))))
 
-(defun inventory-item-reply (type id data)
-  (if (item-view-denied (result-privacy (gethash id *db-results*)))
-    (permission-denied)
-    (standard-page
-      "Reply"
-      (html
-        (:h2 "Reply to "
-             (str (person-link (getf data :by) :possesive t))
-             (str type))
-        (:p (str (getf data :text)))
-        (:h4 "Write your reply:")
-        (:div :class "item"
-          (:form :method "post" :action (strcat "/" type "s/" id)
-            (:table :class "post"
-             (:tr
-               (:td (:textarea :cols "1000" :rows "4" :name "reply-text"))
-               (:td
-                 (:button :class "yes" :type "submit" :class "submit" "Reply")))))))
-      :selected (s+ type "s"))))
+(defun inventory-item-reply (type id data &key next)
+  (let ((next (or next (get-parameter "next"))))
+    (if (item-view-denied (result-privacy (gethash id *db-results*)))
+      (permission-denied)
+      (standard-page
+        "Reply"
+        (html
+          (:h2 "Reply to "
+               (str (person-link (getf data :by) :possesive t))
+               (str type))
+          (:p (str (getf data :text)))
+          (:h4 "Write your reply:")
+          (:div :class "item"
+            (:form :method "post" :action (strcat "/" type "s/" id)
+              (:input :type "hidden" :name "next" :value next)
+              (:table :class "post"
+               (:tr
+                 (:td (:textarea :cols "1000" :rows "4" :name "reply-text"))
+                 (:td
+                   (:button :class "yes" :type "submit" :class "submit" "Reply")))))))
+        :selected (s+ type "s")))))
