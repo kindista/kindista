@@ -445,7 +445,8 @@
                                  (aif (post-parameter "privacy-selection")
                                    (string= "restricted" it)
                                    (getf item :privacy))
-                                  t)))
+                                  t))
+                  (new-text (post-parameter "text")))
 
              (iter (for tag in (tags-from-string (post-parameter "tags")))
                    (setf tags (cons tag tags)))
@@ -453,7 +454,7 @@
              (flet ((inventory-tags (&key error)
                       (enter-inventory-tags :title (s+ "Edit your " type)
                                             :action url
-                                            :text (getf item :text)
+                                            :text (or new-text (getf item :text))
                                             :tags (or tags (getf item :tags))
                                             :groups-selected groups-selected
                                             :restrictedp restrictedp
@@ -465,7 +466,7 @@
 
                (cond
 
-                ((> (length (post-parameter "text")) 1000)
+                ((> (length new-text) 1000)
                  (inventory-tags :error  "Please shorten your description. Offers and Requests must be no longer than 1000 characters including line breaks."))
 
                 ((post-parameter "edit")
@@ -513,7 +514,7 @@
                    (see-other (post-parameter "next"))))
 
                 ((and (post-parameter "create")
-                      (post-parameter "text"))
+                      new-text)
 
                  (if (intersection tags *top-tags* :test #'string=)
                    (progn
