@@ -66,7 +66,7 @@
         collect (list :userid i
                       :requestid (nth (random num-requests) request-list)
                       :more (when (> num-requests 1)
-                              num-requests)))))
+                              (- num-requests 1))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; DISPLAY-GRATITUDE-RECIPROCITY
