@@ -17,6 +17,15 @@
 
 (in-package :kindista)
 
+(defun number-selection-html (name end &optional selected)
+  (html
+    (:select :name name
+      (loop for num from 1 to end
+            do (htm
+                 (:option :value (strcat num)
+                          :selected (when (eql selected num) "")
+                          (str (strcat num))))))))
+
 (defun group-category-selection (&key next selected submit-buttons (class "identity"))
   (let* ((default-options '("business"
                             "church/spiritual community"

@@ -279,14 +279,10 @@
 
 (defun post-new-inventory-item (type &key url)
   (require-active-user
-    (let* ((tags (iter (for pair in (post-parameters*))
-                       (when (and (string= (car pair) "tag")
-                                  (scan *tag-scanner* (cdr pair)))
-                         (collect (cdr pair)))))
-           (groups-selected (iter (for pair in (post-parameters*))
-                                  (when (string= (car pair) "groups-selected")
-                                    (awhen (parse-integer (cdr pair))
-                                      (collect it)))))
+    (let* ((tags (post-parameter-string-list "tag"
+                                             #'(lambda (tag)
+                                                 (scan *tag-scanner* tag))))
+           (groups-selected (post-parameter-integer-list "groups-selected"))
            (groupid (when (scan +number-scanner+ (post-parameter "groupid"))
                      (parse-integer (post-parameter "groupid"))))
            (identity-selection (when (scan +number-scanner+
@@ -430,17 +426,12 @@
                             adminp
                             (getf *user* :admin))
                       (s+ "You can only edit your own " type "s."))
-           (let* ((tags (iter (for pair in (post-parameters*))
-                              (when (and (string= (car pair) "tag")
-                                         (scan *tag-scanner* (cdr pair)))
-                                (collect (cdr pair)))))
-
-                  (groups-selected (or (iter (for pair in (post-parameters*))
-                                         (when (string= (car pair) "groups-selected")
-                                           (awhen (parse-integer (cdr pair))
-                                             (collect it))))
+           (let* ((tags (post-parameter-string-list "tag"
+                                                    #'(lambda (tag)
+                                                        (scan *tag-scanner*
+                                                              tag))))
+                  (groups-selected (or (post-parameter-integer-list "groups-selected")
                                        (getf item :privacy)))
-
                   (restrictedp (when
                                  (aif (post-parameter "privacy-selection")
                                    (string= "restricted" it)

@@ -205,7 +205,7 @@
         (see-other (or (referer) "/home")))
       (enter-event-details))))
 
-(defun enter-event-details (&key error date time location title groupid details existing-url)
+(defun enter-event-details (&key error date time location title groupid details existing-url recurring frequency interval days-of-week by-day-or-date days-of-month end-date)
   (standard-page
     (if existing-url "Edit your event details" "Create a new event")
     (html
@@ -218,6 +218,94 @@
         (:form :method "post"
                :action (or existing-url "/events/new")
          (:input :type "hidden" :name "next" :value (referer))
+
+         (:div
+           (:label "When (date & time)")
+           (:input :type "text"
+                   :name "date"
+                   :placeholder "mm/dd/yyyy"
+                   :value date)
+           (:br)
+           (:input :type "text"
+                   :name "time"
+                   :placeholder "Add a time? (ex. 2:30 PM)"
+                   :value time))
+
+         (:div
+           (:input :type "checkbox"
+                   :name "recurring"
+                   :checked (when recurring "checked")
+                   :onclick "this.form.submit()"
+                   "Repeat..."))
+
+         (:div
+           (:label "Repeats:")
+           (:input :type "radio"
+                   :name "frequency"
+                   :value "weekly"
+                   :onclick "this.form.submit()"
+                   :checked (unless (eql frequency 'monthly) ""))
+           "Weekly"
+           (:input :type "radio"
+                   :name "frequency"
+                   :value "monthly"
+                   :onclick "this.form.submit()"
+                   :checked (when (eql frequency 'monthly) ""))
+           "Monthly")
+
+         (:div
+           (:label "Repeat Every")
+           (str (number-selection-html "interval" 12 (or interval 1)))
+           (str (if (eql frequency 'monthly) "months" "weeks")))
+
+         (unless (eql frequency 'monthly)
+           (htm
+             (:div
+               (:label "Repeat on")
+               (dolist (day +day-names+)
+                 (htm
+                   (:input :type "checkbox"
+                           :name "days-of-week"
+                           :checked (when (find day
+                                                days-of-week
+                                                :test #'equalp)
+                                      "checked")
+                           :value (string-downcase day)
+                           (str (elt day 0))))))))
+
+         (:div
+           (:label "Repeat by")
+           (:input :type "radio"
+                   :name "by-day-or-date"
+                   :value "date"
+                   :onclick "this.form.submit()"
+                   :checked (unless (eql by-day-or-date 'date) ""))
+           "day of the month"
+           (:input :type "radio"
+                   :name "by-day-or-date"
+                   :value "day"
+                   :onclick "this.form.submit()"
+                   :checked (when (eql by-day-or-date 'date) ""))
+           "day of the week")
+
+         (:div
+           (:label "Days of the month")
+             (dolist (option +positions-of-day-in-month+)
+               (pprint option)
+               (htm (:input :type "checkbox"
+                            :name "days-of-month"
+                            :checked (when (find option days-of-month :test #'equalp)
+                                       "checked")
+                            :value option
+                            (str option)))))
+
+         (:div
+           (:label "End Date")
+           (:input :type "text"
+                   :name "end-date"
+                   :placeholder "mm/dd/yyyy"
+                   :value end-date))
+
          (:div :class "long"
            (:label "Event title")
            (:input :type "text"
@@ -248,18 +336,6 @@
                    :value location))
          (:p (:em "Please note: the address you enter for your event will be visible to anyone using Kindista."))
 
-         (:div
-           (:label "When (date & time)")
-           (:input :type "text"
-                   :name "date"
-                   :placeholder "mm/dd/yyyy"
-                   :value date)
-           (:br)
-           (:input :type "text"
-                   :name "time"
-                   :placeholder "Add a time? (ex. 2:30 PM)"
-                   :value time))
-
          (:p
            (:strong "Important: ")
            "Please read the "
@@ -287,16 +363,14 @@
 
 (defun post-events-new ()
   (require-active-user
-    (let* ((title (post-parameter "title"))
+    (let* ((title (post-parameter-string "title"))
            (groupid (or (post-parameter-integer "identity-selection")
                         (post-parameter-integer "groupid")))
            (adminp (group-admin-p groupid))
-           (details (post-parameter "details"))
-           (location (post-parameter "location"))
-           (lat (awhen (post-parameter "lat")
-                  (unless (string= it "") (read-from-string it))))
-           (long (awhen (post-parameter "long")
-                  (unless (string= it "") (read-from-string it))))
+           (details (post-parameter-string "details"))
+           (location (post-parameter-string "location"))
+           (lat (post-parameter-float "lat"))
+           (long (post-parameter-float "long"))
            (date (when (scan +date-scanner+ (post-parameter "date"))
                    (post-parameter "date")))
            (time (post-parameter "time"))
@@ -321,22 +395,19 @@
          ((post-parameter "cancel")
           (see-other (or (post-parameter "next") "/home")))
 
-         ((or (not title)
-              (string= title ""))
+         ((not title)
           (try-again "Please enter a title for your event"))
 
          ((< (length title) 4)
           (try-again "Please enter a longer title for your event"))
 
-         ((or (not details)
-              (string= details ""))
+         ((not details)
           (try-again "Please add some details for your event"))
 
          ((< (length details) 8)
           (try-again "Please enter some more details for your event"))
 
-         ((or (not location)
-              (string= location ""))
+         ((not location)
           (try-again "Please add a location for your event"))
 
          ((not date)
@@ -419,25 +490,38 @@
            (humanize-exact-time old-local-time)
            (declare (ignore date-name))
 
-           (let* ((title (or (unless (string= (post-parameter "title") "")
-                               (post-parameter "title"))
+           (let* ((title (or (post-parameter-string "title")
                              old-title))
-                  (details (or (unless (string= (post-parameter "details") "")
-                                 (post-parameter "details"))
+                  (details (or (post-parameter-string "details")
                                old-details))
-                  (location (or (unless (string= (post-parameter "location") "")
-                                  (post-parameter "location"))
+                  (location (or (post-parameter-string "location")
                                 old-location))
-                  (lat (awhen (post-parameter "lat")
-                         (unless (string= it "") (read-from-string it))))
-                  (long (awhen (post-parameter "long")
-                         (unless (string= it "") (read-from-string it))))
+                  (lat (post-parameter-float "lat"))
+                  (long (post-parameter-float "long"))
                   (new-date-p (scan +date-scanner+ (post-parameter "date")))
                   (new-time-p (scan +time-scanner+ (post-parameter "time")))
                   (date (or (when new-date-p (post-parameter "date"))
                             old-date))
                   (time (or (when new-time-p (post-parameter "time"))
                             old-time))
+                  (recurring (when (post-parameter "recurring") t))
+                  (frequency (awhen (post-parameter-string "frequency")
+                               (intern it)))
+                  (interval (post-parameter-integer "interval"))
+                  (days-of-week (post-parameter-string-list
+                                  "days-of-week"
+                                  #'(lambda (day)
+                                      (find day +day-names+ :test #'equalp))))
+                  (by-day-or-date (intern (post-parameter-string
+                                            "by-day-or-date")))
+                  (days-of-month (post-parameter-string-list
+                                   "days-of-month"
+                                   #'(lambda (day)
+                                       (find day +positions-of-day-in-month+
+                                             :test #'equalp))))
+
+
+
                   (local-time (handler-case (parse-datetime date time)
                                     (local-time::invalid-time-specification () nil))))
              (labels ((try-again (e) (enter-event-details :title title

@@ -23,6 +23,8 @@
              '("Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday" "Sunday") :test #'equal)
 (define-constant +month-names+
              '("January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December") :test #'equal)
+(define-constant +positions-of-day-in-month+
+                 '("first" "second" "third" "fourth" "last"))
 
 (defun parse-datetime (date &optional time)
   (multiple-value-bind (seconds minutes hours date month year)

@@ -443,6 +443,22 @@
        (:div :class "v-align-cell"
          ,content))))
 
+(defun post-parameter-integer-list (name)
+  (loop for pair in (post-parameters*)
+        for i = (when (parse-integer (cdr pair) :junk-allowed t))
+        when (and (string= (car pair) name) i)
+        collect i))
+
+(defun post-parameter-string-list (name &optional fn)
+  (loop for pair in (post-parameters*)
+        for s = (cdr pair)
+        unless (string= s "")
+        when (and (string= (car pair) name)
+                  (if fn
+                    (funcall fn s)
+                    t))
+        collect s))
+
 (defun post-parameter-string (name)
   (awhen (post-parameter name) (unless (string= it "") it)))
 
