@@ -387,14 +387,11 @@
 (defun get-event (id)
   (setf id (parse-integer id))
   (aif (db id)
-    (require-user
-      (standard-page
-        "Event"
-        (html
-          (str (event-activity-item (make-result :id id
-                                                 :time (getf it :local-time)
-                                                 :people (getf it :hosts )))))
-        :selected "events"))
+    (standard-page
+      "Event"
+      (html
+        (str (event-activity-item (gethash id *db-results*))))
+      :selected "events")
     (not-found)))
 
 (defun post-event (id)
