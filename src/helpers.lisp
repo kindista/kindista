@@ -360,6 +360,14 @@
     (if (or (= 0 list-length) (< 1 list-length))
       plural-string singular-string)))
 
+(defun humanize-number (n)
+  (let ((ones (floor n 10)))
+    (strcat n (cond
+                ((= ones 1) "st")
+                ((= ones 2) "nd")
+                ((= ones 3) "rd")
+                (t  "th")))))
+
 (defun contact-opt-out-flash (id-list &key (userid *userid*) (item-type "message"))
   (let ((people-opt-outs)
         (group-opt-outs))

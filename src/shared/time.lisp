@@ -85,7 +85,7 @@
       (t
        (strcat "in " (floor (/ seconds 31536000)) " years")))))
 
-(defun humanize-exact-time (universal-time &key detailed year-first)
+(defun humanize-exact-time (universal-time &key detailed year-first weekday)
  (multiple-value-bind (seconds minutes hours date month year day-of-week)
      (decode-universal-time universal-time)
    (declare (ignore seconds))
@@ -104,9 +104,32 @@
           (date-name (strcat day-name ", " month-name " " date ", " year )))
 
      (cond
+      (weekday (string-downcase day-name))
       (detailed (s+ date-name " at " time))
       (year-first (strcat year "-" month "-" date))
       (t (values time date-name formatted-date))))))
+
+(defun day-of-month (datetime &key formatted-date)
+  (local-time:timestamp-day (local-time:universal-to-timestamp
+                              (if formatted-date
+                                (parse-datetime datetime)
+                                datetime))))
+
+(defun position-of-day-in-month (datetime &key formatted-date)
+  (let* ((timestamp (local-time:universal-to-timestamp
+                      (if formatted-date
+                        (parse-datetime datetime)
+                        datetime)))
+         (day-of-month (local-time:timestamp-day timestamp))
+         (days-in-month (local-time:days-in-month
+                          (local-time:timestamp-month timestamp)
+                          (local-time:timestamp-year timestamp))))
+    (cond
+      ((< day-of-month 8) "first")
+      ((< day-of-month 15) "second")
+      ((< day-of-month 22) "third")
+      ((<= (+ day-of-month 7) days-in-month) "fourth")
+      (t "last"))))
 
 (defun inline-timestamp (time &key type url)
   (let ((inner (html

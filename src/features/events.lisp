@@ -56,7 +56,7 @@
         (dolist (stem stems)
           (push result (gethash stem *event-stem-index*)))))))
 
-(defun modify-event (id &key lat long title details local-time address)
+(defun modify-event (id &key lat long title details local-time address recurring frequency interval days-of-week by-day-or-date days-of-month end-date)
   (let* ((result (gethash id *db-results*))
          (data (db id))
          (old-address (getf data :address))
@@ -65,6 +65,13 @@
          (old-time (getf data :local-time))
          (old-lat (getf data :lat))
          (old-long (getf data :long))
+         (old-recurring (getf data :recurring))
+         (old-frequency (getf data :frequency))
+         (old-interval (getf data :interval))
+         (old-days-of-week (getf data :days-of-week))
+         (old-by-day-or-date (getf data :by-day-or-date))
+         (old-days-of-month (getf data :days-of-month))
+         (old-end-date (getf data :end-date))
          (new-lat (awhen lat (unless (= old-lat it) it)))
          (new-long (awhen long (unless (= old-long it) it)))
          (new-time (awhen local-time (unless (= old-time it) it)))
@@ -205,7 +212,7 @@
         (see-other (or (referer) "/home")))
       (enter-event-details))))
 
-(defun enter-event-details (&key error date time location title groupid details existing-url recurring frequency interval days-of-week by-day-or-date days-of-month end-date)
+(defun enter-event-details (&key error date time location title groupid details existing-url recurring frequency interval days-of-week by-day-or-date days-of-month end-date local-day-of-week)
   (standard-page
     (if existing-url "Edit your event details" "Create a new event")
     (html
@@ -238,73 +245,93 @@
                    :onclick "this.form.submit()"
                    "Repeat..."))
 
-         (:div
-           (:label "Repeats:")
-           (:input :type "radio"
-                   :name "frequency"
-                   :value "weekly"
-                   :onclick "this.form.submit()"
-                   :checked (unless (eql frequency 'monthly) ""))
-           "Weekly"
-           (:input :type "radio"
-                   :name "frequency"
-                   :value "monthly"
-                   :onclick "this.form.submit()"
-                   :checked (when (eql frequency 'monthly) ""))
-           "Monthly")
-
-         (:div
-           (:label "Repeat Every")
-           (str (number-selection-html "interval" 12 (or interval 1)))
-           (str (if (eql frequency 'monthly) "months" "weeks")))
-
-         (unless (eql frequency 'monthly)
+         (when recurring
            (htm
              (:div
-               (:label "Repeat on")
-               (dolist (day +day-names+)
-                 (htm
-                   (:input :type "checkbox"
-                           :name "days-of-week"
-                           :checked (when (find day
-                                                days-of-week
-                                                :test #'equalp)
-                                      "checked")
-                           :value (string-downcase day)
-                           (str (elt day 0))))))))
+               (:label "Repeats:")
+               (:input :type "radio"
+                       :name "frequency"
+                       :value "weekly"
+                       :onclick "this.form.submit()"
+                       :checked (unless (string= frequency "monthly") ""))
+               "Weekly"
+               (:input :type "radio"
+                       :name "frequency"
+                       :value "monthly"
+                       :onclick "this.form.submit()"
+                       :checked (when (string= frequency "monthly") ""))
+               "Monthly")
 
-         (:div
-           (:label "Repeat by")
-           (:input :type "radio"
-                   :name "by-day-or-date"
-                   :value "date"
-                   :onclick "this.form.submit()"
-                   :checked (unless (eql by-day-or-date 'date) ""))
-           "day of the month"
-           (:input :type "radio"
-                   :name "by-day-or-date"
-                   :value "day"
-                   :onclick "this.form.submit()"
-                   :checked (when (eql by-day-or-date 'date) ""))
-           "day of the week")
+             (:div
+               (:label "Repeat Every")
+               (str (number-selection-html "interval" 12 (or interval 1)))
+               (str (if (string= frequency "monthly") "months" "weeks"))) 
 
-         (:div
-           (:label "Days of the month")
-             (dolist (option +positions-of-day-in-month+)
-               (pprint option)
-               (htm (:input :type "checkbox"
-                            :name "days-of-month"
-                            :checked (when (find option days-of-month :test #'equalp)
-                                       "checked")
-                            :value option
-                            (str option)))))
+             (unless (string= frequency "monthly")
+               (htm
+                 (:div
+                   (:label "Repeat on")
+                   (dolist (day +day-names+)
+                     (htm
+                       (:input :type "checkbox"
+                               :name "days-of-week"
+                               :checked (when (or (find day
+                                                        days-of-week
+                                                        :test #'equalp)
+                                                  (equalp local-day-of-week
+                                                          day))
+                                          "checked")
+                               :value (string-downcase day)
+                               (str (elt day 0))))))))
 
-         (:div
-           (:label "End Date")
-           (:input :type "text"
-                   :name "end-date"
-                   :placeholder "mm/dd/yyyy"
-                   :value end-date))
+             (when (string= frequency "monthly")
+               (htm
+                 (:div
+                   (:label "Repeat by")
+                   (:input :type "radio"
+                           :name "by-day-or-date"
+                           :value "day"
+                           :onclick "this.form.submit()"
+                           :checked (unless (string= by-day-or-date "date")
+                                      ""))
+                   "day of the week"
+                   (:input :type "radio"
+                           :name "by-day-or-date"
+                           :value "date"
+                           :onclick "this.form.submit()"
+                           :checked (when (string= by-day-or-date "date") ""))
+                   "date (the "
+                   (str (humanize-number
+                          (day-of-month date :formatted-date t)))
+                   " of the month)")
+
+                 (unless (string= by-day-or-date "date")
+                   (htm
+                     (:div
+                       (:label "Days of the month")
+                         (dolist (option +positions-of-day-in-month+)
+                           (htm
+                             (:input :type "checkbox"
+                                     :name "days-of-month"
+                                     :checked (when
+                                                (or (find option
+                                                          days-of-month
+                                                          :test #'string=)
+                                                    (string=
+                                                      option
+                                                      (position-of-day-in-month
+                                                         date
+                                                         :formatted-date t)))
+                                                "checked")
+                                     :value option
+                                     (str option) " " (str local-day-of-week)))))))))
+
+             (:div
+               (:label "End Date")
+               (:input :type "text"
+                       :name "end-date"
+                       :placeholder "mm/dd/yyyy"
+                       :value end-date))))
 
          (:div :class "long"
            (:label "Event title")
@@ -475,10 +502,7 @@
            (hosts (getf item :hosts))
            (group-adminp (loop for host in hosts
                                thereis (group-admin-p host)))
-           (old-location (getf item :address))
-           (old-title (getf item :title))
-           (old-details (getf item :details))
-           (old-local-time (getf item :local-time))
+           (old-location (getf item :location))
            (url (strcat "/events/" id)))
 
        (require-test ((or (member *userid* (getf item :hosts))
@@ -487,13 +511,13 @@
                       (s+ "You can only edit your own events."))
 
          (multiple-value-bind (old-time date-name old-date)
-           (humanize-exact-time old-local-time)
+           (humanize-exact-time (getf item :local-time))
            (declare (ignore date-name))
 
            (let* ((title (or (post-parameter-string "title")
-                             old-title))
+                             (getf item :title)))
                   (details (or (post-parameter-string "details")
-                               old-details))
+                               (getf item :details)))
                   (location (or (post-parameter-string "location")
                                 old-location))
                   (lat (post-parameter-float "lat"))
@@ -504,38 +528,72 @@
                             old-date))
                   (time (or (when new-time-p (post-parameter "time"))
                             old-time))
-                  (recurring (when (post-parameter "recurring") t))
-                  (frequency (awhen (post-parameter-string "frequency")
-                               (intern it)))
-                  (interval (post-parameter-integer "interval"))
-                  (days-of-week (post-parameter-string-list
-                                  "days-of-week"
-                                  #'(lambda (day)
-                                      (find day +day-names+ :test #'equalp))))
-                  (by-day-or-date (intern (post-parameter-string
-                                            "by-day-or-date")))
-                  (days-of-month (post-parameter-string-list
-                                   "days-of-month"
-                                   #'(lambda (day)
-                                       (find day +positions-of-day-in-month+
-                                             :test #'equalp))))
-
-
-
+                  (recurring (or (when (post-parameter "recurring") t)
+                                 (getf item :recurring)))
+                  (frequency (or (post-parameter-string "frequency")
+                                 (awhen (getf item :frequency)
+                                   (symbol-name it))))
+                  (interval (or (post-parameter-integer "interval")
+                                (getf item :interval)))
+                  (days-of-week (when (string= frequency "weekly")
+                                  (or (post-parameter-string-list
+                                         "days-of-week"
+                                         #'(lambda (day)
+                                             (find day +day-names+
+                                                   :test #'equalp)))
+                                      (awhen (getf item :days-of-week)
+                                        (mapcar #'symbol-name it)))))
+                  (by-day-or-date (when (string= frequency "monthly")
+                                    (or (post-parameter-string
+                                          "by-day-or-date")
+                                        (awhen (getf item :by-day-or-date)
+                                          (symbol-name it)))))
+                  (days-of-month (when (string= frequency "monthly")
+                                   (or (post-parameter-string-list
+                                         "days-of-month"
+                                         #'(lambda (day)
+                                             (find day
+                                                   +positions-of-day-in-month+
+                                                   :test #'string=)))
+                                       (awhen (getf item :days-of-month)
+                                         (mapcar #'symbol-name it)))))
+                  (end-date-string (post-parameter-string "end-date"))
                   (local-time (handler-case (parse-datetime date time)
-                                    (local-time::invalid-time-specification () nil))))
-             (labels ((try-again (e) (enter-event-details :title title
-                                                          :existing-url url
-                                                          :details details
-                                                          :location location
-                                                          :date date
-                                                          :time time
-                                                          :error e))
+                                    (local-time::invalid-time-specification () nil)))
+                  (local-day-of-week (humanize-exact-time local-time :weekday t))
+                  (local-end-time (or (awhen end-date-string
+                                        (handler-case (parse-datetime it time)
+                                          (local-time::invalid-time-specification () nil)))
+                                      (getf item :end-date))))
+
+             (labels ((try-again (&optional e)
+                        (enter-event-details :title title
+                                             :existing-url url
+                                             :details details
+                                             :location location
+                                             :recurring recurring
+                                             :frequency frequency
+                                             :interval interval
+                                             :days-of-week days-of-week
+                                             :by-day-or-date by-day-or-date
+                                             :days-of-month days-of-month
+                                             :local-day-of-week local-day-of-week
+                                             :end-date (awhen local-end-time (humanize-exact-time it))
+                                             :date date
+                                             :time time
+                                             :error e))
                       (modify-data (&key lat long address)
                         (modify-event id :lat lat
                                          :long long
                                          :address address
                                          :local-time local-time
+                                         :recurring recurring
+                                         :frequency frequency
+                                         :interval interval
+                                         :days-of-week days-of-week
+                                         :by-day-or-date by-day-or-date
+                                         :days-of-month days-of-month
+                                         :end-date (awhen local-end-time (humanize-exact-time it))
                                          :details details
                                          :title title)))
                (cond
@@ -586,12 +644,6 @@
                  ; must not be earlier than today.
                  (try-again "Please enter a future date for your event"))
 
-                ((and (string= location old-location)
-                      (string= details old-details)
-                      (string= title old-title)
-                      (= local-time old-local-time))
-                 (try-again "You haven't entered any new details. Nothing has been changed."))
-
                 ((and (not (and lat long))
                       (not (string= location old-location)))
                  ; if there's a new location
@@ -612,7 +664,14 @@
                                       "title" title
                                       "details" details
                                       "date" date
-                                      "time" time))))
+                                      "time" time
+                                      "recurring" recurring
+                                      "frequency" frequency
+                                      "interval" interval
+                                      "days-of-week" days-of-week
+                                      "by-day-or-date" by-day-or-date
+                                      "days-of-month" days-of-month
+                                      "end-date" (awhen local-end-time (humanize-exact-time it))))))
 
                 ((post-parameter "submit-edits")
                  (modify-data)
@@ -622,7 +681,9 @@
                 ((post-parameter "confirm-location")
                  (modify-data :lat lat :long long :address location)
                  (flash "Your event has been updated")
-                 (see-other url))))))))))
+                 (see-other url))
+
+                (t (try-again))))))))))
 
 (defun get-events-all ()
   (standard-page
