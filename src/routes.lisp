@@ -119,7 +119,7 @@
 
   ("/events/new"
    :get get-events-new
-   :post post-events-new)
+   :post post-event)
 
   ("/events/<int:id>"
     :get get-event

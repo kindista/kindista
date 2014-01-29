@@ -286,9 +286,10 @@
         collect (cons id (db id :name))))
 
 (defun group-admin-p (groupid &optional (userid *userid*))
-  (member groupid (getf (if (eql userid *userid*)
-                          *user-group-priviledges*
-                          (gethash userid *group-priviledges-index*)) :admin)))
+"Returns the groupid if userid is an admin for that group."
+  (find groupid (getf (if (eql userid *userid*)
+                        *user-group-priviledges*
+                        (gethash userid *group-priviledges-index*)) :admin)))
 
 (defun group-member-links (groupid &key ul-class)
   (let* ((group (db groupid))

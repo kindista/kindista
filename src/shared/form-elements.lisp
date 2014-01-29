@@ -17,9 +17,10 @@
 
 (in-package :kindista)
 
-(defun number-selection-html (name end &optional selected)
+(defun number-selection-html (name end &key selected auto-submit)
   (html
     (:select :name name
+             :onchange (when auto-submit "this.form.submit()")
       (loop for num from 1 to end
             do (htm
                  (:option :value (strcat num)
