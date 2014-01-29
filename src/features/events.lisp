@@ -17,23 +17,23 @@
 
 (in-package :kindista)
 
-(defun create-event (&key (host *userid*) lat long title details local-time address recurring frequency interval days-of-week by-day-or-date days-of-month end-date)
-  (insert-db (list :type :event
-                   :hosts (list host)
-                   :lat lat
-                   :long long
-                   :address address
-                   :title title
-                   :details details
-                   :local-time local-time
-                   :recurring recurring
-                   :frequency frequency
-                   :interval interval
-                   :days-of-week days-of-week
-                   :by-day-or-date by-day-or-date
-                   :days-of-month days-of-month
-                   :end-date end-date
-                   :created (get-universal-time))))
+(defun create-event (&key (host *userid*) lat long title details local-time address recurring frequency interval days-of-week by-day-or-date days-of-month local-end-date)
+  (insert-db (remove-nil-plist-pairs (list :type :event
+                                           :hosts (list host)
+                                           :lat lat
+                                           :long long
+                                           :address address
+                                           :title title
+                                           :details details
+                                           :local-time local-time
+                                           :recurring recurring
+                                           :frequency frequency
+                                           :interval interval
+                                           :days-of-week days-of-week
+                                           :by-day-or-date by-day-or-date
+                                           :days-of-month days-of-month
+                                           :local-end-date local-end-date
+                                           :created (get-universal-time)))))
 
 (defun index-event (id data)
   (let* ((by (getf data :hosts))
@@ -52,7 +52,7 @@
       (with-locked-hash-table (*recurring-events-index*)
         (flet ((get-property-value (property)
                  (cons property (getf data property))))
-          (let ((event-details))
+          (let (event-details)
             (dolist (pair (mapcar #'get-property-value
                                   (list :frequency
                                         :interval
@@ -60,7 +60,8 @@
                                         :by-day-or-date
                                         :days-of-month
                                         :end-date)))
-              (nconc (list (car pair) (cdr pair)) event-details))
+              (awhen (cdr pair)
+                (nconcf event-details (list (car pair) it))))
              (setf (gethash id *recurring-events-index*) event-details)))))
 
     (unless (< (result-time result) (- now +day-in-seconds+))
@@ -78,7 +79,7 @@
         (dolist (stem stems)
           (push result (gethash stem *event-stem-index*)))))))
 
-(defun modify-event (id &key lat long title details local-time address recurring frequency interval days-of-week by-day-or-date days-of-month end-date)
+(defun modify-event (id &key lat long title details local-time address recurring frequency interval days-of-week by-day-or-date days-of-month local-end-date)
   (let* ((result (gethash id *db-results*))
          (data (db id))
          (old-address (getf data :address))
@@ -93,7 +94,7 @@
          (old-days-of-week (getf data :days-of-week))
          (old-by-day-or-date (getf data :by-day-or-date))
          (old-days-of-month (getf data :days-of-month))
-         (old-end-date (getf data :end-date))
+         (old-end-date (getf data :local-end-date))
          (now (get-universal-time))
          (new-data nil))
 
@@ -431,8 +432,8 @@
            (groupid (or (post-parameter-integer "identity-selection")
                         (post-parameter-integer "groupid")))
            (new-event-admin-p (unless id (group-admin-p groupid)))
-           (hosts (or (when new-event-admin-p groupid)
-                      (getf item :hosts)))
+           (new-host (or new-event-admin-p *userid*))
+           (hosts (getf item :hosts))
            (group-adminp (when id
                            (loop for host in hosts
                                  thereis (group-admin-p host))))
@@ -449,7 +450,7 @@
          (see-other (or (post-parameter "next") (referer))))
 
         (t
-         (require-test ((or (member *userid* (getf item :hosts))
+         (require-test ((or (member *userid* hosts)
                            group-adminp
                            (getf *user* :admin))
                        (s+ "You can only edit your own events."))
@@ -492,6 +493,9 @@
                    (frequency (or (post-parameter-string "frequency")
                                   (awhen (getf item :frequency)
                                     (symbol-name it))))
+                   (symbol-frequency (awhen frequency
+                                       (k-intern
+                                         (or-string= it '("weekly" "monthly")))))
                    (interval (or (post-parameter-integer "interval")
                                  (getf item :interval)))
                    (days-of-week (when (string= frequency "weekly")
@@ -502,12 +506,17 @@
                                                     :test #'equalp)))
                                        (awhen (getf item :days-of-week)
                                          (mapcar #'symbol-name it))
-                                       local-day-of-week)))
+                                       (list local-day-of-week))))
+                   (symbol-days-of-week (awhen days-of-week
+                                          (mapcar #'k-intern it)))
                    (by-day-or-date (when (string= frequency "monthly")
                                      (or (post-parameter-string
                                            "by-day-or-date")
                                          (awhen (getf item :by-day-or-date)
                                            (symbol-name it)))))
+                   (symbol-day-or-date (awhen by-day-or-date
+                                         (k-intern (or-string= it
+                                                   '("day" "date")))))
                    (days-of-month (when (string= frequency "monthly")
                                     (or (post-parameter-string-list
                                           "days-of-month"
@@ -516,7 +525,9 @@
                                                     +positions-of-day-in-month+
                                                     :test #'string=)))
                                         (awhen (getf item :days-of-month)
-                                          (mapcar #'symbol-name it))))))
+                                          (mapcar #'symbol-name it)))))
+                   (symbol-days-of-month (awhen days-of-month
+                                           (mapcar #'k-intern it))))
 
               (labels ((try-again (&optional e)
                ;; needs to be labels not flet because of
@@ -533,7 +544,7 @@
                                               :by-day-or-date by-day-or-date
                                               :days-of-month days-of-month
                                               :local-day-of-week local-day-of-week
-                                              :end-date (awhen local-end-time (humanize-exact-time it))
+                                              :end-date (awhen local-end-time(humanize-exact-time it))
                                               :date date
                                               :time time
                                               :error e))
@@ -546,28 +557,35 @@
                                              :address address
                                              :local-time local-time
                                              :recurring recurring
-                                             :frequency frequency
+                                             :frequency symbol-frequency
                                              :interval interval
-                                             :days-of-week days-of-week
-                                             :by-day-or-date by-day-or-date
-                                             :days-of-month days-of-month
-                                             :end-date (awhen local-end-time
-                                                         (humanize-exact-time
-                                                           it))
+                                             :days-of-week symbol-days-of-week
+                                             :by-day-or-date symbol-day-or-date
+                                             :days-of-month symbol-days-of-month
+                                             :local-end-date local-end-time
                                              :details details
                                              :title title)
                             (flash "Your event has been updated")
                             (see-other url))
                            (t
                             (flash "Your event has been added to the calendar")
-                            (see-other (strcat "/events/"
-                                               (create-event :lat lat
-                                                             :host hosts
-                                                             :long long
-                                                             :local-time local-time
-                                                             :title title
-                                                             :details details
-                                                             :address location)))))))
+                            (see-other
+                              (strcat "/events/"
+                                      (create-event
+                                        :lat lat
+                                        :host new-host
+                                        :long long
+                                        :local-time local-time
+                                        :title title
+                                        :details details
+                                        :address location
+                                        :recurring recurring
+                                        :frequency symbol-frequency
+                                        :interval interval
+                                        :days-of-week symbol-days-of-week
+                                        :by-day-or-date symbol-day-or-date
+                                        :days-of-month symbol-days-of-month
+                                        :local-end-date local-end-time)))))))
                 (cond
                  ((post-parameter "cancel")
                   (see-other (or (script-name*) "/home")))

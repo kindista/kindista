@@ -101,6 +101,23 @@
 (defun string-intersection (list1 list2)
   (intersection list1 list2 :test #'string=))
 
+(defun remove-nil-plist-pairs (plist)
+  (let (new-list)
+    (doplist (key value plist)
+      (when value (nconcf new-list (list key value))))
+    new-list))
+
+(defun k-symbol (string)
+  (or (find-symbol string :kindista)
+      (intern string :kindista)))
+
+(defun symbol= (symbol-a symbol-b)
+  (equalp (symbol-name symbol-a)
+          (symbol-name symbol-b)))
+
+(defun find-symbol-in-list (symbol list)
+  (find symbol list :test #'symbol=))
+
 (defun emails-from-string (string)
   (iter (for email in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
         (when (ppcre:scan +email-scanner+ email)
@@ -251,6 +268,10 @@
 (defun nor (&rest items)
 "Returns true if none of the items are true."
  (notany #'identity items))
+
+(defun or-string= (string test-strings)
+"Returns 'string' if it is a member of test-strings"
+  (find string test-strings :test #'string=))
 
 (defun parse-cons (string)
 "Returns a cons cell from a string. Integers are parsed, other elements returned as strings. ex. '6' -> (6), '6.5' -> (6 . 5), '2.string' -> (2 . 'string')"
