@@ -61,11 +61,11 @@
   (html
     (str
       (menu-horiz "actions"
-        (html (:a :href (strcat "/people/" +kindista-id+ "/reputation") "express gratitude"))
         (html
           (if *userid*
             (htm (:a :href "/contact-us" "contact us"))
-            (htm (:a :href "mailto:info@kindista.org" "contact us"))))))
+            (htm (:a :href "mailto:info@kindista.org" "contact us"))))  
+        (html (:a :href (strcat "/groups/" (username-or-id +kindista-id+) "/reputation") "express gratitude for " (str (db +kindista-id+ :name))))))
     (:menu :class "bar"
       (if (eql tab :faq)
    (htm (:li :class "selected" "Frequent Questions"))
