@@ -201,11 +201,11 @@
 
 (defun remove-message-from-indexes (id)
   (let ((message (gethash id *db-messages*)))
-    (with-locked-hash-table (*person-mailbox-index*)
-      (doplist (folder people-in-folder (message-folders message))
-        (dolist (person people-in-folder)
+    (dolist (person (mapcar #'caar (message-people message)))
+      (with-locked-hash-table (*person-mailbox-index*)
+        (doplist (folder messages (gethash person *person-mailbox-index*))
           (asetf (getf (gethash person *person-mailbox-index*) folder)
-                 (remove message it))))))
+              (remove message it))))))
   (with-locked-hash-table (*db-messages*)
     (remhash id *db-messages*)))
 

@@ -77,30 +77,33 @@
       )))
 
 (defun remove-gratitude-subject (gratitude-id subject-id)
-"To remove subjects to misattributed statements of gratitude using the REPL"
+"To remove subjects to misattributed statements of gratitude using the REPL."
   (let* ((gratitude (db gratitude-id))
          (subject-type (db subject-id :type))
-         (subject-mailboxes (mailbox-ids (list subject-id)))
-         (mailboxes (getf gratitude :people))
+         (new-mailboxes)
          (new-people)
          (folders (getf gratitude :message-folders)))
 
     (cond
+      ((= (length (getf gratitude :subjects)) 1)
+       (strcat "Error: You cannot remove the last subject. Please add another subject-id before removing subject id: " subject-id "."))
       ((not (eql (getf gratitude :type) :gratitude))
        (strcat "Error: " gratitude-id " is not of type :gratitude"))
       ((nor (eql subject-type :person)
             (eql subject-type :group))
        (strcat "Error: " subject-id " is not of type :group or :person"))
       (t
-      ;; remove mailboxes (including group mailboxes) from "people"
-       (asetf mailboxes (remove-if #'(lambda (mailbox)
-                                      (find mailbox subject-mailboxes
-                                            :test #'equal))
-                                  it
-                                  :key #'car))
+       ;; remove mailboxes (including group mailboxes) from "people"
+       (flet ((find-subject-mailboxes (mailbox)
+                (eql subject-id (if (eq subject-type :person)
+                                  (car mailbox)
+                                  (cdr mailbox)))))
+         (setf new-mailboxes
+               (remove-if #'find-subject-mailboxes (getf gratitude :people)
+                 :key #'car)))
 
       ;; get a list of all people who should have access to message
-      (setf new-people (remove-duplicates (mapcar #'caar mailboxes)))
+      (setf new-people (remove-duplicates (mapcar #'caar new-mailboxes)))
 
       (doplist (folder ids folders)
         (asetf (getf folders folder)
@@ -110,7 +113,7 @@
       (remove-message-from-indexes gratitude-id)
 
       (amodify-db gratitude-id :subjects (remove subject-id it)
-                               :people mailboxes
+                               :people new-mailboxes
                                :message-folders folders)
 
       (let ((new-data (db gratitude-id)))
@@ -190,8 +193,7 @@
                (collect it at beginning)))))))
 
 (defun modify-gratitude (id text)
-  (let ((result (gethash id *db-results*))
-        (now (get-universal-time)))
+  (let ((now (get-universal-time)))
     (refresh-item-time-in-indexes id :time now)
     (modify-db id :text text :edited now)))
 
