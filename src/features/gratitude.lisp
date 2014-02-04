@@ -39,6 +39,84 @@
                              :id gratitude))
     gratitude))
 
+(defun add-gratitude-subjects (gratitude-id subject-ids)
+"To add subjects to misattributed statements of gratitude from the REPL"
+  (let* ((gratitude (db gratitude-id))
+         (people-list (mailbox-ids subject-ids))
+         (people (mapcar #'(lambda (mailbox)
+                             (cons mailbox :unread))
+                         people-list))
+         (folders (getf gratitude :message-folders))
+         (bad-subject-ids))
+
+    (setf bad-subject-ids
+          (loop for id in subject-ids
+                for subject-type = (db id :type)
+                unless (or (eql subject-type :person)
+                           (eql subject-type :group))
+                collect id))
+    (cond
+      ((not (eql (getf gratitude :type) :gratitude))
+       (strcat "Error: " gratitude-id " is not of type :gratitude"))
+      (bad-subject-ids
+       (strcat "Error: " (car bad-subject-ids) " is not of type :person or :group"))
+      (t
+       (dolist (id people-list)
+         (pushnew (car id) (getf folders :inbox)))
+
+       (deindex-gratitude gratitude-id)
+       (remove-message-from-indexes gratitude-id)
+
+       (amodify-db gratitude-id :subjects (append subject-ids it)
+                                :people (append people it)
+                                :message-folders folders)
+
+       (let ((new-data (db gratitude-id)))
+         (index-gratitude gratitude-id new-data)
+         new-data))
+      )))
+
+(defun remove-gratitude-subject (gratitude-id subject-id)
+"To remove subjects to misattributed statements of gratitude using the REPL"
+  (let* ((gratitude (db gratitude-id))
+         (subject-type (db subject-id :type))
+         (subject-mailboxes (mailbox-ids (list subject-id)))
+         (mailboxes (getf gratitude :people))
+         (new-people)
+         (folders (getf gratitude :message-folders)))
+
+    (cond
+      ((not (eql (getf gratitude :type) :gratitude))
+       (strcat "Error: " gratitude-id " is not of type :gratitude"))
+      ((nor (eql subject-type :person)
+            (eql subject-type :group))
+       (strcat "Error: " subject-id " is not of type :group or :person"))
+      (t
+      ;; remove mailboxes (including group mailboxes) from "people"
+       (asetf mailboxes (remove-if #'(lambda (mailbox)
+                                      (find mailbox subject-mailboxes
+                                            :test #'equal))
+                                  it
+                                  :key #'car))
+
+      ;; get a list of all people who should have access to message
+      (setf new-people (remove-duplicates (mapcar #'caar mailboxes)))
+
+      (doplist (folder ids folders)
+        (asetf (getf folders folder)
+               (remove-if-not #'(lambda (id) (find id new-people)) it)))
+
+      (deindex-gratitude gratitude-id)
+      (remove-message-from-indexes gratitude-id)
+
+      (amodify-db gratitude-id :subjects (remove subject-id it)
+                               :people mailboxes
+                               :message-folders folders)
+
+      (let ((new-data (db gratitude-id)))
+        (index-gratitude gratitude-id new-data)
+        new-data)))) )
+
 (defun index-gratitude (id data)
   (let* ((author-id (getf data :author))
          (author (db author-id))
@@ -117,17 +195,10 @@
     (refresh-item-time-in-indexes id :time now)
     (modify-db id :text text :edited now)))
 
-(defun delete-gratitude (id)
+(defun deindex-gratitude (id)
   (let* ((result (gethash id *db-results*))
          (data (db id))
-         (people (cons (getf data :author) (getf data :subjects)))
-         (images (getf data :images)))
-
-    (dolist (image-id images)
-      (delete-image image-id))
-
-    (with-locked-hash-table (*db-results*)
-      (remhash id *db-results*))
+         (people (cons (getf data :author) (getf data :subjects))))
 
     (with-locked-hash-table (*gratitude-results-index*)
       (dolist (result (gethash id *gratitude-results-index*))
@@ -137,15 +208,22 @@
     (with-mutex (*recent-activity-mutex*)
       (asetf *recent-activity-index* (remove id it :key #'result-id)))
 
-    (delete-comments id)
-
     (with-locked-hash-table (*profile-activity-index*)
       (dolist (person people)
         (asetf (gethash person *profile-activity-index*)
                (remove result it))))
 
     (when result (geo-index-remove *activity-geo-index* result))
-    (remove-from-db id)))
+
+    (with-locked-hash-table (*db-results*)
+      (remhash id *db-results*)) ))
+
+(defun delete-gratitude (id)
+    (dolist (image-id (db id :images))
+      (delete-image image-id))
+    (delete-comments id)
+    (deindex-gratitude id)
+    (remove-from-db id))
 
 (defun gratitude-compose (&key subjects text next existing-url single-recipient groupid)
   (if subjects
@@ -224,7 +302,7 @@
                (dolist (person (cdr results))
                  (str (id-button (car person) "add" (cdr person)))))))
 
-         (:input :type "submit" :class "cancel" :value "Back")
+         (:input :type "submit" :class "cancel" :name "cancel" :value "Back")
 
          (when groupid
            (htm (:input :type "hidden" :name "subject" :value groupid)))
@@ -241,7 +319,8 @@
 
 (defun get-gratitudes-new ()
   (require-user
-    (gratitude-compose :subjects (parse-subject-list (get-parameter "subject")))))
+    (gratitude-compose :subjects (parse-subject-list (get-parameter "subject"))
+                       :next (referer))))
 
 (defun post-gratitudes-new ()
   (require-active-user
