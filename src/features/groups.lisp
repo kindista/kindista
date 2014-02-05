@@ -455,7 +455,7 @@
                   :id "group"
                   :onchange "this.form.submit()"
                   :checked (when (or (string= selected "all")
-                                        (string= selected "group"))
+                                     (string= selected "group"))
                                  ""))
            (:label :for "group" (str group-name)))
          (:div
@@ -464,7 +464,7 @@
                    :name "members"
                    :onchange "this.form.submit()"
                    :checked (when (or (string= selected "all")
-                                          (string= selected "members"))
+                                      (string= selected "members"))
                                ""))
            (:label :for "group" "group members" ))))))
 
