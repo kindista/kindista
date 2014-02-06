@@ -19,32 +19,34 @@
 
 (defun verify-location (url page-title lat long
                         &rest parameters)
-"Parameters is a list of string-pairs: post-parameter-name post-parameter-value which will be included with the post requst."
-  (let ((key nil))
-    (standard-page
-      page-title
-      (html
-        (:div :class "item"
-          (:h2 (str page-title))
-          (str (static-google-map :size "280x150" :zoom 12 :lat lat :long long))
-          (:form :method "post" :action url
-            (:h3 "Is this location correct?")
-            (:input :type "hidden" :name "lat" :value lat)
-            (:input :type "hidden" :name "long" :value long)
-            (dolist (parameter parameters)
-              (if (not key)
-                (setf key parameter)
-                (progn
-                  (htm
-                    (:input :type "hidden"
-                            :name key
-                            :value (if (stringp parameter)
-                                     (escape-for-html parameter)
-                                     parameter)))
-                  (setf key nil))))
-            (:button :class "cancel"
-                     :type "submit"
-                     :name "reset-location"
-                     "No, go back")
-            (:button :class "yes"
-                     :type "submit" :name "confirm-location" "Yes, this is correct")))))))
+"Parameters is a list of string-pairs: post-parameter-name post-parameter-value which will be included with the post requst. The post-parameter-value can be either a single string or a list of strings."
+  (standard-page
+    page-title
+    (html
+      (:div :class "item"
+        (:h2 (str page-title))
+        (str (static-google-map :size "280x150" :zoom 12 :lat lat :long long))
+        (:form :method "post" :action url
+          (:h3 "Is this location correct?")
+          (:input :type "hidden" :name "lat" :value lat)
+          (:input :type "hidden" :name "long" :value long)
+          (pprint parameters)
+          (terpri)
+          (do ((params parameters (cddr params)))
+              ((not params))
+              (flet ((hidden-input (value)
+                       (html (:input :type "hidden"
+                                     :name (car params)
+                                     :value (if (stringp value)
+                                              (escape-for-html value)
+                                              value)))))
+                (if (listp (cadr params))
+                  (dolist (value (cadr params))
+                    (str (hidden-input value)))
+                  (str (hidden-input (cadr params))))))
+          (:button :class "cancel"
+                   :type "submit"
+                   :name "reset-location"
+                   "No, go back")
+          (:button :class "yes"
+                   :type "submit" :name "confirm-location" "Yes, this is correct"))))))

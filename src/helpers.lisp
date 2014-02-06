@@ -108,15 +108,11 @@
     new-list))
 
 (defun k-symbol (string)
-  (or (find-symbol string :kindista)
-      (intern string :kindista)))
+  (intern (string-upcase string) :kindista))
 
 (defun symbol= (symbol-a symbol-b)
   (equalp (symbol-name symbol-a)
           (symbol-name symbol-b)))
-
-(defun find-symbol-in-list (symbol list)
-  (find symbol list :test #'symbol=))
 
 (defun emails-from-string (string)
   (iter (for email in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))

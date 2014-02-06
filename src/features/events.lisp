@@ -494,7 +494,7 @@
                                   (awhen (getf item :frequency)
                                     (symbol-name it))))
                    (symbol-frequency (awhen frequency
-                                       (k-intern
+                                       (k-symbol
                                          (or-string= it '("weekly" "monthly")))))
                    (interval (or (post-parameter-integer "interval")
                                  (getf item :interval)))
@@ -508,14 +508,14 @@
                                          (mapcar #'symbol-name it))
                                        (list local-day-of-week))))
                    (symbol-days-of-week (awhen days-of-week
-                                          (mapcar #'k-intern it)))
+                                          (mapcar #'k-symbol it)))
                    (by-day-or-date (when (string= frequency "monthly")
                                      (or (post-parameter-string
                                            "by-day-or-date")
                                          (awhen (getf item :by-day-or-date)
                                            (symbol-name it)))))
                    (symbol-day-or-date (awhen by-day-or-date
-                                         (k-intern (or-string= it
+                                         (k-symbol (or-string= it
                                                    '("day" "date")))))
                    (days-of-month (when (string= frequency "monthly")
                                     (or (post-parameter-string-list
@@ -527,7 +527,7 @@
                                         (awhen (getf item :days-of-month)
                                           (mapcar #'symbol-name it)))))
                    (symbol-days-of-month (awhen days-of-month
-                                           (mapcar #'k-intern it))))
+                                           (mapcar #'k-symbol it))))
 
               (labels ((try-again (&optional e)
                ;; needs to be labels not flet because of
