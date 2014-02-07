@@ -17,7 +17,7 @@
 
 (in-package :kindista)
 
-(defun create-event (&key (host *userid*) lat long title details local-time address recurring frequency interval days-of-week by-day-or-date days-of-month local-end-date)
+(defun create-event (&key (host *userid*) lat long title details local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date)
   (insert-db (remove-nil-plist-pairs (list :type :event
                                            :hosts (list host)
                                            :lat lat
@@ -31,7 +31,7 @@
                                            :interval interval
                                            :days-of-week days-of-week
                                            :by-day-or-date by-day-or-date
-                                           :days-of-month days-of-month
+                                           :weeks-of-month weeks-of-month
                                            :local-end-date local-end-date
                                            :created (get-universal-time)))))
 
@@ -58,7 +58,7 @@
                                         :interval
                                         :days-of-week
                                         :by-day-or-date
-                                        :days-of-month
+                                        :weeks-of-month
                                         :end-date)))
               (awhen (cdr pair)
                 (nconcf event-details (list (car pair) it))))
@@ -79,7 +79,7 @@
         (dolist (stem stems)
           (push result (gethash stem *event-stem-index*)))))))
 
-(defun modify-event (id &key lat long title details local-time address recurring frequency interval days-of-week by-day-or-date days-of-month local-end-date)
+(defun modify-event (id &key lat long title details local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date)
   (let* ((result (gethash id *db-results*))
          (data (db id))
          (old-address (getf data :address))
@@ -93,7 +93,7 @@
          (old-interval (getf data :interval))
          (old-days-of-week (getf data :days-of-week))
          (old-by-day-or-date (getf data :by-day-or-date))
-         (old-days-of-month (getf data :days-of-month))
+         (old-weeks-of-month (getf data :weeks-of-month))
          (old-end-date (getf data :local-end-date))
          (now (get-universal-time))
          (new-data nil))
@@ -145,6 +145,59 @@
                     :edited (unless (and (getf *user* :admin)
                                          (member *userid* (getf data :host)))
                               now)))))
+
+(defun update-recurring-event-time (id)
+  (let* ((event (db id))
+         (interval (getf event :interval))
+         (frequency (get event :frequency))
+         (days-of-week (get event :days-of-week))
+         (weeks-of-month (get event :weeks-of-month))
+         (updated-time (getf event :auto-updated-time))
+         (local-time (getf event :local-time))
+         (previous-time (or updated-time local-time))
+         (now (get-universal-time))
+         (previous-timestamp (universal-to-timestamp previous-time))
+         (now-timestamp (local-time:now))
+         (new-timestamp)
+         (new-time))
+    (cond
+      ((= interval 1)
+       (let* ((comparison-list (mapcar #'k-symbol
+                                       (if (eq frequency :weekly)
+                                         +day-names+
+                                         +positions-of-day-in-month+)))
+             (repeat-reference-list (append comparison-list comparison-list))
+             (data-sequence (if (eq frequency :weekly)
+                              (append days-of-week days-of-week)
+                              (append weeks-of-month weeks-of-month))))))
+      ((and (> interval 1)
+            (or (eq frequency :weekly)
+                (and (eq frequency :monthly)
+                     (eq (getf event :by-day-or-date) :date))))
+
+         (flet ((update-timestamp (offset-period)
+                  (asetf new-timestamp
+                         (adjust-timestamp (or it previous-timestamp)
+                           (offset offset-period interval)))
+                  (when (timestamp< new-timestamp now-timestamp)
+                    (update-timestamp offset-period))))
+            (update-timestamp :month)
+            (setf new-time (timestamp-to-universal new-timestamp))))
+
+     (case frequency
+      (:weekly
+        (if (= interval 1)
+          ;find current day of week and loop until a day matches the days-of-week
+          
+          ;loop from (or updated-time local-time) by (* interval +week-in-seconds+)
+          ;until result is after now
+        )
+      (:monthly
+        (case (getf event :by-day-or-date)
+          (:date
+            
+            ))))
+        ))))
 
 (defun upcoming-events (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
   (let ((start (* page count))
@@ -233,7 +286,7 @@
         (see-other (or (referer) "/home")))
       (enter-event-details))))
 
-(defun enter-event-details (&key error date time location title groupid details existing-url recurring frequency interval days-of-week by-day-or-date days-of-month end-date local-day-of-week)
+(defun enter-event-details (&key error date time location title groupid details existing-url recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date local-day-of-week)
   (standard-page
     (if existing-url "Edit your event details" "Create a new event")
     (html
@@ -336,10 +389,10 @@
                          (dolist (option +positions-of-day-in-month+)
                            (htm
                              (:input :type "checkbox"
-                                     :name "days-of-month"
+                                     :name "weeks-of-month"
                                      :checked (when
                                                 (or (find option
-                                                          days-of-month
+                                                          weeks-of-month
                                                           :test #'string=)
                                                     (string=
                                                       option
@@ -499,14 +552,16 @@
                    (interval (or (post-parameter-integer "interval")
                                  (getf item :interval)))
                    (days-of-week (when (string= frequency "weekly")
-                                   (or (post-parameter-string-list
-                                          "days-of-week"
-                                          #'(lambda (day)
-                                              (find day +day-names+
-                                                    :test #'equalp)))
-                                       (awhen (getf item :days-of-week)
-                                         (mapcar #'symbol-name it))
-                                       (list local-day-of-week))))
+                                   (if (and (= interval 1)
+                                            (post-parameter "days-of-week"))
+                                     (post-parameter-string-list
+                                       "days-of-week"
+                                       #'(lambda (day)
+                                           (find day +day-names+
+                                                 :test #'equalp)))
+                                     (or (awhen (getf item :days-of-week)
+                                           (mapcar #'symbol-name it))
+                                          (list local-day-of-week)))))
                    (symbol-days-of-week (awhen days-of-week
                                           (mapcar #'k-symbol it)))
                    (by-day-or-date (when (string= frequency "monthly")
@@ -517,16 +572,18 @@
                    (symbol-day-or-date (awhen by-day-or-date
                                          (k-symbol (or-string= it
                                                    '("day" "date")))))
-                   (days-of-month (when (string= frequency "monthly")
-                                    (or (post-parameter-string-list
-                                          "days-of-month"
-                                          #'(lambda (day)
-                                              (find day
-                                                    +positions-of-day-in-month+
-                                                    :test #'string=)))
-                                        (awhen (getf item :days-of-month)
-                                          (mapcar #'symbol-name it)))))
-                   (symbol-days-of-month (awhen days-of-month
+                   (weeks-of-month (when (string= frequency "monthly")
+                                     (if (and (= 1 interval)
+                                              (post-parameter "weeks-of-month"))
+                                       (post-parameter-string-list
+                                         "weeks-of-month"
+                                         #'(lambda (day)
+                                             (find day
+                                                   +positions-of-day-in-month+
+                                                   :test #'string=)))
+                                       (awhen (getf item :weeks-of-month)
+                                         (mapcar #'symbol-name it)))))
+                   (symbol-weeks-of-month (awhen weeks-of-month
                                            (mapcar #'k-symbol it))))
 
               (labels ((try-again (&optional e)
@@ -542,7 +599,7 @@
                                               :interval interval
                                               :days-of-week days-of-week
                                               :by-day-or-date by-day-or-date
-                                              :days-of-month days-of-month
+                                              :weeks-of-month weeks-of-month
                                               :local-day-of-week local-day-of-week
                                               :end-date (awhen local-end-time(humanize-exact-time it))
                                               :date date
@@ -561,7 +618,7 @@
                                              :interval interval
                                              :days-of-week symbol-days-of-week
                                              :by-day-or-date symbol-day-or-date
-                                             :days-of-month symbol-days-of-month
+                                             :weeks-of-month symbol-weeks-of-month
                                              :local-end-date local-end-time
                                              :details details
                                              :title title)
@@ -584,7 +641,7 @@
                                         :interval interval
                                         :days-of-week symbol-days-of-week
                                         :by-day-or-date symbol-day-or-date
-                                        :days-of-month symbol-days-of-month
+                                        :weeks-of-month symbol-weeks-of-month
                                         :local-end-date local-end-time)))))))
                 (cond
                  ((post-parameter "cancel")
@@ -658,7 +715,7 @@
                                        "interval" interval
                                        "days-of-week" days-of-week
                                        "by-day-or-date" by-day-or-date
-                                       "days-of-month" days-of-month
+                                       "weeks-of-month" weeks-of-month
                                        "end-date" (awhen local-end-time (humanize-exact-time it))))))
 
                  ((post-parameter "submit-edits")

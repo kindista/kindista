@@ -36,6 +36,7 @@
             (:import-from :cl-markdown :markdown)
             (:import-from :cl-who :with-html-output-to-string :str :htm :fmt)
             (:import-from :sb-concurrency :mailbox :receive-message :send-message :make-mailbox :list-mailbox-messages :receive-pending-messages)
+            (:import-from :local-time :adjust-timestamp :adjust-timestamp! :format-timestring :timestamp-year :timestamp-month :timestamp-day :timestamp-hour :timestamp< :timestamp-to-universal :universal-to-timestamp)
             (:shadow :quit)
             (:export :run-server :stop-server :*userid* :load-db :save-db :load-tokens :save-tokens :+db-path+ :fsync))
 
