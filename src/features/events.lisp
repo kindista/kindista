@@ -148,14 +148,16 @@
 
 (defun update-recurring-event-time (id &optional now-time)
   (let* ((event (db id))
-         (interval (getf event :interval))
          (frequency (getf event :frequency))
-         (weekly (eql frequency :weekly))
+         (weekly (eql frequency 'weekly))
+         (interval (getf event :interval))
+         (offset-count (if weekly ;local-time can't offset by the week for 'monthly
+                         interval
+                         (* interval 7)))
          (days-of-week (getf event :days-of-week))
          (weeks-of-month (getf event :weeks-of-month))
-         (updated-time (getf event :auto-updated-time))
-         (local-time (getf event :local-time))
-         (previous-time (or updated-time local-time))
+         (previous-time (or (getf event :auto-updated-time)
+                            (getf event :local-time)))
          (now (or now-time (get-universal-time)))
          (previous-timestamp (universal-to-timestamp previous-time))
          (now-timestamp (universal-to-timestamp now))
@@ -167,40 +169,37 @@
     (labels ((update-timestamp (offset-period)
                (asetf new-timestamp
                       (adjust-timestamp (or it previous-timestamp)
-                        (offset offset-period interval)))
+                        (offset offset-period offset-count)))
                (when (timestamp< new-timestamp now-timestamp)
-                 (update-timestamp offset-period))) 
+                 (update-timestamp offset-period)))
 
              (update-timestamp-until-day ()
+               (update-timestamp :day)
                (setf new-day-of-week
-                     (humanize-exact-time :weekly t ;get day name
-                       (timestamp-to-universal
-                         (update-timestamp :day))))
-               (unless (find new-day-of-week days-of-week :test #'equalp)
-                 (update-timestamp-untill-day)))
+                     (k-symbol (humanize-exact-time
+                                 (timestamp-to-universal new-timestamp)
+                                 :weekday t))) ;day name
+               (unless (find new-day-of-week days-of-week)
+                 (update-timestamp-until-day)))
 
              (update-timestamp-until-week ()
+               (update-timestamp :day)
                (setf new-week-of-month
-                     (position-of-day-in-month
-                       (timestamp-to-universal (update-timestamp :week))))
-               (unless (find new-week-of-month weeks-of-month :test #'equalp)
-                 (update-timestamp-untill-week))))
+                     (k-symbol (position-of-day-in-month
+                                 (timestamp-to-universal new-timestamp))))
+               (unless (find new-week-of-month weeks-of-month)
+                 (update-timestamp-until-week))))
 
-     (cond
-      ((= interval 1)
-       (if weekly
-         (update-timestamp-until-day))
-         (update-timestamp-until-week))
+      (if (and (> interval 1)
+               (or weekly
+                  (eq (getf event :by-day-or-date) 'date)))
+        (update-timestamp (if weekly :day :month)) ;local-time can't offset weekly
+        (if weekly
+          (update-timestamp-until-day)
+          (update-timestamp-until-week))))
 
-      ((and (> interval 1)
-            (or weekly
-               (eq (getf event :by-day-or-date) :date)))
-
-       (update-timestamp (if weekly :week :month)))
-
-      ;; !! still need to do monthly with (> interval 1) on specific week-of-month
-     (setf new-time (timestamp-to-universal new-timestamp)) 
-        ))))
+    (setf new-time (timestamp-to-universal new-timestamp))
+    (humanize-exact-time new-time)))
 
 (defun upcoming-events (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
   (let ((start (* page count))
