@@ -146,57 +146,60 @@
                                          (member *userid* (getf data :host)))
                               now)))))
 
-(defun update-recurring-event-time (id)
+(defun update-recurring-event-time (id &optional now-time)
   (let* ((event (db id))
          (interval (getf event :interval))
-         (frequency (get event :frequency))
-         (days-of-week (get event :days-of-week))
-         (weeks-of-month (get event :weeks-of-month))
+         (frequency (getf event :frequency))
+         (weekly (eql frequency :weekly))
+         (days-of-week (getf event :days-of-week))
+         (weeks-of-month (getf event :weeks-of-month))
          (updated-time (getf event :auto-updated-time))
          (local-time (getf event :local-time))
          (previous-time (or updated-time local-time))
-         (now (get-universal-time))
+         (now (or now-time (get-universal-time)))
          (previous-timestamp (universal-to-timestamp previous-time))
-         (now-timestamp (local-time:now))
+         (now-timestamp (universal-to-timestamp now))
          (new-timestamp)
+         (new-day-of-week)
+         (new-week-of-month)
          (new-time))
-    (cond
+
+    (labels ((update-timestamp (offset-period)
+               (asetf new-timestamp
+                      (adjust-timestamp (or it previous-timestamp)
+                        (offset offset-period interval)))
+               (when (timestamp< new-timestamp now-timestamp)
+                 (update-timestamp offset-period))) 
+
+             (update-timestamp-until-day ()
+               (setf new-day-of-week
+                     (humanize-exact-time :weekly t ;get day name
+                       (timestamp-to-universal
+                         (update-timestamp :day))))
+               (unless (find new-day-of-week days-of-week :test #'equalp)
+                 (update-timestamp-untill-day)))
+
+             (update-timestamp-until-week ()
+               (setf new-week-of-month
+                     (position-of-day-in-month
+                       (timestamp-to-universal (update-timestamp :week))))
+               (unless (find new-week-of-month weeks-of-month :test #'equalp)
+                 (update-timestamp-untill-week))))
+
+     (cond
       ((= interval 1)
-       (let* ((comparison-list (mapcar #'k-symbol
-                                       (if (eq frequency :weekly)
-                                         +day-names+
-                                         +positions-of-day-in-month+)))
-             (repeat-reference-list (append comparison-list comparison-list))
-             (data-sequence (if (eq frequency :weekly)
-                              (append days-of-week days-of-week)
-                              (append weeks-of-month weeks-of-month))))))
+       (if weekly
+         (update-timestamp-until-day))
+         (update-timestamp-until-week))
+
       ((and (> interval 1)
-            (or (eq frequency :weekly)
-                (and (eq frequency :monthly)
-                     (eq (getf event :by-day-or-date) :date))))
+            (or weekly
+               (eq (getf event :by-day-or-date) :date)))
 
-         (flet ((update-timestamp (offset-period)
-                  (asetf new-timestamp
-                         (adjust-timestamp (or it previous-timestamp)
-                           (offset offset-period interval)))
-                  (when (timestamp< new-timestamp now-timestamp)
-                    (update-timestamp offset-period))))
-            (update-timestamp :month)
-            (setf new-time (timestamp-to-universal new-timestamp))))
+       (update-timestamp (if weekly :week :month)))
 
-     (case frequency
-      (:weekly
-        (if (= interval 1)
-          ;find current day of week and loop until a day matches the days-of-week
-          
-          ;loop from (or updated-time local-time) by (* interval +week-in-seconds+)
-          ;until result is after now
-        )
-      (:monthly
-        (case (getf event :by-day-or-date)
-          (:date
-            
-            ))))
+      ;; !! still need to do monthly with (> interval 1) on specific week-of-month
+     (setf new-time (timestamp-to-universal new-timestamp)) 
         ))))
 
 (defun upcoming-events (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
