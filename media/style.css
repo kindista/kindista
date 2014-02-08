@@ -605,6 +605,11 @@ button.red.simple-link {
  color: #900;
 }
 
+
+menu.horiz a {
+ color: #3c6dc8;
+}
+
 button.blue, a.blue {
  font-weight: bold;
  color: #fff;
