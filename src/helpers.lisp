@@ -42,6 +42,19 @@
 (defmacro s+ (&rest strings)
   `(concatenate 'string ,@strings))
 
+(defmacro bind-db-item-parameters (id item-symbol symbol-binding-prefix &rest parameters)
+"Binds item-symbol to (db id) and supplied prefixed-parameters to (getf item-symbol parameter)"
+  `(let ((,item-symbol (db ,id))
+         (prefixed-symbols (mapcar #'(lambda (parameter)
+                                       (k-symbol
+                                         (strcat ,symbol-binding-prefix
+                                                 "-"
+                                                 parameter)))
+                                   ,@parameters)))
+     (multiple-value-bind prefixed-symbols
+       (mapcar #'(lambda (parameter) (getf ,item-symbol (make-keyword parameter))
+                   ,@parameters)))))
+
 (defun validate-name (string)
   (scan +full-name-scanner+ string))
 
