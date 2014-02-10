@@ -41,15 +41,15 @@
                               :time (or (getf data :edited) (getf data :created))
                               :tags (getf data :tags))))
 
+    (with-locked-hash-table (*db-results*)
+      (setf (gethash id *db-results*) result))
+
     (cond
       (pending
        (with-locked-hash-table (*pending-person-items-index*)
          (push id (gethash by *pending-person-items-index*))))
 
       (t
-       (with-locked-hash-table (*db-results*)
-         (setf (gethash id *db-results*) result))
-
        (with-locked-hash-table (*profile-activity-index*)
          (asetf (gethash by *profile-activity-index*)
                 (sort (push result it) #'> :key #'result-time)))
