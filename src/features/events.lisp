@@ -377,7 +377,8 @@
           (flash "Your event has been added to the calendar")
           (see-other (format nil "/events/~A"
                                  (create-event :lat lat
-                                               :host (when adminp groupid)
+                                               :host (or (when adminp groupid)
+                                                         *userid*)
                                                :long long
                                                :local-time local-time
                                                :title title
