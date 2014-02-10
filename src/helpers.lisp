@@ -137,11 +137,6 @@
              (/ 120000 (log (+ (if (intersection contacts (result-people item)) 1 distance) 4)))
              (* (length (loves (result-id item))) 50000)))))
 
-(defun stale-eventp (item)
-  (let ((staleness (- (or (result-time item) 0)
-                      (- (get-universal-time) +day-in-seconds+))))
-    (when (< staleness 0) t)))
-
 (defun event-rank (item)
   (let ((contacts (getf *user* :following))
         (currentness (abs (- (or (result-time item) 0) (get-universal-time))))

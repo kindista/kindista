@@ -41,7 +41,7 @@
 (defindex *banned-emails-index* :test 'equalp)
 (defindex *event-geo-index*)
 (defindex *event-stem-index* :test 'equalp)
-(defindex *recurring-events-index*)
+;(defindex *recurring-events-index*)
 (defindex *followers-index*)
 (defindex *geo-index-index* :test 'equal)
 (defindex *gratitude-index*)

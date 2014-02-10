@@ -35,6 +35,19 @@
                                            :local-end-date local-end-date
                                            :created (get-universal-time)))))
 
+(defun stale-eventp (item &optional time)
+  (let ((staleness (- (or (result-time item) 0)
+                      (- (or time (get-universal-time)) +day-in-seconds+))))
+    (when (< staleness 0) t)))
+
+(defun event-index-insert (result)
+  (with-mutex (*event-mutex*)
+    (asetf *event-index* (sort (push result it) #'< :key #'result-time))))
+
+(defun event-index-update (result)
+  (with-mutex (*event-mutex*)
+    (asetf *event-index* (sort (pushnew result it) #'< :key #'result-time))))
+
 (defun index-event (id data)
   (let* ((by (getf data :hosts))
          (now (get-universal-time))
@@ -43,35 +56,16 @@
                               :id id
                               :type :event
                               :people by
-                              :time (getf data :local-time))))
+                              :time (or (getf data :auto-updated-time)
+                                        (getf data :local-time)))))
 
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (when (getf data :recurring)
-      (with-locked-hash-table (*recurring-events-index*)
-        (flet ((get-property-value (property)
-                 (cons property (getf data property))))
-          (let (event-details)
-            (dolist (pair (mapcar #'get-property-value
-                                  (list :frequency
-                                        :interval
-                                        :days-of-week
-                                        :by-day-or-date
-                                        :weeks-of-month
-                                        :end-date)))
-              (awhen (cdr pair)
-                (nconcf event-details (list (car pair) it))))
-             (setf (gethash id *recurring-events-index*) event-details)))))
-
-    (unless (< (result-time result) (- now +day-in-seconds+))
-      (with-mutex (*event-mutex*)
-        ; remove past events from event-index
-        ; add this event and sort the index
-        (flet ((past-event (item) (< (result-time item)
-                                     (- now (* 3 +day-in-seconds+)))))
-          (asetf *event-index* (sort (cons result (remove-if #'past-event it))
-                                 #'< :key #'result-time))))
+    (unless (stale-eventp result)
+      ; remove past events from event-index
+      ; add this event and sort the index
+      (event-index-insert result)
       (geo-index-insert *event-geo-index* result))
 
     (let ((stems (stem-text (s+ (getf data :title) " " (getf data :details)))))
@@ -95,8 +89,10 @@
          (old-by-day-or-date (getf data :by-day-or-date))
          (old-weeks-of-month (getf data :weeks-of-month))
          (old-end-date (getf data :local-end-date))
+         (old-auto-updated-time (getf data :auto-updated-time))
+         (auto-updated-time)
          (now (get-universal-time))
-         (new-data nil))
+         (new-data))
 
     (flet ((update-unless (clause &rest body)
              (unless clause body (setf new-data t))))
@@ -127,13 +123,17 @@
 
       (update-unless (= local-time (getf data :local-time))
         (setf (result-time result) local-time)
-        (with-mutex (*event-mutex*)
-          ; remove past events from event-index
-          ; add this event and sort the index
-          (flet ((past-event (item) (< (result-time item)
-                                       (- now (* 3 +day-in-seconds+)))))
-            (asetf *event-index* (sort (remove-if #'past-event it)
-                                   #'< :key #'result-time))))))
+        (setf auto-updated-time nil)
+        (event-index-update result))
+
+      (update-unless (and (= old-recurring recurring)
+                          (= old-frequency frequency)
+                          (= old-interval interval)
+                          (= old-days-of-week days-of-week)
+                          (= old-by-day-or-date by-day-or-date)
+                          (= old-weeks-of-month weeks-of-month)
+                          (= old-end-date local-end-date))
+                     nil))
 
     (when new-data
       (modify-db id :title (or title old-title)
@@ -142,12 +142,21 @@
                     :long (or long old-long)
                     :address (or address old-address)
                     :local-time (or local-time old-time)
+                    :recurring (or old-recurring recurring)
+                    :frequency (or old-frequency frequency)
+                    :interval (or old-interval interval)
+                    :days-of-week (or old-days-of-week days-of-week)
+                    :by-day-or-date (or old-by-day-or-date by-day-or-date)
+                    :weeks-of-month (or old-weeks-of-month weeks-of-month)
+                    :end-date (or old-end-date local-end-date)
+                    :auto-updated-time (or old-auto-updated-time auto-updated-time)
                     :edited (unless (and (getf *user* :admin)
                                          (member *userid* (getf data :host)))
                               now)))))
 
-(defun update-recurring-event-time (id &optional now-time)
-  (let* ((event (db id))
+(defun update-recurring-event-time (id &optional data result-struct)
+  (let* ((event (or data (db id)))
+         (result (or result-struct (gethash id *db-results*)))
          (frequency (getf event :frequency))
          (weekly (eql frequency 'weekly))
          (interval (getf event :interval))
@@ -158,7 +167,7 @@
          (weeks-of-month (getf event :weeks-of-month))
          (previous-time (or (getf event :auto-updated-time)
                             (getf event :local-time)))
-         (now (or now-time (get-universal-time)))
+         (now (get-universal-time))
          (previous-timestamp (universal-to-timestamp previous-time))
          (now-timestamp (universal-to-timestamp now))
          (new-timestamp)
@@ -199,7 +208,9 @@
           (update-timestamp-until-week))))
 
     (setf new-time (timestamp-to-universal new-timestamp))
-    (humanize-exact-time new-time)))
+    (with-locked-hash-table (*db-results*)
+      (setf (result-time result) new-time))
+    (event-index-update result)))
 
 (defun upcoming-events (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
   (let ((start (* page count))
@@ -253,26 +264,47 @@
 
 (defun local-upcoming-events (&key (page 0) (count 20) (url "/events") (paginate t) (sidebar nil))
   (with-location
-    (let ((distance (user-distance)))
-      (flet ((show-local-events (list)
-               (upcoming-events list :page page
-                                     :count count
-                                     :url url
-                                     :sidebar sidebar
-                                     :paginate paginate)))
-        (if (= distance 0)
-          (show-local-events
-            (remove-if #'stale-eventp
-                       (sort (copy-list *event-index*)
-                             #'< :key #'result-time)))
+    (let* ((distance (user-distance))
+           (now (get-universal-time))
+           (global-search (= distance 0))
+           (updated-local-event-list)
+           (local-events (sort (geo-index-query *event-geo-index*
+                                                *latitude*
+                                                *longitude*
+                                                distance)
+                                #'< :key #'result-time)))
 
-          (show-local-events
-            (remove-if #'stale-eventp
-                       (sort (geo-index-query *event-geo-index*
-                                              *latitude*
-                                              *longitude*
-                                              distance)
-                               #'< :key #'result-time))))))))
+      (flet ((trim-and-update (results)
+               (do* ((events results (cdr results))
+                     (event (car events)))
+                    ((not (stale-eventp event now))
+                     (acond
+                      (updated-local-event-list
+                       (sort (remove nil (append it results) :from-end t :count 1)
+                             #'< :key #'result-time))
+                      (global-search *event-index*)
+                      (t results)))
+                    (let* ((id (result-id event))
+                           (data (db id)))
+                      (cond
+                       ((getf data :recurring)
+                        (update-recurring-event-time id data event)
+                        (unless global-search
+                          (push event updated-local-event-list)))
+                       (t
+                        (geo-index-remove *event-geo-index* event)
+                        (with-mutex (*event-mutex*)
+                          (asetf *event-index* (remove event it)))))))))
+
+        (upcoming-events (trim-and-update
+                           (if global-search
+                             *event-index*
+                             local-events))
+                         :page page
+                         :count count
+                         :url url
+                         :sidebar sidebar
+                         :paginate paginate)))))
 
 (defun events-rightbar ()
   (html

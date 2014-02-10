@@ -110,20 +110,19 @@
       (t (values time date-name formatted-date))))))
 
 (defun day-of-month (datetime &key formatted-date)
-  (local-time:timestamp-day (local-time:universal-to-timestamp
-                              (if formatted-date
-                                (parse-datetime datetime)
-                                datetime))))
+  (timestamp-day (universal-to-timestamp (if formatted-date
+                                           (parse-datetime datetime)
+                                           datetime))))
 
 (defun position-of-day-in-month (datetime &key formatted-date)
-  (let* ((timestamp (local-time:universal-to-timestamp
+  (let* ((timestamp (universal-to-timestamp
                       (if formatted-date
                         (parse-datetime datetime)
                         datetime)))
-         (day-of-month (local-time:timestamp-day timestamp))
+         (day-of-month (timestamp-day timestamp))
          (days-in-month (local-time:days-in-month
-                          (local-time:timestamp-month timestamp)
-                          (local-time:timestamp-year timestamp))))
+                          (timestamp-month timestamp)
+                          (timestamp-year timestamp))))
     (cond
       ((< day-of-month 8) "first")
       ((< day-of-month 15) "second")
