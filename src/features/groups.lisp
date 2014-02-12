@@ -685,7 +685,7 @@
         (enter-new-group-details :name name
                                  :membership-method membership-method))
 
-       ((not (and lat long city state location country zip))
+       ((not (and lat long city state location country))
         ;geocode the address
         (confirm-location))
 
