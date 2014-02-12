@@ -42,18 +42,25 @@
 (defmacro s+ (&rest strings)
   `(concatenate 'string ,@strings))
 
-(defmacro bind-db-item-parameters (id item-symbol symbol-binding-prefix &rest parameters)
-"Binds item-symbol to (db id) and supplied prefixed-parameters to (getf item-symbol parameter)"
-  `(let ((,item-symbol (db ,id))
-         (prefixed-symbols (mapcar #'(lambda (parameter)
-                                       (k-symbol
-                                         (strcat ,symbol-binding-prefix
-                                                 "-"
-                                                 parameter)))
-                                   ,@parameters)))
-     (multiple-value-bind prefixed-symbols
-       (mapcar #'(lambda (parameter) (getf ,item-symbol (make-keyword parameter))
-                   ,@parameters)))))
+(defmacro bind-db-item-parameters (id item-type symbol-binding-prefix parameters &optional result &body body)
+"Binds item-symbol to (db id) and supplied prefixed-parameters to (getf item-type parameter). When (= result t) binds result to (gethash id *db-results*)."
+  (let ((data (gensym))
+      ; (prefixed-symbols (gensym))
+        )
+    `(let* ((,data (db ,id))
+            (,item-type ,data)
+            (prefixed-symbols (mapcar #'(lambda (parameter)
+                                           (k-symbol
+                                             (strcat ,symbol-binding-prefix
+                                                     "-"
+                                                     parameter)))
+                                       ,parameters))
+            (result (when ,result (gethash ,id *db-results*))))
+       (multiple-value-bind prefixed-symbols
+         (funcall #'values (mapcar #'(lambda (parameter)
+                                       (getf (db ,id) (make-keyword parameter)))
+                              ,parameters))
+         ,@body))))
 
 (defun validate-name (string)
   (scan +full-name-scanner+ string))
