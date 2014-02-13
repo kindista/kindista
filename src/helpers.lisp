@@ -42,25 +42,17 @@
 (defmacro s+ (&rest strings)
   `(concatenate 'string ,@strings))
 
-(defmacro bind-db-item-parameters (id item-type symbol-binding-prefix parameters &optional result &body body)
-"Binds item-symbol to (db id) and supplied prefixed-parameters to (getf item-type parameter). When (= result t) binds result to (gethash id *db-results*)."
-  (let ((data (gensym))
-      ; (prefixed-symbols (gensym))
-        )
-    `(let* ((,data (db ,id))
-            (,item-type ,data)
-            (prefixed-symbols (mapcar #'(lambda (parameter)
-                                           (k-symbol
-                                             (strcat ,symbol-binding-prefix
-                                                     "-"
-                                                     parameter)))
-                                       ,parameters))
-            (result (when ,result (gethash ,id *db-results*))))
-       (multiple-value-bind prefixed-symbols
-         (funcall #'values (mapcar #'(lambda (parameter)
-                                       (getf (db ,id) (make-keyword parameter)))
-                              ,parameters))
-         ,@body))))
+(defmacro bind-db-item-parameters ((id item-type symbol-binding-prefix parameters &optional result) &body body)
+"Binds item-type to (db id) and supplied prefixed-parameters to (getf item-type parameter). When supplied result is bound to (gethash id *db-results*)."
+  (let (bindings)
+    (dolist (parameter parameters)
+      (push (list (k-symbol (strcat symbol-binding-prefix "-" parameter))
+                  (list 'getf item-type (make-keyword parameter)))
+            bindings))
+    (when result
+      (push `(,result (gethash ,id *db-results*)) bindings))
+    (push `(,item-type (db ,id)) bindings)
+    `(let* ,bindings ,@body)))
 
 (defun validate-name (string)
   (scan +full-name-scanner+ string))
