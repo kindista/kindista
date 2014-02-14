@@ -30,8 +30,6 @@
           (:h3 "Is this location correct?")
           (:input :type "hidden" :name "lat" :value lat)
           (:input :type "hidden" :name "long" :value long)
-          (pprint parameters)
-          (terpri)
           (do ((params parameters (cddr params)))
               ((not params))
               (flet ((hidden-input (value)

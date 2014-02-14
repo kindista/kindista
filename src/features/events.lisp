@@ -74,76 +74,72 @@
           (push result (gethash stem *event-stem-index*)))))))
 
 (defun modify-event (id &key lat long title details local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date)
-  (bind-db-item-parameters
-    (id event old (address title details time lat long recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date auto-updated-time local-time)
-    result)
+  (bind-db-parameters
+    (event id
+     (address title details lat long recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date auto-updated-time local-time)
+     old
+     result)
+    (pprint lat)
+    (pprint old-lat)
+    (terpri)
     (let ((auto-updated-time)
-          (now (get-universal-time))
-          (new-data))
+          (new-data (or (eq recurring old-recurring)
+                        (equal frequency old-frequency)
+                        (equal interval old-interval)
+                        (equal days-of-week old-days-of-week)
+                        (equal by-day-or-date old-by-day-or-date)
+                        (equal weeks-of-month old-weeks-of-month))))
 
-      (flet ((update-when (clause &rest body)
-              (when clause body (setf new-data t) (pprint (strcat clause)))))
+      (when (or (and lat (not (eql lat old-lat)))
+                (and long (not (eql long old-long))))
+        (geo-index-remove *event-geo-index* result)
+        (setf (result-latitude result) lat)
+        (setf (result-longitude result) long)
+        (geo-index-insert *event-geo-index* result)
+        (setf new-data t))
 
-        (update-when (or (aand title (not (equalp it old-title))) 
-                         (aand details (not (equalp it old-details))))
-          (let* ((oldstems (stem-text (s+ old-title " " old-details)))
-                 (newstems (stem-text (s+ title " " details)))
-                 (common (intersection oldstems newstems :test #'string=)))
+      (when (or (and title (not (equalp title old-title)))
+                (and details (not (equalp details old-details))))
+        (let* ((oldstems (stem-text (s+ old-title " " old-details)))
+               (newstems (stem-text (s+ title " " details)))
+               (common (intersection oldstems newstems :test #'string=)))
 
-            (flet ((commonp (stem)
-                     (member stem common :test #'string=)))
-              (setf oldstems (delete-if #'commonp oldstems))
-              (setf newstems (delete-if #'commonp newstems))
-              (with-locked-hash-table (*event-stem-index*)
-                (dolist (stem oldstems)
-                  (asetf (gethash stem *event-stem-index*)
-                         (remove result it))))
-                (dolist (stem newstems)
-                  (push result (gethash stem *event-stem-index*))))))
+          (flet ((commonp (stem)
+                   (member stem common :test #'string=)))
+            (setf oldstems (delete-if #'commonp oldstems))
+            (setf newstems (delete-if #'commonp newstems))
+            (with-locked-hash-table (*event-stem-index*)
+              (dolist (stem oldstems)
+                (asetf (gethash stem *event-stem-index*)
+                       (remove result it))))
+              (dolist (stem newstems)
+                (push result (gethash stem *event-stem-index*)))))
+        (setf new-data t))
 
-        (update-when (or (aand lat (not (eql it old-lat)))
-                         (aand long (not (eql it old-long))))
-          (geo-index-remove *event-geo-index* result)
-         ;(setf (result-latitude result) lat)
-         ;(setf (result-longitude result) long)
-          (geo-index-insert *event-geo-index* result))
+      (when (and (not (eql local-time old-local-time))
+                 (not recurring))
+        (setf (result-time result) local-time)
+        (setf auto-updated-time nil)
+        (event-index-update result)
+        (setf new-data t))
 
-        (update-when (aand local-time (not (eql it old-local-time)))
-          (setf (result-time result) local-time)
-          (setf auto-updated-time nil)
-          (event-index-update result))
-
-        (terpri)
-
-        (update-when (or (aand recurring (not (eq it old-recurring)))
-                         (aand frequency (not (eql it old-frequency)))
-                         (aand interval (not (= it old-interval)))
-                         (aand days-of-week (not (equal it old-days-of-week)))
-                         (aand by-day-or-date
-                               (not (eql it old-by-day-or-date)))
-                         (aand weeks-of-month
-                               (not (equal it old-weeks-of-month)))
-                         (aand local-end-date (not (eql it old-end-date))))
-                       nil))
-
-    (when new-data
-      (modify-db id :title (or title old-title)
-                    :details (or details old-details)
-                    :lat (or lat old-lat)
-                    :long (or long old-long)
-                    :address (or address old-address)
-                    :local-time (or local-time old-time)
-                    :recurring (or old-recurring recurring)
-                    :frequency (or old-frequency frequency)
-                    :interval (or old-interval interval)
-                    :days-of-week (or old-days-of-week days-of-week)
-                    :by-day-or-date (or old-by-day-or-date by-day-or-date)
-                    :weeks-of-month (or old-weeks-of-month weeks-of-month)
-                    :end-date (or old-end-date local-end-date)
-                    :auto-updated-time (or old-auto-updated-time auto-updated-time)
-                    :edited (unless (and (getf *user* :admin)
-                                         (member *userid* (getf event :host)))
-                              now))))))
+      (when new-data
+        (modify-db id :title (or title old-title)
+                      :details (or details old-details)
+                      :lat (or lat old-lat)
+                      :long (or long old-long)
+                      :address (or address old-address)
+                      :local-time (or local-time old-local-time)
+                      :recurring (or recurring old-recurring)
+                      :frequency (or frequency old-frequency)
+                      :interval (or interval old-interval)
+                      :days-of-week (or days-of-week old-days-of-week)
+                      :by-day-or-date (or by-day-or-date old-by-day-or-date)
+                      :weeks-of-month (or weeks-of-month old-weeks-of-month)
+                      :end-date (or local-end-date old-end-date)
+                      :auto-updated-time (or auto-updated-time old-auto-updated-time)
+                      :edited (unless (and (getf *user* :admin)
+                                           (member *userid* (getf event :host)))))))))
 
 (defun update-recurring-event-time (id &optional data result-struct)
   (let* ((event (or data (db id)))
@@ -199,9 +195,40 @@
           (update-timestamp-until-week))))
 
     (setf new-time (timestamp-to-universal new-timestamp))
+    (modify-db id :auto-updated-time new-time)
     (with-locked-hash-table (*db-results*)
       (setf (result-time result) new-time))
     (event-index-update result)))
+
+(defun recurring-event-schedule (id &optional data)
+  (let* ((event (or data (db id)))
+         (weekly (eql (getf event :frequency) 'weekly))
+         (interval (getf event :interval))
+         (pluralize-frequency (if (> interval 1)
+                                (strcat interval
+                                        (if weekly "week" "month") "s")
+                                (if weekly "week" "month")))
+         (time (or (getf event :auto-updated-time)
+                   (getf event :local-time))))
+    (flet ((lowercase (words)
+             (mapcar #'(lambda (word)
+                         (string-downcase (symbol-name word)))
+                     words)))
+      (strcat "Every "
+              pluralize-frequency
+              " on "
+              (if weekly
+                (format nil *english-list*
+                            (mapcar #'string-capitalize
+                                    (lowercase (getf event :days-of-week))))
+                (if (eql (getf event :by-day-or-date) 'date)
+                  (s+ "the "
+                      (humanize-number (day-of-month time))
+                      " day")
+                  (s+ "the "
+                      (format nil *english-list*
+                                  (lowercase (getf event :weeks-of-month)))
+                      (humanize-exact-time time :weekday t))))))))
 
 (defun upcoming-events (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
   (let ((start (* page count))
@@ -276,9 +303,12 @@
                       (global-search *event-index*)
                       (t results)))
                     (let* ((id (result-id event))
-                           (data (db id)))
+                           (data (db id))
+                           (end-date (getf data :end-date)))
                       (cond
-                       ((getf data :recurring)
+                       ((and (getf data :recurring)
+                             (or (not end-date)
+                                 (> end-date (- now +day-in-seconds+))))
                         (update-recurring-event-time id data event)
                         (unless global-search
                           (push event updated-local-event-list)))
@@ -367,7 +397,7 @@
                             (htm "s")))))
 
              (when (and (or (not frequency)
-                            (string= frequency "weekly"))
+                            (equalp frequency "weekly"))
                         (or (not interval)
                             (= interval 1)))
                (htm
@@ -497,9 +527,7 @@
       (standard-page
         "Event"
         (html
-          (str (event-activity-item (make-result :id id
-                                                 :time (getf it :local-time)
-                                                 :people (getf it :hosts )))))
+          (str (event-activity-item (gethash id *db-results*))))
         :selected "events"))
     (not-found)))
 

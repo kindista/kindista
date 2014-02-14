@@ -109,6 +109,7 @@
          (group-adminp (group-admin-p host))
          (event-time (or time (humanize-exact-time (getf data :local-time)
                                                    :detailed t)))
+         (recurring (getf data :recurring))
          (item-url (strcat "/events/" item-id)))
 
     (activity-item :id item-id
@@ -138,8 +139,16 @@
                                     (str (humanize-universal-time (getf data :created))))))
 
                               (:table
+                                (when recurring
+                                  (htm
+                                    (:tr
+                                      (:td (:strong "Schedule: "))
+                                      (:td (str (recurring-event-schedule item-id data))))))
                                 (:tr
-                                  (:td (:strong "Time: "))
+                                  (:td (:strong
+                                         (str (if recurring
+                                                "Next time: "
+                                                "Time: "))))
                                   (:td (str event-time)))
 
                                 (:tr

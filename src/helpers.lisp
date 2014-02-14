@@ -42,11 +42,12 @@
 (defmacro s+ (&rest strings)
   `(concatenate 'string ,@strings))
 
-(defmacro bind-db-item-parameters ((id item-type symbol-binding-prefix parameters &optional result) &body body)
+(defmacro bind-db-parameters ((item-type id parameters &optional binding-prefix result) &body body)
 "Binds item-type to (db id) and supplied prefixed-parameters to (getf item-type parameter). When supplied result is bound to (gethash id *db-results*)."
   (let (bindings)
     (dolist (parameter parameters)
-      (push (list (k-symbol (strcat symbol-binding-prefix "-" parameter))
+      (push (list (k-symbol (aif binding-prefix (strcat it "-" parameter)
+                              parameter))
                   (list 'getf item-type (make-keyword parameter)))
             bindings))
     (when result
