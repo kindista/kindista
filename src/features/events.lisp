@@ -79,9 +79,6 @@
      (address title details lat long recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date auto-updated-time local-time)
      old
      result)
-    (pprint lat)
-    (pprint old-lat)
-    (terpri)
     (let ((auto-updated-time)
           (new-data (or (eq recurring old-recurring)
                         (equal frequency old-frequency)
