@@ -138,9 +138,8 @@
                       :edited (unless (and (getf *user* :admin)
                                            (member *userid* (getf event :host)))))))))
 
-(defun update-recurring-event-time (id &optional data result-struct)
+(defun next-recurring-event-time (id &optional data (time (get-universal-time)))
   (let* ((event (or data (db id)))
-         (result (or result-struct (gethash id *db-results*)))
          (frequency (getf event :frequency))
          (weekly (eql frequency 'weekly))
          (interval (getf event :interval))
@@ -151,19 +150,17 @@
          (weeks-of-month (getf event :weeks-of-month))
          (previous-time (or (getf event :auto-updated-time)
                             (getf event :local-time)))
-         (now (get-universal-time))
          (previous-timestamp (universal-to-timestamp previous-time))
-         (now-timestamp (universal-to-timestamp now))
+         (timestamp (universal-to-timestamp time))
          (new-timestamp)
          (new-day-of-week)
-         (new-week-of-month)
-         (new-time))
+         (new-week-of-month))
 
     (labels ((update-timestamp (offset-period)
                (asetf new-timestamp
                       (adjust-timestamp (or it previous-timestamp)
                         (offset offset-period offset-count)))
-               (when (timestamp< new-timestamp now-timestamp)
+               (when (timestamp< new-timestamp timestamp)
                  (update-timestamp offset-period)))
 
              (update-timestamp-until-day ()
@@ -191,7 +188,11 @@
           (update-timestamp-until-day)
           (update-timestamp-until-week))))
 
-    (setf new-time (timestamp-to-universal new-timestamp))
+    (timestamp-to-universal new-timestamp)))
+
+(defun update-recurring-event-time (id &optional data result-struct)
+  (let ((result (or result-struct (gethash id *db-results*)))
+        (new-time (next-recurring-event-time id data)))
     (modify-db id :auto-updated-time new-time)
     (with-locked-hash-table (*db-results*)
       (setf (result-time result) new-time))
@@ -277,6 +278,63 @@
                      (htm
                        (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >")))))))))))
 
+(defun populate-calendar (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
+  (let ((event-list)
+        )
+    (dolist (item items)
+      (let ((event (db (result-id item)))
+            (last-occurance))
+        (if (getf event :recurring)
+          (dotimes (event 6) )
+          (asetf event-list (sort (push (cons (result-time item) item) it)
+                                  #'< :key #'car)))))
+    (html
+      (iter (for i from 0 to (- (+ start count) 1))
+            (cond
+              ((< i start)
+               (setf items (cdr items)))
+
+              ((and (>= i start) items)
+               (let* ((item (car items))
+                      (item-time (result-time item)))
+                 (multiple-value-bind (time date)
+                     (humanize-exact-time item-time)
+                   (unless (string= date calendar-date)
+                     (setf calendar-date date)
+                     (htm (:h3 :class "event-date" (str calendar-date))))
+
+                   (htm (str (event-activity-item item
+                                                  :sidebar sidebar
+                                                  :time time
+                                                  :truncate t
+                                                  :show-distance location)))))
+               (setf items (cdr items)))
+
+              (t
+               (when (and sidebar
+                          (> (length items) count))
+                 (htm (:a :href "/events" "see more events")))
+
+               (when (and (not sidebar)
+                          (< (user-distance) 100)
+                          (> (user-distance) 0))
+                 (htm
+                   (:div :class "item small"
+                    (:em "Increasing the ")(:strong "show activity within")(:em " distance may yield more results."))))
+               (finish)))
+
+            (finally
+              (when (and paginate (or (> page 0) (cdr items)))
+                (htm
+                  (:div :class "item"
+                   (when (> page 0)
+                     (htm
+                       (:a :href (strcat url "?p=" (- page 1)) "< previous page")))
+                   "&nbsp;"
+                   (when (cdr items)
+                     (htm
+                       (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >")))))))))))
+
 (defun local-upcoming-events (&key (page 0) (count 20) (url "/events") (paginate t) (sidebar nil))
   (with-location
     (let* ((distance (user-distance))
@@ -314,15 +372,15 @@
                         (with-mutex (*event-mutex*)
                           (asetf *event-index* (remove event it)))))))))
 
-        (upcoming-events (trim-and-update
-                           (if global-search
-                             *event-index*
-                             local-events))
-                         :page page
-                         :count count
-                         :url url
-                         :sidebar sidebar
-                         :paginate paginate)))))
+        (populate-calendar (trim-and-update
+                             (if global-search
+                               *event-index*
+                               local-events))
+                           :page page
+                           :count count
+                           :url url
+                           :sidebar sidebar
+                           :paginate paginate)))))
 
 (defun events-rightbar ()
   (html
@@ -718,6 +776,9 @@
                   (flash "Your event has been deleted!")
                   (see-other (or (post-parameter "next") "/home")))
 
+                 ((not (post-parameter "confirm-location"))
+                  (try-again))
+
                  ((< (length title) 4)
                   (try-again "Please enter a longer title for your event"))
 
@@ -766,7 +827,8 @@
                                        "days-of-week" days-of-week
                                        "by-day-or-date" by-day-or-date
                                        "weeks-of-month" weeks-of-month
-                                       "end-date" (awhen local-end-time (humanize-exact-time it))))))
+                                       "end-date" (awhen local-end-time
+                                                    (humanize-exact-time it))))))
 
                  ((post-parameter "submit-edits")
                   (submit-data))
