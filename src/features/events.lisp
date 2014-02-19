@@ -152,6 +152,8 @@
                             (getf event :local-time)))
          (previous-timestamp (universal-to-timestamp previous-time))
          (timestamp (universal-to-timestamp time))
+         (end-timestamp (awhen (getf event :local-end-date)
+                          (universal-to-timestamp it)))
          (new-timestamp)
          (new-day-of-week)
          (new-week-of-month))
@@ -160,8 +162,11 @@
                (asetf new-timestamp
                       (adjust-timestamp (or it previous-timestamp)
                         (offset offset-period offset-count)))
-               (when (timestamp< new-timestamp timestamp)
-                 (update-timestamp offset-period)))
+               (cond
+                 ((and end-timestamp (> new-timestamp end-timestamp))
+                  (setf new-timestamp nil))
+                 ((timestamp< new-timestamp timestamp)
+                  (update-timestamp offset-period))))
 
              (update-timestamp-until-day ()
                (update-timestamp :day)
@@ -188,15 +193,15 @@
           (update-timestamp-until-day)
           (update-timestamp-until-week))))
 
-    (timestamp-to-universal new-timestamp)))
+    (awhen new-timestamp (timestamp-to-universal it))))
 
 (defun update-recurring-event-time (id &optional data result-struct)
-  (let ((result (or result-struct (gethash id *db-results*)))
-        (new-time (next-recurring-event-time id data)))
-    (modify-db id :auto-updated-time new-time)
-    (with-locked-hash-table (*db-results*)
-      (setf (result-time result) new-time))
-    (event-index-update result)))
+  (let ((result (or result-struct (gethash id *db-results*))))
+    (awhen (next-recurring-event-time id data)
+      (modify-db id :auto-updated-time it)
+      (with-locked-hash-table (*db-results*)
+        (setf (result-time result) it))
+      (event-index-update result))))
 
 (defun recurring-event-schedule (id &optional data)
   (let* ((event (or data (db id)))
@@ -279,61 +284,41 @@
                        (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >")))))))))))
 
 (defun populate-calendar (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
-  (let ((event-list)
-        )
-    (dolist (item items)
-      (let ((event (db (result-id item)))
-            (last-occurance))
+  (let ((event-list))
+    (flet ((add-event-occurance (result)
+             (asetf event-list (sort (push result it) #'< :key #'result-time))))
+     (dolist (item items)
+      (let* ((id (result-id item))
+             (event (db id)))
         (if (getf event :recurring)
-          (dotimes (event 6) )
-          (asetf event-list (sort (push (cons (result-time item) item) it)
-                                  #'< :key #'car)))))
-    (html
-      (iter (for i from 0 to (- (+ start count) 1))
-            (cond
-              ((< i start)
-               (setf items (cdr items)))
+          (let ((count 0)
+                (next-occurance (next-recurring-event-time id event)) )
+            (labels ((future-events ()
+                       (add-event-occurance
+                         (make-result :latitude (result-latitude item)
+                                      :longitude (result-longitude item)
+                                      :time next-occurance
+                                      :tags (result-tags item)
+                                      :people (result-people item)
+                                      :id id
+                                      :type 'event
+                                      :privacy (result-privacy item)))
+                       (incf count)
+                       (asetf next-occurance
+                              (next-recurring-event-time id event it))
+                       (when (and (< count 6) next-occurance)
+                         (future-events))))
+              (add-event-occurance item)
+              (future-events)))
 
-              ((and (>= i start) items)
-               (let* ((item (car items))
-                      (item-time (result-time item)))
-                 (multiple-value-bind (time date)
-                     (humanize-exact-time item-time)
-                   (unless (string= date calendar-date)
-                     (setf calendar-date date)
-                     (htm (:h3 :class "event-date" (str calendar-date))))
+          (add-event-occurance item)))))
 
-                   (htm (str (event-activity-item item
-                                                  :sidebar sidebar
-                                                  :time time
-                                                  :truncate t
-                                                  :show-distance location)))))
-               (setf items (cdr items)))
-
-              (t
-               (when (and sidebar
-                          (> (length items) count))
-                 (htm (:a :href "/events" "see more events")))
-
-               (when (and (not sidebar)
-                          (< (user-distance) 100)
-                          (> (user-distance) 0))
-                 (htm
-                   (:div :class "item small"
-                    (:em "Increasing the ")(:strong "show activity within")(:em " distance may yield more results."))))
-               (finish)))
-
-            (finally
-              (when (and paginate (or (> page 0) (cdr items)))
-                (htm
-                  (:div :class "item"
-                   (when (> page 0)
-                     (htm
-                       (:a :href (strcat url "?p=" (- page 1)) "< previous page")))
-                   "&nbsp;"
-                   (when (cdr items)
-                     (htm
-                       (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >")))))))))))
+    (upcoming-events event-list :page page
+                                :count count
+                                :url url
+                                :sidebar sidebar
+                                :paginate paginate
+                                :location location)))
 
 (defun local-upcoming-events (&key (page 0) (count 20) (url "/events") (paginate t) (sidebar nil))
   (with-location
@@ -640,7 +625,7 @@
                                          (handler-case
                                            (parse-datetime it time)
                                            (local-time::invalid-time-specification () nil)))
-                                       (getf item :end-date)))
+                                       (getf item :local-end-date)))
                    (title (or (post-parameter-string "title")
                               (getf item :title)))
                    (details (or (post-parameter-string "details")
