@@ -133,7 +133,7 @@
                       :days-of-week (or days-of-week old-days-of-week)
                       :by-day-or-date (or by-day-or-date old-by-day-or-date)
                       :weeks-of-month (or weeks-of-month old-weeks-of-month)
-                      :end-date (or local-end-date old-end-date)
+                      :local-end-date (or local-end-date old-end-date)
                       :auto-updated-time (or auto-updated-time old-auto-updated-time)
                       :edited (unless (and (getf *user* :admin)
                                            (member *userid* (getf event :host)))))))))
@@ -163,27 +163,30 @@
                       (adjust-timestamp (or it previous-timestamp)
                         (offset offset-period offset-count)))
                (cond
-                 ((and end-timestamp (> new-timestamp end-timestamp))
+                 ((and end-timestamp
+                       (local-time:timestamp> new-timestamp end-timestamp))
                   (setf new-timestamp nil))
-                 ((timestamp< new-timestamp timestamp)
+                 ((local-time:timestamp<= new-timestamp timestamp)
                   (update-timestamp offset-period))))
 
              (update-timestamp-until-day ()
                (update-timestamp :day)
-               (setf new-day-of-week
-                     (k-symbol (humanize-exact-time
-                                 (timestamp-to-universal new-timestamp)
-                                 :weekday t))) ;day name
-               (unless (find new-day-of-week days-of-week)
-                 (update-timestamp-until-day)))
+               (when new-timestamp
+                 (setf new-day-of-week
+                       (k-symbol (humanize-exact-time
+                                   (timestamp-to-universal new-timestamp)
+                                   :weekday t))) ;day name
+                 (unless (find new-day-of-week days-of-week)
+                   (update-timestamp-until-day))))
 
              (update-timestamp-until-week ()
                (update-timestamp :day)
-               (setf new-week-of-month
+               (when new-timestamp
+                 (setf new-week-of-month
                      (k-symbol (position-of-day-in-month
                                  (timestamp-to-universal new-timestamp))))
-               (unless (find new-week-of-month weeks-of-month)
-                 (update-timestamp-until-week))))
+                     (unless (find new-week-of-month weeks-of-month)
+                       (update-timestamp-until-week)))))
 
       (if (and (> interval 1)
                (or weekly
@@ -284,34 +287,34 @@
                        (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >")))))))))))
 
 (defun populate-calendar (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
-  (let ((event-list))
+  (let (event-list)
     (flet ((add-event-occurance (result)
              (asetf event-list (sort (push result it) #'< :key #'result-time))))
      (dolist (item items)
-      (let* ((id (result-id item))
-             (event (db id)))
-        (if (getf event :recurring)
-          (let ((count 0)
-                (next-occurance (next-recurring-event-time id event)) )
-            (labels ((future-events ()
-                       (add-event-occurance
-                         (make-result :latitude (result-latitude item)
-                                      :longitude (result-longitude item)
-                                      :time next-occurance
-                                      :tags (result-tags item)
-                                      :people (result-people item)
-                                      :id id
-                                      :type 'event
-                                      :privacy (result-privacy item)))
-                       (incf count)
-                       (asetf next-occurance
-                              (next-recurring-event-time id event it))
-                       (when (and (< count 6) next-occurance)
-                         (future-events))))
-              (add-event-occurance item)
-              (future-events)))
+       (let* ((id (result-id item))
+              (event (db id)))
+         (if (getf event :recurring)
+           (let ((event-repetition-count 1)
+                 (next-occurance (next-recurring-event-time id event)) )
+             (labels ((future-events ()
+                        (add-event-occurance
+                          (make-result :latitude (result-latitude item)
+                                       :longitude (result-longitude item)
+                                       :time next-occurance
+                                       :tags (result-tags item)
+                                       :people (result-people item)
+                                       :id id
+                                       :type 'event
+                                       :privacy (result-privacy item)))
+                        (incf event-repetition-count)
+                        (asetf next-occurance
+                               (next-recurring-event-time id event it))
+                        (when (and (< event-repetition-count 7) next-occurance)
+                          (future-events))))
+               (add-event-occurance item)
+               (future-events)))
 
-          (add-event-occurance item)))))
+           (add-event-occurance item)))))
 
     (upcoming-events event-list :page page
                                 :count count
@@ -344,7 +347,7 @@
                       (t results)))
                     (let* ((id (result-id event))
                            (data (db id))
-                           (end-date (getf data :end-date)))
+                           (end-date (getf data :local-end-date)))
                       (cond
                        ((and (getf data :recurring)
                              (or (not end-date)
@@ -567,7 +570,9 @@
       (standard-page
         "Event"
         (html
-          (str (event-activity-item (gethash id *db-results*))))
+          (str (event-activity-item (gethash id *db-results*)
+                                    :time (when (getf it :recurring)
+                                            (humanize-exact-time (getf it :local-time))))))
         :selected "events"))
     (not-found)))
 
@@ -632,8 +637,8 @@
                                 (getf item :details)))
                    (location (or (post-parameter-string "location")
                                  old-location))
-                   (lat (post-parameter-float "lat"))
-                   (long (post-parameter-float "long"))
+                   (lat (or (post-parameter-float "lat") (getf item :lat)))
+                   (long (or (post-parameter-float "long") (getf item :long)))
                    (recurring (or (when (post-parameter "recurring") t)
                                   (getf item :recurring)))
                    (frequency (or (post-parameter-string "frequency")
@@ -644,7 +649,7 @@
                                          (or-string= it '("weekly" "monthly")))))
                    (interval (or (post-parameter-integer "interval")
                                  (getf item :interval)))
-                   (days-of-week (when (string= frequency "weekly")
+                   (days-of-week (when (equalp frequency "weekly")
                                    (if (and (= interval 1)
                                             (post-parameter "days-of-week"))
                                      (post-parameter-string-list
@@ -657,7 +662,7 @@
                                           (list local-day-of-week)))))
                    (symbol-days-of-week (awhen days-of-week
                                           (mapcar #'k-symbol it)))
-                   (by-day-or-date (when (string= frequency "monthly")
+                   (by-day-or-date (when (equalp frequency "monthly")
                                      (or (post-parameter-string
                                            "by-day-or-date")
                                          (awhen (getf item :by-day-or-date)
@@ -665,7 +670,7 @@
                    (symbol-day-or-date (awhen by-day-or-date
                                          (k-symbol (or-string= it
                                                    '("day" "date")))))
-                   (weeks-of-month (when (string= frequency "monthly")
+                   (weeks-of-month (when (equalp frequency "monthly")
                                      (if (and (= 1 interval)
                                               (post-parameter "weeks-of-month"))
                                        (post-parameter-string-list
@@ -673,7 +678,7 @@
                                          #'(lambda (day)
                                              (find day
                                                    +positions-of-day-in-month+
-                                                   :test #'string=)))
+                                                   :test #'equalp)))
                                        (awhen (getf item :weeks-of-month)
                                          (mapcar #'symbol-name it)))))
                    (symbol-weeks-of-month (awhen weeks-of-month
@@ -748,7 +753,7 @@
 
                  ((or (post-parameter "edit")
                       (post-parameter "reset-location"))
-                  (try-again nil))
+                  (try-again))
 
                  ((post-parameter "delete")
                   (confirm-delete :url (script-name*)
@@ -761,7 +766,8 @@
                   (flash "Your event has been deleted!")
                   (see-other (or (post-parameter "next") "/home")))
 
-                 ((not (post-parameter "confirm-location"))
+                 ((nor (post-parameter "confirm-location")
+                       (post-parameter "submit-edits"))
                   (try-again))
 
                  ((< (length title) 4)

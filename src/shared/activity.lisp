@@ -145,10 +145,7 @@
                                       (:td (:strong "Schedule: "))
                                       (:td (str (recurring-event-schedule item-id data))))))
                                 (:tr
-                                  (:td (:strong
-                                         (str (if recurring
-                                                "Next time: "
-                                                "Time: "))))
+                                  (:td (:strong "Time: "))
                                   (:td (str event-time)))
 
                                 (:tr
