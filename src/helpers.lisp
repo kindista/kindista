@@ -386,7 +386,7 @@
       plural-string singular-string)))
 
 (defun humanize-number (n)
-  (let ((ones (floor n 10)))
+  (let ((ones (cadr (multiple-value-list (floor n 10)))))
     (strcat n (cond
                 ((= ones 1) "st")
                 ((= ones 2) "nd")

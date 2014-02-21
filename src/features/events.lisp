@@ -138,29 +138,32 @@
                       :edited (unless (and (getf *user* :admin)
                                            (member *userid* (getf event :host)))))))))
 
-(defun next-recurring-event-time (id &optional data (time (get-universal-time)))
+(defun next-recurring-event-time (id &key data (time (get-universal-time)) prior-time)
   (let* ((event (or data (db id)))
          (frequency (getf event :frequency))
          (weekly (eql frequency 'weekly))
+         (by-date (eq (getf event :by-day-or-date) 'date))
          (interval (getf event :interval))
-         (offset-count (if weekly ;local-time can't offset by the week for 'monthly
+         ;local-time can't offset by the week for 'monthly
+         (offset-count (if (or (and weekly (eql interval 1))
+                               by-date)
                          interval
                          (* interval 7)))
          (days-of-week (getf event :days-of-week))
          (weeks-of-month (getf event :weeks-of-month))
-         (previous-time (or (getf event :auto-updated-time)
-                            (getf event :local-time)))
-         (previous-timestamp (universal-to-timestamp previous-time))
+         (prior-time (or prior-time
+                       (getf event :auto-updated-time)
+                       (getf event :local-time)))
+         (prior-timestamp (universal-to-timestamp prior-time))
          (timestamp (universal-to-timestamp time))
          (end-timestamp (awhen (getf event :local-end-date)
                           (universal-to-timestamp it)))
          (new-timestamp)
-         (new-day-of-week)
-         (new-week-of-month))
+         (new-day-of-week))
 
     (labels ((update-timestamp (offset-period)
                (asetf new-timestamp
-                      (adjust-timestamp (or it previous-timestamp)
+                      (adjust-timestamp (or it prior-timestamp)
                         (offset offset-period offset-count)))
                (cond
                  ((and end-timestamp
@@ -181,16 +184,27 @@
 
              (update-timestamp-until-week ()
                (update-timestamp :day)
-               (when new-timestamp
-                 (setf new-week-of-month
-                     (k-symbol (position-of-day-in-month
-                                 (timestamp-to-universal new-timestamp))))
-                     (unless (find new-week-of-month weeks-of-month)
-                       (update-timestamp-until-week)))))
+               (when (and new-timestamp
+                          weeks-of-month
+                          (car weeks-of-month)) ;prevent comparing an empty list
+                 (let ((day (timestamp-day new-timestamp))
+                       (days-in-month (local-time:days-in-month
+                                        (timestamp-month new-timestamp)
+                                        (timestamp-year new-timestamp)))
+                       (test-weeks-of-month))
+                   (cond
+                     ((< day 8) (push 'first test-weeks-of-month))
+                     ((< day 15) (push 'second test-weeks-of-month))
+                     ((< day 22) (push 'third test-weeks-of-month))
+                     (t (when (< day 29)
+                          (push 'fourth test-weeks-of-month))
+                        (when (>= day (- days-in-month 7))
+                          (push 'last test-weeks-of-month))))
+                   (unless (intersection weeks-of-month test-weeks-of-month)
+                     (update-timestamp-until-week))))))
 
-      (if (and (> interval 1)
-               (or weekly
-                  (eq (getf event :by-day-or-date) 'date)))
+      (if (or (and (> interval 1) weekly)
+              by-date)
         (update-timestamp (if weekly :day :month)) ;local-time can't offset weekly
         (if weekly
           (update-timestamp-until-day)
@@ -200,41 +214,46 @@
 
 (defun update-recurring-event-time (id &optional data result-struct)
   (let ((result (or result-struct (gethash id *db-results*))))
-    (awhen (next-recurring-event-time id data)
+    (awhen (next-recurring-event-time id :data data)
       (modify-db id :auto-updated-time it)
       (with-locked-hash-table (*db-results*)
         (setf (result-time result) it))
       (event-index-update result))))
 
-(defun recurring-event-schedule (id &optional data)
+(defun recurring-event-schedule (id &optional data end)
   (let* ((event (or data (db id)))
          (weekly (eql (getf event :frequency) 'weekly))
          (interval (getf event :interval))
+         (end-date (getf event :local-end-date))
          (pluralize-frequency (if (> interval 1)
                                 (strcat interval
-                                        (if weekly "week" "month") "s")
-                                (if weekly "week" "month")))
+                                        " "
+                                        (if weekly "week" "month") "s on ")
+                                (unless weekly "month on ")))
          (time (or (getf event :auto-updated-time)
                    (getf event :local-time))))
     (flet ((lowercase (words)
              (mapcar #'(lambda (word)
                          (string-downcase (symbol-name word)))
                      words)))
-      (strcat "Every "
-              pluralize-frequency
-              " on "
-              (if weekly
-                (format nil *english-list*
-                            (mapcar #'string-capitalize
-                                    (lowercase (getf event :days-of-week))))
-                (if (eql (getf event :by-day-or-date) 'date)
-                  (s+ "the "
-                      (humanize-number (day-of-month time))
-                      " day")
-                  (s+ "the "
-                      (format nil *english-list*
-                                  (lowercase (getf event :weeks-of-month)))
-                      (humanize-exact-time time :weekday t))))))))
+      (s+ "Every "
+          pluralize-frequency
+          (if weekly
+            (format nil *english-list*
+                        (mapcar #'string-capitalize
+                                (lowercase (getf event :days-of-week))))
+            (if (eql (getf event :by-day-or-date) 'date)
+              (s+ "the "
+                  (humanize-number (day-of-month time))
+                  " day")
+              (s+ "the "
+                  (format nil *english-list*
+                              (lowercase (getf event :weeks-of-month)))
+                  " "
+                  (string-capitalize (humanize-exact-time time :weekday t)))))
+          (when (and end end-date)
+            (s+ " until "
+                (caddr (multiple-value-list (humanize-exact-time end-date)))))))))
 
 (defun upcoming-events (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
   (let ((start (* page count))
@@ -295,7 +314,7 @@
               (event (db id)))
          (if (getf event :recurring)
            (let ((event-repetition-count 1)
-                 (next-occurance (next-recurring-event-time id event)) )
+                 (next-occurance (next-recurring-event-time id :data event)) )
              (labels ((future-events ()
                         (add-event-occurance
                           (make-result :latitude (result-latitude item)
@@ -308,7 +327,8 @@
                                        :privacy (result-privacy item)))
                         (incf event-repetition-count)
                         (asetf next-occurance
-                               (next-recurring-event-time id event it))
+                               (next-recurring-event-time id :data event
+                                                             :prior-time it))
                         (when (and (< event-repetition-count 7) next-occurance)
                           (future-events))))
                (add-event-occurance item)
@@ -429,12 +449,12 @@
                (:select :onchange  "this.form.submit()"
                         :name "frequency"
                  (:option :value "weekly"
-                          :selected (unless (string= frequency "monthly") "")
+                          :selected (unless (equalp frequency "monthly") "")
                           "Week"
                           (unless (or (not interval) (= interval 1))
                             (htm "s")))
                  (:option :value "monthly"
-                          :selected (when (string= frequency "monthly") "")
+                          :selected (when (equalp frequency "monthly") "")
                           "Month"
                           (unless (or (not interval) (= interval 1))
                             (htm "s")))))
@@ -459,7 +479,7 @@
                                  :value (string-downcase day)
                                  (str (elt day 0))))))))
 
-             (when (string= frequency "monthly")
+             (when (equalp frequency "monthly")
                (htm
                  (:div
                    (:label "Repeat by")
@@ -467,20 +487,20 @@
                            :name "by-day-or-date"
                            :value "day"
                            :onclick "this.form.submit()"
-                           :checked (unless (string= by-day-or-date "date")
+                           :checked (unless (equalp by-day-or-date "date")
                                       ""))
                    "day of the week"
                    (:input :type "radio"
                            :name "by-day-or-date"
                            :value "date"
                            :onclick "this.form.submit()"
-                           :checked (when (string= by-day-or-date "date") ""))
+                           :checked (when (equalp by-day-or-date "date") ""))
                    "date (the "
                    (str (humanize-number
                           (day-of-month date :formatted-date t)))
                    " of the month)")
 
-                 (unless (string= by-day-or-date "date")
+                 (unless (equalp by-day-or-date "date")
                    (htm
                      (:div
                        (:label "Days of the month")
@@ -489,14 +509,14 @@
                              (:input :type "checkbox"
                                      :name "weeks-of-month"
                                      :checked (when
-                                                (or (find option
-                                                          weeks-of-month
-                                                          :test #'string=)
-                                                    (string=
-                                                      option
-                                                      (position-of-day-in-month
-                                                         date
-                                                         :formatted-date t)))
+                                                (aif weeks-of-month
+                                                  (find option it
+                                                        :test #'equalp)
+                                                  (equalp
+                                                    option
+                                                    (position-of-day-in-month
+                                                       date
+                                                       :formatted-date t)))
                                                 "checked")
                                      :value option
                                      (str option) " " (str local-day-of-week)))))))))
