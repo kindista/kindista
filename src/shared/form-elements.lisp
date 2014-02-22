@@ -147,7 +147,7 @@
                     (:input :type "checkbox"
                             :name "groups-selected"
                             :checked (when (or (not groups-selected)
-                                               (member (car group) groups-selected))
+                                               (find (car group) groups-selected))
                                        "checked")
                             :value (car group)
                             (str (cdr group))

@@ -478,7 +478,7 @@
 
 (defun post-parameter-integer-list (name)
   (loop for pair in (post-parameters*)
-        for i = (when (parse-integer (cdr pair) :junk-allowed t))
+        for i = (parse-integer (cdr pair) :junk-allowed t)
         when (and (string= (car pair) name) i)
         collect i))
 
@@ -499,4 +499,4 @@
   (awhen (post-parameter name) (unless (string= it "") (read-from-string it))))
 
 (defun post-parameter-integer (name)
-  (awhen (post-parameter name) (unless (string= it "") (parse-integer it))))
+  (awhen (post-parameter name) (parse-integer it :junk-allowed t)))

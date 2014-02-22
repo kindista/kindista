@@ -17,7 +17,7 @@
 
 (in-package :kindista)
 
-(defun create-event (&key (host *userid*) lat long title details local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date)
+(defun create-event (&key (host *userid*) lat long title details privacy local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date)
   (insert-db (remove-nil-plist-pairs (list :type :event
                                            :hosts (list host)
                                            :lat lat
@@ -25,6 +25,7 @@
                                            :address address
                                            :title title
                                            :details details
+                                           :privacy privacy
                                            :local-time local-time
                                            :recurring recurring
                                            :frequency frequency
@@ -50,12 +51,12 @@
 
 (defun index-event (id data)
   (let* ((by (getf data :hosts))
-         (now (get-universal-time))
          (result (make-result :latitude (or (getf data :lat) (getf (db (getf data :by)) :lat))
                               :longitude (or (getf data :long) (getf (db (getf data :by)) :long))
                               :id id
                               :type :event
                               :people by
+                              :privacy (getf data :privacy)
                               :time (or (getf data :auto-updated-time)
                                         (getf data :local-time)))))
 
@@ -73,13 +74,14 @@
         (dolist (stem stems)
           (push result (gethash stem *event-stem-index*)))))))
 
-(defun modify-event (id &key lat long title details local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date)
+(defun modify-event (id &key lat long title details privacy local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date)
   (bind-db-parameters
     (event id
-     (address title details lat long recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date auto-updated-time local-time)
+     (address title details privacy lat long recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date auto-updated-time local-time)
      old
      result)
     (let ((auto-updated-time)
+          (now (get-universal-time))
           (new-data (or (eq recurring old-recurring)
                         (equal frequency old-frequency)
                         (equal interval old-interval)
@@ -113,11 +115,14 @@
                 (push result (gethash stem *event-stem-index*)))))
         (setf new-data t))
 
-      (when (and (not (eql local-time old-local-time))
-                 (not recurring))
+      (when (not (eql local-time old-local-time))
         (setf (result-time result) local-time)
         (setf auto-updated-time nil)
         (event-index-update result)
+        (setf new-data t))
+
+      (unless (eql old-privacy privacy)
+        (setf (result-privacy result) privacy)
         (setf new-data t))
 
       (when new-data
@@ -126,6 +131,7 @@
                       :lat (or lat old-lat)
                       :long (or long old-long)
                       :address (or address old-address)
+                      :privacy (or privacy old-privacy)
                       :local-time (or local-time old-local-time)
                       :recurring (or recurring old-recurring)
                       :frequency (or frequency old-frequency)
@@ -135,8 +141,7 @@
                       :weeks-of-month (or weeks-of-month old-weeks-of-month)
                       :local-end-date (or local-end-date old-end-date)
                       :auto-updated-time (or auto-updated-time old-auto-updated-time)
-                      :edited (unless (and (getf *user* :admin)
-                                           (member *userid* (getf event :host)))))))))
+                      :edited (when (find *userid* (getf event :hosts)) now))))))
 
 (defun next-recurring-event-time (id &key data (time (get-universal-time)) prior-time)
   (let* ((event (or data (db id)))
@@ -380,10 +385,11 @@
                         (with-mutex (*event-mutex*)
                           (asetf *event-index* (remove event it)))))))))
 
-        (populate-calendar (trim-and-update
-                             (if global-search
-                               *event-index*
-                               local-events))
+        (populate-calendar (remove-private-items
+                             (trim-and-update
+                               (if global-search
+                                 *event-index*
+                                 local-events)))
                            :page page
                            :count count
                            :url url
@@ -404,7 +410,7 @@
         (see-other (or (referer) "/home")))
       (enter-event-details))))
 
-(defun enter-event-details (&key error date time location title groupid details existing-url recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date local-day-of-week)
+(defun enter-event-details (&key error date time location title restrictedp groupid identity-selection groups-selected details existing-url recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date local-day-of-week)
   (standard-page
     (if existing-url "Edit your event details" "Create a new event")
     (html
@@ -417,7 +423,12 @@
         (:form :method "post"
                :action (or existing-url "/events/new")
          (:input :type "hidden" :name "next" :value (referer))
-
+         (when (and existing-url groups-selected)
+           (dolist (group groups-selected)
+             (htm (:input :type "hidden" :name "groups-selected" :value group))))
+         (:input :type "hidden"
+                 :name "prior-identity"
+                 :value (or identity-selection groupid *userid*))
          (:div
            (:label "When (date & time)")
            (:input :type "text"
@@ -534,15 +545,33 @@
                    :name "title"
                    :placeholder "ex: Community Garden Work Party"
                    :value (awhen title (escape-for-html it))))
+
+         (str (strcat "recurring=" recurring
+                      " id-selection=" identity-selection
+                      " groups-selected=" groups-selected
+                      " groupid=" groupid
+                      " restrictedp=" restrictedp))
+
          (unless existing-url
            (awhen (groups-with-user-as-admin)
              (htm
                (:div
                  (:label "Posted by")
-                 (str (identity-selection-html (or groupid *userid*)
+                 (str (identity-selection-html identity-selection
                                                it
-                                               :class "identity event-host"))))))
-
+                                               :class "identity event-host"
+                                               :onchange "this.form.submit()")))))
+          (when (or (getf *user-group-priviledges* :member)
+                    (getf *user-group-priviledges* :admin))
+            (str (privacy-selection-html
+                   "event"
+                   restrictedp
+                   (if groupid
+                     (list (cons groupid (db groupid :name)))
+                     (append (groups-with-user-as-member)
+                             (groups-with-user-as-admin)))
+                   groups-selected
+                   :onchange "this.form.submit()"))))
          (:div
            (:label "Details")
            (:textarea :rows "8"
@@ -587,23 +616,22 @@
   (setf id (parse-integer id))
   (aif (db id)
     (require-user
-      (standard-page
-        "Event"
-        (html
-          (str (event-activity-item (gethash id *db-results*)
-                                    :time (when (getf it :recurring)
-                                            (humanize-exact-time (getf it :local-time))))))
-        :selected "events"))
-    (not-found)))
+      (if (and (not (find *userid* (getf it :hosts)))
+               (item-view-denied (result-privacy (gethash id *db-results*))))
+        (permission-denied)
+        (standard-page
+          "Event"
+          (html
+            (str (event-activity-item (gethash id *db-results*)
+                                      :time (when (getf it :recurring)
+                                              (humanize-exact-time (getf it :local-time))))))
+          :selected "events")))
+      (not-found)))
 
 (defun post-event (&optional id)
   (require-active-user
     (let* ((id (when id (parse-integer id)))
            (item (db id))
-           (groupid (or (post-parameter-integer "identity-selection")
-                        (post-parameter-integer "groupid")))
-           (new-event-admin-p (unless id (group-admin-p groupid)))
-           (new-host (or new-event-admin-p *userid*))
            (hosts (getf item :hosts))
            (group-adminp (when id
                            (loop for host in hosts
@@ -621,9 +649,10 @@
          (see-other (or (post-parameter "next") (referer))))
 
         (t
-         (require-test ((or (member *userid* hosts)
-                           group-adminp
-                           (getf *user* :admin))
+         (require-test ((or (not id)
+                            (member *userid* hosts)
+                            group-adminp
+                            (getf *user* :admin))
                        (s+ "You can only edit your own events."))
 
           (multiple-value-bind (old-time date-name old-date)
@@ -657,8 +686,10 @@
                                 (getf item :details)))
                    (location (or (post-parameter-string "location")
                                  old-location))
-                   (lat (or (post-parameter-float "lat") (getf item :lat)))
-                   (long (or (post-parameter-float "long") (getf item :long)))
+                   (new-lat (post-parameter-float "lat"))
+                   (new-long (post-parameter-float "long"))
+                   (lat (or new-lat (getf item :lat)))
+                   (long (or new-long (getf item :long)))
                    (recurring (or (when (post-parameter "recurring") t)
                                   (getf item :recurring)))
                    (frequency (or (post-parameter-string "frequency")
@@ -702,7 +733,19 @@
                                        (awhen (getf item :weeks-of-month)
                                          (mapcar #'symbol-name it)))))
                    (symbol-weeks-of-month (awhen weeks-of-month
-                                           (mapcar #'k-symbol it))))
+                                           (mapcar #'k-symbol it)))
+                   (identity-selection (post-parameter-integer "identity-selection"))
+                   (groupid (or identity-selection
+                                (post-parameter-integer "groupid")))
+                   (new-event-admin-p (unless id (group-admin-p groupid)))
+                   (new-host (or new-event-admin-p *userid*))
+                   (prior-identity (post-parameter-integer "prior-identity"))
+                   (privacy-selection (post-parameter-string "privacy-selection"))
+                   (restrictedp (and (equalp privacy-selection "restricted")
+                                     (or (not identity-selection)
+                                         (eql identity-selection prior-identity)))) 
+                   (groups-selected (or (post-parameter-integer-list "groups-selected")
+                                        (getf item :privacy))))
 
               (labels ((try-again (&optional e)
                ;; needs to be labels not flet because of
@@ -722,6 +765,10 @@
                                               :end-date (awhen local-end-time(humanize-exact-time it))
                                               :date date
                                               :time time
+                                              :restrictedp restrictedp
+                                              :groupid groupid
+                                              :groups-selected groups-selected
+                                              :identity-selection identity-selection
                                               :error e))
 
                        (submit-data (&key lat long address)
@@ -736,6 +783,7 @@
                                              :interval interval
                                              :days-of-week symbol-days-of-week
                                              :by-day-or-date symbol-day-or-date
+                                             :privacy groups-selected
                                              :weeks-of-month symbol-weeks-of-month
                                              :local-end-date local-end-time
                                              :details details
@@ -751,6 +799,7 @@
                                         :host new-host
                                         :long long
                                         :local-time local-time
+                                        :privacy groups-selected
                                         :title title
                                         :details details
                                         :address location
@@ -813,8 +862,9 @@
                   ; must not be earlier than today.
                   (try-again "Please enter a future date for your event"))
 
-                 ((and (not (and lat long))
-                       (not (equalp location old-location)))
+                 ((or (not (and lat long))
+                      (and (not (equalp location old-location))
+                           (nor new-lat new-long)))
                   ; if there's a new location
                   (multiple-value-bind (latitude longitude address)
                     (geocode-address location)
@@ -832,6 +882,10 @@
                                        "date" date
                                        "time" time
                                        "groupid" new-event-admin-p
+                                       "groups-selected" groups-selected
+                                       "identity-selection" identity-selection
+                                       "privacy-selection" privacy-selection
+                                       "prior-identity" prior-identity
                                        "recurring" recurring
                                        "frequency" frequency
                                        "interval" interval

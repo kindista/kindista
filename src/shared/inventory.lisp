@@ -283,19 +283,14 @@
                                              #'(lambda (tag)
                                                  (scan *tag-scanner* tag))))
            (groups-selected (post-parameter-integer-list "groups-selected"))
-           (groupid (when (scan +number-scanner+ (post-parameter "groupid"))
-                     (parse-integer (post-parameter "groupid"))))
-           (identity-selection (when (scan +number-scanner+
-                                           (post-parameter "identity-selection"))
-                                 (parse-integer (post-parameter "identity-selection"))))
+           (groupid (post-parameter-integer "groupid"))
+           (identity-selection (post-parameter-integer "identity-selection"))
            ;reset to public when changing identity
-           (restrictedp (when
-                          (and (string= (post-parameter "privacy-selection")
-                                        "restricted")
-                               (or (not identity-selection)
-                                   (eql identity-selection
-                                        (parse-integer (post-parameter "prior-identity")))))
-                          t))
+           (restrictedp (and (equalp (post-parameter "privacy-selection")
+                                      "restricted")
+                              (or (not identity-selection)
+                                  (eql identity-selection
+                                       (post-parameter-integer "prior-identity")))))
            (adminp (group-admin-p groupid))
            (text (when (scan +text-scanner+ (post-parameter "text"))
                    (post-parameter "text"))))
