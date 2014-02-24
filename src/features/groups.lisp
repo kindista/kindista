@@ -828,7 +828,20 @@
 
 (defun get-group (id)
   (ensuring-userid (id "/groups/~a")
-    (group-activity-html id)))
+    (let* ((group (db id))
+           (group-adminp (find *userid* (getf group :admins))))
+
+      (cond
+        ((or (not group-adminp)
+             (getf group :bio-summary)
+             (getf group :bio-into)
+             (getf group :bio-contact))
+         (group-activity-html id))
+
+        (group-adminp
+         (see-other (strcat "/groups/" (username-or-id id) "/about")))
+
+      (t (not-found))))))
 
 (defun get-group-about (id)
   (require-user
