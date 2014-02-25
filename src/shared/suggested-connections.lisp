@@ -186,11 +186,14 @@ Sorts them according to a rubric that takes into account if they are following t
       (html
         (:div :class "item right only"
           (:h2 "People you may know")
-          (:br)
          (dolist (suggestion sidebar-suggestions)
              (let* ((id (car suggestion))
+                    (entity (db id))
+                    (url-type (case (getf entity :type)
+                                   (:person "people")
+                                   (:group "groups")))
                     (reasons (cdr suggestion))
-                    (link (s+ "/people/" (username-or-id id)))
+                    (link (s+ "/" url-type "/" (username-or-id id)))
                     (name (db id :name)))
                  (htm
                   (:div :class "side-sug card"
@@ -220,7 +223,7 @@ Sorts them according to a rubric that takes into account if they are following t
                           (htm (:p "Also a member of "
                                 (str (db (rand-from-list it) :name)))))))
 
-                  (:form :method "post" :action "/contacts"
+                  (:form :method "post" :action "/contacts" :class "add-sug"
                     (htm
                       (:input :type "hidden"
                               :name "add"
@@ -228,10 +231,10 @@ Sorts them according to a rubric that takes into account if they are following t
                       (:input :type "hidden"
                               :name "next"
                               :value "/home")
-                      (:button :class "simple-link small"
+                      (:button :class "simple-link"
                                :type "submit"
                                (:img :src "media/icons/add-contact.png" :class "icon")
-                               (str " Add contact"))))))))))))))
+                               (str " Add to contacts"))))))))))))))
 
 
 (defun populate-suggestions-index ()
