@@ -70,7 +70,8 @@
                                            (:file "paginate")
                                            (:file "profiles")
                                            (:file "verify-location")
-                                           (:file "time")))
+                                           (:file "time")
+                                           (:file "suggested-connections")))
                              (:module features
                               :serial t
                               :components ((:file "about")

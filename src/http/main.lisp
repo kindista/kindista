@@ -124,7 +124,7 @@
 (defvar *donate-info* nil) ; current donation page data
 (defvar *user* nil) ; current user
 (defvar *userid* nil) ; current user
-(defvar *user-group-priviledges* nil) ; current user's group priviledges
+(defvar *user-group-privileges* nil) ; current user's group privileges
 (defvar *user-mailbox* nil) ;current user's mailbox
 (defvar *latitude* 0.0)
 (defvar *longitude* 0.0)
@@ -173,8 +173,8 @@
   `(with-token
     (let* ((*userid* (or *userid* (token-userid *token*)))
            (*user* (or *user* (db *userid*)))
-           (*user-group-priviledges* (or *user-group-priviledges*
-                                         (gethash *userid* *group-priviledges-index*)))
+           (*user-group-privileges* (or *user-group-privileges*
+                                         (gethash *userid* *group-privileges-index*)))
            (*user-mailbox* (or *user-mailbox*
                                (gethash *userid* *person-mailbox-index*))))
        ,@body)))

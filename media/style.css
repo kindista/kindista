@@ -605,6 +605,11 @@ button.red.simple-link {
  color: #900;
 }
 
+
+menu.horiz a {
+ color: #3c6dc8;
+}
+
 button.blue, a.blue {
  font-weight: bold;
  color: #fff;
@@ -1504,6 +1509,7 @@ table.messages {
  padding: 0 0 1.25em 0;
  margin: 0.5em 0;
  overflow: hidden;
+ height:100%; /* DJB changed this 2/3/14 - make sure it doesn't mess with anything else */
 }
 
 .card:last-child {
@@ -1706,7 +1712,7 @@ button.card > img {
 }
 
 form.invite-member-result,
-.invite-members form.member-to-admin {
+.invite-members form.member-to-admin, .suggested-contacts {
  clear: both;
  max-width: 30em;
  min-width: 20em;
@@ -3091,7 +3097,7 @@ input[name=reply] {
  color:#333333;
 }
 
-.reciprocity a {
+.reciprocity a, .recip-details a, .tags a, .side-sug a {
  font-weight:normal;
 }
 
@@ -3112,14 +3118,11 @@ input[name=reply] {
  margin-top:0.3em;
 }
 
-.recip-details a {
- font-weight:normal;
-}
 
 .recip-reply {
-  float:right;
-  margin-top:0.3em;
-  font-size:0.9em;
+ float:right;
+ margin-top:0.3em;
+ font-size:0.9em;
 }
 
 .recip-reply :first-child {
@@ -3148,8 +3151,56 @@ input[name=reply] {
  font-size:0.9em;
  margin-bottom:1em;
 }
-.tags a {
+
+.side-sug-image {
+ width:4em;
+ display:table-cell;
+ height:100%;
+ vertical-align:middle;
+}
+
+.side-sug * img {
+ max-height:4em;
+ max-width:4em;
+}
+
+.side-sug-content {
+ overflow:hidden;
+ margin: 0 0 0 .5em;
+}
+
+
+.side-sug {
+ font-size:0.8em;
+ border:none;
+ padding-bottom:.5em;
+ display:table;
+ height:5em;
+}
+
+.side-sug a {
  font-weight:normal;
+}
+
+.side-sug p {
+ margin: 0.25em 0;
+}
+
+.side-sug button {
+ padding:0;
+}
+
+.decline-button {
+ float:right;
+ position:absolute;
+ top:0;
+ right:0;
+ z-index:11;
+}
+
+.decline-button button {
+ padding:0;
+ font-weight:bold;
 }
 
 @-webkit-keyframes rotation {

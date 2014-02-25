@@ -41,15 +41,15 @@
                               :time (or (getf data :edited) (getf data :created))
                               :tags (getf data :tags))))
 
+    (with-locked-hash-table (*db-results*)
+      (setf (gethash id *db-results*) result))
+
     (cond
       (pending
        (with-locked-hash-table (*pending-person-items-index*)
          (push id (gethash by *pending-person-items-index*))))
 
       (t
-       (with-locked-hash-table (*db-results*)
-         (setf (gethash id *db-results*) result))
-
        (with-locked-hash-table (*profile-activity-index*)
          (asetf (gethash by *profile-activity-index*)
                 (sort (push result it) #'> :key #'result-time)))
@@ -606,8 +606,8 @@
                               " by")))
                   (str (identity-selection-html identity-selection it :onchange "this.form.submit()")))))
 
-          (when (or (getf *user-group-priviledges* :member)
-                    (getf *user-group-priviledges* :admin)
+          (when (or (getf *user-group-privileges* :member)
+                    (getf *user-group-privileges* :admin)
                     groups-selected)
             (str (privacy-selection-html
                    (if (string= selected "offers") "offer" "request")

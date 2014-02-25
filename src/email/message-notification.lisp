@@ -68,7 +68,7 @@
 
         (cl-smtp:send-email
           +mail-server+
-          "Kindista <noreply@kindista.org>"
+          "DoNotReply <noreply@kindista.org>"
           (car (db (car recipient) :emails))
           (or (subject (cdr recipient))
               (s+ "New message from " sender-name))

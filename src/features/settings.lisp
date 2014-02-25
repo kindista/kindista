@@ -656,17 +656,17 @@
       :item-id new-admin
       :post-parameter "confirm-new-admin"
       :details (s+ "At this time, each group account can have a maximum of three admins. "
-                   "We recommend that you only give admin priviledges to people who are "
+                   "We recommend that you only give admin privileges to people who are "
                    "actually in leadership or administrative roles within this group. "
                    "Once you make "
                    admin-name
                    " an admin, you will not have the ability to "
-                   "remove their admin priviledges (however they may revoke their admin "
+                   "remove their admin privileges (however they may revoke their admin "
                    "status themselves). " 
                    "<strong>Therefore, we strongly recommend that you confirm that "
                    admin-name
                    " is willing to act as an admin for this account before you give them "
-                   "admin priviledges.</strong>" ))))
+                   "admin privileges.</strong>" ))))
 
 (defun confirm-revoke-admin-role (groupid)
   (let ((group-name (db groupid :name)))
@@ -711,7 +711,7 @@
                                :class "yes"
                                :name "revoke-admin-role"
                                "revoke admin role"))))
-                 (str (person-card admin (db admin :name))))))
+                 (str (person-card admin )))))
             (:div :class "invite-members"
               (:h3 "Add another admin for "
                (str
@@ -746,7 +746,7 @@
                                  (str
                                    (person-card
                                      (car person-cons)
-                                     (cdr person-cons)
+                                     :alias (cdr person-cons)
                                      :button (html
                                                (:button :class "yes"
                                                         :name "add-admin"
@@ -782,7 +782,7 @@
                    (:p :class "help-text"
                     "this account already has the maximum of three administrators. "
                     "if you would like to add an additional admin for this account, "
-                    "one of the current admins must first revoke their admin priviledges." )))))))))
+                    "one of the current admins must first revoke their admin privileges." )))))))))
 
 (defun get-settings-error ()
   (flash "the avatar you uploaded is too large. please upload an image smaller than 10mb." :error t)
@@ -1068,32 +1068,33 @@
              (see-other "/settings/communication")))
 
           ((post-parameter "bio-doing")
-           (unless (getf *user* :bio)
-             (modify-db *userid* :bio t))
-           (modify-db *userid* :bio-doing (post-parameter "bio-doing"))
+           (unless (getf entity :bio)
+             (modify-db id :bio t))
+           (modify-db id :bio-doing (post-parameter "bio-doing"))
            (see-other (or (post-parameter "next") "/home")))
 
           ((post-parameter "bio-summary")
-           (unless (getf *user* :bio)
-             (modify-db *userid* :bio t))
-           (modify-db *userid* :bio-summary (post-parameter "bio-summary"))
+           (unless (getf entity :bio)
+             (modify-db id :bio t))
+           (modify-db id :bio-summary (post-parameter "bio-summary"))
            (see-other (or (post-parameter "next") "/home")))
 
           ((post-parameter "bio-into")
-           (unless (getf *user* :bio)
-             (modify-db *userid* :bio t))
-           (modify-db *userid* :bio-into (post-parameter "bio-into"))
+           (unless (getf entity :bio)
+             (modify-db id :bio t))
+           (modify-db id :bio-into (post-parameter "bio-into"))
            (see-other (or (post-parameter "next") "/home")))
 
           ((post-parameter "bio-contact")
-           (unless (getf *user* :bio)
-             (modify-db *userid* :bio t)) (modify-db *userid* :bio-contact (post-parameter "bio-contact"))
+           (unless (getf entity :bio)
+             (modify-db id :bio t))
+           (modify-db id :bio-contact (post-parameter "bio-contact"))
            (see-other (or (post-parameter "next") "/home")))
 
           ((post-parameter "bio-skills")
-           (unless (getf *user* :bio)
-             (modify-db *userid* :bio t))
-           (modify-db *userid* :bio-skills (post-parameter "bio-skills"))
+           (unless (getf entity :bio)
+             (modify-db id :bio t))
+           (modify-db id :bio-skills (post-parameter "bio-skills"))
            (see-other (or (post-parameter "next") "/home")))
 
           ((scan +number-scanner+ (post-parameter "rdist"))

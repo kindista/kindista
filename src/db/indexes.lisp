@@ -48,7 +48,7 @@
 (defindex *gratitude-results-index*)
 (defindex *group-membership-requests-index*) ;(personid . requestid)
 (defindex *group-membership-invitations-index*) ;(personid . invitationid)
-(defindex *group-priviledges-index*)
+(defindex *group-privileges-index*)
 (defindex *group-members-index*)
 (defindex *groups-geo-index*)
 (defindex *invited-index*)
@@ -62,6 +62,7 @@
 (defindex *person-mailbox-index* :test 'equalp)
 (defindex *person-invitation-index*)
 (defindex *person-notification-index*)
+(defindex *person-suggested-connections-index*)
 (defindex *profile-activity-index*)
 (defindex *request-geo-index*)
 (defindex *request-index*) ;should be called "person-request-index"

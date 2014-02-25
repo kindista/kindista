@@ -292,14 +292,21 @@
 (defun empty-string-p (string)
   (or (not string) (string= string "")))
 
-(defun mutual-connections (one &optional (two *userid*))
-  (let ((one-data (db one)))
-   (intersection (if (eql (getf one-data :type) :person)
-                  (gethash one *followers-index*)
+(defun mutual-connections (other-person-id &optional (user-id *userid*))
+  "A user is considered a \"mutual connection\" between the current user
+  (user) and another user (other-person) if:
+     - current user follows mutual connection
+     - mutual connection follows other-person
+   A user is considered a mutual connection between the current user and a group if they:
+     - current user follows mutual connection
+     - mutual connection is in the group"
+  (let ((other-person-data (db other-person-id)))
+   (intersection (if (eql (getf other-person-data :type) :person)
+                  (gethash other-person-id *followers-index*)
                   (remove *userid*
-                          (union (getf one-data :admins)
-                                 (getf one-data :members))))
-                (getf (db two) :following))))
+                          (union (getf other-person-data :admins)
+                                 (getf other-person-data :members))))
+                (getf (db user-id) :following))))
 
 (defmacro ensuring-userid ((user-id base-url) &body body)
   (let ((is-number (gensym))
@@ -380,10 +387,6 @@
                                      collect (db id :name))
                                (mapcar #'person-link ids))))
 
-(defun pluralize (list singular-string plural-string)
-  (let ((list-length (length list)))
-    (if (or (= 0 list-length) (< 1 list-length))
-      plural-string singular-string)))
 
 (defun humanize-number (n)
   (let ((ones (cadr (multiple-value-list (floor n 10)))))
@@ -410,7 +413,7 @@
       (cond
         (my-group-opt-outs
          (flash (s+ "<p>" (name-list-all my-group-opt-outs)
-                    (pluralize my-group-opt-outs " does " " do ")
+                    (pluralize my-group-opt-outs " does " :plural-form " do " :hidenum t)
                     "not have any admins who have chosen to be notified when "
                     "people send messages to them through Kindista.</p>"
                     "<p>In order to be notified when someone replies "
@@ -429,7 +432,7 @@
         (other-opt-outs
           (flash (s+ "<p>"
                      (name-list-all other-opt-outs)
-                     (pluralize other-opt-outs " has " " have ")
+                     (pluralize other-opt-outs " has " :plural-form " have " :hidenum t)
                      "chosen not to recieve email notifications when other "
                      " Kindista members send them messages.</p>"
                      "<p>They will recieve your message next time they log into "
@@ -500,3 +503,17 @@
 
 (defun post-parameter-integer (name)
   (awhen (post-parameter name) (parse-integer it :junk-allowed t)))
+
+(defun rand-from-list (list)
+  (when list
+    (nth (random (length list)) list)))
+
+(defun pluralize (list-or-num singular &key plural-form hidenum)
+  "If the first argument is 1 (or its length is 1), returns the number and the second argument (the non-plural form of the word). If it is non-1, returns the number and the plural form of the word. If plural-form is non-nil (must be a string), returns that word instead of adding an s. if hidenum is non-nil, only returns the pluralized word without the number."
+  (let ((num (if (integerp list-or-num) list-or-num (length list-or-num))))
+    (s+
+      (unless hidenum (strcat num " "))
+      (if (= num 1)
+        singular
+        (aif plural-form it (strcat singular "s"))))))
+

@@ -64,7 +64,7 @@
         do (incf counter)
         and
         collect (list :userid i
-                      :requestid (nth (random num-requests) request-list)
+                      :requestid (rand-from-list request-list)
                       :more (when (> num-requests 1)
                               (- num-requests 1))))))
 
@@ -97,6 +97,4 @@
                     " &middot; "
                     (:a :href (strcat "/people/" (username-or-id user-id) "/requests")
                      "See "
-                     (str (if (= more-requests 1)
-                            "one more request"
-                            (strcat more-requests " more requests"))))))))))))))
+                     (str (pluralize more-requests " more request")))))))))))))

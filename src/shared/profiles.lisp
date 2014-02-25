@@ -45,7 +45,7 @@
             (str (paginate-links page more)))
           (dolist (id ids)
             (str (if (string= type "people")
-                   (person-card id (db id :name))
+                   (person-card id)
                    (group-card id))))
           (str (paginate-links page more))))
       :selected type
@@ -85,7 +85,7 @@
                 (htm (:a :name (char-downcase char))
                      (:h3 (str char) (:small " (" (htm (:a :href "#index" " back to index ")) ")")))
                 (setf letter char))
-              (str (person-card id (db id :name)))))))
+              (str (person-card id))))))
 
       :selected selected
       :right (html
@@ -93,7 +93,7 @@
                (str (invite-sidebar)))))
   )
 
-(defun profile-bio-section-html (title content &key editing editable section-name)
+(defun profile-bio-section-html (title content &key editing editable section-name groupid)
   (when (string= content "")
     (setf content nil))
   (when (or content editing editable)
@@ -101,18 +101,19 @@
       (:div :class "bio-section"
         (:h2 (str title)
              (when (and editable (not editing))
-               (htm (:a :href (strcat *base-url* "?edit=" section-name)
+               (htm (:a :href (strcat *base-url* "/about?edit=" section-name)
                         (:img :class "icon" :src "/media/icons/pencil.png")))))
         (cond
           (editing
             (htm
               (:form :method "post" :action "/settings"
                 (:input :type "hidden" :name "next" :value (strcat *base-url* "/about"))
+                (awhen groupid
+                  (htm (:input :type "hidden" :name "groupid" :value it)))
                 (:textarea :name (strcat "bio-" section-name)
                            (awhen content (str (escape-for-html it))))
                 (:button :class "yes" :type "submit" :name "save" "Save")
-                (:a :class "cancel red" :href *base-url* "Cancel")
-                )))
+                (:a :class "cancel red" :href *base-url* "Cancel"))))
           ((not content)
             (htm
               (:p :class "empty" "I'm empty... fill me out!")))
@@ -121,7 +122,7 @@
             (htm
               (:p (str (html-text content))))))))))
 
-(defun profile-bio-html (id &key editing)
+(defun profile-bio-html (id)
   ; is the user editing one of the sections?
   ; should we show edit links for the sections?
   ;  if the user is looking at their own bio
@@ -129,13 +130,21 @@
   ;
   (require-user
     (let* ((strid (username-or-id id))
+           (editing (cond
+                      ((string= (get-parameter "edit") "doing") 'doing)
+                      ((string= (get-parameter "edit") "contact") 'contact)
+                      ((string= (get-parameter "edit") "into") 'into)
+                      ((string= (get-parameter "edit") "summary") 'summary)
+                      ((string= (get-parameter "edit") "skills") 'skills)))
            (entity (db id))
            (name (getf entity :name))
            (entity-type (getf entity :type))
+           (group-id (when (eql entity-type :group) id))
+           (group-adminp (find *userid* (getf entity :admins)))
            (editable (when (not editing)
                        (case entity-type
                          (:person (eql id *userid*))
-                         (:group (member *userid* (getf entity :admins))))))
+                         (:group group-adminp))))
            (profile-p (or (getf entity :bio-into)
                           (getf entity :bio-contact)
                           (getf entity :bio-skils)
@@ -147,62 +156,58 @@
            (*base-url* (case entity-type
                          (:person (strcat "/people/" strid))
                          (:group (strcat "/groups/" strid)))))
-      (standard-page
-        name
-        (html
-          (str (profile-tabs-html id :tab :about))
-          (if (or (eql id *userid*) profile-p)
-            (htm
-              (:div :class "bio"
-                (str (profile-bio-section-html
-                       (case entity-type
-                         (:person "My self-summary")
-                         (:group (s+ "About " name)))
-                       (getf entity :bio-summary)
-                       :section-name "summary"
-                       :editing (eql editing 'summary)
-                       :editable editable))
-                (when (eql entity-type :person)
-                  (str (profile-bio-section-html
-                         "What I'm doing with my life"
-                         (getf entity :bio-doing)
-                         :section-name "doing"
-                         :editing (eql editing 'doing)
-                         :editable editable)))
-                (str (profile-bio-section-html
-                       (case entity-type
-                         (:person "What I'm really good at")
-                         (:group "What we're really good at"))
-                       (getf entity :bio-skills)
-                       :section-name "skills"
-                       :editing (eql editing 'skills)
-                       :editable editable))
-                (when (eql entity-type :person)
-                  (str (profile-bio-section-html
-                         "I'm also into"
-                         (getf entity :bio-into)
-                         :section-name "into"
-                         :editing (eql editing 'into)
-                         :editable editable)))
-                (str (profile-bio-section-html
-                       (case entity-type
-                         (:person "You should contact me if")
-                         (:group "Contact us if"))
-                       (getf entity :bio-contact)
-                       :section-name "contact"
-                       :editing (eql editing 'contact)
-                       :editable editable))))
-            (case entity-type
-              (:person (htm (:h3 "This person hasn't written anything here.")))
-              (:group (htm (:h3 "This group hasn't written anything here."))))))
-        :right (case entity-type
-                 (:person (when mutuals
-                            (mutual-connections-sidebar mutual-links)))
-                 (:group (group-sidebar id)))
-        :top (profile-top-html id)
-        :selected (if (eql entity-type :group)
-                    "groups"
-                    "people")))))
+      (flet ((bio-section (title section)
+               (let ((section-name (string-downcase (symbol-name section))))
+                 (profile-bio-section-html
+                   title
+                   (getf entity(make-keyword (string-upcase
+                                               (s+ "bio-" section-name))))
+                   :groupid group-id
+                   :section-name section-name
+                   :editing (eql editing section)
+                   :editable editable))))
+        (pprint group-id)
+        (terpri)
+        (standard-page
+          name
+          (html
+            (str (profile-tabs-html id :tab :about))
+            (if (or (eql id *userid*) profile-p group-adminp)
+              (htm
+                (:div :class "bio"
+                  (str (bio-section (case entity-type
+                                      (:person "My self-summary")
+                                      (:group (s+ "About " name)))
+                                    'summary))
+                  (when (eql entity-type :person)
+                    (str (bio-section
+                           "What I'm doing with my life"
+                           'doing)))
+                  (str (bio-section
+                         (case entity-type
+                           (:person "What I'm really good at")
+                           (:group "What we're really good at"))
+                         'skills))
+                  (when (eql entity-type :person)
+                    (str (bio-section
+                           "I'm also into"
+                           'into)))
+                  (str (bio-section
+                         (case entity-type
+                           (:person "You should contact me if")
+                           (:group "Contact us if"))
+                         'contact))))
+              (case entity-type
+                (:person (htm (:h3 "This person hasn't written anything here.")))
+                (:group (htm (:h3 "This group hasn't written anything here."))))))
+          :right (case entity-type
+                   (:person (when mutuals
+                              (mutual-connections-sidebar mutual-links)))
+                   (:group (group-sidebar id)))
+          :top (profile-top-html id)
+          :selected (if (eql entity-type :group)
+                      "groups"
+                      "people"))))))
 
 (defun profile-activity-items (&key (id *userid*) (page 0) (count 20) type display members)
   (let ((items (cond
@@ -403,11 +408,13 @@
          (entity-type (getf entity :type))
          (name (getf entity :name))
          (display (cond
-                    ((and (get-parameter "group")
-                          (not (get-parameter "members")))
+                    ((or (string= (get-parameter "display") "group")
+                         (and (get-parameter "group")
+                            (not (get-parameter "members"))))
                      "group")
-                    ((and (get-parameter "members")
-                          (not (get-parameter "group")))
+                    ((or (string= (get-parameter "display") "members")
+                         (and (get-parameter "members")
+                              (not (get-parameter "group"))))
                      "members")
                     ((eql entity-type :group)
                      "all")))

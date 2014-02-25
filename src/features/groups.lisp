@@ -62,11 +62,11 @@
 
     (setf (gethash (getf data :username) *username-index*) id)
 
-    (with-locked-hash-table (*group-priviledges-index*)
+    (with-locked-hash-table (*group-privileges-index*)
       (dolist (person (getf data :admins))
-        (push id (getf (gethash person *group-priviledges-index*) :admin)))
+        (push id (getf (gethash person *group-privileges-index*) :admin)))
       (dolist (person (getf data :members))
-        (push id (getf (gethash person *group-priviledges-index*) :member))))
+        (push id (getf (gethash person *group-privileges-index*) :member))))
 
     (with-locked-hash-table (*group-members-index*)
       (dolist (person (getf data :admins))
@@ -230,13 +230,13 @@
   (amodify-db groupid :members (pushnew personid it))
   (with-locked-hash-table (*group-members-index*)
      (pushnew personid (gethash groupid *group-members-index*)))
-  (with-locked-hash-table (*group-priviledges-index*)
-     (pushnew groupid (getf (gethash personid *group-priviledges-index*) :member))))
+  (with-locked-hash-table (*group-privileges-index*)
+     (pushnew groupid (getf (gethash personid *group-privileges-index*) :member))))
 
 (defun remove-group-member (personid groupid)
   (amodify-db groupid :members (remove personid it))
-  (with-locked-hash-table (*group-priviledges-index*)
-     (asetf (getf (gethash personid *group-priviledges-index*) :member)
+  (with-locked-hash-table (*group-privileges-index*)
+     (asetf (getf (gethash personid *group-privileges-index*) :member)
             (remove groupid it)))
   (with-locked-hash-table (*group-members-index*)
      (asetf (gethash groupid *group-members-index*)
@@ -244,10 +244,10 @@
 
 (defun add-group-admin (personid groupid)
   (assert (eql (db personid :type) :person))
-  (with-locked-hash-table (*group-priviledges-index*)
-     (asetf (getf (gethash personid *group-priviledges-index*) :admin)
+  (with-locked-hash-table (*group-privileges-index*)
+     (asetf (getf (gethash personid *group-privileges-index*) :admin)
             (pushnew groupid it))
-     (asetf (getf (gethash personid *group-priviledges-index*) :member)
+     (asetf (getf (gethash personid *group-privileges-index*) :member)
             (remove groupid it)))
   (if (member personid (db groupid :members))
     (amodify-db groupid :members (remove personid it)
@@ -256,10 +256,10 @@
 
 (defun remove-group-admin (personid groupid)
   (assert (eql (db personid :type) :person))
-  (with-locked-hash-table (*group-priviledges-index*)
-     (asetf (getf (gethash personid *group-priviledges-index*) :admin)
+  (with-locked-hash-table (*group-privileges-index*)
+     (asetf (getf (gethash personid *group-privileges-index*) :admin)
             (remove groupid it))
-     (asetf (getf (gethash personid *group-priviledges-index*) :member)
+     (asetf (getf (gethash personid *group-privileges-index*) :member)
             (pushnew groupid it)))
   (amodify-db groupid :admins (remove personid it)
                       :members (pushnew personid it)))
@@ -271,8 +271,8 @@
 (defun groups-with-user-as-admin (&optional (userid *userid*))
 "Returns an a-list of (groupid . group-name)"
   (loop for id in (getf (if (eql userid *userid*)
-                          *user-group-priviledges*
-                          (gethash userid *group-priviledges-index*))
+                          *user-group-privileges*
+                          (gethash userid *group-privileges-index*))
                         :admin)
         collect (cons id (db id :name))))
 
@@ -280,8 +280,8 @@
 (defun groups-with-user-as-member (&optional (userid *userid*))
 "Returns an a-list of (groupid . group-name)"
   (loop for id in (getf (if (eql userid *userid*)
-                          *user-group-priviledges*
-                          (gethash userid *group-priviledges-index*))
+                          *user-group-privileges*
+                          (gethash userid *group-privileges-index*))
                         :member)
         collect (cons id (db id :name))))
 
@@ -356,7 +356,7 @@
                      (str
                        (person-card
                          (car result)
-                         (cdr result)
+                         :alias (cdr result)
                          :button (html (:button :class "submit yes"
                                                 :name "invite-member"
                                                 :value (car result)
@@ -456,7 +456,7 @@
                   :id "group"
                   :onchange "this.form.submit()"
                   :checked (when (or (string= selected "all")
-                                        (string= selected "group"))
+                                     (string= selected "group"))
                                  ""))
            (:label :for "group" (str group-name)))
          (:div
@@ -465,7 +465,7 @@
                    :name "members"
                    :onchange "this.form.submit()"
                    :checked (when (or (string= selected "all")
-                                          (string= selected "members"))
+                                      (string= selected "members"))
                                ""))
            (:label :for "group" "group members" ))))))
 
@@ -497,8 +497,8 @@
 
 (defun get-groups ()
   (if (and *user*
-           (> (+ (length (getf *user-group-priviledges* :admin))
-                 (length (getf *user-group-priviledges* :member)))
+           (> (+ (length (getf *user-group-privileges* :admin))
+                 (length (getf *user-group-privileges* :member)))
               0))
     (see-other "/groups/my-groups")
     (see-other "/groups/nearby")))
@@ -686,7 +686,7 @@
         (enter-new-group-details :name name
                                  :membership-method membership-method))
 
-       ((not (and lat long city state location country zip))
+       ((not (and lat long city state location country))
         ;geocode the address
         (confirm-location))
 
@@ -829,7 +829,20 @@
 
 (defun get-group (id)
   (ensuring-userid (id "/groups/~a")
-    (group-activity-html id)))
+    (let* ((group (db id))
+           (group-adminp (find *userid* (getf group :admins))))
+
+      (cond
+        ((or (not group-adminp)
+             (getf group :bio-summary)
+             (getf group :bio-into)
+             (getf group :bio-contact))
+         (group-activity-html id))
+
+        (group-adminp
+         (see-other (strcat "/groups/" (username-or-id id) "/about")))
+
+      (t (not-found))))))
 
 (defun get-group-about (id)
   (require-user
@@ -992,7 +1005,7 @@
                  (add-group-admin (parse-integer (post-parameter "item-id")) id)
                  (flash (s+ "This account already has the maximum of three administrators. "
                             "If you would like to add an additional admin for this account, one "
-                            "of the current admins must first revoke their admin priviledges.")
+                            "of the current admins must first revoke their admin privileges.")
                         :error t))
                (see-other (url-compose "/settings/admin-roles"
                                        "groupid" id)))
@@ -1006,3 +1019,9 @@
                (see-other url)))
 
             (permission-denied)))))))
+
+
+(defun get-users-groups (id)
+  (let ((admin-and-member (gethash id *group-privileges-index*)))
+    (union (getf admin-and-member :member)
+           (getf admin-and-member :admin))))

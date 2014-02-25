@@ -352,24 +352,6 @@
 (defun contactp (id)
   (member id (getf *user* :following)))
 
-(defun suggested-people (&optional (userid *userid*))
-  ; get nearby people
-  ; get contacts of contacts
-  ; get distance and number of mutuals for each
-  (flet ((mutuals (person)
-           (length (mutual-connections person userid))))
-    (sort
-      (let* ((user (db userid))
-             (following (getf user :following)))
-        (iter (for person in (remove userid
-                                     (iter (for person in following)
-                                           (reducing (getf (db person) :following)
-                                                     by #'union))))
-              (unless (or (member person following)
-                          (not (db person :active)))
-                (collect person))))
-      #'> :key #'mutuals)))
-
 (defun go-people ()
   (moved-permanently "/people"))
 
@@ -407,19 +389,91 @@
 (defun get-people-nearby ()
   (nearby-profiles-html "people" (when *user* (people-tabs-html :tab :nearby))))
 
-(defun get-people-suggested ()
+
+
+
+
+(defun post-people-suggested ()
+  (when *user*
+    (cond
+      ((scan +number-scanner+ (post-parameter "remove"))
+       (let ((other-person-id (parse-integer (post-parameter "remove")))
+             (hidden-suggestions (getf *user* :hidden-suggested-contacts))
+             (contacts (getf *user* :following)))
+         (unless (or (member other-person-id contacts)
+                     (assoc other-person-id hidden-suggestions))
+           (hide-from-suggestions other-person-id *userid*)))
+       (see-other (referer))))))
+
+
+
+(defun get-people-suggested ()  ;(&optional userid *userid*)
   (if *user*
-    (standard-page
-      "Suggested people"
-      (html
-        (str (people-tabs-html :tab :suggested))
-        (dolist (id (suggested-people))
-          (str (person-card id (db id :name)))))
+    (standard-page "Suggested people"
+      (html (str (people-tabs-html :tab :suggested))
+
+        (if (return-suggested-people)
+          (dolist (suggestion (return-suggested-people))
+            (let ((id (car suggestion)))
+              (htm (:div :class "suggested-contacts" 
+
+                   (str (person-card id
+
+         :button (html
+           (:form :method "post" :action "/contacts"
+             (:input :type "hidden" :name "add" :value id)
+             (:input :type "hidden" :name "next" :value "/people/suggested")
+             (:button :class "yes small" :type "submit"
+              (str "Add contact"))))
+
+         :remove (html
+           (:form :method "post" :action "/people/suggested" :class "decline-button"
+            (:input :type "hidden" :name "remove" :value id)
+            (:input :type "hidden" :name "next" :value "people/suggested")
+            (:button :class "simple-link gray-text" :type "submit"
+             "x")))
+
+   :suggestion-reasons (html
+
+    (let ((trimmed-reasons (remove-from-plist (cdr suggestion) :ranking))
+          (city (awhen (getf (db id) :city) it))
+          (link (s+ "/people/" (username-or-id id))))
+
+      (when (length= 6 trimmed-reasons) ; trimmed-reasons is a plist. If its length is 6, that means there are mutual groups, the person has added the user, and there are mutual connections. Least relevant is :num-of-mutuals, which will be removed.
+        (setf trimmed-reasons (remove-from-plist trimmed-reasons :num-of-mutuals)))
+
+      (flet ((html-relevant-info (key value)
+               (cond
+                 ((eql key :following-user-p)
+                  (htm (:p "Added you to their contacts")))
+                 ((eql key :mutual-groups)
+                  (let ((random-group (rand-from-list value)))
+                    (htm (:p "Also a member of "
+                       (:a :href (s+ "/groups/"
+                                     (username-or-id random-group))
+                        (str (db random-group :name)))))))
+                 ((eql key :num-of-mutuals)
+                  (htm (:p (:a :href (strcat link "/connections")
+                                (str (pluralize value " mutual connection")))))))))
+
+        (when (and (length= 2 trimmed-reasons ) city)
+          (htm (:p "Lives in " (str city))))
+
+        (loop for (key value) on trimmed-reasons
+              by #'cddr
+              do (html-relevant-info key value)))))))))))
+
+
+          (htm (:h4 "You have no suggested contacts at this time."))))
+
       :selected "people"
       :right (html
                (str (donate-sidebar))
                (str (invite-sidebar))))
     (see-other "/people/nearby")))
+
+
+
 
 (defun get-people-invited ()
   (require-user
@@ -453,7 +507,7 @@
                           (:small :class "gray-text"
                             (if expired
                               (str (s+ " (expired "
-                                       (humanize-universal-time expired) ")")                                   )
+                                       (humanize-universal-time expired) ")"))
                               (str (s+ (if (< 1 (length times-sent))
                                          " (reminder sent "
                                          " (invited ")
