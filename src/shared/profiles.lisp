@@ -45,7 +45,7 @@
             (str (paginate-links page more)))
           (dolist (id ids)
             (str (if (string= type "people")
-                   (person-card id (db id :name))
+                   (person-card id)
                    (group-card id))))
           (str (paginate-links page more))))
       :selected type
@@ -85,7 +85,7 @@
                 (htm (:a :name (char-downcase char))
                      (:h3 (str char) (:small " (" (htm (:a :href "#index" " back to index ")) ")")))
                 (setf letter char))
-              (str (person-card id (db id :name)))))))
+              (str (person-card id))))))
 
       :selected selected
       :right (html

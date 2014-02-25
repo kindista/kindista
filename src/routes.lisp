@@ -145,7 +145,8 @@
     :get get-people-nearby)
 
   ("/people/suggested"
-    :get get-people-suggested)
+    :get get-people-suggested
+    :post post-people-suggested)
 
   ("/people/invited"
     :get get-people-invited

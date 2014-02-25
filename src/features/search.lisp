@@ -844,7 +844,7 @@
   (html
     (:div 
       (dolist (person person-list)
-        (str (person-card (car person) (cdr person)))))))
+        (str (person-card (car person) :alias (cdr person)))))))
 
 (defun groups-results-html (group-list)
   (html
@@ -869,15 +869,15 @@
 (defun more-results-link (type url count &optional (displayed 5))
   (when (> count displayed)
     (let* ((extra (- count displayed))
-           (pluralize (when (> extra 1) "s")))
+           (extra-s (when (> extra 1) "s")))
       (html
         (:div :class "more-results"
           (:a :href url (str (strcat "see "
                                      extra
                                      " more "
                                      (if (string= type "person")
-                                       (if pluralize "people" "person")
-                                       (s+ type pluralize))))))))))
+                                       (if extra-s "people" "person")
+                                       (s+ type extra-s))))))))))
 
 (defun get-search ()
   (require-user

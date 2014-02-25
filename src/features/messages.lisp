@@ -243,7 +243,7 @@
   (let* ((start (* page count))
          (groups (mapcar #'(lambda (id)
                              (cons id (db id :name)))
-                         (getf *user-group-priviledges* :admin)))
+                         (getf *user-group-privileges* :admin)))
          (filter (or (get-parameter "filter") "all"))
          (items (filter-inbox-items filter)))
     (html

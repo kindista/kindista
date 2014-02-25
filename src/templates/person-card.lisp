@@ -17,27 +17,44 @@
 
 (in-package :kindista)
 
-(defun person-card (id alias &key button)
+(defun person-card (id &key alias button suggestion-reasons remove)
   (let* ((mutuals (mutual-connections id))
          (person (db id))
          (name (getf person :name))
-         (link (s+ "/people/" (username-or-id id))))
+         (link (s+ "/people/" (username-or-id id)))
+         (city (awhen (getf person :city) it)))
+
     (html
+
       (:div :class "person card"
-        (:div :class "image" (:a :href link (:img :src (get-avatar-thumbnail id 300 300))))
-        (when button
+
+       (awhen remove
+         (htm
+           (str it)))
+
+       (:div :class "image"
+        (:a :href link (:img :src (get-avatar-thumbnail id 100 100))))
+
+        (awhen button
           (htm
             (:div :class "card-button"
-              (str (v-align-middle (str button))))))
-        (:div :class "card-details"
-          (:h3 (:a :href link
-                 (str name)))
-          (unless (string= name alias)
-            (htm (:p "nickname: " (str alias))))
+              (str (v-align-middle (str it))))))
 
-          (awhen (getf person :city) 
-            (htm (:p "Lives in " (str it))))
-          (when mutuals
-            (htm (:p (:a :href (s+ link "/connections" )
-                     (str (strcat (length mutuals) " mutual connection"))
-                     (str (when (> (length mutuals) 1) "s")))))))))))
+        (:div :class "card-details"
+         (:h3 (:a :href link
+               (str name)))
+
+
+         (when alias
+           (unless (string= name alias)
+             (htm (:p "nickname: " (str alias)))))
+
+         (aif suggestion-reasons (str it)
+
+           ; below is "default" content
+           (progn
+             (awhen city (htm (:p "Lives in " (str it))))
+             (when mutuals
+               (htm (:p (:a :href (s+ link "/connections" )
+                         (str (pluralize mutuals
+                                         " mutual connection")))))))))))))

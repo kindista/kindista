@@ -286,27 +286,27 @@
 (defun confirm-invitations (&key text emails bulk-emails next-url)
   (standard-page "Confirm invitation"
     (let* ((count (length emails))
-           (pluralize (when (> count 1) "s")))
+           (extra-s (when (> count 1) "s")))
       (html
         (:div :class "item confirm-invite"
           (:form :method "post" :action "/invite"
             (:input :type "hidden" :name "next-url" :value next-url)
             (:input :type "hidden" :name "text" :value (escape-for-html text))
             (:input :type "hidden" :name "bulk-emails" :value bulk-emails)
-            (:h2 "Review your invitation" (str pluralize))
-            (:h3 (str (strcat count " ")) "Recipient" (str pluralize) ":")
+            (:h2 "Review your invitation" (str extra-s))
+            (:h3 (str (strcat count " ")) "Recipient" (str extra-s) ":")
             (dolist (email emails)
               (htm (str email)
                    (:br)))
             (if (equal text "")
               (htm
-                (:p "You did not include a personalized message to your invitation recipient" (str pluralize) "."))
+                (:p "You did not include a personalized message to your invitation recipient" (str extra-s) "."))
               (htm
                 (:h3 "Your personalized invitation message is:")
                 (:blockquote :class "review-text" (str (html-text text)))))
             (:p
               (:button :class "cancel" :type "submit" :class "submit" :name "edit" "Edit Invitation")
-              (:button :class "yes" :type "submit" :class "submit" :name "confirm" "Send Invitation" (str pluralize)))))))))
+              (:button :class "yes" :type "submit" :class "submit" :name "confirm" "Send Invitation" (str extra-s)))))))))
 
 (defun get-invite ()
   (require-active-user

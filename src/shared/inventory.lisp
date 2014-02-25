@@ -620,8 +620,8 @@
                               " by")))
                   (str (identity-selection-html identity-selection it :onchange "this.form.submit()")))))
 
-          (when (or (getf *user-group-priviledges* :member)
-                    (getf *user-group-priviledges* :admin)
+          (when (or (getf *user-group-privileges* :member)
+                    (getf *user-group-privileges* :admin)
                     groups-selected)
             (str (privacy-selection-html
                    (if (string= selected "offers") "offer" "request")

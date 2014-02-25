@@ -32,6 +32,15 @@
   (amodify-db userid :following (cons new-contact-id it))
   (with-locked-hash-table (*followers-index*)
     (push userid (gethash new-contact-id *followers-index*)))
+  (remove-suggestion new-contact-id userid)
+  (remove-suggestion new-contact-id userid :hidden t)
+  (unless (string= (strcat +base-url+ "people/"
+                           (username-or-id new-contact-id))
+                   (referer))
+    (flash (html (:a :href (strcat +base-url+ "people/"
+                                   (username-or-id new-contact-id))
+                     (str (db new-contact-id :name)))
+                 " has been added to your contacts.")))
   ;at some point we can start notifing people when oters add them to their 
   ;contacts
   ;(create-contact-notification :follower userid :contact new-contact-id)
@@ -40,7 +49,8 @@
 (defun remove-contact (contact-id userid)
   (amodify-db *userid* :following (remove contact-id it))
   (with-locked-hash-table (*followers-index*)
-    (remove userid (gethash contact-id *followers-index*))))
+    (remove userid (gethash contact-id *followers-index*)))
+  (amodify-db *userid* :hidden-suggested-contacts (push  (cons contact-id (quick-rank contact-id)) it)))
 
 (defun post-contacts ()
   (require-user
