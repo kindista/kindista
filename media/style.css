@@ -1302,6 +1302,7 @@ menu .newcount {
 
 .item.create-event label,
 .item.create-group label,
+.item.inventory-details label,
 .item.confirm-delete label {
  display: block;
  font-weight: bold;
@@ -1316,18 +1317,22 @@ menu .newcount {
 .create-event textarea,
 .create-event select,
 .create-group select,
+.item div.privacy-selection select,
+.inventory-details select,
 .create-group input[type=text],
 .confirm-delete textarea {
  font-size: 1em;
  border: 1px solid #444;
  margin: .3em 0;
  font-weight: bold;
+ background-color: #fff;
  padding: 0.4em 0.4em;
  border-radius: 0.25em;
  box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);
 
 }
 
+.inventory-details select.identity,
 .create-event input[type=text],
 .create-event select,
 .create-group select,
@@ -1350,7 +1355,45 @@ div.create-group div.group-category-selection {
  margin-bottom: 1em;
 }
 
+div.privacy-selection-warning {
+ margin-top: 0.4em;
+ font-weight: bold;
+}
+
+div.privacy-selection-warning p {
+ margin: 0.4em 0;
+}
+
+div.privacy-selection-details,
+div.recurring-event-details,
+blockquote.review-text {
+ margin: 0;
+ background: #f8f8f8;
+ padding: .5em;
+ border-radius: .25em;
+ border-style: solid;
+ border-width: 1px;
+ border-color: #bbb;
+}
+
+div.recurring-event-details,
+div.privacy-selection {
+ padding-top: 0;
+ width: 30em;
+ display:inline-block;
+ margin-top: 0.3em;
+}
+
+.recurring-event-details input[type=text],
+.recurring-event-details select,
+select.privacy-selection {
+ max-width: none;
+ width: 100%;
+}
+
 @media (max-width:28em) {
+ div.recurring-event-details,
+ div.privacy-selection,
  .create-event input[type=text],
  .create-group select,
  .create-group input[type=text] {
@@ -2441,31 +2484,6 @@ div.settings-avatar {
 
 #edit-tags blockquote.review-text {
  margin: .5em 0 .5em 0;
-}
-
-div.privacy-selection-warning {
- margin-top: 0.4em;
- font-weight: bold;
-}
-
-div.privacy-selection-warning p {
- margin: 0.4em 0;
-}
-
-div.privacy-selection-details,
-blockquote.review-text {
- margin: 0;
- background: #f8f8f8;
- padding: .5em;
- border-radius: .25em;
- border-style: solid;
- border-width: 1px;
- border-color: #bbb;
-}
-
-div.privacy-selection-details {
- display:inline-block;
- padding-right: 0.8em;
 }
 
 div.tag,

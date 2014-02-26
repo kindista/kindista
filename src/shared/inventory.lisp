@@ -576,7 +576,7 @@
   (let ((suggested (or tags (get-tag-suggestions text))))
     (standard-page title
      (html
-       (:div :class "item" :id "edit-tags"
+       (:div :class "item inventory-details" :id "edit-tags"
         (str (pending-disclaimer))
         (when error
           (htm
@@ -601,10 +601,10 @@
           (unless (or groupid existingp)
             (awhen (groups-with-user-as-admin)
               (htm
-                (:h2 (str (s+ (if (string= selected "offers")
-                                "Offered" "Requested")
-                              " by")))
-                  (str (identity-selection-html identity-selection it :onchange "this.form.submit()")))))
+                (:label (str (s+ (if (string= selected "offers")
+                                   "Offered" "Requested")
+                                 " by")))
+                (str (identity-selection-html identity-selection it :onchange "this.form.submit()")))))
 
           (when (or (getf *user-group-privileges* :member)
                     (getf *user-group-privileges* :admin)
@@ -623,7 +623,7 @@
                    groups-selected
                    :onchange "this.form.submit()")))
 
-          (:h2 "Select at least one keyword")
+          (:h3 "Select at least one keyword")
           (dolist (tag *top-tags*)
             (htm 
               (:div :class "tag"
@@ -634,7 +634,7 @@
                                    (setf suggested (remove tag suggested :test #'string=))
                                    ""))
                    (:span (str tag)))))
-          (:h2 "Additional keywords (optional)")
+          (:h3 "Additional keywords (optional)")
           (:input :type "text" :name "tags" :size 40
                   :placeholder "e.g. produce, bicycle, tai-chi"
                   :value (format nil "~{~a~^,~^ ~}" suggested))

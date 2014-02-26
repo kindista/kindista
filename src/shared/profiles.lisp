@@ -166,8 +166,6 @@
                    :section-name section-name
                    :editing (eql editing section)
                    :editable editable))))
-        (pprint group-id)
-        (terpri)
         (standard-page
           name
           (html

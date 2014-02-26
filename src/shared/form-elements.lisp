@@ -115,7 +115,7 @@
          (groups-user-has-left (mapcar #'(lambda (id) (cons id (db id :name)))
                                        group-ids-user-has-left)))
     (html
-      (:h2  "Who can see this " (str item-type) "?")
+      (:label  "Who can see this " (str item-type) "?")
       (:div :class (s+ class (when (and restrictedp
                                         (or groups-user-has-left
                                             (> (length my-groups) 1)))
