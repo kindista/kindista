@@ -290,11 +290,12 @@
                           (> (length items) count))
                  (htm (:a :href "/events" "see more events")))
 
-               (when (and (not sidebar)
-                          (< (user-distance) 100)
+               (when (and (< (user-distance) 100)
                           (> (user-distance) 0))
                  (htm
                    (:div :class "item small"
+                    (unless items
+                      (htm (:em "There are no events scheduled on your local calendar at this time. ")))
                     (:em "Increasing the ")(:strong "show activity within")(:em " distance may yield more results."))))
                (finish)))
 
@@ -363,7 +364,7 @@
       (flet ((trim-and-update (results)
                (do* ((events results (cdr results))
                      (event (car events)))
-                    ((not (stale-eventp event now))
+                    ((or (not events) (not (stale-eventp event now)))
                      (acond
                       (updated-local-event-list
                        (sort (remove nil (append it results) :from-end t :count 1)
