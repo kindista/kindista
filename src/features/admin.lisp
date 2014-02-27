@@ -295,6 +295,7 @@
               (:label "Subject:")
               (:input :type "text" :name "subject"))
             (:textarea :name "markdown")
+            (:button :type "submit" :name "eugene-only" :class "yes" "Send to Eugene Members")
             (:button :type "submit" :name "test" :class "yes" "Send Test")
             (:button :type "submit" :class "yes" "Send to everyone"))))
       :selected "admin")))
@@ -310,7 +311,7 @@
              (html (html-email-base (strcat (nth-value 1 (markdown text :stream nil))
                                             (unsubscribe-notice-ps-html))))
              (subject (post-parameter "subject"))
-             (text-with-unsubscribe (s+ text (unsubscribe-notice-ps)))
+             (text-with-unsubscribe (s+ text (unsubscribe-notice-ps-text)))
              (from (post-parameter "from")))
         (cond
           ((post-parameter "test")
@@ -347,10 +348,13 @@
                                                 subject
                                                 text-with-unsubscribe
                                                 :html-message html)))))))
-             (dolist (id (if *productionp*
-                           (remove-duplicates *active-people-index*)
-                           (when (getf *user* :admin)
-                             (list *userid*))))
+             (dolist (id (cond
+                           ((not *productionp*)
+                            (when (getf *user* :admin)
+                              (list *userid*)))
+                           ((post-parameter "eugene-only")
+                            (remove-duplicates (local-members)))
+                           (t (remove-duplicates *active-people-index*))))
                (send-mail id)))))
         (flash "your message has been sent"))
 
