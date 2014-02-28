@@ -411,6 +411,94 @@
         (see-other (or (referer) "/home")))
       (enter-event-details))))
 
+(defun enter-monthly-recurring-details
+  (date frequent by-day-or-date local-day-of-week weeks-of-month)
+
+  (let* ((day-of-month (day-of-month date :formatted-date t))
+         (by-date (unless (> day-of-month 28)
+                    (equalp by-day-or-date "date")))
+         (local-day-of-week (string-capitalize local-day-of-week))
+         (nth-week-in-month (position-of-day-in-month date :formatted-date t)))
+    (if (> day-of-month 28)
+      (html
+        (:input :type "hidden" :name "by-day-or-date" :value "date"))
+
+      (html
+        (:div
+          (:label "Repeat on")
+          (:div :class "inline-block"
+            (:input :type "radio"
+                    :name "by-day-or-date"
+                    :value "day"
+                    :onclick "this.form.submit()"
+                    :checked (unless by-date ""))
+            (if frequent
+              "day of the week"
+              (str (strcat "the "
+                           nth-week-in-month
+                           " "
+                           local-day-of-week
+                           " of the month" ))))
+          (:div :class "inline-block"
+            (:input :type "radio"
+                    :name "by-day-or-date"
+                    :value "date"
+                    :onclick "this.form.submit()"
+                    :checked (when by-date ""))
+            (unless frequent "date (")
+            "the "
+            (str (humanize-number day-of-month))
+            " day of the month"
+            (unless frequent ")")))))
+
+    (when (not by-date)
+      (html
+        (:div
+          (:label "Days of the month")
+          (if frequent
+            (dolist (option +positions-of-day-in-month+)
+              (htm
+                (:div :class "inline-block"
+                  (:input :type "checkbox"
+                          :name "weeks-of-month"
+                          :checked (when (aif weeks-of-month
+                                           (find option it :test #'equalp)
+                                           (equalp option nth-week-in-month))
+                                     "checked")
+                          :value option)
+                    (str option) " "
+                    (str local-day-of-week))))
+            (cond
+              ((> day-of-month 28)
+               (htm
+                 (:input :type "hidden":name "weeks-of-month" :value "last")))
+              ((< day-of-month 22)
+               (htm (:input :type "hidden"
+                            :name "weeks-of-month"
+                            :value (cond
+                                    ((< day-of-month 8) "first")
+                                    ((< day-of-month 15) "second")
+                                    (t "third")))))
+              ;; determine whether it should be 4th or last week of month
+              (t
+               (htm
+                 (:div :class "inline-block"
+                   (:input :type "radio"
+                           :name "weeks-of-month"
+                           :value "fourth"
+                           :onclick "this.form.submit()"
+                           :checked (unless (equal weeks-of-month '("last"))
+                                      ""))
+                    (str (s+ "the fourth " local-day-of-week " of the month")))
+                 (:div :class "inline-block"
+                   (:input :type "radio"
+                           :name "by-day-or-date"
+                           :value "last"
+                           :onclick "this.form.submit()"
+                           :checked (when (equal weeks-of-month '("last"))
+                                      ""))
+                    (str (s+ "the last " local-day-of-week " of the month"))))))))))))
+
 (defun enter-event-details (&key error date time location title restrictedp (identity-selection *userid*) groups-selected details existing-url recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date local-day-of-week)
   (standard-page
     (if existing-url "Edit your event details" "Create a new event")
@@ -491,62 +579,11 @@
                                       (str (elt day 0))))))))
 
                   (when (and date (equalp frequency "monthly"))
-                    (let ((by-date (equalp by-day-or-date "date"))
-                          (local-day-of-week (string-capitalize local-day-of-week))
-                          (day-of-month (day-of-month date :formatted-date t))
-                          (nth-week-in-month (position-of-day-in-month
-                                               date
-                                               :formatted-date t)))
-                      (htm
-                        (:div
-                          (:label "Repeat on")
-                          (:div :class "inline-block"
-                            (:input :type "radio"
-                                    :name "by-day-or-date"
-                                    :value "day"
-                                    :onclick "this.form.submit()"
-                                    :checked (unless by-date ""))
-                            (if frequent
-                              "day of the week"
-                              (str
-                                (strcat "the "
-                                        nth-week-in-month
-                                        " "
-                                        local-day-of-week
-                                        " of the month" ))))
-                          (when (< day-of-month 29)
-                            (htm
-                              (:div :class "inline-block"
-                                (:input :type "radio"
-                                        :name "by-day-or-date"
-                                        :value "date"
-                                        :onclick "this.form.submit()"
-                                        :checked (when by-date ""))
-                                (unless frequent "date (")
-                                "the "
-                                (str (humanize-number day-of-month))
-                                " day of the month"
-                                (unless frequent ")")))))
-
-                        (when (and (not by-date) frequent)
-                          (htm
-                            (:div
-                              (:label "Days of the month")
-                                (dolist (option +positions-of-day-in-month+)
-                                  (htm
-                                    (:div :class "inline-block"
-                                      (:input :type "checkbox"
-                                            :name "weeks-of-month"
-                                            :checked (when
-                                                       (aif weeks-of-month
-                                                         (find option it
-                                                               :test #'equalp)
-                                                         (equalp
-                                                           option
-                                                           nth-week-in-month))
-                                                       "checked")
-                                            :value option)
-                                      (str option) " " (str local-day-of-week))))))))))
+                    (str (enter-monthly-recurring-details date
+                                                          frequent
+                                                          by-day-or-date
+                                                          local-day-of-week
+                                                          weeks-of-month)))
 
                   (:div
                     (:label "End Date (optional)")
@@ -701,7 +738,7 @@
                    (new-long (post-parameter-float "long"))
                    (lat (or new-lat (getf item :lat)))
                    (long (or new-long (getf item :long)))
-                   (recurring (or (when (post-parameter "recurring") t)
+                   (recurring (or (post-parameter "recurring")
                                   (getf item :recurring)))
                    (frequency (or (post-parameter-string "frequency")
                                   (awhen (getf item :frequency)
@@ -746,8 +783,6 @@
                    (symbol-weeks-of-month (awhen weeks-of-month
                                            (mapcar #'k-symbol it)))
                    (identity-selection (post-parameter-integer "identity-selection"))
-                   (groupid (or identity-selection
-                                (post-parameter-integer "groupid")))
                    (new-host (if (group-admin-p identity-selection)
                                identity-selection
                                *userid*))
@@ -758,6 +793,8 @@
                                          (eql identity-selection prior-identity)))) 
                    (groups-selected (or (post-parameter-integer-list "groups-selected")
                                         (getf item :privacy))))
+                (pprint (post-parameter "date"))
+                (terpri)
 
               (labels ((try-again (&optional e)
                ;; needs to be labels not flet because of
@@ -848,6 +885,9 @@
                  ((nor (post-parameter "confirm-location")
                        (post-parameter "submit-edits"))
                   (try-again))
+
+                 ((and recurring (not date))
+                  (try-again "Please enter a date first."))
 
                  ((not new-date-p)
                   (try-again "Dates must be in the form of mm/dd/yyyy (e.g. 12/30/2013)"))
