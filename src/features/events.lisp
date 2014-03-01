@@ -606,26 +606,27 @@
                    :placeholder "ex: Community Garden Work Party"
                    :value (awhen title (escape-for-html it))))
 
-         (unless existing-url
-           (awhen (groups-with-user-as-admin)
-             (htm
-               (:div
-                 (:label "Posted by")
+         (awhen (groups-with-user-as-admin)
+           (htm
+             (:div
+               (:label "Posted by")
+               (if existing-url
+                 (htm (:h2 (str (db identity-selection :name))))
                  (str (identity-selection-html identity-selection
-                                               it
-                                               :class "identity event-host"
-                                               :onchange "this.form.submit()")))))
-           (when (or (getf *user-group-privileges* :member)
-                     (getf *user-group-privileges* :admin))
-             (str (privacy-selection-html
-                    "event"
-                    restrictedp
-                    (if (not (equal identity-selection *userid*))
-                      (list (cons identity-selection (db identity-selection :name)))
-                      (append (groups-with-user-as-member)
-                              (groups-with-user-as-admin)))
-                    groups-selected
-                    :onchange "this.form.submit()"))))
+                                             it
+                                             :class "identity event-host"
+                                             :onchange "this.form.submit()"))))))
+         (when (or (getf *user-group-privileges* :member)
+                   (getf *user-group-privileges* :admin))
+           (str (privacy-selection-html
+                  "event"
+                  restrictedp
+                  (if (not (equal identity-selection *userid*))
+                    (list (cons identity-selection (db identity-selection :name)))
+                    (append (groups-with-user-as-member)
+                            (groups-with-user-as-admin)))
+                  groups-selected
+                  :onchange "this.form.submit()")))
          (:div
            (:label "Details")
            (:textarea :rows "8"
@@ -708,18 +709,21 @@
                             (getf *user* :admin))
                        (s+ "You can only edit your own events."))
 
-           (let* ((old-date-time (multiple-value-list
-                                   (getf item :local-time)))
+           (let* ((old-datetime (multiple-value-list
+                                  (humanize-exact-time
+                                    (or (getf item :auto-updated-time)
+                                        (getf item :local-time)))))
                   (new-date-p (scan +date-scanner+ (post-parameter "date")))
                   (new-time-p (scan +time-scanner+ (post-parameter "time")))
                   (test-date (or (when new-date-p (post-parameter "date"))
-                            (third old-date-time)))
-                  (time (or (when new-time-p (post-parameter "time"))
-                            (first old-date-time)))
+                                 (third old-datetime)))
+                  (test-time (or (when new-time-p (post-parameter "time"))
+                                 (first old-datetime)))
                   (local-time (awhen test-date
-                                (handler-case (parse-datetime it time)
+                                (handler-case (parse-datetime it test-time)
                                   (local-time::invalid-time-specification ()
                                     nil))))
+                  (time (when local-time test-time))
                   (date (when local-time test-date))
                   (local-day-of-week (when date
                                        (humanize-exact-time local-time
@@ -791,8 +795,9 @@
                           (awhen (getf item :weeks-of-month)
                             (mapcar #'symbol-name it)))))
                   (symbol-weeks-of-month (awhen weeks-of-month
-                                          (mapcar #'k-symbol it)))
-                  (identity-selection (post-parameter-integer "identity-selection"))
+                                           (mapcar #'k-symbol it)))
+                  (identity-selection (or (post-parameter-integer "identity-selection")
+                                          (car (getf item :hosts))))
                   (new-host (if (group-admin-p identity-selection)
                               identity-selection
                               *userid*))
@@ -821,8 +826,7 @@
                                              :local-day-of-week local-day-of-week
                                              :end-date (awhen local-end-time
                                                          (humanize-exact-time it))
-                                             ; prevent 2/30/yyyy date error
-                                             :date (when local-time date)
+                                             :date date
                                              :time time
                                              :restrictedp restrictedp
                                              :groups-selected groups-selected

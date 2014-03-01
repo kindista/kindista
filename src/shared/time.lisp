@@ -119,8 +119,6 @@
   (let ((timestamp (universal-to-timestamp
                      (typecase datetime (integer datetime)
                                         (string (parse-datetime datetime))))))
-    (pprint timestamp)
-    (terpri)
    (local-time:days-in-month (timestamp-month timestamp)
                              (timestamp-year timestamp))))
 
