@@ -60,14 +60,19 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (with-locked-hash-table (*username-index*)
-      (setf (gethash (getf data :username) *username-index*) id))
+    (setf (gethash (getf data :username) *username-index*) id)
 
     (with-locked-hash-table (*group-privileges-index*)
       (dolist (person (getf data :admins))
         (push id (getf (gethash person *group-privileges-index*) :admin)))
       (dolist (person (getf data :members))
         (push id (getf (gethash person *group-privileges-index*) :member))))
+
+    (with-locked-hash-table (*group-members-index*)
+      (dolist (person (getf data :admins))
+        (push person (gethash id *group-members-index*)))
+      (dolist (person (getf data :members))
+        (push person (gethash id *group-members-index*))))
 
     (with-locked-hash-table (*profile-activity-index*)
       (asetf (gethash id *profile-activity-index*)
@@ -146,54 +151,37 @@
   (metaphone-index-insert (list (db id :name))
                           (gethash id *db-results*)))
 
-(defun delete-group (id &optional pre-existing-duplicate-id)
-  (let* ((data (db id))
-         (result (gethash id *db-results*)))
+(defun move-person-group-account-emails-to-mailbox-of-group-admin (old-person-group-id
+                                                                   group-admin-id
+                                                                   groupid)
+  (flet ((remove-old-person-group-id (item)
+           (if (listp item)
+             (remove old-person-group-id item)
+             item)))
+    (let (completed)
+      (doplist (folder messages (gethash old-person-group-id *person-mailbox-index*))
+        (dolist (message messages)
+          (unless (member message completed)
+            (let ((id (message-id message))
+                  (new-mailbox (cons group-admin-id groupid))
+                  (people (mapcar #'caar (message-people message)))
+                  (mailboxes (copy-list (message-people message)))
+                  (folders (copy-list (message-folders message))))
 
-    (with-locked-hash-table (*username-index*)
-      (remhash (getf data :username) *username-index*) id)
+              (asetf (car (assoc (list old-person-group-id) mailboxes :test #'equal))
+                     new-mailbox)
 
-    (with-locked-hash-table (*group-privileges-index*)
-      (dolist (person (getf data :admins))
-        (delete id (getf (gethash person *group-privileges-index*) :admin)))
-      (dolist (person (getf data :members))
-        (delete id (getf (gethash person *group-privileges-index*) :member))))
-    
-    (with-locked-hash-table (*profile-activity-index*)
-      (dolist (result (gethash person-group-id *profile-activity-index*))
-        (let* ((activity-id (result-id result))
-               (activity-data (db activity-id))
-               (activity-data-type (getf activity-data :type)))
-          (flet ((switch-ids (list)
-                   (pushnew pre-existing-duplicate-id
-                            (remove nil
-                                    (remove id list)))))
-            (case type
-             ((or :offer :request)
-              (aif pre-existing-duplicate-id
-                (progn
-                  (modify-db activity-id :by it)
-                  (setf (result-people result) it)
-                  (push result (gethash it *profile-activity-index*)))
-                (delete-inventory-item activity-item))
-              (:gratitude
-                (aif pre-existing-duplicate-id
-                  (cond
-                    (())
-                    
-                    )
-                  )
-              
-                )
-              )
-              
-             )
-            )
-          )
-        )
-      )
-    )
-  )
+              (if (and (member old-person-group-id people)
+                       (member group-admin-id people))
+                (asetf folders (mapcar #'remove-old-person-group-id it))
+                (asetf folders (subst group-admin-id old-person-group-id it)))
+
+              (index-message id (modify-db id :message-folders folders
+                                              :people mailboxes))
+              (dolist (comment (gethash id *comment-index*))
+                (when (eq (car (db comment :by)) old-person-group-id)
+                  (modify-db comment :by new-mailbox)))
+             (push message completed))))))))
 
 (defun change-person-to-group (groupid admin-id)
 
@@ -218,41 +206,61 @@
                      :emails nil
                      :pass nil)
   ;move all the group's messages into the admin's mailbox
-  (flet ((remove-groupid (item)
-           (if (listp item)
-             (remove groupid item)
-             item)))
-    (let (completed)
-      (doplist (folder messages (gethash groupid *person-mailbox-index*))
-        (dolist (message messages)
-          (unless (member message completed)
-            (let ((id (message-id message))
-                  (new-mailbox (cons admin-id groupid))
-                  (people (mapcar #'caar (message-people message)))
-                  (mailboxes (copy-list (message-people message)))
-                  (folders (copy-list (message-folders message))))
-
-              (asetf (car (assoc (list groupid) mailboxes :test #'equal))
-                     new-mailbox)
-             ;(asetf mailboxes
-             ;       (remove (assoc (list admin-id) it :test #'equal)
-             ;                it :test #'equal))
-
-              (if (and (member groupid people)
-                       (member admin-id people))
-                (asetf folders (mapcar #'remove-groupid it))
-                (asetf folders (subst admin-id groupid it)))
-
-              (index-message id (modify-db id :message-folders folders
-                                              :people mailboxes))
-              (dolist (comment (gethash id *comment-index*))
-                (when (eq (car (db comment :by)) groupid)
-                  (modify-db comment :by new-mailbox)))
-             (push message completed)))))))
+  (move-person-group-account-emails-to-mailbox-of-group-admin groupid
+                                                              admin-id
+                                                              groupid)
 
   (index-group groupid (db groupid))
   (reindex-group-location groupid)
   (reindex-group-name groupid))
+
+(defun merge-person-group-account-data-into-group-acount (person-group-id
+                                                          group-id
+                                                          new-group-creator)
+"This function needs to be run when someone creates a group account for a group that already 
+ joined Kindista by setting up a person account. If they created the group account from the 
+ person-group account then the creator id needs to be changed in the new group-account."
+  
+;; replace person-group with new-group-creator for admins/creator
+  (flet ((remove-old-add-new (list)
+           (pushnew new-group-creator
+                    (remove nil (remove person-group-id list)))))
+    (amodify-db group-id :creator new-group-creator
+                         :admins (remove-old-add-new it)
+                         :notify-gratitude (remove-old-add-new it)
+                         :notify-reminders (remove-old-add-new it)
+                         :notify-membership-request (remove-old-add-new it)
+                         :notify-message (remove-old-add-new it)))
+
+  (move-person-group-account-emails-to-mailbox-of-group-admin person-group-id
+                                                              new-group-creator
+                                                              group-id)
+
+  (with-locked-hash-table (*followers-index*)
+    (let ((old-person-group-following (db person-group-id :following)))
+      (dolist (follower-id (gethash person-group-id *followers-index*))
+        (amodify-db follower-id :following (pushnew group-id
+                                                    (remove nil
+                                                            (remove person-group-id it))))
+        (when (find follower-id old-person-group-following)
+          (asetf (gethash follower-id *followers-index*) (remove person-group-id it)))))
+    (remhash person-group-id *followers-index*))
+
+  (with-locked-hash-table (*profile-activity-index*)
+    (dolist (result (gethash person-group-id *profile-activity-index*))
+      (let* ((data (db (result-id result)))
+             (data-type (getf data :type)))
+        (case type
+          ((or :offer :request)
+           
+           )
+          )
+        )
+      )
+    )
+  (delete-active-account person-group-id
+                         (strcat "Group account created as person account;"
+                                 " now merged into account " group-id ".")))
 
 (defun change-group-category (groupid &key new-type)
   (let* ((standard-category (post-parameter-string "group-category"))
@@ -268,11 +276,12 @@
              (see-other next)))))
 
 (defun group-members (groupid)
-  (let ((data (db groupid)))
-    (list :admins (getf data :admins) :members (getf data :members))))
+  (gethash groupid *group-members-index*))
 
 (defun add-group-member (personid groupid)
   (amodify-db groupid :members (pushnew personid it))
+  (with-locked-hash-table (*group-members-index*)
+     (pushnew personid (gethash groupid *group-members-index*)))
   (with-locked-hash-table (*group-privileges-index*)
      (pushnew groupid (getf (gethash personid *group-privileges-index*) :member))))
 
@@ -280,7 +289,10 @@
   (amodify-db groupid :members (remove personid it))
   (with-locked-hash-table (*group-privileges-index*)
      (asetf (getf (gethash personid *group-privileges-index*) :member)
-            (remove groupid it))))
+            (remove groupid it)))
+  (with-locked-hash-table (*group-members-index*)
+     (asetf (gethash groupid *group-members-index*)
+            (remove personid it))))
 
 (defun add-group-admin (personid groupid)
   (assert (eql (db personid :type) :person))
