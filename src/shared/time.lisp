@@ -28,7 +28,8 @@
 
 (defun parse-datetime (date &optional time)
   (multiple-value-bind (seconds minutes hours date month year)
-    (let ((chronicity-date (chronicity:parse (s+ date (awhen time (s+ " at " it)))
+    (let ((chronicity-date (chronicity:parse
+                             (s+ date (awhen time (s+ " at " it)))
                              :endian-preference :middle)))
       (if chronicity-date
         (values (chronicity:sec-of chronicity-date)
@@ -113,6 +114,15 @@
   (timestamp-day (universal-to-timestamp (if formatted-date
                                            (parse-datetime datetime)
                                            datetime))))
+
+(defun days-in-month (datetime)
+  (let ((timestamp (universal-to-timestamp
+                     (typecase datetime (integer datetime)
+                                        (string (parse-datetime datetime))))))
+    (pprint timestamp)
+    (terpri)
+   (local-time:days-in-month (timestamp-month timestamp)
+                             (timestamp-year timestamp))))
 
 (defun position-of-day-in-month (datetime &key formatted-date)
   (let* ((timestamp (universal-to-timestamp

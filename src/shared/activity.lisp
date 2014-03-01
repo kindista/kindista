@@ -140,6 +140,10 @@
                        (str (humanize-universal-time (getf data :created))))))
 
                  (:table
+                   (:tr
+                     (:td (:strong "Time: "))
+                     (:td (str event-time)))
+
                    (when recurring
                      (htm
                        (:tr
@@ -150,10 +154,6 @@
                                                        data
                                                        (string= (script-name*)
                                                                 item-url)))))))
-                   (:tr
-                     (:td (:strong "Time: "))
-                     (:td (str event-time)))
-
                    (:tr
                      (:td (:strong "Place: "))
                      (:td (str (getf data :address))
