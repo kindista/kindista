@@ -225,6 +225,25 @@
         (setf (result-time result) it))
       (event-index-update result))))
 
+(defun tentative-recurring-event-schedule (date weeklyp interval end-date days-of-week by-day-or-date local-day-of-week weeks-of-month)
+  (let ((pluralize-frequency (if (> interval 1)
+                               (strcat interval
+                                       " "
+                                       (if weeklyp "week" "month") "s on ")
+                               (unless weeklyp "month on "))))
+    (s+ "Every "
+        pluralize-frequency
+        (if weeklyp
+          (format nil *english-list* days-of-week)
+          (if (equalp by-day-or-date "date")
+            (s+ "the " (humanize-number (day-of-month date :formatted-date t)) " day")
+            (s+ "the "
+                (format nil *english-list* (mapcar #'string-downcase weeks-of-month))
+                " "
+                local-day-of-week)))
+        (awhen end-date
+          (s+ " until " it)))))
+
 (defun recurring-event-schedule (id &optional data end)
   (let* ((event (or data (db id)))
          (weekly (eql (getf event :frequency) 'weekly))
@@ -503,7 +522,7 @@
             (htm
              (str (day-or-date-selector)) ))))))))
 
-(defun enter-event-details (&key error date time location title restrictedp (identity-selection *userid*) groups-selected details existing-url recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date local-day-of-week)
+(defun enter-event-details (&key error date time location title restrictedp (identity-selection *userid*) groups-selected details existing-url recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date local-day-of-week editing-schedule)
   (standard-page
     (if existing-url "Edit your event details" "Create a new event")
     (html
@@ -517,87 +536,116 @@
          (when (and existing-url groups-selected)
            (dolist (group groups-selected)
              (htm (:input :type "hidden" :name "groups-selected" :value group))))
-         (:input :type "hidden"
-                 :name "prior-identity"
-                 :value identity-selection)
-         (:div
-           (:label "When (date & time)")
-           (:input :type "text"
-                   :name "date"
-                   :placeholder "mm/dd/yyyy"
-                   :value date)
-           (:br)
-           (:input :type "text"
-                   :name "time"
-                   :placeholder "Add a time? (ex. 2:30 PM)"
-                   :value time))
+         (:input :type "hidden" :name "prior-identity" :value identity-selection)
 
-         (:div
-           (:input :type "checkbox"
-                   :name "recurring"
-                   :checked (when recurring "checked")
-                   :onclick "this.form.submit()"
-                   "Repeat..."))
+         (:div (:label "When (date & time)")
+
+               (if editing-schedule
+                 (htm (:strong (str (s+ date " at " time)))
+                      (:button :class "green simple-link"
+                               :type "submit"
+                               :name "edit-datetime"
+                               "edit")
+                      (:input :type "hidden" :name "date" :value date)
+                      (:input :type "hidden" :name "time" :value time))
+
+                 (htm (:input :type "text"
+                              :name "date" :placeholder "mm/dd/yyyy"
+                              :value date)
+                      (:br)
+                      (:input :type "text"
+                              :name "time"
+                              :placeholder "Add a time? (ex. 2:30 PM)"
+                              :value time))))
+
+         (when (not editing-schedule)
+           (htm (:div (:input :type "checkbox"
+                              :name "recurring"
+                              :checked (when recurring "checked")
+                              :onclick "this.form.submit()"
+                              "Repeat..."))))
 
          (when recurring
            (let ((frequent (or (not interval) (= interval 1)))
                  (monthly (equalp frequency "monthly"))
                  (local-day-of-week (string-capitalize local-day-of-week)))
-             (htm
-               (:div :class "recurring-event-details"
-                 (:div
-                   (:label "Repeat "
-                           (when (and local-day-of-week
-                                      (nor monthly frequent))
-                             (htm " on " (str local-day-of-week)))
-                           " every")
-                   (str (number-selection-html "interval" 12
-                                               :selected (or interval 1)
-                                               :auto-submit t)))
+             (if (not editing-schedule)
+               (htm (:h2 "Event Schedule")
+                    (:strong (str (tentative-recurring-event-schedule date
+                                                                      (not monthly)
+                                                                      interval
+                                                                      end-date
+                                                                      days-of-week
+                                                                      by-day-or-date
+                                                                      local-day-of-week
+                                                                      weeks-of-month)))
 
-                 (:div
-                   (:select :onchange "this.form.submit()"
-                            :name "frequency"
-                     (:option :value "weekly"
-                              :selected (unless monthly "")
-                              "Week"
-                              (unless frequent (htm "s")))
-                     (:option :value "monthly"
-                              :selected (when monthly "")
-                              "Month"
-                              (unless frequent (htm "s")))))
+                    (:input :type "hidden" :name "frequency" :value frequency)
+                    (:input :type "hidden" :name "interval" :value interval)
+                    (:input :type "hidden" :name "by-day-or-date" :value by-day-or-date)
+                    (:input :type "hidden" :name "days-of-week" :value days-of-week)
+                    (:input :type "hidden" :name "weeks-of-month" :value weeks-of-month)
+                    (:input :type "hidden" :name "end-date" :value end-date)
+                    (:button :class "green simple-link"
+                             :type "submit"
+                             :name "recurring"
+                             "edit"))
 
-                 (when (and (or (not frequency) (not monthly))
-                            frequent)
-                   (htm
-                     (:div
-                       (:label "Repeat on")
-                         (dolist (day +day-names+)
-                           (htm
-                             (:input :type "checkbox"
-                                     :name "days-of-week"
-                                     :checked (when (or (find day
-                                                              days-of-week
-                                                              :test #'equalp)
-                                                        (equalp local-day-of-week
-                                                                day))
-                                                "checked")
-                                     :value (string-downcase day)
-                                     (str (elt day 0))))))))
+               (htm
+                  (:div :class "recurring-event-details"
+                    (:div
+                      (:label "Repeat "
+                              (when (and local-day-of-week
+                                         (nor monthly frequent))
+                                (htm " on " (str local-day-of-week)))
+                              " every")
+                      (str (number-selection-html "interval" 12
+                                                  :selected (or interval 1)
+                                                  :auto-submit t)))
 
-                 (when (and date monthly)
-                   (str (enter-monthly-recurring-details date
-                                                         frequent
-                                                         by-day-or-date
-                                                         local-day-of-week
-                                                         weeks-of-month)))
+                    (:div
+                      (:select :onchange "this.form.submit()"
+                               :name "frequency"
+                        (:option :value "weekly"
+                                 :selected (unless monthly "")
+                                 "Week"
+                                 (unless frequent (htm "s")))
+                        (:option :value "monthly"
+                                 :selected (when monthly "")
+                                 "Month"
+                                 (unless frequent (htm "s")))))
 
-                 (:div
-                   (:label "End Date (optional)")
-                   (:input :type "text"
-                           :name "end-date"
-                           :placeholder "mm/dd/yyyy"
-                           :value end-date))))))
+                    (when (and (or (not frequency) (not monthly))
+                               frequent)
+                      (htm
+                        (:div
+                          (:label "Repeat on")
+                            (dolist (day +day-names+)
+                              (htm
+                                (:input :type "checkbox"
+                                        :name "days-of-week"
+                                        :checked (when (or (find day
+                                                                 days-of-week
+                                                                 :test #'equalp)
+                                                           (equalp local-day-of-week
+                                                                   day))
+                                                   "checked")
+                                        :value (string-downcase day)
+                                        (str (elt day 0))))))))
+
+                    (when (and date monthly)
+                      (str (enter-monthly-recurring-details date
+                                                            frequent
+                                                            by-day-or-date
+                                                            local-day-of-week
+                                                            weeks-of-month)))
+
+                    (:div
+                      (:label "End Date (optional)")
+                      (:input :type "text"
+                              :name "end-date"
+                              :placeholder "mm/dd/yyyy"
+                              :value end-date)))))))
 
          (:div :class "long"
            (:label "Event title")
@@ -709,10 +757,11 @@
                             (getf *user* :admin))
                        (s+ "You can only edit your own events."))
 
-           (let* ((old-datetime (multiple-value-list
-                                  (humanize-exact-time
-                                    (or (getf item :auto-updated-time)
-                                        (getf item :local-time)))))
+           (let* ((old-datetime (when item
+                                  (multiple-value-list
+                                    (humanize-exact-time
+                                      (or (getf item :auto-updated-time)
+                                          (getf item :local-time))))))
                   (new-date-p (scan +date-scanner+ (post-parameter "date")))
                   (new-time-p (scan +time-scanner+ (post-parameter "time")))
                   (test-date (or (when new-date-p (post-parameter "date"))
@@ -831,6 +880,10 @@
                                              :restrictedp restrictedp
                                              :groups-selected groups-selected
                                              :identity-selection identity-selection
+                                             :editing-schedule (and recurring
+                                                                    (not not-recurring)
+                                                                    (not (post-parameter
+                                                                           "edit-datetime")))
                                              :error e))
 
                       (submit-data (&key lat long address)
@@ -902,6 +955,9 @@
 
                 ((and recurring (not date)
                  (try-again "Please enter a date." t)))
+
+                ((and recurring (not time)
+                 (try-again "Please enter a time" t)))
 
                 ((nor (post-parameter "confirm-location")
                       (post-parameter "submit-edits"))
