@@ -558,7 +558,8 @@
                               :placeholder "Add a time? (ex. 2:30 PM)"
                               :value time))))
 
-         (when (not editing-schedule)
+         (if editing-schedule
+           (htm (:input :type :hidden :name "recurring" :value recurring))
            (htm (:div (:input :type "checkbox"
                               :name "recurring"
                               :checked (when recurring "checked")
