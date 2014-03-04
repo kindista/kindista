@@ -49,6 +49,7 @@
 (defindex *group-membership-invitations-index*) ;(personid . invitationid)
 (defindex *group-privileges-index*)
 (defindex *group-members-index*)
+(defindex *group-messages-index*)
 (defindex *groups-geo-index*)
 (defindex *invited-index*)
 (defindex *invitation-index* :test 'equalp)

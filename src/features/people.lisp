@@ -223,7 +223,7 @@
                   :banned t
                   :notify-kindista nil)))
 
-(defun delete-active-account (id)
+(defun delete-active-account (id &optional reason)
   (let ((data (db id)))
     (deactivate-person id)
 
@@ -233,7 +233,9 @@
           (remhash email *email-index*))))
 
     (modify-db id :emails (list nil)
-                  :deleted t)))
+                  :type deleted-person-account
+                  :deleted t
+                  :reason-for-account-deletion reason)))
 
 (defun find-people-with-incorrect-communication-settings ()
   (sort (iter (for id in *active-people-index*)
