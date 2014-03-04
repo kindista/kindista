@@ -69,6 +69,12 @@
       (dolist (person (getf data :members))
         (push id (getf (gethash person *group-privileges-index*) :member))))
 
+    (with-locked-hash-table (*group-members-index*)
+      (dolist (person (getf data :admins))
+        (push person (gethash id *group-members-index*)))
+      (dolist (person (getf data :members))
+        (push person (gethash id *group-members-index*))))
+
     (with-locked-hash-table (*profile-activity-index*)
       (asetf (gethash id *profile-activity-index*)
              (sort (push result it) #'> :key #'result-time)))
@@ -146,54 +152,124 @@
   (metaphone-index-insert (list (db id :name))
                           (gethash id *db-results*)))
 
-(defun delete-group (id &optional pre-existing-duplicate-id)
+(defun merge-new-duplicate-group-account (new-id pre-existing-id group-creator &key keep-new-name keep-new-location)
+"WARNING: This needs further testing before use on the live server."
+  (delete-group new-id :pre-existing-duplicate-id pre-existing-id
+                       :group-creator group-creator
+                       :keep-new-name keep-new-name
+                       :keep-new-location keep-new-location))
+
+(defun delete-group (id &key pre-existing-duplicate-id group-creator keep-new-name keep-new-location)
+"WARNING: This needs further testing before use on the live server."
   (let* ((data (db id))
+         (pre-existing-data (db pre-existing-duplicate-id))
          (result (gethash id *db-results*)))
 
     (with-locked-hash-table (*username-index*)
-      (remhash (getf data :username) *username-index*) id)
+      (remhash (getf data :username) *username-index*))
 
     (with-locked-hash-table (*group-privileges-index*)
       (dolist (person (getf data :admins))
-        (delete id (getf (gethash person *group-privileges-index*) :admin)))
+        (asetf (getf (gethash person *group-privileges-index*) :admin)
+               (remove id it)))
       (dolist (person (getf data :members))
-        (delete id (getf (gethash person *group-privileges-index*) :member))))
-    
+        (asetf (getf (gethash person *group-privileges-index*) :member)
+               (remove id it))))
+
     (with-locked-hash-table (*profile-activity-index*)
-      (dolist (result (gethash person-group-id *profile-activity-index*))
-        (let* ((activity-id (result-id result))
-               (activity-data (db activity-id))
-               (activity-data-type (getf activity-data :type)))
+      (dolist (result (gethash id *profile-activity-index*))
+        (let* ((item-id (result-id result))
+               (item-data (db item-id))
+               (item-data-type (getf item-data :type)))
           (flet ((switch-ids (list)
-                   (pushnew pre-existing-duplicate-id
-                            (remove nil
-                                    (remove id list)))))
-            (case type
+                   (cons pre-existing-duplicate-id
+                         (remove nil
+                                 (remove id list)))))
+            (case item-data-type
              ((or :offer :request)
               (aif pre-existing-duplicate-id
                 (progn
-                  (modify-db activity-id :by it)
+                  (modify-db item-id :by it)
                   (setf (result-people result) it)
                   (push result (gethash it *profile-activity-index*)))
-                (delete-inventory-item activity-item))
-              (:gratitude
+                (delete-inventory-item item-id)))
+             (:gratitude
+               (aif pre-existing-duplicate-id
+                 (progn
+                   (pushnew result (gethash it *profile-activity-index*))
+                   (cond
+                     ((= (getf item-data :author) id)
+                      (setf (car (result-people result)) pre-existing-duplicate-id)
+                      (modify-db item-id :author pre-existing-duplicate-id))
+                     ((find id (getf item-data :subjects))
+                      (asetf (cdr (result-people result)) (switch-ids it))
+                      (amodify-db item-id :subjects (switch-ids it)))))
+                 (delete-gratitude item-id)))
+              (:event
                 (aif pre-existing-duplicate-id
-                  (cond
-                    (())
-                    
-                    )
-                  )
-              
-                )
-              )
-              
-             )
-            )
-          )
-        )
-      )
-    )
-  )
+                  (let ((new-hosts (switch-ids (getf item-data :hosts))))
+                    (modify-db item-id :hosts new-hosts)
+                    (setf (result-people result) new-hosts))
+                  (delete-inventory-item item-id))))))))
+
+    (when (and (getf data :lat)
+               (getf data :long)
+               (getf data :created)
+               (getf data :active))
+
+      (metaphone-index-insert (list nil) result)
+      (geo-index-remove *groups-geo-index* result)
+
+      (unless (< (result-time result) (- (get-universal-time) 15552000))
+        (geo-index-remove *activity-geo-index* result)))
+
+    (when pre-existing-duplicate-id
+      (let ((modify-pre-existing-data
+              (list :avatar (or (getf pre-existing-data :avatar)
+                                (getf data :avatar))
+                    :category (getf data :category)
+                    :membership-method (getf data :membership-method)
+                    :location-privacy (getf data :location-privacy)
+                    :creator (or group-creator
+                                 (getf pre-existing-data :creator)
+                                 (getf data :creator)))))
+        (when keep-new-name (asetf modify-pre-existing-data
+                                   (append (list :name (getf data :name)) it)))
+        (when keep-new-location (asetf modify-pre-existing-data
+                                  (append (list :location (getf data :location)
+                                                :lat (getf data :lat)
+                                                :long (getf data :long)
+                                                :address (getf data :address)
+                                                :street (getf data :street)
+                                                :city (getf data :city)
+                                                :state (getf data :state)
+                                                :country (getf data :country)
+                                                :zip (getf data :zip))
+                                          it)))
+        (apply #'modify-db pre-existing-duplicate-id modify-pre-existing-data))
+
+      (dolist (message (gethash id *group-messages-index*))
+        (let ((message-id (message-id message))
+              (people (message-people message)))
+          (case (message-type message )
+            ((or :reply :conversation)
+             (setf (message-people message)
+                   (subst pre-existing-duplicate-id id people))
+             (modify-db message-id :people (message-people message))))))
+
+      (dolist (follower (gethash id *followers-index*))
+        (amodify-db follower :following (subst pre-existing-duplicate-id id it))))
+
+    (when (and group-creator
+               (not (eql (getf pre-existing-data :type) :group)))
+      (change-person-to-group pre-existing-duplicate-id group-creator)))
+
+  (with-locked-hash-table (*db-results*)
+    (remhash id *db-results*))
+
+  (modify-db id :type :deleted-group-account
+                :reason-for-account-deletion (strcat "Merged with pre-existing-group-account: "
+                                                     pre-existing-duplicate-id)))
 
 (defun change-person-to-group (groupid admin-id)
 
@@ -268,16 +344,20 @@
              (see-other next)))))
 
 (defun group-members (groupid)
-  (let ((data (db groupid)))
-    (list :admins (getf data :admins) :members (getf data :members))))
+  (gethash groupid *group-members-index*))
 
 (defun add-group-member (personid groupid)
   (amodify-db groupid :members (pushnew personid it))
+  (with-locked-hash-table (*group-members-index*)
+     (pushnew personid (gethash groupid *group-members-index*)))
   (with-locked-hash-table (*group-privileges-index*)
      (pushnew groupid (getf (gethash personid *group-privileges-index*) :member))))
 
 (defun remove-group-member (personid groupid)
   (amodify-db groupid :members (remove personid it))
+  (with-locked-hash-table (*group-members-index*)
+     (asetf (gethash groupid *group-members-index*)
+            (remove personid it)))
   (with-locked-hash-table (*group-privileges-index*)
      (asetf (getf (gethash personid *group-privileges-index*) :member)
             (remove groupid it))))
@@ -490,23 +570,23 @@
                "gratitude about "))))
       (:div
         (:div
-          (:input :type "checkbox"
-                  :name "group"
-                  :id "group"
-                  :onchange "this.form.submit()"
-                  :checked (when (or (string= selected "all")
-                                     (string= selected "group"))
-                                 ""))
-           (:label :for "group" (str group-name)))
+           (:label (:input :type "checkbox"
+                           :name "group"
+                           :id "group"
+                           :onchange "this.form.submit()"
+                           :checked (when (or (string= selected "all")
+                                              (string= selected "group"))
+                                          ""))
+                   (str group-name)))
          (:div
-           (:input :type "checkbox"
-                   :id "members"
-                   :name "members"
-                   :onchange "this.form.submit()"
-                   :checked (when (or (string= selected "all")
-                                      (string= selected "members"))
-                               ""))
-           (:label :for "group" "group members" ))))))
+           (:label (:input :type "checkbox"
+                            :id "members"
+                            :name "members"
+                            :onchange "this.form.submit()"
+                            :checked (when (or (string= selected "all")
+                                               (string= selected "members"))
+                                        ""))
+                   "group members" ))))))
 
 (defun group-members-activity (group-members &key type count)
   (let ((count (or count (+ 20 (floor (/ 30 (length group-members))))))

@@ -133,6 +133,9 @@
                 :people (message-people message))
   (index-message-folders message))))
 
+(defun message-groups (message)
+  (remove nil (mapcar #'cadadr (message-people message))))
+
 (defun index-message (id data)
 "The people field for a conversation is a p-list of the status of the conversation for each participant: (:unread ((personid . last-read-comment)) ... "
   (let* ((time (case (getf data :type)
@@ -153,6 +156,8 @@
                                        (getf data :people)
                                        :test #'equal))
                    (t (getf data :people))))
+         (groups (unless (eql (getf data :type) :gratitude) ; index conversations only
+                   (remove nil (mapcar #'cdar people))))
          (existing-message (gethash id *db-messages*))
          (new-message (unless existing-message
                         (make-message :id id
@@ -160,7 +165,8 @@
                                       :latest-comment latest-comment
                                       :people people
                                       :folders folders
-                                      :type (getf data :type)))))
+                                      :type (getf data :type))))
+         (message (or existing-message new-message)))
 
     (with-locked-hash-table (*db-messages*)
       (aif new-message
@@ -171,7 +177,10 @@
 
           (setf (message-people existing-message) people)
           (setf (message-folders existing-message) folders))))
-    (index-message-folders (or existing-message new-message))))
+    (with-locked-hash-table (*group-messages-index*)
+      (dolist (group groups)
+        (pushnew message (gethash group *group-messages-index*))))
+    (index-message-folders message)))
 
 (defun all-message-people (message)
 "a list of people with access to a given message"

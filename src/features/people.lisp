@@ -233,6 +233,7 @@
           (remhash email *email-index*))))
 
     (modify-db id :emails (list nil)
+                  :type deleted-person-account
                   :deleted t
                   :reason-for-account-deletion reason)))
 
