@@ -14,7 +14,7 @@ Before committing to share goods or services,
 verify that both the giver and recipient are in agreement about what exactly 
 will be shared.
 
-The recipient of goods or services shared through Kindista, 
+The recipient of goods or services shared through Kindista 
 is generally expected to post a [Statement of Gratitude](/gratitude/new)
  about the giver unless the giver has requested otherwise.
 _Statements of gratitude will encourage our community to share with those who 
