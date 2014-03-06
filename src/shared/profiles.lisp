@@ -323,19 +323,19 @@
                                :action (strcat "/groups/" (username-or-id id) "/invite-members")
                            (:button :class "yes small" :type "submit"  "+add members"))))
                   (memberp
-                   (htm (:form :method "POST" :action (strcat "/groups/" id)
+                   (htm (:form :method "POST" :action (strcat "/groups/" id "/members")
                           (:input :type "hidden" :name "next" :value *base-url*)
                           (:button :class "cancel small" :name "leave-group" :value id :type "submit"
                             (str "Leave group")))))
 
                   ((and (not pendingp)(not (eql (getf entity :membership-method) :invite-only)))
-                   (htm (:form :method "POST" :action (strcat "/groups/" id)
+                   (htm (:form :method "POST" :action (strcat "/groups/" id "/members")
                           (:input :type "hidden" :name "next" :value *base-url*)
                           (:button :class "yes small" :type "submit" :name "request-membership" :value id
                             (str "Join group")))))
 
                   ((assoc *userid* (gethash id *group-membership-invitations-index*))
-                   (htm (:form :method "POST" :action (strcat "/groups/" id)
+                   (htm (:form :method "POST" :action (strcat "/groups/" id "/members")
                           (:input :type "hidden" :name "next" :value *base-url*)
                           (:button :class "yes small" :type "submit" :name "accept-group-membership-invitation" :value id
                           (str "Join group")))))))

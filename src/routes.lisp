@@ -212,7 +212,8 @@
     :get get-group-members)
 
   ("/groups/<id>/invite-members"
-    :get get-invite-group-members)
+    :get get-invite-group-members
+    :post post-invite-group-members)
 
   ("/messages"
     :get get-messages

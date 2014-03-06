@@ -20,85 +20,83 @@
 (defun send-invitation-email (invitation-id &key auto-reminder)
   (let* ((invitation (db invitation-id))
          (token (getf invitation :token))
-         (from (getf invitation :host))
+         (host (getf invitation :host))
+         (host-name (db host :name))
          (text (getf invitation :text))
+         ;; the most recent group invite sent by the host
+         (group-id (car (getf invitation :groups)))
+         (group (db group-id))
          (host-reminder (and (not auto-reminder)
                              (> (length (getf invitation :times-sent)) 1)))
          (to (getf invitation :recipient-email)))
-    (cl-smtp:send-email +mail-server+
-                        "Kindista <noreply@kindista.org>"
-                        to
-                        (cond
-                          (auto-reminder
-                            (s+ "Reminder: your Kindista invitation from "
-                                (getf (db from) :name)
-                                " is expiring soon"))
-                          (host-reminder
-                            (s+ (getf (db from) :name)
-                                " is reminding you to join their sharing network on Kindista."))
-                          (t (s+ (getf (db from) :name)
-                                " wants you to join their sharing network!")))
-                        (invitation-email-text token
-                                               to
-                                               from
-                                               :text text
-                                               :host-reminder host-reminder
-                                               :auto-reminder auto-reminder)
-                        :html-message (invitation-email-html token
-                                                             to
-                                                             from
-                                                             :text text
-                                                             :host-reminder host-reminder
-                                                             :auto-reminder auto-reminder))))
+    (cl-smtp:send-email
+      +mail-server+
+      "Kindista <noreply@kindista.org>"
+      to
+      (cond
+        (auto-reminder
+          (s+ "Reminder: your Kindista invitation from "
+              host-name
+              " is expiring soon"))
+        (host-reminder
+          (s+ host-name
+              " is reminding you to join their sharing network on Kindista."))
+        (group
+          (s+ host-name
+              " wants you to join the "
+              (getf group :name)
+              " sharing network on Kindista!"))
+        (t (s+ host-name " wants you to join their sharing network!")))
+      (invitation-email-text token
+                             to
+                             host
+                             :text text
+                             :host-reminder host-reminder
+                             :group-name (getf group :name)
+                             :auto-reminder auto-reminder)
+      :html-message (invitation-email-html token
+                                           to
+                                           host
+                                           :group-id group-id
+                                           :text text
+                                           :host-reminder host-reminder
+                                           :auto-reminder auto-reminder))))
 
-(defun invitation-email-text (token to from &key text auto-reminder host-reminder)
+(defun invitation-email-text (token to from &key group-name text auto-reminder host-reminder)
   (let ((sender (getf (db from) :name)))
-    (s+ 
+    (strcat*
 (no-reply-notice)
-
+#\linefeed #\linefeed
 (when auto-reminder
 "We are writing to let you know that your Kindista invitation will be expiring soon.")
-"
-
-"
+#\linefeed #\linefeed
 sender
-" has invited you to join Kindista, the social network for building "
-"community and sharing skills, tools, and other local resources.
-
-Your invitation code is " (write-to-string token) ".
-
-"
-
+" has invited you to join "
+(when group-name (s+ "the " group-name " group on "))
+"Kindista; the social network for building "
+"community and sharing skills, tools, and other local resources."
+#\linefeed #\linefeed
+"Your invitation code is " (write-to-string token) ". "
+#\linefeed #\linefeed
 (when text
-(s+ sender " says:
-\""
-text "\"
-
-"))
-
+  (strcat* sender " says: \"" #\linefeed text "\""))
+#\linefeed #\linefeed
 sender
 (if host-reminder
-" is reminding you to join"
-" sent you an invitation")
+  " is reminding you to join"
+  " sent you an invitation")
 " because they think you would make a valuable addition to the"
-" Kindista community.
-
-"
-
+" Kindista community."
+#\linefeed #\linefeed
 "Please click on this link or copy and paste it into your browser"
-" to RSVP:
-"
-(url-compose (s+ +base-url+ "signup")
-             "email" to
-             "token" token)
-
-"
-
-"
+" to RSVP:"
+#\linefeed
+(url-compose (s+ +base-url+ "signup") "email" to "token" token)
+#\linefeed #\linefeed
 "-The Kindista Team")))
 
 
-(defun invitation-email-html (token to from &key text auto-reminder host-reminder)
+(defun invitation-email-html (token to from &key group-id text auto-reminder host-reminder)
   (let ((sender (getf (db from) :name)))
     (html-email-base
       (html
@@ -112,7 +110,11 @@ sender
 
         (:p :style *style-p*
           (str (person-email-link from))
-          " has invited you to join Kindista, the social network for building "
+          " has invited you to join "
+
+          (awhen group-id
+            (htm "the " (str (group-link it)) "group on "))
+          "Kindista, the social network for building "
           "community and sharing skills, tools and other local resources. ")
 
         (:p :style *style-p*
