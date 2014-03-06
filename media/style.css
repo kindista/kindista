@@ -1145,6 +1145,10 @@ img.small {
   background: none;
  }
 
+ .mobile.login.item {
+  display: none;
+}
+
  .icon {
   width: 1.47em;
   height: 1.47em;
@@ -1583,10 +1587,16 @@ button.card > img {
 }
 
 .login.item {
+ width: 100%;
+ padding: 0.3em;
 }
 
-#login label, #login input {
- display: block;
+.login.item #login button {
+ min-width: 4.5em;
+ height: 2em;
+ font-size: 0.9em;
+ margin-right: 0.7em;
+ padding: 0;
 }
 
 #login a {
@@ -1598,7 +1608,9 @@ button.card > img {
 }
 
 #login label, #login input {
+ width: 100%;
  display: block;
+ max-width: 30em;
 }
 
 .small {

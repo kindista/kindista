@@ -433,6 +433,22 @@
       (:body :class class :onload "if(!location.hash){window.scrollTo(0,0);};document.body.className+=\" js\";"
         (str body)))))
 
+(defun login-box (&optional (mobile t))
+  (html
+    (:div :class (s+ (when mobile "mobile ") "login item")
+      (:form :method "POST" :action "/login" :id "login"
+        (:label :for "username" "Email")
+        (:input :type "text"
+                :id "username"
+                :name "username"
+                :value (get-parameter "retry"))
+        (:label :for "password" "Password")
+        (:input :type "password"
+                :id "password"
+                :name "password")
+        (:button :type "submit" :class "yes" "Log in")
+        (:a :href "/reset" "Forgot your password?")))))
+
 (defun header-page (title header-extra body &key class)
   (base-page title
              (html
@@ -459,6 +475,8 @@
                (html
                  (dolist (flash (flashes))
                    (str flash))
+                 (unless *user*
+                   (str (login-box t)))
                  (when top
                    (htm
                      (:div :id "full"
@@ -498,7 +516,7 @@
                    (:input :type "submit" :value "Search"))
 
                  (:div :id "menu"
-                   (when *user*
+                   (if *user*
                      (let ((link (s+ "/people/" (username-or-id))))
                        (htm
                          (:table
@@ -511,7 +529,8 @@
                              (:td
                                (:a :class (when (eq selected :settings) "selected") :href "/settings" "Settings")
                                " &middot; "
-                               (:a :href "/logout" "Log&nbsp;out")))))))
+                               (:a :href "/logout" "Log&nbsp;out"))))))
+                     (str (login-box nil)))
 
                    (when *user*
                      (let ((inbox-count (new-inbox-items)))

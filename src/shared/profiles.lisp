@@ -50,7 +50,6 @@
           (str (paginate-links page more))))
       :selected type
       :right (html
-               (str (login-sidebar))
                (str (donate-sidebar))
                (str (invite-sidebar))))))
 

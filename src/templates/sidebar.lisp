@@ -17,19 +17,6 @@
 
 (in-package :kindista)
 
-(defun login-sidebar ()
-  (unless *user*
-    (html
-      (:div :class "login item right"
-        (:h3 "Log in")
-        (:form :method "POST" :action "/login" :id "login"
-          (:label :for "username" "Email")
-          (:input :type "text" :id "username" :name "username" :value (get-parameter "retry"))
-          (:label :for "password" "Password")
-          (:input :type "password" :id "password" :name "password")
-          (:button :type "submit" :class "yes" "Log in")
-          (:a :href "/reset" "Forgot your password?"))))))
-
 (defun donate-sidebar ()
   (html
     (:div :class "item right only"

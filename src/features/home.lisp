@@ -41,7 +41,6 @@
       (:div :style "font-size: 0.9em; margin-top: 1em;" (:a :href "#" "How does Kindista use the money?"))
       )
       |#
-    (str (login-sidebar))
 
     (str (donate-sidebar))
 
