@@ -209,11 +209,11 @@
     :get get-group-requests)
 
   ("/groups/<id>/members"
-    :get get-group-members)
+    :get get-group-members
+    :post post-group-members)
 
   ("/groups/<id>/invite-members"
-    :get get-invite-group-members
-    :post post-invite-group-members)
+    :get get-invite-group-members)
 
   ("/messages"
     :get get-messages
