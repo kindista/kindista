@@ -1302,6 +1302,7 @@ menu .newcount {
 
 .item.create-event label,
 .item.create-group label,
+.invite-members label,
 .item.confirm-delete label {
  display: block;
  font-weight: bold;
@@ -1314,10 +1315,13 @@ menu .newcount {
 
 .create-event input[type=text],
 .create-event textarea,
+.invite-members input[type=text],
+.invite-members textarea,
 .create-event select,
 .create-group select,
 .create-group input[type=text],
 .confirm-delete textarea {
+ display: block;
  font-size: 1em;
  border: 1px solid #444;
  margin: .3em 0;
@@ -1330,11 +1334,18 @@ menu .newcount {
 
 .create-event input[type=text],
 .create-event select,
+.invite-members input[type=text],
 .create-group select,
 .create-group input[type=text] {
  width: 30em;
  white-space: nowrap;
  height: 2.5em;
+ max-width: none;
+}
+
+.invite-members textarea {
+ width: 30em;
+ white-space: nowrap;
  max-width: none;
 }
 
@@ -1351,6 +1362,8 @@ div.create-group div.group-category-selection {
 }
 
 @media (max-width:28em) {
+ .invite-members input[type=text],
+ .invite-members textarea,
  .create-event input[type=text],
  .create-group select,
  .create-group input[type=text] {
@@ -1699,11 +1712,6 @@ button.card > img {
 
 .invite-members h3 {
  margin-bottom: 0.75em;
-}
-
-.invite-members input[type=text] {
- width: 14.3em;
- margin: 0 0.4em 0 0;
 }
 
 .invite-members button {
