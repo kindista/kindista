@@ -2317,7 +2317,7 @@ h3.label {
 }
 
 menu.bar {
- list-stype-type:none;
+ list-style-type:none;
  margin:0;
  padding:0;
  clear:left;
@@ -2721,8 +2721,9 @@ div.settings p.help-text {
  clear: both;
 }
 
+#people-tabs,
 #groups-tabs {
- margin-top: 0.8em;
+ margin-top: 0.9em;
 }
 
 .group-category-selection {
@@ -2956,6 +2957,24 @@ body.donate {
 #privacy ol > li {
  margin-top: 0;
  padding-bottom: .5em;
+}
+
+.item.right.sharing-guidelines ul {
+ padding-left: 0.8em;
+ margin-top: 0.3em;
+}
+
+.item.right.sharing-guidelines p {
+ margin: 0.5em 0;
+}
+
+.item.right.sharing-guidelines h3 {
+ margin-top: 1em;
+ line-height: 1em;
+}
+
+.right.item.sharing-guidelines li {
+ list-style-type: disc;
 }
 
 .faq li {
