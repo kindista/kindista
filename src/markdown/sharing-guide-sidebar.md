@@ -17,7 +17,7 @@ will be shared.
 The recipient of goods or services shared through Kindista 
 is generally expected to post a [Statement of Gratitude](/gratitude/new)
  about the giver unless the giver has requested otherwise.
-_Statements of gratitude will encourage our community to share with those who 
+_Statements of gratitude encourage our community to share with those who 
 have shared with us._
 
 ###When posting an offer:
@@ -27,7 +27,7 @@ have shared with us._
 accurately. 
 Be clear about the qualities and condition of any items you offer.
 
-- Although it one's right to decline an interaction at any time, 
+- Although it is one's right to decline an interaction at any time, 
 the strength and integrity of our community depends on our ability to 
 rely on each other and to follow through with our commitments.
 
