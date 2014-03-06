@@ -223,7 +223,10 @@
                  (latest-seen (or (when (numberp (cdr person))
                                     (cdr person))
                                   (getf it :latest-comment)))
-                 (with (remove *userid* (getf it :participants))))
+                 (with (remove *userid* (getf it :participants)))
+                 (item (db (getf it :on)))
+                 (deleted-type (getf it :deleted-item-type))
+                 (original-message-type (getf item :type)))
             (standard-page
               (aif (getf it :subject)
                 (ellipsis it :length 24)
@@ -232,13 +235,22 @@
                 (str (menu-horiz "actions"
                                  (html (:a :href "/messages" "back to messages"))
                                  (html (:a :href "#reply" "reply"))
+                                 (when (and (eql type :reply)
+                                            (eql (getf it :by) *userid*)
+                                            (eql original-message-type :offer))
+                                   (html
+                                     (:a :href
+                                         (str (url-compose "/gratitude/new"
+                                                           "subject"
+                                                           (getf item :by)))
+                                          "express gratitude"))))
                                 ;(when (eq type :conversation)
                                 ;  (html (:a :href (strcat "/conversations/" id "/leave") "leave conversation")))
                                 ;  removed until we add the ability for
                                 ;  individual members of a group to leave the
                                 ;  conversation and for the group to leave
                                 ;  when its members have
-                                 ))
+                                 )
                 (str
                   (card
                     (html
@@ -251,46 +263,43 @@
                             (htm (:p "with " (str (name-list-all with))))
                             (htm (:p :class "error" "Everybody else has left this conversation."))))
                         (:reply
-                          (let* ((item (db (getf it :on)))
-                                 (deleted-type (getf it :deleted-item-type))
-                                 (original-message-type (getf item :type)))
-                            (flet ((inventory-url ()
-                                    (html
-                                      (case original-message-type
-                                        (:offer
-                                         (htm (:a :href (strcat "/offers/" (getf it :on))
-                                               "offer")))
-                                        (:request
-                                         (htm (:a :href (strcat "/requests/" (getf it :on))
-                                               "request")))
-                                        (t (case deleted-type
-                                             (:offer (htm "offer"))
-                                             (:request (htm "request"))
-                                             (t (htm (:span :class "none" "deleted offer or request")))))))))
+                          (flet ((inventory-url ()
+                                  (html
+                                    (case original-message-type
+                                      (:offer
+                                       (htm (:a :href (strcat "/offers/" (getf it :on))
+                                             "offer")))
+                                      (:request
+                                       (htm (:a :href (strcat "/requests/" (getf it :on))
+                                             "request")))
+                                      (t (case deleted-type
+                                           (:offer (htm "offer"))
+                                           (:request (htm "request"))
+                                           (t (htm (:span :class "none" "deleted offer or request")))))))))
 
-                              (if (eql (getf it :by) *userid*)
-                                (htm
-                                  (:p
-                                  "You replied to "
-                                  (str (person-link (or (getf item :by)
-                                                        (first with))))
-                                  "'s "
+                            (if (eql (getf it :by) *userid*)
+                              (htm
+                                (:p
+                                "You replied to "
+                                (str (person-link (or (getf item :by)
+                                                      (first with))))
+                                "'s "
+                                (str (inventory-url))
+                                ":"))
+                              (htm
+                                (:p
+                                  "A conversation with "
+                                  (str (person-link (getf it :by)))
+                                  " about "
+                                  (if (eq (getf item :by) *userid*)
+                                    (str "your ")
+                                    (str (s+ (db (getf item :by) :name)
+                                             "'s ")))
                                   (str (inventory-url))
-                                  ":"))
-                                (htm
-                                  (:p
-                                    "A conversation with "
-                                    (str (person-link (getf it :by)))
-                                    " about "
-                                    (if (eq (getf item :by) *userid*)
-                                      (str "your ")
-                                      (str (s+ (db (getf item :by) :name)
-                                               "'s ")))
-                                    (str (inventory-url))
-                                    ":"))))
+                                  ":"))))
                             (htm (:blockquote :class "review-text"
                                    (str (html-text (or (getf item :text)
-                                                       (getf it :deleted-item-text))))))))))))
+                                                       (getf it :deleted-item-text)))))))))))
 
                 (let ((comments (gethash id *comment-index*)))
                   (dolist (comment-id comments)

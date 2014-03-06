@@ -584,6 +584,7 @@
            (:textarea :cols "40" :rows "5" :name "text" (str text))
            (:p  (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
                 (:button :class "yes" :type "submit" :class "submit" :name "post" "Next"))))))
+    :right (sharing-guide-sidebar)
     :selected selected))
 
 (defun enter-inventory-tags (&key title action text existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next)
@@ -664,6 +665,7 @@
 
           (:p (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
               (:button :class "yes" :type "submit" :class "submit" :name "create" (str button-text))))))
+     :right (sharing-guide-sidebar)
      :selected selected)))
 
 ; author

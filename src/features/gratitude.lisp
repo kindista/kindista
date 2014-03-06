@@ -273,8 +273,7 @@
             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
             (:button :class "yes" :type "submit" 
                      :name "create" 
-                     (str (if existing-url "Save" "Create"))))))))
-     :selected "people")
+                     (str (if existing-url "Save" "Create")))))))))
     (gratitude-add-subject :text text :next next)))
 
 (defun gratitude-add-subject (&key subjects text next (results 'none) groupid)
@@ -284,7 +283,7 @@
       (:div :class "item"
        (str (pending-disclaimer "statement of gratitude"))
        (:h2 "Who would you like to write about?")
-       (:h3 "Search for a person")
+       (:h3 "Search for a person or group")
        (:form :method "post" :class "new-gratitude" :action "/gratitude/new"
          (:input :type "text" :name "name")
          (:button :type "submit" :class "yes input-height" :name "search" "Search")
@@ -316,8 +315,7 @@
          (when text
            (htm (:input :type "hidden" :name "text" :value (escape-for-html text))))
 
-         )))
-    :selected "people"))
+         )))))
 
 (defun get-gratitudes-new ()
   (require-user

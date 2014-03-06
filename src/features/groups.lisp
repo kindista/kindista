@@ -629,7 +629,7 @@
       (standard-page
         "My Groups"
         (html
-          (str (menu-horiz "actions" (html (:a :href "/groups/new" "create a new group"))))
+          (str (group-contacts-action-menu))
           (str (groups-tabs-html :tab :my-groups))
           (unless (or admin-groups member-groups)
             (htm (:h3 "You have not joined any groups yet.")))

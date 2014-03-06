@@ -17,6 +17,20 @@
 
 (in-package :kindista)
 
+(defun group-contacts-action-menu ()
+  (when *user*
+    (menu-horiz "actions"
+                (html (:a :href "/groups/new" "create a new group"))
+                (html (:a :href "/gratitude/new" "express gratitude")))))
+
+(defun people-contacts-action-menu ()
+  (when *user*
+    (menu-horiz "actions"
+                (html (:a :href "/gratitude/new" "express gratitude"))
+                (html (:a :href "/conversations/new" "send a message"))
+                (html (:a :href "/invite" "invite friends")))))
+
+
 (defun nearby-profiles (index)
   (with-location
     (labels ((distance (result)
@@ -33,8 +47,9 @@
     (standard-page
       (s+ "Nearby " type)
       (html
-        (when (string= type "groups")
-          (str (menu-horiz "actions" (html (:a :href "/groups/new" "create a new group")))))
+        (if (string= type "groups")
+          (str (group-contacts-action-menu))
+          (str (people-contacts-action-menu)))
         (str tabs)
         (multiple-value-bind (ids more)
           (sublist (nearby-profiles (if (string= type "people")
@@ -60,11 +75,16 @@
                    (copy-list (db userid :following)))
     #'string-lessp :key #'person-name))
 
+
 (defun my-contacts (contact-type tabs selected)
-  (let ((contacts (sorted-contacts :contact-type contact-type)))
+  (let ((contacts (sorted-contacts :contact-type contact-type))
+        (groups-p (eql contact-type :group)))
       (standard-page
       "Contacts"
       (html
+        (if groups-p
+          (str (group-contacts-action-menu))
+          (str (people-contacts-action-menu)))
         (str tabs)
         (unless contacts
           (htm (:h3 "No contacts")))
@@ -84,13 +104,14 @@
                 (htm (:a :name (char-downcase char))
                      (:h3 (str char) (:small " (" (htm (:a :href "#index" " back to index ")) ")")))
                 (setf letter char))
-              (str (person-card id))))))
+              (str (if groups-p
+                     (group-card id)
+                     (person-card id)))))))
 
       :selected selected
       :right (html
                (str (donate-sidebar))
-               (str (invite-sidebar)))))
-  )
+               (str (invite-sidebar))))))
 
 (defun profile-bio-section-html (title content &key editing editable section-name groupid)
   (when (string= content "")

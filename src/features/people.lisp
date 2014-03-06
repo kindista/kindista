@@ -359,7 +359,7 @@
 
 (defun people-tabs-html (&key (tab :contacts))
   (html
-    (:menu :type "toolbar" :class "bar"
+    (:menu :type "toolbar" :class "bar" :id "people-tabs"
       (:h3 :class "label" "People Menu")
 
       (if (eql tab :contacts)
@@ -407,6 +407,7 @@
   (if *user*
     (standard-page "Suggested people"
       (html
+        (str (people-contacts-action-menu))
         (str (people-tabs-html :tab :suggested))
         (aif (return-suggested-people)
           (dolist (suggestion it)
@@ -430,6 +431,7 @@
       (standard-page
         "Invited"
         (html
+          (str (people-contacts-action-menu))
           (str (people-tabs-html :tab :invited))
           (:div :id "my-invites"
             (when unconfirmed

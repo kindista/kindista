@@ -45,3 +45,13 @@
        (:a :class "add" :href "/events/new" "+add an event")
        (str events)
        ))))
+
+(defparameter *sharing-guide-sidebar-html*
+  (markdown-file (s+ +markdown-path+ "sharing-guide-sidebar.md")))
+
+(defun sharing-guide-sidebar ()
+  (html
+    (:div :class "item right only sharing-guidelines"
+     (:h2 "Sharing on Kindista")
+     (:div :class "small"
+       (str *sharing-guide-sidebar-html*)))))
