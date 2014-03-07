@@ -58,7 +58,7 @@
 
 (defun login-required ()
   (flash "The page you requested is only available when you are logged in to Kindista." :error t)
-  (see-other (script-name*)))
+  (see-other (referer)))
 
 (defun active-status-required ()
   (flash "Sorry, you must reactivate your account to perform that action." :error t)
