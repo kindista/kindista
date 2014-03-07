@@ -939,7 +939,7 @@
             (:input :type "hidden" :name "zip" :value zip)
             (:input :type "hidden" :name "membership-method" :value membership-method)
             (awhen public-location
-              (htm (:input :type "hidden" :name "public/location" :value it)))
+              (htm (:input :type "hidden" :name "public-location" :value it)))
             (:button :class "cancel"
                      :type "submit"
                      :name "cancel"
