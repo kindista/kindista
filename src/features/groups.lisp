@@ -814,7 +814,7 @@
           (confirm-group-uniqueness it name lat long location city state country street zip membership-method :public-location public)
           (new-group)))
 
-       ((and lat long city state location country zip (post-parameter "confirm-uniqueness"))
+       ((and lat long city state location country (post-parameter "confirm-uniqueness"))
         (new-group))))))
 
 (defun resend-group-membership-request (request-id)
@@ -934,11 +934,12 @@
             (:input :type "hidden" :name "city" :value (escape-for-html city))
             (:input :type "hidden" :name "state" :value state)
             (:input :type "hidden" :name "country" :value (escape-for-html country))
-            (:input :type "hidden" :name "street" :value (escape-for-html street))
+            (:input :type "hidden" :name "street" :value
+             (awhen street (escape-for-html it)))
             (:input :type "hidden" :name "zip" :value zip)
             (:input :type "hidden" :name "membership-method" :value membership-method)
-            (when public-location
-              (htm (:input :type "hidden" :name "public/location" :value lat)))
+            (awhen public-location
+              (htm (:input :type "hidden" :name "public/location" :value it)))
             (:button :class "cancel"
                      :type "submit"
                      :name "cancel"
