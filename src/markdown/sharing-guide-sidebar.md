@@ -3,6 +3,9 @@ Selling, renting, trading, and bartering are not allowed.
 **Do not post an offer as part of a request or a request as part of an offer.**
 More about this [here](/faq#can-i-barter-on-kindista).
 
+Please post multiple items or services into separate offers and requests, 
+so that each one can be categorized properly.
+
 Please keep your descriptions as short and clear as possible to help others 
 find what they are looking for quickly.
 
