@@ -18,17 +18,15 @@
 (in-package :kindista)
 
 (defun group-contacts-action-menu ()
-  (when *user*
-    (menu-horiz "actions"
-                (html (:a :href "/groups/new" "create a new group"))
-                (html (:a :href "/gratitude/new" "express gratitude")))))
+  (menu-horiz "actions"
+              (html (:a :href "/groups/new" "create a new group"))
+              (html (:a :href "/gratitude/new" "express gratitude"))))
 
 (defun people-contacts-action-menu ()
-  (when *user*
-    (menu-horiz "actions"
-                (html (:a :href "/gratitude/new" "express gratitude"))
-                (html (:a :href "/conversations/new" "send a message"))
-                (html (:a :href "/invite" "invite friends")))))
+  (menu-horiz "actions"
+              (html (:a :href "/gratitude/new" "express gratitude"))
+              (html (:a :href "/conversations/new" "send a message"))
+              (html (:a :href "/invite" "invite friends"))))
 
 
 (defun nearby-profiles (index)
