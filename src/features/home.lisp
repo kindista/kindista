@@ -143,6 +143,7 @@
                If you would like to know more about how we use the information you share with us,
                please read our " (:a :href "/privacy" "privacy policy") ".")
           (:h2 "Where do you call home?")
+          (:em "If you are travelling or do not have a permanent address, you may enter the city or location where you will be sleeping tonight.")
           (:p 
             (:small
               "Enter a street address and click \"Next\". We'll show you a map to confirm the location."))
