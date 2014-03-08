@@ -238,14 +238,15 @@
   (let ((message-index (if *userid*
                          *user-mailbox*
                          (gethash id *person-mailbox-index*))))
+  ;; copy-list is needed to prevent destructive sort operation on the index
    (sort
-     (cond
-       ((string= "all" filter)
-        (getf message-index :inbox))
-       ((string= "unread" filter)
-        (getf message-index :unread))
-       ((string= "compost" filter)
-        (getf message-index :compost)))
+     (copy-list (cond
+                  ((string= "all" filter)
+                   (getf message-index :inbox))
+                  ((string= "unread" filter)
+                   (getf message-index :unread))
+                  ((string= "compost" filter)
+                   (getf message-index :compost))))
     #'> :key #'message-time)))
 
 (defun inbox-items (&key (page 0) (count 20))
@@ -281,7 +282,7 @@
              (let* ((item (car items))
                     (item-id (message-id item))
                     (folders *user-mailbox*)
-                    (status (if (member item (getf folders :unread))
+                    (status (if (find item (getf folders :unread))
                                :unread
                                :read)))
                (htm
