@@ -224,6 +224,7 @@
     (dolist (image-id (db id :images))
       (delete-image image-id))
     (delete-comments id)
+    (remove-message-from-indexes id)
     (deindex-gratitude id)
     (remove-from-db id))
 
