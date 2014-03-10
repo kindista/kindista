@@ -29,23 +29,65 @@
          (inventory-text (or (getf inventory-item :text)
                              (getf on-item :deleted-item-text)))
          (sender-id (car (getf comment :by)))
-         (sender-name (db sender-id :name))
+         (sender-group-id (cdr (getf comment :by)))
+         (sender-group (db sender-group-id))
+         (sender (db sender-id))
+         (sender-name (getf sender :name))
          (inventory-poster (getf inventory-item :by))
-         (inventory-poster-data (db inventory-poster))
-         (notify-group-admins (when (eql (getf inventory-poster-data :type)
-                                         :group)
-                                (getf inventory-poster-data :notify-message)))
-         (text (aif (getf on-item :deleted-item-type)
-                 (deleted-invalid-item-reply-text (db (car (remove sender-id participants)) :name)
-                                                  sender-name
-                                                  it
-                                                  (getf comment :text))
-                 (getf comment :text)))
-
          ;; get an a list of (person-id . group-id)
-         (people (mapcar #'car (getf on-item :people))))
+         (people-boxes (mapcar #'car (getf on-item :people)))
+         (recipient-boxes (remove-if #'(lambda (box)
+                                         (eql sender-id (car box)))
+                                     people-boxes))
+         ;;get a list of '(((person-id) . recipient-data) ...)
+         ;;for boxes without group-ids as cdr
+         (recipient-people (mapcar #'(lambda (box) (cons box (db (car box))))
+                                   (remove-if #'cdr recipient-boxes)))
+         ;;remove people who don't want notification emails
+         (valid-recipient-people (remove-if-not #'(lambda (recipient)
+                                                    (getf (cdr recipient)
+                                                          :notify-message))
+                                                recipient-people))
+         (group-ids (remove-duplicates
+                      (remove nil (mapcar #'cdr recipient-boxes))))
+         (valid-recipient-group-admin-boxes
+           (apply #'append
+                  (mapcar #'(lambda (groupid)
+                              (let ((group (db groupid))
+                                    (admin-boxes))
+                                ;; make sure it's actually a group
+                                (when (eql (getf group :type) :group)
+                                  (dolist (id (getf group :notify-message))
+                                    (push (cons id groupid) admin-boxes))
+                                  admin-boxes)))
+                          group-ids)))
+         (valid-recipient-group-admins
+           (mapcar #'(lambda (box) (cons box (db (car box))))
+                   ;; don't send mult. mess. to admins of more than 1 group
+                   (remove-duplicates
+                     ;; don't send 2 messages if person is a recipient
+                     ;; and also an admin of a group that is a recipient
+                     (remove-if #'(lambda (person-id)
+                                    (or (eql person-id sender-id)
+                                        (find person-id
+                                              (mapcar #'caar
+                                                  valid-recipient-people))))
+                                valid-recipient-group-admin-boxes
+                                :key #'car)
+                     :key #'car)))
+         (all-recipients (append valid-recipient-people
+                                 valid-recipient-group-admins))
+         (deleted-item-type (getf on-item :deleted-item-type))
+         (text (if (and deleted-item-type
+                        (eql comment-id (min (gethash on-id *comment-index*))))
+                 (deleted-invalid-item-reply-text
+                   (db (car (remove sender-id participants)) :name)
+                   sender-name
+                   deleted-item-type
+                   (getf comment :text))
+                 (getf comment :text))))
 
-    (flet ((subject (groupid)
+    (flet ((subject-text (groupid)
              (if (eq on-type :reply)
                (if (eql sender-id inventory-poster)
                  (s+ sender-name " has replied to your question about their " inventory-type ":")
@@ -54,67 +96,58 @@
                        (s+ (db it :name) "'s ")
                        "your ")
                      inventory-type ":"))
-               (getf on-item :subject))))
+               (or (getf on-item :subject)
+                   (s+ "New message from " sender-name)))))
 
-      (dolist (recipient (loop for person in (remove (assoc sender-id people)
-                                                     people
-                                                     :test #'equalp)
-                               when (or (and (member (car person) participants)
-                                             (db (car person) :notify-message))
-                                        ; or when it's to a group
-                                        (member (car person)
-                                                notify-group-admins))
-                               collect person))
+      (dolist (recipient all-recipients)
+        (let* ((groupid (cdar recipient))
+               (subject (subject-text groupid)))
+          (cl-smtp:send-email
+            +mail-server+
+            "PleaseDoNotReply <noreply@kindista.org>"
+            (car (getf (cdr recipient) :emails))
+            subject
+            (comment-notification-email-text on-id
+                                             sender-name
+                                             subject
+                                             (name-list (remove (caar recipient)
+                                                                participants)
+                                                        :func #'person-name
+                                                        :maximum-links 5)
+                                             text
+                                             :group-name (getf sender-group
+                                                               :name)
+                                             :inventory-text inventory-text)
+            :html-message (comment-notification-email-html
+                            on-id
+                            (person-email-link sender-id)
+                            subject
+                            (name-list (remove (caar recipient) participants)
+                                       :func #'person-email-link
+                                       :maximum-links 5)
+                            text
+                            :sender-group (person-email-link sender-group-id)
+                            :inventory-text inventory-text)))))))
 
-        (cl-smtp:send-email
-          +mail-server+
-          "DoNotReply <noreply@kindista.org>"
-          (car (db (car recipient) :emails))
-          (or (subject (cdr recipient))
-              (s+ "New message from " sender-name))
-          (comment-notification-email-text on-id
-                                           sender-name
-                                           (or (subject (cdr recipient))
-                                               (s+ "New message from "
-                                                   sender-name))
-                                           (name-list (remove (car recipient)
-                                                              participants)
-                                                      :func #'person-name
-                                                      :maximum-links 5)
-                                           text
-                                           :inventory-text inventory-text)
-          :html-message (comment-notification-email-html
-                          on-id
-                          (person-email-link sender-id)
-                          (or (subject (cdr recipient))
-                              (s+ "New message from " sender-name))
-                          (name-list (remove (car recipient) participants)
-                                     :func #'person-email-link
-                                     :maximum-links 5)
-                          text
-                          :inventory-text inventory-text))))))
-
-(defun comment-notification-email-text (on-id from subject people text &key inventory-text)
-  (strcat 
+(defun comment-notification-email-text (on-id from subject people text &key inventory-text group-name)
+  (strcat*
 (no-reply-notice)
-#\linefeed #\linefeed
 "You can also reply to this message by clicking on the link below."
 #\linefeed #\linefeed
 "A conversation with " people
-#\linefeed
+#\linefeed #\linefeed
 "Subject: " subject
 (awhen inventory-text
   (strcat #\linefeed it #\linefeed))
-#\linefeed
-from " says:"
+#\linefeed #\linefeed
+from (awhen group-name (s+ " from " it )) " says:"
 #\linefeed #\linefeed
 "\"" text "\""
 #\linefeed #\linefeed
 "You can see the conversation on Kindista here:"
+#\linefeed
 (strcat +base-url+ "conversations/" on-id)
-
 #\linefeed #\linefeed
-"You can see the conversation on Kindista here:"
 "If you no longer wish to receive notifications when people send you messages, please edit your communication settings:
 "
 (strcat +base-url+ "settings/communication")
@@ -123,7 +156,7 @@ from " says:"
 -The Kindista Team"))
 
 
-(defun comment-notification-email-html (on-id from subject people text &key inventory-text)
+(defun comment-notification-email-html (on-id from subject people text &key inventory-text sender-group)
   (html-email-base
     (html
       (:p :style *style-p* (:strong (str (no-reply-notice))))
@@ -144,7 +177,10 @@ from " says:"
              (:br)))
 
       (:p :style *style-p*
-        (str from) " says:")
+        (str from)
+        (when sender-group
+          (htm " from " (str sender-group)))
+        " says:")
 
       (:table :cellspacing 0
               :cellpadding 0

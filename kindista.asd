@@ -23,7 +23,6 @@
                :hunchentoot
                :ironclad
                :iterate
-               :levenshtein
                :paren-files
                :sb-concurrency
                :stem

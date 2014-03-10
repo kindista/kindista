@@ -90,16 +90,19 @@
       (with-mutex (*recent-activity-mutex*)
         (push result *recent-activity-index*)))
 
-    (when (and (getf data :lat)
-               (getf data :long)
-               (getf data :created)
+    (when (and (getf data :created)
                (getf data :active))
-
       (metaphone-index-insert names result)
-      (geo-index-insert *people-geo-index* result) 
 
-      (unless (< (result-time result) (- (get-universal-time) 15552000))
-        (geo-index-insert *activity-geo-index* result)))))
+      (when (and (getf data :lat)
+                  (getf data :long)
+                  (getf data :created)
+                  (getf data :active))
+
+         (geo-index-insert *people-geo-index* result)
+
+         (unless (< (result-time result) (- (get-universal-time) 15552000))
+           (geo-index-insert *activity-geo-index* result))))))
 
 (defun reindex-person-location (id)
   ;when people change locations
@@ -112,54 +115,55 @@
       (notice :error :note "no db result on ungeoindex-person"))
 
     (geo-index-remove *people-geo-index* result)
-    (geo-index-remove *activity-geo-index* result)  
+    (geo-index-remove *activity-geo-index* result)
 
     (setf (result-latitude result) lat)
     (setf (result-longitude result) long)
 
-    (when (and lat long
-               (getf data :created)
-               (getf data :active))
+    (when (and (getf data :created)
+               (getf data :active)
+      (metaphone-index-insert (cons (getf data :name) (getf data :aliases)) result))
 
-      (metaphone-index-insert (cons (getf data :name) (getf data :aliases)) result)
-      (geo-index-insert *people-geo-index* result) 
+      (when (and lat long)
 
-      (unless (< (result-time result) (- (get-universal-time) 15552000))
-        (geo-index-insert *activity-geo-index* result))
+        (geo-index-insert *people-geo-index* result)
 
-      (dolist (id (gethash id *request-index*))
-        (let ((result (gethash id *db-results*)))
-          (geo-index-remove *request-geo-index* result)
-          (geo-index-remove *activity-geo-index* result)
-          (setf (result-latitude result) lat)
-          (setf (result-longitude result) long)
-          (unless (< (result-time result) (- (get-universal-time) 15552000))
-            (geo-index-insert *activity-geo-index* result))
-          (geo-index-insert *request-geo-index* result)))
+        (unless (< (result-time result) (- (get-universal-time) 15552000))
+          (geo-index-insert *activity-geo-index* result))
 
-      (dolist (id (gethash id *offer-index*))
-        (let ((result (gethash id *db-results*)))
-          (geo-index-remove *offer-geo-index* result)
-          (geo-index-remove *activity-geo-index* result)
-          (setf (result-latitude result) lat)
-          (setf (result-longitude result) long)
-          (geo-index-insert *offer-geo-index* result) 
-          (unless (< (result-time result) (- (get-universal-time) 15552000))
-            (geo-index-insert *activity-geo-index* result))))
+        (dolist (id (gethash id *request-index*))
+          (let ((result (gethash id *db-results*)))
+            (geo-index-remove *request-geo-index* result)
+            (geo-index-remove *activity-geo-index* result)
+            (setf (result-latitude result) lat)
+            (setf (result-longitude result) long)
+            (unless (< (result-time result) (- (get-universal-time) 15552000))
+              (geo-index-insert *activity-geo-index* result))
+            (geo-index-insert *request-geo-index* result)))
 
-      (dolist (id (gethash id *gratitude-index*))
-        (let ((result (gethash id *db-results*)))
-          (geo-index-remove *activity-geo-index* result)
-          (setf (result-latitude result) lat)
-          (setf (result-longitude result) long)
-          (unless (< (result-time result) (- (get-universal-time) 15552000))
-            (geo-index-insert *activity-geo-index* result)))))))
+        (dolist (id (gethash id *offer-index*))
+          (let ((result (gethash id *db-results*)))
+            (geo-index-remove *offer-geo-index* result)
+            (geo-index-remove *activity-geo-index* result)
+            (setf (result-latitude result) lat)
+            (setf (result-longitude result) long)
+            (geo-index-insert *offer-geo-index* result) 
+            (unless (< (result-time result) (- (get-universal-time) 15552000))
+              (geo-index-insert *activity-geo-index* result))))
+
+        (dolist (id (gethash id *gratitude-index*))
+          (let ((result (gethash id *db-results*)))
+            (geo-index-remove *activity-geo-index* result)
+            (setf (result-latitude result) lat)
+            (setf (result-longitude result) long)
+            (unless (< (result-time result) (- (get-universal-time) 15552000))
+              (geo-index-insert *activity-geo-index* result))))))))
 
 (defun reindex-person-names (id)
   (let* ((result (gethash id *db-results*))
          (data (db id))
          (names (cons (getf data :name)
-                      (getf data :aliases)))) 
+                      (getf data :aliases))))
     (metaphone-index-insert names result)))
 
 (defun deactivate-person (id)
@@ -223,7 +227,7 @@
                   :banned t
                   :notify-kindista nil)))
 
-(defun delete-active-account (id)
+(defun delete-active-account (id &optional reason)
   (let ((data (db id)))
     (deactivate-person id)
 
@@ -233,7 +237,9 @@
           (remhash email *email-index*))))
 
     (modify-db id :emails (list nil)
-                  :deleted t)))
+                  :type :deleted-person-account
+                  :deleted t
+                  :reason-for-account-deletion reason)))
 
 (defun find-people-with-incorrect-communication-settings ()
   (sort (iter (for id in *active-people-index*)
@@ -284,55 +290,40 @@
 
 (defun get-person (id)
   (ensuring-userid (id "/people/~a")
-    (let ((editing (get-parameter "edit")))
-      (cond
-       ;((or (not editing)
-       ;     (not (eql id *userid*)))
-       ; (if (getf (db id) :bio)
-       ;   (profile-bio-html id)
-       ;   (person-activity-html id)))
+    (cond
+     ;((or (not editing)
+     ;     (not (eql id *userid*)))
+     ; (if (getf (db id) :bio)
+     ;   (profile-bio-html id)
+     ;   (person-activity-html id)))
 
-        ((string= editing "doing")
-         (profile-bio-html id :editing 'doing))
+      ((get-parameter "edit")
+       (profile-bio-html id))
 
-        ((string= editing "contact")
-         (profile-bio-html id :editing 'contact))
+      ((or (not (eql id *userid*))
+           (getf *user* :bio-summary)
+           (getf *user* :bio-into)
+           (getf *user* :bio-contact)
+           (getf *user* :bio-skils)
+           (getf *user* :bio-doing))
+       (person-activity-html id))
 
-        ((string= editing "into")
-         (profile-bio-html id :editing 'into))
+      ((eql id *userid*)
+       (profile-bio-html id))
 
-        ((string= editing "summary")
-         (profile-bio-html id :editing 'summary))
-
-        ((string= editing "skills")
-         (profile-bio-html id :editing 'skills))
-
-        ((or (not (eql id *userid*))
-             (getf *user* :bio-summary)
-             (getf *user* :bio-into)
-             (getf *user* :bio-contact)
-             (getf *user* :bio-skils)
-             (getf *user* :bio-doing))
-         (person-activity-html id))
-
-        ((eql id *userid*)
-         (profile-bio-html id))
-
-      (t (not-found))))))
+    (t (not-found)))))
 
 (defun get-person-about (id)
-  (require-user
-    (ensuring-userid (id "/people/~a/about")
-      (profile-bio-html id))))
+  (ensuring-userid (id "/people/~a/about")
+    (profile-bio-html id)))
 
 (defun get-person-activity (id)
   (ensuring-userid (id "/people/~a/activity")
     (person-activity-html id)))
 
 (defun get-person-reputation (id)
-  (require-user
-    (ensuring-userid (id "/people/~a/reputation")
-      (person-activity-html id :type :gratitude))))
+  (ensuring-userid (id "/people/~a/reputation")
+    (person-activity-html id :type :gratitude)))
 
 (defun get-person-offers (id)
   (require-user
@@ -357,7 +348,7 @@
 
 (defun people-tabs-html (&key (tab :contacts))
   (html
-    (:menu :type "toolbar" :class "bar"
+    (:menu :type "toolbar" :class "bar" :id "people-tabs"
       (:h3 :class "label" "People Menu")
 
       (if (eql tab :contacts)
@@ -405,6 +396,7 @@
   (if *user*
     (standard-page "Suggested people"
       (html
+        (str (people-contacts-action-menu))
         (str (people-tabs-html :tab :suggested))
         (aif (return-suggested-people)
           (dolist (suggestion it)
@@ -428,6 +420,7 @@
       (standard-page
         "Invited"
         (html
+          (str (people-contacts-action-menu))
           (str (people-tabs-html :tab :invited))
           (:div :id "my-invites"
             (when unconfirmed

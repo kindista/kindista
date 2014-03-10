@@ -60,7 +60,8 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (setf (gethash (getf data :username) *username-index*) id)
+    (with-locked-hash-table (*username-index*)
+      (setf (gethash (getf data :username) *username-index*) id))
 
     (with-locked-hash-table (*group-privileges-index*)
       (dolist (person (getf data :admins))
@@ -151,6 +152,125 @@
   (metaphone-index-insert (list (db id :name))
                           (gethash id *db-results*)))
 
+(defun merge-new-duplicate-group-account (new-id pre-existing-id group-creator &key keep-new-name keep-new-location)
+"WARNING: This needs further testing before use on the live server."
+  (delete-group new-id :pre-existing-duplicate-id pre-existing-id
+                       :group-creator group-creator
+                       :keep-new-name keep-new-name
+                       :keep-new-location keep-new-location))
+
+(defun delete-group (id &key pre-existing-duplicate-id group-creator keep-new-name keep-new-location)
+"WARNING: This needs further testing before use on the live server."
+  (let* ((data (db id))
+         (pre-existing-data (db pre-existing-duplicate-id))
+         (result (gethash id *db-results*)))
+
+    (with-locked-hash-table (*username-index*)
+      (remhash (getf data :username) *username-index*))
+
+    (with-locked-hash-table (*group-privileges-index*)
+      (dolist (person (getf data :admins))
+        (asetf (getf (gethash person *group-privileges-index*) :admin)
+               (remove id it)))
+      (dolist (person (getf data :members))
+        (asetf (getf (gethash person *group-privileges-index*) :member)
+               (remove id it))))
+
+    (with-locked-hash-table (*profile-activity-index*)
+      (dolist (result (gethash id *profile-activity-index*))
+        (let* ((item-id (result-id result))
+               (item-data (db item-id))
+               (item-data-type (getf item-data :type)))
+          (flet ((switch-ids (list)
+                   (cons pre-existing-duplicate-id
+                         (remove nil
+                                 (remove id list)))))
+            (case item-data-type
+             ((or :offer :request)
+              (aif pre-existing-duplicate-id
+                (progn
+                  (modify-db item-id :by it)
+                  (setf (result-people result) it)
+                  (push result (gethash it *profile-activity-index*)))
+                (delete-inventory-item item-id)))
+             (:gratitude
+               (aif pre-existing-duplicate-id
+                 (progn
+                   (pushnew result (gethash it *profile-activity-index*))
+                   (cond
+                     ((= (getf item-data :author) id)
+                      (setf (car (result-people result)) pre-existing-duplicate-id)
+                      (modify-db item-id :author pre-existing-duplicate-id))
+                     ((find id (getf item-data :subjects))
+                      (asetf (cdr (result-people result)) (switch-ids it))
+                      (amodify-db item-id :subjects (switch-ids it)))))
+                 (delete-gratitude item-id)))
+              (:event
+                (aif pre-existing-duplicate-id
+                  (let ((new-hosts (switch-ids (getf item-data :hosts))))
+                    (modify-db item-id :hosts new-hosts)
+                    (setf (result-people result) new-hosts))
+                  (delete-inventory-item item-id))))))))
+
+    (when (and (getf data :lat)
+               (getf data :long)
+               (getf data :created)
+               (getf data :active))
+
+      (metaphone-index-insert (list nil) result)
+      (geo-index-remove *groups-geo-index* result)
+
+      (unless (< (result-time result) (- (get-universal-time) 15552000))
+        (geo-index-remove *activity-geo-index* result)))
+
+    (when pre-existing-duplicate-id
+      (let ((modify-pre-existing-data
+              (list :avatar (or (getf pre-existing-data :avatar)
+                                (getf data :avatar))
+                    :category (getf data :category)
+                    :membership-method (getf data :membership-method)
+                    :location-privacy (getf data :location-privacy)
+                    :creator (or group-creator
+                                 (getf pre-existing-data :creator)
+                                 (getf data :creator)))))
+        (when keep-new-name (asetf modify-pre-existing-data
+                                   (append (list :name (getf data :name)) it)))
+        (when keep-new-location (asetf modify-pre-existing-data
+                                  (append (list :location (getf data :location)
+                                                :lat (getf data :lat)
+                                                :long (getf data :long)
+                                                :address (getf data :address)
+                                                :street (getf data :street)
+                                                :city (getf data :city)
+                                                :state (getf data :state)
+                                                :country (getf data :country)
+                                                :zip (getf data :zip))
+                                          it)))
+        (apply #'modify-db pre-existing-duplicate-id modify-pre-existing-data))
+
+      (dolist (message (gethash id *group-messages-index*))
+        (let ((message-id (message-id message))
+              (people (message-people message)))
+          (case (message-type message )
+            ((or :reply :conversation)
+             (setf (message-people message)
+                   (subst pre-existing-duplicate-id id people))
+             (modify-db message-id :people (message-people message))))))
+
+      (dolist (follower (gethash id *followers-index*))
+        (amodify-db follower :following (subst pre-existing-duplicate-id id it))))
+
+    (when (and group-creator
+               (not (eql (getf pre-existing-data :type) :group)))
+      (change-person-to-group pre-existing-duplicate-id group-creator)))
+
+  (with-locked-hash-table (*db-results*)
+    (remhash id *db-results*))
+
+  (modify-db id :type :deleted-group-account
+                :reason-for-account-deletion (strcat "Merged with pre-existing-group-account: "
+                                                     pre-existing-duplicate-id)))
+
 (defun change-person-to-group (groupid admin-id)
 
   (awhen (db groupid :emails)
@@ -235,12 +355,12 @@
 
 (defun remove-group-member (personid groupid)
   (amodify-db groupid :members (remove personid it))
-  (with-locked-hash-table (*group-privileges-index*)
-     (asetf (getf (gethash personid *group-privileges-index*) :member)
-            (remove groupid it)))
   (with-locked-hash-table (*group-members-index*)
      (asetf (gethash groupid *group-members-index*)
-            (remove personid it))))
+            (remove personid it)))
+  (with-locked-hash-table (*group-privileges-index*)
+     (asetf (getf (gethash personid *group-privileges-index*) :member)
+            (remove groupid it))))
 
 (defun add-group-admin (personid groupid)
   (assert (eql (db personid :type) :person))
@@ -451,23 +571,23 @@
                "gratitude about "))))
       (:div
         (:div
-          (:input :type "checkbox"
-                  :name "group"
-                  :id "group"
-                  :onchange "this.form.submit()"
-                  :checked (when (or (string= selected "all")
-                                     (string= selected "group"))
-                                 ""))
-           (:label :for "group" (str group-name)))
+           (:label (:input :type "checkbox"
+                           :name "group"
+                           :id "group"
+                           :onchange "this.form.submit()"
+                           :checked (when (or (string= selected "all")
+                                              (string= selected "group"))
+                                          ""))
+                   (str group-name)))
          (:div
-           (:input :type "checkbox"
-                   :id "members"
-                   :name "members"
-                   :onchange "this.form.submit()"
-                   :checked (when (or (string= selected "all")
-                                      (string= selected "members"))
-                               ""))
-           (:label :for "group" "group members" ))))))
+           (:label (:input :type "checkbox"
+                            :id "members"
+                            :name "members"
+                            :onchange "this.form.submit()"
+                            :checked (when (or (string= selected "all")
+                                               (string= selected "members"))
+                                        ""))
+                   "group members" ))))))
 
 (defun group-members-activity (group-members &key type count)
   (let ((count (or count (+ 20 (floor (/ 30 (length group-members))))))
@@ -510,7 +630,7 @@
       (standard-page
         "My Groups"
         (html
-          (str (menu-horiz "actions" (html (:a :href "/groups/new" "create a new group"))))
+          (str (group-contacts-action-menu))
           (str (groups-tabs-html :tab :my-groups))
           (unless (or admin-groups member-groups)
             (htm (:h3 "You have not joined any groups yet.")))
@@ -695,7 +815,7 @@
           (confirm-group-uniqueness it name lat long location city state country street zip membership-method :public-location public)
           (new-group)))
 
-       ((and lat long city state location country zip (post-parameter "confirm-uniqueness"))
+       ((and lat long city state location country (post-parameter "confirm-uniqueness"))
         (new-group))))))
 
 (defun resend-group-membership-request (request-id)
@@ -815,11 +935,12 @@
             (:input :type "hidden" :name "city" :value (escape-for-html city))
             (:input :type "hidden" :name "state" :value state)
             (:input :type "hidden" :name "country" :value (escape-for-html country))
-            (:input :type "hidden" :name "street" :value (escape-for-html street))
+            (:input :type "hidden" :name "street" :value
+             (awhen street (escape-for-html it)))
             (:input :type "hidden" :name "zip" :value zip)
             (:input :type "hidden" :name "membership-method" :value membership-method)
-            (when public-location
-              (htm (:input :type "hidden" :name "public/location" :value lat)))
+            (awhen public-location
+              (htm (:input :type "hidden" :name "public-location" :value it)))
             (:button :class "cancel"
                      :type "submit"
                      :name "cancel"
@@ -845,18 +966,16 @@
       (t (not-found))))))
 
 (defun get-group-about (id)
-  (require-user
-    (ensuring-userid (id "/groups/~a/about")
-      (profile-bio-html id))))
+  (ensuring-userid (id "/groups/~a/about")
+    (profile-bio-html id)))
 
 (defun get-group-activity (id)
   (ensuring-userid (id "/groups/~a/activity")
     (group-activity-html id)))
 
 (defun get-group-reputation (id)
-  (require-user
-    (ensuring-userid (id "/groups/~a/reputation")
-      (group-activity-html id :type :gratitude))))
+  (ensuring-userid (id "/groups/~a/reputation")
+    (group-activity-html id :type :gratitude)))
 
 (defun get-group-offers (id)
   (require-user
