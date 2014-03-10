@@ -290,41 +290,28 @@
 
 (defun get-person (id)
   (ensuring-userid (id "/people/~a")
-    (let ((editing (get-parameter "edit")))
-      (cond
-       ;((or (not editing)
-       ;     (not (eql id *userid*)))
-       ; (if (getf (db id) :bio)
-       ;   (profile-bio-html id)
-       ;   (person-activity-html id)))
+    (cond
+     ;((or (not editing)
+     ;     (not (eql id *userid*)))
+     ; (if (getf (db id) :bio)
+     ;   (profile-bio-html id)
+     ;   (person-activity-html id)))
 
-        ((string= editing "doing")
-         (profile-bio-html id :editing 'doing))
+      ((get-parameter "edit")
+       (profile-bio-html id))
 
-        ((string= editing "contact")
-         (profile-bio-html id :editing 'contact))
+      ((or (not (eql id *userid*))
+           (getf *user* :bio-summary)
+           (getf *user* :bio-into)
+           (getf *user* :bio-contact)
+           (getf *user* :bio-skils)
+           (getf *user* :bio-doing))
+       (person-activity-html id))
 
-        ((string= editing "into")
-         (profile-bio-html id :editing 'into))
+      ((eql id *userid*)
+       (profile-bio-html id))
 
-        ((string= editing "summary")
-         (profile-bio-html id :editing 'summary))
-
-        ((string= editing "skills")
-         (profile-bio-html id :editing 'skills))
-
-        ((or (not (eql id *userid*))
-             (getf *user* :bio-summary)
-             (getf *user* :bio-into)
-             (getf *user* :bio-contact)
-             (getf *user* :bio-skils)
-             (getf *user* :bio-doing))
-         (person-activity-html id))
-
-        ((eql id *userid*)
-         (profile-bio-html id))
-
-      (t (not-found))))))
+    (t (not-found)))))
 
 (defun get-person-about (id)
   (require-user
@@ -336,9 +323,8 @@
     (person-activity-html id)))
 
 (defun get-person-reputation (id)
-  (require-user
-    (ensuring-userid (id "/people/~a/reputation")
-      (person-activity-html id :type :gratitude))))
+  (ensuring-userid (id "/people/~a/reputation")
+    (person-activity-html id :type :gratitude)))
 
 (defun get-person-offers (id)
   (require-user

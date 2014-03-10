@@ -399,7 +399,7 @@
         (if (eql tab :gratitude)
           (htm (:li :class "selected" "Reputation"))
           (htm (:li (:a :href (strcat *base-url* "/reputation") "Reputation"))))
-        (when (eq active t)
+        (when (and *user* (eq active t))
           (if (eql tab :offer)
             (htm (:li :class "selected" "Offers"))
             (htm (:li (:a :href (strcat *base-url* "/offers") "Offers"))))
@@ -443,7 +443,7 @@
     (standard-page
       name
       (html
-        (when *user* (str (profile-tabs-html id :tab (or type :activity))))
+        (str (profile-tabs-html id :tab (or type :activity)))
         (when (or (eql id *userid*) adminp)
           (when (eql type :request)
             (htm (str (simple-inventory-entry-html "a" "request"

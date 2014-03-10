@@ -317,7 +317,7 @@
 (defun metaphone-index-query (name)
   (when (< 0 (length name))
     (labels ((lev-distance (alias)
-               (levenshtein:distance name (alias-alias alias))))
+               (levenshtein-distance name (alias-alias alias))))
       (remove-duplicates
         (sort
           (remove-duplicates
