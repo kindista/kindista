@@ -51,8 +51,8 @@
 
 (defun index-event (id data)
   (let* ((by (getf data :hosts))
-         (result (make-result :latitude (or (getf data :lat) (getf (db (getf data :by)) :lat))
-                              :longitude (or (getf data :long) (getf (db (getf data :by)) :long))
+         (result (make-result :latitude (getf data :lat)
+                              :longitude (getf data :long)
                               :id id
                               :type :event
                               :people by
@@ -63,11 +63,14 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (unless (stale-eventp result)
-      ; remove past events from event-index
-      ; add this event and sort the index
-      (event-index-insert result)
-      (geo-index-insert *event-geo-index* result))
+    (cond
+     ((stale-eventp result); when it needs an :auto-updated-time
+      (when (getf data :recurring)
+        (update-recurring-event-time id data result)))
+     (t
+       (event-index-insert result)
+       (geo-index-insert *event-geo-index* result)))
+
 
     (let ((stems (stem-text (s+ (getf data :title) " " (getf data :details)))))
       (with-locked-hash-table (*event-stem-index*)
@@ -381,6 +384,8 @@
                                 #'< :key #'result-time)))
 
       (flet ((trim-and-update (results)
+               ;; loop through results starting at oldest
+               ;; update recurring events and trim old ones
                (do* ((events results (cdr results))
                      (event (car events)))
                     ((or (not events) (not (stale-eventp event now)))
@@ -794,9 +799,9 @@
                   (new-long (post-parameter-float "long"))
                   (lat (or new-lat (getf item :lat)))
                   (long (or new-long (getf item :long)))
-                  (recurring (or ; set recurring to "t" not "on" from post-par
-                                 (when (post-parameter "recurring") t)
-                                 (getf item :recurring)))
+                  (recurring (and (not (post-parameter "edit-datetime"))
+                                  (or (post-parameter "recurring")
+                                      (getf item :recurring))))
                   (frequency (or (post-parameter-string "frequency")
                                  (awhen (getf item :frequency)
                                    (symbol-name it))))
@@ -859,7 +864,34 @@
                   (groups-selected (or (post-parameter-integer-list "groups-selected")
                                        (getf item :privacy))))
 
-             (labels ((try-again (&optional e not-recurring)
+             (labels ((submit-event (fn &key host id)
+                        (let ((arguments (list :lat lat
+                                               :long long
+                                               :local-time local-time
+                                               :privacy groups-selected
+                                               :title title
+                                               :details details
+                                               :address location
+                                               :recurring recurring)))
+                          (when (or recurring
+                                    ;;reset parameters when :recurring t -> nil
+                                    (getf item :recurring))
+                            (asetf arguments
+                                   (append
+                                     (list :frequency symbol-frequency
+                                           :interval interval
+                                           :days-of-week symbol-days-of-week
+                                           :by-day-or-date symbol-day-or-date
+                                           :weeks-of-month symbol-weeks-of-month
+                                           :local-end-date local-end-time)
+                                    it)))
+                          (when host
+                            (asetf arguments (append (list :host host) it)))
+
+                          (if id (apply fn id arguments)
+                                 (apply fn arguments))))
+
+                      (try-again (&optional e not-recurring)
               ;; needs to be labels not flet because of
               ;; submit-data's parameter precedence
                         (enter-event-details :title title
@@ -887,45 +919,18 @@
                                                                            "edit-datetime")))
                                              :error e))
 
-                      (submit-data (&key lat long address)
+                      (submit-data ()
                         (cond
                           (id
-                           (modify-event id :lat lat
-                                            :long long
-                                            :address address
-                                            :local-time local-time
-                                            :recurring recurring
-                                            :frequency symbol-frequency
-                                            :interval interval
-                                            :days-of-week symbol-days-of-week
-                                            :by-day-or-date symbol-day-or-date
-                                            :privacy groups-selected
-                                            :weeks-of-month symbol-weeks-of-month
-                                            :local-end-date local-end-time
-                                            :details details
-                                            :title title)
-                           (flash "Your event has been updated")
-                           (see-other url))
+                            (submit-event #'modify-event :id id)
+                            (flash "Your event has been updated")
+                            (see-other url))
                           (t
                            (flash "Your event has been added to the calendar")
                            (see-other
                              (strcat "/events/"
-                                     (create-event
-                                       :lat lat
-                                       :host new-host
-                                       :long long
-                                       :local-time local-time
-                                       :privacy groups-selected
-                                       :title title
-                                       :details details
-                                       :address location
-                                       :recurring recurring
-                                       :frequency symbol-frequency
-                                       :interval interval
-                                       :days-of-week symbol-days-of-week
-                                       :by-day-or-date symbol-day-or-date
-                                       :weeks-of-month symbol-weeks-of-month
-                                       :local-end-date local-end-time)))))))
+                                     (submit-event #'create-event
+                                                   :host new-host)))))))
                (cond
                 ((post-parameter "cancel")
                  (see-other (or (script-name*) "/home")))
@@ -1019,11 +1024,9 @@
                                       "end-date" (awhen local-end-time
                                                    (humanize-exact-time it))))))
 
-                ((post-parameter "submit-edits")
+                ((or (post-parameter "submit-edits")
+                     (post-parameter "confirm-location"))
                  (submit-data))
-
-                ((post-parameter "confirm-location")
-                 (submit-data :lat lat :long long :address location))
 
                 (t (try-again)))))))))))
 
