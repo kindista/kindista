@@ -314,9 +314,8 @@
     (t (not-found)))))
 
 (defun get-person-about (id)
-  (require-user
-    (ensuring-userid (id "/people/~a/about")
-      (profile-bio-html id))))
+  (ensuring-userid (id "/people/~a/about")
+    (profile-bio-html id)))
 
 (defun get-person-activity (id)
   (ensuring-userid (id "/people/~a/activity")

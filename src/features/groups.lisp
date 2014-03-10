@@ -965,18 +965,16 @@
       (t (not-found))))))
 
 (defun get-group-about (id)
-  (require-user
-    (ensuring-userid (id "/groups/~a/about")
-      (profile-bio-html id))))
+  (ensuring-userid (id "/groups/~a/about")
+    (profile-bio-html id)))
 
 (defun get-group-activity (id)
   (ensuring-userid (id "/groups/~a/activity")
     (group-activity-html id)))
 
 (defun get-group-reputation (id)
-  (require-user
-    (ensuring-userid (id "/groups/~a/reputation")
-      (group-activity-html id :type :gratitude))))
+  (ensuring-userid (id "/groups/~a/reputation")
+    (group-activity-html id :type :gratitude)))
 
 (defun get-group-offers (id)
   (require-user
