@@ -42,6 +42,7 @@
 
 (defun settings-item-html (item body &key title help-text editable edit-text)
   (html
+    (:a :id item)
     (:div :class "settings-item item"
       (:div :class "settings-item title" (str (or title
                                                   (string-capitalize item))))
@@ -440,6 +441,7 @@
                              "activate" email)))
     (t
      (add-alt-email invitation-id)
+     (pending-email-actions email)
      (flash (s+ "You have successfully added " email
                 " to your Kindista account."))
      (see-other "/settings/communication")))))
@@ -1011,9 +1013,9 @@
                            " as an alternate email address, you must first "
                            "set another email to be your primary email "
                            "address.") :error t)
-                (see-other "/settings/communication?edit=email")) 
-               ((member new-email emails)
-                (see-other "/settings/communication?edit=email")) 
+                (see-other "/settings/communication?edit=email"))
+               ((find new-email emails)
+                (see-other "/settings/communication?edit=email"))
                (id
                 (flash (s+ "The email address you have submitted, " new-email
                            ", already belongs to another Kindista member. "
@@ -1025,7 +1027,7 @@
                            "Please try again.") :error t)
                 (see-other "/settings/communication?edit=email"))
                (t
-                (let ((confirmation nil))
+                (let (confirmation)
                   (setf confirmation (create-invitation new-email :self t))
                   (modify-db *userid* :pending-alt-emails (cons confirmation pending)))
                 (flash (s+ "A verification email has been sent to " new-email
@@ -1035,7 +1037,7 @@
 
           ((and (post-parameter "invitation-id")
                 (post-parameter "token"))
-           (activate-email-address (parse-integer (post-parameter "invitation-id"))
+           (activate-email-address (post-parameter-integer "invitation-id")
                                    (post-parameter "token")))
 
           ((post-parameter "resend-code")

@@ -93,7 +93,13 @@ sender
 #\linefeed
 (url-compose (s+ +base-url+ "signup") "email" to "token" token)
 #\linefeed #\linefeed
-"-The Kindista Team")))
+"-The Kindista Team"
+#\linefeed #\linefeed
+"Already on Kindista?"
+"Please click on this link or copy and paste it into your browser"
+" to add this email address (" to
+") to your Kindista account:"
+(s+ +base-url+ "settings/communication?edit=email#email"))))
 
 
 (defun invitation-email-html (token to from &key group-id text auto-reminder host-reminder)
@@ -149,5 +155,13 @@ sender
                                       "email" to
                                       "token" token))))
 
-        (:p "-The Kindista Team")))))
+        (:p "-The Kindista Team")
+
+        (:p :style *style-p*
+          "Already on Kindista?"
+          "Please click on this link or copy and paste it into your browser"
+          " to add this email address (" to
+          ") to your Kindista account:"
+          (:a :href (s+ +base-url+ "settings/communication?edit=email#email")
+              (str (s+ +base-url+ "settings/communication?edit=email#email"))))))))
 

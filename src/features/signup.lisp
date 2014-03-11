@@ -205,20 +205,9 @@
                (setf (token-userid *token*) new-id)
                (dolist (group (getf invitation :groups))
                  (add-group-member new-id group))
-               (dolist (invite-id (mapcar #'car valid-email-invites))
-                 (let* ((invitation (db invite-id))
-                        (host-id (getf invitation :host))
-                        (groups (getf invitation :groups)))
-                   ;; send group invites for invitations from groups
-                   ;; that the new user never replied to
-                   (dolist (groupid groups)
-                     (create-group-membership-invitation groupid
-                                                         new-id
-                                                         :host host-id))
-                   ;; add new user to contacts of others who had invited them
-                   (unless (eql id +kindista-id+)
-                     (add-contact new-id host-id)))
-                 (delete-invitation invite-id))
+               ;; see if anyone has invited this email to a group
+               ;; or added to contacts
+               (pending-email-actions email new-id)
                (add-contact host new-id)
                (see-other "/home"))))
 

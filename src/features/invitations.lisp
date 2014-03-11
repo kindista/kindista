@@ -139,6 +139,22 @@
     (amodify-db id :times-sent (push now it)
                    :auto-reminder-sent (push now it))))
 
+(defun pending-email-actions (email &optional (userid *userid*))
+  (dolist (invitation-id (mapcar #'car (gethash email *invitation-index*)))
+    (let* ((invitation (db invitation-id))
+           (host-id (getf invitation :host))
+           (groups (getf invitation :groups)))
+      ;; send group invites for invitations from groups
+      ;; that the new user never replied to
+      (dolist (groupid groups)
+        (create-group-membership-invitation groupid
+                                            userid
+                                            :host host-id))
+      ;; add new user to contacts of others who had invited them
+      (unless (find host-id (list *userid* +kindista-id+))
+        (add-contact userid host-id)))
+    (delete-invitation invitation-id)))
+
 (defun add-alt-email (invitation-id)
   (let* ((invitation (db invitation-id))
          (userid (getf invitation :host))
