@@ -310,6 +310,18 @@ textarea {
  vertical-align: middle;
 }
 
+input[type=radio] {
+ margin-left: 0.5em;
+}
+
+input[type=radio].first-option {
+ margin-left: 0em;
+}
+
+#signup .identity-selection {
+ margin-top: 0.8em;
+}
+
 #signup .fineprint {
  margin-bottom: 0em;
 }
