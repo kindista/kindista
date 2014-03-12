@@ -638,7 +638,7 @@
       (standard-page
         "My Groups"
         (html
-          (str (menu-horiz "actions" (html (:a :href "/groups/new" "create a new group"))))
+          (str (group-contacts-action-menu))
           (str (groups-tabs-html :tab :my-groups))
           (unless (or admin-groups member-groups)
             (htm (:h3 "You have not joined any groups yet.")))
@@ -823,7 +823,7 @@
           (confirm-group-uniqueness it name lat long location city state country street zip membership-method :public-location public)
           (new-group)))
 
-       ((and lat long city state location country zip (post-parameter "confirm-uniqueness"))
+       ((and lat long city state location country (post-parameter "confirm-uniqueness"))
         (new-group))))))
 
 (defun resend-group-membership-request (request-id)
@@ -943,11 +943,12 @@
             (:input :type "hidden" :name "city" :value (escape-for-html city))
             (:input :type "hidden" :name "state" :value state)
             (:input :type "hidden" :name "country" :value (escape-for-html country))
-            (:input :type "hidden" :name "street" :value (escape-for-html street))
+            (:input :type "hidden" :name "street" :value
+             (awhen street (escape-for-html it)))
             (:input :type "hidden" :name "zip" :value zip)
             (:input :type "hidden" :name "membership-method" :value membership-method)
-            (when public-location
-              (htm (:input :type "hidden" :name "public/location" :value lat)))
+            (awhen public-location
+              (htm (:input :type "hidden" :name "public-location" :value it)))
             (:button :class "cancel"
                      :type "submit"
                      :name "cancel"
@@ -973,18 +974,16 @@
       (t (not-found))))))
 
 (defun get-group-about (id)
-  (require-user
-    (ensuring-userid (id "/groups/~a/about")
-      (profile-bio-html id))))
+  (ensuring-userid (id "/groups/~a/about")
+    (profile-bio-html id)))
 
 (defun get-group-activity (id)
   (ensuring-userid (id "/groups/~a/activity")
     (group-activity-html id)))
 
 (defun get-group-reputation (id)
-  (require-user
-    (ensuring-userid (id "/groups/~a/reputation")
-      (group-activity-html id :type :gratitude))))
+  (ensuring-userid (id "/groups/~a/reputation")
+    (group-activity-html id :type :gratitude)))
 
 (defun get-group-offers (id)
   (require-user

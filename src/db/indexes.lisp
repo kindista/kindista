@@ -59,7 +59,7 @@
 (defindex *people-geo-index*)
 (defindex *person-alias-index*)
 (defindex *person-conversation-index*)
-(defindex *person-mailbox-index* :test 'equalp)
+(defindex *person-mailbox-index*)
 (defindex *person-invitation-index*)
 (defindex *person-notification-index*)
 (defindex *person-suggested-connections-index*)

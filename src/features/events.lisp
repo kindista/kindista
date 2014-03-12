@@ -193,7 +193,6 @@
 
 (defun events-rightbar ()
   (html
-    (str (login-sidebar))
     (str (donate-sidebar))
     (str (invite-sidebar))))
 
