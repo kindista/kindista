@@ -140,20 +140,29 @@
                    :auto-reminder-sent (push now it))))
 
 (defun pending-email-actions (email &optional (userid *userid*))
-  (dolist (invitation-id (mapcar #'car (gethash email *invitation-index*)))
-    (let* ((invitation (db invitation-id))
-           (host-id (getf invitation :host))
-           (groups (getf invitation :groups)))
-      ;; send group invites for invitations from groups
-      ;; that the new user never replied to
-      (dolist (groupid groups)
-        (create-group-membership-invitation groupid
-                                            userid
-                                            :host host-id))
-      ;; add new user to contacts of others who had invited them
-      (unless (find host-id (list *userid* +kindista-id+))
-        (add-contact userid host-id)))
-    (delete-invitation invitation-id)))
+  (let ((group-invitations-sent nil))
+    (dolist (invitation-id (mapcar #'car (gethash email *invitation-index*)))
+      (let* ((invitation (db invitation-id))
+             (host-id (getf invitation :host))
+             (groups (getf invitation :groups)))
+        ;; send group invites for invitations from groups
+        ;; that the new user never replied to
+        (dolist (groupid groups)
+          (unless (or (find groupid group-invitations-sent)
+                      (find userid (gethash groupid *group-members-index*)))
+            (aif (assoc userid
+                        (gethash groupid
+                                 *group-membership-invitations-index*))
+                 (resend-group-membership-invitation (cdr it))
+                 (create-group-membership-invitation groupid
+                                                     userid
+                                                     :host host-id))
+            (asetf group-invitations-sent (push groupid it))))
+        ;; add new user to contacts of others who had invited them
+        (unless (or (find host-id (list *userid* +kindista-id+))
+                    (find userid (db host-id :following)))
+          (add-contact userid host-id)))
+    (delete-invitation invitation-id))))
 
 (defun add-alt-email (invitation-id)
   (let* ((invitation (db invitation-id))
@@ -302,15 +311,16 @@
             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
             (:button :class "yes" :type "submit" :class "submit" :name "review" "Next")))))))
 
-(defun confirm-invitations (&key text emails bulk-emails next-url groupid)
+(defun confirm-invitations (&key url text emails bulk-emails next-url groupid)
   (standard-page "Confirm invitation"
     (let* ((count (length emails))
            (extra-s (when (> count 1) "s")))
       (html
         (:div :class "item confirm-invite"
-          (:form :method "post" :action "/invite"
+          (:form :method "post" :action (or url "/invite")
             (:input :type "hidden" :name "next-url" :value next-url)
-            (:input :type "hidden" :name "text" :value (escape-for-html text))
+            (when text
+              (htm (:input :type "hidden" :name "text" :value (escape-for-html text))))
             (:input :type "hidden" :name "groupid" :value groupid)
             (:input :type "hidden" :name "bulk-emails" :value bulk-emails)
             (:h2 "Review your invitation" (str extra-s))
@@ -332,7 +342,9 @@
                   (:h3 "Your personalized invitation message is:")
                   (:blockquote :class "review-text" (str (html-text text))))))
             (:p
-              (:button :class "cancel" :type "submit" :class "submit" :name "edit" "Edit Invitation")
+              (if groupid
+                (htm (:button :class "cancel submit" :type "submit" :name "add-member-by-email" "Go Back"))
+                (htm (:button :class "cancel submit" :type "submit" :name "edit" "Edit Invitation")))
               (:button :class "yes" :type "submit" :class "submit" :name "confirm" "Send Invitation" (str extra-s)))))))))
 
 (defun get-invite ()
@@ -351,8 +363,6 @@
            (emails (remove-duplicates
                      (emails-from-string (post-parameter "bulk-emails"))
                      :test #'string=))
-           (groupid (when (group-admin-p (post-parameter-integer "groupid"))
-                      (post-parameter-integer "groupid")))
            (already-invited (unconfirmed-invites))
            (duplicate-invites (intersection emails
                                             (mapcar #'(lambda (invite)
@@ -399,13 +409,13 @@
 
       ((post-parameter "confirm")
        (dolist (email new-emails)
-         (create-invitation email :text text :groups (list groupid)))
+         (create-invitation email :text text))
        (dolist (email duplicate-invites)
          (let* ((invite (find email already-invited
                               :key #'(lambda (item) (getf item :email))
                               :test #'string=))
                 (id (getf invite :id)))
-           (resend-invitation id :text text :groupid groupid)))
+           (resend-invitation id :text text)))
        (if (> (+ (length duplicate-invites) (length new-emails)) 1)
          (flash "Your invitations have been sent.")
          (flash "Your invitation has been sent."))

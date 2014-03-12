@@ -1090,6 +1090,7 @@
                     (push (parse-integer it)
                           invitations-to-current-kindistas)))
 
+               ;; figure out what kind of invitation to send
                (dolist (email emails)
                  (aif (gethash email *email-index*)
                    (if (find it (group-members groupid))
@@ -1133,11 +1134,6 @@
                                 (name-list-all it)
                                 ".")))
 
-               (awhen new-invitation-emails
-                 (confirm-invitations :emails it
-                                      :groupid groupid
-                                      :next-url next-url))
-
                (awhen already-group-members
                  (flet ((id-details (data)
                          (strcat* (person-link (car data))
@@ -1151,7 +1147,29 @@
                                   (getf group :name) ".")
                           :error t)))
 
-               (see-other next-url))))
+               (pprint (strcat "emails=" emails
+                               " new-invites=" new-invitation-emails
+                               " current-kindistas=" invitations-to-current-kindistas
+                               " resent-member-ids=" resent-member-ids))
+               (terpri)
+               (if new-invitation-emails
+                 (if (post-parameter "confirm")
+                   (progn
+                     (dolist (email new-invitation-emails)
+                       (create-invitation email
+                                          :text (awhen (post-parameter "text")
+                                                  (escape-for-html it))
+                                          :groups (list groupid)))
+                     (if (> (length new-invitation-emails) 1)
+                       (flash "Your invitations have been sent.")
+                       (flash "Your invitation has been sent."))
+                     (see-other next-url))
+                   (confirm-invitations :url (strcat "/groups/" groupid "/members")
+                                        :emails new-invitation-emails
+                                        :bulk-emails new-invitation-emails
+                                        :groupid groupid
+                                        :next-url next-url))
+                 (see-other next-url)))))
 
          (permission-denied)))))))
 
