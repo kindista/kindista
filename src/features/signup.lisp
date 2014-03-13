@@ -22,7 +22,7 @@
     (:div :class "identity-selection"
       (:h3 "What kind of an account is this?")
       (:input :type "radio"
-              :class "first-option"
+       :class "first-option"
               :name "account-type"
               :value "person") 
       "An individual person"

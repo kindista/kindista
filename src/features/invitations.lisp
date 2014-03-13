@@ -334,7 +334,7 @@
                 (:textarea :rows "6"
                            :name "text"
                            :placeholder "Enter your message here..."
-                           (str (when text text))))
+                           (when text (str text))))
               (if (equal text "")
                 (htm
                   (:p "You did not include a personalized message to your invitation recipient" (str extra-s) "."))
@@ -343,7 +343,7 @@
                   (:blockquote :class "review-text" (str (html-text text))))))
             (:p
               (if groupid
-                (htm (:button :class "cancel submit" :type "submit" :name "add-member-by-email" "Go Back"))
+                (htm (:button :class "cancel submit" :type "submit" :name "try-again" "Go Back"))
                 (htm (:button :class "cancel submit" :type "submit" :name "edit" "Edit Invitation")))
               (:button :class "yes" :type "submit" :class "submit" :name "confirm" "Send Invitation" (str extra-s)))))))))
 
