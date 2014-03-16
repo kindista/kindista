@@ -121,7 +121,7 @@
 (defun activity-rank (item)
   (let ((contacts (getf *user* :following))
         (age (- (get-universal-time) (or (result-time item) 0)))
-        (distance (if (and (result-latitude item) (result-longitude result))
+        (distance (if (and (result-latitude item) (result-longitude item))
                     (air-distance *latitude* *longitude*
                                   (result-latitude item) (result-longitude item))
                     5000)))
