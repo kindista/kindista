@@ -40,7 +40,7 @@
               " is expiring soon"))
         (host-reminder
           (s+ host-name
-              " is reminding you to join their sharing network on Kindista."))
+              " is reminding you to join them on Kindista."))
         (group
           (s+ host-name
               " wants you to join the "
@@ -119,7 +119,7 @@ sender
           " has invited you to join "
 
           (awhen group-id
-            (htm "the " (str (group-link it)) "group on "))
+            (htm "the " (str (group-link it)) " group on "))
           "Kindista, the social network for building "
           "community and sharing skills, tools and other local resources. ")
 

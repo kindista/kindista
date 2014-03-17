@@ -233,10 +233,12 @@
                (setf (token-userid *token*) new-id)
                (dolist (group (getf invitation :groups))
                  (add-group-member new-id group))
+               (add-contact host new-id)
+               (with-locked-hash-table (*invited-index*)
+                 (pushnew new-id (gethash host *invited-index*)))
                ;; see if anyone has invited this email to a group
                ;; or added to contacts
                (pending-email-actions email new-id)
-               (add-contact host new-id)
                (see-other "/home"))))
 
     (labels ((try-again (e)

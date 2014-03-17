@@ -576,7 +576,7 @@
   (html
     (:form :method "get"
            :class "group-activity-selection small"
-           :action (strcat "/groups/" (username-or-id groupid) "/" tab)
+           :action (strcat "/groups/" groupid "/" tab)
       (:strong "Display "
                (str (cond
                      ((or (string= tab "activity")
@@ -1014,174 +1014,193 @@
       (invite-group-members id))))
 
 (defun post-invite-group-members (groupid)
-  (ensuring-userid (groupid "/groups/~a/invite-members")
-    (require-group-admin groupid
-      (let* ((emails (remove-if
-                       #'(lambda (email)
-                           (gethash email *banned-emails-index*))
-                       (remove-duplicates
-                         (emails-from-string
-                           (post-parameter "bulk-emails"))
-                         :test #'string=)))
-             (group (db groupid))
-             (new-invitation-emails)
-             (invitations-to-current-kindistas)
-             (already-group-members) ; '((id . email) ...)
-             (approved-member-ids)
-             (new-invitation-member-ids)
-             (resent-member-ids)
-             (url (strcat "/groups/" (username-or-id groupid)))
-             (next-url (or (post-parameter "next")
-                           (url-compose (s+ url "/invite-members")
-                                        "add-another" ""))))
+  (let* ((groupid (parse-integer groupid))
+         (emails (remove-if
+                   #'(lambda (email)
+                       (gethash email *banned-emails-index*))
+                   (remove-duplicates
+                     (emails-from-string
+                       (post-parameter "bulk-emails"))
+                     :test #'string=)))
+         (group (db groupid))
+         (new-invitation-emails)
+         (invitations-to-current-kindistas)
+         (already-group-members) ; '((id . email) ...)
+         (approved-member-ids)
+         (new-invitation-member-ids)
+         (resent-member-ids)
+         (url (strcat "/groups/" (username-or-id groupid)))
+         (next-url (or (post-parameter "next")
+                       (url-compose (s+ url "/invite-members")
+                                    "add-another" ""))))
 
-        (awhen (post-parameter "invite-member")
-           (if (find it (group-members groupid))
-             (push (cons it nil) already-group-members)
-             (push (parse-integer it)
-                   invitations-to-current-kindistas)))
+    (pprint new-invitation-emails)
+    (terpri)
+    (awhen (post-parameter "invite-member")
+       (if (find it (group-members groupid))
+         (push (cons it nil) already-group-members)
+         (push (parse-integer it)
+               invitations-to-current-kindistas)))
 
-        ;; figure out what kind of invitation to send
-        (dolist (email emails)
-          (aif (gethash email *email-index*)
-            (if (find it (group-members groupid))
-              (pushnew (cons it email) already-group-members
-                       :test #'equal)
-              (pushnew it invitations-to-current-kindistas))
-            (push email new-invitation-emails)))
+    ;; figure out what kind of invitation to send
+    (dolist (email emails)
+      (aif (gethash email *email-index*)
+        (if (find it (group-members groupid))
+          (pushnew (cons it email) already-group-members
+                   :test #'equal)
+          (pushnew it invitations-to-current-kindistas))
+        (push email new-invitation-emails)))
 
-        (dolist (id invitations-to-current-kindistas)
-          (acond
-           ((assoc id
-                   (gethash groupid
-                            *group-membership-invitations-index*))
-            (resend-group-membership-request (cdr it))
-            (push id resent-member-ids))
+    (dolist (id invitations-to-current-kindistas)
+      (acond
+       ((assoc id
+               (gethash groupid
+                        *group-membership-invitations-index*))
+        (resend-group-membership-request (cdr it))
+        (push id resent-member-ids))
 
-           ((assoc id
-                   (gethash groupid *group-membership-requests-index*))
-            (approve-group-membership-request (cdr it))
-            (push id approved-member-ids))
+       ((assoc id
+               (gethash groupid *group-membership-requests-index*))
+        (approve-group-membership-request (cdr it))
+        (push id approved-member-ids))
 
-           (t
-            (create-group-membership-invitation groupid id)
-            (push id new-invitation-member-ids))))
+       (t
+        (create-group-membership-invitation groupid id)
+        (push id new-invitation-member-ids))))
 
-        (awhen approved-member-ids
-          (flash (strcat "You have approved " (name-list-all it) "'s "
-                         (pluralize it "request" :hidenum t)
-                         " to join " (getf group :name) ".")))
+    (awhen approved-member-ids
+      (flash (strcat "You have approved " (name-list-all it) "'s "
+                     (pluralize it "request" :hidenum t)
+                     " to join " (getf group :name) ".")))
 
-        (awhen resent-member-ids
-          (flash (strcat (name-list-all it) "'s "
-                         (if (> (length it) 1)
-                           "invitation has" "invitations have")
-                         " been resent." )))
+    (awhen resent-member-ids
+      (flash (strcat (name-list-all it) "'s "
+                     (if (> (length it) 1)
+                       "invitation has" "invitations have")
+                     " been resent." )))
 
-        (awhen new-invitation-member-ids
-          (flash (strcat (if (> (length it) 1)
-                           "Invitations have" "An Invitation has")
-                         " been sent to "
-                         (name-list-all it)
-                         ".")))
+    (awhen new-invitation-member-ids
+      (flash (strcat (if (> (length it) 1)
+                       "Invitations have" "An Invitation has")
+                     " been sent to "
+                     (name-list-all it)
+                     ".")))
 
-        (awhen already-group-members
-          (flet ((id-details (data)
-                  (strcat* (person-link (car data))
-                           (when (cdr data) ; when an email was included
-                             (s+ " (" (cdr data) ") ")))))
-            (flash (strcat (name-list it :func #'id-details
-                                         :maximum-links 1000)
-                           (if (> (length it) 1)
-                             " are already members of "
-                             " is already a member of ")
-                           (getf group :name) ".")
-                   :error t)))
+    (awhen already-group-members
+      (flet ((id-details (data)
+              (strcat* (person-link (car data))
+                       (when (cdr data) ; when an email was included
+                         (s+ " (" (cdr data) ") ")))))
+        (flash (strcat (name-list it :func #'id-details
+                                     :maximum-links 1000)
+                       (if (> (length it) 1)
+                         " are already members of "
+                         " is already a member of ")
+                       (getf group :name) ".")
+               :error t)))
 
-        (cond
-         ((not new-invitation-emails)
-          (see-other next-url))
+    (cond
+     ((not new-invitation-emails)
+      (see-other next-url))
 
-         ((post-parameter "confirm")
-          (dolist (email new-invitation-emails)
-            (create-invitation email
-                               :text (awhen (post-parameter "text")
-                                       (escape-for-html it))
-                               :groups (list groupid)))
-          (if (> (length new-invitation-emails) 1)
-            (flash "Your invitations have been sent.")
-            (flash "Your invitation has been sent."))
-          (see-other next-url))
+     ((post-parameter "confirm")
+      (let* ((duplicate-invites
+               (remove-if-not #'(lambda (plist)
+                                  (find (getf plist :email)
+                                        new-invitation-emails
+                                       :test #'equalp))
+                              (unconfirmed-invites)))
+             (new-invites (set-difference new-invitation-emails
+                                          (mapcar #'(lambda (plist)
+                                                      (getf plist :email))
+                                                  duplicate-invites)
+                                          :test #'equalp))
+             (text (awhen (post-parameter "text")
+                     (escape-for-html it))))
 
-         ((post-parameter "try-again")
-          (invite-group-members groupid :emails new-invitation-emails))
+        (dolist (invite duplicate-invites)
+          (resend-invitation (getf invite :id)
+                             :groupid groupid
+                             :text text))
+        (dolist (email new-invites)
+          (create-invitation email
+                             :text text
+                             :groups (list groupid))))
 
-         (t
-          (confirm-invitations :url (strcat "/groups/" groupid "/invite-members")
-                               :emails new-invitation-emails
-                               :bulk-emails (separate-with-commas
-                                              new-invitation-emails)
-                               :groupid groupid
-                               :next-url next-url)))))))
+      (if (> (length new-invitation-emails) 1)
+        (flash "Your invitations have been sent.")
+        (flash "Your invitation has been sent."))
+      (see-other next-url))
+
+     ((post-parameter "try-again")
+      (invite-group-members groupid :emails new-invitation-emails))
+
+     (t
+      (confirm-invitations :url (strcat "/groups/" groupid "/invite-members")
+                           :emails new-invitation-emails
+                           :bulk-emails (separate-with-commas
+                                          new-invitation-emails)
+                           :groupid groupid
+                           :next-url next-url)))))
 
 (defun post-group-members (groupid)
-  (ensuring-userid (groupid "/groups/~a/members")
-    (let* ((group (db groupid))
-           (url (strcat "/groups/" (username-or-id groupid)))
-           (next (or (post-parameter "next") url)))
+  (let* ((groupid (parse-integer groupid))
+         (group (db groupid))
+         (url (strcat "/groups/" (username-or-id groupid)))
+         (next (or (post-parameter "next") url)))
 
-      (cond
-        ((post-parameter "request-membership")
-         (if (eql (getf group :membership-method) :invite-only)
-           (permission-denied)
-           (unless (or (member *userid* (getf group :members))
-                       (member *userid* (getf group :admins)))
-             (let ((current-membership-request
-                     (assoc *userid*
-                            (gethash groupid
-                                     *group-membership-requests-index*))))
-               (aif current-membership-request
-                 (resend-group-membership-request (cdr it))
-                 (create-group-membership-request groupid)))))
-         (flash (s+ "Your membership request has been forwarded to the "
-                    (getf group :name)
-                    " admins."))
-         (see-other next))
+    (cond
+      ((post-parameter "request-membership")
+       (if (eql (getf group :membership-method) :invite-only)
+         (permission-denied)
+         (unless (or (member *userid* (getf group :members))
+                     (member *userid* (getf group :admins)))
+           (let ((current-membership-request
+                   (assoc *userid*
+                          (gethash groupid
+                                   *group-membership-requests-index*))))
+             (aif current-membership-request
+               (resend-group-membership-request (cdr it))
+               (create-group-membership-request groupid)))))
+       (flash (s+ "Your membership request has been forwarded to the "
+                  (getf group :name)
+                  " admins."))
+       (see-other next))
 
-        ((post-parameter "accept-group-membership-invitation")
-         (aif (assoc *userid*
-                     (gethash groupid *group-membership-invitations-index*))
-           (progn
-             (accept-group-membership-invitation (cdr it))
-             (flash (s+ "You have joined " (getf group :name)))
-             (see-other next))
-           (permission-denied)))
+      ((post-parameter "accept-group-membership-invitation")
+       (aif (assoc *userid*
+                   (gethash groupid *group-membership-invitations-index*))
+         (progn
+           (accept-group-membership-invitation (cdr it))
+           (flash (s+ "You have joined " (getf group :name)))
+           (see-other next))
+         (permission-denied)))
 
-        ((post-parameter "leave-group")
-         (when (member *userid* (getf group :members))
-           (confirm-action "Leave group"
-                           (s+ "Are you sure you want to leave the group " (getf group :name) "?")
-                           :url (strcat "/groups/" (username-or-id groupid) "/members")
-                           :post-parameter "really-leave-group"
-                           :details "If you leave this group, you will not be able to rejoin again without being re-approved by the group's admin.")))
+      ((post-parameter "leave-group")
+       (when (member *userid* (getf group :members))
+         (confirm-action "Leave group"
+                         (s+ "Are you sure you want to leave the group " (getf group :name) "?")
+                         :url (strcat "/groups/" (username-or-id groupid) "/members")
+                         :post-parameter "really-leave-group"
+                         :details "If you leave this group, you will not be able to rejoin again without being re-approved by the group's admin.")))
 
-        ((post-parameter "really-leave-group")
-         (when (member *userid* (getf group :members))
-           (remove-group-member *userid* groupid)
-           (see-other url)))
+      ((post-parameter "really-leave-group")
+       (when (member *userid* (getf group :members))
+         (remove-group-member *userid* groupid)
+         (see-other url)))
 
-        (t
-         (require-group-admin groupid
-           (cond
-            ((post-parameter "approve-group-membership-request")
-             (approve-group-membership-request
-               (parse-integer (post-parameter "membership-request-id")))
-             (see-other (referer)))
+      (t
+       (require-group-admin groupid
+         (cond
+          ((post-parameter "approve-group-membership-request")
+           (approve-group-membership-request
+             (parse-integer (post-parameter "membership-request-id")))
+           (see-other (referer)))
 
-            ((post-parameter "deny-group-membership-request")
-             (delete-group-membership-request
-               (parse-integer (post-parameter "membership-request-id")))
-             (see-other (referer))))))))))
+          ((post-parameter "deny-group-membership-request")
+           (delete-group-membership-request
+             (parse-integer (post-parameter "membership-request-id")))
+           (see-other (referer)))))))))
 
 (defun groups-tabs-html (&key (tab :my-groups))
   (html

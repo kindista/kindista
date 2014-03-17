@@ -31,7 +31,7 @@
      (t
       (send-invitation-email invitation-id)))))
 
-(defun create-invitation (email &key text invite-request-id groups (expires (* 90 +day-in-seconds+)) (host *userid*) (self nil) name)
+(defun create-invitation (email &key text invite-request-id groups (expires (* 90 +day-in-seconds+)) (host *userid*) self name)
 ; self invitations are verifications for alternate email addresses
   (let* ((time (get-universal-time))
          (invitation (insert-db `(:type :invitation
@@ -86,17 +86,22 @@
       (remove-from-db id))))
 
 (defun resend-invitation (id &key text groupid)
-  (let ((now (get-universal-time)))
-    (if text
-      (amodify-db id :text text
-                     :times-sent (push now it)
-                     :expired-notice-sent nil
-                     :groups (cons groupid it)
-                     :valid-until (+ now (* 90 +day-in-seconds+)))
-      (amodify-db id :times-sent (push now it)
-                     :groups (cons groupid it)
-                     :expired-notice-sent nil
-                     :valid-until (+ now (* 90 +day-in-seconds+))))
+  (let* ((now (get-universal-time))
+         (message-data (db id))
+         (message-groups (copy-list (getf message-data :groups)))
+         (message-times-sent (getf message-data :times-sent))
+         (message-parameters (list :valid-until (+ now (* 90 +day-in-seconds+))
+                                   :expired-notice-sent nil
+                                   :times-sent (cons now message-times-sent))))
+    (awhen text (appendf message-parameters message-parameters (list :text it)))
+    (when groupid (appendf message-parameters
+                           message-parameters
+                          (list :groups (if message-groups
+                                           (pushnew groupid message-groups)
+                                           (list groupid)))))
+
+    (apply #'modify-db id message-parameters)
+
     (with-mutex (*invitation-reminder-timer-mutex*)
       (asetf *invitation-reminder-timer-index*
              (remove (rassoc id it)

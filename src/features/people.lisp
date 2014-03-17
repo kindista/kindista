@@ -79,8 +79,7 @@
 
     (awhen (getf data :host)
       (with-locked-hash-table (*invited-index*)
-        (unless (member id (gethash it *invited-index*))
-          (push id (gethash it *invited-index*)))))
+        (pushnew id (gethash it *invited-index*))))
 
     (with-locked-hash-table (*profile-activity-index*)
       (asetf (gethash id *profile-activity-index*)
