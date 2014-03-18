@@ -150,8 +150,10 @@
 (defun activity-rank (item)
   (let ((contacts (getf *user* :following))
         (age (- (get-universal-time) (or (result-time item) 0)))
-        (distance (air-distance *latitude* *longitude*
-                                (result-latitude item) (result-longitude item))))
+        (distance (if (and (result-latitude item) (result-longitude item))
+                    (air-distance *latitude* *longitude*
+                                  (result-latitude item) (result-longitude item))
+                    5000)))
     (round (- age
              (/ 120000 (log (+ (if (intersection contacts (result-people item)) 1 distance) 4)))
              (* (length (loves (result-id item))) 50000)))))
