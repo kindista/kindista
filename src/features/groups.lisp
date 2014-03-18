@@ -1179,7 +1179,8 @@
        (when (member *userid* (getf group :members))
          (confirm-action "Leave group"
                          (s+ "Are you sure you want to leave the group " (getf group :name) "?")
-                         :url (strcat "/groups/" (username-or-id groupid) "/members")
+                         :url (strcat "/groups/" groupid "/members")
+                         :next-url (referer)
                          :post-parameter "really-leave-group"
                          :details "If you leave this group, you will not be able to rejoin again without being re-approved by the group's admin.")))
 
