@@ -17,6 +17,20 @@
 
 (in-package :kindista)
 
+(defun signup-identity-selection ()
+  (html
+    (:div :class "identity-selection"
+      (:h3 "What kind of an account is this?")
+      (:input :type "radio"
+       :class "first-option"
+              :name "account-type"
+              :value "person") 
+      "An individual person"
+      (:input :type "radio"
+              :name "account-type"
+              :value "group") 
+      "A group (business, non-profit, school, community, church, etc.)")))
+
 (defun signup-page (&key error name email)
   (standard-page
     "Sign up"
@@ -42,9 +56,11 @@
         (:label :for "email" "Email")
         (:input :type "text" :id "email" :name "email" :value email)
         (:br)
-        (:label :for "email-2" "Confirm email")
+        (:label :for "email-2" "Confirm Email")
         (:input :type "text" :id "email-2" :name "email-2")
-
+        (:br)
+        (:div
+          (str (signup-identity-selection)))
         (:p :class "fineprint" "By creating an account, you are agreeing to our "
           (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
 
@@ -79,6 +95,8 @@
         (:br)
         (:label :for "password-2" "Confirm Password")
         (:input :type "password" :id "password" :name "password-2")
+        (:div
+          (str (signup-identity-selection)))
         (:p :class "fineprint" "By creating an account, you are agreeing to our "
           (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
 
@@ -121,7 +139,9 @@
 (defun post-signup ()
   (with-user
     (let* ((token (post-parameter "token"))
-           (name (post-parameter "name"))
+           (person-p (string= (post-parameter "account-type") "person"))
+           (group-p (string= (post-parameter "account-type") "group"))
+           (name (unless group-p (post-parameter "name")))
            (email (post-parameter "email"))
            (valid-email-invites (gethash email *invitation-index*))
            (valid-token (rassoc token valid-email-invites :test #'equal))
@@ -158,6 +178,10 @@
 
             ((< (getf invitation :valid-until) (get-universal-time))
              (try-again "Your invitation has expired. Please contact the person who invited you to join Kindista and request another invitation."))
+
+            (group-p
+             (try-again "This form is for creating personal accounts only. Once you create your personal account you can create group accounts from the \"Groups\" section of Kindista. If you ignore this warning you will create mass confusion for our community and will not be able to invite people to join your group. (Also we will probably end up deleting group accounts created with this form.)"))
+
             ((not (and (< 0 (length name))
                        (< 0 (length (post-parameter "password")))
                        (< 0 (length (post-parameter "password-2")))))
@@ -168,6 +192,10 @@
              (try-again "Please use your full name"))
             ((not (string= (post-parameter "password") (post-parameter "password-2")))
              (try-again "Your password confirmation did not match the password you entered."))
+
+            ((not person-p)
+              (try-again "Please select an account type"))
+
             (t
                (setf new-id
                      (if (integerp invite-request-id)
@@ -203,23 +231,33 @@
                                       :email (post-parameter "email")
                                       :password (post-parameter "password"))))
                (setf (token-userid *token*) new-id)
-               (dolist (invite-id (mapcar #'car valid-email-invites))
-                 (let ((id (db invite-id :host)))
-                   (unless (eql id +kindista-id+)
-                     (add-contact new-id id)))
-                 (delete-invitation invite-id))
+               (dolist (group (getf invitation :groups))
+                 (add-group-member new-id group))
                (add-contact host new-id)
+               (with-locked-hash-table (*invited-index*)
+                 (pushnew new-id (gethash host *invited-index*)))
+               ;; see if anyone has invited this email to a group
+               ;; or added to contacts
+               (pending-email-actions email new-id)
                (see-other "/home"))))
 
     (labels ((try-again (e)
                (signup-page :error e :name name :email email)))
       (cond
+        (group-p
+         (try-again "This form is for creating personal accounts only. Once you create your personal account you can create group accounts from the \"Groups\" section of Kindista. If you ignore this warning you will create mass confusion for our community and will not be able to invite people to join your group. (Also we will probably end up deleting group accounts created with this form.)"))
+
         ((not (validate-name name))
          (try-again "Please use your full name"))
+
         ((not (scan +email-scanner+ email))
          (try-again "There was a problem with the email address you entered. Please use a valid email address."))
+
         ((not (string= email (post-parameter "email-2")))
          (try-again "Your email confirmation did not match the email you entered"))
+        ((not person-p)
+         (try-again "Please select an account type"))
+
         (t
          (aif (find email (unconfirmed-invites +kindista-id+)
                     :key #'(lambda (item) (getf item :email))

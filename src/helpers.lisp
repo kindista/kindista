@@ -135,6 +135,9 @@
         (when (ppcre:scan +email-scanner+ email)
           (collect email))))
 
+(defun separate-with-commas (list)
+  (format nil "~{~A, ~}" list))
+
 (defun item-view-denied (result-privacy &optional (userid *userid*))
   (and result-privacy
        (not (member userid

@@ -3,7 +3,6 @@
 (defun send-email-verification (invitation-id)
   (let* ((invitation (db invitation-id))
          (token (getf invitation :token))
-         (expires (getf invitation :valid-until))
          (to (getf invitation :recipient-email)))
     (cl-smtp:send-email +mail-server+
                         "Kindista <noreply@kindista.org>"
@@ -17,30 +16,29 @@
                                                                token))))
 
 (defun email-verification-text (id to token)
-  (s+
+  (strcat*
 "To validate this email address, click on this link or
- copy and paste it into your browser:
- 
-"
+ copy and paste it into your browser: "
+#\linefeed
 (url-compose (s+ +base-url+ "settings/communication")
              "token" token
              "invitation-id" id
              "email" to)
-"
-If you did not request this email, you can safely ignore it.
-
-If you are unable to click on the above link, go to your
+#\linefeed #\linefeed
+"If you did not request this email, you can safely ignore it."
+#\linefeed #\linefeed
+"If you are unable to click on the above link, go to your
 communications settings, click on the \"activate\" link
 next to this email address (" to
 ") and enter your activation code."
-"
-Your activation code is " (write-to-string token) ".
-This activation code will expire in 30 days. "
-
-"
-Thank you for sharing your gifts with us!
-"
-      "-The Kindista Team"))
+#\linefeed #\linefeed
+"Your activation code is " (write-to-string token) "."
+#\linefeed
+"This activation code will expire in 30 days."
+#\linefeed #\linefeed
+"Thank you for sharing your gifts with us!"
+#\linefeed #\linefeed
+"-The Kindista Team"))
 
 
 (defun email-verification-html (id to token)
