@@ -41,18 +41,33 @@
 
 (defun get-request (id)
   (setf id (parse-integer id))
-  (aif (db id)
-    (if (and (not (eql *userid* (getf it :by)))
-             (item-view-denied (result-privacy (gethash id *db-results*))))
-      (permission-denied)
-      (with-location
-        (standard-page
-          "Requests"
-          (html
-            (:div :class "activity"
-              (str (inventory-activity-item "request" (gethash id *db-results*) :show-distance t :show-tags t))))
-          :selected "requests")))
-    (not-found)))
+  (let* ((request (db id))
+         (by (getf request :by))
+         (mine (eql *userid* by))
+         (result (gethash id *db-results*)))
+    (if request
+      (if (and (not mine)
+               (item-view-denied (result-privacy result)))
+        (permission-denied)
+        (with-location
+          (standard-page
+            "Requests"
+            (html
+              (:div :class "activity"
+                (str (inventory-activity-item "request" result :show-distance t :show-tags t))
+                (when mine
+                  (htm
+                    (:form :method "post" :action (strcat "/requests/" id)
+                      (:input :type "checkbox"
+                              :name "notify-matches"
+                              :checked (when (getf request :notify-matches)
+                                         "checked")
+                              :onclick "this.form.submit()"
+                        "Notify me when someone posts a matching offer...")
+                      
+                      ) ))))
+            :selected "requests")))
+     (not-found))))
 
 (defun get-request-reply (id)
   (require-user
