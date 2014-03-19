@@ -955,6 +955,9 @@
                  (flash "Your event has been deleted!")
                  (see-other (or (post-parameter "next") "/home")))
 
+                ((and (post-parameter "date") (not new-date-p))
+                 (try-again "Please enter your date with the format MM/DD/YYYY" t))
+
                 ((and test-date (not date))
                  (try-again "Please enter a valid date." t))
 
