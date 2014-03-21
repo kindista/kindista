@@ -336,7 +336,7 @@
 (defun populate-calendar (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
   (let (event-list)
     (flet ((add-event-occurance (result)
-             (asetf event-list (sort (push result it) #'< :key #'result-time))))
+             (asetf event-list (stable-sort (push result it) #'< :key #'result-time))))
      (dolist (item items)
        (let* ((id (result-id item))
               (event (db id)))
@@ -344,15 +344,16 @@
            (let ((event-repetition-count 1)
                  (next-occurance (next-recurring-event-time id :data event)) )
              (labels ((future-events ()
-                        (add-event-occurance
-                          (make-result :latitude (result-latitude item)
-                                       :longitude (result-longitude item)
-                                       :time next-occurance
-                                       :tags (result-tags item)
-                                       :people (result-people item)
-                                       :id id
-                                       :type 'event
-                                       :privacy (result-privacy item)))
+                        (when next-occurance
+                          (add-event-occurance
+                            (make-result :latitude (result-latitude item)
+                                         :longitude (result-longitude item)
+                                         :time next-occurance
+                                         :tags (result-tags item)
+                                         :people (result-people item)
+                                         :id id
+                                         :type 'event
+                                         :privacy (result-privacy item))))
                         (incf event-repetition-count)
                         (asetf next-occurance
                                (next-recurring-event-time id :data event
@@ -954,6 +955,9 @@
                  (delete-inventory-item id)
                  (flash "Your event has been deleted!")
                  (see-other (or (post-parameter "next") "/home")))
+
+                ((and (post-parameter "date") (not new-date-p))
+                 (try-again "Please enter your date with the format MM/DD/YYYY" t))
 
                 ((and test-date (not date))
                  (try-again "Please enter a valid date." t))
