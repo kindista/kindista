@@ -69,30 +69,47 @@
                             :name "notify-matches"
                             :checked (when notify-matches "checked")
                             :onclick "this.form.submit()"
-                      "Notify me when someone posts a matching offer..."))
+                      "Notify me by email when someone posts a matching offer..."))
                   (when notify-matches
                     (htm
-                      (:form :method "post" :action (strcat "/requests/" id)
+                      (:form :method "post"
+                             :action (strcat "/requests/" id)
+                             :class "matchmaker"
                         (:input :type "hidden" :name "notify-matches" :value "")
 
+                        (:h3 "Show me offers...")
                         (:label
-                          "We will send you an email notification when "
-                          "someone posts an offer containing the words: "
-                          (:input :type "text" :name "search-terms"))
-                        (:label "With any of these tags"
+                          "...containing " (:strong "ANY") " of these words:"
+                          (:br)
+                          (:input :type "text" :name "match-any-terms"))
+                        (:br)
+                        (:label
+                          "...containing  " (:strong "ALL") " of these words:"
+                          (:br)
+                          (:input :type "text" :name "match-all-terms"))
+                        (:br)
+                        (:label "...with any of these tags:"
+                         (:br)
                          (dolist (tag (getf request :tags))
                            (htm
                              (:div :class "tag"
-                              (:input :type "checkbox"
-                                      :name "matching-tags"
-                                      :value tag
-                                      :checked (unless
-                                                 (and
-                                                   matching-tags
-                                                   (not (find tag matching-tags
-                                                              :test #'string=)))
-                                                 ""))
-                              (:span (str tag)))))))))))))
+                               (:table :class "tag"
+                                 (:tr
+                                   (:td
+                                     (:input :type "checkbox"
+                                             :name "matching-tags"
+                                             :value tag
+                                             :checked
+                                              (unless
+                                                (and
+                                                  matching-tags
+                                                  (not (find tag matching-tags
+                                                             :test #'string=)))
+                                                        "")))
+                                    (:td (str tag))))))))
+                        (:div
+                          (:button :class "cancel" :type "submit" :name "cancel" "Cancel")
+                          (:button :class "yes" :type "submit" :name "submit-matchmaker" "Save")))))))))
           :selected "requests")))
      (not-found))))
 
