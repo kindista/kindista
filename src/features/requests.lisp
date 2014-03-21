@@ -42,31 +42,58 @@
 (defun get-request (id)
   (setf id (parse-integer id))
   (let* ((request (db id))
+         (matching-tags (getf request :matching-tags))
          (by (getf request :by))
          (mine (eql *userid* by))
+         (notify-matches (or (getf request :notify-matches)
+                             (get-parameter "notify-matches")))
          (result (gethash id *db-results*)))
-    (if request
-      (if (and (not mine)
-               (item-view-denied (result-privacy result)))
-        (permission-denied)
-        (with-location
-          (standard-page
-            "Requests"
-            (html
-              (:div :class "activity"
-                (str (inventory-activity-item "request" result :show-distance t :show-tags t))
-                (when mine
-                  (htm
-                    (:form :method "post" :action (strcat "/requests/" id)
-                      (:input :type "checkbox"
-                              :name "notify-matches"
-                              :checked (when (getf request :notify-matches)
-                                         "checked")
-                              :onclick "this.form.submit()"
-                        "Notify me when someone posts a matching offer...")
-                      
-                      ) ))))
-            :selected "requests")))
+    (cond
+     ((not request)
+      (not-found))
+
+     ((and (not mine)
+           (item-view-denied (result-privacy result)))
+       (permission-denied))
+     (t
+      (with-location
+        (standard-page
+          "Requests"
+          (html
+            (:div :class "activity"
+              (str (inventory-activity-item "request" result :show-distance t :show-tags t))
+              (when mine
+                (htm
+                  (:form :method "get" :action (strcat "/requests/" id)
+                    (:input :type "checkbox"
+                            :name "notify-matches"
+                            :checked (when notify-matches "checked")
+                            :onclick "this.form.submit()"
+                      "Notify me when someone posts a matching offer..."))
+                  (when notify-matches
+                    (htm
+                      (:form :method "post" :action (strcat "/requests/" id)
+                        (:input :type "hidden" :name "notify-matches" :value "")
+
+                        (:label
+                          "We will send you an email notification when "
+                          "someone posts an offer containing the words: "
+                          (:input :type "text" :name "search-terms"))
+                        (:label "With any of these tags"
+                         (dolist (tag (getf request :tags))
+                           (htm
+                             (:div :class "tag"
+                              (:input :type "checkbox"
+                                      :name "matching-tags"
+                                      :value tag
+                                      :checked (unless
+                                                 (and
+                                                   matching-tags
+                                                   (not (find tag matching-tags
+                                                              :test #'string=)))
+                                                 ""))
+                              (:span (str tag)))))))))))))
+          :selected "requests")))
      (not-found))))
 
 (defun get-request-reply (id)
