@@ -315,7 +315,7 @@
     "Tags:  "
     (dolist (tag tags)
       (htm
-        (:a :href (url-compose (strcat type "s") "kw" tag) (str tag))
+        (:a :href (url-compose (strcat "/" type "s") "kw" tag) (str tag))
         (unless (eql tag (car (last tags)))
           (htm
             " &middot "))))))
