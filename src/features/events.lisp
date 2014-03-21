@@ -344,15 +344,16 @@
            (let ((event-repetition-count 1)
                  (next-occurance (next-recurring-event-time id :data event)) )
              (labels ((future-events ()
-                        (add-event-occurance
-                          (make-result :latitude (result-latitude item)
-                                       :longitude (result-longitude item)
-                                       :time next-occurance
-                                       :tags (result-tags item)
-                                       :people (result-people item)
-                                       :id id
-                                       :type 'event
-                                       :privacy (result-privacy item)))
+                        (when next-occurance
+                          (add-event-occurance
+                            (make-result :latitude (result-latitude item)
+                                         :longitude (result-longitude item)
+                                         :time next-occurance
+                                         :tags (result-tags item)
+                                         :people (result-people item)
+                                         :id id
+                                         :type 'event
+                                         :privacy (result-privacy item))))
                         (incf event-repetition-count)
                         (asetf next-occurance
                                (next-recurring-event-time id :data event
