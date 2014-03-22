@@ -39,14 +39,16 @@
 (defun post-requests-new ()
   (post-new-inventory-item "request" :url "/requests/new"))
 
-(defun get-request (id)
-  (setf id (parse-integer id))
+(defun get-request (id &key all-terms any-terms distance notify-matches)
+  (unless (integerp id)
+    (setf id (parse-integer id)))
   (let* ((request (db id))
          (matching-tags (getf request :matching-tags))
          (by (getf request :by))
          (mine (eql *userid* by))
          (notify-matches (or (getf request :notify-matches)
-                             (get-parameter "notify-matches")))
+                             (get-parameter "notify-matches")
+                             notify-matches))
          (result (gethash id *db-results*)))
     (cond
      ((not request)
@@ -73,7 +75,7 @@
                   (when notify-matches
                     (htm
                       (:form :method "post"
-                             :action (strcat "/requests/" id)
+                             :action (strcat "/requests/" id "/matching-items")
                              :class "matchmaker"
                         (:input :type "hidden" :name "notify-matches" :value "")
 
@@ -81,12 +83,18 @@
                         (:label
                           "...containing " (:strong "ANY") " of these words:"
                           (:br)
-                          (:input :type "text" :name "match-any-terms"))
+                          (:input :type "text"
+                                  :name "match-any-terms"
+                                  :value (awhen any-terms
+                                           (separate-with-spaces it))))
                         (:br)
                         (:label
                           "...containing  " (:strong "ALL") " of these words:"
                           (:br)
-                          (:input :type "text" :name "match-all-terms"))
+                          (:input :type "text"
+                                  :name "match-all-terms"
+                                  :value (awhen all-terms
+                                           (separate-with-spaces it))))
                         (:br)
                         (:label "...with any of these tags:"
                          (:br)
@@ -108,6 +116,9 @@
                                                         "")))
                                     (:td (str tag))))))))
                         (:div
+                          (:div :class "inline-block"
+                            (:label "...within "
+                              (str (distance-selection-dropdown distance))))
                           (:button :class "cancel" :type "submit" :name "cancel" "Cancel")
                           (:button :class "yes" :type "submit" :name "submit-matchmaker" "Save")))))))))
           :selected "requests")))

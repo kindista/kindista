@@ -130,6 +130,11 @@
   (equalp (symbol-name symbol-a)
           (symbol-name symbol-b)))
 
+(defun words-from-string (string)
+  (iter (for word in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
+        (when (ppcre:scan +text-scanner+ word)
+          (collect word))))
+
 (defun emails-from-string (string)
   (iter (for email in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
         (when (ppcre:scan +email-scanner+ email)
@@ -137,6 +142,9 @@
 
 (defun separate-with-commas (list)
   (format nil "~{~A, ~}" list))
+
+(defun separate-with-spaces (list)
+  (format nil "~{~A ~}" list))
 
 (defun item-view-denied (result-privacy &optional (userid *userid*))
   (and result-privacy
@@ -505,6 +513,9 @@
 
 (defun post-parameter-string (name)
   (awhen (post-parameter name) (unless (string= it "") it)))
+
+(defun post-parameter-words (name)
+  (awhen (post-parameter name) (unless (string= it "") (words-from-string it))))
 
 (defun post-parameter-float (name)
   (awhen (post-parameter name) (unless (string= it "") (read-from-string it))))

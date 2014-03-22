@@ -98,6 +98,9 @@
     :get get-request
     :post post-request)
 
+  ("/requests/<int:id>/matching-items"
+    :post post-matchmaker)
+
   ("/requests/<int:id>/reply"
     :get get-request-reply)
 

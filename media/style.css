@@ -1353,6 +1353,7 @@ menu .newcount {
 }
 
 .inventory-details select.identity,
+.matchmaker input[type=text],
 .create-event input[type=text],
 .create-event select,
 .invite-members input[type=text],
@@ -1391,6 +1392,7 @@ div.privacy-selection-warning p {
  margin: 0.4em 0;
 }
 
+form.matchmaker,
 div.privacy-selection-details,
 div.recurring-event-details,
 blockquote.review-text {
@@ -1401,6 +1403,10 @@ blockquote.review-text {
  border-style: solid;
  border-width: 1px;
  border-color: #bbb;
+}
+
+form.matchmaker {
+ margin-top: 0.5em;
 }
 
 div.recurring-event-details,
@@ -1419,6 +1425,8 @@ select.privacy-selection {
 }
 
 @media (max-width:28em) {
+ form.matchmacker,
+ .matchmaker input[type=text],
  div.recurring-event-details,
  div.privacy-selection,
  .invite-members input[type=text],
@@ -2527,6 +2535,27 @@ div.item-group-privacy {
 div.tag {
  width: 11em;
 }
+
+form.matchmaker {
+ overflow: hidden;
+}
+
+form.matchmaker h3 {
+ margin-bottom: 0.7em;
+}
+
+form.matchmaker label {
+ display: block;
+}
+
+form.matchmaker div.tag {
+ vertical-align: top;
+}
+
+form.matchmaker div.tag td {
+ vertical-align: top;
+}
+
 
 div.tag input:checked + span {
  font-weight: bold;
