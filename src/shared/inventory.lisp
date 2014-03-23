@@ -486,6 +486,7 @@
                                    :next-url (referer)
                                    :type type
                                    :text (getf item :text)
+                                   :item-id id
                                    :inappropriate-item t)))
 
                 ((post-parameter "delete-inappropriate-item")
