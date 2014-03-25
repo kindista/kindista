@@ -1407,6 +1407,11 @@ blockquote.review-text {
 
 form.matchmaker {
  margin-top: 0.5em;
+ max-width: 40em;
+}
+
+form.matchmaker label.distance-selection {
+ padding-top: 0.6em;
 }
 
 div.recurring-event-details,
