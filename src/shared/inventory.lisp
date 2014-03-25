@@ -408,10 +408,10 @@
             (pending-flash "contact other Kindista members")
             (see-other (or (referer) "/home")))
            (t
-            (create-reply :on id :text (post-parameter "reply-text")))
+            (create-reply :on id :text (post-parameter "reply-text"))
             (flash "Your reply has been sent.")
             (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
-            (see-other (or next (script-name*)))))
+            (see-other (or next (script-name*))))))
 
         ((post-parameter "love")
          (love id)
