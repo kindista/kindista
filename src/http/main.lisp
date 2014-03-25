@@ -329,7 +329,7 @@
                (format destination "[~A~@[ [~A]~]] ~A ~A ~:S ~:S ~?~%"
                        (hunchentoot::iso-time)
                        log-level
-                       *userid*
+                       (with-user *userid*)
                        (script-name*)
                        (get-parameters*)
                        (post-parameters*)
