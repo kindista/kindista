@@ -68,6 +68,8 @@
 (defindex *request-geo-index*)
 (defindex *request-index*) ;should be called "person-request-index"
 (defindex *request-stem-index* :test 'equalp)
+(defindex *matching-requests-geo-index*)
+(defindex *matching-requests-stem-index* :test 'equalp)
 (defindex *offer-geo-index*)
 (defindex *offer-index*) ;should be called "person-offer-index"
 (defindex *offer-stem-index* :test 'equalp)

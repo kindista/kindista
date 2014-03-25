@@ -117,10 +117,13 @@
                                     (:td (str tag))))))))
                         (:div
                           (:div :class "inline-block"
-                            (:label "...within "
-                              (str (distance-selection-dropdown distance))))
-                          (:button :class "cancel" :type "submit" :name "cancel" "Cancel")
-                          (:button :class "yes" :type "submit" :name "submit-matchmaker" "Save")))))))))
+                            (:label :class "distance-selection"
+                              "...within "
+                              (str (distance-selection-dropdown (or distance
+                                                                    25)))))
+                          (:div :class "float-right"
+                           (:button :class "cancel" :type "submit" :name "cancel" "Cancel")
+                           (:button :class "yes" :type "submit" :name "submit-matchmaker" "Save"))))))))))
           :selected "requests")))
      (not-found))))
 

@@ -25,6 +25,7 @@
 
          (any-terms (post-parameter-words "match-any-terms"))
          (tags (post-parameter-string-list "match-tags"))
+         (distance (post-parameter-integer "distance"))
         ;(url (url-compose (strcat "/requests/" id) "notify-matches" "on"))
          )
     (require-test((or (eql *userid* by)
@@ -39,8 +40,7 @@
                                            (getf item :match-all-terms))
                             :any-terms (or any-terms
                                            (getf item :match-any-terms))
-                            )
-               ))
+                            :distance (or distance (getf item :distance)))))
         (cond
           ((not (eql (getf item :type) :request))
            (flash "Matchmaker notifications are currently only available for requests" :error t)
@@ -51,7 +51,13 @@
 
           ((not tags)
            (try-again "Please check at least 1 tag"))
-          
-          ))
-     )) 
+          )))) )
+
+(defun create-matchmaker (request-id &key match-all-terms match-any-terms match-tags match-distance)
+  (modify db request-id :notify-matches t
+                        :match-all-terms match-all-terms
+                        :match-any-terms match-any-terms
+                        :match-tags match-tags
+                        :match-distance match-distance)
+
   )
