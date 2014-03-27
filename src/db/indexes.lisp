@@ -31,6 +31,7 @@
   (setf *feedback-index* ()
         *event-index* ()
         *invitation-reminder-timer-index* ()
+        *matchmaker-requests-geo-index* ()
         *invite-request-index* ()
         *recent-activity-index* ()
         *active-people-index* ()))
@@ -68,11 +69,11 @@
 (defindex *request-geo-index*)
 (defindex *request-index*) ;should be called "person-request-index"
 (defindex *request-stem-index* :test 'equalp)
-(defindex *matching-requests-geo-index*)
-(defindex *matching-requests-stem-index* :test 'equalp)
+(defindex *matchmaker-requests-geo-index*)
 (defindex *offer-geo-index*)
 (defindex *offer-index*) ;should be called "person-offer-index"
 (defindex *offer-stem-index* :test 'equalp)
+(defindex *offers-with-matching-requests-index*)
 (defindex *username-index* :test 'equalp)
 
 (defvar *recent-activity-mutex* (make-mutex))
@@ -81,6 +82,8 @@
 (defvar *invite-request-index* ())
 (defvar *invitation-reminder-timer-mutex* (make-mutex))
 (defvar *invitation-reminder-timer-index* ())
+(defvar *global-matchmaker-requests-mutex* (make-mutex))
+(defvar *global-matchmaker-requests-index* ())
 (defvar *event-mutex* (make-mutex))
 (defvar *event-index* ())
 (defvar *feedback-mutex* (make-mutex))

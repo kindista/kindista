@@ -39,7 +39,9 @@
                               :people (list by)
                               :privacy (getf data :privacy)
                               :time (or (getf data :edited) (getf data :created))
-                              :tags (getf data :tags))))
+                              :tags (getf data :tags)))
+         (locationp (and (result-latitude result)
+                        (result-longitude result))))
 
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
@@ -60,8 +62,7 @@
          (with-locked-hash-table (*request-index*)
            (push id (gethash by *request-index*))))
 
-       (when (and (result-latitude result)
-                  (result-longitude result))
+       (when locationp
 
          (let ((stems (stem-text (getf data :text))))
            (if (eq type :offer)
@@ -82,7 +83,10 @@
            (unless (< (result-time result) (- (get-universal-time) 2592000))
              (with-mutex (*recent-activity-mutex*)
                (push result *recent-activity-index*)))
-           (geo-index-insert *activity-geo-index* result)))))))
+           (geo-index-insert *activity-geo-index* result)))
+
+       (when (getf data :notify-matches)
+         (index-matchmaker id data))))))
 
 (defun modify-inventory-item (id &key text tags privacy latitude longitude)
   (let* ((result (gethash id *db-results*))
@@ -129,12 +133,16 @@
       (if (eq type :offer)
         (geo-index-remove *offer-geo-index* result)
         (geo-index-remove *request-geo-index* result))
+      (when (getf data :notify-matches)
+        (geo-index-remove *matching-requests-geo-index* result))
       (geo-index-remove *activity-geo-index* result)
       (setf (result-latitude result) latitude)
       (setf (result-longitude result) longitude)
       (if (eq type :offer)
         (geo-index-insert *offer-geo-index* result)
-        (geo-index-insert *request-geo-index* result)))
+        (geo-index-insert *request-geo-index* result))
+      (when (getf data :notify-matches)
+        (geo-index-insert *matching-requests-geo-index* result)))
 
     (setf (result-privacy result) privacy)
 

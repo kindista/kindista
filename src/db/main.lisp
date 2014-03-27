@@ -24,6 +24,7 @@
 (defvar *db-log-lock* (make-mutex :name "db log"))
 (defvar *db-results* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
 (defvar *db-messages* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
+(defvar *matchmaker-requests* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
 
 ;(defvar *auth-tokens* (make-hash-table :test 'equal :synchronized t :size 200 :rehash-size 1.25))
 (defvar *tokens* (make-hash-table :test 'equal :synchronized t :size 200 :rehash-size 1.25))
@@ -232,6 +233,20 @@
 (defun stem-index-query (index query)
   (iter (for stem in (stem-text query))
         (reducing (gethash stem index) by #'result-id-intersection)))
+
+(defun all-terms-stem-index-query (index list-of-terms)
+  (let (matching-terms)
+    (remove-duplicates
+      (do )
+      (loop for term in list-of-sterms
+            setf
+                             )
+                       )))
+
+(defun any-terms-stem-index-query (index list-of-terms)
+  (remove-duplicates (loop for term in list-of-terms
+                           append (gethash (stem term) index))))
+
 ; }}}
 
 ; {{{ metaphone

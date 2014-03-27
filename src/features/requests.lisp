@@ -39,7 +39,7 @@
 (defun post-requests-new ()
   (post-new-inventory-item "request" :url "/requests/new"))
 
-(defun get-request (id &key all-terms any-terms distance notify-matches)
+(defun get-request (id &key all-terms any-terms without-terms distance notify-matches)
   (unless (integerp id)
     (setf id (parse-integer id)))
   (let* ((request (db id))
@@ -94,6 +94,14 @@
                           (:input :type "text"
                                   :name "match-all-terms"
                                   :value (awhen all-terms
+                                           (separate-with-spaces it))))
+                        (:br)
+                        (:label
+                          "...containing  " (:strong "NONE") " of these words:"
+                          (:br)
+                          (:input :type "text"
+                                  :name "match-no-terms"
+                                  :value (awhen without-terms
                                            (separate-with-spaces it))))
                         (:br)
                         (:label "...with any of these tags:"
