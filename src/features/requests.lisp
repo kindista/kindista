@@ -49,6 +49,14 @@
          (notify-matches (or (getf request :notify-matches)
                              (get-parameter "notify-matches")
                              notify-matches))
+         (all-terms (or all-terms (getf request :match-all-terms)))
+         (any-terms (or any-terms (getf request :match-any-terms)))
+         (without-terms (or without-terms (getf request :match-no-terms)))
+         (pre-existing-distance (getf request :match-distance))
+         (distance (or distance
+                       (if (equal pre-existing-distance nil)
+                         0
+                         pre-existing-distance)))
          (result (gethash id *db-results*)))
     (cond
      ((not request)

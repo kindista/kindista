@@ -37,6 +37,8 @@ Search:
 ## Display matching items on both offer and request pages
 
 
+## When user locations change, change offer/request matchmaker locations
+
 ## Add Inventory Titles
 - require titles on new/edited inventory items
 - display titles on inventory activity items when present

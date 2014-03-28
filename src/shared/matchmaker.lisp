@@ -25,13 +25,14 @@
   (let* ((id (parse-integer id))
          (item (db id))
          (by (getf item :by))
-         (pre-existing-matchmaker (getf item :notify-matches))
          (all-terms (post-parameter-words "match-all-terms"))
 
          (any-terms (post-parameter-words "match-any-terms"))
          (without-terms (post-parameter-words "match-no-terms"))
          (tags (post-parameter-string-list "match-tags"))
-         (distance (post-parameter-integer "distance"))
+         (raw-distance (post-parameter-integer "distance"))
+         (distance (unless (equal raw-distance 0)
+                     raw-distance))
         ;(url (url-compose (strcat "/requests/" id) "notify-matches" "on"))
          )
     (require-test((or (eql *userid* by)
@@ -48,7 +49,7 @@
                                            (getf item :match-any-terms))
                             :without-terms (or without-terms
                                                (getf item :match-no-terms))
-                            :distance (or distance (getf item :distance)))))
+                            :distance (or distance (getf item :match-distance)))))
         (cond
           ((not (eql (getf item :type) :request))
            (flash "Matchmaker notifications are currently only available for requests" :error t)
@@ -65,22 +66,16 @@
 
           (t
 
-           (if pre-existing-matchmaker
-             (modify-matchmaker id :data item
-                                   :all-terms all-terms
-                                   :any-terms any-terms
-                                   :without-terms without-terms
-                                   :tags tags
-                                   :distance distance)
-             (progn
-               (index-matchmaker id
-                                 (modify-db id
-                                            :notify-matches t
-                                            :match-all-terms all-terms
-                                            :match-any-terms any-terms
-                                            :match-no-terms without-terms
-                                            :match-tags tags
-                                            :match-distance distance))))
+           (let ((new-matchmaker-data (modify-db id
+                                                :notify-matches t
+                                                :match-all-terms all-terms
+                                                :match-any-terms any-terms
+                                                :match-no-terms without-terms
+                                                :match-tags tags
+                                                :match-distance distance)))
+             (if (getf item :notify-matches)
+               new-matchmaker-data
+               (index-matchmaker id new-matchmaker-data)))
 
            (update-matching-inventory-data id)
            (see-other (or (post-parameter "next")
@@ -113,6 +108,7 @@
       (with-mutex (*global-matchmaker-requests-mutex*)
         (push matchmaker *global-matchmaker-requests-index*)))
 
+    ;;only on load-db; (eql :matching-offers nil) when matchmaker is created
     (with-locked-hash-table (*offers-with-matching-requests-index*)
       (dolist (offer-id (getf data :matching-offers))
         (push request-id
@@ -184,30 +180,3 @@
                 :hidden-matching-offers (intersection rejected-offers
                                                       new-matching-offers))))
 
-(defun modify-matchmaker (request-id &key data all-terms any-terms without-terms tags distance)
-  (let* ((matchmaker (gethash request-id *matchmaker-requests*))
-         (locationp (and (match-latitude matchmaker)
-                         (match-longitude matchmaker)))
-         (data (or data (db request-id)))
-         )
-  (when text
-      (let* ((oldstems (stem-text (getf data :text)))
-             (newstems (stem-text text))
-             (common (intersection oldstems newstems :test #'string=)))
-
-        (flet ((commonp (stem)
-                 (member stem common :test #'string=)))
-
-          (setf oldstems (delete-if #'commonp oldstems))
-          (setf newstems (delete-if #'commonp newstems))
-
-            (with-locked-hash-table (*matching-requests-stem-index*)
-              (dolist (stem oldstems)
-                (asetf (gethash stem *matching-requests-stem-index*)
-                       (remove result it))))
-              (dolist (stem newstems)
-                (push result (gethash stem *matching-requests-stem-index*)))
-
-          )))
-    )
-  )

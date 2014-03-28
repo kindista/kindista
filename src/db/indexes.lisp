@@ -31,8 +31,8 @@
   (setf *feedback-index* ()
         *event-index* ()
         *invitation-reminder-timer-index* ()
-        *matchmaker-requests-geo-index* ()
         *invite-request-index* ()
+        *global-matchmaker-requests-index* ()
         *recent-activity-index* ()
         *active-people-index* ()))
 
