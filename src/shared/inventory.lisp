@@ -291,7 +291,7 @@
                               (or (not identity-selection)
                                   (eql identity-selection
                                        (post-parameter-integer "prior-identity")))))
-           (adminp (group-admin-p groupid))
+           (adminp (group-admin-p (or groupid identity-selection)))
            (text (when (scan +text-scanner+ (post-parameter "text"))
                    (post-parameter "text"))))
 
@@ -358,7 +358,9 @@
             (let ((new-id (create-inventory-item
                             :type (if (string= type "request") :request
                                                                :offer)
-                            :by (if adminp groupid *userid*)
+                            :by (if adminp
+                                  (or groupid identity-selection)
+                                  *userid*)
                             :privacy groups-selected
                             :text text
                             :tags tags)))
