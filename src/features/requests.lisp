@@ -113,7 +113,7 @@
                                  (:tr
                                    (:td
                                      (:input :type "checkbox"
-                                             :name "matching-tags"
+                                             :name "match-tags"
                                              :value tag
                                              :checked
                                               (unless
@@ -131,7 +131,18 @@
                                                                     25)))))
                           (:div :class "float-right"
                            (:button :class "cancel" :type "submit" :name "cancel" "Cancel")
-                           (:button :class "yes" :type "submit" :name "submit-matchmaker" "Save"))))))))))
+                           (:button :class "yes" :type "submit" :name "submit-matchmaker" "Save")))))
+                    
+                    )
+                  (awhen (getf request :matching-offers)
+                    (dolist (offer it)
+                      (str
+                        (inventory-activity-item "offer"
+                                                  (gethash offer *db-results*)
+                                                  :truncate t
+                                                  :show-distance t
+                                                  :show-what t
+                                                  :show-tags t))))))))
           :selected "requests")))
      (not-found))))
 

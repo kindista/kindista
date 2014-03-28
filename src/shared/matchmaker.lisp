@@ -29,7 +29,7 @@
          (all-terms (post-parameter-words "match-all-terms"))
 
          (any-terms (post-parameter-words "match-any-terms"))
-         (without-terms (post-parameter "match-no-terms"))
+         (without-terms (post-parameter-words "match-no-terms"))
          (tags (post-parameter-string-list "match-tags"))
          (distance (post-parameter-integer "distance"))
         ;(url (url-compose (strcat "/requests/" id) "notify-matches" "on"))
@@ -58,7 +58,7 @@
             (try-again "You need to enter your location on your <a href=\"/settings\">settings page</a> before you can create matchmaker notifications."))
 
           ((nor any-terms all-terms)
-           (try-again "Please enter at least 1 search term"))
+           (try-again "Please enter at least 1 search term you would like to be notified about"))
 
           ((not tags)
            (try-again "Please check at least 1 tag"))
@@ -67,20 +67,24 @@
 
            (if pre-existing-matchmaker
              (modify-matchmaker id :data item
-                                   :all-terms match-all-terms
-                                   :any-terms match-any-terms
+                                   :all-terms all-terms
+                                   :any-terms any-terms
                                    :without-terms without-terms
-                                   :match-tags tags
+                                   :tags tags
                                    :distance distance)
              (progn
                (index-matchmaker id
-                                 (modify-db request-id
+                                 (modify-db id
                                             :notify-matches t
                                             :match-all-terms all-terms
                                             :match-any-terms any-terms
                                             :match-no-terms without-terms
                                             :match-tags tags
-                                            :match-distance distance))))))))))
+                                            :match-distance distance))))
+
+           (update-matching-inventory-data id)
+           (see-other (or (post-parameter "next")
+                          (url-compose (strcat "/requests/" id))))))))))
 
 (defun index-matchmaker (request-id &optional data)
   (let* ((data (or data (db request-id)))
@@ -107,22 +111,78 @@
     (if distance
       (geo-index-insert *matchmaker-requests-geo-index* matchmaker)
       (with-mutex (*global-matchmaker-requests-mutex*)
-        (push matchmaker *global-matchmaker-requests-index*)))))
+        (push matchmaker *global-matchmaker-requests-index*)))
+
+    (with-locked-hash-table (*offers-with-matching-requests-index*)
+      (dolist (offer-id (getf data :matching-offers))
+        (push request-id
+              (gethash offer-id *offers-with-matching-requests-index*))))))
 
 (defun find-matching-offers-for-request (request-id &optional matchmaker)
-  (let* ((matchmaker (or matchmaker (gethash request-id *matchmaker-requests)))
-         (nearby-offers (when (match-distance matchmaker)
+  (let* ((matchmaker (or matchmaker
+                         (gethash request-id *matchmaker-requests*)))
+         (distance (match-distance matchmaker))
+         (nearby-offers (awhen distance
                           (geo-index-query *offer-geo-index*
                                            (match-latitude matchmaker)
                                            (match-longitude matchmaker)
                                            it)))
-         (offer-with-all-terms )
-         ()
-         )
+         (all-terms (match-all-terms matchmaker))
+         (any-terms (match-any-terms matchmaker))
+         (offers-with-all-terms (awhen all-terms
+                                  (all-terms-stem-index-query
+                                    *offer-stem-index* it)))
+         (offers-with-any-terms (awhen any-terms
+                                  (any-terms-stem-index-query
+                                    *offer-stem-index* it)))
+         (offers-with-excluded-terms (awhen (match-without-terms matchmaker)
+                                       (any-terms-stem-index-query
+                                         *offer-stem-index* it)))
+         (offers-matching-terms (set-difference
+                                  (if (and all-terms any-terms)
+                                    (result-id-intersection
+                                      offers-with-all-terms
+                                      offers-with-any-terms)
+                                    (or offers-with-all-terms
+                                        offers-with-any-terms))
+                                  offers-with-excluded-terms
+                                  :key #'match-id)))
 
-    
-    )
-  )
+    (loop for offer in (if distance
+                         (result-id-intersection nearby-offers
+                                                 offers-matching-terms)
+                         offers-matching-terms)
+          when (intersection (match-tags matchmaker)
+                             (result-tags offer)
+                             :test #'equalp)
+          collect (result-id offer))))
+
+(defun update-matching-inventory-data (request-id &key data matchmaker)
+  (let* ((request (or data (db request-id)))
+         (matchmaker (or matchmaker
+                         (gethash request-id *matchmaker-requests*)))
+         (current-matching-offers (db request :matching-offers))
+         (rejected-offers (db request :hidden-matching-offers))
+         (all-old-matches (append current-matching-offers rejected-offers))
+         (new-matching-offers (find-matching-offers-for-request request-id
+                                                                matchmaker))
+         (new-useful-offers (set-difference new-matching-offers
+                                            rejected-offers)))
+
+    (with-locked-hash-table (*offers-with-matching-requests-index*)
+      (dolist (offer-id (set-difference all-old-matches
+                                        new-matching-offers))
+        (asetf (gethash offer-id *offers-with-matching-requests-index*)
+               (remove request-id it)))
+      (dolist (offer-id (set-difference new-matching-offers
+                                        all-old-matches))
+        (push request-id
+              (gethash offer-id *offers-with-matching-requests-index*))))
+
+    (amodify-db request-id
+                :matching-offers new-useful-offers
+                :hidden-matching-offers (intersection rejected-offers
+                                                      new-matching-offers))))
 
 (defun modify-matchmaker (request-id &key data all-terms any-terms without-terms tags distance)
   (let* ((matchmaker (gethash request-id *matchmaker-requests*))
