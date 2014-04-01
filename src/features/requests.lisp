@@ -43,7 +43,6 @@
   (unless (integerp id)
     (setf id (parse-integer id)))
   (let* ((request (db id))
-         (matching-tags (getf request :matching-tags))
          (by (getf request :by))
          (mine (eql *userid* by))
          (notify-matches (or (getf request :notify-matches)
@@ -52,11 +51,9 @@
          (all-terms (or all-terms (getf request :match-all-terms)))
          (any-terms (or any-terms (getf request :match-any-terms)))
          (without-terms (or without-terms (getf request :match-no-terms)))
-         (pre-existing-distance (getf request :match-distance))
-         (distance (or distance
-                       (if (equal pre-existing-distance nil)
-                         0
-                         pre-existing-distance)))
+         (pre-existing-distance (when (getf request :notify-matches)
+                                  (or (getf request :match-distance) 0)))
+         (distance (or distance pre-existing-distance))
          (result (gethash id *db-results*)))
     (cond
      ((not request)
@@ -114,23 +111,16 @@
                         (:br)
                         (:label "...with any of these tags:"
                          (:br)
-                         (dolist (tag (getf request :tags))
-                           (htm
-                             (:div :class "tag"
-                               (:table :class "tag"
-                                 (:tr
-                                   (:td
-                                     (:input :type "checkbox"
-                                             :name "match-tags"
-                                             :value tag
-                                             :checked
-                                              (unless
-                                                (and
-                                                  matching-tags
-                                                  (not (find tag matching-tags
-                                                             :test #'string=)))
-                                                        "")))
-                                    (:td (str tag))))))))
+                         (:div :class ""
+                          (str (display-tags "request" (getf request :tags)))
+
+                          (:p (:strong "Note: ")
+                           "To change which tags are matched, please "
+                           (:button :type "submit"
+                                    :class "green inline-link"
+                                    :name "edit-original"
+                             "edit your request")
+                           " and change your keywords")))
                         (:div
                           (:div :class "inline-block"
                             (:label :class "distance-selection"
@@ -139,18 +129,18 @@
                                                                     25)))))
                           (:div :class "float-right"
                            (:button :class "cancel" :type "submit" :name "cancel" "Cancel")
-                           (:button :class "yes" :type "submit" :name "submit-matchmaker" "Save")))))
-                    
-                    )
+                           (:button :class "yes" :type "submit" :name "submit-matchmaker" "Save"))))))
                   (awhen (getf request :matching-offers)
                     (dolist (offer it)
-                      (str
-                        (inventory-activity-item "offer"
-                                                  (gethash offer *db-results*)
-                                                  :truncate t
-                                                  :show-distance t
-                                                  :show-what t
-                                                  :show-tags t))))))))
+                      (let ((result (gethash offer *db-results*)))
+                        (unless (item-view-denied (result-privacy result))
+                          (str
+                            (inventory-activity-item "offer"
+                                                      result
+                                                      :truncate t
+                                                      :show-distance t
+                                                      :show-what t
+                                                      :show-tags t))))))))))
           :selected "requests")))
      (not-found))))
 

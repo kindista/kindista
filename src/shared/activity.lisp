@@ -304,6 +304,7 @@
                               (when (and show-tags tags) 
                                 (htm
                                   (:div :class "tags"
+                                   "Tags:  "
                                    (str (display-tags type tags)))))
                               (unless (string= item-url (script-name*));image?
                                 (str (activity-item-images images
@@ -312,7 +313,6 @@
 
 (defun display-tags (type tags)
   (html
-    "Tags:  "
     (dolist (tag tags)
       (htm
         (:a :href (url-compose (strcat "/" type "s") "kw" tag) (str tag))

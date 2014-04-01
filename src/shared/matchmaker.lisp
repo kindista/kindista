@@ -29,12 +29,12 @@
 
          (any-terms (post-parameter-words "match-any-terms"))
          (without-terms (post-parameter-words "match-no-terms"))
-         (tags (post-parameter-string-list "match-tags"))
          (raw-distance (post-parameter-integer "distance"))
          (distance (unless (equal raw-distance 0)
                      raw-distance))
-        ;(url (url-compose (strcat "/requests/" id) "notify-matches" "on"))
-         )
+         (base-url (strcat "/requests/" id))
+         (match-url (url-compose base-url "notify-matches" "on")))
+
     (require-test((or (eql *userid* by)
                        (group-admin-p by)
                        (getf *user* :admin))
@@ -50,6 +50,7 @@
                             :without-terms (or without-terms
                                                (getf item :match-no-terms))
                             :distance (or distance (getf item :match-distance)))))
+
         (cond
           ((not (eql (getf item :type) :request))
            (flash "Matchmaker notifications are currently only available for requests" :error t)
@@ -58,26 +59,34 @@
           ((not (and (getf *user* :lat) (getf *user* :long)))
             (try-again "You need to enter your location on your <a href=\"/settings\">settings page</a> before you can create matchmaker notifications."))
 
+          ((post-parameter "edit-original")
+           (enter-inventory-tags :title "Edit your request"
+                                 :action base-url
+                                 :text (getf item :text)
+                                 :tags (getf item :tags)
+                                 :groups-selected (getf item :privacy)
+                                 :restrictedp (getf item :privacy)
+                                 :next match-url
+                                 :existingp t
+                                 :button-text "Save request"
+                                 :selected "requests"))
+
           ((nor any-terms all-terms)
            (try-again "Please enter at least 1 search term you would like to be notified about"))
-
-          ((not tags)
-           (try-again "Please check at least 1 tag"))
 
           (t
 
            (let ((new-matchmaker-data (modify-db id
-                                                :notify-matches t
-                                                :match-all-terms all-terms
-                                                :match-any-terms any-terms
-                                                :match-no-terms without-terms
-                                                :match-tags tags
-                                                :match-distance distance)))
+                                                 :notify-matches t
+                                                 :match-all-terms all-terms
+                                                 :match-any-terms any-terms
+                                                 :match-no-terms without-terms
+                                                 :match-distance distance)))
              (if (getf item :notify-matches)
                new-matchmaker-data
                (index-matchmaker id new-matchmaker-data)))
 
-           (update-matching-inventory-data id)
+           (update-matchmaker-request-data id)
            (see-other (or (post-parameter "next")
                           (url-compose (strcat "/requests/" id))))))))))
 
@@ -88,7 +97,7 @@
          (all-terms (getf data :match-all-terms))
          (any-terms (getf data :match-any-terms))
          (without-terms (getf data :match-no-terms))
-         (tags (getf data :match-tags))
+         (tags (getf data :tags))
          (distance (getf data :match-distance))
          (matchmaker (make-matchmaker :id request-id
                                       :latitude (getf by-data :lat)
@@ -113,6 +122,40 @@
       (dolist (offer-id (getf data :matching-offers))
         (push request-id
               (gethash offer-id *offers-with-matching-requests-index*))))))
+
+(defun find-matching-requests-for-offer (offer-id)
+  (let* ((offer (db offer-id))
+         (offer-result (gethash offer-id *db-results*))
+         (by-id (getf offer :by))
+         (by (db by-id))
+         (lat (or (getf offer :lat) (getf by :lat)))
+         (long (or (getf offer :long) (getf by :long)))
+         (stems (stem-text (getf offer :text)))
+         (tags (getf offer :tags)))
+
+    (flet ((find-strings (fn request-data offer-data)
+             (or (not request-data)
+                 (funcall fn #'(lambda (string)
+                                 (find string offer-data) :test #'equalp)
+                             request-data))))
+
+      (loop for matchmaker
+            in (append *global-matchmaker-requests-index*
+                       (geo-index-query *matchmaker-requests-geo-index* lat long 100))
+            when (and (find-strings #'some (match-tags matchmaker) tags)
+                      (find-strings #'some (match-any-terms matchmaker) stems)
+                      (find-strings #'every (match-all-terms matchmaker) stems)
+                      (find-strings #'notany (match-without-terms matchmaker) stems)
+                      (or (not (match-distance matchmaker))
+                          (<= (air-distance lat
+                                           long
+                                           (match-latitude matchmaker)
+                                           (match-longitude matchmaker))
+                               (match-distance matchmaker)))
+                      (not (item-view-denied (match-privacy matchmaker) by-id))
+                      (not (item-view-denied (result-privacy offer-result)
+                                             (db (match-id matchmaker) :by))))
+          collect (result-id matchmaker)))))
 
 (defun find-matching-offers-for-request (request-id &optional matchmaker)
   (let* ((matchmaker (or matchmaker
@@ -148,12 +191,14 @@
                          (result-id-intersection nearby-offers
                                                  offers-matching-terms)
                          offers-matching-terms)
-          when (intersection (match-tags matchmaker)
-                             (result-tags offer)
-                             :test #'equalp)
-          collect (result-id offer))))
+          when (and (intersection (match-tags matchmaker) (result-tags offer)
+                                  :test #'equalp)
+                    (not (item-view-denied (result-privacy offer) *userid*))
+                    (not (item-view-denied (match-privacy matchmaker)
+                                           (db (result-id offer) :by))))
+          collect offer)))
 
-(defun update-matching-inventory-data (request-id &key data matchmaker)
+(defun update-matchmaker-request-data (request-id &key data matchmaker)
   (let* ((request (or data (db request-id)))
          (matchmaker (or matchmaker
                          (gethash request-id *matchmaker-requests*)))

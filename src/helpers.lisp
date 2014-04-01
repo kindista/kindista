@@ -148,9 +148,11 @@
 
 (defun item-view-denied (result-privacy &optional (userid *userid*))
   (and result-privacy
-       (not (member userid
-                    (apply #'append
-                           (mapcar #'group-members result-privacy))))))
+       (nor (find userid result-privacy)
+            ;; userid can be a group in some cases
+            (find userid
+                 (apply #'append
+                        (mapcar #'group-members result-privacy))))))
 
 (defun remove-private-items (items)
   (remove-if #'item-view-denied items :key #'result-privacy))

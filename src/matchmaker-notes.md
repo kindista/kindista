@@ -34,10 +34,18 @@ Search:
 - *matchmaker-requests-geo-index*
 - *global-matchmaker-requests-index*
 
+## Make sure searching offers/requests respects item-privacy
+
 ## Display matching items on both offer and request pages
 
+## Email requestor when new matching offer is made
 
-## When user locations change, change offer/request matchmaker locations
+## Matchmaker should be reindexed with edits
+- tags
+- change of location
+- changes to matching offes
+
+## When user removes their location, delete all matchmakers
 
 ## Add Inventory Titles
 - require titles on new/edited inventory items

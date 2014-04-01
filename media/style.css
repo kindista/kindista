@@ -735,6 +735,14 @@ button.link {
  margin-right:1em;
 }
 
+button.inline-link {
+ border:0;
+ padding:0;
+ background-color: transparent;
+ font-weight:bold;
+ margin:0;
+}
+
 button.simple-link {
  border:0;
  background-color: transparent;
@@ -2551,19 +2559,6 @@ form.matchmaker h3 {
 
 form.matchmaker label {
  display: block;
-}
-
-form.matchmaker div.tag {
- vertical-align: top;
-}
-
-form.matchmaker div.tag td {
- vertical-align: top;
-}
-
-
-div.tag input:checked + span {
- font-weight: bold;
 }
 
 ul.keywords {
