@@ -234,18 +234,19 @@
   (iter (for stem in (stem-text query))
         (reducing (gethash stem index) by #'result-id-intersection)))
 
-(defun all-terms-stem-index-query (index list-of-terms)
+(defun all-terms-stem-index-query (index list-of-stems)
 "Like stem-index-query but takes a list-of-strings instead of a single query string and uses loop instead of iter"
-  (let ((matching-terms (gethash (stem (car list-of-terms)) index)))
-    (loop for term in (cdr list-of-terms)
-          while (and matching-terms term)
-          do (asetf matching-terms
-                    (result-id-intersection it (gethash (stem term) index))))
-    matching-terms))
+  (let ((matching-stems (gethash (car list-of-stems) index)))
+    (loop for stem in (cdr list-of-stems)
+          while (and matching-stems stem)
+          do (asetf matching-stems
+                    (result-id-intersection it (gethash stem index))))
+    matching-stems))
 
-(defun any-terms-stem-index-query (index list-of-terms)
-  (remove-duplicates (loop for term in list-of-terms
-                           append (gethash (stem term) index))))
+(defun any-terms-stem-index-query (index list-of-stems)
+  (remove-duplicates (loop for stem in list-of-stems
+                           append (gethash stem index))))
+
 
 ; }}}
 

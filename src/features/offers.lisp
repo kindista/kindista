@@ -43,20 +43,33 @@
   (post-new-inventory-item "offer" :url "/offers/new"))
 
 (defun get-offer (id)
-  (setf id (parse-integer id))
-  (aif (db id)
-    (if (and (not (eql *userid* (getf it :by)))
-             (item-view-denied (result-privacy (gethash id *db-results*))))
-      (permission-denied)
+  (unless (integerp id)
+    (setf id (parse-integer id)))
+  (let* ((offer (db id))
+         (by (getf offer :by))
+         (mine (eql *userid* by))
+         (result (gethash id *db-results*))
+         (matching-requests (gethash id *offers-with-matching-requests-index*)))
+    (cond
+      ((not offer)
+       (not-found))
+
+     ((and (not mine)
+           (item-view-denied (result-privacy result)))
+       (permission-denied))
+
+     (t
       (with-location
         (standard-page
           "Offers"
           (html
             (:div :class "activity item"
-              (str (inventory-activity-item "offer" (gethash id *db-results*) :show-distance t :show-tags t)))
-            (str (item-images-html id)))
-          :selected "offers")))
-    (not-found)))
+              (str (inventory-activity-item "offer" result :show-distance t :show-tags t)))
+            (str (item-images-html id))
+            (when (and mine matching-requests)
+              (str (item-matches-html id :data offer
+                                         :current-matches matching-requests))))
+          :selected "offers"))))))
 
 (defun get-offer-reply (id)
   (require-user

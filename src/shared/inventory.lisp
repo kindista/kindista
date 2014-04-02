@@ -85,7 +85,8 @@
                (push result *recent-activity-index*)))
            (geo-index-insert *activity-geo-index* result)))
 
-       (when (getf data :notify-matches)
+       (when (or (getf data :match-any-terms)
+                 (getf data :match-all-terms))
          (index-matchmaker id data))))))
 
 (defun modify-inventory-item (id &key text tags privacy latitude longitude)
@@ -134,7 +135,7 @@
         (geo-index-remove *offer-geo-index* result)
         (geo-index-remove *request-geo-index* result))
       (when (getf data :notify-matches)
-        (geo-index-remove *matching-requests-geo-index* result))
+        (geo-index-remove *matchmaker-requests-geo-index* result))
       (geo-index-remove *activity-geo-index* result)
       (setf (result-latitude result) latitude)
       (setf (result-longitude result) longitude)
@@ -142,7 +143,7 @@
         (geo-index-insert *offer-geo-index* result)
         (geo-index-insert *request-geo-index* result))
       (when (getf data :notify-matches)
-        (geo-index-insert *matching-requests-geo-index* result)))
+        (geo-index-insert *matchmaker-requests-geo-index* result)))
 
     (setf (result-privacy result) privacy)
 
@@ -156,7 +157,10 @@
 
       (progn
         (refresh-item-time-in-indexes id :time now)
-        (modify-db id :text text :tags tags :privacy privacy :lat latitude :long longitude :edited now)))))
+        (modify-db id :text text :tags tags :privacy privacy :lat latitude :long longitude :edited now)))
+
+    (when (eql (result-type result) :offer)
+      (update-matchmaker-offer-data id))))
 
 (defun delete-inventory-item (id)
   (let* ((result (gethash id *db-results*))
@@ -380,6 +384,8 @@
                   (see-other "/home"))
                 (progn
                   (contact-opt-out-flash (list *userid*) :item-type type)
+                  (when (string= type "offer")
+                    (update-matchmaker-offer-data new-id))
                   (see-other (format nil (strcat "/" type "s/" new-id))))))
 
             (inventory-tags :error "You must select at least one keyword")))

@@ -45,15 +45,6 @@
   (let* ((request (db id))
          (by (getf request :by))
          (mine (eql *userid* by))
-         (notify-matches (or (getf request :notify-matches)
-                             (get-parameter "notify-matches")
-                             notify-matches))
-         (all-terms (or all-terms (getf request :match-all-terms)))
-         (any-terms (or any-terms (getf request :match-any-terms)))
-         (without-terms (or without-terms (getf request :match-no-terms)))
-         (pre-existing-distance (when (getf request :notify-matches)
-                                  (or (getf request :match-distance) 0)))
-         (distance (or distance pre-existing-distance))
          (result (gethash id *db-results*)))
     (cond
      ((not request)
@@ -70,79 +61,13 @@
             (:div :class "activity"
               (str (inventory-activity-item "request" result :show-distance t :show-tags t))
               (when mine
-                (htm
-                  (:form :method "get" :action (strcat "/requests/" id)
-                    (:input :type "checkbox"
-                            :name "notify-matches"
-                            :checked (when notify-matches "checked")
-                            :onclick "this.form.submit()"
-                      "Notify me by email when someone posts a matching offer..."))
-                  (when notify-matches
-                    (htm
-                      (:form :method "post"
-                             :action (strcat "/requests/" id "/matching-items")
-                             :class "matchmaker"
-                        (:input :type "hidden" :name "notify-matches" :value "")
-
-                        (:h3 "Show me offers...")
-                        (:label
-                          "...containing " (:strong "ANY") " of these words:"
-                          (:br)
-                          (:input :type "text"
-                                  :name "match-any-terms"
-                                  :value (awhen any-terms
-                                           (separate-with-spaces it))))
-                        (:br)
-                        (:label
-                          "...containing  " (:strong "ALL") " of these words:"
-                          (:br)
-                          (:input :type "text"
-                                  :name "match-all-terms"
-                                  :value (awhen all-terms
-                                           (separate-with-spaces it))))
-                        (:br)
-                        (:label
-                          "...containing  " (:strong "NONE") " of these words:"
-                          (:br)
-                          (:input :type "text"
-                                  :name "match-no-terms"
-                                  :value (awhen without-terms
-                                           (separate-with-spaces it))))
-                        (:br)
-                        (:label "...with any of these tags:"
-                         (:br)
-                         (:div :class ""
-                          (str (display-tags "request" (getf request :tags)))
-
-                          (:p (:strong "Note: ")
-                           "To change which tags are matched, please "
-                           (:button :type "submit"
-                                    :class "green inline-link"
-                                    :name "edit-original"
-                             "edit your request")
-                           " and change your keywords")))
-                        (:div
-                          (:div :class "inline-block"
-                            (:label :class "distance-selection"
-                              "...within "
-                              (str (distance-selection-dropdown (or distance
-                                                                    25)))))
-                          (:div :class "float-right"
-                           (:button :class "cancel" :type "submit" :name "cancel" "Cancel")
-                           (:button :class "yes" :type "submit" :name "submit-matchmaker" "Save"))))))
-                  (awhen (getf request :matching-offers)
-                    (dolist (offer it)
-                      (let ((result (gethash offer *db-results*)))
-                        (unless (item-view-denied (result-privacy result))
-                          (str
-                            (inventory-activity-item "offer"
-                                                      result
-                                                      :truncate t
-                                                      :show-distance t
-                                                      :show-what t
-                                                      :show-tags t))))))))))
-          :selected "requests")))
-     (not-found))))
+                (str (item-matches-html id :data request
+                                           :all-terms all-terms
+                                           :any-terms any-terms
+                                           :without-terms without-terms
+                                           :distance distance
+                                           :notify-matches notify-matches)))))
+          :selected "requests"))))))
 
 (defun get-request-reply (id)
   (require-user

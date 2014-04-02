@@ -15,6 +15,7 @@
 - :tags
 - :distance
 - :tags
+- :notification
 - :latitude
 - :longitude
 
@@ -46,6 +47,8 @@ Search:
 - changes to matching offes
 
 ## When user removes their location, delete all matchmakers
+
+## When request is deleted, delete matchmaker
 
 ## Add Inventory Titles
 - require titles on new/edited inventory items

@@ -137,10 +137,12 @@
          (let ((item-ids (gethash userid *pending-person-items-index*)))
             (dolist (item-id item-ids)
               (let ((item (db item-id)))
+                (index-item item-id item)
                 (case (getf item :type)
                   (:gratitude
-                    (notice :new-gratitude :id item-id)))
-                (index-item item-id item)))
+                    (notice :new-gratitude :id item-id))
+                  (:offer
+                    (update-matchmaker-offer-data item-id)))))
            (with-locked-hash-table (*pending-person-items-index*)
              (remhash userid *pending-person-items-index*)))
          (notice :account-approval :id userid

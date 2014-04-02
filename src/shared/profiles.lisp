@@ -385,7 +385,7 @@
          (active (getf entity :active))
          (show-bio-tab (or profile-p self admin)))
     (html
-      (:menu :class "bar"
+      (:menu :type "toolbar" :class "bar"
         (:h3 :class "label" "Profile Menu")
         (when show-bio-tab
           (if (eql tab :about)
