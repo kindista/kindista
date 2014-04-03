@@ -262,10 +262,10 @@
               (:gift
                 (str (gift-activity-item item)))
               (:offer
-                (str (inventory-activity-item "offer" item
+                (str (inventory-activity-item item
                                           :show-what (unless (eql type :offer) t))))
               (:request
-                (str (inventory-activity-item "request" item
+                (str (inventory-activity-item item
                                             :show-what (unless (eql type :request) t)))))))
 
           (setf items (cdr items))

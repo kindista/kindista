@@ -63,8 +63,8 @@
         (standard-page
           "Offers"
           (html
-            (:div :class "activity item"
-              (str (inventory-activity-item "offer" result :show-distance t :show-tags t)))
+            (:div :class  "inventory-item-page"
+              (str (inventory-activity-item result :show-distance t :show-tags t)))
             (str (item-images-html id))
             (when (and mine matching-requests)
               (str (item-matches-html id :data offer

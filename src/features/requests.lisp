@@ -58,8 +58,8 @@
         (standard-page
           "Requests"
           (html
-            (:div :class "activity"
-              (str (inventory-activity-item "request" result :show-distance t :show-tags t))
+            (:div :class "inventory-item-page"
+              (str (inventory-activity-item result :show-distance t :show-tags t))
               (when mine
                 (str (item-matches-html id :data request
                                            :all-terms all-terms

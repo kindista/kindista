@@ -430,7 +430,9 @@
                   (end-of-file (e) (declare (ignore e)) (return)))))))))
     (setf *db-log* (open (s+ +db-path+ "db-log") :if-exists :append :if-does-not-exist :create :direction :output)))
   (clear-indexes)
-  (maphash #'index-item *db*))
+  (maphash #'index-item *db*)
+  (index-matching-requests-by-account) ;must be run after all requests have been indexed
+  )
 
 
 (defun db (id &optional key)

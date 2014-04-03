@@ -86,12 +86,11 @@
                                                  :match-distance distance)))
              (if (or (getf item :match-all-terms)
                      (getf item :match-any-terms))
-               new-matchmaker-data
+               (modify-matchmaker id new-matchmaker-data)
                (index-matchmaker id new-matchmaker-data)))
            (update-matchmaker-request-data id)
            (see-other (or (post-parameter "next")
                           (url-compose (strcat "/requests/" id))))))))))
-
 (defun index-matchmaker (request-id &optional data)
   (flet ((stem-terms (terms)
            (remove-duplicates (mapcan #'stem-text terms) :test #'string=)))
@@ -123,10 +122,51 @@
           (push matchmaker *global-matchmaker-requests-index*)))
 
       ;;only on load-db; (eql :matching-offers nil) when matchmaker is created
-      (with-locked-hash-table (*offers-with-matching-requests-index*)
-        (dolist (offer-id (getf data :matching-offers))
-          (push request-id
-                (gethash offer-id *offers-with-matching-requests-index*)))))))
+      (awhen (getf data :matching-offers)
+        (with-locked-hash-table (*offers-with-matching-requests-index*)
+          (dolist (offer-id it)
+            (push request-id
+                  (gethash offer-id *offers-with-matching-requests-index*))))
+        (with-locked-hash-table (*account-inventory-matches-index*)
+          (dolist (offer-id it)
+            (push (cons offer-id request-id)
+                  (getf (gethash by *account-inventory-matches-index*) :offers))))))))
+
+(defun index-matching-requests-by-account ()
+"Populates the :request property value of *account-inventory-matches-index* such that key=personid/groupid value=(:offers :requests). Should be run after *offers-with-matching-requests-index* is populated."
+  (flet ((index-offer (offer-id matching-request-ids)
+           (let ((by (db offer-id :by)))
+             (dolist (request-id matching-request-ids)
+               (push (cons request-id offer-id)
+                     (getf (gethash by *account-inventory-matches-index*)
+                           :requests))))))
+
+    (with-locked-hash-table (*account-inventory-matches-index*)
+      (maphash #'index-offer *offers-with-matching-requests-index*))))
+
+(defun modify-matchmaker (request-id &optional data)
+  (flet ((stem-terms (terms)
+           (remove-duplicates (mapcan #'stem-text terms) :test #'string=)))
+
+    (let* ((data (or data (db request-id)))
+           (by (getf data :by))
+           (by-data (db by))
+           (all-terms (getf data :match-all-terms))
+           (any-terms (getf data :match-any-terms))
+           (without-terms (getf data :match-no-terms))
+           (tags (getf data :tags))
+           (distance (getf data :match-distance))
+           (matchmaker (gethash request-id *matchmaker-requests*)))
+
+      (setf (match-latitude matchmaker) (getf by-data :lat))
+      (setf (match-longitude matchmaker) (getf by-data :long))
+      (setf (match-distance matchmaker) distance)
+      (setf (match-all-terms matchmaker) (stem-terms all-terms))
+      (setf (match-any-terms matchmaker) (stem-terms any-terms))
+      (setf (match-without-terms matchmaker) (stem-terms without-terms))
+      (setf (match-tags matchmaker) tags)
+      (setf (match-notification matchmaker) (getf data :notify-matches))
+      (setf (match-privacy matchmaker) (getf data :privacy)))))
 
 (defun find-matching-requests-for-offer (offer-id)
   (let* ((offer (db offer-id))
@@ -141,7 +181,7 @@
     (flet ((find-strings (fn request-data offer-data)
              (or (not request-data)
                  (funcall fn #'(lambda (string)
-                                 (find string offer-data) :test #'equalp)
+                                 (find string offer-data :test #'equalp))
                              request-data))))
 
       (loop for matchmaker
@@ -190,7 +230,7 @@
                                     (or offers-with-all-terms
                                         offers-with-any-terms))
                                   offers-with-excluded-terms
-                                  :key #'match-id)))
+                                  :key #'result-id)))
 
     (loop for offer in (if distance
                          (result-id-intersection nearby-offers
@@ -277,7 +317,7 @@
                               (if requestp
                                 (getf data :matching-offers)
                                 (gethash id *offers-with-matching-requests-index*))))
-         (tab (or (when requestp (get-parameter "selected"))
+         (tab (or (get-parameter "selected")
                   (if current-matches "matches" "matchmaker"))))
     (html
       (:div :class "item-matches"
@@ -296,17 +336,28 @@
                           "Matching Offers")))))))
 
         (cond
-         ((string= tab "matches")
-          (awhen (getf data :matching-offers)
-             (dolist (offer it)
-               (let ((result (gethash offer *db-results*)))
-                 (unless (item-view-denied (result-privacy result))
-                   (str (inventory-activity-item "offer"
-                                                 result
-                                                 :truncate t
-                                                 :show-distance t
-                                                 :show-what t
-                                                 :show-tags t)))))))
+         ((or (string= tab "matches") (not requestp))
+          (if current-matches
+            (progn
+              (unless requestp
+                (htm
+                  (:menu :type "toolbar" :class "bar"
+                    (:li :class "selected" "Matching Requests"))))
+              (dolist (item current-matches)
+                (let ((result (gethash item *db-results*)))
+                  (unless (item-view-denied (result-privacy result))
+                    (str (inventory-activity-item result
+                                                  :truncate t
+                                                  :show-distance t
+                                                  :show-what t
+                                                  :show-tags t))))))
+            (when requestp
+              (htm
+                (:strong
+                  "There are no matching offers for the search "
+                  "criteria you have specified. If you have elected to "
+                  "recieve email notifications, you will be notified "
+                  "when someone posts a matching offer.")))))
 
          ((string= tab "matchmaker")
           (htm
@@ -366,3 +417,23 @@
                  (:button :class "cancel" :type "submit" :name "cancel" "Cancel")
                  (:button :class "yes" :type "submit" :name "submit-matchmaker" "Save"))
               ))))))))
+
+(defun matching-inventory-items-by-user (&optional (userid *userid*))
+  (let ((accounts (cons userid (groups-with-user-as-admin userid)))
+        (matching-items))
+    (flet ((items-to-plist (account-id)
+             (let ((items (gethash account-id
+                                   *account-inventory-matches-index*)))
+               (dolist (request (getf items :requests))
+                 (push (list :account-id account-id
+                             :request (car request)
+                             :offer (cdr request))
+                       (getf matching-items :requests)))
+                (dolist (offer (getf items :offers))
+                 (push (list :account-id account-id
+                             :offer (car offer)
+                             :request (cdr offer))
+                       (getf matching-items :offers))))))
+      (mapcar #'items-to-plist accounts))
+
+    matching-items))

@@ -249,12 +249,13 @@
       (str (timestamp (result-time result)))
       (:p (str (person-link (first (result-people result)))) " joined Kindista"))))
 
-(defun inventory-activity-item (type result &key truncate show-distance show-what show-tags)
+(defun inventory-activity-item (result &key truncate show-distance show-what show-tags)
   (let* ((user-id (first (result-people result)))
          (self (eql user-id *userid*))
          (item-id (result-id result))
          (data (db item-id))
          (by (getf data :by))
+         (type (if (eql (getf data :type) :request) "request" "offer"))
          (group-adminp (group-admin-p by))
          (images (getf data :images))
          (item-url (strcat "/" type "s/" item-id))
@@ -329,11 +330,31 @@
            (:a :href url (:img :src (get-image-thumbnail image-id 70 70)
                                :alt alt))))))))
 
-(defun activity-items (items &key (page 0) (count 20) (url "/home")
+(defun activity-items (items &key (page 0) (count 30) (url "/home")
                              (paginate t) (location t) reciprocity show-tags)
   (with-location
     (let ((start (* page count)))
       (html
+        (when (= page 0)
+
+          (let ((matching-items (matching-inventory-items-by-user)))
+            (awhen (rand-from-list (getf matching-items :offers))
+              (htm
+                (:h3 "Featured offer")
+                (str (inventory-activity-item (gethash (getf it :offer)
+                                                         *db-results*)
+                                                :show-what t
+                                                :show-distance location
+                                                :truncate t
+                                                :show-tags t))
+                
+                )
+                    ;(str (if (= (getf it :account-id) *userid*)
+                    ;       "your"
+                    ;       (strcat (group-link (getf it :account-id)) "'s")))
+              )
+            )
+          )
         (iter (for i from 0 to (- (+ start count) 1))
               (cond
                 ((< i start)
@@ -351,16 +372,17 @@
                      (:person
                        (str (joined-activity-item item)))
                      (:offer
-                       (str (inventory-activity-item "offer" item :show-what t :show-distance location :show-tags show-tags :truncate t)))
+                       (str (inventory-activity-item item :show-what t :show-distance location :show-tags show-tags :truncate t)))
                      (:request
-                       (str (inventory-activity-item "request" item :show-what t :show-distance location :truncate t :show-tags show-tags)))))
+                       (str (inventory-activity-item item :show-what t :show-distance location :truncate t :show-tags show-tags)))))
                  (setf items (cdr items)))
 
                 (t
                  (when (< (user-distance) 100)
                    (htm
                      (:div :class "item small"
-                      (:em "Increasing the ")(:strong "show activity within")(:em " distance may yield more results."))))
+                      (:em "Increasing the ")
+                      (:strong "show activity within")(:em " distance may yield more results."))))
                  (finish)))
 
               (finally
@@ -392,9 +414,9 @@
                                           *longitude*
                                           distance)
                        #'< :key #'activity-rank)))
-        (activity-items items :page page 
+        (activity-items items :page page
                               :count count
-                              :reciprocity t 
+                              :reciprocity t
                               :url url
                               :show-tags show-tags)))))
 

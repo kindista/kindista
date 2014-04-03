@@ -808,8 +808,7 @@
                  (pop items))
 
                 ((and (>= i start) items)
-                 (str (inventory-activity-item type
-                                               (pop items)
+                 (str (inventory-activity-item (pop items)
                                                :show-distance t
                                                :truncate t
                                                :show-tags t)))

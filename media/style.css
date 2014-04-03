@@ -1605,6 +1605,7 @@ table.messages {
  height:100%; /* DJB changed this 2/3/14 - make sure it doesn't mess with anything else */
 }
 
+.inventory-item-page .card,
 .card:last-child {
  border-bottom: none;
 }

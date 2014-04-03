@@ -538,3 +538,14 @@
         singular
         (aif plural-form it (strcat singular "s"))))))
 
+(defun highlight-stems-in-text (list-of-stems text)
+  (let ((words (split " "
+                      (ppcre:regex-replace-all
+                        *multispace-scanner*
+                        (ppcre:regex-replace-all *nonword-scanner*
+                                                 (string-downcase text)
+                                                 " ")
+                        " ")))
+        )) 
+  )
+

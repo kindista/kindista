@@ -827,15 +827,10 @@
             (sort aliases
                   #'> :key #'group-rank)))))
 
-(defun request-results-html (request-list)
+(defun inventory-results-html (item-list)
   (html
-    (dolist (item request-list)
-      (str (inventory-activity-item "request" item)))))
-
-(defun offer-results-html (offer-list)
-  (html
-    (dolist (item offer-list)
-      (str (inventory-activity-item "offer" item)))))
+    (dolist (item item-list)
+      (str (inventory-activity-item item)))))
 
 (defun event-results-html (event-list)
   (html
@@ -974,7 +969,7 @@
                          (str (rdist-selection-html (request-uri*)
                                                     :class "rdist search"
                                                     :text "show results within ")))
-                       (str (request-results-html (sublist requests 0 5)))
+                       (str (inventory-results-html (sublist requests 0 5)))
                        (str (more-results-link "request"
                                                (s+ "/requests?q="
                                                    (url-encode q))
@@ -986,7 +981,7 @@
                          (str (rdist-selection-html (request-uri*)
                                                     :class "rdist search"
                                                     :text "show results within ")))
-                       (str (offer-results-html (sublist offers 0 5)))
+                       (str (inventory-results-html (sublist offers 0 5)))
                        (str (more-results-link "offer"
                                                (s+ "/offers?q="
                                                    (url-encode q))

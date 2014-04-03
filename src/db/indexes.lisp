@@ -66,6 +66,7 @@
 (defindex *person-notification-index*)
 (defindex *person-suggested-connections-index*)
 (defindex *profile-activity-index*)
+(defindex *account-inventory-matches-index*) ;k=person/groupid v=(:requests :offers)
 (defindex *request-geo-index*)
 (defindex *request-index*) ;should be called "person-request-index"
 (defindex *request-stem-index* :test 'equalp)
