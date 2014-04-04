@@ -539,13 +539,25 @@
         (aif plural-form it (strcat singular "s"))))))
 
 (defun highlight-stems-in-text (list-of-stems text)
-  (let ((words (split " "
-                      (ppcre:regex-replace-all
-                        *multispace-scanner*
-                        (ppcre:regex-replace-all *nonword-scanner*
-                                                 (string-downcase text)
-                                                 " ")
-                        " ")))
-        )) 
-  )
+  (let* ((text (copy-seq text))
+         (words (remove-duplicates
+                  (split " "
+                         (ppcre:regex-replace-all
+                           *multispace-scanner*
+                           (ppcre:regex-replace-all *nonword-scanner*
+                                                    (string-downcase text)
+                                                    " ")
+                           " "))
+                  :test #'string=)))
+
+     (dolist (word words)
+       (when (find (stem word) list-of-stems :test #'equalp)
+         (setf text
+               (regex-replace-all word
+                                  text
+                                  (html (:strong (str word)))))))
+    text))
+
+
+
 

@@ -277,40 +277,7 @@
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")
                                                  ((string= type "offer") "offered")))
-                   :content (html
-                              (:p
-                                (str (person-link user-id))
-                                (when show-what
-                                  (str (if (getf data :edited) " edited " " posted "))
-                                  (str (if (eq (getf data :type) :offer) "an " "a "))
-                                  (htm (:a :href item-url
-                                           (str type))))
-                                (when show-distance
-                                  (htm (:small
-                                    " (within "
-                                    (str
-                                      (distance-string
-                                        (air-distance (result-latitude result)
-                                                      (result-longitude result)
-                                                      *latitude*
-                                                      *longitude*)))
-                                    ")"))))
-                              (:p
-                                (str
-                                  (if truncate
-                                    (ellipsis (getf data :text)
-                                              :length 500
-                                              :see-more item-url)
-                                    (html-text (getf data :text)))))
-                              (when (and show-tags tags) 
-                                (htm
-                                  (:div :class "tags"
-                                   "Tags:  "
-                                   (str (display-tags type tags)))))
-                              (unless (string= item-url (script-name*));image?
-                                (str (activity-item-images images
-                                                           item-url
-                                                           type)))))))
+                   :content )))
 
 (defun display-tags (type tags)
   (html
@@ -341,12 +308,9 @@
             (awhen (rand-from-list (getf matching-items :offers))
               (htm
                 (:h3 "Featured offer")
-                (str (inventory-activity-item (gethash (getf it :offer)
-                                                         *db-results*)
-                                                :show-what t
-                                                :show-distance location
-                                                :truncate t
-                                                :show-tags t))
+                (str (matching-item-html (getf it :offer) (getf it :request)))
+
+
                 
                 )
                     ;(str (if (= (getf it :account-id) *userid*)

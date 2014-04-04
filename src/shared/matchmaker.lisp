@@ -437,3 +437,63 @@
       (mapcar #'items-to-plist accounts))
 
     matching-items))
+
+(defun highlight-relevant-inventory-text (offer-id request-id)
+  (let ((matchmaker (gethash request-id *matchmaker-requests*)))
+   (highlight-stems-in-text (append (match-any-terms matchmaker)
+                                    (match-all-terms matchmaker))
+                            (db offer-id :text))))
+
+(defun matching-item-html (item-id match-id &key comments truncate class)
+  (let* ((result (gethash item-id *db-results*))
+         (data (db item-id))
+         (type (case (result-type result)(:offer "offer") (:request "request")))
+         (adminp (getf *user* :admin))
+         (reply (not (and adminp (item-view-denied (result-privacy result)))))
+         (url (strcat "/" type "s/" item-id))
+        
+         )
+   (html
+     (:div :class (if class (s+ "card " class) "card") :id item-id
+       (str (timestamp (result-time result)))
+       (:p
+         "Posted by "
+         (str (person-link (getf data :by)))
+         (:small
+           " (within "
+           (str
+             (distance-string
+               (air-distance (result-latitude result)
+                             (result-longitude result)
+                             *latitude*
+                             *longitude*)))
+           ")"))
+       (:p
+         (str
+           (if truncate
+              (ellipsis (getf data :text)
+                        :length 500
+                        :see-more url)
+              (highlight-relevant-inventory-text
+                           item-id
+                           match-id))))
+       (:div :class "tags"
+        "Tags:  "
+        (str (display-tags type (result-tags result))))
+
+       (:div :class "actions"
+         (str (activity-icons :hearts (length (loves item-id))
+                              :comments comments
+                              :url url))
+         (:form :method "post" :action url
+           (:input :type "hidden" :name "next" :value (request-uri*))
+           (when reply
+              (htm
+               (:input :type "submit" :name "reply" :value "Reply")))
+           (when adminp
+             (htm
+               " &middot; "
+               (:input :type "submit" :name "edit" :value "Edit")
+               " &middot; "
+               (:input :type "submit" :name "inappropriate-item" :value "Inappropriate"))))
+         )))))
