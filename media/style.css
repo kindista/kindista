@@ -1610,6 +1610,37 @@ table.messages {
  border-bottom: none;
 }
 
+div.suggested-items {
+ background: #fbf4d7;
+ padding: 0 0.5em 0.4em;
+ border-radius: 0.5em;
+}
+
+div.suggested-items > .div {
+ margin: 0.5em 0;
+}
+
+div.suggested-items p {
+ font-size: 0.9em;
+}
+
+div.suggested-items h3 {
+ margin-top: 0.7em;
+}
+
+div.suggested-items .tags {
+ font-size: inherit;
+}
+
+div.suggested-items p.match-reason {
+ margin: 0.3em 0;
+}
+
+div.system-match {
+ padding-bottom: 0.4em;
+ border-bottom: 1px solid #fafafa;
+}
+
 .card-details {
  overflow: hidden;
 }

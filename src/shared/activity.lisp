@@ -279,11 +279,22 @@
                                                  ((string= type "offer") "offered")))
                    :content )))
 
-(defun display-tags (type tags)
+(defun display-search-terms (typestring terms)
+  (html
+    (dolist (term terms)
+      (htm
+        (:a :href (url-compose (strcat "/" typestring "s") "q" term)
+         (str term))
+        (unless (eql term (car (last terms)))
+          (htm
+            " &middot "))))))
+
+(defun display-tags (typestring tags)
   (html
     (dolist (tag tags)
       (htm
-        (:a :href (url-compose (strcat "/" type "s") "kw" tag) (str tag))
+        (:a :href (url-compose (strcat "/" typestring "s") "kw" tag)
+         (str tag))
         (unless (eql tag (car (last tags)))
           (htm
             " &middot "))))))
@@ -307,18 +318,21 @@
           (let ((matching-items (matching-inventory-items-by-user)))
             (awhen (rand-from-list (getf matching-items :offers))
               (htm
-                (:h3 "Featured offer")
-                (str (matching-item-html (getf it :offer) (getf it :request)))
-
-
-                
-                )
-                    ;(str (if (= (getf it :account-id) *userid*)
-                    ;       "your"
-                    ;       (strcat (group-link (getf it :account-id)) "'s")))
-              )
-            )
-          )
+                (:div :class "suggested-items card"
+                  (:h3 "Suggested offer")
+                  (str (network-matching-item-html (getf it :offer)
+                                                   (getf it :request)))
+                  (str (my-matching-item-html (getf it :request)
+                                              (getf it :offer)
+                                              )))))
+            (awhen (rand-from-list (getf matching-items :requests))
+              (htm
+                (:div :class "suggested-items card"
+                  (:h3 "Suggested request")
+                  (str (network-matching-item-html (getf it :request)
+                                                   (getf it :offer)))
+                  (str (my-matching-item-html (getf it :offer)
+                                              (getf it :request))))))))
         (iter (for i from 0 to (- (+ start count) 1))
               (cond
                 ((< i start)

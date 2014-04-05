@@ -558,6 +558,3 @@
                                   (html (:strong (str word)))))))
     text))
 
-
-
-

@@ -444,42 +444,96 @@
                                     (match-all-terms matchmaker))
                             (db offer-id :text))))
 
-(defun matching-item-html (item-id match-id &key comments truncate class)
+(defun my-matching-item-html (item-id match-id &key data reply)
+  (let* ((data (or data (db item-id)))
+         (type (getf data :type))
+         (offer-p (eql type :offer))
+         (typestring (if offer-p "offer" "request"))
+         (url (strcat "/" typestring "s/" item-id))
+         (matchmaker (unless offer-p (gethash item-id *matchmaker-requests*)))
+         (result (if offer-p
+                   (gethash item-id *db-results*)
+                   matchmaker))
+         (terms (union (getf data :match-all-terms)
+                       (getf data :match-any-terms)))
+         (tags (result-tags result))
+         )
+    (html
+      (:div :class "my-match"
+        (:p (str (if offer-p "...matches an " "...matches a "))
+            (:a :href url (str typestring))
+            " by "
+            (str (person-link (getf data :by))))
+        (:p (str (if offer-p
+                   (highlight-relevant-inventory-text item-id match-id)
+                   (getf data :text))))
+        (:p :class "match-reason"
+          (:span :class "tags"
+            "tags:  "
+            (str (display-tags type tags))))
+
+        (when terms
+          (htm
+            (:p :class "match-reason"
+              (:span :class "tags" "matchmaker:  ")
+              (dolist (term terms)
+                 (htm (str term))
+                 (unless (eql term (car (last terms)))
+                   (htm " &middot "))))))
+        (:div :class "actions"
+          (:form :method "post" :action url
+            (:input :type "hidden" :name "next" :value (request-uri*))
+            (when reply
+              (htm
+                (:input :type "submit" :name "reply" :value "Reply")))
+            (:input :type "submit"
+                    :name "delete"
+                    :value "Delete")
+            " &middot; "
+            (when offer-p
+              (htm (:input :type "submit" :name "edit" :value "Edit offer"))))
+
+          (unless offer-p
+            (htm
+              (:a :href (url-compose url "selected" "matchmaker")
+                "Edit matchmaker"))))))))
+
+
+(defun network-matching-item-html (item-id match-id &key comments truncate)
   (let* ((result (gethash item-id *db-results*))
          (data (db item-id))
-         (type (case (result-type result)(:offer "offer") (:request "request")))
+         (type (case (result-type result)
+                 (:offer "offer") (:request "request")))
          (adminp (getf *user* :admin))
          (reply (not (and adminp (item-view-denied (result-privacy result)))))
-         (url (strcat "/" type "s/" item-id))
-        
-         )
+         (url (strcat "/" type "s/" item-id)))
    (html
-     (:div :class (if class (s+ "card " class) "card") :id item-id
-       (str (timestamp (result-time result)))
-       (:p
-         "Posted by "
-         (str (person-link (getf data :by)))
-         (:small
-           " (within "
-           (str
-             (distance-string
-               (air-distance (result-latitude result)
-                             (result-longitude result)
-                             *latitude*
-                             *longitude*)))
-           ")"))
+     (:div :class "system-match" :id item-id
        (:p
          (str
-           (if truncate
-              (ellipsis (getf data :text)
-                        :length 500
-                        :see-more url)
+           (if (eql (result-type result) :offer)
               (highlight-relevant-inventory-text
                            item-id
-                           match-id))))
-       (:div :class "tags"
-        "Tags:  "
-        (str (display-tags type (result-tags result))))
+                           match-id)
+              (getf data :text))))
+       (:p
+         (:em "posted by "
+              (str (person-link (getf data :by)))
+              " "
+              (str (humanize-universal-time (result-time result))) 
+              " (within "
+              (str
+                (distance-string
+                  (air-distance (result-latitude result)
+                                (result-longitude result)
+                                *latitude*
+                                *longitude*)))
+              ") "))
+
+       (:p
+         (:span :class "tags"
+           "tags:  "
+           (str (display-tags type (result-tags result)))))
 
        (:div :class "actions"
          (str (activity-icons :hearts (length (loves item-id))
@@ -496,4 +550,5 @@
                (:input :type "submit" :name "edit" :value "Edit")
                " &middot; "
                (:input :type "submit" :name "inappropriate-item" :value "Inappropriate"))))
-         )))))
+         ))))
+     )

@@ -50,6 +50,9 @@ Search:
 
 ## When request is deleted, delete matchmaker
 
+## Show matches on items
+- allow admins to see all matches
+
 ## Add Inventory Titles
 - require titles on new/edited inventory items
 - display titles on inventory activity items when present
