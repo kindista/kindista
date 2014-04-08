@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete reciprocity)
+(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete reciprocity matchmaker)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -71,9 +71,14 @@
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
                 (htm (:input :type "submit" :name "love" :value "Love")))
               (when reply
-                 (htm
-                  " &middot; "
-                  (:input :type "submit" :name "reply" :value "Reply")))
+                (htm
+                 " &middot; "
+                 (:input :type "submit" :name "reply" :value "Reply")))
+              (when matchmaker
+                (htm
+                 " &middot; "
+                 (:a :href (url-compose url "selected" "matchmaker")
+                  "Matchmaker")))
               (when delete
                 (htm
                   " &middot; "
@@ -277,24 +282,47 @@
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")
                                                  ((string= type "offer") "offered")))
-                   :content )))
+                   :matchmaker (and self (string= type "request"))
+                   :content (html
+                              (:p
+                                (str (person-link user-id))
+                                (when show-what
+                                  (str (if (getf data :edited) " edited " " posted "))
+                                  (str (if (eq (getf data :type) :offer) "an " "a "))
+                                  (htm (:a :href item-url
+                                           (str type))))
+                                (when show-distance
+                                  (htm (:small
+                                    " (within "
+                                    (str
+                                      (distance-string
+                                        (air-distance (result-latitude result)
+                                                      (result-longitude result)
+                                                      *latitude*
+                                                      *longitude*)))
+                                    ")"))))
+                              (:p
+                                (str
+                                  (if truncate
+                                    (ellipsis (getf data :text)
+                                              :length 500
+                                              :see-more item-url)
+                                    (html-text (getf data :text)))))
+                              (when (and show-tags tags) 
+                                (htm
+                                  (:div :class "tags"
+                                   "Tags:  "
+                                   (str (display-tags type tags)))))
+                              (unless (string= item-url (script-name*));image?
+                                (str (activity-item-images images
+                                                           item-url
+                                                           type)))))))
 
-(defun display-search-terms (typestring terms)
-  (html
-    (dolist (term terms)
-      (htm
-        (:a :href (url-compose (strcat "/" typestring "s") "q" term)
-         (str term))
-        (unless (eql term (car (last terms)))
-          (htm
-            " &middot "))))))
-
-(defun display-tags (typestring tags)
+(defun display-tags (type tags)
   (html
     (dolist (tag tags)
       (htm
-        (:a :href (url-compose (strcat "/" typestring "s") "kw" tag)
-         (str tag))
+        (:a :href (url-compose (strcat "/" type "s") "kw" tag) (str tag))
         (unless (eql tag (car (last tags)))
           (htm
             " &middot "))))))
@@ -319,20 +347,26 @@
             (awhen (rand-from-list (getf matching-items :offers))
               (htm
                 (:div :class "suggested-items card"
-                  (:h3 "Suggested offer")
-                  (str (network-matching-item-html (getf it :offer)
-                                                   (getf it :request)))
-                  (str (my-matching-item-html (getf it :request)
-                                              (getf it :offer)
-                                              )))))
-            (awhen (rand-from-list (getf matching-items :requests))
+                 (:h3 "Featured offer")
+                 (str (network-matching-item-html (getf it :offer)
+                                                  (getf it :request)))
+                 (str (my-matching-item-html (getf it :request)
+                                             (getf it :offer)))))
+              (awhen (rand-from-list (getf matching-items :requests))
               (htm
                 (:div :class "suggested-items card"
-                  (:h3 "Suggested request")
-                  (str (network-matching-item-html (getf it :request)
-                                                   (getf it :offer)))
-                  (str (my-matching-item-html (getf it :offer)
-                                              (getf it :request))))))))
+                 (:h3 "Featured request")
+                 (str (network-matching-item-html (getf it :request)
+                                                  (getf it :offer)))
+                 (str (my-matching-item-html (getf it :offer)
+                                             (getf it :request)))))
+               )
+                    ;(str (if (= (getf it :account-id) *userid*)
+                    ;       "your"
+                    ;       (strcat (group-link (getf it :account-id)) "'s")))
+              )
+            )
+          )
         (iter (for i from 0 to (- (+ start count) 1))
               (cond
                 ((< i start)

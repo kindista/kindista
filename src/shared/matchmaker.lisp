@@ -271,29 +271,48 @@
                                                       new-matching-offers))))
 
 (defun update-matchmaker-offer-data (offer-id)
-  (let ((current-matching-requests (copy-list (gethash offer-id *offers-with-matching-requests-index*)))
+  (let ((offered-by (db offer-id :by))
+        (current-matching-requests (copy-list (gethash offer-id *offers-with-matching-requests-index*)))
         (new-matching-requests (find-matching-requests-for-offer offer-id))
         (hidden-from-requests))
 
     ;; remove offer from requests that no longer match
     (dolist (request-id (set-difference current-matching-requests
                                         new-matching-requests))
-      (let ((request (db request-id)))
-        (unless (or (find offer-id (getf request :hidden-matching-offers))
-                    (find offer-id (getf request :matching-offers)))
+      (let* ((request (db request-id))
+             (by (getf request :by)))
+        (when (or (find offer-id (getf request :hidden-matching-offers))
+                  (find offer-id (getf request :matching-offers)))
           (amodify-db request-id :hidden-matching-offers (remove offer-id it)
-                                 :matching-offers (remove offer-id it)))))
+                                 :matching-offers (remove offer-id it))
+          (with-locked-hash-table (*account-inventory-matches-index*)
+            (asetf (getf (gethash by *account-inventory-matches-index*)
+                         :offers)
+                   (remove offer-id it :key #'car))
+            (asetf (getf (gethash offered-by
+                                  *account-inventory-matches-index*)
+                         :requests)
+                   (remove request-id it :key #'cdr))))))
 
     ;; add offer to requests that now match
     (dolist (request-id (set-difference new-matching-requests
                                         current-matching-requests))
       (let* ((request (db request-id))
+             (by (getf request :by))
              (matching-offers (copy-list (getf request :matching-offers))))
         (if (find offer-id (getf request :hidden-matching-offers))
           (push request-id hidden-from-requests)
           (unless (find offer-id matching-offers)
             (modify-db request-id :matching-offers (cons offer-id
-                                                         matching-offers))))))
+                                                         matching-offers))
+            (with-locked-hash-table (*account-inventory-matches-index*)
+              (asetf (getf (gethash by *account-inventory-matches-index*)
+                           :offers)
+                     (pushnew (cons offer-id request-id) it :test #'equal))
+              (asetf (getf (gethash offered-by
+                                    *account-inventory-matches-index*)
+                           :requests)
+                     (pushnew (cons request-id offer-id) it :test #'equal)))))))
 
     (with-locked-hash-table (*offers-with-matching-requests-index*)
       (setf (gethash offer-id *offers-with-matching-requests-index*)
@@ -321,7 +340,7 @@
                   (if current-matches "matches" "matchmaker"))))
     (html
       (:div :class "item-matches"
-        (when (and requestp current-matches)
+        (when (and requestp (or all-terms any-terms))
           (htm
             (:menu :type "toolbar" :class "bar"
               (if (equalp tab "matchmaker")
