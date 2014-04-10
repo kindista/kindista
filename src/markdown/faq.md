@@ -9,14 +9,12 @@
 - [Can I use Kindista to barter with other members?](#can-i-barter-on-kindista)
 - [Are resources shared using Kindista taxable?](#are-resources-taxable)
 
-### Events
-- [What are the guidelines for posting events on Kindista?](#event-guidelines)
-
-### Contacts
+### People
+- [How do I know I can trust someone on Kindista?](#can-i-trust-someone-on-kindista)
 - [What are contacts?](#what-are-contacts)
 - [What are mutual connections on a person's profile?](#what-are-mutual-connections)
 - [How do invitations work?](#how-do-invitations-work)
-- [How do I know I can trust someone on Kindista?](#can-i-trust-someone-on-kindista)
+- [How do I post a concern or complaint about another user on Kindista?](#flagging-other-users)
 
 ### Groups
 - [What are groups?](#what-are-groups)
@@ -27,6 +25,9 @@
 - [What is a statement of gratitude?](#what-is-gratitude)
 - [Can I post gratitude about someone if I haven't  received any resources from them?](#can-i-post-gratitude-about-anyone)
 - [Why should I express my gratitude publicly?](#why-express-gratitude-publicly)
+
+### Events
+- [What are the guidelines for posting events on Kindista?](#event-guidelines)
 
 </div>
   
@@ -189,25 +190,30 @@ you may want to consult a tax attorney.
 
 <small><a href="#questions">Return to questions</a></small>
 
-## Events
+## People
 
-<a id="event-guidelines"></a>
+<a id="can-i-trust-someone-on-kindista"></a>
 
-### What are the guidelines for posting events on Kindista?
+### How do I know I can trust someone on Kindista?
 
-Events posted to Kindista must adhere to our [Terms of Use](/terms).
-Kindista is for non-profit sharing, therefore you may not post an
-event to Kindista for which you plan on charging an entrance fee.
+Kindista offers a variety of ways to determine whether other people 
+on the site are trustworthy. 
+When looking at someone's profile, you can see if you have any 
+[mutual connections](#what-are-mutual-connections).
+If you see anyone on their mutual connections list 
+whom you feel that you can trust, 
+you can contact the connection for a referral. 
+If you don't see any dependable mutual connections, 
+take a look at their 
+[reputation](#what-is-gratitude).
 
-You are free to conduct fundraising activities at events posted to Kindista.
-However, donating to your cause must not be a requirement for participants
-to attend your event.
-<em>If you post an event to Kindista, you may not turn away anyone due to a lack of funds.</em>
+We encourage you to expand your comfort zone for generosity. 
+But at the same time, we want you to feel safe. 
+Always check in with your gut and your heart when 
+considering meeting up with someone you don't already know
+in the real world.
 
 <small><a href="#questions">Return to questions</a></small>
-
-## Connections
-
 <a id="what-are-contacts"></a>
 
 ### What are contacts?
@@ -237,6 +243,10 @@ who have also listed the person whose profile you are looking at
 as one of their own contacts as well. 
 Mutual connections can help you determine 
 if you might want to share with someone. 
+If you have any uncertainty about interacting with someone on Kindista 
+please contact a mutual connection first and ask them if they think 
+the person in question would be trustworthy for your particular situation.
+
 *Note: when you see one of your contacts listed as a mutual connection, 
 that does not necessarily mean that the person whose profile you are looking at 
 has also added the person to their own contacts list.*
@@ -262,28 +272,34 @@ you to their list) when they join. You can add or remove
 someone from your contacts at any time by visiting their profile page.
 
 <small><a href="#questions">Return to questions</a></small>
-<a id="can-i-trust-someone-on-kindista"></a>
+<a id="flagging-other-users"></a>
 
-### How do I know I can trust someone on Kindista?
+### How do I post a concern or complaint about another user on Kindista?
 
-Kindista offers a variety of ways to determine whether other people 
-on the site are trustworthy. 
-When looking at someone's profile, you can see if you have any 
-[mutual connections](#what-are-mutual-connections).
-If you see anyone on their mutual connections list 
-whom you feel that you can trust, 
-you can contact the connection for a referral. 
-If you don't see any dependable mutual connections, 
-take a look at their 
-[reputation](#what-is-gratitude).
+Please [contact us](/contact-us) immediately if you have been mistreated 
+by another Kindista member or if you have a verifiable reason to believe 
+that a Kindista member poses a threat to your safety, your property, or the 
+safety or property of other Kindista members.
 
-We encourage you to expand your comfort zone for generosity. 
-But at the same time, we want you to feel safe. 
-Always check in with your gut and your heart when 
-considering meeting up with someone you don't already know
-in the real world.
+Please do not contact us for simple disagreements or misunderstandings 
+with other members.
+In any case 
+_please do not air your grievances by misusing Kindista's functionality_ 
+(such as misusing the "Gratitude" functionality as a 
+method to publicly post your concerns).  Such misuse of Kindista's 
+functionality is a violation of Kindista's [Terms of Use](/terms) and will 
+not be tolerated.
 
-<small><a href="#questions">Return to questions</a></small>
+We take your concerns very seriously and we handle them on a case-by-case 
+basis. 
+However we make no guarantees about what actions (if any) we might take 
+in your specific circumstances. 
+Please remember that Kindista has no liability whatsoever for your 
+interactions with other Kindista members (for more about this 
+please refer to our [Terms of Use](/terms)).
+Please use [good judgement](#can-i-trust-someone-on-kindista) when choosing 
+who to give to or receive from.
+
 
 ## Groups
 
@@ -404,6 +420,23 @@ if they see that other people are already getting
 lots of their needs met through the system. 
 That's why it's up to us to be 
 as publicly generous and appreciative as possible right now. 
+
+<small><a href="#questions">Return to questions</a></small>
+
+## Events
+
+<a id="event-guidelines"></a>
+
+### What are the guidelines for posting events on Kindista?
+
+Events posted to Kindista must adhere to our [Terms of Use](/terms).
+Kindista is for non-profit sharing, therefore you may not post an
+event to Kindista for which you plan on charging an entrance fee.
+
+You are free to conduct fundraising activities at events posted to Kindista.
+However, donating to your cause must not be a requirement for participants
+to attend your event.
+<em>If you post an event to Kindista, you may not turn away anyone due to a lack of funds.</em>
 
 <small><a href="#questions">Return to questions</a></small>
 
