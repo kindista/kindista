@@ -59,10 +59,16 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (awhen (getf data :emails)
+    (when (and (getf data :emails)
+               (not (getf data :banned)))
       (with-locked-hash-table (*email-index*)
-        (dolist (email it)
+        (dolist (email (getf data :emails))
           (setf (gethash email *email-index*) id))))
+
+    (awhen (getf data :banned)
+      (with-locked-hash-table (*banned-emails-index*)
+        (dolist (email (getf data :emails))
+          (setf (gethash email *banned-emails-index*) id))))
 
     (setf (gethash (getf data :username) *username-index*) id)
 
@@ -224,6 +230,7 @@
 
     (modify-db id :pending nil
                   :banned t
+                  :username nil
                   :notify-kindista nil)))
 
 (defun delete-active-account (id &optional reason)

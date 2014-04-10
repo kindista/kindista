@@ -329,7 +329,7 @@
                (format destination "[~A~@[ [~A]~]] ~A ~A ~:S ~:S ~?~%"
                        (hunchentoot::iso-time)
                        log-level
-                       *userid*
+                       (with-user *userid*)
                        (script-name*)
                        (get-parameters*)
                        (post-parameters*)
@@ -584,7 +584,13 @@
             (:input :type "hidden" :name "delete-inappropriate-item")
             (:label :for "explanation"
              "Do you want to include a comment or explanation about deleting this item (optional)?")
-            (:textarea :cols 300 :rows 5 :name "explanation" :id "explanation")))
+            (:textarea :cols 300 :rows 5 :name "explanation" :id "explanation")
+            (:h3 "The automatically generated response is shown below. "
+                 "If you include an explanation, it will be inserted after the first paragraph.")
+            (:div
+              (str (html-text (deleted-invalid-item-reply-text (db (db item-id :by) :name)
+                                                               (getf *user* :name)
+                                                               type))))))
         (:a :href next-url "No, I didn't mean it!")
         (:button :class "yes" :type "submit" :class "submit" :name "really-delete" "Yes")))
     :class class))

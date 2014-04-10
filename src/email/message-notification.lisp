@@ -79,7 +79,7 @@
                                  valid-recipient-group-admins))
          (deleted-item-type (getf on-item :deleted-item-type))
          (text (if (and deleted-item-type
-                        (eql comment-id (min (gethash on-id *comment-index*))))
+                        (eql comment-id (apply #'min (gethash on-id *comment-index*))))
                  (deleted-invalid-item-reply-text
                    (db (car (remove sender-id participants)) :name)
                    sender-name
