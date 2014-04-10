@@ -164,11 +164,11 @@
             ((gethash email *banned-emails-index*)
              (flash (s+ "The email you have entered, "
                         email
-                        ",is associated with an account "
+                        ", is associated with an account "
                         "that has been banned for posting inappropriate "
                         "content or otherwise violating Kindista's "
                         "Terms of Use. "
-                        "If you believe this to be an error, please email us"
+                        "If you believe this to be an error, please email us "
                         "so we can resolve this issue.")
                     :error t)
              (see-other "/home"))

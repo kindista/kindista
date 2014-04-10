@@ -50,12 +50,12 @@
       (cond
         ((gethash username *banned-emails-index*)
          (flash (s+ "The email you have entered, "
-                    user
-                    ",is associated with an account "
+                    username
+                    ", is associated with an account "
                     "that has been suspended for posting inappropriate "
                     "content or otherwise violating Kindista's "
                     "Terms of Use. "
-                    "If you believe this to be an error, please email us"
+                    "If you believe this to be an error, please email us "
                     "so we can resolve this issue.")
                 :error t)
          (see-other "/home"))
