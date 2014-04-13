@@ -506,6 +506,9 @@
 (defun post-parameter-string (name)
   (awhen (post-parameter name) (unless (string= it "") it)))
 
+(defun get-parameter-string (name)
+  (awhen (get-parameter name) (unless (string= it "") it)))
+
 (defun post-parameter-float (name)
   (awhen (post-parameter name) (unless (string= it "") (read-from-string it))))
 
