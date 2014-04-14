@@ -675,7 +675,8 @@
            (str (privacy-selection-html
                   "event"
                   restrictedp
-                  (if (not (equal identity-selection *userid*))
+                  (if (and identity-selection
+                           (not (equal identity-selection *userid*)))
                     (list (cons identity-selection (db identity-selection :name)))
                     (append (groups-with-user-as-member)
                             (groups-with-user-as-admin)))
