@@ -234,7 +234,7 @@
         "..."
         (when see-more
           (htm (:a :href see-more " see more"))))
-      newtext)))
+      (html-text newtext))))
 
 (defun html-text (string)
   (if string
