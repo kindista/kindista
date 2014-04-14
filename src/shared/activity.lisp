@@ -174,7 +174,7 @@
                        (ellipsis (getf data :details)
                                  :length (if sidebar 150 500)
                                  :see-more item-url)
-                       (getf data :details))))))))
+                       (html-text (getf data :details)))))))))
 
 (defun gratitude-activity-item (result &key truncate reciprocity)
   ; we should probably get rid of these comments -DJB
