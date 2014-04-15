@@ -51,7 +51,8 @@
          (result (gethash id *db-results*))
          (matching-requests (gethash id *offers-with-matching-requests-index*)))
     (cond
-      ((not offer)
+      ((or (not offer)
+           (not (eql (getf offer :type) :offer)))
        (not-found))
 
      ((and (not mine)

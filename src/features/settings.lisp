@@ -152,7 +152,7 @@
              (:div :class "submit-settings"
                (:button :class "cancel small" :type "submit" :name "cancel" "Cancel")
                (:button :class "yes small" :type "submit" :name "confirm-address" "Submit"))
-             (:input :type "text" :name "address" :value (str address))
+             (:input :type "text" :name "address" :value address)
              (when groupid
                (htm
                  (:br)

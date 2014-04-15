@@ -1636,9 +1636,14 @@ div.suggested-items p.match-reason {
  margin: 0.3em 0;
 }
 
-div.offer-match {
- padding-bottom: 0.4em;
- border-bottom: 1px solid #fafafa;
+div.offer-match:last-child,
+div.request-match:last-child {
+ border-top: 1px solid #fafafa;
+}
+
+div.offer-match,
+div.request-match {
+ position: relative;
 }
 
 .card-details {

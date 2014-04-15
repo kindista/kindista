@@ -47,7 +47,8 @@
          (mine (eql *userid* by))
          (result (gethash id *db-results*)))
     (cond
-     ((not request)
+     ((or (not request)
+          (not (eql (getf request :type) :request)))
       (not-found))
 
      ((and (not mine)

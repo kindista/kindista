@@ -24,6 +24,8 @@
 (defun post-matchmaker (id)
   (let* ((id (parse-integer id))
          (item (db id))
+         (old-matches)
+         (old-hidden-matches)
          (by (getf item :by))
          (all-terms (post-parameter-words "match-all-terms"))
 
@@ -77,7 +79,10 @@
            (try-again "Please enter at least 1 search term you would like to be notified about"))
 
           (t
-
+           (setf old-matches
+                 (copy-list (getf item :matching-offers)))
+           (setf old-hidden-matches
+                 (copy-list (getf item :hidden-matching-offers)))
            (let ((new-matchmaker-data (modify-db id
                                                  :notify-matches notify
                                                  :match-all-terms all-terms
@@ -88,9 +93,13 @@
                      (getf item :match-any-terms))
                (modify-matchmaker id new-matchmaker-data)
                (index-matchmaker id new-matchmaker-data)))
-           (update-matchmaker-request-data id)
+
+           (update-matchmaker-request-data id
+                                           :prior-matching-offers old-matches
+                                           :rejected-offers old-hidden-matches)
            (see-other (or (post-parameter "next")
                           (url-compose (strcat "/requests/" id))))))))))
+
 (defun index-matchmaker (request-id &optional data)
   (flet ((stem-terms (terms)
            (remove-duplicates (mapcan #'stem-text terms) :test #'string=)))
@@ -243,27 +252,53 @@
                                            (db (result-id offer) :by))))
           collect (result-id offer))))
 
-(defun update-matchmaker-request-data (request-id &key data matchmaker)
+(defun update-matchmaker-request-data (request-id &key data matchmaker prior-matching-offers rejected-offers)
   (let* ((request (or data (db request-id)))
+         (requested-by (getf request :by))
          (matchmaker (or matchmaker
                          (gethash request-id *matchmaker-requests*)))
-         (current-matching-offers (db request :matching-offers))
-         (rejected-offers (db request :hidden-matching-offers))
-         (all-old-matches (append current-matching-offers rejected-offers))
+         (all-old-matches (append prior-matching-offers rejected-offers))
          (new-matching-offers (find-matching-offers-for-request request-id
                                                                 matchmaker))
          (new-useful-offers (set-difference new-matching-offers
                                             rejected-offers)))
 
-    (with-locked-hash-table (*offers-with-matching-requests-index*)
-      (dolist (offer-id (set-difference all-old-matches
-                                        new-matching-offers))
-        (asetf (gethash offer-id *offers-with-matching-requests-index*)
-               (remove request-id it)))
-      (dolist (offer-id (set-difference new-matching-offers
-                                        all-old-matches))
-        (push request-id
-              (gethash offer-id *offers-with-matching-requests-index*))))
+    (dolist (offer-id (set-difference all-old-matches
+                                      new-matching-offers))
+      (let* ((offer (db offer-id))
+             (offered-by (getf offer :by)))
+        (with-locked-hash-table (*offers-with-matching-requests-index*)
+          (asetf (gethash offer-id *offers-with-matching-requests-index*)
+                 (remove request-id it)))
+
+        (with-locked-hash-table (*account-inventory-matches-index*)
+          (asetf (getf (gethash offered-by *account-inventory-matches-index*)
+                       :requests)
+                 (remove request-id it :key #'car))
+          (asetf (getf (gethash requested-by
+                                *account-inventory-matches-index*)
+                       :offers)
+                 (remove offer-id it :key #'car)))))
+
+        (terpri)
+    (dolist (offer-id (set-difference new-matching-offers
+                                      all-old-matches))
+
+      (let* ((offer (db offer-id))
+             (offered-by (getf offer :by)))
+        (with-locked-hash-table (*offers-with-matching-requests-index*)
+          (push request-id
+                (gethash offer-id *offers-with-matching-requests-index*)))
+
+        (with-locked-hash-table (*account-inventory-matches-index*)
+          (asetf (getf (gethash requested-by
+                                *account-inventory-matches-index*)
+                       :offers)
+                 (pushnew (cons offer-id request-id) it :test #'equal))
+          (asetf (getf (gethash offered-by
+                                *account-inventory-matches-index*)
+                       :requests)
+                 (pushnew (cons request-id offer-id) it :test #'equal)))))
 
     (amodify-db request-id
                 :matching-offers new-useful-offers
@@ -280,25 +315,26 @@
     (dolist (request-id (set-difference current-matching-requests
                                         new-matching-requests))
       (let* ((request (db request-id))
-             (by (getf request :by)))
+             (requested-by (getf request :by)))
         (when (or (find offer-id (getf request :hidden-matching-offers))
                   (find offer-id (getf request :matching-offers)))
           (amodify-db request-id :hidden-matching-offers (remove offer-id it)
                                  :matching-offers (remove offer-id it))
           (with-locked-hash-table (*account-inventory-matches-index*)
-            (asetf (getf (gethash by *account-inventory-matches-index*)
+            (asetf (getf (gethash requested-by
+                                  *account-inventory-matches-index*)
                          :offers)
                    (remove offer-id it :key #'car))
             (asetf (getf (gethash offered-by
                                   *account-inventory-matches-index*)
                          :requests)
-                   (remove request-id it :key #'cdr))))))
+                   (remove request-id it :key #'car))))))
 
     ;; add offer to requests that now match
     (dolist (request-id (set-difference new-matching-requests
                                         current-matching-requests))
       (let* ((request (db request-id))
-             (by (getf request :by))
+             (requested-by (getf request :by))
              (matching-offers (copy-list (getf request :matching-offers))))
         (if (find offer-id (getf request :hidden-matching-offers))
           (push request-id hidden-from-requests)
@@ -306,7 +342,8 @@
             (modify-db request-id :matching-offers (cons offer-id
                                                          matching-offers))
             (with-locked-hash-table (*account-inventory-matches-index*)
-              (asetf (getf (gethash by *account-inventory-matches-index*)
+              (asetf (getf (gethash requested-by
+                                    *account-inventory-matches-index*)
                            :offers)
                      (pushnew (cons offer-id request-id) it :test #'equal))
               (asetf (getf (gethash offered-by
@@ -483,7 +520,8 @@
               " by "
               (str (person-link by)))))
         (:div :class "inventory-text"
-          (str (highlight-relevant-inventory-text offer-id request-id)))
+          (:p
+            (str (highlight-relevant-inventory-text offer-id request-id))))
         (unless mine
           (htm
             (:p
@@ -510,13 +548,15 @@
             (:input :type "hidden" :name "next" :value (request-uri*))
             (when reply
                (htm
-                (:input :type "submit" :name "reply" :value "Reply")))
-            (when adminp
+                 (:input :type "submit" :name "reply" :value "Reply")))
+            (when (or adminp mine)
               (when reply (htm " &middot; "))
               (htm
                 (:input :type "submit" :name "edit" :value "Edit")
                 " &middot; "
-                (:input :type "submit" :name "inappropriate-item" :value "Inappropriate")))))))))
+                (if adminp
+                  (htm (:input :type "submit" :name "inappropriate-item" :value "Inappropriate"))
+                  (htm (:input :type "submit" :name "delete" :value "Delete")))))))))))
 
 (defun featured-request-match-html (request-id &key data)
   (let* ((request (or data (db request-id)))
@@ -536,7 +576,7 @@
                                (match-privacy matchmaker)))))
          (tags (match-tags matchmaker)))
     (html
-      (:div :class "my-match"
+      (:div :class "request-match"
         (when mine
           (htm
             (:p "...matches a "
@@ -575,16 +615,16 @@
             (:input :type "hidden" :name "next" :value (request-uri*))
             (when reply-p
               (htm
-                (:input :type "submit" :name "reply" :value "Reply")
-            " &middot; "))
-            (:input :type "submit"
-                    :name "delete"
-                    :value "Delete")
-            " &middot; ")
+                (:input :type "submit" :name "reply" :value "Reply")))
+            (when mine
+              (htm
+                (:input :type "submit" :name "delete" :value "Delete")
+                " &middot; ")))
 
-        (htm
-          (:a :href (url-compose url "selected" "matchmaker")
-            "Edit matchmaker")))))))
+        (when mine
+          (htm
+            (:a :href (url-compose url "selected" "matchmaker")
+              " Edit matchmaker"))))))))
 
 (defun my-matching-item-html (item-id match-id &key data reply)
   (let* ((data (or data (db item-id)))

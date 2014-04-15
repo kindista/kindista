@@ -347,28 +347,22 @@
             (awhen (rand-from-list (getf matching-items :offers))
               (htm
                 (:div :class "suggested-items card"
-                 (:h3 "Featured offer")
-                 (str (featured-offer-match-html (getf it :offer)
-                                                 (getf it :request)))
-                 (str (featured-request-match-html (getf it :request)))))
-              (awhen (rand-from-list (getf matching-items :requests))
-                (let* ((request (db (getf it :request)))
-                       (by (getf request :by)))
-                  (htm
+                  (:h3 "Featured offer")
+                  (str (featured-offer-match-html (getf it :offer)
+                                                  (getf it :request)))
+                  (str (featured-request-match-html (getf it :request))))))
+            (awhen (rand-from-list (getf matching-items :requests))
+              (let* ((request (db (getf it :request))))
+                (htm
                   (:div :class "suggested-items card"
-                   (:h3 "Will you respond to this request?...")
-                   (str (featured-request-match-html (getf it :request)
-                                                     :data request))   
-                   (str (featured-offer-match-html (getf it :offer)
-                                                   (getf it :request)))
-                   )))
-               )
-                    ;(str (if (= (getf it :account-id) *userid*)
-                    ;       "your"
-                    ;       (strcat (group-link (getf it :account-id)) "'s")))
-              )
-            )
-           
+                    (:h3 "Will you respond to this request?...")
+                    (str (featured-request-match-html (getf it :request)
+                                                      :data request))   
+                    (str (featured-offer-match-html (getf it :offer)
+                                                    (getf it :request)))
+                    )))))
+         ;alternative implementation. can be deleted if matchmaker has
+         ;already launched
          ;(let ((matching-items (matching-inventory-items-by-user)))
          ;  (awhen (rand-from-list (getf matching-items :offers))
          ;    (htm
