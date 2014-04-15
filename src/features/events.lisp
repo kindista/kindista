@@ -675,7 +675,8 @@
            (str (privacy-selection-html
                   "event"
                   restrictedp
-                  (if (not (equal identity-selection *userid*))
+                  (if (and identity-selection
+                           (not (equal identity-selection *userid*)))
                     (list (cons identity-selection (db identity-selection :name)))
                     (append (groups-with-user-as-member)
                             (groups-with-user-as-admin)))
@@ -999,33 +1000,41 @@
                      (and (not (equalp location old-location))
                           (nor new-lat new-long)))
                  ; if there's a new location
-                 (multiple-value-bind (latitude longitude address)
-                   (geocode-address location)
-                   (if (equalp address old-location)
-                     ; if the geocoded new location is the same as
-                     ; the old address
-                     (submit-data)
-                     (verify-location url
-                                      "Please verify the location of your event."
-                                      latitude
-                                      longitude
-                                      "location" address
-                                      "title" title
-                                      "details" details
-                                      "date" date
-                                      "time" time
-                                      "groups-selected" groups-selected
-                                      "identity-selection" identity-selection
-                                      "privacy-selection" privacy-selection
-                                      "prior-identity" prior-identity
-                                      "recurring" recurring
-                                      "frequency" frequency
-                                      "interval" interval
-                                      "days-of-week" days-of-week
-                                      "by-day-or-date" by-day-or-date
-                                      "weeks-of-month" weeks-of-month
-                                      "end-date" (awhen local-end-time
-                                                   (humanize-exact-time it))))))
+                 (let* ((location-data (multiple-value-list (geocode-address location)))
+                        (latitude (first location-data))
+                        (longitude (second location-data))
+                        (address (third location-data)))
+                   (cond 
+                     ((notevery #'identity (list latitude longitude))
+                      (try-again "We are unable to understand the location you submitted. Please use an actual address. If your event doesn't have a specific address, please enter an approximate address and give more detailed directions in the details section."))
+
+                     ((equalp address old-location)
+                      ; if the geocoded new location is the same as
+                      ; the old address
+                      (submit-data))
+
+                     (t
+                      (verify-location url
+                                       "Please verify the location of your event."
+                                       latitude
+                                       longitude
+                                       "location" address
+                                       "title" title
+                                       "details" details
+                                       "date" date
+                                       "time" time
+                                       "groups-selected" groups-selected
+                                       "identity-selection" identity-selection
+                                       "privacy-selection" privacy-selection
+                                       "prior-identity" prior-identity
+                                       "recurring" recurring
+                                       "frequency" frequency
+                                       "interval" interval
+                                       "days-of-week" days-of-week
+                                       "by-day-or-date" by-day-or-date
+                                       "weeks-of-month" weeks-of-month
+                                       "end-date" (awhen local-end-time
+                                                    (humanize-exact-time it)))))))
 
                 ((or (post-parameter "submit-edits")
                      (post-parameter "confirm-location"))

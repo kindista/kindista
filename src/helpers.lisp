@@ -244,7 +244,7 @@
         "..."
         (when see-more
           (htm (:a :href see-more " see more"))))
-      newtext)))
+      (html-text newtext))))
 
 (defun html-text (string)
   (if string
@@ -518,6 +518,9 @@
 
 (defun post-parameter-words (name)
   (awhen (post-parameter name) (unless (string= it "") (words-from-string it))))
+
+(defun get-parameter-string (name)
+  (awhen (get-parameter name) (unless (string= it "") it)))
 
 (defun post-parameter-float (name)
   (awhen (post-parameter name) (unless (string= it "") (read-from-string it))))

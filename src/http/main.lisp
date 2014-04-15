@@ -58,7 +58,7 @@
 
 (defun login-required ()
   (flash "The page you requested is only available when you are logged in to Kindista." :error t)
-  (see-other (referer)))
+  (see-other (or (referer) (url-compose "/home" "next" (request-uri*)))))
 
 (defun active-status-required ()
   (flash "Sorry, you must reactivate your account to perform that action." :error t)
@@ -446,6 +446,8 @@
         (:input :type "password"
                 :id "password"
                 :name "password")
+        (awhen (get-parameter-string "next")
+          (htm (:input :type "hidden" :name "next" :value it)))
         (:button :type "submit" :class "yes" "Log in")
         (:a :href "/reset" "Forgot your password?")))))
 
