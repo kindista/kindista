@@ -112,8 +112,8 @@
               (:ul
                 (:li (:span (:input :type "text"
                                     :name "name"
-                                    :value (str (or group-name
-                                                    (getf *user* :name)))))
+                                    :value (or group-name
+                                               (getf *user* :name))))
                      (unless groupid
                        (htm (:span (:strong "display name")))))
                 (unless groupid
@@ -122,7 +122,7 @@
                                   (:span (:input :type "text"
                                                  :name "aliases"
                                                  :value (awhen (nth i aliases)
-                                                       (str it))))
+                                                          it)))
                                   (:span "nickname")))))))))
         (t
           (html
@@ -152,13 +152,13 @@
              (:div :class "submit-settings"
                (:button :class "cancel small" :type "submit" :name "cancel" "Cancel")
                (:button :class "yes small" :type "submit" :name "confirm-address" "Submit"))
-             (:input :type "text" :name "address" :value (str address))
+             (:input :type "text" :name "address" :value address)
              (when groupid
                (htm
                  (:br)
                  (:input :type "checkbox"
                          :name "public-location"
-                         :value (str (when public-location "checked")))
+                         :value (when public-location "checked"))
                  "Display this address publicly to anyone looking at this group's profile page.")))))
         (t
           (if (and address (getf entity :location))
@@ -219,7 +219,7 @@
 
               (:form :method "post" :action "/settings"
                 (:h3 "Is this location correct?")
-                (:input :type "hidden" :name "next" :value (str next))
+                (:input :type "hidden" :name "next" :value next)
                 (when groupid
                   (htm (:input :type "hidden" :name "groupid" :value groupid)))
                 (:button :class "cancel"
@@ -744,7 +744,7 @@
                               (:form :method "get"
                                      :class "invite-member-result"
                                      :action (strcat "/settings/admin-roles" )
-                                 (:input :type "hidden" :name "groupid" :value (str groupid))
+                                 (:input :type "hidden" :name "groupid" :value groupid)
                                  (str
                                    (person-card
                                      (car person-cons)
