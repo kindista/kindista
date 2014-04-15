@@ -126,8 +126,9 @@
     (setf (result-longitude result) long)
 
     (when (and (getf data :created)
-               (getf data :active)
-      (metaphone-index-insert (cons (getf data :name) (getf data :aliases)) result))
+               (getf data :active))
+
+      (metaphone-index-insert (cons (getf data :name) (getf data :aliases)) result)
 
       (when (and lat long)
 
