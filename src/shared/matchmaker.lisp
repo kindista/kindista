@@ -463,6 +463,129 @@
                                     (match-all-terms matchmaker))
                             (db offer-id :text))))
 
+(defun featured-offer-match-html (offer-id request-id)
+  (let* ((result (gethash offer-id *db-results*))
+         (offer (db offer-id))
+         (adminp (getf *user* :admin))
+         (by (getf offer :by))
+         (mine (or (eql *userid* by)
+                   (find by (getf *user-group-privileges* :admin))))
+         (reply (nor (and adminp
+                          (item-view-denied (result-privacy result)))
+                     mine))
+         (url (strcat "/offers/" offer-id)))
+    (html
+      (:div :class "offer-match"
+        (when mine
+          (htm
+            (:p "...matches an "
+              (:a :href url "offer")
+              " by "
+              (str (person-link by)))))
+        (:div :class "inventory-text"
+          (str (highlight-relevant-inventory-text offer-id request-id)))
+        (unless mine
+          (htm
+            (:p
+              (:em "posted by "
+                 (str (person-link by)) " "
+                 (str (humanize-universal-time (result-time result)))
+                 " (within "
+                 (str (distance-string
+                     (air-distance (result-latitude result)
+                                   (result-longitude result)
+                                   *latitude*
+                                   *longitude*)))
+                 ") "))))
+
+        (:p
+          (:span :class "tags"
+            "tags:  "
+            (str (display-tags "offer" (result-tags result)))))
+
+        (:div :class "actions"
+          (str (activity-icons :hearts (length (loves offer-id))
+                               :url url))
+          (:form :method "post" :action url
+            (:input :type "hidden" :name "next" :value (request-uri*))
+            (when reply
+               (htm
+                (:input :type "submit" :name "reply" :value "Reply")))
+            (when adminp
+              (when reply (htm " &middot; "))
+              (htm
+                (:input :type "submit" :name "edit" :value "Edit")
+                " &middot; "
+                (:input :type "submit" :name "inappropriate-item" :value "Inappropriate")))))))))
+
+(defun featured-request-match-html (request-id &key data)
+  (let* ((request (or data (db request-id)))
+         (url (strcat "/requests/" request-id))
+         (matchmaker (gethash request-id *matchmaker-requests*))
+         (adminp (getf *user* :admin))
+         (terms (union (getf request :match-all-terms)
+                       (getf request :match-any-terms)))
+         (by (getf request :by))
+         (mine (or (eql *userid* by)
+                   (find by (getf *user-group-privileges* :admin))))
+         (reply-p (nor mine
+                       ;; only necessary if we use this function to let admins
+                       ;; see other user's matches
+                        (and adminp
+                             (item-view-denied
+                               (match-privacy matchmaker)))))
+         (tags (match-tags matchmaker)))
+    (html
+      (:div :class "my-match"
+        (when mine
+          (htm
+            (:p "...matches a "
+              (:a :href url "request")
+              " by "
+              (str (person-link by)))))
+        (:p (str (html-text (getf request :text))))
+        (unless mine
+          (htm (:p
+                 (:em "posted by "
+                      (str (person-link by))
+                      " "
+                      (str
+                        (humanize-universal-time (or (getf request :edited)
+                                                     (getf request :created))))
+                      " (within "
+                      (str (distance-string
+                             (air-distance (match-latitude matchmaker)
+                                           (match-longitude matchmaker)
+                                           *latitude*
+                                           *longitude*)))
+                      ") "))))
+
+        (:p :class "match-reason"
+          (:span :class "tags"
+            "tags:  "
+            (str (display-tags "request" tags))))
+        (:p :class "match-reason"
+          (:span :class "tags" "matchmaker:  ")
+          (dolist (term terms)
+             (htm (str term))
+             (unless (eql term (car (last terms)))
+               (htm " &middot "))))
+        (:div :class "actions"
+          (:form :method "post" :action url
+            (:input :type "hidden" :name "next" :value (request-uri*))
+            (when reply-p
+              (htm
+                (:input :type "submit" :name "reply" :value "Reply")
+            " &middot; "))
+            (:input :type "submit"
+                    :name "delete"
+                    :value "Delete")
+            " &middot; ")
+
+        (htm
+          (:a :href (url-compose url "selected" "matchmaker")
+            "Edit matchmaker")))))))
+
 (defun my-matching-item-html (item-id match-id &key data reply)
   (let* ((data (or data (db item-id)))
          (type (getf data :type))

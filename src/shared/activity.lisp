@@ -348,24 +348,57 @@
               (htm
                 (:div :class "suggested-items card"
                  (:h3 "Featured offer")
-                 (str (network-matching-item-html (getf it :offer)
-                                                  (getf it :request)))
-                 (str (my-matching-item-html (getf it :request)
-                                             (getf it :offer)))))
+                 (str (featured-offer-match-html (getf it :offer)
+                                                 (getf it :request)))
+                 (str (featured-request-match-html (getf it :request)))))
               (awhen (rand-from-list (getf matching-items :requests))
-              (htm
-                (:div :class "suggested-items card"
-                 (:h3 "Featured request")
-                 (str (network-matching-item-html (getf it :request)
-                                                  (getf it :offer)))
-                 (str (my-matching-item-html (getf it :offer)
-                                             (getf it :request)))))
+                (let* ((request (db (getf it :request)))
+                       (by (getf request :by)))
+                  (htm
+                  (:div :class "suggested-items card"
+                   (:h3 "Will you respond to this request?...")
+                   (str (featured-request-match-html (getf it :request)
+                                                     :data request))   
+                   (str (featured-offer-match-html (getf it :offer)
+                                                   (getf it :request)))
+                   )))
                )
                     ;(str (if (= (getf it :account-id) *userid*)
                     ;       "your"
                     ;       (strcat (group-link (getf it :account-id)) "'s")))
               )
             )
+           
+         ;(let ((matching-items (matching-inventory-items-by-user)))
+         ;  (awhen (rand-from-list (getf matching-items :offers))
+         ;    (htm
+         ;      (:div :class "suggested-items card"
+         ;       (:h3 "Featured offer")
+         ;       (str (network-matching-item-html 
+         ;              (getf it :offer)
+         ;              (getf it :request)  
+         ;              ))
+         ;       (str (my-matching-item-html
+         ;              (getf it :request)    
+         ;              (getf it :offer)
+         ;              ))))
+         ;    (awhen (rand-from-list (getf matching-items :requests))
+         ;      (let* ((request (db (getf it :request)))
+         ;             (by (getf request :by)))
+         ;        (htm
+         ;        (:div :class "suggested-items card"
+         ;         (:h3 "Featured request ")
+         ;         (str (network-matching-item-html (getf it :request)  
+         ;                (getf it :offer)
+         ;                ))
+         ;         (str (my-matching-item-html (getf it :offer) (getf it :request)
+         ;                                          )))))
+         ;     )
+         ;          ;(str (if (= (getf it :account-id) *userid*)
+         ;          ;       "your"
+         ;          ;       (strcat (group-link (getf it :account-id)) "'s")))
+         ;    )
+         ;  )
           )
         (iter (for i from 0 to (- (+ start count) 1))
               (cond
