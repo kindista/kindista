@@ -127,8 +127,9 @@
     (setf (result-longitude result) long)
 
     (when (and (getf data :created)
-               (getf data :active)
-      (metaphone-index-insert (cons (getf data :name) (getf data :aliases)) result))
+               (getf data :active))
+
+      (metaphone-index-insert (cons (getf data :name) (getf data :aliases)) result)
 
       (when (and lat long)
 
@@ -137,9 +138,11 @@
         (unless (< (result-time result) (- (get-universal-time) 15552000))
           (geo-index-insert *activity-geo-index* result))
 
+        (pprint (gethash id *request-index*))
+        (terpri)
         (dolist (request-id (gethash id *request-index*))
           (let ((result (gethash request-id *db-results*)))
-            (pprint request-id)
+           ;(pprint request-id)
             (geo-index-remove *request-geo-index* result)
             (geo-index-remove *activity-geo-index* result)
             (setf (result-latitude result) lat)
@@ -149,7 +152,7 @@
             (geo-index-insert *request-geo-index* result)
             (update-matchmaker-request-data request-id)))
 
-        (terpri)
+       ;(terpri)
        ;(dolist (request-id (mapcar #'car (getf inventory-matches :requests)))
        ; () 
        ;  )
