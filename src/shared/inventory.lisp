@@ -279,28 +279,19 @@
 
 (defun post-new-inventory-item (type &key url)
   (require-active-user
-    (let* ((tags (iter (for pair in (post-parameters*))
-                       (when (and (string= (car pair) "tag")
-                                  (scan *tag-scanner* (cdr pair)))
-                         (collect (cdr pair)))))
-           (groups-selected (iter (for pair in (post-parameters*))
-                                  (when (string= (car pair) "groups-selected")
-                                    (awhen (parse-integer (cdr pair))
-                                      (collect it)))))
-           (groupid (when (scan +number-scanner+ (post-parameter "groupid"))
-                     (parse-integer (post-parameter "groupid"))))
-           (identity-selection (when (scan +number-scanner+
-                                           (post-parameter "identity-selection"))
-                                 (parse-integer (post-parameter "identity-selection"))))
+    (let* ((tags (post-parameter-string-list "tag"
+                                             #'(lambda (tag)
+                                                 (scan *tag-scanner* tag))))
+           (groups-selected (post-parameter-integer-list "groups-selected"))
+           (groupid (post-parameter-integer "groupid"))
+           (identity-selection (post-parameter-integer "identity-selection"))
            ;reset to public when changing identity
-           (restrictedp (when
-                          (and (string= (post-parameter "privacy-selection")
-                                        "restricted")
-                               (or (not identity-selection)
-                                   (eql identity-selection
-                                        (parse-integer (post-parameter "prior-identity")))))
-                          t))
-           (adminp (group-admin-p groupid))
+           (restrictedp (and (equalp (post-parameter "privacy-selection")
+                                      "restricted")
+                              (or (not identity-selection)
+                                  (eql identity-selection
+                                       (post-parameter-integer "prior-identity")))))
+           (adminp (group-admin-p (or groupid identity-selection)))
            (text (when (scan +text-scanner+ (post-parameter "text"))
                    (post-parameter "text"))))
 
@@ -367,7 +358,9 @@
             (let ((new-id (create-inventory-item
                             :type (if (string= type "request") :request
                                                                :offer)
-                            :by (if adminp groupid *userid*)
+                            :by (if adminp
+                                  (or groupid identity-selection)
+                                  *userid*)
                             :privacy groups-selected
                             :text text
                             :tags tags)))
@@ -412,10 +405,15 @@
              (t (not-found)))))
 
         ((post-parameter "reply-text")
-         (create-reply :on id :text (post-parameter "reply-text"))
-         (flash "Your reply has been sent.")
-         (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
-         (see-other (or next (script-name*))))
+         (cond
+           ((getf *user* :pending)
+            (pending-flash "contact other Kindista members")
+            (see-other (or (referer) "/home")))
+           (t
+            (create-reply :on id :text (post-parameter "reply-text"))
+            (flash "Your reply has been sent.")
+            (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
+            (see-other (or next (script-name*))))))
 
         ((post-parameter "love")
          (love id)
@@ -430,17 +428,12 @@
                             adminp
                             (getf *user* :admin))
                       (s+ "You can only edit your own " type "s."))
-           (let* ((tags (iter (for pair in (post-parameters*))
-                              (when (and (string= (car pair) "tag")
-                                         (scan *tag-scanner* (cdr pair)))
-                                (collect (cdr pair)))))
-
-                  (groups-selected (or (iter (for pair in (post-parameters*))
-                                         (when (string= (car pair) "groups-selected")
-                                           (awhen (parse-integer (cdr pair))
-                                             (collect it))))
+           (let* ((tags (post-parameter-string-list "tag"
+                                                    #'(lambda (tag)
+                                                        (scan *tag-scanner*
+                                                              tag))))
+                  (groups-selected (or (post-parameter-integer-list "groups-selected")
                                        (getf item :privacy)))
-
                   (restrictedp (when
                                  (aif (post-parameter "privacy-selection")
                                    (string= "restricted" it)
@@ -500,6 +493,7 @@
                                    :next-url (referer)
                                    :type type
                                    :text (getf item :text)
+                                   :item-id id
                                    :inappropriate-item t)))
 
                 ((post-parameter "delete-inappropriate-item")
@@ -584,13 +578,14 @@
            (:textarea :cols "40" :rows "5" :name "text" (str text))
            (:p  (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
                 (:button :class "yes" :type "submit" :class "submit" :name "post" "Next"))))))
+    :right (sharing-guide-sidebar)
     :selected selected))
 
 (defun enter-inventory-tags (&key title action text existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next)
   (let ((suggested (or tags (get-tag-suggestions text))))
     (standard-page title
      (html
-       (:div :class "item" :id "edit-tags"
+       (:div :class "item inventory-details" :id "edit-tags"
         (str (pending-disclaimer))
         (when error
           (htm
@@ -615,10 +610,10 @@
           (unless (or groupid existingp)
             (awhen (groups-with-user-as-admin)
               (htm
-                (:h2 (str (s+ (if (string= selected "offers")
-                                "Offered" "Requested")
-                              " by")))
-                  (str (identity-selection-html identity-selection it :onchange "this.form.submit()")))))
+                (:label (str (s+ (if (string= selected "offers")
+                                   "Offered" "Requested")
+                                 " by")))
+                (str (identity-selection-html identity-selection it :onchange "this.form.submit()")))))
 
           (when (or (getf *user-group-privileges* :member)
                     (getf *user-group-privileges* :admin)
@@ -637,7 +632,7 @@
                    groups-selected
                    :onchange "this.form.submit()")))
 
-          (:h2 "Select at least one keyword")
+          (:h3 "Select at least one keyword")
           (dolist (tag *top-tags*)
             (htm 
               (:div :class "tag"
@@ -648,7 +643,7 @@
                                    (setf suggested (remove tag suggested :test #'string=))
                                    ""))
                    (:span (str tag)))))
-          (:h2 "Additional keywords (optional)")
+          (:h3 "Additional keywords (optional)")
           (:input :type "text" :name "tags" :size 40
                   :placeholder "e.g. produce, bicycle, tai-chi"
                   :value (format nil "~{~a~^,~^ ~}" suggested))
@@ -664,6 +659,7 @@
 
           (:p (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
               (:button :class "yes" :type "submit" :class "submit" :name "create" (str button-text))))))
+     :right (sharing-guide-sidebar)
      :selected selected)))
 
 ; author

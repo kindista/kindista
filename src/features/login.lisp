@@ -42,7 +42,7 @@
 (defun post-login ()
   (with-token
     (let ((username (post-parameter "username"))
-          (next (post-parameter "next"))
+          (next (post-parameter-string "next"))
           (user nil))
       (if (find #\@ username :test #'equal)
         (setf user (gethash username *email-index*))
@@ -50,12 +50,12 @@
       (cond
         ((gethash username *banned-emails-index*)
          (flash (s+ "The email you have entered, "
-                    user
-                    ",is associated with an account "
+                    username
+                    ", is associated with an account "
                     "that has been suspended for posting inappropriate "
                     "content or otherwise violating Kindista's "
                     "Terms of Use. "
-                    "If you believe this to be an error, please email us"
+                    "If you believe this to be an error, please email us "
                     "so we can resolve this issue.")
                 :error t)
          (see-other "/home"))
@@ -65,7 +65,10 @@
          (see-other (or next "/home")))
         (t
          (setf (return-code*) +http-see-other+)
-         (setf (header-out :location) "/home")
+         (setf (header-out :location)
+               (if next
+                 (url-compose "/home" "next" next)
+                 "/home"))
          (flash "<p>The email or password you entered was not recognized.</p><p>Please try again.</p><p>If you would like to join Kindista please request an invitation from someone you know.</p>" :error t)
          (notice :auth-failure :username user)
          "")))))

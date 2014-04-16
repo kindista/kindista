@@ -31,7 +31,7 @@
      (t
       (send-invitation-email invitation-id)))))
 
-(defun create-invitation (email &key text invite-request-id (expires (* 90 +day-in-seconds+)) (host *userid*) (self nil) name)
+(defun create-invitation (email &key text invite-request-id groups (expires (* 90 +day-in-seconds+)) (host *userid*) self name)
 ; self invitations are verifications for alternate email addresses
   (let* ((time (get-universal-time))
          (invitation (insert-db `(:type :invitation
@@ -39,6 +39,7 @@
                                   :invite-request-id ,invite-request-id
                                   :token ,(random-password 9)
                                   :self ,self
+                                  :groups ,groups
                                   :recipient-email ,email
                                   :text ,text
                                   :name ,name
@@ -84,16 +85,23 @@
                (remove id it)))
       (remove-from-db id))))
 
-(defun resend-invitation (id &key text)
-  (let ((now (get-universal-time)))
-    (if text
-      (amodify-db id :text text
-                     :times-sent (push now it)
-                     :expired-notice-sent nil
-                     :valid-until (+ now (* 90 +day-in-seconds+)))
-      (amodify-db id :times-sent (push now it)
-                     :expired-notice-sent nil
-                     :valid-until (+ now (* 90 +day-in-seconds+))))
+(defun resend-invitation (id &key text groupid)
+  (let* ((now (get-universal-time))
+         (message-data (db id))
+         (message-groups (copy-list (getf message-data :groups)))
+         (message-times-sent (getf message-data :times-sent))
+         (message-parameters (list :valid-until (+ now (* 90 +day-in-seconds+))
+                                   :expired-notice-sent nil
+                                   :times-sent (cons now message-times-sent))))
+    (awhen text (appendf message-parameters message-parameters (list :text it)))
+    (when groupid (appendf message-parameters
+                           message-parameters
+                          (list :groups (if message-groups
+                                           (pushnew groupid message-groups)
+                                           (list groupid)))))
+
+    (apply #'modify-db id message-parameters)
+
     (with-mutex (*invitation-reminder-timer-mutex*)
       (asetf *invitation-reminder-timer-index*
              (remove (rassoc id it)
@@ -135,6 +143,31 @@
       (send-invitation-email id :auto-reminder t))
     (amodify-db id :times-sent (push now it)
                    :auto-reminder-sent (push now it))))
+
+(defun pending-email-actions (email &optional (userid *userid*))
+  (let ((group-invitations-sent nil))
+    (dolist (invitation-id (mapcar #'car (gethash email *invitation-index*)))
+      (let* ((invitation (db invitation-id))
+             (host-id (getf invitation :host))
+             (groups (getf invitation :groups)))
+        ;; send group invites for invitations from groups
+        ;; that the new user never replied to
+        (dolist (groupid groups)
+          (unless (or (find groupid group-invitations-sent)
+                      (find userid (gethash groupid *group-members-index*)))
+            (aif (assoc userid
+                        (gethash groupid
+                                 *group-membership-invitations-index*))
+                 (resend-group-membership-invitation (cdr it))
+                 (create-group-membership-invitation groupid
+                                                     userid
+                                                     :host host-id))
+            (asetf group-invitations-sent (push groupid it))))
+        ;; add new user to contacts of others who had invited them
+        (unless (or (find host-id (list *userid* +kindista-id+))
+                    (find userid (db host-id :following)))
+          (add-contact userid host-id)))
+    (delete-invitation invitation-id))))
 
 (defun add-alt-email (invitation-id)
   (let* ((invitation (db invitation-id))
@@ -283,29 +316,40 @@
             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
             (:button :class "yes" :type "submit" :class "submit" :name "review" "Next")))))))
 
-(defun confirm-invitations (&key text emails bulk-emails next-url)
+(defun confirm-invitations (&key url text emails bulk-emails next-url groupid)
   (standard-page "Confirm invitation"
     (let* ((count (length emails))
            (extra-s (when (> count 1) "s")))
       (html
         (:div :class "item confirm-invite"
-          (:form :method "post" :action "/invite"
+          (:form :method "post" :action (or url "/invite")
             (:input :type "hidden" :name "next-url" :value next-url)
-            (:input :type "hidden" :name "text" :value (escape-for-html text))
+            (when text
+              (htm (:input :type "hidden" :name "text" :value (escape-for-html text))))
+            (:input :type "hidden" :name "groupid" :value groupid)
             (:input :type "hidden" :name "bulk-emails" :value bulk-emails)
             (:h2 "Review your invitation" (str extra-s))
             (:h3 (str (strcat count " ")) "Recipient" (str extra-s) ":")
             (dolist (email emails)
               (htm (str email)
                    (:br)))
-            (if (equal text "")
+            (if groupid
               (htm
-                (:p "You did not include a personalized message to your invitation recipient" (str extra-s) "."))
-              (htm
-                (:h3 "Your personalized invitation message is:")
-                (:blockquote :class "review-text" (str (html-text text)))))
+                (:p "Include a message for your recipient(s): (optional)")
+                (:textarea :rows "6"
+                           :name "text"
+                           :placeholder "Enter your message here..."
+                           (when text (str text))))
+              (if (equal text "")
+                (htm
+                  (:p "You did not include a personalized message to your invitation recipient" (str extra-s) "."))
+                (htm
+                  (:h3 "Your personalized invitation message is:")
+                  (:blockquote :class "review-text" (str (html-text text))))))
             (:p
-              (:button :class "cancel" :type "submit" :class "submit" :name "edit" "Edit Invitation")
+              (if groupid
+                (htm (:button :class "cancel submit" :type "submit" :name "try-again" "Go Back"))
+                (htm (:button :class "cancel submit" :type "submit" :name "edit" "Edit Invitation")))
               (:button :class "yes" :type "submit" :class "submit" :name "confirm" "Send Invitation" (str extra-s)))))))))
 
 (defun get-invite ()
@@ -337,8 +381,7 @@
                                        (union duplicate-invites member-emails :test #'string=)
                                        :test #'string=))
            (valid-emails (union new-emails duplicate-invites :test #'string=))
-           (text (unless (string= (post-parameter "text") "")
-                   (post-parameter "text"))))
+           (text (post-parameter-string "text")))
     (cond
       ((getf *user* :pending)
        (pending-flash "invite people to join Kindista")

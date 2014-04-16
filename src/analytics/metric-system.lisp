@@ -65,14 +65,14 @@
     (let* ((now (local-time:now))
            (dirname (strcat *metrics-path*
                             (with-output-to-string (str)
-                              (local-time:format-timestring str
-                                                            now
-                                                            :format '((:year 4) #\/ (:month 2) #\/)))))
+                              (format-timestring str
+                                                 now
+                                                 :format '((:year 4) #\/ (:month 2) #\/)))))
            (filename (strcat *metrics-path*
                              (with-output-to-string (str)
-                               (local-time:format-timestring str
-                                                             now
-                                                             :format '((:year 4) #\/ (:month 2) #\/ (:day 2))))))
+                               (format-timestring str
+                                                  now
+                                                  :format '((:year 4) #\/ (:month 2) #\/ (:day 2))))))
           (active-today (data 'active-today))
           (checked-mailbox (data 'checked-mailbox))
           (used-search (data 'used-search))
@@ -132,14 +132,14 @@
           (case (first message)
             (:start
               (let ((time (local-time:now)))
-                (when (>= (local-time:timestamp-hour time) 10)
-                  (local-time:adjust-timestamp! time (offset :day 1)))
-                (local-time:adjust-timestamp! time
-                                              (set :hour 10)
-                                              (set :minute 0)
-                                              (set :sec 0))
+                (when (>= (timestamp-hour time) 10)
+                  (adjust-timestamp! time (offset :day 1)))
+                (adjust-timestamp! time
+                                   (set :hour 10)
+                                   (set :minute 0)
+                                   (set :sec 0))
                 (schedule-timer (slot-value metric-system 'timer)
-                                (local-time:timestamp-to-universal time)
+                                (timestamp-to-universal time)
                                 :absolute-p t)))
             (:stop
               (unschedule-timer (slot-value metric-system 'timer))
@@ -155,10 +155,10 @@
               (save-metrics metric-system)
               (clear 'active-today 'checked-mailbox 'used-search 'got-offers 'got-requests 'messages-sent)
               (schedule-timer (slot-value metric-system 'timer)
-                              (local-time:timestamp-to-universal
-                                (local-time:adjust-timestamp (local-time:now)
-                                                             (offset :day 1)
-                                                             (set :hour 10)
-                                                             (set :minute 0)
-                                                             (set :sec 0)))
+                              (timestamp-to-universal
+                                (adjust-timestamp (local-time:now)
+                                                  (offset :day 1)
+                                                  (set :hour 10)
+                                                  (set :minute 0)
+                                                  (set :sec 0)))
                               :absolute-p t))))))))

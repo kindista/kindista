@@ -23,10 +23,13 @@
              '("Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday" "Sunday") :test #'equal)
 (define-constant +month-names+
              '("January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December") :test #'equal)
+(define-constant +positions-of-day-in-month+
+                 '("first" "second" "third" "fourth" "last") :test #'equal)
 
 (defun parse-datetime (date &optional time)
   (multiple-value-bind (seconds minutes hours date month year)
-    (let ((chronicity-date (chronicity:parse (s+ date (awhen time (s+ " at " it)))
+    (let ((chronicity-date (chronicity:parse
+                             (s+ date (awhen time (s+ " at " it)))
                              :endian-preference :middle)))
       (if chronicity-date
         (values (chronicity:sec-of chronicity-date)
@@ -83,7 +86,7 @@
       (t
        (strcat "in " (floor (/ seconds 31536000)) " years")))))
 
-(defun humanize-exact-time (universal-time &key detailed year-first)
+(defun humanize-exact-time (universal-time &key detailed year-first weekday)
  (multiple-value-bind (seconds minutes hours date month year day-of-week)
      (decode-universal-time universal-time)
    (declare (ignore seconds))
@@ -102,9 +105,38 @@
           (date-name (strcat day-name ", " month-name " " date ", " year )))
 
      (cond
+      (weekday (string-downcase day-name))
       (detailed (s+ date-name " at " time))
       (year-first (strcat year "-" month "-" date))
       (t (values time date-name formatted-date))))))
+
+(defun day-of-month (datetime &key formatted-date)
+  (timestamp-day (universal-to-timestamp (if formatted-date
+                                           (parse-datetime datetime)
+                                           datetime))))
+
+(defun days-in-month (datetime)
+  (let ((timestamp (universal-to-timestamp
+                     (typecase datetime (integer datetime)
+                                        (string (parse-datetime datetime))))))
+   (local-time:days-in-month (timestamp-month timestamp)
+                             (timestamp-year timestamp))))
+
+(defun position-of-day-in-month (datetime &key formatted-date)
+  (let* ((timestamp (universal-to-timestamp
+                      (if formatted-date
+                        (parse-datetime datetime)
+                        datetime)))
+         (day-of-month (timestamp-day timestamp))
+         (days-in-month (local-time:days-in-month
+                          (timestamp-month timestamp)
+                          (timestamp-year timestamp))))
+    (cond
+      ((< day-of-month 8) "first")
+      ((< day-of-month 15) "second")
+      ((< day-of-month 22) "third")
+      ((<= (+ day-of-month 7) days-in-month) "fourth")
+      (t "last"))))
 
 (defun inline-timestamp (time &key type url)
   (let ((inner (html

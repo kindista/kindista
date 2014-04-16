@@ -45,6 +45,19 @@
 (defmacro s+ (&rest strings)
   `(concatenate 'string ,@strings))
 
+(defmacro bind-db-parameters ((item-type id parameters &optional binding-prefix result) &body body)
+"Binds item-type to (db id) and supplied prefixed-parameters to (getf item-type parameter). When supplied result is bound to (gethash id *db-results*)."
+  (let (bindings)
+    (dolist (parameter parameters)
+      (push (list (k-symbol (aif binding-prefix (strcat it "-" parameter)
+                              parameter))
+                  (list 'getf item-type (make-keyword parameter)))
+            bindings))
+    (when result
+      (push `(,result (gethash ,id *db-results*)) bindings))
+    (push `(,item-type (db ,id)) bindings)
+    `(let* ,bindings ,@body)))
+
 (defun validate-name (string)
   (scan +full-name-scanner+ string))
 
@@ -104,10 +117,26 @@
 (defun string-intersection (list1 list2)
   (intersection list1 list2 :test #'string=))
 
+(defun remove-nil-plist-pairs (plist)
+  (let (new-list)
+    (doplist (key value plist)
+      (when value (nconcf new-list (list key value))))
+    new-list))
+
+(defun k-symbol (string)
+  (intern (string-upcase string) :kindista))
+
+(defun symbol= (symbol-a symbol-b)
+  (equalp (symbol-name symbol-a)
+          (symbol-name symbol-b)))
+
 (defun emails-from-string (string)
   (iter (for email in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
         (when (ppcre:scan +email-scanner+ email)
           (collect email))))
+
+(defun separate-with-commas (list)
+  (format nil "~{~A, ~}" list))
 
 (defun item-view-denied (result-privacy &optional (userid *userid*))
   (and result-privacy
@@ -121,16 +150,13 @@
 (defun activity-rank (item)
   (let ((contacts (getf *user* :following))
         (age (- (get-universal-time) (or (result-time item) 0)))
-        (distance (air-distance *latitude* *longitude*
-                                (result-latitude item) (result-longitude item))))
+        (distance (if (and (result-latitude item) (result-longitude item))
+                    (air-distance *latitude* *longitude*
+                                  (result-latitude item) (result-longitude item))
+                    5000)))
     (round (- age
              (/ 120000 (log (+ (if (intersection contacts (result-people item)) 1 distance) 4)))
              (* (length (loves (result-id item))) 50000)))))
-
-(defun stale-eventp (item)
-  (let ((staleness (- (or (result-time item) 0)
-                      (- (get-universal-time) +day-in-seconds+))))
-    (when (< staleness 0) t)))
 
 (defun event-rank (item)
   (let ((contacts (getf *user* :following))
@@ -208,7 +234,7 @@
         "..."
         (when see-more
           (htm (:a :href see-more " see more"))))
-      newtext)))
+      (html-text newtext))))
 
 (defun html-text (string)
   (if string
@@ -254,6 +280,10 @@
 (defun nor (&rest items)
 "Returns true if none of the items are true."
  (notany #'identity items))
+
+(defun or-string= (string test-strings)
+"Returns 'string' if it is a member of test-strings"
+  (find string test-strings :test #'string=))
 
 (defun parse-cons (string)
 "Returns a cons cell from a string. Integers are parsed, other elements returned as strings. ex. '6' -> (6), '6.5' -> (6 . 5), '2.string' -> (2 . 'string')"
@@ -366,6 +396,14 @@
                                (mapcar #'person-link ids))))
 
 
+(defun humanize-number (n)
+  (let ((ones (cadr (multiple-value-list (floor n 10)))))
+    (strcat n (cond
+                ((= ones 1) "st")
+                ((= ones 2) "nd")
+                ((= ones 3) "rd")
+                (t  "th")))))
+
 (defun contact-opt-out-flash (id-list &key (userid *userid*) (item-type "message"))
   (let ((people-opt-outs)
         (group-opt-outs))
@@ -449,20 +487,37 @@
        (:div :class "v-align-cell"
          ,content))))
 
+(defun post-parameter-integer-list (name)
+  (loop for pair in (post-parameters*)
+        for i = (parse-integer (cdr pair) :junk-allowed t)
+        when (and (string= (car pair) name) i)
+        collect i))
+
+(defun post-parameter-string-list (name &optional fn)
+  (loop for pair in (post-parameters*)
+        for s = (cdr pair)
+        unless (string= s "")
+        when (and (string= (car pair) name)
+                  (if fn
+                    (funcall fn s)
+                    t))
+        collect s))
+
 (defun post-parameter-string (name)
   (awhen (post-parameter name) (unless (string= it "") it)))
+
+(defun get-parameter-string (name)
+  (awhen (get-parameter name) (unless (string= it "") it)))
 
 (defun post-parameter-float (name)
   (awhen (post-parameter name) (unless (string= it "") (read-from-string it))))
 
 (defun post-parameter-integer (name)
-  (awhen (post-parameter name) (unless (string= it "") (parse-integer it))))
-
+  (awhen (post-parameter name) (parse-integer it :junk-allowed t)))
 
 (defun rand-from-list (list)
   (when list
     (nth (random (length list)) list)))
-
 
 (defun pluralize (list-or-num singular &key plural-form hidenum)
   "If the first argument is 1 (or its length is 1), returns the number and the second argument (the non-plural form of the word). If it is non-1, returns the number and the plural form of the word. If plural-form is non-nil (must be a string), returns that word instead of adding an s. if hidenum is non-nil, only returns the pluralized word without the number."

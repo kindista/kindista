@@ -58,7 +58,7 @@
 
 (defun login-required ()
   (flash "The page you requested is only available when you are logged in to Kindista." :error t)
-  (see-other (s+ "/login?next=" (script-name*))))
+  (see-other (or (referer) (url-compose "/home" "next" (request-uri*)))))
 
 (defun active-status-required ()
   (flash "Sorry, you must reactivate your account to perform that action." :error t)
@@ -329,7 +329,7 @@
                (format destination "[~A~@[ [~A]~]] ~A ~A ~:S ~:S ~?~%"
                        (hunchentoot::iso-time)
                        log-level
-                       *userid*
+                       (with-user *userid*)
                        (script-name*)
                        (get-parameters*)
                        (post-parameters*)
@@ -433,6 +433,24 @@
       (:body :class class :onload "if(!location.hash){window.scrollTo(0,0);};document.body.className+=\" js\";"
         (str body)))))
 
+(defun login-box (&optional (mobile t))
+  (html
+    (:div :class (s+ (when mobile "mobile ") "login item")
+      (:form :method "POST" :action "/login" :id "login"
+        (:label :for "username" "Email")
+        (:input :type "text"
+                :id "username"
+                :name "username"
+                :value (get-parameter "retry"))
+        (:label :for "password" "Password")
+        (:input :type "password"
+                :id "password"
+                :name "password")
+        (awhen (get-parameter-string "next")
+          (htm (:input :type "hidden" :name "next" :value it)))
+        (:button :type "submit" :class "yes" "Log in")
+        (:a :href "/reset" "Forgot your password?")))))
+
 (defun header-page (title header-extra body &key class)
   (base-page title
              (html
@@ -459,6 +477,8 @@
                (html
                  (dolist (flash (flashes))
                    (str flash))
+                 (unless *user*
+                   (str (login-box t)))
                  (when top
                    (htm
                      (:div :id "full"
@@ -498,7 +518,7 @@
                    (:input :type "submit" :value "Search"))
 
                  (:div :id "menu"
-                   (when *user*
+                   (if *user*
                      (let ((link (s+ "/people/" (username-or-id))))
                        (htm
                          (:table
@@ -511,7 +531,8 @@
                              (:td
                                (:a :class (when (eq selected :settings) "selected") :href "/settings" "Settings")
                                " &middot; "
-                               (:a :href "/logout" "Log&nbsp;out")))))))
+                               (:a :href "/logout" "Log&nbsp;out"))))))
+                     (str (login-box nil)))
 
                    (when *user*
                      (let ((inbox-count (new-inbox-items)))
@@ -565,7 +586,13 @@
             (:input :type "hidden" :name "delete-inappropriate-item")
             (:label :for "explanation"
              "Do you want to include a comment or explanation about deleting this item (optional)?")
-            (:textarea :cols 300 :rows 5 :name "explanation" :id "explanation")))
+            (:textarea :cols 300 :rows 5 :name "explanation" :id "explanation")
+            (:h3 "The automatically generated response is shown below. "
+                 "If you include an explanation, it will be inserted after the first paragraph.")
+            (:div
+              (str (html-text (deleted-invalid-item-reply-text (db (db item-id :by) :name)
+                                                               (getf *user* :name)
+                                                               type))))))
         (:a :href next-url "No, I didn't mean it!")
         (:button :class "yes" :type "submit" :class "submit" :name "really-delete" "Yes")))
     :class class))

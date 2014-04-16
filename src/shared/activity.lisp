@@ -109,60 +109,72 @@
          (group-adminp (group-admin-p host))
          (event-time (or time (humanize-exact-time (getf data :local-time)
                                                    :detailed t)))
+         (recurring (getf data :recurring))
          (item-url (strcat "/events/" item-id)))
 
-    (activity-item :id item-id
-                   :url item-url
-                   :class "event"
-                   :edit (when (or (eql host *userid*)
-                                   group-adminp
-                                   (getf *user* :admin)) t)
-                   :hearts (length (loves item-id))
-                   ;:comments (length (comments item-id))
-                   :content (html
-                              (:h3 (:a :href item-url
-                                             (str
-                                               (if truncate
-                                                 (ellipsis
-                                                   (getf data :title)
-                                                   :length (if sidebar 33 50))
-                                                 (html-text (getf data :title))))))
-                              (unless sidebar
-                                (htm
-                                  (:p
-                                    (str (if (getf data :editied)
-                                           "Edited by "
-                                           "Posted by "))
-                                    (str (person-link host))
-                                    "&nbsp;"
-                                    (str (humanize-universal-time (getf data :created))))))
-
-                              (:table
-                                (:tr
-                                  (:td (:strong "Time: "))
-                                  (:td (str event-time)))
-
-                                (:tr
-                                  (:td (:strong "Place: "))
-                                  (:td (str (getf data :address))
-                                   (when (and show-distance (not sidebar))
-                                     (htm (:small
-                                       " (within "
-                                       (str
-                                         (distance-string
-                                           (air-distance (result-latitude result)
-                                                         (result-longitude result)
-                                                         *latitude*
-                                                         *longitude*)))
-                                     ")"))))))
-
-                              (:p
+    (activity-item
+      :id item-id
+      :url item-url
+      :class "event"
+      :edit (when (or (eql host *userid*)
+                      group-adminp
+                      (getf *user* :admin)) t)
+      :hearts (length (loves item-id))
+      ;:comments (length (comments item-id))
+      :content(html
+                 (:h3 (:a :href item-url
                                 (str
                                   (if truncate
-                                    (ellipsis (getf data :details)
-                                              :length (if sidebar 150 500)
-                                              :see-more item-url)
-                                    (html-text (getf data :details)))))))))
+                                    (ellipsis
+                                      (getf data :title)
+                                      :length (if sidebar 33 50))
+                                    (html-text (getf data :title))))))
+                 (unless sidebar
+                   (htm
+                     (:p
+                       (str (if (getf data :editied)
+                              "Edited by "
+                              "Posted by "))
+                       (str (person-link host))
+                       "&nbsp;"
+                       (str (humanize-universal-time (getf data :created))))))
+
+                 (:table
+                   (:tr
+                     (:td (:strong "Time: "))
+                     (:td (str event-time)))
+
+                   (when recurring
+                     (htm
+                       (:tr
+                         (:td (:strong "Schedule: "))
+                         (:td
+                           (str
+                             (recurring-event-schedule item-id
+                                                       data
+                                                       (string= (script-name*)
+                                                                item-url)))))))
+                   (:tr
+                     (:td (:strong "Place: "))
+                     (:td (str (getf data :address))
+                      (when (and show-distance (not sidebar))
+                        (htm (:small
+                          " (within "
+                          (str
+                            (distance-string
+                              (air-distance (result-latitude result)
+                                            (result-longitude result)
+                                            *latitude*
+                                            *longitude*)))
+                        ")"))))))
+
+                 (:p
+                   (str
+                     (if truncate
+                       (ellipsis (getf data :details)
+                                 :length (if sidebar 150 500)
+                                 :see-more item-url)
+                       (html-text (getf data :details)))))))))
 
 (defun gratitude-activity-item (result &key truncate reciprocity)
   ; we should probably get rid of these comments -DJB
@@ -303,7 +315,7 @@
     "Tags:  "
     (dolist (tag tags)
       (htm
-        (:a :href (url-compose (strcat type "s") "kw" tag) (str tag))
+        (:a :href (url-compose (strcat "/" type "s") "kw" tag) (str tag))
         (unless (eql tag (car (last tags)))
           (htm
             " &middot "))))))

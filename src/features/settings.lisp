@@ -42,6 +42,7 @@
 
 (defun settings-item-html (item body &key title help-text editable edit-text)
   (html
+    (:a :id item)
     (:div :class "settings-item item"
       (:div :class "settings-item title" (str (or title
                                                   (string-capitalize item))))
@@ -111,8 +112,8 @@
               (:ul
                 (:li (:span (:input :type "text"
                                     :name "name"
-                                    :value (str (or group-name
-                                                    (getf *user* :name)))))
+                                    :value (or group-name
+                                               (getf *user* :name))))
                      (unless groupid
                        (htm (:span (:strong "display name")))))
                 (unless groupid
@@ -121,7 +122,7 @@
                                   (:span (:input :type "text"
                                                  :name "aliases"
                                                  :value (awhen (nth i aliases)
-                                                       (str it))))
+                                                          it)))
                                   (:span "nickname")))))))))
         (t
           (html
@@ -151,13 +152,13 @@
              (:div :class "submit-settings"
                (:button :class "cancel small" :type "submit" :name "cancel" "Cancel")
                (:button :class "yes small" :type "submit" :name "confirm-address" "Submit"))
-             (:input :type "text" :name "address" :value (str address))
+             (:input :type "text" :name "address" :value address)
              (when groupid
                (htm
                  (:br)
                  (:input :type "checkbox"
                          :name "public-location"
-                         :value (str (when public-location "checked")))
+                         :value (when public-location "checked"))
                  "Display this address publicly to anyone looking at this group's profile page.")))))
         (t
           (if (and address (getf entity :location))
@@ -218,7 +219,7 @@
 
               (:form :method "post" :action "/settings"
                 (:h3 "Is this location correct?")
-                (:input :type "hidden" :name "next" :value (str next))
+                (:input :type "hidden" :name "next" :value next)
                 (when groupid
                   (htm (:input :type "hidden" :name "groupid" :value groupid)))
                 (:button :class "cancel"
@@ -440,6 +441,7 @@
                              "activate" email)))
     (t
      (add-alt-email invitation-id)
+     (pending-email-actions email)
      (flash (s+ "You have successfully added " email
                 " to your Kindista account."))
      (see-other "/settings/communication")))))
@@ -742,7 +744,7 @@
                               (:form :method "get"
                                      :class "invite-member-result"
                                      :action (strcat "/settings/admin-roles" )
-                                 (:input :type "hidden" :name "groupid" :value (str groupid))
+                                 (:input :type "hidden" :name "groupid" :value groupid)
                                  (str
                                    (person-card
                                      (car person-cons)
@@ -1011,9 +1013,9 @@
                            " as an alternate email address, you must first "
                            "set another email to be your primary email "
                            "address.") :error t)
-                (see-other "/settings/communication?edit=email")) 
-               ((member new-email emails)
-                (see-other "/settings/communication?edit=email")) 
+                (see-other "/settings/communication?edit=email"))
+               ((find new-email emails)
+                (see-other "/settings/communication?edit=email"))
                (id
                 (flash (s+ "The email address you have submitted, " new-email
                            ", already belongs to another Kindista member. "
@@ -1025,7 +1027,7 @@
                            "Please try again.") :error t)
                 (see-other "/settings/communication?edit=email"))
                (t
-                (let ((confirmation nil))
+                (let (confirmation)
                   (setf confirmation (create-invitation new-email :self t))
                   (modify-db *userid* :pending-alt-emails (cons confirmation pending)))
                 (flash (s+ "A verification email has been sent to " new-email
@@ -1035,7 +1037,7 @@
 
           ((and (post-parameter "invitation-id")
                 (post-parameter "token"))
-           (activate-email-address (parse-integer (post-parameter "invitation-id"))
+           (activate-email-address (post-parameter-integer "invitation-id")
                                    (post-parameter "token")))
 
           ((post-parameter "resend-code")

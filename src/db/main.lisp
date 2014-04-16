@@ -247,8 +247,12 @@
           :initial-value '(())))
 
 (defun name-to-metaphone-codes (name)
-  (iter (for word in (split " " name))
-        (collect (multiple-value-list (double-metaphone word)))))
+  (let* ((base-words (split " " name))
+         (hyphenated-words (split " " (regex-replace-all "-" name " ")))
+         (all-words (remove-duplicates (append base-words hyphenated-words)
+                                       :test #'string=)))
+   (iter (for word in all-words)
+        (collect (multiple-value-list (double-metaphone word))))))
 
 
 ;(defun map-metaphone-codes (function string)
@@ -290,10 +294,30 @@
                      (push alias (gethash code *metaphone-index*))))
             (map-metaphone-codes #'add-alias name)))))))
 
+(defun levenshtein-distance (s1 s2)
+"Levenshtein distance that ignores case"
+  (let* ((width (1+ (length s1)))
+         (height (1+ (length s2)))
+         (d (make-array (list height width))))
+    (dotimes (x width)
+      (setf (aref d 0 x) x))
+    (dotimes (y height)
+      (setf (aref d y 0) y))
+    (dotimes (x (length s1))
+      (dotimes (y (length s2))
+        (setf (aref d (1+ y) (1+ x))
+              (min (1+ (aref d y (1+ x)))
+                   (1+ (aref d (1+ y) x))
+                   (+ (aref d y x)
+                      (if (char-equal (aref s1 x) (aref s2 y))
+                        0
+                        1))))))
+   (aref d (1- height) (1- width))))
+
 (defun metaphone-index-query (name)
   (when (< 0 (length name))
     (labels ((lev-distance (alias)
-               (levenshtein:distance name (alias-alias alias))))
+               (levenshtein-distance name (alias-alias alias))))
       (remove-duplicates
         (sort
           (remove-duplicates

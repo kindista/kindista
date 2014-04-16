@@ -17,6 +17,16 @@
 
 (in-package :kindista)
 
+(defun number-selection-html (name end &key selected auto-submit)
+  (html
+    (:select :name name
+             :onchange (when auto-submit "this.form.submit()")
+      (loop for num from 1 to end
+            do (htm
+                 (:option :value (strcat num)
+                          :selected (when (eql selected num) "")
+                          (str (strcat num))))))))
+
 (defun group-category-selection (&key next selected submit-buttons (class "identity"))
   (let* ((default-options '("business"
                             "church/spiritual community"
@@ -105,7 +115,7 @@
          (groups-user-has-left (mapcar #'(lambda (id) (cons id (db id :name)))
                                        group-ids-user-has-left)))
     (html
-      (:h2  "Who can see this " (str item-type) "?")
+      (:label  "Who can see this " (str item-type) "?")
       (:div :class (s+ class (when (and restrictedp
                                         (or groups-user-has-left
                                             (> (length my-groups) 1)))
@@ -137,7 +147,7 @@
                     (:input :type "checkbox"
                             :name "groups-selected"
                             :checked (when (or (not groups-selected)
-                                               (member (car group) groups-selected))
+                                               (find (car group) groups-selected))
                                        "checked")
                             :value (car group)
                             (str (cdr group))

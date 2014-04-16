@@ -17,6 +17,18 @@
 
 (in-package :kindista)
 
+(defun group-contacts-action-menu ()
+  (menu-horiz "actions"
+              (html (:a :href "/groups/new" "create a new group"))
+              (html (:a :href "/gratitude/new" "express gratitude"))))
+
+(defun people-contacts-action-menu ()
+  (menu-horiz "actions"
+              (html (:a :href "/gratitude/new" "express gratitude"))
+              (html (:a :href "/conversations/new" "send a message"))
+              (html (:a :href "/invite" "invite friends"))))
+
+
 (defun nearby-profiles (index)
   (with-location
     (labels ((distance (result)
@@ -33,8 +45,9 @@
     (standard-page
       (s+ "Nearby " type)
       (html
-        (when (string= type "groups")
-          (str (menu-horiz "actions" (html (:a :href "/groups/new" "create a new group")))))
+        (if (string= type "groups")
+          (str (group-contacts-action-menu))
+          (str (people-contacts-action-menu)))
         (str tabs)
         (multiple-value-bind (ids more)
           (sublist (nearby-profiles (if (string= type "people")
@@ -50,7 +63,6 @@
           (str (paginate-links page more))))
       :selected type
       :right (html
-               (str (login-sidebar))
                (str (donate-sidebar))
                (str (invite-sidebar))))))
 
@@ -61,11 +73,16 @@
                    (copy-list (db userid :following)))
     #'string-lessp :key #'person-name))
 
+
 (defun my-contacts (contact-type tabs selected)
-  (let ((contacts (sorted-contacts :contact-type contact-type)))
+  (let ((contacts (sorted-contacts :contact-type contact-type))
+        (groups-p (eql contact-type :group)))
       (standard-page
       "Contacts"
       (html
+        (if groups-p
+          (str (group-contacts-action-menu))
+          (str (people-contacts-action-menu)))
         (str tabs)
         (unless contacts
           (htm (:h3 "No contacts")))
@@ -85,13 +102,14 @@
                 (htm (:a :name (char-downcase char))
                      (:h3 (str char) (:small " (" (htm (:a :href "#index" " back to index ")) ")")))
                 (setf letter char))
-              (str (person-card id))))))
+              (str (if groups-p
+                     (group-card id)
+                     (person-card id)))))))
 
       :selected selected
       :right (html
                (str (donate-sidebar))
-               (str (invite-sidebar)))))
-  )
+               (str (invite-sidebar))))))
 
 (defun profile-bio-section-html (title content &key editing editable section-name groupid)
   (when (string= content "")
@@ -128,86 +146,83 @@
   ;  if the user is looking at their own bio
   ;   and they are not currently editing another section
   ;
-  (require-user
-    (let* ((strid (username-or-id id))
-           (editing (cond
-                      ((string= (get-parameter "edit") "doing") 'doing)
-                      ((string= (get-parameter "edit") "contact") 'contact)
-                      ((string= (get-parameter "edit") "into") 'into)
-                      ((string= (get-parameter "edit") "summary") 'summary)
-                      ((string= (get-parameter "edit") "skills") 'skills)))
-           (entity (db id))
-           (name (getf entity :name))
-           (entity-type (getf entity :type))
-           (group-id (when (eql entity-type :group) id))
-           (group-adminp (find *userid* (getf entity :admins)))
-           (editable (when (not editing)
+  (let* ((strid (username-or-id id))
+         (editing (cond
+                    ((string= (get-parameter "edit") "doing") 'doing)
+                    ((string= (get-parameter "edit") "contact") 'contact)
+                    ((string= (get-parameter "edit") "into") 'into)
+                    ((string= (get-parameter "edit") "summary") 'summary)
+                    ((string= (get-parameter "edit") "skills") 'skills)))
+         (entity (db id))
+         (name (getf entity :name))
+         (entity-type (getf entity :type))
+         (group-id (when (eql entity-type :group) id))
+         (group-adminp (find *userid* (getf entity :admins)))
+         (editable (when (not editing)
+                     (case entity-type
+                       (:person (eql id *userid*))
+                       (:group group-adminp))))
+         (profile-p (or (getf entity :bio-into)
+                        (getf entity :bio-contact)
+                        (getf entity :bio-skils)
+                        (getf entity :bio-doing)
+                        (getf entity :bio-summary)))
+         (mutuals (mutual-connections id))
+         (mutual-links (html (:ul (dolist (link (alpha-people-links mutuals))
+                                    (htm (:li (str link)))))))
+         (*base-url* (case entity-type
+                       (:person (strcat "/people/" strid))
+                       (:group (strcat "/groups/" strid)))))
+    (flet ((bio-section (title section)
+             (let ((section-name (string-downcase (symbol-name section))))
+               (profile-bio-section-html
+                 title
+                 (getf entity(make-keyword (string-upcase
+                                             (s+ "bio-" section-name))))
+                 :groupid group-id
+                 :section-name section-name
+                 :editing (eql editing section)
+                 :editable editable))))
+      (standard-page
+        name
+        (html
+          (str (profile-tabs-html id :tab :about))
+          (if (or (eql id *userid*) profile-p group-adminp)
+            (htm
+              (:div :class "bio"
+                (str (bio-section (case entity-type
+                                    (:person "My self-summary")
+                                    (:group (s+ "About " name)))
+                                  'summary))
+                (when (eql entity-type :person)
+                  (str (bio-section
+                         "What I'm doing with my life"
+                         'doing)))
+                (str (bio-section
                        (case entity-type
-                         (:person (eql id *userid*))
-                         (:group group-adminp))))
-           (profile-p (or (getf entity :bio-into)
-                          (getf entity :bio-contact)
-                          (getf entity :bio-skils)
-                          (getf entity :bio-doing)
-                          (getf entity :bio-summary)))
-           (mutuals (mutual-connections id))
-           (mutual-links (html (:ul (dolist (link (alpha-people-links mutuals))
-                                      (htm (:li (str link)))))))
-           (*base-url* (case entity-type
-                         (:person (strcat "/people/" strid))
-                         (:group (strcat "/groups/" strid)))))
-      (flet ((bio-section (title section)
-               (let ((section-name (string-downcase (symbol-name section))))
-                 (profile-bio-section-html
-                   title
-                   (getf entity(make-keyword (string-upcase
-                                               (s+ "bio-" section-name))))
-                   :groupid group-id
-                   :section-name section-name
-                   :editing (eql editing section)
-                   :editable editable))))
-        (pprint group-id)
-        (terpri)
-        (standard-page
-          name
-          (html
-            (str (profile-tabs-html id :tab :about))
-            (if (or (eql id *userid*) profile-p group-adminp)
-              (htm
-                (:div :class "bio"
-                  (str (bio-section (case entity-type
-                                      (:person "My self-summary")
-                                      (:group (s+ "About " name)))
-                                    'summary))
-                  (when (eql entity-type :person)
-                    (str (bio-section
-                           "What I'm doing with my life"
-                           'doing)))
+                         (:person "What I'm really good at")
+                         (:group "What we're really good at"))
+                       'skills))
+                (when (eql entity-type :person)
                   (str (bio-section
-                         (case entity-type
-                           (:person "What I'm really good at")
-                           (:group "What we're really good at"))
-                         'skills))
-                  (when (eql entity-type :person)
-                    (str (bio-section
-                           "I'm also into"
-                           'into)))
-                  (str (bio-section
-                         (case entity-type
-                           (:person "You should contact me if")
-                           (:group "Contact us if"))
-                         'contact))))
-              (case entity-type
-                (:person (htm (:h3 "This person hasn't written anything here.")))
-                (:group (htm (:h3 "This group hasn't written anything here."))))))
-          :right (case entity-type
-                   (:person (when mutuals
-                              (mutual-connections-sidebar mutual-links)))
-                   (:group (group-sidebar id)))
-          :top (profile-top-html id)
-          :selected (if (eql entity-type :group)
-                      "groups"
-                      "people"))))))
+                         "I'm also into"
+                         'into)))
+                (str (bio-section
+                       (case entity-type
+                         (:person "You should contact me if")
+                         (:group "Contact us if"))
+                       'contact))))
+            (case entity-type
+              (:person (htm (:h3 "This person hasn't written anything here.")))
+              (:group (htm (:h3 "This group hasn't written anything here."))))))
+        :right (case entity-type
+                 (:person (when mutuals
+                            (mutual-connections-sidebar mutual-links)))
+                 (:group (group-sidebar id)))
+        :top (profile-top-html id)
+        :selected (if (eql entity-type :group)
+                    "groups"
+                    "people")))))
 
 (defun profile-activity-items (&key (id *userid*) (page 0) (count 20) type display members)
   (let ((items (cond
@@ -323,19 +338,19 @@
                                :action (strcat "/groups/" (username-or-id id) "/invite-members")
                            (:button :class "yes small" :type "submit"  "+add members"))))
                   (memberp
-                   (htm (:form :method "POST" :action (strcat "/groups/" id)
+                   (htm (:form :method "POST" :action (strcat "/groups/" id "/members")
                           (:input :type "hidden" :name "next" :value *base-url*)
                           (:button :class "cancel small" :name "leave-group" :value id :type "submit"
                             (str "Leave group")))))
 
                   ((and (not pendingp)(not (eql (getf entity :membership-method) :invite-only)))
-                   (htm (:form :method "POST" :action (strcat "/groups/" id)
+                   (htm (:form :method "POST" :action (strcat "/groups/" id "/members")
                           (:input :type "hidden" :name "next" :value *base-url*)
                           (:button :class "yes small" :type "submit" :name "request-membership" :value id
                             (str "Join group")))))
 
                   ((assoc *userid* (gethash id *group-membership-invitations-index*))
-                   (htm (:form :method "POST" :action (strcat "/groups/" id)
+                   (htm (:form :method "POST" :action (strcat "/groups/" id "/members")
                           (:input :type "hidden" :name "next" :value *base-url*)
                           (:button :class "yes small" :type "submit" :name "accept-group-membership-invitation" :value id
                           (str "Join group")))))))
@@ -383,7 +398,7 @@
         (if (eql tab :gratitude)
           (htm (:li :class "selected" "Reputation"))
           (htm (:li (:a :href (strcat *base-url* "/reputation") "Reputation"))))
-        (when (eq active t)
+        (when (and *user* (eq active t))
           (if (eql tab :offer)
             (htm (:li :class "selected" "Offers"))
             (htm (:li (:a :href (strcat *base-url* "/offers") "Offers"))))
@@ -391,13 +406,13 @@
             (htm (:li :class "selected" "Requests"))
             (htm (:li (:a :href (strcat *base-url* "/requests") "Requests")))))
 
-        (when (and (eql (getf entity :type) :person)
+        (when (and *user* (eql (getf entity :type) :person)
                    (mutual-connections id))
           (if (eql tab :connections)
             (htm (:li :class "selected" "Mutual Connections"))
             (htm (:li :class "no-rightbar" (:a :href (strcat *base-url* "/connections") "Mutual Connections")))))
 
-        (when (eql (getf entity :type) :group)
+        (when (and *user* (eql (getf entity :type) :group))
           (if (eql tab :members)
             (htm (:li :class "selected" "Group Members"))
             (htm (:li :class "no-rightbar" (:a :href (strcat *base-url* "/members") "Group Members")))))))))
@@ -427,7 +442,7 @@
     (standard-page
       name
       (html
-        (when *user* (str (profile-tabs-html id :tab (or type :activity))))
+        (str (profile-tabs-html id :tab (or type :activity)))
         (when (or (eql id *userid*) adminp)
           (when (eql type :request)
             (htm (str (simple-inventory-entry-html "a" "request"
