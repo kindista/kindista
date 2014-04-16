@@ -21,9 +21,11 @@
   (flash "That page hasn't been implemented yet.")
   (go-home))
 
-(defun get-js ()
-  (with-output-to-string (s)
-    (paren-files:compile-script-system :kindista-js :output-stream s)))
+;; no longer compiling kindista-js.asd becase paren-files' ability to 
+;; interface with asdf is currently busted
+;(defun get-js ()
+;  (with-output-to-string (s)
+;    (paren-files:compile-script-system :kindista-js :output-stream s)))
 
 (routes
   ("/"
@@ -356,6 +358,7 @@
 
   ;js
 
-  ("/kindista.js"
-   :get get-js))
+ ;("/kindista.js"
+ ; :get get-js)
+  )
 

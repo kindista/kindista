@@ -1,6 +1,9 @@
 (defpackage #:kindista-js-system
   (:use #:cl #:asdf))
 
+;; no longer compiling with (paren-files:compile-script-system) 
+;; becase paren-files' ability to interface with asdf is currently busted
+
 (in-package :kindista-js-system)
 
 (operate 'load-op :paren-files)
