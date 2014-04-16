@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /offers
+Disallow: /requests
+Disallow: /people

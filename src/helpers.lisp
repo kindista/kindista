@@ -36,6 +36,10 @@
 
 (defparameter +time-scanner+ (create-scanner "^(0[1-9]|1[0-2]|[1-9])(:[0-5][0-9])? ?(a|A)|(p|P)\\.?(m|M)\\.? ?$"))
 
+(defun generate-js ()
+  (paren-files:compile-script-file-to-js-file "../js/main.paren"
+                                              :destination-file "../html/kindista.js"))
+
 (defun strcat (&rest items)
   (format nil "~{~A~}" items))
 
