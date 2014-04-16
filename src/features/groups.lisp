@@ -99,7 +99,12 @@
   (let* ((result (gethash id *db-results*))
          (data (db id))
          (lat (getf data :lat))
-         (long (getf data :long)))
+         (long (getf data :long))
+         (account-offers (gethash id *offer-index*))
+         (account-requests (gethash id *request-index*))
+         (matchmakers (loop for id in account-requests
+                            when (gethash id *matchmaker-requests*)
+                            collect id)))
 
     (unless result
       (notice :error :note "no db result on reindex-group-location"))
@@ -130,6 +135,11 @@
             (geo-index-insert *activity-geo-index* result))
           (geo-index-insert *request-geo-index* result)))
 
+      (dolist (request-id matchmakers)
+        ;; rematch all outstanding matchmaker requests
+        (modify-matchmaker request-id)
+        (update-matchmaker-request-data request-id))
+
       (dolist (id (gethash id *offer-index*))
         (let ((result (gethash id *db-results*)))
           (geo-index-remove *offer-geo-index* result)
@@ -139,6 +149,9 @@
           (geo-index-insert *offer-geo-index* result)
           (unless (< (result-time result) (- (get-universal-time) 15552000))
             (geo-index-insert *activity-geo-index* result))))
+
+      (dolist (offer-id account-offers)
+        (update-matchmaker-offer-data offer-id))
 
       (dolist (id (gethash id *gratitude-index*))
         (let ((result (gethash id *db-results*)))

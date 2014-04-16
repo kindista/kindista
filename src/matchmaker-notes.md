@@ -43,7 +43,8 @@ Search:
 
 ## Matchmaker should be reindexed with edits
 - tags
-- change of location
+- change of location (person and group)
+- change of privacy
 - changes to matching offes
 
 ## When user removes their location, delete all matchmakers

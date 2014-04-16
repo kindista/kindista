@@ -113,9 +113,13 @@
   ;when people change locations
   (let* ((result (gethash id *db-results*))
          (data (db id))
-         (inventory-matches (gethash id *account-inventory-matches-index*))
          (lat (getf data :lat))
-         (long (getf data :long)))
+         (long (getf data :long))
+         (account-offers (gethash id *offer-index*))
+         (account-requests (gethash id *request-index*))
+         (matchmakers (loop for id in account-requests
+                            when (gethash id *matchmaker-requests*)
+                            collect id)))
 
     (unless result
       (notice :error :note "no db result on ungeoindex-person"))
@@ -129,7 +133,8 @@
     (when (and (getf data :created)
                (getf data :active))
 
-      (metaphone-index-insert (cons (getf data :name) (getf data :aliases)) result)
+      (metaphone-index-insert (cons (getf data :name) (getf data :aliases))
+                              result)
 
       (when (and lat long)
 
@@ -138,24 +143,20 @@
         (unless (< (result-time result) (- (get-universal-time) 15552000))
           (geo-index-insert *activity-geo-index* result))
 
-        (pprint (gethash id *request-index*))
-        (terpri)
-        (dolist (request-id (gethash id *request-index*))
+        (dolist (request-id account-requests)
           (let ((result (gethash request-id *db-results*)))
-           ;(pprint request-id)
             (geo-index-remove *request-geo-index* result)
             (geo-index-remove *activity-geo-index* result)
             (setf (result-latitude result) lat)
             (setf (result-longitude result) long)
             (unless (< (result-time result) (- (get-universal-time) 15552000))
               (geo-index-insert *activity-geo-index* result))
-            (geo-index-insert *request-geo-index* result)
-            (update-matchmaker-request-data request-id)))
+            (geo-index-insert *request-geo-index* result)))
 
-       ;(terpri)
-       ;(dolist (request-id (mapcar #'car (getf inventory-matches :requests)))
-       ; () 
-       ;  )
+        (dolist (request-id matchmakers)
+          ;; rematch all outstanding matchmaker requests
+          (modify-matchmaker request-id)
+          (update-matchmaker-request-data request-id))
 
         (dolist (offer-id (gethash id *offer-index*))
           (let ((result (gethash offer-id *db-results*)))
@@ -167,6 +168,9 @@
             (update-matchmaker-offer-data offer-id)
             (unless (< (result-time result) (- (get-universal-time) 15552000))
               (geo-index-insert *activity-geo-index* result))))
+
+        (dolist (offer-id account-offers)
+          (update-matchmaker-offer-data offer-id))
 
         (dolist (id (gethash id *gratitude-index*))
           (let ((result (gethash id *db-results*)))

@@ -254,6 +254,10 @@
 
 (defun update-matchmaker-request-data (request-id &key data matchmaker prior-matching-offers rejected-offers)
   (let* ((request (or data (db request-id)))
+         (prior-matching-offers (or prior-matching-offers
+                                    (getf request :matching-offers)))
+         (rejected-offers (or rejected-offers
+                              (getf request :hidden-matching-offers)))
          (requested-by (getf request :by))
          (matchmaker (or matchmaker
                          (gethash request-id *matchmaker-requests*)))
@@ -274,13 +278,12 @@
         (with-locked-hash-table (*account-inventory-matches-index*)
           (asetf (getf (gethash offered-by *account-inventory-matches-index*)
                        :requests)
-                 (remove request-id it :key #'car))
+                 (remove (cons request-id offer-id) it :test #'equal))
           (asetf (getf (gethash requested-by
                                 *account-inventory-matches-index*)
                        :offers)
-                 (remove offer-id it :key #'car)))))
+                 (remove (cons offer-id request-id) it :test #'equal)))))
 
-        (terpri)
     (dolist (offer-id (set-difference new-matching-offers
                                       all-old-matches))
 
@@ -324,11 +327,11 @@
             (asetf (getf (gethash requested-by
                                   *account-inventory-matches-index*)
                          :offers)
-                   (remove offer-id it :key #'car))
+                   (remove (cons offer-id request-id) it :test #'equal))
             (asetf (getf (gethash offered-by
                                   *account-inventory-matches-index*)
                          :requests)
-                   (remove request-id it :key #'car))))))
+                   (remove (cons request-id offer-id) it :test #'equal))))))
 
     ;; add offer to requests that now match
     (dolist (request-id (set-difference new-matching-requests
