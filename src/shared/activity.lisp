@@ -265,7 +265,8 @@
                    :time (result-time result)
                    :edit (or self group-adminp (getf *user* :admin))
                    :admin-delete (and (getf *user* :admin)
-                                      (not (eql *userid* user-id)))
+                                      (not self)
+                                      (not group-adminp))
                    :image-text (when (and (string= type "offer") self)
                                  (if images
                                    "Add/remove photos"

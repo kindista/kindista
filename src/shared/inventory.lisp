@@ -453,6 +453,7 @@
                                             :restrictedp restrictedp
                                             :next (or (post-parameter "next") (referer))
                                             :existingp t
+                                            :groupid (when adminp by)
                                             :error error
                                             :button-text (s+ "Save " type)
                                             :selected (s+ type "s"))))
