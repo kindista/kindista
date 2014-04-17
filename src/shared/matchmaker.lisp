@@ -252,6 +252,23 @@
                                            (db (result-id offer) :by))))
           collect (result-id offer))))
 
+(defun unmatch-request-matches (request-id requested-by offers-to-unmatch)
+  (dolist (offer-id offers-to-unmatch)
+    (let* ((offer (db offer-id))
+           (offered-by (getf offer :by)))
+      (with-locked-hash-table (*offers-with-matching-requests-index*)
+        (asetf (gethash offer-id *offers-with-matching-requests-index*)
+               (remove request-id it)))
+
+      (with-locked-hash-table (*account-inventory-matches-index*)
+        (asetf (getf (gethash offered-by *account-inventory-matches-index*)
+                     :requests)
+               (remove (cons request-id offer-id) it :test #'equal))
+        (asetf (getf (gethash requested-by
+                              *account-inventory-matches-index*)
+                     :offers)
+               (remove (cons offer-id request-id) it :test #'equal))))))
+
 (defun update-matchmaker-request-data (request-id &key data matchmaker prior-matching-offers rejected-offers)
   (let* ((request (or data (db request-id)))
          (prior-matching-offers (or prior-matching-offers
@@ -267,22 +284,10 @@
          (new-useful-offers (set-difference new-matching-offers
                                             rejected-offers)))
 
-    (dolist (offer-id (set-difference all-old-matches
-                                      new-matching-offers))
-      (let* ((offer (db offer-id))
-             (offered-by (getf offer :by)))
-        (with-locked-hash-table (*offers-with-matching-requests-index*)
-          (asetf (gethash offer-id *offers-with-matching-requests-index*)
-                 (remove request-id it)))
-
-        (with-locked-hash-table (*account-inventory-matches-index*)
-          (asetf (getf (gethash offered-by *account-inventory-matches-index*)
-                       :requests)
-                 (remove (cons request-id offer-id) it :test #'equal))
-          (asetf (getf (gethash requested-by
-                                *account-inventory-matches-index*)
-                       :offers)
-                 (remove (cons offer-id request-id) it :test #'equal)))))
+    (unmatch-request-matches request-id
+                             requested-by
+                             (set-difference all-old-matches
+                                             new-matching-offers))
 
     (dolist (offer-id (set-difference new-matching-offers
                                       all-old-matches))
@@ -308,6 +313,24 @@
                 :hidden-matching-offers (intersection rejected-offers
                                                       new-matching-offers))))
 
+(defun unmatch-offer-matches (offer-id offered-by requests-to-unmatch)
+  (dolist (request-id requests-to-unmatch)
+    (let* ((request (db request-id))
+           (requested-by (getf request :by)))
+      (when (or (find offer-id (getf request :hidden-matching-offers))
+                (find offer-id (getf request :matching-offers)))
+        (amodify-db request-id :hidden-matching-offers (remove offer-id it)
+                               :matching-offers (remove offer-id it))
+        (with-locked-hash-table (*account-inventory-matches-index*)
+          (asetf (getf (gethash requested-by
+                                *account-inventory-matches-index*)
+                       :offers)
+                 (remove (cons offer-id request-id) it :test #'equal))
+          (asetf (getf (gethash offered-by
+                                *account-inventory-matches-index*)
+                       :requests)
+                 (remove (cons request-id offer-id) it :test #'equal)))))))
+
 (defun update-matchmaker-offer-data (offer-id)
   (let ((offered-by (db offer-id :by))
         (current-matching-requests (copy-list (gethash offer-id *offers-with-matching-requests-index*)))
@@ -315,23 +338,10 @@
         (hidden-from-requests))
 
     ;; remove offer from requests that no longer match
-    (dolist (request-id (set-difference current-matching-requests
-                                        new-matching-requests))
-      (let* ((request (db request-id))
-             (requested-by (getf request :by)))
-        (when (or (find offer-id (getf request :hidden-matching-offers))
-                  (find offer-id (getf request :matching-offers)))
-          (amodify-db request-id :hidden-matching-offers (remove offer-id it)
-                                 :matching-offers (remove offer-id it))
-          (with-locked-hash-table (*account-inventory-matches-index*)
-            (asetf (getf (gethash requested-by
-                                  *account-inventory-matches-index*)
-                         :offers)
-                   (remove (cons offer-id request-id) it :test #'equal))
-            (asetf (getf (gethash offered-by
-                                  *account-inventory-matches-index*)
-                         :requests)
-                   (remove (cons request-id offer-id) it :test #'equal))))))
+    (unmatch-offer-matches offer-id
+                           offered-by
+                           (set-difference current-matching-requests
+                                           new-matching-requests))
 
     ;; add offer to requests that now match
     (dolist (request-id (set-difference new-matching-requests

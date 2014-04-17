@@ -159,8 +159,11 @@
         (refresh-item-time-in-indexes id :time now)
         (modify-db id :text text :tags tags :privacy privacy :lat latitude :long longitude :edited now)))
 
-    (when (eql (result-type result) :offer)
-      (update-matchmaker-offer-data id))))
+    (case (result-type result)
+      (:offer (update-matchmaker-offer-data id))
+      (:request (progn
+                  (modify-matchmaker id)
+                  (update-matchmaker-request-data id))))))
 
 (defun delete-inventory-item (id)
   (let* ((result (gethash id *db-results*))
@@ -187,6 +190,24 @@
         (dolist (stem stems)
           (asetf (gethash stem stem-index)
                  (remove result it))))
+
+      ;; delete matchmakers
+      (case (result-type result)
+        (:offer
+          (unmatch-offer-matches id
+                                 (getf data :by)
+                                 (copy-list
+                                   (gethash id
+                                           *offers-with-matching-requests-index*)))
+          (with-locked-hash-table (*offers-with-matching-requests-index*)
+            (remhash id *offers-with-matching-requests-index*)))
+
+        (:request
+          (unmatch-request-matches id
+                                 (getf data :by)
+                                 (append (getf data :matching-offers)
+                                         (getf data :hidden-matching-offers)))
+          (remhash id *matchmaker-requests*)))
 
       (dolist (image-id images)
         (delete-image image-id))
@@ -216,6 +237,8 @@
         (remhash id *db-results*)))
 
     (delete-comments id)
+    ;;if in the future we decide not to delete inventory items,
+    ;;we need to first delete :matching-offers from offers with matchmakers
     (remove-from-db id)))
 
 (defun delete-pending-inventory-item (id)

@@ -1,4 +1,4 @@
-## Add attributes to Request db items:
+## Add attributes to Request db items: DONE
 - :notify-matches t/nil
 - :match-tags
 - :match-all-terms
@@ -7,7 +7,7 @@
 - :match-distance
 
 
-## Matchmaker-requests struct
+## Matchmaker-requests struct DONE
 - :id
 - :all-terms
 - :any-terms
@@ -19,39 +19,43 @@
 - :latitude
 - :longitude
 
-## Index
+## Index DONE
 - *matchmaker-requests-geo-index*
 - *global-matchmaker-requests-index*
 
-## Search offers
+## Search offers DONE
 - geo-index search
 - variety of stem-index searches
 - add matching offers to (db request :matching-offers)
 - (push matching-request-result (gethash offer-id
   *offers-with-matching-requests-index*))
 
-## Search requests when new offers are posted
+## Search requests when new offers are posted DONE
 Search:
 - *matchmaker-requests-geo-index*
 - *global-matchmaker-requests-index*
 
-## Make sure searching offers/requests respects item-privacy
+## Make sure searching offers/requests respects item-privacy DONE
 
-## Display matching items on both offer and request pages
+## Display matching items on both offer and request pages DONE
 
-## Email requestor when new matching offer is made
+### Email requestor when new matching offer is made
 
-## Matchmaker should be reindexed with edits
-- tags
-- change of location (person and group)
-- change of privacy
-- changes to matching offes
+## Matchmaker should be reindexed with edits DONE
+- tags DONE
+- change of location (person and group) DONE
+- change of privacy DONE
+- changes to matching offers DONE
 
-## When user removes their location, delete all matchmakers
+### When user removes their location, delete all matchmakers
 
-## When request is deleted, delete matchmaker
+## When request is deleted, delete matchmaker DONE
 
-## Show matches on items
+## When offer is deleted, remove from matching requests DONE
+
+### Show number of matches below all of my items
+
+### Show matches on items
 - allow admins to see all matches
 
 ## Add Inventory Titles
