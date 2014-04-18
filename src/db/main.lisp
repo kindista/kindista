@@ -371,8 +371,7 @@
               (when (or (token-userid value)
                         (token-donate-info value))
                 (prin1 (cons key value) out)
-                (fresh-line out)))))
-    (fsync out))
+                (fresh-line out))))))
   (rename-file (s+ +db-path+ "tokens-tmp") "tokens"))
 
 (defun save-db ()
@@ -447,8 +446,7 @@
   (with-mutex (*db-log-lock*)
     (with-standard-io-syntax
       (prin1 (append (list (get-universal-time) id) data) *db-log*)
-      (fresh-line *db-log*))
-    (fsync *db-log*))
+      (fresh-line *db-log*)))
   (with-locked-hash-table (*db*)
     (setf (gethash id *db*) data)))
 
@@ -501,8 +499,7 @@
   (with-mutex (*db-log-lock*)
     (with-standard-io-syntax
       (prin1 (list (get-universal-time) id nil) *db-log*)
-      (fresh-line *db-log*))
-    (fsync *db-log*))
+      (fresh-line *db-log*)))
   (with-locked-hash-table (*db*)
     (remhash id *db*)))
 

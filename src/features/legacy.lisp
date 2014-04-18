@@ -177,8 +177,7 @@
       (push (cons old-id new-id) *legacy-identity-map*))) 
   (with-standard-io-syntax
     (prin1 (list type old-id new-id) *legacy-map-stream*)
-    (fresh-line *legacy-map-stream*))
-  (fsync *legacy-map-stream*))
+    (fresh-line *legacy-map-stream*)))
 
 (defun import-identities (path settings-path)
   (let ((settings (map-over-file #'copy-list settings-path))
