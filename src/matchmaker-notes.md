@@ -1,5 +1,6 @@
 ## Add attributes to Request db items: DONE
 - :notify-matches t/nil
+
 - :match-tags
 - :match-all-terms
 - :match-any-terms
@@ -53,7 +54,7 @@ Search:
 
 ## When offer is deleted, remove from matching requests DONE
 
-### Show number of matches below all of my items
+## Show number of matches below all of my items DONE
 
 ### Show matches on items
 - allow admins to see all matches

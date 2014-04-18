@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete reciprocity matchmaker)
+(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete related-items matchmaker)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -100,7 +100,7 @@
               (htm
                 " &middot; "
                 (str (comment-button url)))))))
-      (awhen reciprocity (str it)))))
+      (awhen related-items (str it)))))
 
         ;(unless (eql user-id *userid*)
         ;  (htm
@@ -225,8 +225,8 @@
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))
                                 (str (activity-item-images images item-url "gift"))))
-                   :reciprocity (when reciprocity
-                                  (display-gratitude-reciprocities result)))))))
+                   :related-items (when reciprocity
+                                    (display-gratitude-reciprocities result)))))))
 
 
 (defun gift-activity-item (result)
@@ -318,7 +318,18 @@
                               (unless (string= item-url (script-name*));image?
                                 (str (activity-item-images images
                                                            item-url
-                                                           type)))))))
+                                                           type))))
+
+                   :related-items (when (and (or self group-adminp)
+                                             (not (string= (script-name*)
+                                                           item-url)))
+                                    (let ((matches (case (getf data :type)
+                                                     (:offer (length (gethash item-id *offers-with-matching-requests-index*)))
+                                                     (:request (length (getf data :matching-offers))))))
+                                       (when (> matches 0)
+                                         (matching-item-count-html item-id
+                                                                   type
+                                                                   matches)))))))
 
 (defun display-tags (type tags)
   (html

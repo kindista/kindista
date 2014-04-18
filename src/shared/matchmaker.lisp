@@ -639,6 +639,44 @@
             (:a :href (url-compose url "selected" "matchmaker")
               " Edit matchmaker"))))))))
 
+(defun matching-item-count-html (item-id item-type count)
+  (html
+    (:div :class "reciprocity"
+     (:a :href (url-compose (strcat "/" item-type "s/" item-id)
+                            "selected" "matches")
+      (:img :alt "sharing:" :src "/media/icons/share.png")
+      (:strong
+        "You have "
+        (str count)
+        " matching "
+        (str (if (string= item-type "offer")
+               "request"
+               "offer"))
+
+        (when (> count 1) (htm "s"))
+        " for this "
+        (str item-type))))))
+
+(defun matching-item-suggestion-details-html (item-id &key list-of-matches data)
+  (let* ((data (or data (db item-id)))
+         (type (getf data :type))
+         (string-type (case type (:offer "offer") (:request "request")))
+         (matches (case type
+                    (:offer (gethash item-id
+                                     *offers-with-matching-requests-index*))
+                    (:request (getf data :matching-offers))))
+         (match-id (rand-from-list matches))
+         (match (db match-id))
+         (match-by (getf match :by))))
+      (html
+        (:div :class "reciprocity"
+          (:h3 "Can you share with "
+               "?")
+          (dolist (one-item details)
+            (str (display-gratitude-reciprocity one-item)))))   
+  
+  )
+
 (defun my-matching-item-html (item-id match-id &key data reply)
   (let* ((data (or data (db item-id)))
          (type (getf data :type))
