@@ -85,8 +85,7 @@
                (push result *recent-activity-index*)))
            (geo-index-insert *activity-geo-index* result)))
 
-       (when (or (getf data :match-any-terms)
-                 (getf data :match-all-terms))
+       (when (getf data :active-matchmaker)
          (index-matchmaker id data))))))
 
 (defun modify-inventory-item (id &key text tags privacy latitude longitude)
@@ -203,11 +202,12 @@
             (remhash id *offers-with-matching-requests-index*)))
 
         (:request
-          (unmatch-request-matches id
-                                 (getf data :by)
-                                 (append (getf data :matching-offers)
-                                         (getf data :hidden-matching-offers)))
-          (remhash id *matchmaker-requests*)))
+          (when (getf data :active-matchmaker)
+            (unmatch-request-matches id
+                                   (getf data :by)
+                                   (append (getf data :matching-offers)
+                                           (getf data :hidden-matching-offers)))
+            (remove-matchmaker-from-indexes id))))
 
       (dolist (image-id images)
         (delete-image image-id))

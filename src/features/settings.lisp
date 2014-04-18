@@ -889,6 +889,10 @@
                               :country country
                               :location nil
                               :location-privacy (if (post-parameter "public-location") :public :private)))
+
+              (dolist (request-id (account-matchmakers (or groupid *userid*))) 
+                (deactivate-matchmaker request-id))
+
               (see-other (if groupid
                            (url-compose "/settings/verify-address"
                                         "groupid" id

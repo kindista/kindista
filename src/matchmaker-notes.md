@@ -48,7 +48,7 @@ Search:
 - change of privacy DONE
 - changes to matching offers DONE
 
-### When user removes their location, delete all matchmakers
+### When user removes their location, make all matchmakers inactive
 
 ## When request is deleted, delete matchmaker DONE
 

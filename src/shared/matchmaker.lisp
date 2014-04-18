@@ -61,7 +61,7 @@
            (see-other (referer)))
 
           ((not (and (getf *user* :lat) (getf *user* :long)))
-            (try-again "You need to enter your location on your <a href=\"/settings\">settings page</a> before you can create matchmaker notifications."))
+            (try-again "You need to enter your location on your <a href=\"/settings\">settings page</a> before you can create or edit matchmaker notifications."))
 
           ((post-parameter "edit-original")
            (enter-inventory-tags :title "Edit your request"
@@ -76,6 +76,8 @@
                                  :selected "requests"))
 
           ((nor any-terms all-terms)
+           ;; very important that all matchmakers have at least one of these.
+           ;; indexing and searching depend on (or any-terms all-terms)
            (try-again "Please enter at least 1 search term you would like to be notified about"))
 
           (t
@@ -84,6 +86,7 @@
            (setf old-hidden-matches
                  (copy-list (getf item :hidden-matching-offers)))
            (let ((new-matchmaker-data (modify-db id
+                                                 :active-matchmaker t
                                                  :notify-matches notify
                                                  :match-all-terms all-terms
                                                  :match-any-terms any-terms
@@ -122,24 +125,47 @@
                                         :notification (getf data :notify-matches)
                                         :privacy (getf data :privacy))))
 
-      (with-locked-hash-table (*matchmaker-requests*)
-        (setf (gethash request-id *matchmaker-requests*) matchmaker))
+      (when (getf data :active-matchmaker)
 
-      (if distance
-        (geo-index-insert *matchmaker-requests-geo-index* matchmaker)
-        (with-mutex (*global-matchmaker-requests-mutex*)
-          (push matchmaker *global-matchmaker-requests-index*)))
+        (with-locked-hash-table (*matchmaker-requests*)
+          (setf (gethash request-id *matchmaker-requests*) matchmaker))
 
-      ;;only on load-db; (eql :matching-offers nil) when matchmaker is created
-      (awhen (getf data :matching-offers)
-        (with-locked-hash-table (*offers-with-matching-requests-index*)
-          (dolist (offer-id it)
-            (push request-id
-                  (gethash offer-id *offers-with-matching-requests-index*))))
-        (with-locked-hash-table (*account-inventory-matches-index*)
-          (dolist (offer-id it)
-            (push (cons offer-id request-id)
-                  (getf (gethash by *account-inventory-matches-index*) :offers))))))))
+        (if distance
+          (geo-index-insert *matchmaker-requests-geo-index* matchmaker)
+          (with-mutex (*global-matchmaker-requests-mutex*)
+            (push matchmaker *global-matchmaker-requests-index*)))
+
+        ;;only on load-db; (eql :matching-offers nil) when matchmaker is created
+        (awhen (getf data :matching-offers)
+          (with-locked-hash-table (*offers-with-matching-requests-index*)
+            (dolist (offer-id it)
+              (push request-id
+                    (gethash offer-id *offers-with-matching-requests-index*))))
+          (with-locked-hash-table (*account-inventory-matches-index*)
+            (dolist (offer-id it)
+              (push (cons offer-id request-id)
+                    (getf (gethash by *account-inventory-matches-index*) :offers)))))))))
+
+(defun remove-matchmaker-from-indexes (request-id &key matchmaker data)
+  (let ((data (or data (db request-id)))
+        (matchmaker (or matchmaker (gethash request-id *matchmaker-requests*))))
+
+    (if (getf data :match-distance)
+      (geo-index-remove *matchmaker-requests-geo-index* matchmaker)
+      (with-mutex (*global-matchmaker-requests-mutex*)
+        (delete matchmaker *global-matchmaker-requests-index*)))
+
+    (remhash request-id *matchmaker-requests*)))
+
+(defun deactivate-matchmaker (request-id)
+  (let ((data (db request-id)))
+    (when (getf data :active-matchmaker)
+      (unmatch-request-matches request-id
+                             (getf data :by)
+                             (append (getf data :matching-offers)
+                                     (getf data :hidden-matching-offers)))
+      (remove-matchmaker-from-indexes request-id :data data))
+    (modify-db request-id :activ-matchmaker nil)))
 
 (defun index-matching-requests-by-account ()
 "Populates the :request property value of *account-inventory-matches-index* such that key=personid/groupid value=(:offers :requests). Should be run after *offers-with-matching-requests-index* is populated."
@@ -176,6 +202,12 @@
       (setf (match-tags matchmaker) tags)
       (setf (match-notification matchmaker) (getf data :notify-matches))
       (setf (match-privacy matchmaker) (getf data :privacy)))))
+
+(defun account-matchmakers (&optional (account-id *userid*))
+  (loop for id in (gethash account-id *request-index*)
+        when (or (db id :match-all-terms)
+                 (db id :match-any-terms))
+        collect id))
 
 (defun find-matching-requests-for-offer (offer-id)
   (let* ((offer (db offer-id))
