@@ -30,7 +30,7 @@
 (defvar *tokens* (make-hash-table :test 'equal :synchronized t :size 200 :rehash-size 1.25))
 
 (defstruct token
-  userid created donate-info)
+  userid created last-seen session-data)
 
 (defstruct donate-info
   amount type name address city state zip email phone token)
@@ -369,7 +369,7 @@
       (with-locked-hash-table (*tokens*)
         (iter (for (key value) in-hashtable *tokens*)
               (when (or (token-userid value)
-                        (token-donate-info value))
+                        (token-session-data value))
                 (prin1 (cons key value) out)
                 (fresh-line out))))))
   (rename-file (s+ +db-path+ "tokens-tmp") "tokens"))

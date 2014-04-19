@@ -63,3 +63,6 @@ Search:
 - require titles on new/edited inventory items
 - display titles on inventory activity items when present
 - index stemmed words in inventory titles
+
+# Push to server
+- DATA MIGRATION OF TOKENS to allow for new token structure
