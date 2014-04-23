@@ -48,8 +48,6 @@ Search:
 - change of privacy DONE
 - changes to matching offers DONE
 
-### When user removes their location, make all matchmakers inactive
-
 ## When request is deleted, delete matchmaker DONE
 
 ## When offer is deleted, remove from matching requests DONE
@@ -58,6 +56,7 @@ Search:
 
 ### Show matches on items
 - allow admins to see all matches
+- list of requests without matchmakers
 
 ## Add Inventory Titles
 - require titles on new/edited inventory items

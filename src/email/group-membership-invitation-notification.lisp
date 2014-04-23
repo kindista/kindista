@@ -43,24 +43,24 @@
 
 (defun group-membership-invitation-notification-email-text (host-name group-id group-name)
   (strcat
-(no-reply-notice)
-#\linefeed #\linefeed
-host-name
-" invited you to join their group, "
-group-name
-", on Kindista."
-#\linefeed #\linefeed
-#\linefeed #\linefeed
-"You can accept the invitation here:"
-#\linefeed
-+base-url+ "groups/" (username-or-id group-id)
-#\linefeed #\linefeed
-" If you no longer wish to receive notifications when people invite you to join groups on Kindista, please edit your settings:"
-#\linefeed
-+base-url+ "settings/communication"
-#\linefeed #\linefeed
-"Thank you for sharing your gifts with us!
--The Kindista Team"))
+    (no-reply-notice)
+    #\linefeed
+    host-name
+    " invited you to join their group, "
+    group-name
+    ", on Kindista."
+    #\linefeed #\linefeed
+    "You can accept the invitation here:"
+    #\linefeed
+    +base-url+ "groups/" (username-or-id group-id)
+    #\linefeed #\linefeed
+    " If you no longer wish to receive notifications when people invite you to join groups on Kindista, please edit your settings:"
+    #\linefeed
+    +base-url+ "settings/communication"
+    #\linefeed #\linefeed
+    "Thank you for sharing your gifts with us!"
+    #\linefeed
+    "-The Kindista Team"))
 
 
 (defun group-membership-invitation-notification-email-html (from group-id group-name)

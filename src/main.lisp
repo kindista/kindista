@@ -40,6 +40,7 @@
   (add-notice-handler :new-feedback #'new-feedback-notice-handler)
   (add-notice-handler :send-invitation #'send-invitation-notice-handler)
   (add-notice-handler :new-pending-offer #'new-pending-offer-notice-handler)
+  (add-notice-handler :new-matching-offer #'new-matching-offer-notice-handler)
   (add-notice-handler :new-invite-request #'new-invite-request-notice-handler)
   (add-notice-handler :new-group-membership-request
                       #'new-group-membership-request-notice-handler)

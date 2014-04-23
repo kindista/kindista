@@ -17,6 +17,10 @@
 
 (in-package :kindista)
 
+(defun new-matching-offer-notice-handler ()
+  (send-matching-offer-notification-email (getf (cddddr *notice*) :offer-id)
+                                          (getf (cddddr *notice*) :request-id)))
+
 (defstruct (matchmaker (:include result)
                        (:conc-name match-))
   distance all-terms any-terms without-terms notification)
@@ -38,10 +42,11 @@
          (base-url (strcat "/requests/" id))
          (match-url (url-compose base-url "selected" "matchmaker")))
 
-    (require-test((or (eql *userid* by)
+    (require-test ((or (eql *userid* by)
                        (group-admin-p by)
                        (getf *user* :admin))
-                  (s+ "You can only edit your own matchmaker notifications."))
+                   (s+ "You can only edit your own matchmaker notifications."))
+
       (flet ((try-again (e)
                (flash e :error t)
                (get-request id
@@ -86,7 +91,6 @@
            (setf old-hidden-matches
                  (copy-list (getf item :hidden-matching-offers)))
            (let ((new-matchmaker-data (modify-db id
-                                                 :active-matchmaker t
                                                  :notify-matches notify
                                                  :match-all-terms all-terms
                                                  :match-any-terms any-terms
@@ -125,8 +129,8 @@
                                         :notification (getf data :notify-matches)
                                         :privacy (getf data :privacy))))
 
-      (when (getf data :active-matchmaker)
-
+      (when (or (getf data :match-all-terms)
+                (getf data :match-any-terms))
         (with-locked-hash-table (*matchmaker-requests*)
           (setf (gethash request-id *matchmaker-requests*) matchmaker))
 
@@ -156,16 +160,6 @@
         (delete matchmaker *global-matchmaker-requests-index*)))
 
     (remhash request-id *matchmaker-requests*)))
-
-(defun deactivate-matchmaker (request-id)
-  (let ((data (db request-id)))
-    (when (getf data :active-matchmaker)
-      (unmatch-request-matches request-id
-                             (getf data :by)
-                             (append (getf data :matching-offers)
-                                     (getf data :hidden-matching-offers)))
-      (remove-matchmaker-from-indexes request-id :data data))
-    (modify-db request-id :activ-matchmaker nil)))
 
 (defun index-matching-requests-by-account ()
 "Populates the :request property value of *account-inventory-matches-index* such that key=personid/groupid value=(:offers :requests). Should be run after *offers-with-matching-requests-index* is populated."
@@ -365,19 +359,20 @@
 
 (defun update-matchmaker-offer-data (offer-id)
   (let ((offered-by (db offer-id :by))
-        (current-matching-requests (copy-list (gethash offer-id *offers-with-matching-requests-index*)))
+        (prior-matching-requests (copy-list (gethash offer-id *offers-with-matching-requests-index*)))
         (new-matching-requests (find-matching-requests-for-offer offer-id))
-        (hidden-from-requests))
+        (hidden-from-requests)
+        (now (get-universal-time)))
 
     ;; remove offer from requests that no longer match
     (unmatch-offer-matches offer-id
                            offered-by
-                           (set-difference current-matching-requests
+                           (set-difference prior-matching-requests
                                            new-matching-requests))
 
     ;; add offer to requests that now match
     (dolist (request-id (set-difference new-matching-requests
-                                        current-matching-requests))
+                                        prior-matching-requests))
       (let* ((request (db request-id))
              (requested-by (getf request :by))
              (matching-offers (copy-list (getf request :matching-offers))))
@@ -386,6 +381,12 @@
           (unless (find offer-id matching-offers)
             (modify-db request-id :matching-offers (cons offer-id
                                                          matching-offers))
+
+            (when (getf request :notify-matches)
+              (notice :new-matching-offer :time now
+                                          :offer-id offer-id
+                                          :request-id request-id))
+
             (with-locked-hash-table (*account-inventory-matches-index*)
               (asetf (getf (gethash requested-by
                                     *account-inventory-matches-index*)
@@ -465,7 +466,6 @@
             (:form :method "post"
                    :action (strcat "/requests/" id "/matching-items")
                    :class "matchmaker"
-              (:input :type "hidden" :name "notify-matches" :value "")
 
               (:h3 "Show me offers...")
               (:label
@@ -540,10 +540,12 @@
     matching-items))
 
 (defun highlight-relevant-inventory-text (offer-id request-id)
-  (let ((matchmaker (gethash request-id *matchmaker-requests*)))
+  (let ((matchmaker (gethash request-id *matchmaker-requests*))
+        (offer (db offer-id)))
    (highlight-stems-in-text (append (match-any-terms matchmaker)
                                     (match-all-terms matchmaker))
-                            (db offer-id :text))))
+                            (or (getf offer :details)
+                                (getf offer :text)))))
 
 (defun featured-offer-match-html (offer-id request-id)
   (let* ((result (gethash offer-id *db-results*))
@@ -688,132 +690,3 @@
         (when (> count 1) (htm "s"))
         " for this "
         (str item-type))))))
-
-(defun matching-item-suggestion-details-html (item-id &key list-of-matches data)
-  (let* ((data (or data (db item-id)))
-         (type (getf data :type))
-         (string-type (case type (:offer "offer") (:request "request")))
-         (matches (case type
-                    (:offer (gethash item-id
-                                     *offers-with-matching-requests-index*))
-                    (:request (getf data :matching-offers))))
-         (match-id (rand-from-list matches))
-         (match (db match-id))
-         (match-by (getf match :by))))
-      (html
-        (:div :class "reciprocity"
-          (:h3 "Can you share with "
-               "?")
-          (dolist (one-item details)
-            (str (display-gratitude-reciprocity one-item)))))   
-  
-  )
-
-(defun my-matching-item-html (item-id match-id &key data reply)
-  (let* ((data (or data (db item-id)))
-         (type (getf data :type))
-         (offer-p (eql type :offer))
-         (typestring (if offer-p "offer" "request"))
-         (url (strcat "/" typestring "s/" item-id))
-         (matchmaker (unless offer-p (gethash item-id *matchmaker-requests*)))
-         (result (if offer-p
-                   (gethash item-id *db-results*)
-                   matchmaker))
-         (terms (union (getf data :match-all-terms)
-                       (getf data :match-any-terms)))
-         (tags (result-tags result))
-         )
-    (html
-      (:div :class "my-match"
-        (:p (str (if offer-p "...matches an " "...matches a "))
-            (:a :href url (str typestring))
-            " by "
-            (str (person-link (getf data :by))))
-        (:p (str (if offer-p
-                   (highlight-relevant-inventory-text item-id match-id)
-                   (getf data :text))))
-        (:p :class "match-reason"
-          (:span :class "tags"
-            "tags:  "
-            (str (display-tags type tags))))
-
-        (when terms
-          (htm
-            (:p :class "match-reason"
-              (:span :class "tags" "matchmaker:  ")
-              (dolist (term terms)
-                 (htm (str term))
-                 (unless (eql term (car (last terms)))
-                   (htm " &middot "))))))
-        (:div :class "actions"
-          (:form :method "post" :action url
-            (:input :type "hidden" :name "next" :value (request-uri*))
-            (when reply
-              (htm
-                (:input :type "submit" :name "reply" :value "Reply")))
-            (:input :type "submit"
-                    :name "delete"
-                    :value "Delete")
-            " &middot; "
-            (when offer-p
-              (htm (:input :type "submit" :name "edit" :value "Edit offer"))))
-
-          (unless offer-p
-            (htm
-              (:a :href (url-compose url "selected" "matchmaker")
-                "Edit matchmaker"))))))))
-
-
-(defun network-matching-item-html (item-id match-id &key comments truncate)
-  (let* ((result (gethash item-id *db-results*))
-         (data (db item-id))
-         (type (case (result-type result)
-                 (:offer "offer") (:request "request")))
-         (adminp (getf *user* :admin))
-         (reply (not (and adminp (item-view-denied (result-privacy result)))))
-         (url (strcat "/" type "s/" item-id)))
-   (html
-     (:div :class "system-match" :id item-id
-       (:p
-         (str
-           (if (eql (result-type result) :offer)
-              (highlight-relevant-inventory-text
-                           item-id
-                           match-id)
-              (getf data :text))))
-       (:p
-         (:em "posted by "
-              (str (person-link (getf data :by)))
-              " "
-              (str (humanize-universal-time (result-time result))) 
-              " (within "
-              (str
-                (distance-string
-                  (air-distance (result-latitude result)
-                                (result-longitude result)
-                                *latitude*
-                                *longitude*)))
-              ") "))
-
-       (:p
-         (:span :class "tags"
-           "tags:  "
-           (str (display-tags type (result-tags result)))))
-
-       (:div :class "actions"
-         (str (activity-icons :hearts (length (loves item-id))
-                              :comments comments
-                              :url url))
-         (:form :method "post" :action url
-           (:input :type "hidden" :name "next" :value (request-uri*))
-           (when reply
-              (htm
-               (:input :type "submit" :name "reply" :value "Reply")))
-           (when adminp
-             (htm
-               " &middot; "
-               (:input :type "submit" :name "edit" :value "Edit")
-               " &middot; "
-               (:input :type "submit" :name "inappropriate-item" :value "Inappropriate"))))
-         ))))
-     )
