@@ -85,9 +85,15 @@
                (push result *recent-activity-index*)))
            (geo-index-insert *activity-geo-index* result)))
 
-       (when (or (getf data :match-all-terms)
+       (when (eq type :request)
+         (if (or (getf data :match-all-terms)
                  (getf data :match-any-terms))
-         (index-matchmaker id data))))))
+           (index-matchmaker id data)
+           (with-mutex (*requests-without-matchmakers-mutex*)
+             (sort (push result
+                         *requests-without-matchmakers-index*)
+                   #'>
+                   :key #'result-time))))))))
 
 (defun modify-inventory-item (id &key text tags privacy latitude longitude)
   (let* ((result (gethash id *db-results*))

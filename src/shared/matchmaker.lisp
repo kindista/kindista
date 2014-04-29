@@ -99,7 +99,11 @@
              (if (or (getf item :match-all-terms)
                      (getf item :match-any-terms))
                (modify-matchmaker id new-matchmaker-data)
-               (index-matchmaker id new-matchmaker-data)))
+               (progn
+                 (with-mutex (*requests-without-matchmakers-index*)
+                   (asetf *requests-without-matchmakers-index*
+                          (remove id it :key #'result-id)))
+                 (index-matchmaker id new-matchmaker-data))))
 
            (update-matchmaker-request-data id
                                            :prior-matching-offers old-matches

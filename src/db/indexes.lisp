@@ -33,6 +33,7 @@
         *invitation-reminder-timer-index* ()
         *invite-request-index* ()
         *global-matchmaker-requests-index* ()
+        *requests-without-matchmakers-index*
         *recent-activity-index* ()
         *active-people-index* ()))
 
@@ -85,6 +86,8 @@
 (defvar *invitation-reminder-timer-index* ())
 (defvar *global-matchmaker-requests-mutex* (make-mutex))
 (defvar *global-matchmaker-requests-index* ())
+(defvar *requests-without-matchmakers-mutex* (make-mutex))
+(defvar *requests-without-matchmakers-index* ())
 (defvar *event-mutex* (make-mutex))
 (defvar *event-index* ())
 (defvar *feedback-mutex* (make-mutex))
