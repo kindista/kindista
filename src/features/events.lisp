@@ -43,11 +43,11 @@
 
 (defun event-index-insert (result)
   (with-mutex (*event-mutex*)
-    (asetf *event-index* (sort (push result it) #'< :key #'result-time))))
+    (asetf *event-index* (safe-sort (push result it) #'< :key #'result-time))))
 
 (defun event-index-update (result)
   (with-mutex (*event-mutex*)
-    (asetf *event-index* (sort (pushnew result it) #'< :key #'result-time))))
+    (asetf *event-index* (safe-sort (pushnew result it) #'< :key #'result-time))))
 
 (defun index-event (id data)
   (let* ((by (getf data :hosts))
@@ -336,7 +336,7 @@
 (defun populate-calendar (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
   (let (event-list)
     (flet ((add-event-occurance (result)
-             (asetf event-list (stable-sort (push result it) #'< :key #'result-time))))
+             (asetf event-list (stable-sort (copy-list (push result it)) #'< :key #'result-time))))
      (dolist (item items)
        (let* ((id (result-id item))
               (event (db id)))

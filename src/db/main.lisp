@@ -206,7 +206,7 @@
   (declare (optimize (speed 3) (safety 0) (debug 0))
            (type integer distance))
    (let ((geocode-distance (min 10 (ceiling (/ distance 12.4274)))))
-     (iter (for item in (delete-duplicates
+     (iter (for item in (remove-duplicates
                           (iter (for code in (geocode-neighbors (geocode lat long) geocode-distance))
                                 (appending (gethash code index)))
                           :key #'result-id))
@@ -225,7 +225,7 @@
 (defun geo-index-remove (index item)
   (with-locked-hash-table (*geo-index-index*)
     (with-locked-hash-table (index)
-      (dolist (geocode (delete-duplicates (gethash (cons index item) *geo-index-index*)))
+      (dolist (geocode (remove-duplicates (gethash (cons index item) *geo-index-index*)))
         (asetf (gethash geocode index)
                (remove item it))))
     (remhash (cons index item) *geo-index-index*)))

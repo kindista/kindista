@@ -49,9 +49,9 @@
   (add-notice-handler :new-gratitude #'new-gratitude-notice-handler))
 
 (defun end ()
+  (stop *acceptor*)
   (save-db)
   (save-tokens)
-  (stop *acceptor*)
   (stop (acceptor-metric-system *acceptor*))
   (stop-notice-thread))
 
