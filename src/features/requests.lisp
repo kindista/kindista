@@ -61,7 +61,7 @@
           (html
             (:div :class "inventory-item-page"
               (str (inventory-activity-item result :show-distance t :show-tags t))
-              (when (or mine (group-admin-p by))
+              (when (or mine (group-admin-p by) (getf *user* :matchmaker))
                 (str (item-matches-html id :data request
                                            :all-terms all-terms
                                            :any-terms any-terms

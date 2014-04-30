@@ -44,6 +44,7 @@
 
     (require-test ((or (eql *userid* by)
                        (group-admin-p by)
+                       (getf *user* :matchmaker)
                        (getf *user* :admin))
                    (s+ "You can only edit your own matchmaker notifications."))
 
@@ -100,7 +101,7 @@
                      (getf item :match-any-terms))
                (modify-matchmaker id new-matchmaker-data)
                (progn
-                 (with-mutex (*requests-without-matchmakers-index*)
+                 (with-mutex (*requests-without-matchmakers-mutex*)
                    (asetf *requests-without-matchmakers-index*
                           (remove id it :key #'result-id)))
                  (index-matchmaker id new-matchmaker-data))))
@@ -411,6 +412,7 @@
          (requestp (eql item-type :request))
          (notify-matches (or (getf data :notify-matches)
                              notify-matches))
+         (self (eql (getf data :by) *userid*))
          (all-terms (or all-terms (getf data :match-all-terms)))
          (any-terms (or any-terms (getf data :match-any-terms)))
          (without-terms (or without-terms (getf data :match-no-terms)))
@@ -452,11 +454,9 @@
               (dolist (item current-matches)
                 (let ((result (gethash item *db-results*)))
                   (unless (item-view-denied (result-privacy result))
-                    (str (inventory-activity-item result
-                                                  :truncate t
-                                                  :show-distance t
-                                                  :show-what t
-                                                  :show-tags t))))))
+                    (htm
+                      (:div :class "item"
+                        (str (featured-offer-match-html (result-id result) id))))))))
             (when requestp
               (htm
                 (:strong
@@ -513,10 +513,12 @@
                  (str (distance-selection-dropdown (or distance
                                                        25))))
                (:br)
-               (:input :type "checkbox"
-                       :name "notify-matches"
-                       :checked (when notify-matches "checked")
-                 "Notify me by email when someone posts a matching offer")
+               (when self
+                 (htm
+                   (:input :type "checkbox"
+                           :name "notify-matches"
+                           :checked (when notify-matches "checked")
+                   "Notify me by email when someone posts a matching offer")))
                (:br)
                (:div :class "float-right"
                  (:button :class "cancel" :type "submit" :name "cancel" "Cancel")

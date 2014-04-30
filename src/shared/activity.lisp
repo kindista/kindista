@@ -283,8 +283,9 @@
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")
                                                  ((string= type "offer") "offered")))
-                   :matchmaker (and (or group-adminp self)
-                                    (string= type "request"))
+                   :matchmaker (or (getf *user* :matchmaker)
+                                   (and (or group-adminp self)
+                                      (string= type "request")))
                    :content (html
                               (:p
                                 (str (person-link user-id))

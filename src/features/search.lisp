@@ -684,7 +684,7 @@
   "you've"
   "zero")
 
-(defparameter *nonword-scanner* (ppcre:create-scanner "[^'a-z ]"))
+(defparameter *nonword-scanner* (ppcre:create-scanner "[^a-zA-Z]"))
 (defparameter *multispace-scanner* (ppcre:create-scanner " +"))
 
 (defun stem-text (text)
