@@ -40,7 +40,7 @@ Search:
 
 ## Display matching items on both offer and request pages DONE
 
-### Email requestor when new matching offer is made
+## Email requestor when new matching offer is made
 
 ## Matchmaker should be reindexed with edits DONE
 - tags DONE
@@ -54,9 +54,11 @@ Search:
 
 ## Show number of matches below all of my items DONE
 
-### Show matches on items
+### Admin functionality
 - allow admins to see all matches
 - list of requests without matchmakers
+- list of recent matches
+
 
 ## Add Inventory Titles
 - require titles on new/edited inventory items

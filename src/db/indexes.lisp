@@ -33,7 +33,7 @@
         *invitation-reminder-timer-index* ()
         *invite-request-index* ()
         *global-matchmaker-requests-index* ()
-        *requests-without-matchmakers-index*
+        *requests-without-matchmakers-index* ()
         *recent-activity-index* ()
         *active-people-index* ()))
 
