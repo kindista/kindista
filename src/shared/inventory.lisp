@@ -90,10 +90,10 @@
                  (getf data :match-any-terms))
            (index-matchmaker id data)
            (with-mutex (*requests-without-matchmakers-mutex*)
-             (sort (push result
-                         *requests-without-matchmakers-index*)
-                   #'>
-                   :key #'result-time))))))))
+             (safe-sort (push result
+                              *requests-without-matchmakers-index*)
+                        #'>
+                        :key #'result-time))))))))
 
 (defun modify-inventory-item (id &key text tags privacy latitude longitude)
   (let* ((result (gethash id *db-results*))
