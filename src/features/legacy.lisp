@@ -42,7 +42,7 @@
     (with-locked-hash-table (*profile-activity-index*)
       (dolist (person people)
         (asetf (gethash person *profile-activity-index*)
-               (sort (push result it) #'> :key #'result-time))))
+               (safe-sort (push result it) #'> :key #'result-time))))
 
 
     (unless (< created (- (get-universal-time) 15552000))

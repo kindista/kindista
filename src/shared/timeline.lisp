@@ -24,13 +24,13 @@
 
   (with-locked-hash-table (*timeline-index*)
     (asetf (gethash userid *timeline-index*)
-           (sort (cons result it)
+           (safe-sort (cons result it)
                  #'> :key #'result-time))))
 
 (defun sort-timeline (userid)
   (with-locked-hash-table (*timeline-index*)
     (asetf (gethash userid *timeline-index*)
-           (sort it #'> :key #'result-time))))
+           (safe-sort it #'> :key #'result-time))))
 
 (defun timeline-remove (userid result)
   "insert objectid at time into userid's timeline and sort"

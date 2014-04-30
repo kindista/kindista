@@ -52,7 +52,7 @@
       (t
        (with-locked-hash-table (*profile-activity-index*)
          (asetf (gethash by *profile-activity-index*)
-                (sort (push result it) #'> :key #'result-time)))
+                (safe-sort (push result it) #'> :key #'result-time)))
 
        (if (eq type :offer)
          (with-locked-hash-table (*offer-index*)
@@ -734,7 +734,7 @@
                                                        "more"
                                                        (reduce #'+ (subseq subtags (- subtag-count 1)) :key #'cdr))))
                                            (sort top-subtags #'string< :key #'car)))))))
-                (sort items #'> :key #'inventory-rank))))))
+                (safe-sort items #'> :key #'inventory-rank))))))
 
 (defun nearby-inventory-top-tags (type &key (count 9) (more t) base (subtag-count 4) q)
   (multiple-value-bind (nearby items)
@@ -742,10 +742,10 @@
                                    :subtag-count subtag-count
                                    :q q
                                    :distance (user-rdist))
-    (let* ((tags (sort (if base
-                         nearby
-                         (remove-if-not #'top-tag-p nearby :key #'first))
-                       #'> :key #'second))
+    (let* ((tags (safe-sort (if base
+                                nearby
+                                (remove-if-not #'top-tag-p nearby :key #'first))
+                   #'> :key #'second))
            (top-tags (subseq tags 0 (min count (length tags)))))
       (cond
         ((and more (> (length tags) (+ count 1)))

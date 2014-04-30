@@ -58,9 +58,11 @@
          (token (getf invitation :token)))
     (with-locked-hash-table (*invitation-index*)
       (push (cons id token) (gethash email *invitation-index*)))
+
     (unless (getf invitation :auto-reminder-sent)
       (with-mutex (*invitation-reminder-timer-mutex*)
-        (sort (push (cons sent id) *invitation-reminder-timer-index*) #'< :key #'car)))
+        (safe-sort (push (cons sent id) *invitation-reminder-timer-index*) #'< :key #'car)))
+
     (with-locked-hash-table (*person-invitation-index*)
        (push id (gethash host *person-invitation-index*)))))
 
@@ -107,8 +109,8 @@
              (remove (rassoc id it)
                      it
                      :test #'equal))
-      (sort (push (cons now id) *invitation-reminder-timer-index*) #'<
-            :key #'car))
+      (safe-sort (push (cons now id) *invitation-reminder-timer-index*) #'<
+                  :key #'car))
   (notice :send-invitation :time now :id id)))
 
 (defun get-automatic-invitation-reminders ()

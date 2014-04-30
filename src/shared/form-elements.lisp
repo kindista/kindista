@@ -103,7 +103,7 @@
       (:option :value *userid*
                :selected (when (eql selected *userid*) "")
                (str (getf *user* :name))" ")
-      (dolist (group (sort groups #'string< :key #'cdr))
+      (dolist (group (safe-sort groups #'string< :key #'cdr))
         (htm (:option :value (car group)
                       :selected (when (eql selected (car group)) "")
                       (str (cdr group))" "))))))
@@ -140,7 +140,7 @@
           (if (or groups-user-has-left
                   (> (length my-groups) 1))
             (progn
-              (dolist (group (sort my-groups #'string-lessp :key #'cdr))
+              (dolist (group (safe-sort my-groups #'string-lessp :key #'cdr))
                 (htm
                   (:br)
                   (:div :class "item-group-privacy"

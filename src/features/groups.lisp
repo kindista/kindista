@@ -77,7 +77,7 @@
 
     (with-locked-hash-table (*profile-activity-index*)
       (asetf (gethash id *profile-activity-index*)
-             (sort (push result it) #'> :key #'result-time)))
+             (safe-sort (push result it) #'> :key #'result-time)))
 
     (unless (< (result-time result) (- (get-universal-time) 2592000))
       (with-mutex (*recent-activity-mutex*)

@@ -151,7 +151,7 @@
        (with-locked-hash-table (*profile-activity-index*)
          (dolist (person people)
            (asetf (gethash person *profile-activity-index*)
-                  (sort (push result it) #'> :key #'result-time))))
+                  (safe-sort (push result it) #'> :key #'result-time))))
 
        ;; unless gratitude is older than 180 days
        (unless (< (result-time result) (- (get-universal-time) 15552000))

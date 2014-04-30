@@ -62,6 +62,9 @@
     (push `(,item-type (db ,id)) bindings)
     `(let* ,bindings ,@body)))
 
+(defun safe-sort (sequence predicate &key key)
+  (sort (copy-list sequence) predicate :key key))
+
 (defun validate-name (string)
   (scan +full-name-scanner+ string))
 
@@ -199,14 +202,14 @@
       (setf (result-time result) time)
       (with-locked-hash-table (*profile-activity-index*)
         (asetf (gethash by *profile-activity-index*)
-               (sort it #'> :key #'result-time)))
+               (safe-sort it #'> :key #'result-time)))
 
       (unless (< (result-time result) (- (get-universal-time) 15552000))
         (unless (< (result-time result) (- (get-universal-time) 2592000))
           (with-mutex (*recent-activity-mutex*)
             (setf *recent-activity-index*
-                  (sort (pushnew result *recent-activity-index*)
-                        #'> :key #'result-time))))
+                  (safe-sort (pushnew result *recent-activity-index*)
+                             #'> :key #'result-time))))
         (geo-index-insert *activity-geo-index* result)))))
 
 (defun url-compose (base &rest params)

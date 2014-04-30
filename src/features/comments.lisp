@@ -69,7 +69,8 @@
 
 (defun index-comment (id data)
   (with-locked-hash-table (*comment-index*)
-    (asetf (gethash (getf data :on) *comment-index*) (sort (push id it) #'<))))
+    (asetf (gethash (getf data :on) *comment-index*)
+           (safe-sort (push id it) #'<))))
 
 (defun comments (id)
   (gethash id *comment-index*))

@@ -274,7 +274,7 @@
                      (parse-integer (get-parameter "p"))
                      0)))
           (with-location
-            (str (activity-items (sort (copy-list *recent-activity-index*) #'> :key #'result-time)
+            (str (activity-items (safe-sort *recent-activity-index* #'> :key #'result-time)
                                  :url "/admin/recent"
                                  :page page)))))
       :selected "admin")))

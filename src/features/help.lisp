@@ -38,8 +38,8 @@
                               :id id)))
 
     (with-mutex (*feedback-mutex*)
-      (setf *feedback-index* (sort (cons result *feedback-index*)
-                                   #'> :key #'result-time)))
+      (setf *feedback-index* (safe-sort (cons result *feedback-index*)
+                                        #'> :key #'result-time)))
 
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))))
