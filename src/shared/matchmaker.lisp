@@ -44,8 +44,7 @@
 
     (require-test ((or (eql *userid* by)
                        (group-admin-p by)
-                       (getf *user* :matchmaker)
-                       (getf *user* :admin))
+                       (matchmaker-admin-p))
                    (s+ "You can only edit your own matchmaker notifications."))
 
       (flet ((try-again (e)
@@ -207,6 +206,12 @@
         when (or (db id :match-all-terms)
                  (db id :match-any-terms))
         collect id))
+
+(defun matchmaker-admin-p (&optional (userid *userid*))
+  (let ((user (if (eql userid *userid*)
+                (db userid)
+                *user*)))
+    (or (getf user :admin) (getf user :matchmaker))))
 
 (defun find-matching-requests-for-offer (offer-id)
   (let* ((offer (db offer-id))
@@ -428,7 +433,7 @@
          (tab (or (get-parameter "selected")
                   (if current-matches "matches" "matchmaker"))))
     (html
-      (:div :class "item-matches"
+      (:div :class "item-matches card"
         (when (and requestp (or all-terms any-terms))
           (htm
             (:menu :type "toolbar" :class "bar"
@@ -553,64 +558,6 @@
                             (or (getf offer :details)
                                 (getf offer :text)))))
 
-(defun featured-offer-match-html (offer-id request-id)
-  (let* ((result (gethash offer-id *db-results*))
-         (offer (db offer-id))
-         (adminp (getf *user* :admin))
-         (by (getf offer :by))
-         (mine (or (eql *userid* by)
-                   (find by (getf *user-group-privileges* :admin))))
-         (reply (nor (and adminp
-                          (item-view-denied (result-privacy result)))
-                     mine))
-         (url (strcat "/offers/" offer-id)))
-    (html
-      (:div :class "offer-match"
-        (when mine
-          (htm
-            (:p "...matches an "
-              (:a :href url "offer")
-              " by "
-              (str (person-link by)))))
-        (:div :class "inventory-text"
-          (:p
-            (str (highlight-relevant-inventory-text offer-id request-id))))
-        (unless mine
-          (htm
-            (:p
-              (:em "posted by "
-                 (str (person-link by)) " "
-                 (str (humanize-universal-time (result-time result)))
-                 " (within "
-                 (str (distance-string
-                     (air-distance (result-latitude result)
-                                   (result-longitude result)
-                                   *latitude*
-                                   *longitude*)))
-                 ") "))))
-
-        (:p
-          (:span :class "tags"
-            "tags:  "
-            (str (display-tags "offer" (result-tags result)))))
-
-        (:div :class "actions"
-          (str (activity-icons :hearts (length (loves offer-id))
-                               :url url))
-          (:form :method "post" :action url
-            (:input :type "hidden" :name "next" :value (request-uri*))
-            (when reply
-               (htm
-                 (:input :type "submit" :name "reply" :value "Reply")))
-            (when (or adminp mine)
-              (when reply (htm " &middot; "))
-              (htm
-                (:input :type "submit" :name "edit" :value "Edit")
-                " &middot; "
-                (if adminp
-                  (htm (:input :type "submit" :name "inappropriate-item" :value "Inappropriate"))
-                  (htm (:input :type "submit" :name "delete" :value "Delete")))))))))))
-
 (defun featured-request-match-html (request-id &key data)
   (let* ((request (or data (db request-id)))
          (url (strcat "/requests/" request-id))
@@ -636,7 +583,21 @@
               (:a :href url "request")
               " by "
               (str (person-link by)))))
-        (:p (str (html-text (getf request :text))))
+        (:p :class "inventory-match-text"
+         (str (html-text (getf request :text))))
+
+        (:p :class "match-reason"
+          (:span :class "tags"
+            "tags:  "
+            (str (display-tags "request" tags))))
+
+        (:p :class "match-reason"
+          (:span :class "tags" "matchmaker:  ")
+          (dolist (term terms)
+             (htm (str term))
+             (unless (eql term (car (last terms)))
+               (htm " &middot "))))
+
         (unless mine
           (htm (:p
                  (:em "posted by "
@@ -653,16 +614,6 @@
                                            *longitude*)))
                       ") "))))
 
-        (:p :class "match-reason"
-          (:span :class "tags"
-            "tags:  "
-            (str (display-tags "request" tags))))
-        (:p :class "match-reason"
-          (:span :class "tags" "matchmaker:  ")
-          (dolist (term terms)
-             (htm (str term))
-             (unless (eql term (car (last terms)))
-               (htm " &middot "))))
         (:div :class "actions"
           (:form :method "post" :action url
             (:input :type "hidden" :name "next" :value (request-uri*))
@@ -679,14 +630,74 @@
             (:a :href (url-compose url "selected" "matchmaker")
               " Edit matchmaker"))))))))
 
-(defun matching-item-count-html (item-id item-type count)
+(defun featured-offer-match-html (offer-id request-id)
+  (let* ((result (gethash offer-id *db-results*))
+         (offer (db offer-id))
+         (adminp (getf *user* :admin))
+         (by (getf offer :by))
+         (mine (or (eql *userid* by)
+                   (find by (getf *user-group-privileges* :admin))))
+         (reply (nor (and adminp
+                          (item-view-denied (result-privacy result)))
+                     mine))
+         (url (strcat "/offers/" offer-id)))
+    (html
+      (:div :class "offer-match"
+        (when mine
+          (htm
+            (:p "...matches an "
+              (:a :href url "offer")
+              " by "
+              (str (person-link by)))))
+
+        (:p :class "inventory-match-text"
+          (str (highlight-relevant-inventory-text offer-id request-id)))
+
+        (:p :class "match-reason"
+          (:span :class "tags"
+            "tags:  "
+            (str (display-tags "offer" (result-tags result)))))
+
+        (unless mine
+          (htm
+            (:p
+              (:em "posted by "
+                 (str (person-link by)) " "
+                 (str (humanize-universal-time (result-time result)))
+                 " (within "
+                 (str (distance-string
+                     (air-distance (result-latitude result)
+                                   (result-longitude result)
+                                   *latitude*
+                                   *longitude*)))
+                 ") "))))
+
+        (:div :class "actions"
+          (str (activity-icons :hearts (length (loves offer-id))
+                               :url url))
+          (:form :method "post" :action url
+            (:input :type "hidden" :name "next" :value (request-uri*))
+            (when reply
+               (htm
+                 (:input :type "submit" :name "reply" :value "Reply")))
+            (when (or adminp mine)
+              (when reply (htm " &middot; "))
+              (htm
+                (:input :type "submit" :name "edit" :value "Edit")
+                " &middot; "
+                (if adminp
+                  (htm (:input :type "submit" :name "inappropriate-item" :value "Inappropriate"))
+                  (htm (:input :type "submit" :name "delete" :value "Delete")))))))))))
+(defun matching-item-count-html (item-id item-type count &key admin)
   (html
-    (:div :class "reciprocity"
+    (:div :class "reciprocity matches"
      (:a :href (url-compose (strcat "/" item-type "s/" item-id)
                             "selected" "matches")
       (:img :alt "sharing:" :src "/media/icons/share.png")
       (:strong
-        "You have "
+        (str (if admin
+               (s+ "There " (if (> count 1) "are " "is"))
+               "You have "))
         (str count)
         " matching "
         (str (if (string= item-type "offer")

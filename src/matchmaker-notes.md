@@ -54,11 +54,9 @@ Search:
 
 ## Show number of matches below all of my items DONE
 
-### Admin functionality
-- allow admins to see all matches
+## Admin functionality
 - list of requests without matchmakers
 - list of recent matches
-
 
 ## Add Inventory Titles
 - require titles on new/edited inventory items

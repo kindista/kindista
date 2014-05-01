@@ -60,7 +60,9 @@
         (htm
           (:p :class "distance"
             "within " (str (distance-string distance)))))
-      (str content)
+      (:div :class "item-text"(str content))
+      (when (and matchmaker related-items)
+        (str related-items))
       (when *user*
         (htm
           (:div :class "actions"
@@ -100,7 +102,7 @@
               (htm
                 " &middot; "
                 (str (comment-button url)))))))
-      (awhen related-items (str it)))))
+      (when (and related-items (not matchmaker)) (str related-items)))))
 
         ;(unless (eql user-id *userid*)
         ;  (htm
@@ -262,6 +264,7 @@
          (by (getf data :by))
          (type (if (eql (getf data :type) :request) "request" "offer"))
          (group-adminp (group-admin-p by))
+         (admin-matchmaker (matchmaker-admin-p))
          (images (getf data :images))
          (item-url (strcat "/" type "s/" item-id))
          (tags (getf data :tags))) ;DJB
@@ -321,16 +324,21 @@
                                                            item-url
                                                            type))))
 
-                   :related-items (when (and (or self group-adminp)
+                   :related-items (when (and (or self
+                                                 group-adminp
+                                                 admin-matchmaker)
                                              (not (string= (script-name*)
                                                            item-url)))
                                     (let ((matches (case (getf data :type)
                                                      (:offer (length (gethash item-id *offers-with-matching-requests-index*)))
                                                      (:request (length (getf data :matching-offers))))))
-                                       (when (> matches 0)
-                                         (matching-item-count-html item-id
-                                                                   type
-                                                                   matches)))))))
+                                      (when (> matches 0)
+                                        (matching-item-count-html
+                                          item-id
+                                          type
+                                          matches
+                                          :admin (and admin-matchmaker
+                                                      (not self)))))))))
 
 (defun display-tags (type tags)
   (html

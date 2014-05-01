@@ -167,7 +167,8 @@
 
     (case (result-type result)
       (:offer (update-matchmaker-offer-data id))
-      (:request (progn
+      (:request (when (or (getf data :match-all-terms)
+                          (getf data :match-any-terms))
                   (modify-matchmaker id)
                   (update-matchmaker-request-data id))))))
 

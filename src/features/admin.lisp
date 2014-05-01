@@ -155,38 +155,19 @@
 
 (defun get-admin-matchmaker ()
   (require-admin
-    (let ((tab (or (get-parameter "selected")
-                   "without-matchmaker"))
-          (page (if (scan +number-scanner+ (get-parameter "p"))
+    (let ((page (if (scan +number-scanner+ (get-parameter "p"))
                 (parse-integer (get-parameter "p"))
                 0)))
       (standard-page
         "Admin Matchmaker"
         (html
           (:p (:a :href "/admin" "back to admin"))
-          (:h1 "Admin Matchmaker")
+          (:h2 "Admin Matchmaker")
           (:div :class "item-matches"
-            (:menu :type "toolbar" :class "bar"
-              (if (equalp tab "without-matchmaker")
-                (htm (:li :class "selected" "Requests without Matchmakers"))
-                (htm
-                  (:li (:a :href (url-compose "matchmaker"
-                                              "selected" "without-matchmaker")
-                            "Requests without Matchmakers"))))
-              (if (equalp tab "recent-matches")
-                (htm (:li :class "selected" "Recent Matches"))
-                (htm
-                  (:li (:a :href (url-compose  "matchmaker"
-                                              "selected" "recent-matches")
-                          "Recent Matches")))))
-            (if (equalp tab "without-matchmaker")
-              (aif (requests-without-matchmakers-html :page page)
-                (htm
-                  (str it))
-                (htm "There are currently no requests without matchmakers"))
-
-              
-              )))))))
+            (aif (requests-without-matchmakers-html :page page)
+              (htm
+                (str it))
+              (htm "There are currently no requests without matchmakers"))))))))
 
 (defun requests-without-matchmakers-html (&key (page 0) (count 20))
   (let* ((start (* page count))

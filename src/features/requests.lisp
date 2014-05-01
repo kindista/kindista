@@ -45,6 +45,7 @@
   (let* ((request (db id))
          (by (getf request :by))
          (mine (eql *userid* by))
+         (matchmaker-admin (matchmaker-admin-p))
          (result (gethash id *db-results*)))
     (cond
      ((or (not request)
@@ -60,8 +61,13 @@
           "Requests"
           (html
             (:div :class "inventory-item-page"
+              (when matchmaker-admin
+                (str (menu-horiz "actions"
+                       (html (:a :href "/admin/matchmaker"
+                              "see all requests without matchmakers")))))
+
               (str (inventory-activity-item result :show-distance t :show-tags t))
-              (when (or mine (group-admin-p by) (getf *user* :matchmaker))
+              (when (or mine (group-admin-p by) matchmaker-admin)
                 (str (item-matches-html id :data request
                                            :all-terms all-terms
                                            :any-terms any-terms
