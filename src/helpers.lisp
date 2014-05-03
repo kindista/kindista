@@ -560,16 +560,12 @@
                            " "))
                   :test #'string=)))
 
-    (pprint list-of-stems)
-    (pprint words)
      (dolist (word words)
        (when (find (stem word) list-of-stems :test #'equalp)
-         (pprint word)
          (setf text
                (regex-replace-all word
                                   text
                                   (html (:strong (str word)))
                                   :preserve-case t))))
-         (terpri)
     text))
 
