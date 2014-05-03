@@ -17,6 +17,8 @@
 
 (in-package :kindista)
 
+(defvar *acceptor-thread* nil)
+
 (defun run ()
   (dolist (symbol '(*convert-path*
                     *original-images*
@@ -28,7 +30,7 @@
   (load-notice-handlers)
   (load-db)
   (load-tokens)
-  (make-thread #'(lambda () (start *acceptor*)))
+  (setf *acceptor-thread* (make-thread #'(lambda () (start *acceptor*))))
   (start (acceptor-metric-system *acceptor*))
   (start-notice-thread))
 
@@ -49,9 +51,10 @@
 
 (defun end ()
   (stop *acceptor*)
+  (stop (acceptor-metric-system *acceptor*))
   (save-db)
   (save-tokens)
-  (stop (acceptor-metric-system *acceptor*))
+  (terminate-thread *acceptor-thread*)
   (stop-notice-thread))
 
 (defun quit ()
