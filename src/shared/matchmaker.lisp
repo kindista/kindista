@@ -696,7 +696,7 @@
       (:img :alt "sharing:" :src "/media/icons/share.png")
       (:strong
         (str (if admin
-               (s+ "There " (if (> count 1) "are " "is"))
+               (s+ "There " (if (> count 1) "are " "is "))
                "You have "))
         (str count)
         " matching "
