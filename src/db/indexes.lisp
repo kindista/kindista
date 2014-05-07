@@ -32,6 +32,8 @@
         *event-index* ()
         *invitation-reminder-timer-index* ()
         *invite-request-index* ()
+        *global-matchmaker-requests-index* ()
+        *requests-without-matchmakers-index* ()
         *recent-activity-index* ()
         *active-people-index* ()))
 
@@ -65,12 +67,15 @@
 (defindex *person-notification-index*)
 (defindex *person-suggested-connections-index*)
 (defindex *profile-activity-index*)
+(defindex *account-inventory-matches-index*) ;k=person/groupid v=(:requests :offers)
 (defindex *request-geo-index*)
 (defindex *request-index*) ;should be called "person-request-index"
 (defindex *request-stem-index* :test 'equalp)
+(defindex *matchmaker-requests-geo-index*)
 (defindex *offer-geo-index*)
 (defindex *offer-index*) ;should be called "person-offer-index"
 (defindex *offer-stem-index* :test 'equalp)
+(defindex *offers-with-matching-requests-index*)
 (defindex *username-index* :test 'equalp)
 
 (defvar *recent-activity-mutex* (make-mutex))
@@ -79,6 +84,10 @@
 (defvar *invite-request-index* ())
 (defvar *invitation-reminder-timer-mutex* (make-mutex))
 (defvar *invitation-reminder-timer-index* ())
+(defvar *global-matchmaker-requests-mutex* (make-mutex))
+(defvar *global-matchmaker-requests-index* ())
+(defvar *requests-without-matchmakers-mutex* (make-mutex))
+(defvar *requests-without-matchmakers-index* ())
 (defvar *event-mutex* (make-mutex))
 (defvar *event-index* ())
 (defvar *feedback-mutex* (make-mutex))

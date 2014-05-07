@@ -735,6 +735,14 @@ button.link {
  margin-right:1em;
 }
 
+button.inline-link {
+ border:0;
+ padding:0;
+ background-color: transparent;
+ font-weight:bold;
+ margin:0;
+}
+
 button.simple-link {
  border:0;
  background-color: transparent;
@@ -1353,6 +1361,7 @@ menu .newcount {
 }
 
 .inventory-details select.identity,
+.matchmaker input[type=text],
 .create-event input[type=text],
 .create-event select,
 .invite-members input[type=text],
@@ -1391,6 +1400,7 @@ div.privacy-selection-warning p {
  margin: 0.4em 0;
 }
 
+form.matchmaker,
 div.privacy-selection-details,
 div.recurring-event-details,
 blockquote.review-text {
@@ -1401,6 +1411,15 @@ blockquote.review-text {
  border-style: solid;
  border-width: 1px;
  border-color: #bbb;
+}
+
+form.matchmaker {
+ margin-top: 0.5em;
+ max-width: 40em;
+}
+
+form.matchmaker label.distance-selection {
+ padding-top: 0.6em;
 }
 
 div.recurring-event-details,
@@ -1419,6 +1438,8 @@ select.privacy-selection {
 }
 
 @media (max-width:28em) {
+ form.matchmacker,
+ .matchmaker input[type=text],
  div.recurring-event-details,
  div.privacy-selection,
  .invite-members input[type=text],
@@ -1584,10 +1605,65 @@ table.messages {
  height:100%; /* DJB changed this 2/3/14 - make sure it doesn't mess with anything else */
 }
 
+.inventory-item-page .card,
 .card:last-child {
  border-bottom: none;
 }
 
+div.suggested-items {
+ background: #fbf4d7;
+ padding: 0 0.5em 0.4em;
+ border-radius: 0.5em;
+}
+
+div.suggested-items > .div {
+ margin: 0.5em 0;
+}
+
+div.suggested-items p {
+ font-size: 0.9em;
+}
+
+div.suggested-items h3 {
+ margin-top: 0.7em;
+}
+
+div.suggested-items .tags {
+ font-size: inherit;
+}
+
+div.suggested-items p.match-reason,
+div.offer-match p.match-reason {
+ margin: 0.3em 0;
+}
+
+.suggested-items div.offer-match:last-child,
+.suggested-items div.request-match:last-child {
+ border-top: 1px solid #fafafa;
+}
+
+div.offer-match,
+div.request-match {
+ position: relative;
+}
+
+div.request-match {
+ margin-bottom: 0.4em;
+}
+
+p.inventory-match-text {
+ margin-bottom: 0.6em;
+}
+
+div.reciprocity.matches {
+ margin-top: 0.4em;
+ font-size: 0.8em;
+}
+
+.reciprocity.matches img {
+ height: 1.4em;
+ width: auto;
+}
 .card-details {
  overflow: hidden;
 }
@@ -1630,7 +1706,8 @@ button.card > img {
  /*margin-left: 8.5em;*/
 }
 
-.card p:last-child {
+.card p:last-child,
+.activity .card div.item-text p:last-of-type {
  margin-bottom: 0;
 }
 
@@ -2006,9 +2083,9 @@ div.membership-request button:last-child {
 
 .card .actions {
  clear: left;
- /*margin-top: 2em;
- position:relative;
- /*border-top:1px solid #dfdfdf;
+ margin-top: 0.65em;
+ /*position:relative;
+ border-top:1px solid #dfdfdf;
  padding-top:5px;*/
  color:#aaa;
  text-align: right;
@@ -2173,7 +2250,7 @@ img.bigavatar {
  float: left;
  border:5px solid #fff;
  box-shadow:2px 2px 3px #c0c0c0;
- margin: 0 0.6em 0.6em 0;
+ margin: 0.5em 0.6em 0.6em 0;
  max-width:7.15em;
  min-height:77px;
  max-height:6.15em;
@@ -2528,8 +2605,16 @@ div.tag {
  width: 11em;
 }
 
-div.tag input:checked + span {
- font-weight: bold;
+form.matchmaker {
+ overflow: hidden;
+}
+
+form.matchmaker h3 {
+ margin-bottom: 0.7em;
+}
+
+form.matchmaker label {
+ display: block;
 }
 
 ul.keywords {

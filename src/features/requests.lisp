@@ -39,20 +39,42 @@
 (defun post-requests-new ()
   (post-new-inventory-item "request" :url "/requests/new"))
 
-(defun get-request (id)
-  (setf id (parse-integer id))
-  (aif (db id)
-    (if (and (not (eql *userid* (getf it :by)))
-             (item-view-denied (result-privacy (gethash id *db-results*))))
-      (permission-denied)
+(defun get-request (id &key all-terms any-terms without-terms distance notify-matches)
+  (unless (integerp id)
+    (setf id (parse-integer id)))
+  (let* ((request (db id))
+         (by (getf request :by))
+         (mine (eql *userid* by))
+         (matchmaker-admin (matchmaker-admin-p))
+         (result (gethash id *db-results*)))
+    (cond
+     ((or (not request)
+          (not (eql (getf request :type) :request)))
+      (not-found))
+
+     ((and (not mine)
+           (item-view-denied (result-privacy result)))
+       (permission-denied))
+     (t
       (with-location
         (standard-page
           "Requests"
           (html
-            (:div :class "activity"
-              (str (inventory-activity-item "request" (gethash id *db-results*) :show-distance t :show-tags t))))
-          :selected "requests")))
-    (not-found)))
+            (:div :class "inventory-item-page"
+              (when matchmaker-admin
+                (str (menu-horiz "actions"
+                       (html (:a :href "/admin/matchmaker"
+                              "see all requests without matchmakers")))))
+
+              (str (inventory-activity-item result :show-distance t :show-tags t))
+              (when (or mine (group-admin-p by) matchmaker-admin)
+                (str (item-matches-html id :data request
+                                           :all-terms all-terms
+                                           :any-terms any-terms
+                                           :without-terms without-terms
+                                           :distance distance
+                                           :notify-matches notify-matches)))))
+          :selected "requests"))))))
 
 (defun get-request-reply (id)
   (require-user

@@ -32,7 +32,7 @@
           (:ul
             (:li (:a :href "/admin/metrics" "user metrics"))
             (:li (:a :href "/admin/pending-accounts" "pending accounts to review"))
-            (:li (:a :href "/admin/invite-requests" "invitation requests"))
+            (:li (:a :href "/admin/matchmaker" "matchmaker"))
             (:li (:a :href "/admin/recent" "recently added"))
             (:li (:a :href "/admin/sendmail" "send email to everyone")))))
       :selected "admin")))
@@ -137,10 +137,12 @@
          (let ((item-ids (gethash userid *pending-person-items-index*)))
             (dolist (item-id item-ids)
               (let ((item (db item-id)))
+                (index-item item-id item)
                 (case (getf item :type)
                   (:gratitude
-                    (notice :new-gratitude :id item-id)))
-                (index-item item-id item)))
+                    (notice :new-gratitude :id item-id))
+                  (:offer
+                    (update-matchmaker-offer-data item-id)))))
            (with-locked-hash-table (*pending-person-items-index*)
              (remhash userid *pending-person-items-index*)))
          (notice :account-approval :id userid
@@ -150,6 +152,37 @@
                         "'s account: "
                         userid))
          (see-other "/admin/pending-accounts"))))))
+
+(defun get-admin-matchmaker ()
+  (require-admin
+    (let ((page (if (scan +number-scanner+ (get-parameter "p"))
+                (parse-integer (get-parameter "p"))
+                0)))
+      (standard-page
+        "Admin Matchmaker"
+        (html
+          (:p (:a :href "/admin" "back to admin"))
+          (:h2 "Admin Matchmaker")
+          (:div :class "item-matches"
+            (aif (requests-without-matchmakers-html :page page)
+              (htm
+                (str it))
+              (htm "There are currently no requests without matchmakers"))))))))
+
+(defun requests-without-matchmakers-html (&key (page 0) (count 20))
+  (let* ((start (* page count))
+         (requests (sublist *requests-without-matchmakers-index* start count))
+         (more (nth (+ start count 1) *requests-without-matchmakers-index*)))
+    (when requests
+      (with-location
+        (html
+          (dolist (request requests)
+            (str (inventory-activity-item request :truncate t
+                                                  :show-distance t
+                                                  :show-what t
+                                                  :show-tags t)))
+          (str (paginate-links page more (url-compose  "matchmaker"
+                                                       "selected" "without-matchmaker"))))))))
 
 (defun get-admin-invite-requests ()
   (require-admin
@@ -209,59 +242,7 @@
                               :class "yes" 
                               "Send Invitation"))))))))))))))
 
-(defun post-admin-invite-request (id)
-  (require-admin
-    (let* ((request-id (parse-integer id))
-           (request (db request-id))
-           (text (strcat
-                   (awhen (post-parameter "message")
-                     (strcat
-                       it
-                       #\return
-                       #\linefeed
-                       #\linefeed
-                       ))
-                   (awhen (getf request :offering)
-                     (strcat
-                       "For your reference, here is the text you entered "
-                       "about resources you might share on Kindista: "
-                       #\return
-                       #\linefeed
-                       #\linefeed
-                       it
-                       #\return
-                       #\linefeed
-                       #\linefeed
-                       "Save this email so you can cut and paste your text "
-                       "into the new offers you post on Kindista."
-                       )))))
-      (cond
-        ((post-parameter "delete")
-         (confirm-delete :url (strcat "/admin/invite-request/" request-id)
-                         :next-url "/admin/invite-requests"
-                         :type "invitation request"
-                         :text (strcat "An invitation request from "
-                                       (getf request :name)
-                                       " , offering: \""
-                                       #\return
-                                       #\linefeed
-                                       #\linefeed
-                                       (getf request :offering)
-                                       "\"")))
-        ((post-parameter "really-delete")
-         (delete-invite-request request-id)
-         (flash (strcat "Invitation request " request-id " has been deleted."))
-         (see-other "/admin/invite-requests"))
-        ((post-parameter "invite")
-         (let ((invitation-id (create-invitation (getf request :email)
-                                                 :text text
-                                                 :invite-request-id request-id
-                                                 :expires 5184000
-                                                 :host +kindista-id+
-                                                 :name (getf request :name))))
-                 (modify-db request-id :invite-id invitation-id))
-         (flash (strcat "You have sent an invitation to Request ID: " request-id))
-         (see-other "/admin/invite-requests"))))))
+
 
 (defun get-admin-recent ()
   (require-admin

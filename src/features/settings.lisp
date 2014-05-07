@@ -215,7 +215,14 @@
                     (s+ "We will never share your exact location with anyone else.")))
                   "If you would like to know more about how we use the information you share with us,
                    please read our " (:a :href "/privacy" "privacy policy") ".")
-              (str (static-google-map :size "280x150" :zoom 12 :lat (getf entity :lat) :long (getf entity :long)))
+              (str (static-google-map :size "280x150"
+                                      :zoom 12
+                                      :lat (getf (getf (token-session-data *token*)
+                                                       :unverified-location)
+                                                 :lat)
+                                      :long (getf (getf (token-session-data *token*)
+                                                        :unverified-location)
+                                                  :long)))
 
               (:form :method "post" :action "/settings"
                 (:h3 "Is this location correct?")
@@ -879,16 +886,17 @@
              (t
               (multiple-value-bind (lat long address city state country street zip)
                 (geocode-address it)
-                (modify-db id :lat lat
-                              :long long
-                              :address address
-                              :city city
-                              :state state
-                              :street street
-                              :zip zip
-                              :country country
-                              :location nil
-                              :location-privacy (if (post-parameter "public-location") :public :private)))
+                (setf (getf (token-session-data *token*) :unverified-location)
+                      (list :lat lat
+                            :long long
+                            :address address
+                            :city city
+                            :state state
+                            :street street
+                            :zip zip
+                            :country country
+                            :location-privacy (if (post-parameter "public-location") :public :private))))
+
               (see-other (if groupid
                            (url-compose "/settings/verify-address"
                                         "groupid" id
@@ -897,16 +905,15 @@
                                         "next" (or (post-parameter "next") "/home")))))))
 
           ((and (post-parameter "confirm-location")
-                (getf entity :lat)
-                (getf entity :long))
-           (modify-db id :location t)
+                (getf (getf (token-session-data *token*) :unverified-location) :lat)
+                (getf (getf (token-session-data *token*) :unverified-location) :long))
+           (apply #'modify-db id :location t (getf (token-session-data *token*) :unverified-location))
            (case (getf entity :type)
              (:person (reindex-person-location *userid*))
              (:group (reindex-group-location id)))
            (see-other (or (post-parameter "next") "/home")))
 
           ((post-parameter "reset-location")
-           (modify-db id :lat nil :long nil :address nil :location nil)
            (see-other (or it "/home")))
 
           ((post-parameter "password")

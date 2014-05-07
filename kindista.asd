@@ -68,6 +68,7 @@
                                            (:file "timeline")
                                            (:file "paginate")
                                            (:file "profiles")
+                                           (:file "matchmaker")
                                            (:file "verify-location")
                                            (:file "time")
                                            (:file "suggested-connections")))

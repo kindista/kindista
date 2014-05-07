@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete reciprocity)
+(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete related-items matchmaker)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -60,7 +60,9 @@
         (htm
           (:p :class "distance"
             "within " (str (distance-string distance)))))
-      (str content)
+      (:div :class "item-text"(str content))
+      (when (and matchmaker related-items)
+        (str related-items))
       (when *user*
         (htm
           (:div :class "actions"
@@ -71,9 +73,14 @@
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
                 (htm (:input :type "submit" :name "love" :value "Love")))
               (when reply
-                 (htm
-                  " &middot; "
-                  (:input :type "submit" :name "reply" :value "Reply")))
+                (htm
+                 " &middot; "
+                 (:input :type "submit" :name "reply" :value "Reply")))
+              (when matchmaker
+                (htm
+                 " &middot; "
+                 (:a :href (url-compose url "selected" "matchmaker")
+                  "Matchmaker")))
               (when delete
                 (htm
                   " &middot; "
@@ -95,7 +102,7 @@
               (htm
                 " &middot; "
                 (str (comment-button url)))))))
-      (awhen reciprocity (str it)))))
+      (when (and related-items (not matchmaker)) (str related-items)))))
 
         ;(unless (eql user-id *userid*)
         ;  (htm
@@ -220,8 +227,8 @@
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))
                                 (str (activity-item-images images item-url "gift"))))
-                   :reciprocity (when reciprocity
-                                  (display-gratitude-reciprocities result)))))))
+                   :related-items (when reciprocity
+                                    (display-gratitude-reciprocities result)))))))
 
 
 (defun gift-activity-item (result)
@@ -249,13 +256,15 @@
       (str (timestamp (result-time result)))
       (:p (str (person-link (first (result-people result)))) " joined Kindista"))))
 
-(defun inventory-activity-item (type result &key truncate show-distance show-what show-tags)
+(defun inventory-activity-item (result &key truncate show-distance show-what show-tags)
   (let* ((user-id (first (result-people result)))
          (self (eql user-id *userid*))
          (item-id (result-id result))
          (data (db item-id))
          (by (getf data :by))
+         (type (if (eql (getf data :type) :request) "request" "offer"))
          (group-adminp (group-admin-p by))
+         (admin-matchmaker (matchmaker-admin-p))
          (images (getf data :images))
          (item-url (strcat "/" type "s/" item-id))
          (tags (getf data :tags))) ;DJB
@@ -277,6 +286,9 @@
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")
                                                  ((string= type "offer") "offered")))
+                   :matchmaker (or (getf *user* :matchmaker)
+                                   (and (or group-adminp self)
+                                      (string= type "request")))
                    :content (html
                               (:p
                                 (str (person-link user-id))
@@ -305,15 +317,31 @@
                               (when (and show-tags tags) 
                                 (htm
                                   (:div :class "tags"
+                                   "Tags:  "
                                    (str (display-tags type tags)))))
                               (unless (string= item-url (script-name*));image?
                                 (str (activity-item-images images
                                                            item-url
-                                                           type)))))))
+                                                           type))))
+
+                   :related-items (when (and (or self
+                                                 group-adminp
+                                                 admin-matchmaker)
+                                             (not (string= (script-name*)
+                                                           item-url)))
+                                    (let ((matches (case (getf data :type)
+                                                     (:offer (length (gethash item-id *offers-with-matching-requests-index*)))
+                                                     (:request (length (getf data :matching-offers))))))
+                                      (when (> matches 0)
+                                        (matching-item-count-html
+                                          item-id
+                                          type
+                                          matches
+                                          :admin (and admin-matchmaker
+                                                      (not self)))))))))
 
 (defun display-tags (type tags)
   (html
-    "Tags:  "
     (dolist (tag tags)
       (htm
         (:a :href (url-compose (strcat "/" type "s") "kw" tag) (str tag))
@@ -330,11 +358,31 @@
            (:a :href url (:img :src (get-image-thumbnail image-id 70 70)
                                :alt alt))))))))
 
-(defun activity-items (items &key (page 0) (count 20) (url "/home")
+(defun activity-items (items &key (page 0) (count 30) (url "/home")
                              (paginate t) (location t) reciprocity show-tags)
   (with-location
     (let ((start (* page count)))
       (html
+        (when (= page 0)
+
+          (let ((matching-items (matching-inventory-items-by-user)))
+            (awhen (rand-from-list (getf matching-items :offers))
+              (htm
+                (:div :class "suggested-items card"
+                  (:h3 "Featured offer")
+                  (str (featured-offer-match-html (getf it :offer)
+                                                  (getf it :request)))
+                  (str (featured-request-match-html (getf it :request))))))
+            (awhen (rand-from-list (getf matching-items :requests))
+              (let* ((request (db (getf it :request))))
+                (htm
+                  (:div :class "suggested-items card"
+                    (:h3 "Will you respond to this request?...")
+                    (str (featured-request-match-html (getf it :request)
+                                                      :data request))   
+                    (str (featured-offer-match-html (getf it :offer)
+                                                    (getf it :request)))
+                    ))))))
         (iter (for i from 0 to (- (+ start count) 1))
               (cond
                 ((< i start)
@@ -352,16 +400,17 @@
                      (:person
                        (str (joined-activity-item item)))
                      (:offer
-                       (str (inventory-activity-item "offer" item :show-what t :show-distance location :show-tags show-tags :truncate t)))
+                       (str (inventory-activity-item item :show-what t :show-distance location :show-tags show-tags :truncate t)))
                      (:request
-                       (str (inventory-activity-item "request" item :show-what t :show-distance location :truncate t :show-tags show-tags)))))
+                       (str (inventory-activity-item item :show-what t :show-distance location :truncate t :show-tags show-tags)))))
                  (setf items (cdr items)))
 
                 (t
                  (when (< (user-distance) 100)
                    (htm
                      (:div :class "item small"
-                      (:em "Increasing the ")(:strong "show activity within")(:em " distance may yield more results."))))
+                      (:em "Increasing the ")
+                      (:strong "show activity within")(:em " distance may yield more results."))))
                  (finish)))
 
               (finally
@@ -393,9 +442,9 @@
                                           *longitude*
                                           distance)
                        #'< :key #'activity-rank)))
-        (activity-items items :page page 
+        (activity-items items :page page
                               :count count
-                              :reciprocity t 
+                              :reciprocity t
                               :url url
                               :show-tags show-tags)))))
 

@@ -137,6 +137,11 @@
   (equalp (symbol-name symbol-a)
           (symbol-name symbol-b)))
 
+(defun words-from-string (string)
+  (iter (for word in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
+        (when (ppcre:scan +text-scanner+ word)
+          (collect word))))
+
 (defun emails-from-string (string)
   (iter (for email in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
         (when (ppcre:scan +email-scanner+ email)
@@ -145,11 +150,16 @@
 (defun separate-with-commas (list)
   (format nil "~{~A, ~}" list))
 
+(defun separate-with-spaces (list)
+  (format nil "~{~A ~}" list))
+
 (defun item-view-denied (result-privacy &optional (userid *userid*))
   (and result-privacy
-       (not (member userid
-                    (apply #'append
-                           (mapcar #'group-members result-privacy))))))
+       (nor (find userid result-privacy)
+            ;; userid can be a group in some cases
+            (find userid
+                 (apply #'append
+                        (mapcar #'group-members result-privacy))))))
 
 (defun remove-private-items (items)
   (remove-if #'item-view-denied items :key #'result-privacy))
@@ -513,6 +523,9 @@
 (defun post-parameter-string (name)
   (awhen (post-parameter name) (unless (string= it "") it)))
 
+(defun post-parameter-words (name)
+  (awhen (post-parameter name) (unless (string= it "") (words-from-string it))))
+
 (defun get-parameter-string (name)
   (awhen (get-parameter name) (unless (string= it "") it)))
 
@@ -534,4 +547,25 @@
       (if (= num 1)
         singular
         (aif plural-form it (strcat singular "s"))))))
+
+(defun highlight-stems-in-text (list-of-stems text)
+  (let* ((text (copy-seq text))
+         (words (remove-duplicates
+                  (split " "
+                         (ppcre:regex-replace-all
+                           *multispace-scanner*
+                           (ppcre:regex-replace-all *nonword-scanner*
+                                                    text
+                                                    " ")
+                           " "))
+                  :test #'string=)))
+
+     (dolist (word words)
+       (when (find (stem word) list-of-stems :test #'equalp)
+         (setf text
+               (regex-replace-all word
+                                  text
+                                  (html (:strong (str word)))
+                                  :preserve-case t))))
+    text))
 

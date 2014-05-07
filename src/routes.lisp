@@ -100,6 +100,9 @@
     :get get-request
     :post post-request)
 
+  ("/requests/<int:id>/matching-items"
+    :post post-matchmaker)
+
   ("/requests/<int:id>/reply"
     :get get-request-reply)
 
@@ -315,8 +318,8 @@
   ("/admin/invite-requests"
     :get get-admin-invite-requests)
 
-  ("/admin/invite-request/<id>"
-    :post post-admin-invite-request)
+  ("/admin/matchmaker"
+    :get get-admin-matchmaker)
 
   ("/admin/pending-accounts"
     :get get-admin-pending-accounts)

@@ -39,7 +39,9 @@
                               :people (list by)
                               :privacy (getf data :privacy)
                               :time (or (getf data :edited) (getf data :created))
-                              :tags (getf data :tags))))
+                              :tags (getf data :tags)))
+         (locationp (and (result-latitude result)
+                        (result-longitude result))))
 
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
@@ -60,8 +62,7 @@
          (with-locked-hash-table (*request-index*)
            (push id (gethash by *request-index*))))
 
-       (when (and (result-latitude result)
-                  (result-longitude result))
+       (when locationp
 
          (let ((stems (stem-text (getf data :text))))
            (if (eq type :offer)
@@ -82,7 +83,17 @@
            (unless (< (result-time result) (- (get-universal-time) 2592000))
              (with-mutex (*recent-activity-mutex*)
                (push result *recent-activity-index*)))
-           (geo-index-insert *activity-geo-index* result)))))))
+           (geo-index-insert *activity-geo-index* result)))
+
+       (when (eq type :request)
+         (if (or (getf data :match-all-terms)
+                 (getf data :match-any-terms))
+           (index-matchmaker id data)
+           (with-mutex (*requests-without-matchmakers-mutex*)
+             (safe-sort (push result
+                              *requests-without-matchmakers-index*)
+                        #'>
+                        :key #'result-time))))))))
 
 (defun modify-inventory-item (id &key text tags privacy latitude longitude)
   (let* ((result (gethash id *db-results*))
@@ -129,12 +140,16 @@
       (if (eq type :offer)
         (geo-index-remove *offer-geo-index* result)
         (geo-index-remove *request-geo-index* result))
+      (when (getf data :notify-matches)
+        (geo-index-remove *matchmaker-requests-geo-index* result))
       (geo-index-remove *activity-geo-index* result)
       (setf (result-latitude result) latitude)
       (setf (result-longitude result) longitude)
       (if (eq type :offer)
         (geo-index-insert *offer-geo-index* result)
-        (geo-index-insert *request-geo-index* result)))
+        (geo-index-insert *request-geo-index* result))
+      (when (getf data :notify-matches)
+        (geo-index-insert *matchmaker-requests-geo-index* result)))
 
     (setf (result-privacy result) privacy)
 
@@ -148,7 +163,14 @@
 
       (progn
         (refresh-item-time-in-indexes id :time now)
-        (modify-db id :text text :tags tags :privacy privacy :lat latitude :long longitude :edited now)))))
+        (modify-db id :text text :tags tags :privacy privacy :lat latitude :long longitude :edited now)))
+
+    (case (result-type result)
+      (:offer (update-matchmaker-offer-data id))
+      (:request (when (or (getf data :match-all-terms)
+                          (getf data :match-any-terms))
+                  (modify-matchmaker id)
+                  (update-matchmaker-request-data id))))))
 
 (defun delete-inventory-item (id)
   (let* ((result (gethash id *db-results*))
@@ -175,6 +197,26 @@
         (dolist (stem stems)
           (asetf (gethash stem stem-index)
                  (remove result it))))
+
+      ;; delete matchmakers
+      (case (result-type result)
+        (:offer
+          (unmatch-offer-matches id
+                                 (getf data :by)
+                                 (copy-list
+                                   (gethash id
+                                           *offers-with-matching-requests-index*)))
+          (with-locked-hash-table (*offers-with-matching-requests-index*)
+            (remhash id *offers-with-matching-requests-index*)))
+
+        (:request
+          (when (or (getf data :match-all-terms)
+                    (getf data :match-any-terms))
+            (unmatch-request-matches id
+                                   (getf data :by)
+                                   (append (getf data :matching-offers)
+                                           (getf data :hidden-matching-offers)))
+            (remove-matchmaker-from-indexes id))))
 
       (dolist (image-id images)
         (delete-image image-id))
@@ -204,6 +246,8 @@
         (remhash id *db-results*)))
 
     (delete-comments id)
+    ;;if in the future we decide not to delete inventory items,
+    ;;we need to first delete :matching-offers from offers with matchmakers
     (remove-from-db id)))
 
 (defun delete-pending-inventory-item (id)
@@ -374,6 +418,8 @@
                   (see-other "/home"))
                 (progn
                   (contact-opt-out-flash (list *userid*) :item-type type)
+                  (when (string= type "offer")
+                    (update-matchmaker-offer-data new-id))
                   (see-other (format nil (strcat "/" type "s/" new-id))))))
 
             (inventory-tags :error "You must select at least one keyword")))
@@ -803,8 +849,7 @@
                  (pop items))
 
                 ((and (>= i start) items)
-                 (str (inventory-activity-item type
-                                               (pop items)
+                 (str (inventory-activity-item (pop items)
                                                :show-distance t
                                                :truncate t
                                                :show-tags t)))

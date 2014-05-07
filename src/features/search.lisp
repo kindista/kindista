@@ -684,7 +684,7 @@
   "you've"
   "zero")
 
-(defparameter *nonword-scanner* (ppcre:create-scanner "[^'a-z ]"))
+(defparameter *nonword-scanner* (ppcre:create-scanner "[^a-zA-Z]"))
 (defparameter *multispace-scanner* (ppcre:create-scanner " +"))
 
 (defun stem-text (text)
@@ -706,15 +706,7 @@
     (:form :method "post" :action "/settings" :style style :class class
       (:strong :class (when search "small") (str text))
       (:input :type "hidden" :name "next" :value next-url)
-      (let ((distance (user-distance)))
-        (htm
-          (:select :class "distance-selection" :name "distance" :onchange "this.form.submit()"
-            (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
-            (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
-            (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
-            (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
-            (:option :value "100" :selected (when (eql distance 100) "") "100 miles")
-            (:option :value "0" :selected (when (eql distance 0) "") "everywhere"))))
+      (str (distance-selection-dropdown (user-distance) :auto-submit t))
       " "
       (:input :type "submit" :class "no-js" :value "apply"))))
 
@@ -835,15 +827,10 @@
             (sort aliases
                   #'> :key #'group-rank)))))
 
-(defun request-results-html (request-list)
+(defun inventory-results-html (item-list)
   (html
-    (dolist (item request-list)
-      (str (inventory-activity-item "request" item)))))
-
-(defun offer-results-html (offer-list)
-  (html
-    (dolist (item offer-list)
-      (str (inventory-activity-item "offer" item)))))
+    (dolist (item item-list)
+      (str (inventory-activity-item item)))))
 
 (defun event-results-html (event-list)
   (html
@@ -982,7 +969,7 @@
                          (str (rdist-selection-html (request-uri*)
                                                     :class "rdist search"
                                                     :text "show results within ")))
-                       (str (request-results-html (sublist requests 0 5)))
+                       (str (inventory-results-html (sublist requests 0 5)))
                        (str (more-results-link "request"
                                                (s+ "/requests?q="
                                                    (url-encode q))
@@ -994,7 +981,7 @@
                          (str (rdist-selection-html (request-uri*)
                                                     :class "rdist search"
                                                     :text "show results within ")))
-                       (str (offer-results-html (sublist offers 0 5)))
+                       (str (inventory-results-html (sublist offers 0 5)))
                        (str (more-results-link "offer"
                                                (s+ "/offers?q="
                                                    (url-encode q))

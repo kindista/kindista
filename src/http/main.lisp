@@ -187,8 +187,8 @@
 
 (defmacro with-donate-info (&body body)
   `(with-user
-     (let ((*donate-info* (or (token-donate-info *token*)
-                              (setf (token-donate-info *token*)
+     (let ((*donate-info* (or (getf (token-session-data *token*) :donate-info)
+                              (setf (getf (token-session-data *token*) :donate-info)
                                     (make-donate-info :address (getf *user* :street)
                                                       :city (getf *user* :city)
                                                       :state (getf *user* :state)

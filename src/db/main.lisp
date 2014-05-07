@@ -24,12 +24,13 @@
 (defvar *db-log-lock* (make-mutex :name "db log"))
 (defvar *db-results* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
 (defvar *db-messages* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
+(defvar *matchmaker-requests* (make-hash-table :synchronized t :size 1000 :rehash-size 1.25))
 
 ;(defvar *auth-tokens* (make-hash-table :test 'equal :synchronized t :size 200 :rehash-size 1.25))
 (defvar *tokens* (make-hash-table :test 'equal :synchronized t :size 200 :rehash-size 1.25))
 
 (defstruct token
-  userid created donate-info)
+  userid created last-seen session-data)
 
 (defstruct donate-info
   amount type name address city state zip email phone token)
@@ -232,6 +233,21 @@
 (defun stem-index-query (index query)
   (iter (for stem in (stem-text query))
         (reducing (gethash stem index) by #'result-id-intersection)))
+
+(defun all-terms-stem-index-query (index list-of-stems)
+"Like stem-index-query but takes a list-of-strings instead of a single query string and uses loop instead of iter"
+  (let ((matching-stems (gethash (car list-of-stems) index)))
+    (loop for stem in (cdr list-of-stems)
+          while (and matching-stems stem)
+          do (asetf matching-stems
+                    (result-id-intersection it (gethash stem index))))
+    matching-stems))
+
+(defun any-terms-stem-index-query (index list-of-stems)
+  (remove-duplicates (loop for stem in list-of-stems
+                           append (gethash stem index))))
+
+
 ; }}}
 
 ; {{{ metaphone
@@ -353,7 +369,7 @@
       (with-locked-hash-table (*tokens*)
         (iter (for (key value) in-hashtable *tokens*)
               (when (or (token-userid value)
-                        (token-donate-info value))
+                        (token-session-data value))
                 (prin1 (cons key value) out)
                 (fresh-line out))))))
   (rename-file (s+ +db-path+ "tokens-tmp") "tokens"))
@@ -413,7 +429,9 @@
                   (end-of-file (e) (declare (ignore e)) (return)))))))))
     (setf *db-log* (open (s+ +db-path+ "db-log") :if-exists :append :if-does-not-exist :create :direction :output)))
   (clear-indexes)
-  (maphash #'index-item *db*))
+  (maphash #'index-item *db*)
+  (index-matching-requests-by-account) ;must be run after all requests have been indexed
+  )
 
 
 (defun db (id &optional key)
