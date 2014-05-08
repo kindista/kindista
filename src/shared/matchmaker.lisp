@@ -461,7 +461,9 @@
                   (unless (item-view-denied (result-privacy result))
                     (htm
                       (:div :class "item"
-                        (str (featured-offer-match-html (result-id result) id))))))))
+                        (if requestp
+                          (str (featured-offer-match-html (result-id result) id))
+                          (str (featured-request-match-html (result-id result))))))))))
             (when requestp
               (htm
                 (:strong
@@ -688,6 +690,7 @@
                 (if adminp
                   (htm (:input :type "submit" :name "inappropriate-item" :value "Inappropriate"))
                   (htm (:input :type "submit" :name "delete" :value "Delete")))))))))))
+
 (defun matching-item-count-html (item-id item-type count &key admin)
   (html
     (:div :class "reciprocity matches"

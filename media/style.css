@@ -1620,6 +1620,8 @@ div.suggested-items > .div {
  margin: 0.5em 0;
 }
 
+div.request-match,
+div.offer-match,
 div.suggested-items p {
  font-size: 0.9em;
 }
@@ -1633,6 +1635,7 @@ div.suggested-items .tags {
 }
 
 div.suggested-items p.match-reason,
+div.request-match p.match-reason,
 div.offer-match p.match-reason {
  margin: 0.3em 0;
 }
