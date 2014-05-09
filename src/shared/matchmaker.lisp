@@ -420,28 +420,29 @@
          (self (eql (getf data :by) *userid*))
          (all-terms (or all-terms (getf data :match-all-terms)))
          (any-terms (or any-terms (getf data :match-any-terms)))
+         (active-matchmaker (or all-terms any-terms))
          (without-terms (or without-terms (getf data :match-no-terms)))
          (pre-existing-distance (when (or (getf data :match-all-terms)
                                           (getf data :match-any-terms))
                                   (or (getf data :match-distance) 0)))
          (distance (or distance pre-existing-distance))
          (base-url (strcat "/" (if requestp "requests/" "offers/") id))
+         (matchmaker-url (url-compose base-url "selected" "matchmaker"))
          (current-matches (or current-matches
                               (if requestp
                                 (getf data :matching-offers)
                                 (gethash id *offers-with-matching-requests-index*))))
          (tab (or (get-parameter "selected")
-                  (if current-matches "matches" "matchmaker"))))
+                  (if active-matchmaker "matches" "matchmaker"))))
     (html
       (:div :class "item-matches card"
-        (when (and requestp (or all-terms any-terms))
+        (when (and requestp active-matchmaker)
           (htm
             (:menu :type "toolbar" :class "bar"
               (if (equalp tab "matchmaker")
                 (htm (:li :class "selected" "Matchmaker"))
                 (htm
-                  (:li (:a :href (url-compose base-url "selected" "matchmaker")
-                            "Matchmaker"))))
+                  (:li (:a :href matchmaker-url "Matchmaker"))))
               (if (equalp tab "matches")
                 (htm (:li :class "selected" "Matching Offers"))
                 (htm
@@ -467,10 +468,16 @@
             (when requestp
               (htm
                 (:strong
-                  "There are no matching offers for the search "
-                  "criteria you have specified. If you have elected to "
-                  "recieve email notifications, you will be notified "
-                  "when someone posts a matching offer.")))))
+                  "There are currently no matching offers for the "
+                  (:a :href matchmaker-url "search terms specified")
+                  ". "
+                  (str
+                    (if (getf data :notify-matches)
+                      "You will will be notified by email whenever someone posts a new offer that matches your search terms."
+                      "You have chosen not to be notified when someone posts a new offer that matches your search terms."))
+                  " You can change your "
+                  (:a :href matchmaker-url "notification preferences")
+                  " for this request at any time.")))))
 
          ((string= tab "matchmaker")
           (htm
@@ -590,15 +597,16 @@
 
         (:p :class "match-reason"
           (:span :class "tags"
-            "tags:  "
+            (:strong "tags:  ")
             (str (display-tags "request" tags))))
 
         (:p :class "match-reason"
-          (:span :class "tags" "matchmaker:  ")
-          (dolist (term terms)
-             (htm (str term))
-             (unless (eql term (car (last terms)))
-               (htm " &middot "))))
+          (:span :class "tags"
+           (:strong "matchmaker:  ")
+           (dolist (term terms)
+              (htm (str term))
+              (unless (eql term (car (last terms)))
+                (htm " &middot ")))))
 
         (unless mine
           (htm (:p
@@ -657,7 +665,7 @@
 
         (:p :class "match-reason"
           (:span :class "tags"
-            "tags:  "
+            (:strong "tags:  ")
             (str (display-tags "offer" (result-tags result)))))
 
         (unless mine

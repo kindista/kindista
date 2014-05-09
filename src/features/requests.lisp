@@ -44,7 +44,7 @@
     (setf id (parse-integer id)))
   (let* ((request (db id))
          (by (getf request :by))
-         (mine (eql *userid* by))
+         (self (eql *userid* by))
          (matchmaker-admin (matchmaker-admin-p))
          (result (gethash id *db-results*)))
     (cond
@@ -52,7 +52,7 @@
           (not (eql (getf request :type) :request)))
       (not-found))
 
-     ((and (not mine)
+     ((and (not self)
            (item-view-denied (result-privacy result)))
        (permission-denied))
      (t
@@ -61,13 +61,18 @@
           "Requests"
           (html
             (:div :class "inventory-item-page"
-              (when matchmaker-admin
+              (when (or matchmaker-admin self)
                 (str (menu-horiz "actions"
+                       (when self
+                         (html (:a :href (s+ "/people/"
+                                             (username-or-id)
+                                             "/requests")
+                                "show my requests")))
                        (html (:a :href "/admin/matchmaker"
-                              "see all requests without matchmakers")))))
+                              "show requests without matchmakers")))))
 
               (str (inventory-activity-item result :show-distance t :show-tags t))
-              (when (or mine (group-admin-p by) matchmaker-admin)
+              (when (or self (group-admin-p by) matchmaker-admin)
                 (str (item-matches-html id :data request
                                            :all-terms all-terms
                                            :any-terms any-terms
