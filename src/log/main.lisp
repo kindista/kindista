@@ -28,5 +28,6 @@
     (with-standard-io-syntax
       ; probably need an error handler in here in case the log gets moved
       (prin1 *notice* *log-stream*)
-      (fresh-line *log-stream*))))
+      (fresh-line *log-stream*))
+    (fsync *log-stream*)))
 
