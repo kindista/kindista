@@ -28,8 +28,8 @@
 (defun post-matchmaker (id)
   (let* ((id (parse-integer id))
          (item (db id))
-         (old-matches)
-         (old-hidden-matches)
+         (prior-matchmaker (or (getf item :match-all-terms)
+                               (getf item :match-any-terms)))
          (by (getf item :by))
          (all-terms (post-parameter-words "match-all-terms"))
 
@@ -40,76 +40,75 @@
          (distance (unless (equal raw-distance 0)
                      raw-distance))
          (base-url (strcat "/requests/" id))
+         (hide-offer (post-parameter-integer "hide-offer"))
          (match-url (url-compose base-url "selected" "matchmaker")))
 
-    (require-test ((or (eql *userid* by)
-                       (group-admin-p by)
-                       (matchmaker-admin-p))
-                   (s+ "You can only edit your own matchmaker notifications."))
+    (if hide-offer
+      (progn
+        (reject-matching-offer id hide-offer)
+        (see-other (or (post-parameter "next") (referer) "/home")))
 
-      (flet ((try-again (e)
-               (flash e :error t)
-               (get-request id
-                            :notify-matches (or notify
-                                                (getf item :notify-matches))
-                            :all-terms (or all-terms
-                                           (getf item :match-all-terms))
-                            :any-terms (or any-terms
-                                           (getf item :match-any-terms))
-                            :without-terms (or without-terms
-                                               (getf item :match-no-terms))
-                            :distance (or distance (getf item :match-distance)))))
+      (require-test ((or (eql *userid* by)
+                         (group-admin-p by)
+                         (matchmaker-admin-p))
+                     (s+ "You can only edit your own matchmaker notifications."))
 
-        (cond
-          ((not (eql (getf item :type) :request))
-           (flash "Matchmaker notifications are currently only available for requests" :error t)
-           (see-other (referer)))
+        (flet ((try-again (e)
+                 (flash e :error t)
+                 (get-request id
+                              :notify-matches (or notify
+                                                  (getf item :notify-matches))
+                              :all-terms (or all-terms
+                                             (getf item :match-all-terms))
+                              :any-terms (or any-terms
+                                             (getf item :match-any-terms))
+                              :without-terms (or without-terms
+                                                 (getf item :match-no-terms))
+                              :distance (or distance (getf item :match-distance)))))
 
-          ((not (and (getf *user* :lat) (getf *user* :long)))
-            (try-again "You need to enter your location on your <a href=\"/settings\">settings page</a> before you can create or edit matchmaker notifications."))
+          (cond
+            ((not (eql (getf item :type) :request))
+             (flash "Matchmaker notifications are currently only available for requests" :error t)
+             (see-other (referer)))
 
-          ((post-parameter "edit-original")
-           (enter-inventory-tags :title "Edit your request"
-                                 :action base-url
-                                 :text (getf item :text)
-                                 :tags (getf item :tags)
-                                 :groups-selected (getf item :privacy)
-                                 :restrictedp (getf item :privacy)
-                                 :next match-url
-                                 :existingp t
-                                 :button-text "Save request"
-                                 :selected "requests"))
+            ((not (and (getf *user* :lat) (getf *user* :long)))
+              (try-again "You need to enter your location on your <a href=\"/settings\">settings page</a> before you can create or edit matchmaker notifications."))
 
-          ((nor any-terms all-terms)
-           ;; very important that all matchmakers have at least one of these.
-           ;; indexing and searching depend on (or any-terms all-terms)
-           (try-again "Please enter at least 1 search term you would like to be notified about"))
+            ((post-parameter "edit-original")
+             (enter-inventory-tags :title "Edit your request"
+                                   :action base-url
+                                   :text (getf item :text)
+                                   :tags (getf item :tags)
+                                   :groups-selected (getf item :privacy)
+                                   :restrictedp (getf item :privacy)
+                                   :next match-url
+                                   :existingp t
+                                   :button-text "Save request"
+                                   :selected "requests"))
 
-          (t
-           (setf old-matches
-                 (copy-list (getf item :matching-offers)))
-           (setf old-hidden-matches
-                 (copy-list (getf item :hidden-matching-offers)))
-           (let ((new-matchmaker-data (modify-db id
-                                                 :notify-matches notify
-                                                 :match-all-terms all-terms
-                                                 :match-any-terms any-terms
-                                                 :match-no-terms without-terms
-                                                 :match-distance distance)))
-             (if (or (getf item :match-all-terms)
-                     (getf item :match-any-terms))
-               (modify-matchmaker id new-matchmaker-data)
-               (progn
-                 (with-mutex (*requests-without-matchmakers-mutex*)
-                   (asetf *requests-without-matchmakers-index*
-                          (remove id it :key #'result-id)))
-                 (index-matchmaker id new-matchmaker-data))))
+            ((nor any-terms all-terms)
+             ;; very important that all matchmakers have at least one of these.
+             ;; indexing and searching depend on (or any-terms all-terms)
+             (try-again "Please enter at least 1 search term you would like to be notified about"))
 
-           (update-matchmaker-request-data id
-                                           :prior-matching-offers old-matches
-                                           :rejected-offers old-hidden-matches)
-           (see-other (or (post-parameter "next")
-                          (url-compose (strcat "/requests/" id))))))))))
+            (t
+             (let ((new-matchmaker-data (modify-db id
+                                                   :notify-matches notify
+                                                   :match-all-terms all-terms
+                                                   :match-any-terms any-terms
+                                                   :match-no-terms without-terms
+                                                   :match-distance distance)))
+               (if prior-matchmaker
+                 (modify-matchmaker id new-matchmaker-data)
+                 (progn
+                   (with-mutex (*requests-without-matchmakers-mutex*)
+                     (asetf *requests-without-matchmakers-index*
+                            (remove id it :key #'result-id)))
+                   (index-matchmaker id new-matchmaker-data))))
+
+             (update-matchmaker-request-data id)
+             (see-other (or (post-parameter "next")
+                            (url-compose (strcat "/requests/" id)))))))))))
 
 (defun index-matchmaker (request-id &optional data)
   (flet ((stem-terms (terms)
@@ -288,29 +287,43 @@
                                            (db (result-id offer) :by))))
           collect (result-id offer))))
 
+(defun reject-matching-offer (request-id offer-id)
+  (let* ((request (db request-id))
+         (offer (db offer-id))
+         (requested-by (getf request :by))
+         (offered-by (getf offer :by)))
+    (if (or (find *userid* (list offered-by requested-by))
+            (getf *user* :matchmaker))
+      (progn
+        (unindex-inventory-match request-id requested-by offer-id offered-by)
+        (amodify-db request-id :hidden-matching-offers (pushnew offer-id it)
+                               :matching-offers (remove offer-id it)))
+      (permission-denied))))
+
+(defun unindex-inventory-match (request-id requested-by offer-id offered-by)
+  (with-locked-hash-table (*offers-with-matching-requests-index*)
+    (asetf (gethash offer-id *offers-with-matching-requests-index*)
+           (remove request-id it)))
+
+  (with-locked-hash-table (*account-inventory-matches-index*)
+    (asetf (getf (gethash offered-by *account-inventory-matches-index*)
+                 :requests)
+           (remove (cons request-id offer-id) it :test #'equal))
+    (asetf (getf (gethash requested-by
+                          *account-inventory-matches-index*)
+                 :offers)
+           (remove (cons offer-id request-id) it :test #'equal))))
+
 (defun unmatch-request-matches (request-id requested-by offers-to-unmatch)
   (dolist (offer-id offers-to-unmatch)
     (let* ((offer (db offer-id))
            (offered-by (getf offer :by)))
-      (with-locked-hash-table (*offers-with-matching-requests-index*)
-        (asetf (gethash offer-id *offers-with-matching-requests-index*)
-               (remove request-id it)))
+      (unindex-inventory-match request-id requested-by offer-id offered-by))))
 
-      (with-locked-hash-table (*account-inventory-matches-index*)
-        (asetf (getf (gethash offered-by *account-inventory-matches-index*)
-                     :requests)
-               (remove (cons request-id offer-id) it :test #'equal))
-        (asetf (getf (gethash requested-by
-                              *account-inventory-matches-index*)
-                     :offers)
-               (remove (cons offer-id request-id) it :test #'equal))))))
-
-(defun update-matchmaker-request-data (request-id &key data matchmaker prior-matching-offers rejected-offers)
+(defun update-matchmaker-request-data (request-id &key data matchmaker)
   (let* ((request (or data (db request-id)))
-         (prior-matching-offers (or prior-matching-offers
-                                    (getf request :matching-offers)))
-         (rejected-offers (or rejected-offers
-                              (getf request :hidden-matching-offers)))
+         (prior-matching-offers (getf request :matching-offers))
+         (rejected-offers (getf request :hidden-matching-offers))
          (requested-by (getf request :by))
          (matchmaker (or matchmaker
                          (gethash request-id *matchmaker-requests*)))
@@ -345,9 +358,7 @@
                  (pushnew (cons request-id offer-id) it :test #'equal)))))
 
     (amodify-db request-id
-                :matching-offers new-useful-offers
-                :hidden-matching-offers (intersection rejected-offers
-                                                      new-matching-offers))))
+                :matching-offers new-useful-offers)))
 
 (defun unmatch-offer-matches (offer-id offered-by requests-to-unmatch)
   (dolist (request-id requests-to-unmatch)
@@ -357,15 +368,7 @@
                 (find offer-id (getf request :matching-offers)))
         (amodify-db request-id :hidden-matching-offers (remove offer-id it)
                                :matching-offers (remove offer-id it))
-        (with-locked-hash-table (*account-inventory-matches-index*)
-          (asetf (getf (gethash requested-by
-                                *account-inventory-matches-index*)
-                       :offers)
-                 (remove (cons offer-id request-id) it :test #'equal))
-          (asetf (getf (gethash offered-by
-                                *account-inventory-matches-index*)
-                       :requests)
-                 (remove (cons request-id offer-id) it :test #'equal)))))))
+        (unindex-inventory-match request-id requested-by offer-id offered-by)))))
 
 (defun update-matchmaker-offer-data (offer-id)
   (let ((offered-by (db offer-id :by))
