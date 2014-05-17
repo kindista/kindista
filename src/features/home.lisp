@@ -82,10 +82,10 @@
           (unless (> page 0)
             ;; get either the user's matching offers or matching requests
             ;; at random
-            (let* ((matching-items (rand-from-list (matching-inventory-items-by-user)))
-                   (random-item (rand-from-list (second matching-items))))
+            (let* ((offers-or-requests (rand-from-list (matching-inventory-items-by-user)))
+                   (random-item (rand-from-list (second offers-or-requests))))
               (awhen random-item
-                (case (car matching-items)
+                (case (car offers-or-requests)
                   (:offers
                     (htm
                       (:div :class "suggested-items card"
@@ -105,9 +105,7 @@
                                                             :request-data request))
                           (str (featured-offer-match-html (getf it :offer)
                                                           (getf it :request)
-                                                          :featured t))))))))
-              (awhen (rand-from-list (getf matching-items :requests))
-                )))
+                                                          :featured t))))))))))
           (str (distance-selection-html "/home"
                                         :text "show activity within "
                                         :class "item")))
