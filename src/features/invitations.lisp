@@ -61,7 +61,10 @@
 
     (unless (getf invitation :auto-reminder-sent)
       (with-mutex (*invitation-reminder-timer-mutex*)
-        (safe-sort (push (cons sent id) *invitation-reminder-timer-index*) #'< :key #'car)))
+        (setf *invitation-reminder-timer-index*
+              (safe-sort (push (cons sent id) *invitation-reminder-timer-index*)
+                         #'<
+                         :key #'car))))
 
     (with-locked-hash-table (*person-invitation-index*)
        (push id (gethash host *person-invitation-index*)))))
