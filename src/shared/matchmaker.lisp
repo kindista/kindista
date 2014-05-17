@@ -28,8 +28,8 @@
 (defun post-matchmaker (id)
   (let* ((id (parse-integer id))
          (item (db id))
-         (old-matches)
-         (old-hidden-matches)
+         (prior-matchmaker (or (getf item :match-all-terms)
+                               (getf item :match-any-terms)))
          (by (getf item :by))
          (all-terms (post-parameter-words "match-all-terms"))
 
@@ -40,76 +40,75 @@
          (distance (unless (equal raw-distance 0)
                      raw-distance))
          (base-url (strcat "/requests/" id))
+         (hide-offer (post-parameter-integer "hide-match"))
          (match-url (url-compose base-url "selected" "matchmaker")))
 
-    (require-test ((or (eql *userid* by)
-                       (group-admin-p by)
-                       (matchmaker-admin-p))
-                   (s+ "You can only edit your own matchmaker notifications."))
+    (if hide-offer
+      (progn
+        (hide-matching-offer id hide-offer)
+        (see-other (or (post-parameter "next") (referer) "/home")))
 
-      (flet ((try-again (e)
-               (flash e :error t)
-               (get-request id
-                            :notify-matches (or notify
-                                                (getf item :notify-matches))
-                            :all-terms (or all-terms
-                                           (getf item :match-all-terms))
-                            :any-terms (or any-terms
-                                           (getf item :match-any-terms))
-                            :without-terms (or without-terms
-                                               (getf item :match-no-terms))
-                            :distance (or distance (getf item :match-distance)))))
+      (require-test ((or (eql *userid* by)
+                         (group-admin-p by)
+                         (matchmaker-admin-p))
+                     (s+ "You can only edit your own matchmaker notifications."))
 
-        (cond
-          ((not (eql (getf item :type) :request))
-           (flash "Matchmaker notifications are currently only available for requests" :error t)
-           (see-other (referer)))
+        (flet ((try-again (e)
+                 (flash e :error t)
+                 (get-request id
+                              :notify-matches (or notify
+                                                  (getf item :notify-matches))
+                              :all-terms (or all-terms
+                                             (getf item :match-all-terms))
+                              :any-terms (or any-terms
+                                             (getf item :match-any-terms))
+                              :without-terms (or without-terms
+                                                 (getf item :match-no-terms))
+                              :distance (or distance (getf item :match-distance)))))
 
-          ((not (and (getf *user* :lat) (getf *user* :long)))
-            (try-again "You need to enter your location on your <a href=\"/settings\">settings page</a> before you can create or edit matchmaker notifications."))
+          (cond
+            ((not (eql (getf item :type) :request))
+             (flash "Matchmaker notifications are currently only available for requests" :error t)
+             (see-other (referer)))
 
-          ((post-parameter "edit-original")
-           (enter-inventory-tags :title "Edit your request"
-                                 :action base-url
-                                 :text (getf item :text)
-                                 :tags (getf item :tags)
-                                 :groups-selected (getf item :privacy)
-                                 :restrictedp (getf item :privacy)
-                                 :next match-url
-                                 :existingp t
-                                 :button-text "Save request"
-                                 :selected "requests"))
+            ((not (and (getf *user* :lat) (getf *user* :long)))
+              (try-again "You need to enter your location on your <a href=\"/settings\">settings page</a> before you can create or edit matchmaker notifications."))
 
-          ((nor any-terms all-terms)
-           ;; very important that all matchmakers have at least one of these.
-           ;; indexing and searching depend on (or any-terms all-terms)
-           (try-again "Please enter at least 1 search term you would like to be notified about"))
+            ((post-parameter "edit-original")
+             (enter-inventory-tags :title "Edit your request"
+                                   :action base-url
+                                   :text (getf item :text)
+                                   :tags (getf item :tags)
+                                   :groups-selected (getf item :privacy)
+                                   :restrictedp (getf item :privacy)
+                                   :next match-url
+                                   :existingp t
+                                   :button-text "Save request"
+                                   :selected "requests"))
 
-          (t
-           (setf old-matches
-                 (copy-list (getf item :matching-offers)))
-           (setf old-hidden-matches
-                 (copy-list (getf item :hidden-matching-offers)))
-           (let ((new-matchmaker-data (modify-db id
-                                                 :notify-matches notify
-                                                 :match-all-terms all-terms
-                                                 :match-any-terms any-terms
-                                                 :match-no-terms without-terms
-                                                 :match-distance distance)))
-             (if (or (getf item :match-all-terms)
-                     (getf item :match-any-terms))
-               (modify-matchmaker id new-matchmaker-data)
-               (progn
-                 (with-mutex (*requests-without-matchmakers-mutex*)
-                   (asetf *requests-without-matchmakers-index*
-                          (remove id it :key #'result-id)))
-                 (index-matchmaker id new-matchmaker-data))))
+            ((nor any-terms all-terms)
+             ;; very important that all matchmakers have at least one of these.
+             ;; indexing and searching depend on (or any-terms all-terms)
+             (try-again "Please enter at least 1 search term you would like to be notified about"))
 
-           (update-matchmaker-request-data id
-                                           :prior-matching-offers old-matches
-                                           :rejected-offers old-hidden-matches)
-           (see-other (or (post-parameter "next")
-                          (url-compose (strcat "/requests/" id))))))))))
+            (t
+             (let ((new-matchmaker-data (modify-db id
+                                                   :notify-matches notify
+                                                   :match-all-terms all-terms
+                                                   :match-any-terms any-terms
+                                                   :match-no-terms without-terms
+                                                   :match-distance distance)))
+               (if prior-matchmaker
+                 (modify-matchmaker id new-matchmaker-data)
+                 (progn
+                   (with-mutex (*requests-without-matchmakers-mutex*)
+                     (asetf *requests-without-matchmakers-index*
+                            (remove id it :key #'result-id)))
+                   (index-matchmaker id new-matchmaker-data))))
+
+             (update-matchmaker-request-data id)
+             (see-other (or (post-parameter "next")
+                            (url-compose (strcat "/requests/" id)))))))))))
 
 (defun index-matchmaker (request-id &optional data)
   (flet ((stem-terms (terms)
@@ -288,29 +287,43 @@
                                            (db (result-id offer) :by))))
           collect (result-id offer))))
 
+(defun hide-matching-offer (request-id offer-id)
+  (let* ((request (db request-id))
+         (offer (db offer-id))
+         (requested-by (getf request :by))
+         (offered-by (getf offer :by)))
+    (if (or (find *userid* (list offered-by requested-by))
+            (getf *user* :matchmaker))
+      (progn
+        (unindex-inventory-match request-id requested-by offer-id offered-by)
+        (amodify-db request-id :hidden-matching-offers (pushnew offer-id it)
+                               :matching-offers (remove offer-id it)))
+      (permission-denied))))
+
+(defun unindex-inventory-match (request-id requested-by offer-id offered-by)
+  (with-locked-hash-table (*offers-with-matching-requests-index*)
+    (asetf (gethash offer-id *offers-with-matching-requests-index*)
+           (remove request-id it)))
+
+  (with-locked-hash-table (*account-inventory-matches-index*)
+    (asetf (getf (gethash offered-by *account-inventory-matches-index*)
+                 :requests)
+           (remove (cons request-id offer-id) it :test #'equal))
+    (asetf (getf (gethash requested-by
+                          *account-inventory-matches-index*)
+                 :offers)
+           (remove (cons offer-id request-id) it :test #'equal))))
+
 (defun unmatch-request-matches (request-id requested-by offers-to-unmatch)
   (dolist (offer-id offers-to-unmatch)
     (let* ((offer (db offer-id))
            (offered-by (getf offer :by)))
-      (with-locked-hash-table (*offers-with-matching-requests-index*)
-        (asetf (gethash offer-id *offers-with-matching-requests-index*)
-               (remove request-id it)))
+      (unindex-inventory-match request-id requested-by offer-id offered-by))))
 
-      (with-locked-hash-table (*account-inventory-matches-index*)
-        (asetf (getf (gethash offered-by *account-inventory-matches-index*)
-                     :requests)
-               (remove (cons request-id offer-id) it :test #'equal))
-        (asetf (getf (gethash requested-by
-                              *account-inventory-matches-index*)
-                     :offers)
-               (remove (cons offer-id request-id) it :test #'equal))))))
-
-(defun update-matchmaker-request-data (request-id &key data matchmaker prior-matching-offers rejected-offers)
+(defun update-matchmaker-request-data (request-id &key data matchmaker)
   (let* ((request (or data (db request-id)))
-         (prior-matching-offers (or prior-matching-offers
-                                    (getf request :matching-offers)))
-         (rejected-offers (or rejected-offers
-                              (getf request :hidden-matching-offers)))
+         (prior-matching-offers (getf request :matching-offers))
+         (rejected-offers (getf request :hidden-matching-offers))
          (requested-by (getf request :by))
          (matchmaker (or matchmaker
                          (gethash request-id *matchmaker-requests*)))
@@ -345,9 +358,7 @@
                  (pushnew (cons request-id offer-id) it :test #'equal)))))
 
     (amodify-db request-id
-                :matching-offers new-useful-offers
-                :hidden-matching-offers (intersection rejected-offers
-                                                      new-matching-offers))))
+                :matching-offers new-useful-offers)))
 
 (defun unmatch-offer-matches (offer-id offered-by requests-to-unmatch)
   (dolist (request-id requests-to-unmatch)
@@ -357,15 +368,7 @@
                 (find offer-id (getf request :matching-offers)))
         (amodify-db request-id :hidden-matching-offers (remove offer-id it)
                                :matching-offers (remove offer-id it))
-        (with-locked-hash-table (*account-inventory-matches-index*)
-          (asetf (getf (gethash requested-by
-                                *account-inventory-matches-index*)
-                       :offers)
-                 (remove (cons offer-id request-id) it :test #'equal))
-          (asetf (getf (gethash offered-by
-                                *account-inventory-matches-index*)
-                       :requests)
-                 (remove (cons request-id offer-id) it :test #'equal)))))))
+        (unindex-inventory-match request-id requested-by offer-id offered-by)))))
 
 (defun update-matchmaker-offer-data (offer-id)
   (let ((offered-by (db offer-id :by))
@@ -473,7 +476,7 @@
                   ". "
                   (str
                     (if (getf data :notify-matches)
-                      "You will will be notified by email whenever someone posts a new offer that matches your search terms."
+                      "You will be notified by email whenever someone posts a new offer that matches your search terms."
                       "You have chosen not to be notified when someone posts a new offer that matches your search terms."))
                   " You can change your "
                   (:a :href matchmaker-url "notification preferences")
@@ -481,13 +484,22 @@
 
          ((string= tab "matchmaker")
           (htm
+            (:p
+              "Please fill out this form if you would like to be notified "
+              "when someone posts an offer that matches the above request. "
+              (:em "It is important that you separate multiple requests "
+               "into separate posts so each request can be matched with "
+               "with specific offers. "
+               "If the item you have posted above includes multiple requests "
+               (:strong "please ")
+               "edit it and post each request separately."))
             (:form :method "post"
-                   :action (strcat "/requests/" id "/matching-items")
+                   :action (strcat "/requests/" id "/matchmaker")
                    :class "matchmaker"
 
-              (:h3 "Show me offers...")
+              (:h3 "Show me offers related to the above request that...")
               (:label
-                "...containing " (:strong "ANY") " of these words:"
+                "...contain " (:strong "ANY") " of these words:"
                 (:br)
                 (:input :type "text"
                         :name "match-any-terms"
@@ -495,7 +507,7 @@
                                  (separate-with-spaces it))))
               (:br)
               (:label
-                "...containing  " (:strong "ALL") " of these words:"
+                "...contain  " (:strong "ALL") " of these words:"
                 (:br)
                 (:input :type "text"
                         :name "match-all-terms"
@@ -503,14 +515,14 @@
                                  (separate-with-spaces it))))
               (:br)
               (:label
-                "...containing  " (:strong "NONE") " of these words:"
+                "...contain  " (:strong "NONE") " of these words:"
                 (:br)
                 (:input :type "text"
                         :name "match-no-terms"
                         :value (awhen without-terms
                                  (separate-with-spaces it))))
               (:br)
-              (:label "...with any of these tags:"
+              (:label "...have any of these tags:"
                 (:br)
                 (:div :class ""
                  (str (display-tags "request" (getf data :tags)))
@@ -523,7 +535,7 @@
                     "edit your request")
                   " and change your keywords")))
                (:label :class "distance-selection"
-                 "...within "
+                 "...are located within "
                  (str (distance-selection-dropdown (or distance
                                                        25))))
                (:br)
@@ -540,24 +552,30 @@
               ))))))))
 
 (defun matching-inventory-items-by-user (&optional (userid *userid*))
+"Returns a list of ((:offers . ((:account-id :offer-id :request-id)...)) (:requests . ((:account-id :offer-id :request-id)...)).  :account-id is either the user's account or a group that the user is an admin of. Only returns :offers/:requests cons cell when there are :offers/:requests"
   (let ((accounts (cons userid (groups-with-user-as-admin userid)))
-        (matching-items))
+        (matching-offers (cons :offers (list nil)))
+        (matching-requests (cons :requests (list nil))))
     (flet ((items-to-plist (account-id)
              (let ((items (gethash account-id
                                    *account-inventory-matches-index*)))
+               ;; *account-inventory-matches-index* has format:
+               ;; (match-item-id . my-item-id)
                (dolist (request (getf items :requests))
                  (push (list :account-id account-id
                              :request (car request)
                              :offer (cdr request))
-                       (getf matching-items :requests)))
+                       (cadr matching-requests)))
                 (dolist (offer (getf items :offers))
                  (push (list :account-id account-id
                              :offer (car offer)
                              :request (cdr offer))
-                       (getf matching-items :offers))))))
+                       (cadr matching-offers))))))
       (mapcar #'items-to-plist accounts))
 
-    matching-items))
+    (remove nil
+            (list (when (caadr matching-offers) matching-offers)
+                  (when (caadr matching-requests) matching-requests)))))
 
 (defun highlight-relevant-inventory-text (offer-id request-id)
   (let ((matchmaker (gethash request-id *matchmaker-requests*))
@@ -567,137 +585,182 @@
                             (or (getf offer :details)
                                 (getf offer :text)))))
 
-(defun featured-request-match-html (request-id &key data)
-  (let* ((request (or data (db request-id)))
-         (url (strcat "/requests/" request-id))
-         (matchmaker (gethash request-id *matchmaker-requests*))
-         (adminp (getf *user* :admin))
-         (terms (union (getf request :match-all-terms)
-                       (getf request :match-any-terms)))
-         (by (getf request :by))
-         (mine (or (eql *userid* by)
-                   (find by (getf *user-group-privileges* :admin))))
-         (reply-p (nor mine
-                       ;; only necessary if we use this function to let admins
-                       ;; see other user's matches
-                        (and adminp
-                             (item-view-denied
-                               (match-privacy matchmaker)))))
-         (tags (match-tags matchmaker)))
-    (html
-      (:div :class "request-match"
-        (when mine
-          (htm
-            (:p "...matches a "
-              (:a :href url "request")
-              " by "
-              (str (person-link by)))))
-        (:p :class "inventory-match-text"
-         (str (html-text (getf request :text))))
+(defun featured-request-match-html
+  (request-id
+   &key offer-id
+        request-data
+        featured
+   &aux (request (or request-data (db request-id)))
+        (url (strcat "/requests/" request-id))
+        (matchmaker (gethash request-id *matchmaker-requests*))
+        (adminp (getf *user* :admin))
+        (terms (union (getf request :match-all-terms)
+                      (getf request :match-any-terms)))
+        (by (getf request :by))
+        (mine (or (eql *userid* by)
+                  (find by (getf *user-group-privileges* :admin))))
+        (reply-p (nor mine
+                      ;; only necessary if we use this function to let admins
+                      ;; see other user's matches
+                       (and adminp
+                            (item-view-denied
+                              (match-privacy matchmaker)))))
+        (tags (match-tags matchmaker)))
 
-        (:p :class "match-reason"
-          (:span :class "tags"
-            (:strong "tags:  ")
-            (str (display-tags "request" tags))))
+  (html
+    (:div
+      (:div :class (s+ (when (and featured (not mine)) "featured ")
+                       "match-header")
+       (if mine
+         (htm
+           (:p "...matches a "
+            (:a :href url "request")
+            " by "
+            (str (person-link by))))
+         (when (or offer-id featured)
+           (htm
+             (when featured
+               (htm (:h3 "Will you respond to thes request?...")))
 
-        (:p :class "match-reason"
-          (:span :class "tags"
-           (:strong "matchmaker:  ")
-           (dolist (term terms)
-              (htm (str term))
-              (unless (eql term (car (last terms)))
-                (htm " &middot ")))))
+             (when offer-id
+               (htm
+                 (:form :method "post"
+                  :action (strcat "/requests/"
+                                  request-id
+                                  "/matchmaker")
+                  :class "float-right"
+                  (:button :type "submit"
+                   :name "hide-match"
+                   :class "red simple-link"
+                   :value offer-id
+                   "hide this request"))))))))
 
-        (unless mine
-          (htm (:p
-                 (:em "posted by "
-                      (str (person-link by))
-                      " "
-                      (str
-                        (humanize-universal-time (or (getf request :edited)
-                                                     (getf request :created))))
-                      " (within "
-                      (str (distance-string
-                             (air-distance (match-latitude matchmaker)
-                                           (match-longitude matchmaker)
-                                           *latitude*
-                                           *longitude*)))
-                      ") "))))
+      (:div :class "match-details"
+       (:p :class "inventory-match-text"
+        (str (html-text (getf request :text))))
 
-        (:div :class "actions"
-          (:form :method "post" :action url
-            (:input :type "hidden" :name "next" :value (request-uri*))
-            (when reply-p
-              (htm
-                (:input :type "submit" :name "reply" :value "Reply")))
-            (when mine
-              (htm
-                (:input :type "submit" :name "delete" :value "Delete")
-                " &middot; ")))
+       (:p :class "match-reason"
+        (:span :class "tags"
+         (:strong "tags:  ")
+         (str (display-tags "request" tags))))
+
+       (:p :class "match-reason"
+        (:span :class "tags"
+         (:strong "matchmaker:  ")
+         (dolist (term terms)
+           (htm (str term))
+           (unless (eql term (car (last terms)))
+             (htm " &middot ")))))
+
+       (unless mine
+         (htm (:p :class "other-party-details"
+                (:em "posted by "
+                 (str (person-link by))
+                 " "
+                 (str
+                   (humanize-universal-time (or (getf request :edited)
+                                                (getf request :created))))
+                 " (within "
+                 (str (distance-string
+                        (with-location
+                          (air-distance (match-latitude matchmaker)
+                                        (match-longitude matchmaker)
+                                        *latitude*
+                                        *longitude*))))
+                 ") "))))
+
+       (:div :class "actions"
+        (:form :method "post" :action url
+         (:input :type "hidden" :name "next" :value (request-uri*))
+         (when reply-p
+           (htm (:input :type "hidden" :name "match" :value offer-id))
+           (htm (:input :type "submit" :name "reply" :value "Reply")))
+         (when mine
+           (htm
+             (:input :type "submit" :name "delete" :value "Delete")
+             " &middot; ")))
 
         (when mine
           (htm
             (:a :href (url-compose url "selected" "matchmaker")
-              " Edit matchmaker"))))))))
+             " Edit matchmaker"))))))))
 
-(defun featured-offer-match-html (offer-id request-id)
-  (let* ((result (gethash offer-id *db-results*))
-         (offer (db offer-id))
-         (adminp (getf *user* :admin))
-         (by (getf offer :by))
-         (mine (or (eql *userid* by)
-                   (find by (getf *user-group-privileges* :admin))))
-         (reply (nor (and adminp
-                          (item-view-denied (result-privacy result)))
-                     mine))
-         (url (strcat "/offers/" offer-id)))
-    (html
-      (:div :class "offer-match"
-        (when mine
-          (htm
-            (:p "...matches an "
-              (:a :href url "offer")
-              " by "
-              (str (person-link by)))))
+(defun featured-offer-match-html
+  (offer-id
+   request-id
+   &key featured
+   &aux (result (gethash offer-id *db-results*))
+        (offer (db offer-id))
+        (adminp (getf *user* :admin))
+        (by (getf offer :by))
+        (mine (or (eql *userid* by)
+                  (find by (getf *user-group-privileges* :admin))))
+        (reply (nor (and adminp
+                         (item-view-denied (result-privacy result)))
+                    mine))
+        (url (strcat "/offers/" offer-id)))
+  (html
+    (:div
+      (:div :class (s+ (when (and featured (not mine)) "featured ")
+                       "match-header")
+       (if mine
+         (htm
+           (:p "...matches an "
+            (:a :href url "offer")
+            " by "
+            (str (person-link by))))
+         (htm
+           (when featured (htm (:h3 "Featured offer")))
 
-        (:p :class "inventory-match-text"
-          (str (highlight-relevant-inventory-text offer-id request-id)))
+           (:form :method "post"
+            :action (strcat "/requests/" request-id "/matchmaker")
+            :class "float-right"
+            (:button :type "submit"
+             :name "hide-match"
+             :class "red simple-link"
+             :value offer-id
+             "hide this offer")))))
 
-        (:p :class "match-reason"
-          (:span :class "tags"
-            (:strong "tags:  ")
-            (str (display-tags "offer" (result-tags result)))))
+      (:div :class "match-details"
+       (:p :class "inventory-match-text"
+        (str (highlight-relevant-inventory-text offer-id request-id)))
 
-        (unless mine
-          (htm
-            (:p
-              (:em "posted by "
-                 (str (person-link by)) " "
-                 (str (humanize-universal-time (result-time result)))
-                 " (within "
-                 (str (distance-string
-                     (air-distance (result-latitude result)
-                                   (result-longitude result)
-                                   *latitude*
-                                   *longitude*)))
-                 ") "))))
+       (:p :class "match-reason"
+        (:span :class "tags"
+         (:strong "tags:  ")
+         (str (display-tags "offer" (result-tags result)))))
 
-        (:div :class "actions"
-          (str (activity-icons :hearts (length (loves offer-id))
-                               :url url))
-          (:form :method "post" :action url
-            (:input :type "hidden" :name "next" :value (request-uri*))
-            (when reply
-               (htm
-                 (:input :type "submit" :name "reply" :value "Reply")))
-            (when (or adminp mine)
-              (when reply (htm " &middot; "))
-              (htm
-                (:input :type "submit" :name "edit" :value "Edit")
-                " &middot; "
-                (if adminp
-                  (htm (:input :type "submit" :name "inappropriate-item" :value "Inappropriate"))
-                  (htm (:input :type "submit" :name "delete" :value "Delete")))))))))))
+       (unless mine
+         (htm
+           (:p :class "other-party-details"
+             (:em "posted by "
+              (str (person-link by)) " "
+              (str (humanize-universal-time (result-time result)))
+              " (within "
+              (str (distance-string
+                     (with-location
+                       (air-distance (result-latitude result)
+                                     (result-longitude result)
+                                     *latitude*
+                                     *longitude*))))
+              ") "))))
+
+       (:div :class "actions"
+        (str (activity-icons :hearts (length (loves offer-id))
+                             :url url))
+        (:form :method "post" :action url
+         (:input :type "hidden" :name "next" :value (request-uri*))
+         (when reply
+           (htm (:input :type "hidden" :name "match" :value request-id))
+           (htm (:input :type "submit" :name "reply" :value "Reply")))
+         (when (or adminp mine)
+           (when reply (htm " &middot; "))
+           (htm
+             (:input :type "submit" :name "edit" :value "Edit")
+             " &middot; "
+             (if adminp
+               (htm (:input :type "submit" :name "inappropriate-item" :value "Inappropriate"))
+               (htm (:input :type "submit" :name "delete" :value "Delete")))))))))))
 
 (defun matching-item-count-html (item-id item-type count &key admin)
   (html

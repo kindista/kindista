@@ -100,7 +100,7 @@
     :get get-request
     :post post-request)
 
-  ("/requests/<int:id>/matching-items"
+  ("/requests/<int:id>/matchmaker"
     :post post-matchmaker)
 
   ("/requests/<int:id>/reply"

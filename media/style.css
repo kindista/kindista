@@ -617,6 +617,11 @@ button.red.simple-link {
  color: #900;
 }
 
+button.green.simple-link {
+ background: none;
+ color:#5c8a2f;
+}
+
 
 menu.horiz a {
  color: #3c6dc8;
@@ -1610,51 +1615,74 @@ table.messages {
  border-bottom: none;
 }
 
-div.suggested-items {
+div.suggested-items.card {
  background: #fbf4d7;
- padding: 0 0.5em 0.4em;
  border-radius: 0.5em;
+ padding-bottom: 0;
+ margin-bottom: 1em;
 }
 
-div.suggested-items > .div {
- margin: 0.5em 0;
+div.suggested-items > div:last-child {
+ border-top: 1px solid #fafafa;
 }
 
-div.request-match,
-div.offer-match,
+div.inventory-match,
 div.suggested-items p {
  font-size: 0.9em;
-}
-
-div.suggested-items h3 {
- margin-top: 0.7em;
 }
 
 div.suggested-items .tags {
  font-size: inherit;
 }
 
-div.suggested-items p.match-reason,
-div.request-match p.match-reason,
-div.offer-match p.match-reason {
- margin: 0.3em 0;
+div.match-details p.match-reason {
+ margin: 0;
 }
 
-.suggested-items div.offer-match:last-child,
-.suggested-items div.request-match:last-child {
- border-top: 1px solid #fafafa;
+div.suggested-items div.match-details,
+div.suggested-items div.match-header {
+ padding: 0 0.7em;
 }
 
-div.offer-match,
-div.request-match {
+div.match-details p.other-party-details {
+ margin: 0.2em 0 0.3em;
+}
+
+div.suggested-items .actions {
+ position: relative;
+ margin: 0 0 0.4em;
+}
+
+div.featured.match-header {
+ background: #D6C994;
+}
+
+div.featured.match-header h3 {
+ font-size: 1.2em;
+ display: inline;
+ color: #fff;
+}
+
+div.inventory-match {
  position: relative;
 }
 
-div.request-match {
+div.match-header button.simple-link {
+ text-shadow: none;
+ padding: 0;
+ margin: 0 0 0 0.4em;
+ font-size: 0.83em;
+ font-weight: bold;
+}
+
+div.inventory-match {
  margin-bottom: 0.4em;
 }
 
-p.inventory-match-text {
+div.suggested-items p.inventory-match-text,
+div.item-matches p.inventory-match-text {
+ clear: both;
+ font-size: 0.95em;
  margin-bottom: 0.6em;
 }
 
@@ -2613,7 +2641,7 @@ form.matchmaker {
 }
 
 form.matchmaker h3 {
- margin-bottom: 0.7em;
+ margin: 0.4em 0 0.7em;
 }
 
 form.matchmaker label {
