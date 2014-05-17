@@ -282,7 +282,7 @@
         #\linefeed
         from-name ", Kindista"))
 
-(defun create-reply (&key on text pending-deletion (user *userid*))
+(defun create-reply (&key on text match-id pending-deletion (user *userid*))
   (let* ((time (get-universal-time))
          (on-item (db on))
          (by (getf on-item :by))
@@ -318,6 +318,10 @@
                                 :created time)))))
 
     (create-comment :on id :by (list user) :text text)
+    (when match-id
+      (case (getf on-item :type)
+        (:offer (hide-matching-offer match-id on))
+        (:request (hide-matching-offer on match-id))))
 
     id))
 
@@ -444,7 +448,11 @@
 
         ((post-parameter "reply")
          (flet ((reply-html (type)
-                  (inventory-item-reply type id item :next next)))
+                  (inventory-item-reply type
+                                        id
+                                        item
+                                        :next next
+                                        :match (post-parameter-integer "match"))))
            (case (getf item :type)
              (:offer (reply-html "offer"))
              (:request (reply-html "request"))
@@ -456,7 +464,9 @@
             (pending-flash "contact other Kindista members")
             (see-other (or (referer) "/home")))
            (t
-            (create-reply :on id :text (post-parameter "reply-text"))
+            (create-reply :on id
+                          :text (post-parameter "reply-text")
+                          :match-id (post-parameter-integer "match"))
             (flash "Your reply has been sent.")
             (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
             (see-other (or next (script-name*))))))
@@ -962,7 +972,7 @@
                      (unless (= i 1)
                        (str ", ")))))))))))))
 
-(defun inventory-item-reply (type id data &key next)
+(defun inventory-item-reply (type id data &key next match)
   (let ((next (or next (get-parameter "next"))))
     (if (item-view-denied (result-privacy (gethash id *db-results*)))
       (permission-denied)
@@ -977,6 +987,7 @@
           (:div :class "item"
             (:form :method "post" :action (strcat "/" type "s/" id)
               (:input :type "hidden" :name "next" :value next)
+              (:input :type "hidden" :name "match" :value match)
               (:table :class "post"
                (:tr
                  (:td (:textarea :cols "1000" :rows "4" :name "reply-text"))

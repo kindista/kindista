@@ -75,13 +75,42 @@
                           ;(:a :href "/announcements/new" "post announcement")
                           ))
 
-      (when *user*
-        (str (distance-selection-html "/home"
-                                      :text "show activity within "
-                                      :class "item")))
       (let ((page (if (scan +number-scanner+ (get-parameter "p"))
                    (parse-integer (get-parameter "p"))
                    0)))
+        (when *user*
+          (unless (> page 0)
+            ;; get either the user's matching offers or matching requests
+            ;; at random
+            (let* ((matching-items (rand-from-list (matching-inventory-items-by-user)))
+                   (random-item (rand-from-list (second matching-items))))
+              (awhen random-item
+                (case (car matching-items)
+                  (:offers
+                    (htm
+                      (:div :class "suggested-items card"
+                        (str (featured-offer-match-html (getf it :offer)
+                                                        (getf it :request)
+                                                        :featured t))
+                        (str (featured-request-match-html (getf it :request)
+                                                          :featured t)))))
+                  (:requests
+                    (let* ((request (db (getf it :request))))
+                      (htm
+                        (:div :class "suggested-items card"
+                          (str (featured-request-match-html (getf it :request)
+                                                            :offer-id (getf it
+                                                                            :offer)
+                                                            :featured t
+                                                            :request-data request))
+                          (str (featured-offer-match-html (getf it :offer)
+                                                          (getf it :request)
+                                                          :featured t))))))))
+              (awhen (rand-from-list (getf matching-items :requests))
+                )))
+          (str (distance-selection-html "/home"
+                                        :text "show activity within "
+                                        :class "item")))
         (with-location
           (str (local-activity-items :page page))))))
     :selected "home"
