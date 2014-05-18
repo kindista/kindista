@@ -58,6 +58,11 @@
   (terminate-thread *acceptor-thread*)
   (stop-notice-thread))
 
+(defun reboot-acceptor ()
+  (stop *acceptor*)
+  (terminate-thread *acceptor-thread*)
+  (setf *acceptor-thread* (make-thread #'(lambda () (start *acceptor*)))))
+
 (defun quit ()
   (end)
   (sb-ext:exit))
