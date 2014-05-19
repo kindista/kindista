@@ -44,7 +44,7 @@
         (return)
         (progn
           (dolist (handler (gethash (first *notice*) *notice-handlers*))
-            (funcall handler)) 
+            (funcall handler))
           (dolist (handler (gethash :all *notice-handlers*))
             (funcall handler)))))))
 

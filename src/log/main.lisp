@@ -21,7 +21,7 @@
 (defvar *log-stream*  (open (concatenate 'string +db-path+ "log")
                             :if-exists :append
                             :if-does-not-exist :create
-                            :direction :output)) 
+                            :direction :output))
 
 (defun log-notice ()
   (with-mutex (*log-lock*)
