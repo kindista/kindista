@@ -23,20 +23,24 @@
     (base-page
       "Welcome to Kindista"
       (html
-        (:div :id "header"
+        (:div :id "header-container"
+         (:div :id "header"
           (:a :id "logo" :href "/"
-           (:img :id "symbol" :src "/media/logo.png")))
+           (:img :id "symbol" :src "/media/logo.png"))
+          (:div :id "splashlogin"
+            (:form :id "splashlogin" :action "/login" :method "post"
+              (:label :for "username" "Email")
+              (:input :id "username" :type "text" :name "username" )
+              (:label :for "password" "Password")
+              (:input :id "password" :type "password" :name "password" )
+              (:br)
+              (:a :href "/reset" "Forgot your password?")   
+              (:button :class "yes" :type "submit" "Log in")
+              ))))
 
         (:div :id "splashbox"
-          (:form :id "splashlogin" :action "/login" :method "post"
-            (:label :for "username" "Username or email")
-            (:input :id "username" :type "text" :name "username" )
-            (:label :for "password" "Password")
-            (:input :id "password" :type "password" :name "password" )
-            (:button :class "yes" :type "submit" "Log in")
-            (:p (:a :href "/reset" "Forgot your password?"))
-            (:h3 "New to Kindista?")
-            (:p (:a :href "/signup" "Sign up for an account.")))  
+          (:h3 "New to Kindista?")
+          (:p (:a :href "/signup" "Sign up for an account."))  
           (:h2 "Kindista helps you share offers, requests, and gratitude with people who live nearby.")
           (:p "Make connections with people who can help you lead a more abundant life through the culture of sharing. "
               (:strong "Because sharing is good."))
