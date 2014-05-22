@@ -478,7 +478,23 @@ body.splash #symbol {
 }
 
 #splashbox h2 {
- font-size: 2em;
+ font-size: 1.6em;
+}
+
+#splashbox #big-ass-signup-button {
+ display: block;
+ margin: 0.75em auto;
+ line-height: 2em;
+ width: 13em;
+ font-size: 1.5em;
+}
+
+#splashbox > div {
+ padding: 0.5em;
+}
+
+#splashbox a:last-of-type {
+ font-size: 1.2em;
 }
 
 #splashlogin {
@@ -535,7 +551,27 @@ body.splash #symbol {
  margin-top: -0.3em;
 }
 
+#splashbox > p {
+ font-size: 1.5em;
+}
+
+#splashbox {
+ background: rgba(255,255,255,0.85);
+ padding: 2em;
+ border-radius: 2em;
+ box-shadow: 0.05em 0.05em 2em rgba(0,0,0,0.3);
+ width: 54em;
+ margin: 4em auto;
+}
+
 @media (max-width:50em) {
+ #splashbox {
+  width: 100%;
+  padding: 1em;
+  background: none;
+  margin: 0;
+  box-shadow: none;
+ }
  body.splash {
   background: none;
  }
@@ -547,6 +583,10 @@ body.splash #symbol {
 }
 
 @media (max-width:42em) {
+ #splashbox > div.half {
+  width:100%;
+  text-align: center;
+ }
  body.splash {
   background: none;
  }
@@ -592,25 +632,6 @@ body.splash #symbol {
  }
  #splashlogin a {
   margin-top: 0.9em;
- }
-}
-
-#splashbox > p {
- font-size: 1.5em;
-}
-
-#splashbox {
- background: rgba(255,255,255,0.85);
- padding: 2em;
- border-radius: 2em;
- box-shadow: 0.05em 0.05em 2em rgba(0,0,0,0.3);
- width: 54em;
- margin: 4em auto;
-}
-
-@media (max-width:50em) {
- #splashbox {
-  width: 100%;
  }
 }
 
@@ -976,16 +997,6 @@ img.small {
  font-size: 3em;
 }
 
-
-@media (max-width:39em) {
- #splashbox {
-  padding: 1em;
-  background: none;
-  margin: 0;
-  box-shadow: none;
- }
-}
-
 @media (max-width:49em) {
  #preview-cards {
   column-count: 2;
@@ -1281,6 +1292,9 @@ img.small {
 
  .flash {
   margin-left:16em;
+ }
+ .signup.flash {
+  margin-left: 0;
  }
 
  #full .profile {
@@ -3291,6 +3305,18 @@ input[name=reply] {
 
 .middle {
  vertical-align: middle;
+}
+
+.center {
+ width: 100%;
+ text-align: center;
+ margin-left: auto;
+ margin-right: auto;
+}
+
+
+.half {
+ width: 50%;
 }
 
 .v-align-container {

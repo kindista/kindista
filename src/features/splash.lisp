@@ -39,12 +39,19 @@
               ))))
 
         (:div :id "splashbox"
-          (:h3 "New to Kindista?")
-          (:p (:a :href "/signup" "Sign up for an account."))  
-          (:h2 "Kindista helps you share offers, requests, and gratitude with people who live nearby.")
-          (:p "Make connections with people who can help you lead a more abundant life through the culture of sharing. "
-              (:strong "Because sharing is good."))
-          (:p :class "clear"))
+          (:div :class "half float-left"
+           (:h2 "Kindista helps you share offers, requests, and gratitude with people who live nearby.")
+           (:p "Make connections with people who can help you lead a more abundant life through the culture of sharing. "
+            (:strong "Because sharing is good.")))
+         (:div :class "half float-left"
+           (:h2 :class "center" "New to Kindista?")
+           (:div :class "center"
+             (:a :class "yes"
+                 :id "big-ass-signup-button" 
+                 :href "/signup" "Sign up for an account."))
+             (:p :class "center"
+              (:a :href "/home" "...or try Kindista as a guest")))
+           (:p :class "clear"))
 
         (:div :id "preview"
           (:h2 "What's happening on Kindista?")

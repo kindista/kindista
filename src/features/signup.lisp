@@ -32,22 +32,18 @@
       "A group (business, non-profit, school, community, church, etc.)")))
 
 (defun signup-page (&key error name email)
-  (standard-page
+  (base-page
     "Sign up"
     (html
-      (:h2 "Sign up for Kindista ")
-      (:h3 "Step 1 of 3: Verify Your Email Address")
-      (:p (:em
-            (:strong "Please note: ")
-            "To prevent spam and abuse, some features on "
-            "Kindista may only be available after you post your first "
-            "offers and we have a chance to review your initial activity. "
-            (:br)
-            (:strong :class "red"
-             " If you have already recieved an invitation to join Kindista "
-             "from us or from a friend , please follow the link in your "
-             "invitation email instead of filling out this form.")))
-      (:form :method "POST" :action "/signup" :id "signup"
+      (str (page-header))
+      (when error
+        (htm 
+          (:div :class "signup flash err"
+            (str error))))
+      (:div :id "body"
+       (:h2 "Sign up for Kindista ")
+       (:h3 "Step 1 of 3: Verify Your Email Address") 
+       (:form :method "POST" :action "/signup" :id "signup"
         (when error
           (flash error :error t))
         (:label :for "name" "Full Name")
@@ -62,12 +58,12 @@
         (:div
           (str (signup-identity-selection)))
         (:p :class "fineprint" "By creating an account, you are agreeing to our "
-          (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
+         (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
 
         (:br)
         (:button :class "yes" :type "submit" "Sign up") 
 
-        (:span "Already have an account? " (:a :href "/login" "Log in"))))))
+        (:span "Already have an account? " (:a :href "/login" "Log in")))))))
 
 (defun email-verification-page (&key error name email token host)
   (standard-page
