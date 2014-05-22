@@ -1293,6 +1293,8 @@ img.small {
  .flash {
   margin-left:16em;
  }
+
+ .hide-menu .flash,
  .signup.flash {
   margin-left: 0;
  }

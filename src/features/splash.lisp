@@ -58,12 +58,16 @@
           (:p "People are sharing offers, requests, and gratitude with others who live near them. Here's a sampling of what's happening right now.")
           (:div :id "preview-cards"
             (with-location
-              (str (activity-items (safe-sort *recent-activity-index* #'> :key #'result-time)
-                                   :url "/"
-                                   :page 0
-                                   :count 10
-                                   :location nil
-                                   :paginate nil))))
+              (str (activity-items
+                     (remove-private-items
+                       (safe-sort *recent-activity-index*
+                                  #'> :key
+                                  #'result-time))
+                     :url "/"
+                     :page 0
+                     :count 10
+                     :location nil
+                     :paginate nil))))
           (:div :class "splactions"
             (:a :class "yes" :href "/home" "Try out Kindista")
             " "

@@ -31,21 +31,19 @@
               :value "group") 
       "A group (business, non-profit, school, community, church, etc.)")))
 
-(defun signup-page (&key error name email)
-  (base-page
+(defun signup-page (&key error name email email2)
+  (header-page
     "Sign up"
+    nil
     (html
-      (str (page-header))
       (when error
-        (htm 
+        (htm
           (:div :class "signup flash err"
-            (str error))))
+           (str error))))
       (:div :id "body"
        (:h2 "Sign up for Kindista ")
        (:h3 "Step 1 of 3: Verify Your Email Address") 
        (:form :method "POST" :action "/signup" :id "signup"
-        (when error
-          (flash error :error t))
         (:label :for "name" "Full Name")
         (:input :type "text" :id "name" :name "name" :value name)
         (:br)
@@ -53,7 +51,7 @@
         (:input :type "text" :id "email" :name "email" :value email)
         (:br)
         (:label :for "email-2" "Confirm Email")
-        (:input :type "text" :id "email-2" :name "email-2")
+        (:input :type "text" :id "email-2" :name "email-2" :value email2)
         (:br)
         (:div
           (str (signup-identity-selection)))
@@ -63,26 +61,31 @@
         (:br)
         (:button :class "yes" :type "submit" "Sign up") 
 
-        (:span "Already have an account? " (:a :href "/login" "Log in")))))))
+        (:span "Already have an account? " (:a :href "/login" "Log in")))))
+    :hide-menu t))
 
 (defun email-verification-page (&key error name email token host)
-  (standard-page
+  (header-page
     "Sign up"
+    nil
     (html
-      (if (eq host +kindista-id+)
-        (htm (:h2 "Create a Kindista account")
-             (:h3 "Step 2 of 3: Set your password"))
-        (htm (:h2 "Please RSVP to your invitation. ")))
-      (:p "Your activation code is:  " (:strong (str token))
+      (when error
+        (htm 
+          (:div :class "signup flash err"
+           (str error))))
+      (:div :id "body"
+       (if (eq host +kindista-id+)
+         (htm (:h2 "Create a Kindista account")
+              (:h3 "Step 2 of 3: Set your password"))
+         (htm (:h2 "Please RSVP to your invitation. ")))
+       (:p "Your activation code is:  " (:strong (str token))
         (:br) "Your email address is: " (:strong (str email)))
-      (:p "You will be able to change your email address on the Settings page after you sign up.")
-      (:form :method "POST" :action "/signup" :id "signup"
+       (:p "You will be able to change your email address on the Settings page after you sign up.")
+       (:form :method "POST" :action "/signup" :id "signup"
         (:input :type "hidden" :name "token" :value token)
         (:input :type "hidden" :name "email" :value email)
         (unless (eq host +kindista-id+)
           (htm (:h2 "Create an account")))
-        (when error
-          (flash error :error t))
         (:label :for "name" "Full Name")
         (:input :type "text" :id "name" :name "name" :value name)
         (:br)
@@ -94,20 +97,13 @@
         (:div
           (str (signup-identity-selection)))
         (:p :class "fineprint" "By creating an account, you are agreeing to our "
-          (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
+         (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
 
         (:br)
         (:button :class "yes" :type "submit" "Sign up") 
 
-        (:span "Already have an account? " (:a :href "/login" "Log in"))))
-
-    :top (when (get-parameter "action")
-           (welcome-bar
-             (html
-               "If you want to do more than browse and search Kindista, you'll need to "
-               (:a :href "/signup" "create an account") ". Or, " (:a :href "/login" "log in")
-               " if you've already got one!")
-             nil))))
+        (:span "Already have an account? " (:a :href "/login" "Log in")))))
+    :hide-menu t))
 
 (defun get-signup ()
   (let* ((get-email (get-parameter "email"))
@@ -132,6 +128,37 @@
                                 :host host
                                 :name name)))))
 
+(defun signup-confirmation-sent (invite-id email &key resent)
+  (header-page
+    "Confirm your email address"
+    nil
+    (html
+      (:div :id "body"
+       (:h2
+         "We have "
+         (str (if resent "resent" "sent"))
+         " sent a confirmation email to " (str email))
+       (:p
+         "You should be receiving this email very soon. "
+         "Please check your email and follow the instructions we sent you to complete the sign-up process. "
+         "If you don't see the confirmation email in your inbox, please check your \"junk\" "
+         "or \"spam\" folder.")
+       (if resent
+         (htm
+           (:p "Still haven't received your confirmation email?")
+           (:p (htm (:a :class "yes" :href "mailto:info@kindista.org"
+                      "Contact us."))))
+         (htm
+           (:div
+             (:form :method "post" :action "/signup"
+              (:input :type "hidden" :name "invite-id" :value invite-id)
+              (:input :type "hidden" :name "email" :value email)
+              (:button :type "submit"
+               :name "resend-confirmation"
+               :class "yes"
+               "Resend invitation")))))))
+    :hide-menu t))
+
 (defun post-signup ()
   (with-user
     (let* ((token (post-parameter "token"))
@@ -139,9 +166,10 @@
            (group-p (string= (post-parameter "account-type") "group"))
            (name (unless group-p (post-parameter "name")))
            (email (post-parameter "email"))
+           (email2 (post-parameter "email-2"))
            (valid-email-invites (gethash email *invitation-index*))
            (valid-token (rassoc token valid-email-invites :test #'equal))
-           (id (car valid-token))
+           (id (or (car valid-token) (post-parameter-integer "invite-id")))
            (invitation (db id))
            (host (getf invitation :host))
            (invite-request-id (getf invitation :invite-request-id))
@@ -155,6 +183,12 @@
                                             :token token
                                             :host host)))
           (cond
+            ((post-parameter "resend-confirmation")
+             (resend-invitation id)
+             (signup-confirmation-sent id email :resent t))
+
+            (group-p
+             (try-again "This form is for creating personal accounts only. Once you create your personal account you can create group accounts from the \"Groups\" section of Kindista. If you ignore this warning you will create mass confusion for our community and will not be able to invite people to join your group. (Also we will probably end up deleting group accounts created with this form.)"))
             ((not valid-token)
              (try-again "The invitation code you have entered is not valid. Please sign up using te link provided in a valid Kindista invitation."))
             ((gethash email *banned-emails-index*)
@@ -238,7 +272,10 @@
                (see-other "/home"))))
 
     (labels ((try-again (e)
-               (signup-page :error e :name name :email email)))
+               (signup-page :error e
+                            :name name
+                            :email email
+                            :email2 (when (equalp email email2) email2))))
       (cond
         (group-p
          (try-again "This form is for creating personal accounts only. Once you create your personal account you can create group accounts from the \"Groups\" section of Kindista. If you ignore this warning you will create mass confusion for our community and will not be able to invite people to join your group. (Also we will probably end up deleting group accounts created with this form.)"))
@@ -255,12 +292,13 @@
          (try-again "Please select an account type"))
 
         (t
-         (aif (find email (unconfirmed-invites +kindista-id+)
-                    :key #'(lambda (item) (getf item :email))
-                    :test #'string=)
-           (resend-invitation (getf it :id))
-           (create-invitation email :host +kindista-id+
-                                    :name name
-                                    :expires (* 90 +day-in-seconds+)))
-         (flash "We have sent an invitation to the email address you entered. Please check your email and follow the instructions we sent you to complete the sign-up process.")
-         (see-other "/home"))))))))
+         (let ((id (aif (find email (unconfirmed-invites +kindista-id+)
+                              :key #'(lambda (item) (getf item :email))
+                              :test #'string=)
+                     (resend-invitation (getf it :id))
+                     (create-invitation email
+                                        :host +kindista-id+
+                                        :name name
+                                        :expires (* 90 +day-in-seconds+)))))
+
+           (signup-confirmation-sent id email)))))))))

@@ -21,23 +21,28 @@
   (with-user
     (if *user*
       (see-other "/home")
-      (standard-page
+      (header-page
         "Login"
+        nil
         (html
-          (:form :method "POST" :action "/login" :id "login"
-            (awhen (get-parameter "retry")
-              (htm (:p :class "error" "The email/username or password was incorrect.")
-                   (unless (string= it "")
-                       (htm (:p (:a :href (s+ "/signup?email=" it)
-                                    "Would you like to create an account?"))))))
-            (awhen (get-parameter "next")
-              (htm (:input :type "hidden" :name "next" :value it)))
-            (:label :for "username" "Username or email")
-            (:input :type "text" :id "username" :name "username" :value (get-parameter "retry"))
-            (:label :for "password" "Password")
-            (:input :type "password" :id "password" :name "password")
-            (:button :type "submit" :class "yes" "Log in")
-            (:span (:a :href "/reset" "Forgot your password?"))))))))
+          (dolist (flash (flashes))
+            (str flash))
+          (:div :id "body"
+            (:form :method "POST" :action "/login" :id "login"
+             (awhen (get-parameter "retry")
+               (htm (:p :class "error" "The email/username or password was incorrect.")
+                    (unless (string= it "")
+                        (htm (:p (:a :href (s+ "/signup?email=" it)
+                                     "Would you like to create an account?"))))))
+             (awhen (get-parameter "next")
+               (htm (:input :type "hidden" :name "next" :value it)))
+             (:label :for "username" "Username or email")
+             (:input :type "text" :id "username" :name "username" :value (get-parameter "retry"))
+             (:label :for "password" "Password")
+             (:input :type "password" :id "password" :name "password")
+             (:button :type "submit" :class "yes" "Log in")
+             (:span (:a :href "/reset" "Forgot your password?")))))
+        :hide-menu t))))
 
 (defun post-login ()
   (with-token
@@ -64,12 +69,8 @@
          (notice :login)
          (see-other (or next "/home")))
         (t
-         (setf (return-code*) +http-see-other+)
-         (setf (header-out :location)
-               (if next
-                 (url-compose "/home" "next" next)
-                 "/home"))
-         (flash "<p>The email or password you entered was not recognized.</p><p>Please try again.</p><p>If you would like to join Kindista please request an invitation from someone you know.</p>" :error t)
+         (see-other (if next (url-compose "/login" "next" next) "/login"))
+         (flash "The email or password you entered was not recognized.  Please try again." :error t)
          (notice :auth-failure :username user)
          "")))))
 

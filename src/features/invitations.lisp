@@ -114,7 +114,8 @@
                      :test #'equal))
       (safe-sort (push (cons now id) *invitation-reminder-timer-index*) #'<
                   :key #'car))
-  (notice :send-invitation :time now :id id)))
+  (notice :send-invitation :time now :id id))
+  id)
 
 (defun get-automatic-invitation-reminders ()
   (when (or *productionp*

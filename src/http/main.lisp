@@ -452,13 +452,13 @@
         (:button :type "submit" :class "yes" "Log in")
         (:a :href "/reset" "Forgot your password?")))))
 
-(defun header-page (title header-extra body &key class)
+(defun header-page (title header-extra body &key class hide-menu)
   (base-page title
              (html
-               (:a :id "top")
+               (unless hide-menu (htm (:a :id "top")))
                (str (page-header header-extra))
                (str body))
-             :class class))
+             :class (s+ class (when hide-menu " hide-menu"))))
 
 (defun standard-page (title body &key selected top right search search-scope class)
   (declare (optimize (speed 3) (debug 0) (safety 0)))
