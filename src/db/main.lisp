@@ -447,8 +447,8 @@
   (with-mutex (*db-log-lock*)
     (with-standard-io-syntax
       (prin1 (append (list (get-universal-time) id) data) *db-log*)
-      (fresh-line *db-log*))
-    (fsync *db-log*))
+      (fresh-line *db-log*)))
+  (fsync *db-log*)
   (with-locked-hash-table (*db*)
     (setf (gethash id *db*) data)))
 

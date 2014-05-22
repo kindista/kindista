@@ -620,7 +620,7 @@
          (when (or offer-id featured)
            (htm
              (when featured
-               (htm (:h3 "Will you respond to thes request?...")))
+               (htm (:h3 "Will you respond to this request?...")))
 
              (when offer-id
                (htm
