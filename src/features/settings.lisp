@@ -196,13 +196,14 @@
          (entity (or group *user*)))
     (if (or (not groupid)
             (member *userid* (getf group :admins)))
-      (standard-page
+      (header-page
         (s+ "Please verify "
             (aif (getf group :name) (s+ it "'s") "your")
             " location.")
+        nil
         (html
-          (:div :class "item"
-            (:div :class "setup"
+          (:div :id "body"
+            (:div :class "address setup"
               (:h2 "Verify "
                    (str (aif (getf group :name) (s+ it "'s") "your"))
                    " location")
@@ -238,7 +239,8 @@
                          :type "submit"
                          :name "confirm-location"
                          :value "1"
-                         "Yes, this is correct"))))))
+                         "Yes, this is correct")))))
+        :hide-menu t)
         (permission-denied))))
 
 (defun settings-password ()
@@ -247,7 +249,7 @@
       (:form :method "post" :class "password" :autocomplete "off" :action "/settings"
        (:input :type "hidden" :name "next" :value *base-url*)
        (:div :class "submit-settings"
-         (:button :class "yes" :type "submit" "Change password"))
+         (:button :class "yes small" :type "submit" "Change password"))
        (:div
          (:label "Current password:")
          (:input :type "password"
@@ -469,7 +471,7 @@
           (when groupid
             (htm (:input :type "hidden" :name "groupid" :value groupid)))
           (:div :class "submit-settings"
-            (:button :class "yes" :type "submit" :name "save-notifications" "Save notification preferences"))
+            (:button :class "yes small" :type "submit" :name "save-notifications" "Save notification preferences"))
           (:ul
             (:li (:input :type "checkbox"
                   :name "gratitude"

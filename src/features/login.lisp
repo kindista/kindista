@@ -37,9 +37,16 @@
              (awhen (get-parameter "next")
                (htm (:input :type "hidden" :name "next" :value it)))
              (:label :for "username" "Username or email")
-             (:input :type "text" :id "username" :name "username" :value (get-parameter "retry"))
+             (:input :type "text"
+                     :id "username"
+                     :name "username"
+                     :autocomplete "off"
+                     :value (get-parameter "retry"))
              (:label :for "password" "Password")
-             (:input :type "password" :id "password" :name "password")
+             (:input :type "password"
+                     :id "password"
+                     :autocomplete "off"
+                     :name "password")
              (:button :type "submit" :class "yes" "Log in")
              (:span (:a :href "/reset" "Forgot your password?")))))
         :hide-menu t))))

@@ -18,58 +18,61 @@
 (in-package :kindista)
 
 (defun get-reset-password ()
-  (standard-page 
+  (header-page
     "Reset your password"
+    nil
     (html
-      (acond
-        ((get-parameter "email")
-         (let ((email it)
-               (token (get-parameter "token")))
-           (htm
-             (:div :class "settings-item reset-password"
-               (:form :method "post" :class "password" :autocomplete "off" :action "/reset"
+      (dolist (flash (flashes))
+        (str flash))
+      (:div :id "body"
+        (:h2 "Reset your password")
+        (acond
+         ((get-parameter "email")
+          (let ((email it)
+                (token (get-parameter "token")))
+            (htm
+              (:form :method "post"
+                     :class "confirm password"
+                     :autocomplete "off"
+                     :action "/reset"
                  (:input :type "hidden" :name "email" :value email)
                  (if (and token (not (string= token "")))
-                   (htm (:input :type "hidden" :name "token" :value token)) 
-                   (htm (:div
-                          (:label "Security code:")
-                          (:input :type "text"
-                                  :name "token"
-                                  :placeholder "enter security code here")))) 
-                 (:div
-                   (:label "New password:")
-                   (:input :type "password"
-                           :name "new-password-1"
-                           :placeholder "new password: at least 8 characters"))   
-                 (:div
-                   (:label "Confirm your new password:")
-                   (:input :type "password"
-                           :name "new-password-2"
-                           :placeholder "please retype your new password"))
-                 
-                 (:button :class "yes" :type "submit" :class "submit" "Change password")
-               )
-               
+                   (htm (:input :type "hidden" :name "token" :value token))
+                   (htm
+                     (:div
+                       (:label "Security code:"
+                         (:input :type "text"
+                                 :name "token"
+                                 :placeholder "enter security code here")))))
+                     (:div
+                       (:label "New password:"
+                         (:input :type "password"
+                                 :name "new-password-1"
+                                 :placeholder "at least 8 characters")))
+                     (:div
+                       (:label "Confirm new password:"
+                         (:input :type "password"
+                                 :name "new-password-2"
+                                 :placeholder "please retype your new password")))
+                     (:button :class "yes small" :type "submit" :class "submit" "Change password"))
                (:p :class "help-text"
                 "Minimum of 8 characters. "
                 "We strongly recommend using either a mix of upper- and "
-                "lower-case letters, numbers, and symbols; or a sentence "
-                "of at least 8 words.")   
-               ))))
-        (t
-         (htm 
-           (:div :class "settings-item reset-password"
-             (:form :method "post" :class "password" :autocomplete "off" :action "/reset"
-               (:div
-                 (:label "Please confirm your email address: ")
-                 (:input :type "text"
-                         :name "email"
-                         :placeholder "enter your email address")) 
-                 (:button :class "yes" :type "submit" :class "submit" "Reset password")
-              )))))
-      )
-    :right (html
-             (str (donate-sidebar)))))
+                "lower-case letters, numbers, and symbols; or a phrase "
+                "of at least 5 words."))))
+         (t
+          (htm
+            (:form :method "post" :class "reset password" :autocomplete "off" :action "/reset"
+             (:div
+               (:label :for "email" "Please confirm your email address: ")
+               (:input :type "text"
+                :name "email"
+                :id "email"
+                :placeholder "enter your email address")
+               (:button :class "yes small"
+                :type "submit"
+                "Reset password"))))))))
+    :hide-menu t))
 
 (defun post-reset-password ()
   (let* ((email (post-parameter "email"))

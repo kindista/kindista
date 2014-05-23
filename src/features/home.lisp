@@ -140,10 +140,11 @@
   :right (home-rightbar)))
 
 (defun newuser-home ()
-  (standard-page
+  (header-page
     "Welcome"
+    nil
     (html
-      (:div :class "item"
+      (:div :id "body"
         (:div :class "setup"
           (if (getf *user* :pending)
             (htm 
@@ -167,12 +168,12 @@
                      :value (if (getf *user* :pending)
                               "/offers/new"
                               "/home"))
-            (:input :type "text" 
-                    :name "address" 
+            (:input :type "text"
+                    :name "address"
                     :placeholder "1600 Pennsylvania Avenue NW, Washington, DC"
                     :value (getf *user* :address))
             (:button :type "submit" :class "submit yes" "Next")))))
-    :selected "home"))
+    :hide-menu t))
 
 (defun get-home ()
   (with-user

@@ -30,9 +30,15 @@
           (:div :id "splashlogin"
             (:form :id "splashlogin" :action "/login" :method "post"
               (:label :for "username" "Email")
-              (:input :id "username" :type "text" :name "username" )
+              (:input :id "username"
+                      :type "text"
+                      :autocomplete "off"
+                      :name "username" )
               (:label :for "password" "Password")
-              (:input :id "password" :type "password" :name "password" )
+              (:input :id "password"
+                      :type "password"
+                      :autocomplete "off"
+                      :name "password" )
               (:br)
               (:a :href "/reset" "Forgot your password?")   
               (:button :class "yes" :type "submit" "Log in")

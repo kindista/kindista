@@ -36,8 +36,9 @@
 
 (defun get-offers-new ()
   (require-user
-    (enter-inventory-text :title "Post an offer"
+    (enter-inventory-tags :title "Post an offer"
                           :action "/offers/new"
+                          :button-text "Post offer"
                           :selected "offers")))
 (defun post-offers-new ()
   (post-new-inventory-item "offer" :url "/offers/new"))

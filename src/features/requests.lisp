@@ -33,9 +33,11 @@
 
 (defun get-requests-new ()
   (require-user
-    (enter-inventory-text :title "Post a request"
+    (enter-inventory-tags :title "Post a request"
                           :action "/requests/new"
+                          :button-text "Post request"
                           :selected "requests")))
+
 (defun post-requests-new ()
   (post-new-inventory-item "request" :url "/requests/new"))
 

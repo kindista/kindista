@@ -218,7 +218,7 @@ input[type=text], input[type=password] {
  font-size: 1em;
  border: 1px solid #444;
  margin: .3em 0;
- padding: 0.4em 0.4em;
+ padding: 0 0.4em;
  height: 2.05em;
  border-radius: 0.25em;
  box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);
@@ -1774,8 +1774,13 @@ div.reciprocity.matches {
  height: 1.4em;
  width: auto;
 }
+
 .card-details {
  overflow: hidden;
+}
+
+.person.card .card-details p {
+ margin: 0.5em 0;
 }
 
 .person.card .card-button {
@@ -1912,7 +1917,7 @@ button.card > img {
  padding:0;
 }
 
-.item :first-child {
+.item > :first-child {
  margin-top:0;
 }
 
@@ -2627,6 +2632,11 @@ menu.bar li a {
  vertical-align: middle;
 }
 
+.address.setup img {
+ max-width: 100%;
+ height: auto;
+}
+
 #guest-actions {
  margin: 0.5em 0.75em 0.25em;
  font-size: 1.5em;
@@ -2980,6 +2990,7 @@ div.settings p.help-text {
  clear:both;
 }
 
+.reset.password label,
 .settings-item .password label {
   width: 20em;
   padding-right: .5em;
@@ -2987,8 +2998,29 @@ div.settings p.help-text {
   margin: .4em 0 .3em 0;
 }
 
+form.confirm.password {
+ max-width: 28em;
+}
+
+.reset.password input {
+ margin-right: 0.5em;
+}
+
+.confirm.password label {
+ font-weight: bold;
+}
+
+.confirm.password input {
+ display: block;
+}
+
+.reset.password button {
+ margin-bottom: 0.55em;
+}
+
 .settings-item .password input[type=password] {
  width: 20em
+ font-size: 1em;
 }
 
 .settings-item .password input[type=text] {

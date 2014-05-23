@@ -346,18 +346,7 @@
       (iter (for tag in (tags-from-string (post-parameter "tags")))
             (setf tags (cons tag tags)))
 
-      (flet ((inventory-text ()
-               (enter-inventory-text :type type
-                                     :text text
-                                     :action url
-                                     :restrictedp restrictedp
-                                     :next (or (post-parameter "next") (referer))
-                                     :identity-selection identity-selection
-                                     :groupid groupid
-                                     :groups-selected groups-selected
-                                     :tags tags
-                                     :selected (s+ type "s")))
-             (inventory-tags (&key error)
+      (flet ((inventory-tags (&key error)
                (enter-inventory-tags :title (s+ "Preview your " type)
                                      :text text
                                      :next (post-parameter "next")
@@ -385,11 +374,11 @@
          ((not text)
           (flash (s+ "Please enter a better description of your " type ".")
                  :error t)
-          (inventory-text))
+          (inventory-tags))
 
          ((> (length text) 1000)
           (flash (s+ "Please shorten your description. Offers and Requests must be no longer than 1000 characters including line breaks."))
-          (inventory-text))
+          (inventory-tags))
 
          ((and (not (post-parameter "create"))
                text)
@@ -593,50 +582,6 @@
             (:td (:textarea :cols "150" :rows "4" :name "text"))
             (:td
               (:button :class "yes submit" :type "submit" :name "post" "Post"))))))))
-
-(defun enter-inventory-text (&key type title text groupid action selected tags next restrictedp identity-selection groups-selected)
-  (standard-page
-    (or title (if (string= type "offer")
-                  "Post an offer"
-                  "Post a request"))
-    (let ((type (or type (if (string= selected "offers")
-                           "offer"
-                           "request"))))
-      (html
-       (:div :class "item"
-         (str (pending-disclaimer type))
-         (when (getf *user* :pending)
-           (htm (:p "Now that you have created a Kindista account, "
-                 "please post some "
-                 (str type)
-                 "s for your local community. "
-                 (:strong
-                   (:em "When posting multiple items, please enter them in "
-                     "separate " (str type) "s.")))
-                (:br)))
-         (:h2 (str (s+ "Please describe your " type)))
-         (:form :method "post" :action action
-           (when groupid
-             (htm (:input :type "hidden" :name "groupid" :value groupid)))
-           (awhen identity-selection
-             (htm (:input :type "hidden" :name "identity-selection" :value it)))
-           (when restrictedp
-             (htm (:input :type "hidden" :name "privacy-selection" :value "restricted")))
-           (:input :type "hidden"
-                   :name "prior-identity"
-                   :value (or identity-selection groupid *userid*))
-           (when groups-selected
-             (dolist (group groups-selected)
-               (htm (:input :type "hidden" :name "groups-selected" :value group))))
-           (dolist (tag tags)
-             (htm (:input :type "hidden" :name "tag" :value tag)))
-           (when next
-             (htm (:input :type "hidden" :name "next" :value next)))
-           (:textarea :cols "40" :rows "5" :name "text" (str text))
-           (:p  (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
-                (:button :class "yes" :type "submit" :class "submit" :name "post" "Next"))))))
-    :right (sharing-guide-sidebar)
-    :selected selected))
 
 (defun enter-inventory-tags (&key title action text existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next)
   (let ((suggested (or tags (get-tag-suggestions text))))

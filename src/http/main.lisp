@@ -439,13 +439,16 @@
     (:div :class (s+ (when mobile "mobile ") "login item")
       (:form :method "POST" :action "/login" :id "login"
         (:label :for "username" "Email")
+        (:input :type "hidden" :name "next" :value (request-uri*))
         (:input :type "text"
                 :id "username"
                 :name "username"
+                :autocomplete "off"
                 :value (get-parameter "retry"))
         (:label :for "password" "Password")
         (:input :type "password"
                 :id "password"
+                :autocomplete "off"
                 :name "password")
         (awhen (get-parameter-string "next")
           (htm (:input :type "hidden" :name "next" :value it)))
