@@ -74,23 +74,25 @@
 ;; a link to reply, and a link to more of their requests (if there are).
 
 (defun display-gratitude-reciprocity (reciprocity-details)
-  (let ((user-id (getf reciprocity-details :userid))
-        (request-id (getf reciprocity-details :requestid))
-        (more-requests (getf reciprocity-details :more)))
+  (let* ((user-id (getf reciprocity-details :userid))
+         (request-id (getf reciprocity-details :requestid))
+         (request (db request-id))
+         (url (strcat "/requests/" request-id))
+         (more-requests (getf reciprocity-details :more)))
     (html
       (:div :class "recip-container"
         (:div :class "recip-header"
           (str (person-link user-id))
           " is requesting:")
         (:div :class "recip-details"
-          (str (ellipsis (db request-id :text)
-                         :length 120
-                         :see-more (strcat "/requests/" request-id)))
+          (awhen (getf request :title)
+            (htm (:p (:strong (:a :html url (str (html-text it)))))))
+          (awhen (getf request :details)
+            (htm (:p (str (ellipsis it :length 120 :see-more url)))))
           (when (and *userid* (not (= *userid* user-id)))
             (htm
               (:div :class "recip-reply"
-                (:a :href (url-compose (strcat "/requests/" request-id "/reply")
-                                       "next" (request-uri*))
+                (:a :href (url-compose (s+ url "/reply") "next" (request-uri*))
                     "Reply")
                 (when more-requests
                   (htm

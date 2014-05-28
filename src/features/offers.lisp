@@ -36,10 +36,11 @@
 
 (defun get-offers-new ()
   (require-user
-    (enter-inventory-tags :title "Post an offer"
+    (enter-inventory-tags :page-title "Post an offer"
                           :action "/offers/new"
                           :button-text "Post offer"
                           :selected "offers")))
+
 (defun post-offers-new ()
   (post-new-inventory-item "offer" :url "/offers/new"))
 
@@ -99,14 +100,16 @@
              (start (* page 20)))
         (when (string= q "") (setf q nil))
         (multiple-value-bind (tags items)
-            (nearby-inventory-top-tags :offer :base base :q q)
+          (nearby-inventory-top-tags :offer :base base :q q)
           (standard-page
            "Offers"
-           (inventory-body-html "offer" :base base
-                                        :q q
-                                        :items items
-                                        :start start
-                                        :page page)
+           (inventory-body-html "an"
+                                "offer"
+                                :base base
+                                :q q
+                                :items items
+                                :start start
+                                :page page)
           :top (when (getf *user* :help)
                  (offers-help-text))
           :search q

@@ -63,7 +63,12 @@
                          (:p (str link)
                            (str (s+ " posted " preposition " " type)))
                          (:blockquote :class "review-text"
-                           (str (getf data :text)))
+                           (awhen (getf data :title)
+                             (htm (:strong (str it))))
+                           (awhen (getf data :details)
+                             (htm (:br)
+                                  (str it)))
+                           (str (getf data :details)))
                          (:p (:strong "Tags: ")
                           (str (format nil *english-list* (getf data :tags))))
                          (:form :method "post"

@@ -158,21 +158,19 @@
                If you would like to know more about how we use the information you share with us,
                please read our " (:a :href "/privacy" "privacy policy") ".")
           (:h2 "Where do you call home?")
-          (:em "If you are travelling or do not have a permanent address, you may enter the city or location where you will be sleeping tonight.")
-          (:p 
-            (:small
-              "Enter a street address and click \"Next\". We'll show you a map to confirm the location."))
+          (:em "If you are travelling or do not have a permanent address, you may enter the city or location where you will be sleeping tonight. You can change your address at any time on the settings page.")
+          (:p :class "small help-text"
+            "Enter a street address and click \"Next\". We'll show you a map to confirm the location.")   
           (:form :method "post" :action "/settings"
             (:input :type "hidden"
                      :name "next"
-                     :value (if (getf *user* :pending)
-                              "/offers/new"
-                              "/home"))
+                     :value "/home")
             (:input :type "text"
                     :name "address"
                     :placeholder "1600 Pennsylvania Avenue NW, Washington, DC"
                     :value (getf *user* :address))
-            (:button :type "submit" :class "submit yes" "Next")))))
+            (:button :type "submit" :class "submit yes input-height" "Next"))
+          )))
     :hide-menu t))
 
 (defun get-home ()

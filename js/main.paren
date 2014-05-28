@@ -7,4 +7,13 @@
   (set-display ((@ #:document #:get-element-by-id) "spinner") "inline-block")
   ((@ #:document #:forms #:imageform #:submit)))
 
-
+(defun limit-characters (message char-count indicator)
+ (setf chars (length (@ message #:value)))
+ ((@ #:console #:log) (@ ((@ #:document #:get-element-by-id) indicator)
+                         #:inner-h-t-m-l))
+ ((@ #:console #:log) (@ ((@ #:document #:get-element-by-id) indicator)))
+ (setf (@ ((@ #:document #:get-element-by-id) indicator) #:inner-h-t-m-l)
+       (- char-count chars))
+ (if (> chars char-count)
+   (setf (@ message #:value)
+         ((@ message #:value #:substring) 0 char-count))))

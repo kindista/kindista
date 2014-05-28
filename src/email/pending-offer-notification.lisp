@@ -30,14 +30,15 @@
        (user (db userid)))
 (strcat
 "New Kindista user, " (getf user :name) " (ID:" userid "), posted a new offer."
-"
-
-Offer text:
-"
-(getf offer :text)
-"
-
-"
+#\linefeed #\linefeed
+"Offer title: "
+#\linefeed
+(getf offer :title)
+#\linefeed #\linefeed
+"Offer details: "
+#\linefeed
+(getf offer :details)
+#\linefeed #\linefeed
 "Please review this user's activity as soon as possible and approve their Kindista membership if appropriate.")))
 
 

@@ -730,21 +730,28 @@
 (defun search-inventory (type text &key (distance 10))
   ; get all requests within distance
   ; for each stem get matching requests
-  ; return intersection
+  ; return an intersection that is ranked via inventory-rank
   (with-location
-    (sort
-      (result-id-intersection
-        (geo-index-query (case type
-                           (:offer *offer-geo-index*)
-                           (t *request-geo-index*))
-                         *latitude*
-                         *longitude*
-                         distance)
-        (stem-index-query (case type
-                           (:offer *offer-stem-index*)
-                           (t *request-stem-index*))
-                          text))
-      #'> :key #'inventory-rank)))
+    (let ((local-items (geo-index-query (case type
+                                          (:offer *offer-geo-index*)
+                                          (t *request-geo-index*))
+                                        *latitude*
+                                        *longitude*
+                                        distance))
+          (stem-results (inventory-stem-index-query
+                          (case type
+                            (:offer *offer-stem-index*)
+                            (t *request-stem-index*))
+                          text)))
+
+      (asetf (getf stem-results :title)
+             (result-id-intersection local-items it))
+      (asetf (getf stem-results :details)
+             (result-id-intersection local-items it))
+      (asetf (getf stem-results :tags)
+             (result-id-intersection local-items it))
+
+      (inventory-rank stem-results))))
 
 (defun search-events (text &key (distance 10))
   ; get all events within distance

@@ -70,11 +70,11 @@
 (defindex *account-inventory-matches-index*) ;k=person/groupid v=(:requests :offers)
 (defindex *request-geo-index*)
 (defindex *request-index*) ;should be called "person-request-index"
-(defindex *request-stem-index* :test 'equalp)
+(defindex *request-stem-index* :test 'equalp) ;k=stem v=(:title :details :tags)
 (defindex *matchmaker-requests-geo-index*)
 (defindex *offer-geo-index*)
 (defindex *offer-index*) ;should be called "person-offer-index"
-(defindex *offer-stem-index* :test 'equalp)
+(defindex *offer-stem-index* :test 'equalp) ;k=stem v=(:title :details :tags)
 (defindex *offers-with-matching-requests-index*)
 (defindex *username-index* :test 'equalp)
 

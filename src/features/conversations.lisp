@@ -298,7 +298,12 @@
                                   (str (inventory-url))
                                   ":"))))
                             (htm (:blockquote :class "review-text"
-                                   (str (html-text (or (getf item :text)
+                                   (awhen (getf item :title)
+                                     (htm
+                                       (:strong (str it))
+                                       (:br)
+                                       (:br)))
+                                   (str (html-text (or (getf item :details)
                                                        (getf it :deleted-item-text)))))))))))
 
                 (let ((comments (gethash id *comment-index*)))

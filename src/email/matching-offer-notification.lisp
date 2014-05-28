@@ -52,7 +52,7 @@
         it)
       #\linefeed
       "\""
-      (or (getf offer :details) (getf offer :text))
+      (getf offer :details)
       "\""
       #\linefeed #\linefeed
       "Here's a link to the offer if you want to check it out or ask to receive it:"
@@ -125,7 +125,7 @@
             (htm (:tr (:td :style "padding: 4px 12px;"
                         (:a :href request-link (str it))))))
           (:tr (:td :style "padding: 4px 12px;"
-                 (str (or (getf request :details) (getf request :text)))))
+                 (str (getf request :details))))
           (:tr (:td :style (s+ "padding: 4px 12px;")
                 (:span
                   (:strong "matchmaker terms:  ")

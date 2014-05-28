@@ -531,7 +531,9 @@
 
         (:p :class "text"
           (:span :class "title"
-            (str (reply-url (ellipsis (getf original-message :text) :length 30)))
+            (str (reply-url (ellipsis (or (getf original-message :title)
+                                          (getf original-message :details))
+                                      :length 30)))
             (when (> comments 1)
               (htm
                 " (" (str comments) ") "))

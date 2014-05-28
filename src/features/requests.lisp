@@ -33,7 +33,7 @@
 
 (defun get-requests-new ()
   (require-user
-    (enter-inventory-tags :title "Post a request"
+    (enter-inventory-tags :page-title "Post a request"
                           :action "/requests/new"
                           :button-text "Post request"
                           :selected "requests")))
@@ -111,11 +111,13 @@
           (nearby-inventory-top-tags :request :base base :q q)
         (standard-page
           "Requests"
-          (inventory-body-html "request" :base base 
-                                         :q q 
-                                         :items items 
-                                         :start start 
-                                         :page page)
+          (inventory-body-html "a"
+                               "request"
+                               :base base
+                               :q q
+                               :items items
+                               :start start
+                               :page page)
           :top (when (getf *user* :help)
                  (requests-help-text))
           :search q

@@ -26,7 +26,10 @@
          (inventory-item (db (getf on-item :on))) ; when reply, get inventory item
          (inventory-type (if (eq (getf inventory-item :type) :request)
                            "request" "offer"))
-         (inventory-text (or (getf inventory-item :text)
+         (inventory-text (or (getf inventory-item :title)
+                             (getf inventory-item :details)
+                             (getf on-item :deleted-item-title)
+                             (getf on-item :deleted-item-details)
                              (getf on-item :deleted-item-text)))
          (sender-id (car (getf comment :by)))
          (sender-group-id (cdr (getf comment :by)))

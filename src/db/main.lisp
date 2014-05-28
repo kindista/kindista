@@ -234,18 +234,34 @@
   (iter (for stem in (stem-text query))
         (reducing (gethash stem index) by #'result-id-intersection)))
 
+(defun inventory-stem-index-query (index query &aux (query-results (list)))
+  "Returns an a-list of ((request . (whether the request had matching terms in the :title, :details, and/or :tags))...)"
+  (dolist (stem (stem-text query))
+    (doplist (field results (copy-list (gethash stem index)))
+      (dolist (result results)
+        (aif (assoc result query-results)
+          (pushnew field (cdr it))
+          (push (cons result (list field)) query-results)))))
+
+  query-results)
+
 (defun all-terms-stem-index-query (index list-of-stems)
 "Like stem-index-query but takes a list-of-strings instead of a single query string and uses loop instead of iter"
   (let ((matching-stems (gethash (car list-of-stems) index)))
     (loop for stem in (cdr list-of-stems)
           while (and matching-stems stem)
           do (asetf matching-stems
-                    (result-id-intersection it (gethash stem index))))
+                    (result-id-intersection
+                      it
+                      (remove-duplicates
+                        (append (getf (gethash stem index) :title)
+                                (getf (gethash stem index) :details))))))
     matching-stems))
 
 (defun any-terms-stem-index-query (index list-of-stems)
   (remove-duplicates (loop for stem in list-of-stems
-                           append (gethash stem index))))
+                           append (append (getf (gethash stem index) :title)
+                                          (getf (gethash stem index) :details)))))
 
 
 ; }}}

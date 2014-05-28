@@ -77,7 +77,8 @@
             ((post-parameter "edit-original")
              (enter-inventory-tags :title "Edit your request"
                                    :action base-url
-                                   :text (getf item :text)
+                                   :item-title (getf item :title)
+                                   :details (getf item :details)
                                    :tags (getf item :tags)
                                    :groups-selected (getf item :privacy)
                                    :restrictedp (getf item :privacy)
@@ -219,7 +220,9 @@
          (by (db by-id))
          (lat (or (getf offer :lat) (getf by :lat)))
          (long (or (getf offer :long) (getf by :long)))
-         (stems (stem-text (getf offer :text)))
+         (stems (stem-text (s+ (getf offer :title)
+                               " "
+                               (getf offer :details))))
          (tags (getf offer :tags)))
 
     (flet ((find-strings (fn request-data offer-data)
@@ -485,8 +488,9 @@
          ((string= tab "matchmaker")
           (htm
             (:p
-              "Please fill out this form if you would like to be notified "
+              "Please fill out this form to be notified "
               "when someone posts an offer that matches the above request. "
+              (:br)
               (:em "It is important that you separate multiple requests "
                "into separate posts so each request can be matched with "
                "with specific offers. "
@@ -578,12 +582,19 @@
                   (when (caadr matching-requests) matching-requests)))))
 
 (defun highlight-relevant-inventory-text (offer-id request-id)
-  (let ((matchmaker (gethash request-id *matchmaker-requests*))
-        (offer (db offer-id)))
-   (highlight-stems-in-text (append (match-any-terms matchmaker)
-                                    (match-all-terms matchmaker))
-                            (or (getf offer :details)
-                                (getf offer :text)))))
+  (let* ((matchmaker (gethash request-id *matchmaker-requests*))
+         (offer (db offer-id))
+         (offer-url (strcat "/offers/" offer-id))
+         (stems (append (match-any-terms matchmaker)
+                        (match-all-terms matchmaker))))
+   (html
+     (awhen (getf offer :title)
+       (htm (:p :class "inventory-match-title"
+              (:a :href offer-url (str (highlight-stems-in-text stems it))))))
+
+     (awhen (getf offer :details)
+       (htm (:p :class "inventory-match-text"
+              (str (highlight-stems-in-text stems it))))))))
 
 (defun featured-request-match-html
   (request-id
@@ -636,38 +647,44 @@
                    "hide this request"))))))))
 
       (:div :class "match-details"
-       (:p :class "inventory-match-text"
-        (str (html-text (getf request :text))))
+        (awhen (getf request :title)
+          (htm (:p :class "inventory-match-title"
+                 (:strong (:a :href url (str (html-text it))))))
+        ;(when (and (getf request :title) (getf request :details))
+        ;  (htm (:br) (:br)))
+         (awhen (getf request :details)
+           (htm (:p :class "inventory-match-text"
+                  (str (html-text it))))))
 
-       (:p :class "match-reason"
-        (:span :class "tags"
-         (:strong "tags:  ")
-         (str (display-tags "request" tags))))
+        (:p :class "match-reason"
+         (:span :class "tags"
+          (:strong "tags:  ")
+          (str (display-tags "request" tags))))
 
-       (:p :class "match-reason"
-        (:span :class "tags"
-         (:strong "matchmaker:  ")
-         (dolist (term terms)
-           (htm (str term))
-           (unless (eql term (car (last terms)))
-             (htm " &middot ")))))
+        (:p :class "match-reason"
+         (:span :class "tags"
+          (:strong "matchmaker:  ")
+          (dolist (term terms)
+            (htm (str term))
+            (unless (eql term (car (last terms)))
+              (htm " &middot ")))))
 
-       (unless mine
-         (htm (:p :class "other-party-details"
-                (:em "posted by "
-                 (str (person-link by))
-                 " "
-                 (str
-                   (humanize-universal-time (or (getf request :edited)
-                                                (getf request :created))))
-                 " (within "
-                 (str (distance-string
-                        (with-location
-                          (air-distance (match-latitude matchmaker)
-                                        (match-longitude matchmaker)
-                                        *latitude*
-                                        *longitude*))))
-                 ") "))))
+        (unless mine
+          (htm (:p :class "other-party-details"
+                 (:em "posted by "
+                  (str (person-link by))
+                  " "
+                  (str
+                    (humanize-universal-time (or (getf request :edited)
+                                                 (getf request :created))))
+                  " (within "
+                  (str (distance-string
+                         (with-location
+                           (air-distance (match-latitude matchmaker)
+                                         (match-longitude matchmaker)
+                                         *latitude*
+                                         *longitude*))))
+                  ") "))))
 
        (:div :class "actions"
         (:form :method "post" :action url
@@ -722,13 +739,12 @@
              "hide this offer")))))
 
       (:div :class "match-details"
-       (:p :class "inventory-match-text"
-        (str (highlight-relevant-inventory-text offer-id request-id)))
+        (str (highlight-relevant-inventory-text offer-id request-id))
 
-       (:p :class "match-reason"
-        (:span :class "tags"
-         (:strong "tags:  ")
-         (str (display-tags "offer" (result-tags result)))))
+        (:p :class "match-reason"
+          (:span :class "tags"
+            (:strong "tags:  ")
+            (str (display-tags "offer" (result-tags result)))))
 
        (unless mine
          (htm

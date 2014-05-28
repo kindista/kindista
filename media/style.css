@@ -658,7 +658,6 @@ button.blue,
 a.blue {
  font-weight: bold;
  vertical-align: middle;
- font-size: 1em;
  height: 2.5em;
  padding: 0.2em 0.4em;
  margin: 0.35em 0;
@@ -918,9 +917,11 @@ button.small, a.small {
 }
 
 button.input-height {
- font-size: 0.9em;
- height: 2.25em;
- padding: 0.4em;
+ font-size: 1em;
+ height: 2.05em;
+ padding: 0 0.4em;
+ margin-top: 0.1em;
+ margin-bottom: 0.3em;
 }
 
 img.small {
@@ -1430,6 +1431,8 @@ menu .newcount {
 .create-group select,
 .item div.privacy-selection select,
 .inventory-details select,
+.inventory-details input[type=text],
+.inventory-details textarea,
 .create-group input[type=text],
 .confirm-delete textarea {
  display: block;
@@ -1444,17 +1447,65 @@ menu .newcount {
 
 }
 
+
+
 .inventory-details select.identity,
+.inventory-details input[type=text],
 .matchmaker input[type=text],
 .create-event input[type=text],
 .create-event select,
 .invite-members input[type=text],
+.item div.privacy-selection,
 .create-group select,
 .create-group input[type=text] {
  width: 30em;
  white-space: nowrap;
  height: 2.5em;
- max-width: none;
+ max-width: 100%;
+}
+
+table.inventory-title {
+ width: 100%;
+ border-collapse: collapse;
+}
+
+.inventory-title td.inventory-details input[type=text] {
+ width: 100%;
+}
+
+.inventory-title td#inventory-title-button {
+ width: 3em;
+}
+
+.simple-inventory-entry.item > p {
+ margin-top: 0;
+ font-size: 0.85em;
+}
+
+.inventory-details label {
+ width: 16em;
+ white-space: nowrap;
+}
+
+.inventory-details div.help-text {
+ float: right;
+ font-size: 0.85em;
+ position: relative;
+ top: 1.1em;
+}
+
+div.card div.inventory-title {
+ margin-bottom: 0.3em;
+}
+
+div.card h3.inventory-title {
+ font-size: 1.1em;
+ margin: 0 0 0.3em;
+ display: inline;
+}
+
+div.card img.icon {
+ margin-right: 0.3em;
 }
 
 .invite-members textarea {
@@ -1762,7 +1813,15 @@ div.suggested-items p.inventory-match-text,
 div.item-matches p.inventory-match-text {
  clear: both;
  font-size: 0.95em;
- margin-bottom: 0.6em;
+ margin: 0.4em 0;
+}
+
+div.suggested-items p.inventory-match-title,
+div.item-matches p.inventory-match-title {
+ clear: both;
+ font-size: 1em;
+ font-weight: bold;
+ margin: 0.4em 0;
 }
 
 div.reciprocity.matches {
@@ -2268,7 +2327,6 @@ div.profile-buttons div.float-right {
  height:auto;
  padding: 0.3em;
  margin-left: 0;
- margin-bottom: 0;
 }
 
 .profile-buttons:after {
@@ -2307,6 +2365,14 @@ div.profile-buttons div.float-right {
  display: inline-block;
 }
 
+.align-left {
+ text-align: left;
+}
+
+.align-right {
+ text-align: right;
+}
+
 button.text.large {
  font-size:1.1em;
 }
@@ -2318,6 +2384,15 @@ button.text.large {
  float: right;
  color:#666;
  /*margin-left: 10.7em;*/
+}
+
+.card.inventory-item .timestamp {
+ margin-top: 0;
+}
+
+#preview-cards .card.inventory-item,
+div.card.inventory-item {
+ padding-top: 0.9em;
 }
 
 .card .right {
@@ -2711,6 +2786,10 @@ div.settings-avatar {
  white-space: nowrap;
 }
 
+#edit-tags {
+ max-width: 40em;
+}
+
 #edit-tags blockquote.review-text {
  margin: .5em 0 .5em 0;
 }
@@ -2952,6 +3031,11 @@ div.settings-item.content > a {
  margin-left: 1em;
  font-size: .9em;
  padding: .3em .5em;
+}
+
+
+div.setup p.help-text {
+ margin-bottom: 0;
 }
 
 div.settings p.help-text {
@@ -3284,6 +3368,10 @@ body.donate {
  font-weight: normal;
  font-style: italic;
  color: #666;
+}
+
+span.highlight {
+ background-color: #F0F137;
 }
 
 .card .text > a {
