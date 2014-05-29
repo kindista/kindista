@@ -267,6 +267,7 @@
          (group-adminp (group-admin-p by))
          (admin-matchmaker (matchmaker-admin-p))
          (q (awhen (get-parameter-string "q") (stem-text it)))
+         (title (getf data :title))
          (images (getf data :images))
          (item-url (strcat "/" type "s/" item-id))
          (tags (getf data :tags))) ;DJB
@@ -293,15 +294,14 @@
                                       (string= type "request")))
                    :content (html
                               (:div
-                                (when (or (getf data :title)
-                                          show-what)
+                                (when (or title show-what)
                                   (htm
                                     (:div :class "inventory-title"
-                                      (when show-what
+                                      (when (and title show-what)
                                         (htm (str (icon (if requestp
                                                           "requests"
                                                           "offers")))))
-                                      (awhen (getf data :title)
+                                      (awhen title
                                         (htm
                                           (:h3 :class "inventory-title"
                                             (:a :href item-url
@@ -314,17 +314,17 @@
                                   (str (if requestp
                                          "requested by "
                                          "offered by "))
-                                  (str (person-link user-id)))
-                                (when show-distance
-                                  (htm (:small
-                                         " (within "
-                                         (str
-                                           (distance-string
-                                             (air-distance (result-latitude result)
-                                                           (result-longitude result)
-                                                           *latitude*
-                                                           *longitude*)))
-                                         ")")))
+                                  (str (person-link user-id))
+                                  (when show-distance
+                                    (htm (:small
+                                           " (within "
+                                           (str
+                                             (distance-string
+                                               (air-distance (result-latitude result)
+                                                             (result-longitude result)
+                                                             *latitude*
+                                                             *longitude*)))
+                                           ")"))))
 
                                 (awhen (getf data :details)
                                   (htm

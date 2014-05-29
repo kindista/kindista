@@ -28,7 +28,7 @@
       (when (or (eql type :request)
                 (eql type :offer))
          (modify-db id
-                    text nil
+                    :text nil
                     new-data-type text)))))
 
 (defun new-pending-offer-notice-handler ()
@@ -535,6 +535,18 @@
 
                (cond
 
+                ((post-parameter "edit")
+                 (inventory-tags))
+
+                ((post-parameter "delete")
+                 (confirm-delete :url url
+                                 :type type
+                                 :text (or (getf item :title)
+                                           (getf item :details))
+                                 :next-url (if (string= (referer) (strcat "/" type "/" id))
+                                             "/home"
+                                             (referer))))
+
                 ((not title)
                  (flash (s+ "Please enter a title for your " type "."))
                  (inventory-tags))
@@ -552,17 +564,6 @@
                  (flash (s+ "Please shorten your description. Offers and Requests must be no longer than 1000 characters including line breaks."))
                  (inventory-tags))
 
-                ((post-parameter "edit")
-                 (inventory-tags))
-
-                ((post-parameter "delete")
-                 (confirm-delete :url url
-                                 :type type
-                                 :text (or (getf item :title)
-                                           (getf item :details))
-                                 :next-url (if (string= (referer) (strcat "/" type "/" id))
-                                             "/home"
-                                             (referer))))
 
                 ((and (post-parameter "really-delete")
                       (not (post-parameter "delete-inappropriate-item")))
