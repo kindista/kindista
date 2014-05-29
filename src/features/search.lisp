@@ -744,14 +744,10 @@
                             (t *request-stem-index*))
                           text)))
 
-      (asetf (getf stem-results :title)
-             (result-id-intersection local-items it))
-      (asetf (getf stem-results :details)
-             (result-id-intersection local-items it))
-      (asetf (getf stem-results :tags)
-             (result-id-intersection local-items it))
-
-      (inventory-rank stem-results))))
+      (inventory-rank (remove-if-not #'(lambda (result-cons)
+                                         (find (car result-cons)
+                                               local-items))
+                                     stem-results)))))
 
 (defun search-events (text &key (distance 10))
   ; get all events within distance
