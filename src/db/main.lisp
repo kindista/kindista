@@ -247,16 +247,19 @@
 
 (defun all-terms-stem-index-query (index list-of-stems)
 "Like stem-index-query but takes a list-of-strings instead of a single query string and uses loop instead of iter"
-  (let ((matching-stems (gethash (car list-of-stems) index)))
+  (let* ((matching-stem-plist (gethash (car list-of-stems) index))
+         (matching-results (remove-duplicates
+                             (append (getf matching-stem-plist :title)
+                                     (getf matching-stem-plist :details)))))
     (loop for stem in (cdr list-of-stems)
-          while (and matching-stems stem)
-          do (asetf matching-stems
+          while (and matching-results stem)
+          do (asetf matching-results
                     (result-id-intersection
                       it
                       (remove-duplicates
                         (append (getf (gethash stem index) :title)
                                 (getf (gethash stem index) :details))))))
-    matching-stems))
+    matching-results))
 
 (defun any-terms-stem-index-query (index list-of-stems)
   (remove-duplicates (loop for stem in list-of-stems
