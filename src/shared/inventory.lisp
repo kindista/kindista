@@ -547,24 +547,6 @@
                                              "/home"
                                              (referer))))
 
-                ((not title)
-                 (flash (s+ "Please enter a title for your " type "."))
-                 (inventory-tags))
-
-                ((and (post-parameter "title") (not new-title))
-                 (flash (s+ "Please enter a better title for your " type ".")
-                        :error t)
-                 (inventory-tags))
-
-                ((> (length title) 140)
-                 (flash (s+ "Please shorten your title to 140 characters or less."))
-                 (inventory-tags))
-
-                ((> (length details) 1000)
-                 (flash (s+ "Please shorten your description. Offers and Requests must be no longer than 1000 characters including line breaks."))
-                 (inventory-tags))
-
-
                 ((and (post-parameter "really-delete")
                       (not (post-parameter "delete-inappropriate-item")))
                  (delete-inventory-item id)
@@ -599,6 +581,23 @@
                      (delete-inventory-item id))
                    (flash (strcat (string-capitalize type) " " id " has been deleted."))
                    (see-other (post-parameter "next"))))
+
+                ((not title)
+                 (flash (s+ "Please enter a title for your " type "."))
+                 (inventory-tags))
+
+                ((and (post-parameter "title") (not new-title))
+                 (flash (s+ "Please enter a better title for your " type ".")
+                        :error t)
+                 (inventory-tags))
+
+                ((> (length title) 140)
+                 (flash (s+ "Please shorten your title to 140 characters or less."))
+                 (inventory-tags))
+
+                ((> (length details) 1000)
+                 (flash (s+ "Please shorten your description. Offers and Requests must be no longer than 1000 characters including line breaks."))
+                 (inventory-tags))
 
                 ((post-parameter "create")
                  (if (intersection tags *top-tags* :test #'string=)
