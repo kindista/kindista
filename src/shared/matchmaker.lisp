@@ -470,7 +470,7 @@
                       (:div :class "item"
                         (if requestp
                           (str (featured-offer-match-html (result-id result) id))
-                          (str (featured-request-match-html (result-id result))))))))))
+                          (str (featured-request-match-html (result-id result) :offer-id id)))))))))
             (when requestp
               (htm
                 (:strong
@@ -649,12 +649,12 @@
       (:div :class "match-details"
         (awhen (getf request :title)
           (htm (:p :class "inventory-match-title"
-                 (:strong (:a :href url (str (html-text it))))))
+                (:strong (:a :href url (str (html-text it)))))))
         ;(when (and (getf request :title) (getf request :details))
         ;  (htm (:br) (:br)))
-         (awhen (getf request :details)
-           (htm (:p :class "inventory-match-text"
-                  (str (html-text it))))))
+        (awhen (getf request :details)
+          (htm (:p :class "inventory-match-text"
+                 (str (html-text it)))))
 
         (:p :class "match-reason"
          (:span :class "tags"
