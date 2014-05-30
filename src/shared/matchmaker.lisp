@@ -697,7 +697,7 @@
              (:input :type "submit" :name "delete" :value "Delete")
              " &middot; ")))
 
-        (when mine
+        (when (or mine (getf *user* :matchmaker))
           (htm
             (:a :href (url-compose url "selected" "matchmaker")
              " Edit matchmaker"))))))))
