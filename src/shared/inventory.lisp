@@ -678,7 +678,8 @@
                   :name "title"
                   :onkeyup (ps-inline
                              (limit-characters this 64 "title-count"))
-                  :value (str item-title))
+                  :value (awhen item-title
+                           (str (escape-for-html it))))
 
           (:div :class "help-text"
             (:strong
@@ -692,7 +693,8 @@
                      :rows "5"
                      :onkeyup (ps-inline
                                 (limit-characters this 1000 "details-count"))
-                     (str details))
+                     (awhen details
+                       (str (escape-for-html it))))
 
           (unless (or groupid existingp)
             (awhen (groups-with-user-as-admin)
