@@ -461,8 +461,8 @@
          (see-other (or next "/home")))
 
         ((and (or (post-parameter "reply-text")
-                  (post-parameter "reply")
-              (getf *user* :pending)))
+                  (post-parameter "reply"))
+              (getf *user* :pending))
          (pending-flash "contact other Kindista members")
          (see-other (or (referer) "/home")))
 
