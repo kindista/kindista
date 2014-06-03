@@ -67,15 +67,16 @@
      ((stale-eventp result); when it needs an :auto-updated-time
       (when (getf data :recurring)
         (update-recurring-event-time id data result)))
-     (t
+     ((getf data :active)
        (event-index-insert result)
        (geo-index-insert *event-geo-index* result)))
 
 
-    (let ((stems (stem-text (s+ (getf data :title) " " (getf data :details)))))
-      (with-locked-hash-table (*event-stem-index*)
-        (dolist (stem stems)
-          (push result (gethash stem *event-stem-index*)))))))
+    (when (getf data :active)
+      (let ((stems (stem-text (s+ (getf data :title) " " (getf data :details)))))
+        (with-locked-hash-table (*event-stem-index*)
+          (dolist (stem stems)
+            (push result (gethash stem *event-stem-index*))))))))
 
 (defun modify-event (id &key lat long title details privacy local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date)
   (bind-db-parameters
@@ -946,14 +947,16 @@
                      (post-parameter "reset-location"))
                  (try-again))
 
-                ((post-parameter "delete")
+                ((post-parameter "deactivate")
                  (confirm-delete :url (script-name*)
+                                 :confirmation-question
+                                   (s+ "Are you sure you want to deactivate this event?")
                                  :type "event"
                                  :text (getf item :title)
                                  :next-url (referer)))
 
                 ((post-parameter "really-delete")
-                 (delete-inventory-item id)
+                 (deactivate-inventory-item id)
                  (flash "Your event has been deleted!")
                  (see-other (or (post-parameter "next") "/home")))
 

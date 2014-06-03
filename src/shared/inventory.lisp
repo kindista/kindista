@@ -19,28 +19,21 @@
 
 (defun migrate-to-new-inventory-data-structure ()
   (dolist (id (hash-table-keys *db*))
-    (let* ((data (db id))
-           (text (getf data :text))
-           (type (getf data :type))
-           (new-data-type (if (< (length text) 65)
-                            :title
-                            :details)))
-      (when (or (eql type :request)
+    (let ((type (db id :type)))
+      (when (or (eql type :event)
+                (eql type :request)
                 (eql type :offer))
-         (modify-db id
-                    :text nil
-                    new-data-type text)))))
+         (modify-db id :active t)))))
 
 (defun new-pending-offer-notice-handler ()
   (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-inventory-item (&key type (by *userid*) title details text tags privacy)
+(defun create-inventory-item (&key type (by *userid*) title details tags privacy)
   (insert-db (list :type type
                    :by by
                    :privacy privacy ;a list of groups who can see the item
                    :title title
                    :details details
-                   :text text
                    :tags tags
                    :created (get-universal-time))))
 
@@ -67,7 +60,7 @@
        (with-locked-hash-table (*pending-person-items-index*)
          (push id (gethash by *pending-person-items-index*))))
 
-      (t
+      ((getf data :active)
        (with-locked-hash-table (*profile-activity-index*)
          (asetf (gethash by *profile-activity-index*)
                 (safe-sort (push result it) #'> :key #'result-time)))
@@ -190,11 +183,10 @@
                   (modify-matchmaker id)
                   (update-matchmaker-request-data id))))))
 
-(defun delete-inventory-item (id)
+(defun deactivate-inventory-item (id)
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
-         (images (getf data :images))
          (type-index (case type
                        (:offer *offer-index*)
                        (:request *request-index*)))
@@ -234,9 +226,6 @@
                                            (getf data :hidden-matching-offers)))
             (remove-matchmaker-from-indexes id))))
 
-      (dolist (image-id images)
-        (delete-image image-id))
-
       (geo-index-remove geo-index result)
 
       (if (eq type :event)
@@ -254,17 +243,14 @@
         (with-mutex (*recent-activity-mutex*)
           (asetf *recent-activity-index* (remove id it :key #'result-id))))
 
-      (with-locked-hash-table (*love-index*)
-        (dolist (person-id (gethash id *love-index*))
-          (amodify-db person-id :loves (remove id it))))
+    ; (with-locked-hash-table (*db-results*)
+    ;   (remhash id *db-results*))
+    )
 
-      (with-locked-hash-table (*db-results*)
-        (remhash id *db-results*)))
-
-    (delete-comments id)
     ;;if in the future we decide not to delete inventory items,
     ;;we need to first delete :matching-offers from offers with matchmakers
-    (remove-from-db id)))
+
+    (modify-db id :active nil)))
 
 (defun delete-pending-inventory-item (id)
   (let ((data (db id)))
@@ -538,19 +524,21 @@
                 ((post-parameter "edit")
                  (inventory-tags))
 
-                ((post-parameter "delete")
+                ((post-parameter "deactivate")
                  (confirm-delete :url url
                                  :type type
+                                 :confirmation-question
+                                   (s+ "Are you sure you want to deactivate this " type "?")
                                  :text (or (getf item :title)
                                            (getf item :details))
-                                 :next-url (if (string= (referer) (strcat "/" type "/" id))
+                                 :next-url (if (string= (referer) (strcat "/" type "s/" id))
                                              "/home"
                                              (referer))))
 
                 ((and (post-parameter "really-delete")
                       (not (post-parameter "delete-inappropriate-item")))
-                 (delete-inventory-item id)
-                 (flash (s+ "Your " type " has been deleted!"))
+                 (deactivate-inventory-item id)
+                 (flash (s+ "Your " type " has been deactivated!"))
                  (if (equal (fourth (split "/" (post-parameter "next") :limit 4)) (subseq (script-name*) 1))
                    (see-other "/home")
                    (see-other (or (post-parameter "next") "/home"))))
@@ -565,6 +553,8 @@
                  (require-admin
                    (confirm-delete :url url
                                    :next-url (referer)
+                                   :confirmation-question
+                                     (s+ "Are you sure you want to deactivate this " type "?")
                                    :type type
                                    :text (or (getf item :title)
                                              (getf item :details))
@@ -578,7 +568,7 @@
                                  :text (post-parameter "explanation"))
                    (if (db by :pending)
                      (delete-pending-inventory-item id)
-                     (delete-inventory-item id))
+                     (deactivate-inventory-item id))
                    (flash (strcat (string-capitalize type) " " id " has been deleted."))
                    (see-other (post-parameter "next"))))
 

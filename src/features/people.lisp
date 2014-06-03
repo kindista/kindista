@@ -195,9 +195,9 @@
     (with-mutex (*active-people-mutex*)
       (asetf *active-people-index* (remove id it)))
     (dolist (request-id (gethash id *request-index*))
-      (delete-inventory-item request-id))
+      (deactivate-inventory-item request-id))
     (dolist (offer-id (gethash id *offer-index*))
-      (delete-inventory-item offer-id))
+      (deactivate-inventory-item offer-id))
     (modify-db id :active nil
                   :notify-message nil
                   :notify-kindista nil

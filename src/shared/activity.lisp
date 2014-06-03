@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time hearts comments type distance delete image-text edit reply class admin-delete related-items matchmaker)
+(defun activity-item (&key id url content time hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -81,7 +81,7 @@
                  " &middot; "
                  (:a :href (url-compose url "selected" "matchmaker")
                   "Matchmaker")))
-              (when delete
+              (when delete ;for gift-activity-items
                 (htm
                   " &middot; "
                   (:input :type "submit" :name "delete" :value "Delete")))
@@ -90,9 +90,19 @@
                   " &middot; "
                   (:input :type "submit" :name "edit" :value "Edit")
                   " &middot; "
-                  (if admin-delete
-                    (htm (:input :type "submit" :name "inappropriate-item" :value "Inappropriate"))
-                    (htm (:input :type "submit" :name "delete" :value "Delete"))))))
+                  (cond
+                    (admin-delete
+                     (htm (:input :type "submit"
+                                  :name "inappropriate-item"
+                                  :value "Inappropriate")))
+                    (deactivate
+                     (htm (:input :type "submit"
+                                  :name "deactivate"
+                                  :value "Deactivate")))
+                    (t
+                     (htm (:input :type "submit"
+                                  :name "delete"
+                                  :value "Delete")))))))
             (when (and image-text
                        (not (string= url (script-name*))))
               (htm
@@ -123,12 +133,15 @@
       :id item-id
       :url item-url
       :class "event"
-      :edit (when (or (eql host *userid*)
+      :edit (or (eql host *userid*)
+                group-adminp
+                (getf *user* :admin))
+      :deactivate (or (eql host *userid*)
                       group-adminp
-                      (getf *user* :admin)) t)
+                      (getf *user* :admin))
       :hearts (length (loves item-id))
       ;:comments (length (comments item-id))
-      :content(html
+      :content (html
                  (:h3 (:a :href item-url
                                 (str
                                   (if truncate
@@ -276,6 +289,7 @@
                    :url item-url
                    :time (result-time result)
                    :edit (or self group-adminp (getf *user* :admin))
+                   :deactivate (or self group-adminp (getf *user* :admin))
                    :admin-delete (and (getf *user* :admin)
                                       (not self)
                                       (not group-adminp))

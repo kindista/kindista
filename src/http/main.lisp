@@ -568,11 +568,14 @@
                         (right "right")
                         (class class))))
 
-(defun confirm-delete (&key url next-url (type "item") class text image-id item-id inappropriate-item)
+(defun confirm-delete (&key url next-url (type "item") confirmation-question class text image-id item-id inappropriate-item)
   (standard-page
     "Confirm Delete"
     (html
-      (:h2 "Are you sure you want to delete this " (str type) "?")
+      (:h2
+        (str
+          (or confirmation-question
+              (s+ "Are you sure you want to delete this " (str type) "?"))))
       (when text
         (htm (:p
                (:blockquote :class "review-text " (cl-who:esc text)))))

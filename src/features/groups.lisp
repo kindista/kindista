@@ -205,7 +205,7 @@
                   (modify-db item-id :by it)
                   (setf (result-people result) it)
                   (push result (gethash it *profile-activity-index*)))
-                (delete-inventory-item item-id)))
+                (deactivate-inventory-item item-id)))
              (:gratitude
                (aif pre-existing-duplicate-id
                  (progn
@@ -223,7 +223,7 @@
                   (let ((new-hosts (switch-ids (getf item-data :hosts))))
                     (modify-db item-id :hosts new-hosts)
                     (setf (result-people result) new-hosts))
-                  (delete-inventory-item item-id))))))))
+                  (deactivate-inventory-item item-id))))))))
 
     (when (and (getf data :lat)
                (getf data :long)
