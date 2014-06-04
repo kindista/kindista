@@ -27,6 +27,7 @@
 
     id))
 
+;; this doesn't appear be used for anything yet
 (defun index-contact-notification (id data)
   (let ((result (make-result :id id
                              :type :contact-n

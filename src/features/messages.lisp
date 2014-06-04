@@ -138,7 +138,8 @@
 
 (defun index-message (id data)
 "The people field for a conversation is a p-list of the status of the conversation for each participant: (:unread ((personid . last-read-comment)) ... "
-  (let* ((time (case (getf data :type)
+  (let* ((type (getf data :type))
+         (time (case type
                  ((or :conversation :reply)
                   (db (getf data :latest-comment) :created))
                  ((or :group-membership-invitation
@@ -149,6 +150,7 @@
                                  (getf data :created)))))
          (latest-comment (getf data :latest-comment))
          (folders (getf data :message-folders))
+         (on-item (getf data :on))
          (people (case (getf data :type)
                    (:gratitude (remove (assoc (list (getf data :author))
                                               (getf data :people)

@@ -20,7 +20,7 @@
 (defun new-gratitude-notice-handler ()
   (send-gratitude-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-gratitude (&key author subjects text)
+(defun create-gratitude (&key author subjects text on)
   (let* ((time (get-universal-time))
          (people-list (mailbox-ids subjects))
          (people (mapcar #'(lambda (mailbox)
@@ -33,6 +33,7 @@
                                  :people ,people
                                  :message-folders ,message-folders
                                  :text ,text
+                                 :on ,on
                                  :created ,time))))
     (unless (getf *user* :pending)
       (notice :new-gratitude :time time
@@ -228,7 +229,7 @@
     (deindex-gratitude id)
     (remove-from-db id))
 
-(defun gratitude-compose (&key subjects text next existing-url single-recipient groupid)
+(defun gratitude-compose (&key subjects text next existing-url single-recipient groupid on-type on-id)
   (if subjects
     (standard-page
      (if existing-url "Edit your statement of gratitude" "Express gratitude")
@@ -270,6 +271,33 @@
                                               it
                                               :class "identity recipients profile-gratitude"))))))
           (:textarea :rows "8" :name "text" (str text))
+
+          (:h3 "This statement of gratitude is for...")
+
+          (:div ;:class "inline-block"
+            (:input :type "radio"
+                    :name "on-type"
+                    :value "offer"
+                    :onclick "this.form.submit()"
+                    :checked (when (string= on-type "offer") "checked"))
+            "An offer I replied to on Kindista")
+
+          (:div ;:class "inline-block"
+            (:input :type "radio"
+                    :name "on-type"
+                    :value "request"
+                    :onclick "this.form.submit()"
+                    :checked (when (string= on-type "offer") "checked"))
+            "A request I made on Kindista")
+
+          (:div ;:class "inline-block"
+            (:input :type "radio"
+                    :name "on-type"
+                    :value "other"
+                    :onclick "this.form.submit()"
+                    :checked (when (string= on-type "offer") "checked"))
+            "Something else")
+
           (:p
             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
             (:button :class "yes" :type "submit" 

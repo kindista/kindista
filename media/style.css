@@ -2894,6 +2894,9 @@ form.recipients menu.recipients li {
  vertical-align: top;
 }
 
+form.recipients menu.recipients li:first-of-type {
+ margin-top: 0;
+}
 form.recipients button.x-remove {
  margin-left: 0.3em;
  vertical-align: top;
