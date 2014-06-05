@@ -188,18 +188,9 @@
              (item (db item-id))
              (by (getf item :by))
              (result (when item ; prior to 6/3/2014 inventory items could be deleted
-                       (or (gethash item-id *db-results*)
-                           (make-result :latitude (or (getf item :lat)
-                                                      (db by :lat))
-                                        :longitude (or (getf item :long)
-                                                       (db by :long))
-                                        :id item-id
-                                        :type (getf item :type)
-                                        :people (list by)
-                                        :privacy (getf item :privacy)
-                                        :time (or (getf item :edited)
-                                                  (getf item :created))
-                                        :tags (getf item :tags))))))
+                       (inventory-item-result item-id
+                                              :data item
+                                              :by-id by))))
 
         (when result
           (with-locked-hash-table (*pending-gratitude-index*)

@@ -37,18 +37,30 @@
                    :tags tags
                    :created (get-universal-time))))
 
+(defun inventory-item-result (id &key data by-id by)
+  (or (gethash id *db-results*)
+      (let* ((item (or data (db id)))
+             (by-id (or by-id (getf data :by)))
+             (by (or by (db by-id))))
+        (when item
+          (make-result :latitude (or (getf item :lat) (db by :lat))
+                       :longitude (or (getf item :long) (db by :long))
+                       :id id
+                       :type (getf item :type)
+                       :people (list by)
+                       :privacy (getf item :privacy)
+                       :time (or (getf item :edited) (getf item :created))
+                       :tags (getf item :tags))))))
+
 (defun index-inventory-item (id data)
-  (let* ((by (getf data :by))
+  (let* ((by-id (getf data :by))
+         (by (db by-id))
          (type (getf data :type))
-         (pending (db by :pending))
-         (result (make-result :latitude (or (getf data :lat) (db by :lat))
-                              :longitude (or (getf data :long) (db by :long))
-                              :id id
-                              :type type
-                              :people (list by)
-                              :privacy (getf data :privacy)
-                              :time (or (getf data :edited) (getf data :created))
-                              :tags (getf data :tags)))
+         (pending (getf by :pending))
+         (result (inventory-item-result id
+                                        :data data
+                                        :by-id by-id
+                                        :by by))
          (locationp (and (result-latitude result)
                         (result-longitude result))))
 
@@ -58,18 +70,18 @@
     (cond
       (pending
        (with-locked-hash-table (*pending-person-items-index*)
-         (push id (gethash by *pending-person-items-index*))))
+         (push id (gethash by-id *pending-person-items-index*))))
 
       ((getf data :active)
        (with-locked-hash-table (*profile-activity-index*)
-         (asetf (gethash by *profile-activity-index*)
+         (asetf (gethash by-id *profile-activity-index*)
                 (safe-sort (push result it) #'> :key #'result-time)))
 
        (if (eq type :offer)
          (with-locked-hash-table (*offer-index*)
-           (push id (gethash by *offer-index*)))
+           (push id (gethash by-id *offer-index*)))
          (with-locked-hash-table (*request-index*)
-           (push id (gethash by *request-index*))))
+           (push id (gethash by-id *request-index*))))
 
        (when locationp
          (let ((title-stems (stem-text (getf data :title)))
