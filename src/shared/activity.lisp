@@ -279,11 +279,8 @@
          (type (if requestp "request" "offer"))
          (group-adminp (group-admin-p by))
          (admin-matchmaker (matchmaker-admin-p))
-         (q (awhen (get-parameter-string "q") (stem-text it)))
-         (title (getf data :title))
          (images (getf data :images))
-         (item-url (strcat "/" type "s/" item-id))
-         (tags (getf data :tags))) ;DJB
+         (item-url (strcat "/" type "s/" item-id)))
 
     (activity-item :id item-id
                    :url item-url
@@ -306,62 +303,12 @@
                    :matchmaker (or (getf *user* :matchmaker)
                                    (and (or group-adminp self)
                                       (string= type "request")))
-                   :content (html
-                              (:div
-                                (when (or title show-what)
-                                  (htm
-                                    (:div :class "inventory-title"
-                                      (when (and title show-what)
-                                        (htm (str (icon (if requestp
-                                                          "requests"
-                                                          "offers")))))
-                                      (awhen title
-                                        (htm
-                                          (:h3 :class "inventory-title"
-                                            (:a :href item-url
-                                              (str
-                                                (if q
-                                                  (highlight-stems-in-text q
-                                                                           it)
-                                                  it)))))))))
-                                (:div
-                                  (str (if requestp
-                                         "requested by "
-                                         "offered by "))
-                                  (str (person-link user-id))
-                                  (when show-distance
-                                    (htm (:small
-                                           " (within "
-                                           (str
-                                             (distance-string
-                                               (air-distance (result-latitude result)
-                                                             (result-longitude result)
-                                                             *latitude*
-                                                             *longitude*)))
-                                           ")"))))
-
-                                (awhen (getf data :details)
-                                  (htm
-                                    (:p
-                                      (str
-                                        (cond
-                                          (q
-                                            (highlight-stems-in-text q it))
-                                          (truncate
-                                            (ellipsis it
-                                                      :length 250
-                                                      :see-more item-url))
-                                          (t (html-text it))))))))
-
-                              (when (and show-tags tags)
-                                (htm
-                                  (:div :class "tags"
-                                   "Tags:  "
-                                   (str (display-tags type tags)))))
-                              (unless (string= item-url (script-name*));image?
-                                (str (activity-item-images images
-                                                           item-url
-                                                           type))))
+                   :content (inventory-item-content result
+                                                    :truncate truncate
+                                                    :data data
+                                                    :show-distance show-distance
+                                                    :show-what show-what
+                                                    :show-tags show-tags)
 
                    :related-items (when (and (or self
                                                  group-adminp
@@ -378,6 +325,64 @@
                                           matches
                                           :admin (and admin-matchmaker
                                                       (not self)))))))))
+
+(defun inventory-item-content
+  (result
+   &key show-distance show-what show-tags truncate data
+   &aux (item-id (result-id result))
+        (item (or data (db item-id)))
+        (by (getf item :by))
+        (requestp (eql (getf item :type) :request))
+        (type (if requestp "request" "offer"))
+        (q (awhen (get-parameter-string "q") (stem-text it)))
+        (title (getf item :title))
+        (images (getf item :images))
+        (item-url (strcat "/" type "s/" item-id))
+        (tags (getf item :tags)))
+  (html
+    (:div
+      (when (or title show-what)
+        (htm (:div :class "inventory-title"
+               (when (and title show-what)
+                 (htm (str (icon (if requestp "requests" "offers")))))
+             (awhen title
+               (htm (:h3 :class "inventory-title"
+                      (:a :href item-url
+                        (str (if q
+                               (highlight-stems-in-text q it)
+                               it)))))))))
+      (:div
+        (str (if requestp
+               "requested by "
+               "offered by "))
+        (str (person-link by))
+        (when show-distance
+          (with-location
+            (htm (:small
+                   " (within "
+                   (str
+                     (distance-string
+                       (air-distance (result-latitude result)
+                                     (result-longitude result)
+                                     *latitude*
+                                     *longitude*)))
+                   ")")))))
+
+      (awhen (getf item :details)
+        (htm
+          (:p
+            (str (cond
+                   (q (highlight-stems-in-text q it))
+                   (truncate (ellipsis it :length 250 :see-more item-url))
+                   (t (html-text it))))))))
+
+    (when (and show-tags tags)
+      (htm (:div :class "tags"
+             "Tags:  "
+             (str (display-tags type tags)))))
+
+    (unless (string= item-url (script-name*));image?
+      (str (activity-item-images images item-url type)))))
 
 (defun display-tags (type tags)
   (html
