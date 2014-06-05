@@ -150,7 +150,6 @@
                                  (getf data :created)))))
          (latest-comment (getf data :latest-comment))
          (folders (getf data :message-folders))
-         (on-item (getf data :on))
          (people (case (getf data :type)
                    (:gratitude (remove (assoc (list (getf data :author))
                                               (getf data :people)
@@ -182,7 +181,36 @@
     (with-locked-hash-table (*group-messages-index*)
       (dolist (group groups)
         (pushnew message (gethash group *group-messages-index*))))
-    (index-message-folders message)))
+    (index-message-folders message)
+
+    (when (eql type :reply)
+      (let* ((item-id (getf data :on))
+             (item (db item-id))
+             (by (getf item :by))
+             (result (when item ; prior to 6/3/2014 inventory items could be deleted
+                       (or (gethash item-id *db-results*)
+                           (make-result :latitude (or (getf item :lat)
+                                                      (db by :lat))
+                                        :longitude (or (getf item :long)
+                                                       (db by :long))
+                                        :id item-id
+                                        :type (getf item :type)
+                                        :people (list by)
+                                        :privacy (getf item :privacy)
+                                        :time (or (getf item :edited)
+                                                  (getf item :created))
+                                        :tags (getf item :tags))))))
+
+        (when result
+          (with-locked-hash-table (*pending-gratitude-index*)
+          (case (getf item :type)
+            (:offer
+              (push result (getf (gethash (getf data :by)
+                                          *pending-gratitude-index*)
+                                 :offers)))
+            (:request
+              (push result (getf (gethash by *pending-gratitude-index*)
+                                 :requests))))))))))
 
 (defun all-message-people (message)
 "a list of people with access to a given message"

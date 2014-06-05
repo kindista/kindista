@@ -546,7 +546,8 @@
   (awhen (post-parameter name) (when (scan +float-scanner+ it) (read-from-string it))))
 
 (defun post-parameter-integer (name)
-  (awhen (post-parameter name) (parse-integer it :junk-allowed t)))
+  (when (scan +number-scanner+ (post-parameter name))
+    (parse-integer (post-parameter name))))
 
 (defun rand-from-list (list)
   (when list

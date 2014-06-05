@@ -229,80 +229,88 @@
     (deindex-gratitude id)
     (remove-from-db id))
 
-(defun gratitude-compose (&key subjects text next existing-url single-recipient groupid on-type on-id)
+(defun gratitude-compose (&key subjects text next existing-url single-recipient groupid on-type on-id pending-items)
   (if subjects
     (standard-page
-     (if existing-url "Edit your statement of gratitude" "Express gratitude")
-     (html
-       (str (pending-disclaimer "statement of gratitude"))
-       (:div :class "item"
-        (:h2 (str (if existing-url "Edit your statement of gratitude"
-                                   "Express gratitude")))
-       (:div :class "item"
-        (:form :method "post"
-               :action (or existing-url "/gratitude/new")
-               :class "recipients"
-          (:label "About:")
-          (:menu :type "toolbar" :class "recipients"
-            (unless subjects
-              (htm (:li (:em "nobody yet"))))
-            (dolist (subject subjects)
-              (htm
-                (:li
-                  (str (db subject :name))
-                  (unless (or single-recipient existing-url)
-                    (htm
-                      (:button :class "text large x-remove" :type "submit" :name "remove" :value subject " ⨯ "))))))
-            (unless (or single-recipient existing-url)
-              (htm
-                (:li :class "recipients" (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or group")))))
+      (if existing-url "Edit your statement of gratitude" "Express gratitude")
+      (html
+        (str (pending-disclaimer "statement of gratitude"))
+        (:div :class "item"
+         (:h2 (str (if existing-url "Edit your statement of gratitude"
+                                    "Express gratitude")))
+        (:div :class "item"
+         (:form :method "post"
+                :action (or existing-url "/gratitude/new")
+                :class "recipients"
+           (:label "About:")
+           (:menu :type "toolbar" :class "recipients"
+             (unless subjects
+               (htm (:li (:em "nobody yet"))))
+             (dolist (subject subjects)
+               (htm
+                 (:li
+                   (str (db subject :name))
+                   (unless (or single-recipient existing-url)
+                     (htm
+                       (:button :class "text large x-remove" :type "submit" :name "remove" :value subject " ⨯ "))))))
+             (unless (or single-recipient existing-url)
+               (htm
+                 (:li :class "recipients" (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or group")))))
 
-          (when subjects
-            (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" subjects))))
-          (when next
-            (htm (:input :type "hidden" :name "next" :value next)))
+           (when subjects
+             (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" subjects))))
+           (when next
+             (htm (:input :type "hidden" :name "next" :value next)))
 
-          (unless existing-url
-            (awhen (groups-with-user-as-admin)
-              (htm
-                (:div :class "clear"
-                  (:label :class "from" "From:")
-                  (str (identity-selection-html (or groupid *userid*)
-                                              it
-                                              :class "identity recipients profile-gratitude"))))))
-          (:textarea :rows "8" :name "text" (str text))
+           (unless existing-url
+             (awhen (groups-with-user-as-admin)
+               (htm
+                 (:div :class "clear"
+                   (:label :class "from" "From:")
+                   (str (identity-selection-html (or groupid *userid*)
+                                               it
+                                               :class "identity recipients profile-gratitude"))))))
+           (:textarea :rows "8" :name "text" (str text))
 
-          (:h3 "This statement of gratitude is for...")
+           (:h3 "This statement of gratitude is for...")
 
-          (:div ;:class "inline-block"
-            (:input :type "radio"
-                    :name "on-type"
-                    :value "offer"
-                    :onclick "this.form.submit()"
-                    :checked (when (string= on-type "offer") "checked"))
-            "An offer I replied to on Kindista")
+           (:div ;:class "inline-block"
+             (:input :type "radio"
+                     :name "on-type"
+                     :value "offer"
+                     :onclick "this.form.submit()"
+                     :checked (when (string= on-type "offer") "checked"))
+             "An offer I replied to on Kindista")
 
-          (:div ;:class "inline-block"
-            (:input :type "radio"
-                    :name "on-type"
-                    :value "request"
-                    :onclick "this.form.submit()"
-                    :checked (when (string= on-type "offer") "checked"))
-            "A request I made on Kindista")
+           (:div ;:class "inline-block"
+             (:input :type "radio"
+                     :name "on-type"
+                     :value "request"
+                     :onclick "this.form.submit()"
+                     :checked (when (string= on-type "offer") "checked"))
+             "A request I made on Kindista")
 
-          (:div ;:class "inline-block"
-            (:input :type "radio"
-                    :name "on-type"
-                    :value "other"
-                    :onclick "this.form.submit()"
-                    :checked (when (string= on-type "offer") "checked"))
-            "Something else")
+           (:div ;:class "inline-block"
+             (:input :type "radio"
+                     :name "on-type"
+                     :value "other"
+                     :onclick "this.form.submit()"
+                     :checked (when (string= on-type "offer") "checked"))
+             "Something else")
 
-          (:p
-            (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
-            (:button :class "yes" :type "submit" 
-                     :name "create" 
-                     (str (if existing-url "Save" "Create")))))))))
+           (awhen pending-items
+             (htm
+               (:div
+                (dolist (result pending-items)
+                  (str (inventory-activity-item result :truncate t))))))
+
+           (:p
+             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
+             (:button :class "yes" :type "submit" 
+                      :name "create" 
+                      (str (if existing-url "Save" "Create")))))))))
+
+    ;; else
     (gratitude-add-subject :text text :next next)))
 
 (defun gratitude-add-subject (&key subjects text next (results 'none) groupid)
@@ -353,69 +361,92 @@
 
 (defun post-gratitudes-new ()
   (require-active-user
-    (let* ((groupid (when (scan +number-scanner+
-                                (post-parameter "identity-selection"))
-                     (parse-integer (post-parameter "identity-selection"))))
-           (adminp (group-admin-p groupid)))
-      (cond
-        ((post-parameter "cancel")
-         (see-other (or (post-parameter "next") "/home")))
+    (let* ((groupid (post-parameter-integer "identity-selection"))
+           (adminp (group-admin-p groupid))
+           (on-type (post-parameter-string "on-type"))
+           (subjects (parse-subject-list (post-parameter "subject")
+                                         :remove (write-to-string *userid*)))
+           (pending-items (awhen on-type
+                            (cond
+                              ((string= it "offer")
+                               (getf (gethash *userid*
+                                              *pending-gratitude-index*)
+                                     :offers))
+                              ((string= it "request")
+                               (getf (gethash *userid*
+                                              *pending-gratitude-index*)
+                                     :requests))))))
 
-        ((not (confirmed-location))
-         (flash "You must set your street address on your settings page before you can post gratitude about someone." :error t)
-         (see-other (or (post-parameter "next") "/home")))
+     (setf pending-items
+       (if (and (string= on-type "offer")
+             (= (length subjects) 1))
+         (remove-if-not #'(lambda (result) (find (car subjects)
+                                                 (result-people result)))
+                        pending-items)))
 
-        ((post-parameter "create")
-         (let* ((subjects (parse-subject-list (post-parameter "subject")
-                                              :remove (write-to-string *userid*)))
-                (text (post-parameter "text"))
-                (author (if adminp groupid *userid*))
-                (new-id (create-gratitude :author author
-                                          :subjects (remove author subjects)
-                                          :text text)))
-           (cond
-             ((and subjects text)
-              (if (getf *user* :pending)
-                (progn
-                  new-id
-                  (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
-                  (see-other (or (post-parameter "next") "/home")))
-                (see-other (format nil "/gratitude/~A" new-id))))
-             (subjects
-              "no text")
-             ((post-parameter "text")
-              "no subject")
-             (t
-              "totally blank"))))
-
-        ((post-parameter "add")
-         (if (string= (post-parameter "add") "new")
-           (gratitude-add-subject :subjects (parse-subject-list (post-parameter "subject"))
+      (flet ((g-compose (&key single-recipient subjects)
+               (gratitude-compose :subjects subjects
+                                  :single-recipient single-recipient
                                   :groupid (when adminp groupid)
                                   :text (post-parameter "text")
-                                  :next (post-parameter "next"))
-           (gratitude-compose
-             :single-recipient (post-parameter "single-recipient")
-             :groupid (when adminp groupid)
-             :next (post-parameter "next")
-             :text (post-parameter "text")
-             :subjects (parse-subject-list
-                         (format nil "~A,~A" (post-parameter "add") (post-parameter "subject"))))))
+                                  :next (post-parameter "next")
+                                  :on-type on-type
+                                  :pending-items pending-items))
+             (g-add-subject (&key results subjects)
+               (gratitude-add-subject :results results
+                                      :subjects subjects
+                                      :text (post-parameter "text")
+                                      :next (post-parameter "next")
+                                      :groupid (when adminp groupid))))
 
-        ((post-parameter "search")
-         (gratitude-add-subject :subjects (parse-subject-list (post-parameter "subject"))
-                                :text (post-parameter "text")
-                                :groupid (when adminp groupid)
-                                :next (post-parameter "next")
-                                :results (cons (search-groups (post-parameter "name"))
-                                               (search-people (post-parameter "name")))))
-        (t
-         (gratitude-compose
-           :text (post-parameter "text")
-           :groupid (when adminp groupid)
-           :subjects (parse-subject-list
-                       (post-parameter "subject")
-                       :remove (post-parameter "remove"))))))))
+        (cond
+          ((post-parameter "cancel")
+           (see-other (or (post-parameter "next") "/home")))
+
+          ((not (confirmed-location))
+           (flash "You must set your street address on your settings page before you can post gratitude about someone." :error t)
+           (see-other (or (post-parameter "next") "/home")))
+
+          ((post-parameter "create")
+           (let* ((text (post-parameter "text"))
+                  (author (if adminp groupid *userid*))
+                  (new-id (create-gratitude :author author
+                                            :subjects (remove author subjects)
+                                            :text text)))
+             (cond
+               ((and subjects text)
+                (if (getf *user* :pending)
+                  (progn
+                    new-id
+                    (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
+                    (see-other (or (post-parameter "next") "/home")))
+                  (see-other (format nil "/gratitude/~A" new-id))))
+               (subjects
+                "no text")
+               ((post-parameter "text")
+                "no subject")
+               (t
+                "totally blank"))))
+
+          ((post-parameter "add")
+           (if (string= (post-parameter "add") "new")
+             (g-add-subject
+               :subjects (parse-subject-list (post-parameter "subject")))
+             (g-compose
+               :single-recipient (post-parameter "single-recipient")
+               :subjects (parse-subject-list
+                           (format nil "~A,~A" (post-parameter "add") (post-parameter "subject"))))))
+
+          ((post-parameter "search")
+           (g-add-subject
+             :subjects (parse-subject-list (post-parameter "subject"))
+             :results (cons (search-groups (post-parameter "name"))
+                            (search-people (post-parameter "name")))))
+
+          (t
+           (g-compose :subjects (parse-subject-list
+                                  (post-parameter "subject")
+                                  :remove (post-parameter "remove")))))))))
 
 
 (defun get-gratitude (id)

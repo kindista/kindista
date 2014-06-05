@@ -5,3 +5,5 @@
 ## Pending gratitude index
 - key user/group id
 - value: plist (:offers (results) :requests (results))
+
+## 
