@@ -479,13 +479,6 @@
 
                    (:a :href "#menu" (:img :alt "Menu" :src "/media/icons/menu.png"))))
                (html
-                 (:div :class "flash err"
-                  (:p "On June 6, 2014, we ran into some technical issues with our database.  As a result, some data posted on June 6 may have been irretreivably lost.  Please "
-                   (if *userid*
-                     (htm (:a :href "/contact-us" "contact us"))
-                     (htm (:a :href "mailto:info@kindista.org" "contact us")))
-                   " if you notice that anything you have posted is missing."
-                   " We are very sorry that this happend, and for any inconvenience that this may have caused."))
                  (dolist (flash (flashes))
                    (str flash))
                  (unless *user*
