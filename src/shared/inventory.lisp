@@ -17,12 +17,14 @@
 
 (in-package :kindista)
 
-(defun migrate-to-new-inventory-data-structure ()
+(defun mark-recent-inventory-active ()
   (dolist (id (hash-table-keys *db*))
-    (let ((type (db id :type)))
-      (when (or (eql type :event)
-                (eql type :request)
-                (eql type :offer))
+    (let* ((item (db id))
+           (type (getf item :type)))
+      (when (and (or (eql type :event)
+                     (eql type :request)
+                     (eql type :offer))
+                 (> (getf item :created) 3610734290))
          (modify-db id :active t)))))
 
 (defun new-pending-offer-notice-handler ()
@@ -30,6 +32,7 @@
 
 (defun create-inventory-item (&key type (by *userid*) title details tags privacy)
   (insert-db (list :type type
+                   :active t
                    :by by
                    :privacy privacy ;a list of groups who can see the item
                    :title title
@@ -259,14 +262,7 @@
                  (remove result it)))
         (geo-index-remove *activity-geo-index* result)
         (with-mutex (*recent-activity-mutex*)
-          (asetf *recent-activity-index* (remove id it :key #'result-id))))
-
-    ; (with-locked-hash-table (*db-results*)
-    ;   (remhash id *db-results*))
-    )
-
-    ;;if in the future we decide not to delete inventory items,
-    ;;we need to first delete :matching-offers from offers with matchmakers
+          (asetf *recent-activity-index* (remove id it :key #'result-id)))))
 
     (modify-db id :active nil)))
 
