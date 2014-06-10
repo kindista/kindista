@@ -18,6 +18,7 @@
 (in-package :kindista)
 
 (defun mark-recent-inventory-active ()
+"To fix a bug introduced in commit f24b715bd4bb893f8bc6fc037910ee677b3e59dd in which new inventory items were not being marked as active"
   (dolist (id (hash-table-keys *db*))
     (let* ((item (db id))
            (type (getf item :type)))
@@ -628,7 +629,7 @@
       (:p :class "help-text"
         "Enter a "
         (:strong "short title for a single " (str type))
-        ". You can add detials after you click \"post\". "))))
+        ". You can add details after you click \"post.\""))))
 
 
 (defun enter-inventory-tags (&key page-title action item-title details existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next)
