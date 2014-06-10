@@ -414,12 +414,17 @@
 
            ((string= on-type "request")
             (remove nil (append relevant-items
-                                (set-difference
-                                  (mapcar #'(lambda (id)
-                                              (gethash id *db-results*))
-                                          (gethash recipient-id
-                                                   *request-index*))
-                                  relevant-items)))))))
+                                (sort
+                                  (set-difference
+                                    (mapcar #'(lambda (id)
+                                                (gethash id *db-results*))
+                                            (append
+                                              (gethash recipient-id *account-inactive-request-index*)
+                                              (gethash recipient-id
+                                                       *request-index*)))
+                                    relevant-items)
+                                  #'>
+                                  :key #'result-time)))))))
 
       (flet ((g-compose (&key single-recipient subjects)
                (gratitude-compose :subjects subjects

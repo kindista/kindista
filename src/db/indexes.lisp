@@ -37,6 +37,8 @@
         *recent-activity-index* ()
         *active-people-index* ()))
 
+(defindex *account-inactive-offer-index*)
+(defindex *account-inactive-request-index*)
 (defindex *activity-geo-index*)
 (defindex *comment-index*)
 (defindex *email-index* :test 'equalp)

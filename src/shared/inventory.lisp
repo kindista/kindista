@@ -125,7 +125,13 @@
              (safe-sort (push result
                               *requests-without-matchmakers-index*)
                         #'>
-                        :key #'result-time))))))))
+                        :key #'result-time)))))
+      (t
+       (if (eq type :offer)
+         (with-locked-hash-table (*account-inactive-offer-index*)
+           (push id (gethash by-id *account-inactive-offer-index*)))
+         (with-locked-hash-table (*account-inactive-request-index*)
+           (push id (gethash by-id *account-inactive-request-index*))))))))
 
 (defun modify-inventory-item (id &key title details tags privacy)
   (let* ((result (gethash id *db-results*))
