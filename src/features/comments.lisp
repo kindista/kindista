@@ -39,16 +39,20 @@
       (dolist (box user-boxes)
         (asetf (cdr (assoc (car box) people :test #'equal)) id)))
 
-    (with-locked-hash-table (*db-messages*)
-      (setf (message-folders on-message)
-            (list :inbox people-list
-                  :unread others
-                  :compost nil
-                  :deleted nil)))
+    ;; user feedbacks don't have messages
+    (when on-message
+      (with-locked-hash-table (*db-messages*)
+        (setf (message-folders on-message)
+              (list :inbox people-list
+                    :unread others
+                    :compost nil
+                    :deleted nil))))
 
-    (index-message on (modify-db on :latest-comment id
-                                    :message-folders (message-folders on-message)
-                                    :people people))
+    (if on-message
+      (index-message on (modify-db on :latest-comment id
+                                      :message-folders (message-folders on-message)
+                                      :people people))
+      (modify-db on :latest-comment id))
 
     (when (or (eq on-type :conversation)
               (eq on-type :reply))
