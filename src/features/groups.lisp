@@ -125,8 +125,8 @@
       (unless (< (result-time result) (- (get-universal-time) 15552000))
         (geo-index-insert *activity-geo-index* result))
 
-      (dolist (id (gethash id *request-index*))
-        (let ((result (gethash id *db-results*)))
+      (dolist (request-id account-requests)
+        (let ((result (gethash request-id *db-results*)))
           (geo-index-remove *request-geo-index* result)
           (geo-index-remove *activity-geo-index* result)
           (setf (result-latitude result) lat)
@@ -140,8 +140,8 @@
         (modify-matchmaker request-id)
         (update-matchmaker-request-data request-id))
 
-      (dolist (id (gethash id *offer-index*))
-        (let ((result (gethash id *db-results*)))
+      (dolist (offer-id account-offers)
+        (let ((result (gethash offer-id *db-results*)))
           (geo-index-remove *offer-geo-index* result)
           (geo-index-remove *activity-geo-index* result)
           (setf (result-latitude result) lat)
@@ -153,8 +153,8 @@
       (dolist (offer-id account-offers)
         (update-matchmaker-offer-data offer-id))
 
-      (dolist (id (gethash id *gratitude-index*))
-        (let ((result (gethash id *db-results*)))
+      (dolist (gratitude-id (gethash id *gratitude-index*))
+        (let ((result (gethash gratitude-id *db-results*)))
           (geo-index-remove *activity-geo-index* result)
           (setf (result-latitude result) lat)
           (setf (result-longitude result) long)

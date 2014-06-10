@@ -407,19 +407,19 @@
                                                       (result-people result)))
                                             pending-items))))
 
-     (setf pending-items
-       (if (= (length subjects) 1)
-         (cond
-          ((string= on-type "offer") relevant-items)
+      (setf pending-items
+        (if (= (length subjects) 1)
+          (cond
+           ((string= on-type "offer") relevant-items)
 
-          ((string= on-type "request")
-           (remove nil (append relevant-items
-                               (set-difference
-                                 (mapcar #'(lambda (id)
-                                             (gethash id *db-results*))
-                                         (gethash recipient-id
-                                                  *request-index*))
-                                 relevant-items)))))))
+           ((string= on-type "request")
+            (remove nil (append relevant-items
+                                (set-difference
+                                  (mapcar #'(lambda (id)
+                                              (gethash id *db-results*))
+                                          (gethash recipient-id
+                                                   *request-index*))
+                                  relevant-items)))))))
 
       (flet ((g-compose (&key single-recipient subjects)
                (gratitude-compose :subjects subjects

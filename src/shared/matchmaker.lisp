@@ -203,8 +203,9 @@
 
 (defun account-matchmakers (&optional (account-id *userid*))
   (loop for id in (gethash account-id *request-index*)
-        when (or (db id :match-all-terms)
-                 (db id :match-any-terms))
+        for request = (db id)
+        when (or (getf request :match-all-terms)
+                 (getf request :match-any-terms))
         collect id))
 
 (defun matchmaker-admin-p (&optional (userid *userid*))

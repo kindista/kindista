@@ -43,11 +43,11 @@
              (by-id (or by-id (getf data :by)))
              (by (or by (db by-id))))
         (when item
-          (make-result :latitude (or (getf item :lat) (db by :lat))
-                       :longitude (or (getf item :long) (db by :long))
+          (make-result :latitude (or (getf item :lat) (getf by :lat))
+                       :longitude (or (getf item :long) (getf by :long))
                        :id id
                        :type (getf item :type)
-                       :people (list by)
+                       :people (list by-id)
                        :privacy (getf item :privacy)
                        :time (or (getf item :edited) (getf item :created))
                        :tags (getf item :tags))))))
