@@ -208,6 +208,7 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
+         (by (getf data :by))
          (type-index (case type
                        (:offer *offer-index*)
                        (:request *request-index*)))
@@ -228,10 +229,10 @@
                  (remove result it))))
 
       ;; delete matchmakers
-      (case (result-type result)
+      (case type
         (:offer
           (unmatch-offer-matches id
-                                 (getf data :by)
+                                 by
                                  (copy-list
                                    (gethash id
                                            *offers-with-matching-requests-index*)))
@@ -242,7 +243,7 @@
           (when (or (getf data :match-all-terms)
                     (getf data :match-any-terms))
             (unmatch-request-matches id
-                                   (getf data :by)
+                                   by
                                    (append (getf data :matching-offers)
                                            (getf data :hidden-matching-offers)))
             (remove-matchmaker-from-indexes id))))
@@ -253,12 +254,19 @@
         (with-mutex (*event-mutex*)
           (asetf *event-index* (remove result it)))
         (with-locked-hash-table (type-index)
-          (asetf (gethash (getf data :by) type-index)
+          (asetf (gethash by type-index)
                  (remove id it))))
+      (case type
+        (:request
+          (with-locked-hash-table (*account-inactive-request-index*)
+            (push id (gethash by *account-inactive-requests-index*))))
+        (:offer
+          (with-locked-hash-table (*account-inactive-offer-index*)
+            (push id (gethash by *account-inactive-offers-index*)))))
 
       (unless (eq type :event)
         (with-locked-hash-table (*profile-activity-index*)
-          (asetf (gethash (getf data :by) *profile-activity-index*)
+          (asetf (gethash by *profile-activity-index*)
                  (remove result it)))
         (geo-index-remove *activity-geo-index* result)
         (with-mutex (*recent-activity-mutex*)

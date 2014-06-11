@@ -244,13 +244,12 @@
                                        :truncate t
                                        :show-distance t)))))))
 
-(defun gratitude-compose (&key subjects text next existing-url single-recipient groupid on-type on-id pending-items)
+(defun gratitude-compose (&key error subjects text next existing-url single-recipient groupid on-type on-id pending-items)
   (if subjects
     (standard-page
       (if existing-url "Edit your statement of gratitude" "Express gratitude")
       (html
-        (pprint on-type)
-        (terpri)
+        (when error (flash (getf error :text) :error t))
         (str (pending-disclaimer "statement of gratitude"))
         (:div :class "item"
          (:h2 (str (if existing-url "Edit your statement of gratitude"
@@ -290,7 +289,8 @@
                                                  :onchange "this.form.submit()"))))))
            (:textarea :rows "8" :name "text" (str text))
 
-           (:h3 "This statement of gratitude is for...")
+           (:h3 :class (when (string= (getf error :field) "on-type") "red")
+            "This statement of gratitude is for...")
 
            (:div ;:class "inline-block"
              (:input :type "radio"
@@ -319,7 +319,8 @@
            (when (and pending-items on-type)
              (htm
                (:div
-                 (:h3 "Please select the "
+                 (:h3 :class (when (string= (getf error :field) "on-id") "red")
+                   "Please select the "
                       (str on-type)
                       " you are posting gratitude about:")
 
@@ -426,7 +427,7 @@
                                   #'>
                                   :key #'result-time)))))))
 
-      (flet ((g-compose (&key single-recipient subjects)
+      (flet ((g-compose (&key single-recipient (subjects subjects) error)
                (gratitude-compose :subjects subjects
                                   :single-recipient single-recipient
                                   :groupid (when adminp groupid)
@@ -434,6 +435,7 @@
                                   :next (post-parameter "next")
                                   :on-type on-type
                                   :on-id on-id
+                                  :error error
                                   :pending-items pending-items))
              (g-add-subject (&key results subjects)
                (gratitude-add-subject :results results
@@ -450,6 +452,28 @@
            (flash "You must set your street address on your settings page before you can post gratitude about someone." :error t)
            (see-other (or (post-parameter "next") "/home")))
 
+          ((post-parameter "add")
+           (if (string= (post-parameter "add") "new")
+             (g-add-subject
+               :subjects (parse-subject-list (post-parameter "subject")))
+             (g-compose
+               :single-recipient (post-parameter "single-recipient")
+               :subjects (parse-subject-list
+                           (format nil "~A,~A" (post-parameter "add") (post-parameter "subject"))))))
+
+          ((post-parameter "search")
+           (g-add-subject
+             :subjects (parse-subject-list (post-parameter "subject"))
+             :results (cons (search-groups (post-parameter "name"))
+                            (search-people (post-parameter "name")))))
+
+          ((not on-type)
+           (g-compose :error '(:text "Please let us know what this statement of gratitude is in reference to."
+                               :field "on-type")))
+
+          ((and pending-items (not (post-parameter "on-id")))
+           (g-compose :error '(:text "Please let us know what this statement of gratitude is in reference to."
+                               :field "on-id")))
           ((post-parameter "create")
            (let* ((text (post-parameter "text"))
                   (author (if adminp groupid *userid*))
@@ -470,21 +494,6 @@
                 "no subject")
                (t
                 "totally blank"))))
-
-          ((post-parameter "add")
-           (if (string= (post-parameter "add") "new")
-             (g-add-subject
-               :subjects (parse-subject-list (post-parameter "subject")))
-             (g-compose
-               :single-recipient (post-parameter "single-recipient")
-               :subjects (parse-subject-list
-                           (format nil "~A,~A" (post-parameter "add") (post-parameter "subject"))))))
-
-          ((post-parameter "search")
-           (g-add-subject
-             :subjects (parse-subject-list (post-parameter "subject"))
-             :results (cons (search-groups (post-parameter "name"))
-                            (search-people (post-parameter "name")))))
 
           (t
            (g-compose :subjects (parse-subject-list
