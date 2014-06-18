@@ -290,14 +290,20 @@
           (scan-to-strings (car rule) (script-name*))
         (when match
           (return-from acceptor-dispatch-request
-            (let ((method (request-method*)))
+            (let ((method (request-method*))
+                  (timer (make-timer (lambda ()
+                                       (error "timeout"))
+                                     :thread *current-thread*)))
               (iter (for rule-method in (cadr rule) by #'cddr)
                     (for rule-function in (cdadr rule) by #'cddr)
                     (when (eq method rule-method)
                       (leave (with-user
                                (when *userid*
                                  (send-metric (acceptor-metric-system acceptor) :active *userid*))
-                               (apply (fdefinition rule-function) (coerce results 'list)))))
+                               (schedule-timer timer 5)
+                               (unwind-protect
+                                 (apply (fdefinition rule-function) (coerce results 'list))
+                                 (unschedule-timer timer)))))
                     (finally
                       (setf (return-code*) +http-method-not-allowed+)
                       "that method is not permitted on this URL")))))))
@@ -327,7 +333,8 @@
   (hunchentoot::with-log-stream (stream (acceptor-message-log-destination acceptor) hunchentoot::*message-log-lock*)
     (handler-case
       (flet ((error-message (destination)
-               (format destination "[~A~@[ [~A]~]] ~A ~A ~:S ~:S ~?~%"
+               (format destination "~A [~A~@[ [~A]~]] ~A ~A ~:S ~:S ~?~%"
+                       (get-universal-time)
                        (hunchentoot::iso-time)
                        log-level
                        (with-user *userid*)
