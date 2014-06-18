@@ -183,7 +183,8 @@
         (pushnew message (gethash group *group-messages-index*))))
     (index-message-folders message)
 
-    (when (eql type :reply)
+    (when (and (eql type :reply)
+               (not (eql (getf data :status) :gratitude-posted)))
       (let* ((item-id (getf data :on))
              (item (db item-id))
              (by (getf item :by))
@@ -196,12 +197,13 @@
           (with-locked-hash-table (*pending-gratitude-index*)
           (case (getf item :type)
             (:offer
-              (push result (getf (gethash (getf data :by)
-                                          *pending-gratitude-index*)
-                                 :offers)))
+              (push (cons result id)
+                    (getf (gethash (getf data :by) *pending-gratitude-index*)
+                          :offers)))
             (:request
-              (push result (getf (gethash by *pending-gratitude-index*)
-                                 :requests))))))))))
+              (push (cons result id)
+                    (getf (gethash by *pending-gratitude-index*)
+                          :requests))))))))))
 
 (defun all-message-people (message)
 "a list of people with access to a given message"

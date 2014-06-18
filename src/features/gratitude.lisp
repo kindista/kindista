@@ -121,6 +121,15 @@
         (index-gratitude gratitude-id new-data)
         new-data)))) )
 
+(defun index-gratitude-link (gratitude-id on-item-id &optional (time (get-universal-time)))
+  (with-mutex (*linked-gratitudes-mutex*)
+    (stable-sort (push (list :time time
+                             :gratiude gratitude-id
+                             :on on-item-id)
+                       *linked-gratitudes-index*)
+                 #'>
+                 :key #'(lambda (item) (getf item :time)))))
+
 (defun index-gratitude (id data)
   (let* ((author-id (getf data :author))
          (author (db author-id))
@@ -153,6 +162,9 @@
          (dolist (person people)
            (asetf (gethash person *profile-activity-index*)
                   (safe-sort (push result it) #'> :key #'result-time))))
+
+       (awhen (getf data :on)
+         (index-gratitude-link id it created))
 
        ;; unless gratitude is older than 180 days
        (unless (< (result-time result) (- (get-universal-time) 15552000))
@@ -236,7 +248,7 @@
                    :name "on-id"
                    :value (str (result-id result))
                    :onclick "this.form.submit()"
-                   :checked (when (string= on-id (strcat (result-id result)))
+                   :checked (when (eql on-id (result-id result))
                               "checked")))
       (:td
         (:div :class "option-text"
@@ -318,7 +330,9 @@
 
            (when (and pending-items on-type)
              (htm
-               (:div
+               (:div :class (s+ "gratitude-selection-list "
+                                (when (string= (getf error :field) "on-id")
+                                  "error-border"))
                  (:h3 :class (when (string= (getf error :field) "on-id") "red")
                    "Please select the "
                       (str on-type)
@@ -388,20 +402,19 @@
     (let* ((groupid (post-parameter-integer "identity-selection"))
            (adminp (group-admin-p groupid))
            (recipient-id (if adminp groupid *userid*))
-           (on-type (post-parameter-string "on-type"))
+           (posted-on-type (post-parameter-string "on-type"))
+           (on-types (cond
+                       ((string= posted-on-type "offer") :offers)
+                       ((string= posted-on-type "request") :requests)))
            (on-id (post-parameter-integer "on-id"))
+           (text (post-parameter "text"))
            (subjects (parse-subject-list (post-parameter "subject")
                                          :remove (write-to-string *userid*)))
-           (pending-items (awhen on-type
-                            (cond
-                              ((string= it "offer")
-                               (getf (gethash recipient-id
-                                              *pending-gratitude-index*)
-                                     :offers))
-                              ((string= it "request")
-                               (getf (gethash recipient-id
-                                              *pending-gratitude-index*)
-                                     :requests)))))
+           (pending-gratitudes-by-account (gethash recipient-id
+                                                   *pending-gratitude-index*))
+           (pending-item-conses ; returns '((result . reply-id)...)
+             (when on-types (getf pending-gratitudes-by-account on-types)))
+           (pending-items (mapcar #'car pending-item-conses))
            (relevant-items (when (= (length subjects) 1)
                              (remove-if-not #'(lambda (result)
                                                 (find (car subjects)
@@ -410,10 +423,10 @@
 
       (setf pending-items
         (if (= (length subjects) 1)
-          (cond
-           ((string= on-type "offer") relevant-items)
+          (case on-types
+           (:offers relevant-items)
 
-           ((string= on-type "request")
+           (:requests
             (remove nil (append relevant-items
                                 (sort
                                   (set-difference
@@ -431,9 +444,9 @@
                (gratitude-compose :subjects subjects
                                   :single-recipient single-recipient
                                   :groupid (when adminp groupid)
-                                  :text (post-parameter "text")
+                                  :text text
                                   :next (post-parameter "next")
-                                  :on-type on-type
+                                  :on-type posted-on-type
                                   :on-id on-id
                                   :error error
                                   :pending-items pending-items))
@@ -467,33 +480,48 @@
              :results (cons (search-groups (post-parameter "name"))
                             (search-people (post-parameter "name")))))
 
-          ((not on-type)
+          ((not posted-on-type)
            (g-compose :error '(:text "Please let us know what this statement of gratitude is in reference to."
                                :field "on-type")))
 
-          ((and pending-items (not (post-parameter "on-id")))
-           (g-compose :error '(:text "Please let us know what this statement of gratitude is in reference to."
+          ((and pending-items
+                (not (post-parameter "on-id"))
+                (post-parameter "create"))
+           (g-compose :error '(:text "Please select the item you are posting gratitude about from the list below."
                                :field "on-id")))
-          ((post-parameter "create")
-           (let* ((text (post-parameter "text"))
-                  (author (if adminp groupid *userid*))
-                  (new-id (create-gratitude :author author
-                                            :subjects (remove author subjects)
-                                            :text text)))
-             (cond
-               ((and subjects text)
-                (if (getf *user* :pending)
-                  (progn
-                    new-id
-                    (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
-                    (see-other (or (post-parameter "next") "/home")))
-                  (see-other (format nil "/gratitude/~A" new-id))))
-               (subjects
-                "no text")
-               ((post-parameter "text")
-                "no subject")
-               (t
-                "totally blank"))))
+
+          ((and (post-parameter "create")
+                subjects
+                text)
+
+           (let ((new-id (create-gratitude :author recipient-id
+                                           :subjects (remove recipient-id
+                                                             subjects)
+                                           :on on-id
+                                           :text text)))
+
+             (if (getf *user* :pending)
+               (progn
+                 new-id
+                 (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
+                 (see-other (or (post-parameter "next") "/home")))
+               (progn
+                 (awhen on-id
+                   (let* ((inventory-result (gethash on-id *db-results*))
+                          (pending-link (assoc inventory-result
+                                               (getf (gethash recipient-id
+                                                             *pending-gratitude-index*)
+                                                     on-types)))
+                          (reply-msg-id (cdr pending-link)))
+
+                     (modify-db reply-msg-id :status :gratitude-posted)
+
+                     (with-locked-hash-table (*pending-gratitude-index*)
+                       (asetf (getf (gethash recipient-id
+                                             *pending-gratitude-index*)
+                                    on-types)
+                              (remove pending-link it :test #'equal))))
+                 (see-other (format nil "/gratitude/~A" new-id)))))))
 
           (t
            (g-compose :subjects (parse-subject-list
