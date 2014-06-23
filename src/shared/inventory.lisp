@@ -567,7 +567,10 @@
                      (delete-pending-inventory-item id)
                      (deactivate-inventory-item id))
                    (flash (strcat (string-capitalize type) " " id " has been deleted."))
-                   (see-other (post-parameter "next"))))
+                   (see-other (if (string= (post-parameter "next")
+                                           (strcat "/" type "s/" id))
+                                "/home"
+                                (post-parameter "next"))))
 
                 ((not title)
                  (flash (s+ "Please enter a title for your " type "."))
