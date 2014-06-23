@@ -570,7 +570,7 @@
                    (see-other (if (string= (post-parameter "next")
                                            (strcat "/" type "s/" id))
                                 "/home"
-                                (post-parameter "next"))))
+                                (post-parameter "next")))))
 
                 ((not title)
                  (flash (s+ "Please enter a title for your " type "."))
