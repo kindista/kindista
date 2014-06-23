@@ -75,7 +75,7 @@
               (try-again "You need to enter your location on your <a href=\"/settings\">settings page</a> before you can create or edit matchmaker notifications."))
 
             ((post-parameter "edit-original")
-             (enter-inventory-tags :title "Edit your request"
+             (enter-inventory-tags :page-title "Edit your request"
                                    :action base-url
                                    :item-title (getf item :title)
                                    :details (getf item :details)
