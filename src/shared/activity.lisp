@@ -112,7 +112,9 @@
               (htm
                 " &middot; "
                 (str (comment-button url)))))))
-      (when (and related-items (not matchmaker)) (str related-items)))))
+
+      (when (and related-items (not matchmaker))
+        (str related-items)))))
 
         ;(unless (eql user-id *userid*)
         ;  (htm
@@ -303,6 +305,7 @@
                    :matchmaker (or (getf *user* :matchmaker)
                                    (and (or group-adminp self)
                                       (string= type "request")))
+
                    :content (inventory-item-content result
                                                     :truncate truncate
                                                     :data data
@@ -381,7 +384,8 @@
              "Tags:  "
              (str (display-tags type tags)))))
 
-    (unless (string= item-url (script-name*));image?
+    (when (and images
+               (not (string= item-url (script-name*))))
       (str (activity-item-images images item-url type)))))
 
 (defun display-tags (type tags)

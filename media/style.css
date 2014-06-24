@@ -1845,7 +1845,9 @@ div.item-matches p.inventory-match-title {
  margin: 0.4em 0;
 }
 
+
 div.reciprocity.matches {
+ clear: both;
  margin-top: 0.4em;
  font-size: 0.8em;
 }
