@@ -69,7 +69,8 @@
             (:div :class  "inventory-item-page"
               (str (inventory-activity-item result :show-distance t :show-tags t)))
             (str (item-images-html id))
-            (when (and mine matching-requests)
+            (when (and (or mine (group-admin-p by))
+                       matching-requests)
               (str (item-matches-html id :data offer
                                          :current-matches matching-requests))))
           :selected "offers"))))))

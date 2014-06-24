@@ -112,7 +112,9 @@
               (htm
                 " &middot; "
                 (str (comment-button url)))))))
-      (when (and related-items (not matchmaker)) (str related-items)))))
+
+      (when (and related-items (not matchmaker))
+        (str related-items)))))
 
         ;(unless (eql user-id *userid*)
         ;  (htm
@@ -358,7 +360,11 @@
                                   (:div :class "tags"
                                    "Tags:  "
                                    (str (display-tags type tags)))))
-                              (unless (string= item-url (script-name*));image?
+
+                              (when (and images
+                                         (not (string= item-url
+                                                       (script-name*))))
+
                                 (str (activity-item-images images
                                                            item-url
                                                            type))))
