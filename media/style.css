@@ -1571,6 +1571,11 @@ tr.select-linked-inventory div.option-text {
  margin-bottom: 0.5em;
 }
 
+tr.select-linked-inventory button {
+ margin-top: -0.2em;
+ margin-bottom: 0.5em;
+}
+
 form.matchmaker {
  margin-top: 0.5em;
  max-width: 40em;

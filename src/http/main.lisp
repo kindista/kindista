@@ -59,7 +59,7 @@
 
 (defun login-required ()
   (flash "The page you requested is only available when you are logged in to Kindista." :error t)
-  (see-other (or (referer) (url-compose "/home" "next" (request-uri*)))))
+  (see-other (url-compose "/login" "next" (request-uri*))))
 
 (defun active-status-required ()
   (flash "Sorry, you must reactivate your account to perform that action." :error t)

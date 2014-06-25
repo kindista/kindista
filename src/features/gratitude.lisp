@@ -261,7 +261,7 @@
           (:offer
             (htm
               (str (person-link (getf on-data :by)))
-              " shared with "
+              " shared a gift with "
               (str (person-link (getf gratitude-data :author)))))
           (:request
             (htm
@@ -292,7 +292,32 @@
                                        :truncate t
                                        :show-distance t)))))))
 
-(defun gratitude-compose (&key error subjects text next existing-url single-recipient groupid on-type on-id relevant-offers relevant-requests)
+(defun gratitude-compose
+  (&key error
+        subjects
+        text
+        next
+        existing-url
+        single-recipient
+        single-recipient-name
+        groupid
+        on-type
+        on-id
+        relevant-offers
+        relevant-requests
+   &aux (submit-buttons
+          (html
+            (:tr :class "select-linked-inventory" 
+              (:td)
+              (:td
+                (:button :type "submit"
+                         :class "cancel"
+                         :name "cancel"
+                         "Cancel")
+                 (:button :class "yes"
+                          :type "submit"
+                          :name "create"
+                          (str (if existing-url "Save" "Create"))))))))
   (if subjects
     (standard-page
       (if existing-url "Edit your statement of gratitude" "Express gratitude")
@@ -301,25 +326,25 @@
         (str (pending-disclaimer "statement of gratitude"))
         (:div :class "item"
          (:h2 (str (if existing-url "Edit your statement of gratitude"
-                                    "Express gratitude")))
-        (:div :class "item"
-         (:form :method "post"
-                :action (or existing-url "/gratitude/new")
-                :class "recipients"
+                     "Express gratitude")))
+         (:div :class "item"
+          (:form :method "post"
+           :action (or existing-url "/gratitude/new")
+           :class "recipients"
            (:label "About:")
            (:menu :type "toolbar" :class "recipients"
-             (unless subjects
-               (htm (:li (:em "nobody yet"))))
-             (dolist (subject subjects)
-               (htm
-                 (:li
-                   (str (db subject :name))
-                   (unless (or single-recipient existing-url)
-                     (htm
-                       (:button :class "text large x-remove" :type "submit" :name "remove" :value subject " ⨯ "))))))
-             (unless (or single-recipient existing-url)
-               (htm
-                 (:li :class "recipients" (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or group")))))
+            (unless subjects
+              (htm (:li (:em "nobody yet"))))
+            (dolist (subject subjects)
+              (htm
+                (:li
+                  (str (db subject :name))
+                  (unless (or single-recipient existing-url)
+                    (htm
+                      (:button :class "text large x-remove" :type "submit" :name "remove" :value subject " ⨯ "))))))
+            (unless (or single-recipient existing-url)
+              (htm
+                (:li :class "recipients" (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or group")))))
 
            (when subjects
              (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" subjects))))
@@ -330,66 +355,87 @@
              (awhen (groups-with-user-as-admin)
                (htm
                  (:div :class "clear"
-                   (:label :class "from" "From:")
-                   (str (identity-selection-html (or groupid *userid*)
-                                                 it
-                                                 :class "identity recipients profile-gratitude"
-                                                 :onchange "this.form.submit()"))))))
+                  (:label :class "from" "From:")
+                  (str (identity-selection-html (or groupid *userid*)
+                                                it
+                                                :class "identity recipients profile-gratitude"
+                                                :onchange "this.form.submit()"))))))
            (:textarea :rows "8" :name "text" (str text))
 
            (:div :class (s+ "gratitude-selectors "
                             (when (string= (getf error :field) "on-type")
                               "error-border"))
-             (:h3 :class (when (string= (getf error :field) "on-type") "red")
-              "This statement of gratitude is for...")
+            (:h3 :class (when (string= (getf error :field) "on-type") "red")
+             "This statement of gratitude is for...")
 
-             (:div ;:class "inline-block"
-               (:input :type "radio"
-                       :name "on-type"
-                       :value "offer"
-                       :onclick "this.form.submit()"
-                       :checked (when (string= on-type "offer") "checked"))
-               "Something "
-               "An offer I replied to on Kindista")
+            (when (and relevant-offers
+                       single-recipient-name)
+              (htm
+                (:div ;:class "inline-block"
+                  (:input :type "radio"
+                   :name "on-type"
+                   :value "offer"
+                   :onclick "this.form.submit()"
+                   :checked (when (string= on-type "offer") "checked"))
+                  "An offer posted by "
+                  (str single-recipient-name))))
 
-             (:div ;:class "inline-block"
-               (:input :type "radio"
-                       :name "on-type"
-                       :value "request"
-                       :onclick "this.form.submit()"
-                       :checked (when (string= on-type "request") "checked"))
-               "A request I made on Kindista")
+            (when relevant-requests
+              (htm
+                (:div ;:class "inline-block"
+                  (:input :type "radio"
+                   :name "on-type"
+                   :value "request"
+                   :onclick "this.form.submit()"
+                   :checked (when (string= on-type "request") "checked"))
+                  "A request I made on Kindista")))
 
-             (:div ;:class "inline-block"
-               (:input :type "radio"
-                       :name "on-type"
-                       :value "other"
-                       :onclick "this.form.submit()"
-                       :checked (when (string= on-type "other") "checked"))
-               "Something else"))
+            (when (or relevant-offers relevant-requests)
+              (htm
+                (:div ;:class "inline-block"
+                  (:input :type "radio"
+                   :name "on-type"
+                   :value "other"
+                   :onclick "this.form.submit()"
+                   :checked (when (string= on-type "other") "checked"))
+                  "Something else"))))
 
-           (when (and (or relevant-offers relevant-requests)
-                      on-type)
+           (if (and (or relevant-offers relevant-requests)
+                    on-type
+                    (not (string= on-type "other")))
              (htm
                (:div :class (s+ "gratitude-selectors "
                                 (when (string= (getf error :field) "on-id")
                                   "error-border"))
-                 (:h3 :class (when (string= (getf error :field) "on-id") "red")
-                   "Please select the "
-                      (str on-type)
-                      " you are posting gratitude about:")
+                (:h3 :class (when (string= (getf error :field) "on-id") "red")
+                 "Please select the "
+                 (str on-type)
+                 " you are posting gratitude about:")
 
                 (:table
-                  (dolist (result (if (string= on-type "offer")
-                                    relevant-offers
-                                    relevant-requests))
-                    (str (select-linked-inventory-html result :on-id on-id)))))))
+                  (loop for i from 1
+                        for result in (if (string= on-type "offer")
+                                        relevant-offers
+                                        relevant-requests)
 
-           (:p
-             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
-             (:button :class "yes" :type "submit" 
-                      :name "create" 
-                      (str (if existing-url "Save" "Create")))))))))
+                        do (str (select-linked-inventory-html result :on-id on-id))
+                        when (eql (mod i 3) 0)
+                        do (str submit-buttons)
+                        finally (unless (eql (mod i 3) 1)
+                                  (htm
+                                    (:tr (:td)
+                                     (:td (str submit-buttons)))))))))
+
+             (htm
+               (:p
+                 (:button :type "submit"
+                          :class "cancel"
+                          :name "cancel"
+                          "Cancel")
+                  (:button :class "yes"
+                   :type "submit"
+                   :name "create"
+                   (str (if existing-url "Save" "Create")))))))))))
 
     ;; else
     (gratitude-add-subject :text text :next next)))
@@ -440,6 +486,47 @@
     (gratitude-compose :subjects (parse-subject-list (get-parameter "subject"))
                        :next (referer))))
 
+(defun possible-inventory-for-gratitude
+  (thanker-id
+    &optional thankee-id
+    &aux (pending-gratitudes-by-account (gethash thanker-id
+                                                 *pending-gratitude-index*))
+         (pending-requests ; returns '((result . reply-id)...)
+           (mapcar #'car (getf pending-gratitudes-by-account :requests)))
+         (pending-offers ; returns '((result . reply-id)...)
+           (mapcar #'car (getf pending-gratitudes-by-account :offers))))
+
+    (flet ((calculate-relevant-items (pending-items all-account-items-of-type)
+             (let ((relevant-items (when thankee-id
+                                     (remove-if-not #'(lambda (result)
+                                                        (find thankee-id
+                                                              (result-people result)))
+                                                    pending-items))))
+               (remove nil
+                       (append
+                         relevant-items
+                         (sort
+                           (remove-private-items
+                             (set-difference
+                               (mapcar #'(lambda (id)
+                                           (gethash id *db-results*))
+                                       all-account-items-of-type)
+                               relevant-items))
+                           #'>
+                           :key #'result-time))))))
+
+      (list :offers (calculate-relevant-items
+                      pending-offers
+                      (when thankee-id
+                        (append
+                          (gethash thankee-id *account-inactive-offer-index*)
+                          (gethash thankee-id *offer-index*))))
+            :requests (calculate-relevant-items
+                        pending-requests
+                        (append
+                          (gethash thanker-id *account-inactive-request-index*)
+                          (gethash thanker-id *request-index*))))))
+
 (defun post-gratitudes-new ()
   (require-active-user
     (let* ((groupid (post-parameter-integer "identity-selection"))
@@ -451,53 +538,24 @@
                        ((string= posted-on-type "request") :requests)))
            (on-id (post-parameter-integer "on-id"))
            (text (post-parameter "text"))
-           (subjects (parse-subject-list (post-parameter "subject")
-                                         :remove (write-to-string *userid*)))
-           (pending-gratitudes-by-account (gethash recipient-id
-                                                   *pending-gratitude-index*))
-           (pending-requests ; returns '((result . reply-id)...)
-             (mapcar #'car (getf pending-gratitudes-by-account :requests)))
-           (pending-offers ; returns '((result . reply-id)...)
-             (mapcar #'car (getf pending-gratitudes-by-account :offers)))
-           (relevant-requests)
-           (relevant-offers))
-
-      (flet ((calculate-relevant-items (pending-items)
-               (let* ((single-subject (when (= (length subjects) 1)
-                                        (car subjects)))
-                      (relevant-items (when single-subject
-                                        (remove-if-not #'(lambda (result)
-                                                           (find (car subjects)
-                                                                 (result-people result)))
-                                                       pending-items))))
-                 (remove nil
-                         (append
-                           relevant-items
-                           (sort
-                             (remove-private-items
-                               (set-difference
-                                 (mapcar #'(lambda (id)
-                                             (gethash id *db-results*))
-                                         (case on-types
-                                           (:requests
-                                             (append
-                                                (gethash recipient-id *account-inactive-request-index*)
-                                                (gethash recipient-id *request-index*)))
-                                           (:offers
-                                             (awhen single-subject
-                                               (append
-                                                (gethash it *account-inactive-offer-index*)
-                                                (gethash it *offer-index*))))))
-                                 relevant-items))
-                             #'>
-                             :key #'result-time))))))
-
-      (asetf pending-offers (calculate-relevant-items it))
-      (asetf pending-requests (calculate-relevant-items it)))
+           (subjects (parse-subject-list
+                       (format nil "~A,~A" (post-parameter "add")
+                                           (post-parameter "subject"))
+                       :remove (write-to-string *userid*)))
+           (single-recipient (or (post-parameter-integer "single-recipient")
+                                 (when (= (length subjects) 1)
+                                   (car subjects))))
+           (single-recipient-name (db single-recipient :name))
+           (relevant-inventory (possible-inventory-for-gratitude
+                                 recipient-id
+                                 single-recipient))
+           (relevant-requests (getf relevant-inventory :requests))
+           (relevant-offers (getf relevant-inventory :offers)))
 
       (flet ((g-compose (&key single-recipient (subjects subjects) error)
                (gratitude-compose :subjects subjects
                                   :single-recipient single-recipient
+                                  :single-recipient-name single-recipient-name
                                   :groupid (when adminp groupid)
                                   :text text
                                   :next (post-parameter "next")
@@ -528,8 +586,7 @@
                :subjects (parse-subject-list (post-parameter "subject")))
              (g-compose
                :single-recipient (post-parameter "single-recipient")
-               :subjects (parse-subject-list
-                           (format nil "~A,~A" (post-parameter "add") (post-parameter "subject"))))))
+               :subjects subjects)))
 
           ((post-parameter "search")
            (g-add-subject
@@ -537,11 +594,13 @@
              :results (cons (search-groups (post-parameter "name"))
                             (search-people (post-parameter "name")))))
 
-          ((not posted-on-type)
+          ((and (or relevant-offers relevant-requests)
+                (not posted-on-type))
            (g-compose :error '(:text "Please let us know what this statement of gratitude is in reference to."
                                :field "on-type")))
 
-          ((and (or pending-offers pending-requests)
+          ((and (or (and relevant-offers (eq on-types :offers))
+                    (and relevant-requests (eq on-types :requests)))
                 (not (post-parameter "on-id"))
                 (post-parameter "create"))
            (g-compose :error '(:text "Please select the item you are posting gratitude about from the list below."
@@ -571,19 +630,19 @@
                                                      on-types)))
                           (reply-msg-id (cdr pending-link)))
 
-                     (modify-db reply-msg-id :status :gratitude-posted)
+                     (when pending-link
+                       (modify-db reply-msg-id :status :gratitude-posted)
 
-                     (with-locked-hash-table (*pending-gratitude-index*)
-                       (asetf (getf (gethash recipient-id
-                                             *pending-gratitude-index*)
-                                    on-types)
-                              (remove pending-link it :test #'equal))))
+                       (with-locked-hash-table (*pending-gratitude-index*)
+                         (asetf (getf (gethash recipient-id
+                                               *pending-gratitude-index*)
+                                      on-types)
+                                (remove pending-link it :test #'equal)))))
+
                  (see-other (format nil "/gratitude/~A" new-id)))))))
 
           (t
-           (g-compose :subjects (parse-subject-list
-                                  (post-parameter "subject")
-                                  :remove (post-parameter "remove")))))))))
+           (g-compose :subjects subjects)))))))
 
 
 (defun get-gratitude (id)

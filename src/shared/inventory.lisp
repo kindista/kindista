@@ -307,7 +307,7 @@
         #\linefeed
         from-name ", Kindista"))
 
-(defun create-reply (&key on text match-id pending-deletion (user *userid*))
+(defun create-reply (&key on text status match-id pending-deletion (user *userid*))
   (let* ((time (get-universal-time))
          (on-item (db on))
          (by (getf on-item :by))
@@ -339,6 +339,7 @@
                           (list :type :reply
                                 :on on
                                 :by user
+                                :status status
                                 :participants participants
                                 :message-folders message-folders
                                 :people people
@@ -458,6 +459,8 @@
     (let* ((id (parse-integer id))
            (item (db id))
            (by (getf item :by))
+           (reply-type (post-parameter-string "reply-type"))
+           (reply-text (post-parameter-string "reply-text"))
            (adminp (group-admin-p by))
            (next (post-parameter "next")))
 
@@ -475,25 +478,41 @@
          (pending-flash "contact other Kindista members")
          (see-other (or (referer) "/home")))
 
-        ((post-parameter "reply")
-         (flet ((reply-html (type)
-                  (inventory-item-reply type
-                                        id
-                                        item
-                                        :next next
-                                        :match (post-parameter-integer "match"))))
-           (case (getf item :type)
-             (:offer (reply-html "offer"))
-             (:request (reply-html "request"))
-             (t (not-found)))))
-
-        ((post-parameter "reply-text")
+        ((and (post-parameter-string "reply-text")
+              reply-type)
          (create-reply :on id
+                       :status (cond
+                                 ((string= reply-type "offer") :offered)
+                                 ((string= reply-type "request") :requested)
+                                 ((string= reply-type "inqiry") :inquiry)
+                                 ((string= reply-type "suggestion") :suggestion))
                        :text (post-parameter "reply-text")
                        :match-id (post-parameter-integer "match"))
          (flash "Your reply has been sent.")
          (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
          (see-other (or next (script-name*))))
+
+        ((or (post-parameter "reply")
+             (and (post-parameter "reply-text")
+                  (or (not reply-text) (not reply-type))))
+
+         (flet ((reply-html (type)
+                  (inventory-item-reply type
+                                        id
+                                        item
+                                        :text reply-text
+                                        :next next
+                                        :match (post-parameter-integer "match")
+                                        :error (unless (post-parameter "reply")
+                                                 (cond
+                                                   ((not reply-text)
+                                                    :no-message)
+                                                   ((not reply-type)
+                                                    :no-reply-type))))))
+           (case (getf item :type)
+             (:offer (reply-html "offer"))
+             (:request (reply-html "request"))
+             (t (not-found)))))
 
         ((post-parameter "love")
          (love id)
@@ -1042,7 +1061,7 @@
                      (unless (= i 1)
                        (str ", ")))))))))))))
 
-(defun inventory-item-reply (type id data &key next match)
+(defun inventory-item-reply (type id data &key next match text error)
   (let ((next (or next (get-parameter "next")))
         (url (strcat "/" type "s/" id)))
     (if (item-view-denied (result-privacy (gethash id *db-results*)))
@@ -1050,6 +1069,14 @@
       (standard-page
         "Reply"
         (html
+          (when error
+            (flash
+              (case error
+                (:no-message
+                  "Please enter a message to send.")
+                (:no-reply-type
+                  "Please indicate the type of reply you are sending."))
+              :error t))
           (:h2 "Reply to "
                (str (person-link (getf data :by) :possessive t))
                (str type))
@@ -1064,9 +1091,49 @@
             (:form :method "post" :action url
               (:input :type "hidden" :name "next" :value next)
               (:input :type "hidden" :name "match" :value match)
-              (:table :class "post"
-               (:tr
-                 (:td (:textarea :cols "1000" :rows "4" :name "reply-text"))
-                 (:td
-                   (:button :class "yes" :type "submit" :class "submit" "Reply")))))))
+
+              (:textarea :cols "1000" :rows "4" :name "reply-text" (str text))
+
+              (:div :class (when (eq error :no-reply-type) "error-border")
+               (:div ;:class "inline-block"
+                 (:input :type "radio"
+                  :name "reply-type"
+                  :value "suggestion")
+                 "I have a comment or suggestion about this "
+                 (str type)
+                 " , but I am "
+                 (:strong "NOT ")
+                 (str (if (string= type "request")
+                        "offering to fulfill it."
+                        "requesting to receive it.")))
+
+               (:div ;:class "inline-block"
+                 (:input :type "radio"
+                  :name "reply-type"
+                  :value "inquiry")
+                 "I have a question about this "
+                 (str type)
+                 " and I might "
+                 (str (if (string= type "request")
+                        "offer to fulfill it."
+                        "request to receive it.")))
+
+               (if (string= type "request")
+                 (htm
+                   (:div ;:class "inline-block"
+                     (:input :type "radio"
+                      :name "reply-type"
+                      :value "offer")
+                     "I am offering to fulfill this request."))
+
+                 (htm
+                   (:div ;:class "inline-block"
+                     (:input :type "radio"
+                      :name "reply-type"
+                      :value "request")
+                     "I am requesting to recieve this offer."))))
+
+
+              (:button :class "yes" :type "submit" :class "submit" "Reply"))))
+
         :selected (s+ type "s")))))
