@@ -86,9 +86,9 @@
           " is requesting:")
         (:div :class "recip-details"
           (awhen (getf request :title)
-            (htm (:p (:strong (:a :html url (str (html-text it)))))))
+            (htm (:div (:strong (:a :html url (str (html-text it)))))))
           (awhen (getf request :details)
-            (htm (:p (str (ellipsis it :length 120 :see-more url)))))
+            (htm (:div (str (ellipsis it :length 120 :see-more url)))))
           (when (and *userid* (not (= *userid* user-id)))
             (htm
               (:div :class "recip-reply"

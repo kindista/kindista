@@ -242,8 +242,15 @@
                                     (html-text (getf data :text)))))
                               (unless (string= item-url (script-name*))
                                 (str (activity-item-images images item-url "gift"))))
-                   :related-items (when reciprocity
-                                    (display-gratitude-reciprocities result)))))))
+                   :related-items (html
+                                    (:div
+                                      (when (getf data :on)
+                                        (str (gratitude-on-item-html
+                                               item-id
+                                               :gratitude-data data)))
+                                      (when reciprocity
+                                        (str (display-gratitude-reciprocities
+                                               result))))))))))
 
 
 (defun gift-activity-item (result)

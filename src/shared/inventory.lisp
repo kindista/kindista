@@ -1051,7 +1051,7 @@
         "Reply"
         (html
           (:h2 "Reply to "
-               (str (person-link (getf data :by) :possesive t))
+               (str (person-link (getf data :by) :possessive t))
                (str type))
           (:p
             (awhen (getf data :title)

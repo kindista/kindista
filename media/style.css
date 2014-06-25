@@ -1351,7 +1351,9 @@ img.small {
  /*background: #eee;*/
 }
 
-#menu li img, a > img {
+#menu li img,
+div.gratitude-on-item img,
+a > img {
  margin:0 0.625em 0 0;
  vertical-align:middle;
 }
@@ -1556,12 +1558,12 @@ div.error-border {
  border-color: #900;
 }
 
-div.gratitude-selection-list  h3 {
+div.gratitude-selectors h3 {
  margin-top: 0;
  margin-left: 0.3em;
 }
 
-div.gratitude-selection-list {
+div.gratitude-selectors {
  margin-top: 1em;
 }
 
@@ -1845,6 +1847,9 @@ div.item-matches p.inventory-match-title {
  margin: 0.4em 0;
 }
 
+div.gratitude-on-item {
+ 
+}
 
 div.reciprocity.matches {
  clear: both;
@@ -1852,6 +1857,7 @@ div.reciprocity.matches {
  font-size: 0.8em;
 }
 
+div.gratitude-on-item img,
 .reciprocity.matches img {
  height: 1.4em;
  width: auto;
@@ -3509,6 +3515,7 @@ input[name=reply] {
    border-radius:100%;
 }
 
+.gratitude-on-item,
 .reciprocity {
   font-size:0.9em;
 }
@@ -3519,10 +3526,16 @@ input[name=reply] {
  color:#333333;
 }
 
-.reciprocity a, .recip-details a, .tags a, .side-sug a {
+.tags a, .side-sug a {
  font-weight:normal;
 }
 
+.recip-container div,
+.gratitude-on-item div {
+ margin-top: 0.4em;
+}
+
+.gratitude-on-item,
 .recip-container {
  border-radius: 0.2em;
  font-weight:normal;
@@ -3540,6 +3553,9 @@ input[name=reply] {
  margin-top:0.3em;
 }
 
+.recip-details a {
+ cursor: pointer;
+}
 
 .recip-reply {
  float:right;
