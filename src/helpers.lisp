@@ -194,18 +194,15 @@
 "Takes an a-list of ((request . (whether the request had matching terms in the :title, :details, and/or :tags))...)  and returns a ranked list of results"
 
   (flet ((inventory-item-rank (item)
-    (let* ((result (car item))
-           (age (- (get-universal-time) (or (result-time result) 0)))
-           (loves (max 1 (length (loves (result-id result))))))
-      (+ (* (/ 50 (log (+ (/ age 86400) 6)))
-            (expt loves 0.3))
-         (if (find :title (cdr item)) 25 0)
-         (if (find :tags (cdr item)) 8 0)))))
+           (let* ((result (car item))
+                  (age (- (get-universal-time) (or (result-time result) 0)))
+                  (loves (max 1 (length (loves (result-id result))))))
+             (+ (* (/ 50 (log (+ (/ age 86400) 6)))
+                   (expt loves 0.3))
+                (if (find :title (cdr item)) 25 0)
+                (if (find :tags (cdr item)) 8 0)))))
 
-    (when (or (second alist)
-              (fourth alist)
-              (sixth alist))
-      (mapcar #'car (sort alist #'> :key #'inventory-item-rank)))))
+    (mapcar #'car (sort alist #'> :key #'inventory-item-rank))))
 
 (defun refresh-item-time-in-indexes (id &key (time (get-universal-time)))
   (let* ((result (gethash id *db-results*))
