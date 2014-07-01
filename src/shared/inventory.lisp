@@ -345,7 +345,7 @@
                                 :people people
                                 :created time)))))
 
-    (create-comment :on id :by (list user) :text text)
+    (create-comment :on id :by (list user) :text text :reply-type status)
     (when match-id
       (case (getf on-item :type)
         (:offer (hide-matching-offer match-id on))
@@ -484,7 +484,7 @@
                        :status (cond
                                  ((string= reply-type "offer") :offered)
                                  ((string= reply-type "request") :requested)
-                                 ((string= reply-type "inqiry") :inquiry)
+                                 ((string= reply-type "inquiry") :inquiry)
                                  ((string= reply-type "suggestion") :suggestion))
                        :text (post-parameter "reply-text")
                        :match-id (post-parameter-integer "match"))

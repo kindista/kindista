@@ -204,6 +204,179 @@
 (defun go-conversation (id)
   (moved-permanently (strcat "/conversations/" id)))
 
+(defun conversation-comments (conversation comment-ids latest-seen)
+  (html
+    (dolist (comment-id comment-ids)
+      (let* ((data (db comment-id))
+             (participants (getf conversation :participants))
+             (by (car (getf data :by)))
+             (for (cdr (getf data :by)))
+             (bydata (db by))
+             (text (if (and (= comment-id (first comment-ids))
+                            (getf conversation :deleted-item-type))
+                     (deleted-invalid-item-reply-text
+                       (db (car (remove by participants)) :name)
+                       (getf bydata :name)
+                       (case (getf conversation :deleted-item-type)
+                         (:offer "offer")
+                         (:request "request"))
+                       (getf data :text))
+                     (getf data :text))))
+
+          (str (conversation-comment-html data
+                                          by
+                                          (db by :name)
+                                          for
+                                          (db for :name)
+                                          text
+                                          (when (>= (or latest-seen 0)
+                                                    comment-id))))))))
+
+(defun conversation-comment-html (data by by-name for for-name text newp)
+  (card
+    (html
+      (str (h3-timestamp (getf data :created)))
+      (:p (:a :href (s+ "/people/" (username-or-id by))
+           (str by-name))
+          (when for
+            (htm
+              " for "
+              (:a :href (s+ "/groups/" (username-or-id ))
+               (str for-name)))))
+
+      (:p :class (when newp "new")
+        (str (regex-replace-all "\\n" text "<br>"))))))
+
+(defun conversation-html (data type with on-item comments-html &key deleted-type on-type error)
+  (standard-page
+    (aif (getf data :subject)
+      (ellipsis it :length 24)
+      "Conversation")
+    (html
+      (str (menu-horiz "actions"
+                       (html (:a :href "/messages" "back to messages"))
+                       (html (:a :href "#reply" "reply"))
+                       (when (and (eql type :reply)
+                                  (eql (getf data :by) *userid*)
+                                  (eql on-type :offer))
+                         (html
+                           (:a :href
+                               (str (url-compose "/gratitude/new"
+                                                 "subject"
+                                                 (getf on-item :by)))
+                                "express gratitude"))))
+                      ;(when (eq type :conversation)
+                      ;  (html (:a :href (strcat "/conversations/" id "/leave") "leave conversation")))
+                      ;  removed until we add the ability for
+                      ;  individual members of a group to leave the
+                      ;  conversation and for the group to leave
+                      ;  when its members have
+                       )
+      (str
+        (card
+          (html
+            (when (getf data :subject)
+              (htm
+                (:h2 "Subject: " (str (getf data :subject)))))
+            (case type
+              (:conversation
+                (if with
+                  (htm (:p "with " (str (name-list-all with))))
+                  (htm (:p :class "error" "Everybody else has left this conversation."))))
+              (:reply
+                (flet ((inventory-url ()
+                        (html
+                          (case on-type
+                            (:offer
+                             (htm (:a :href (strcat "/offers/" (getf data :on))
+                                   "offer")))
+                            (:request
+                             (htm (:a :href (strcat "/requests/" (getf data :on))
+                                   "request")))
+                            (t (case deleted-type
+                                 (:offer (htm "offer"))
+                                 (:request (htm "request"))
+                                 (t (htm (:span :class "none" "deleted offer or request")))))))))
+
+                  (if (eql (getf data :by) *userid*)
+                    (htm
+                      (:p
+                      "You replied to "
+                      (str (person-link (or (getf on-item :by)
+                                            (first with))))
+                      "'s "
+                      (str (inventory-url))
+                      ":"))
+                    (htm
+                      (:p
+                        "A conversation with "
+                        (str (person-link (getf data :by)))
+                        " about "
+                        (if (eq (getf on-item :by) *userid*)
+                          (str "your ")
+                          (str (s+ (db (getf on-item :by) :name)
+                                   "'s ")))
+                        (str (inventory-url))
+                        ":"))))
+                  (htm (:blockquote :class "review-text"
+                         (awhen (getf on-item :title)
+                           (htm
+                             (:strong (str it))
+                             (:br)
+                             (:br)))
+                         (str (html-text (or (getf on-item :details)
+                                             (getf data :deleted-item-text)))))))))))
+
+      (str comments-html)
+
+      (:div :class "item" :id "reply"
+        (:h4 "post a reply")
+        (:form :method "post" :action (script-name*)
+          (:textarea :cols "150" :rows "4" :name "text")
+
+            (:div :class (when (eq error :no-reply-type)
+                           "error-border")
+              (:div ;:class "inline-block"
+                (:input :type "radio"
+                 :name "reply-type"
+                 :value "suggestion")
+                "I have a comment or suggestion about this "
+                (str type)
+                " , but I am "
+                (:strong "NOT ")
+                (str (if (string= type "request")
+                       "offering to fulfill it."
+                       "requesting to receive it.")))
+
+              (:div ;:class "inline-block"
+                (:input :type "radio"
+                 :name "reply-type"
+                 :value "inquiry")
+                "I have a question about this "
+                (str type)
+                " and I might "
+                (str (if (string= type "request")
+                       "offer to fulfill it."
+                       "request to receive it.")))
+
+              (if (string= type "request")
+                (htm
+                  (:div ;:class "inline-block"
+                    (:input :type "radio"
+                     :name "reply-type"
+                     :value "offer")
+                    "I am offering to fulfill this request."))
+
+                (htm
+                  (:div ;:class "inline-block"
+                    (:input :type "radio"
+                     :name "reply-type"
+                     :value "request")
+                    "I am requesting to recieve this offer."))))
+          (:button :class "yes" :type "submit" :class "submit" "Send"))))
+
+    :selected "messages"))
+
 (defun get-conversation (id)
 "when called, (modify-db conversation-id :people '((userid . this-comment-id) (other-user-id . whatever)))"
   (require-user
@@ -218,144 +391,38 @@
       (if (or (eq type :reply)
               (eq type :conversation))
         (if valid-mailboxes
-          (let* ((it (db id))
+          (let* ((conversation (db id))
                  (person (assoc-assoc *userid* people))
+                 (latest-comment (getf conversation :latest-comment))
                  (latest-seen (or (when (numberp (cdr person))
                                     (cdr person))
-                                  (getf it :latest-comment)))
-                 (with (remove *userid* (getf it :participants)))
-                 (item (db (getf it :on)))
-                 (deleted-type (getf it :deleted-item-type))
-                 (original-message-type (getf item :type)))
-            (standard-page
-              (aif (getf it :subject)
-                (ellipsis it :length 24)
-                "Conversation")
-              (html
-                (str (menu-horiz "actions"
-                                 (html (:a :href "/messages" "back to messages"))
-                                 (html (:a :href "#reply" "reply"))
-                                 (when (and (eql type :reply)
-                                            (eql (getf it :by) *userid*)
-                                            (eql original-message-type :offer))
-                                   (html
-                                     (:a :href
-                                         (str (url-compose "/gratitude/new"
-                                                           "subject"
-                                                           (getf item :by)))
-                                          "express gratitude"))))
-                                ;(when (eq type :conversation)
-                                ;  (html (:a :href (strcat "/conversations/" id "/leave") "leave conversation")))
-                                ;  removed until we add the ability for
-                                ;  individual members of a group to leave the
-                                ;  conversation and for the group to leave
-                                ;  when its members have
-                                 )
-                (str
-                  (card
-                    (html
-                      (when (getf it :subject)
-                        (htm
-                          (:h2 "Subject: " (str (getf it :subject)))))
-                      (case type
-                        (:conversation
-                          (if with
-                            (htm (:p "with " (str (name-list-all with))))
-                            (htm (:p :class "error" "Everybody else has left this conversation."))))
-                        (:reply
-                          (flet ((inventory-url ()
-                                  (html
-                                    (case original-message-type
-                                      (:offer
-                                       (htm (:a :href (strcat "/offers/" (getf it :on))
-                                             "offer")))
-                                      (:request
-                                       (htm (:a :href (strcat "/requests/" (getf it :on))
-                                             "request")))
-                                      (t (case deleted-type
-                                           (:offer (htm "offer"))
-                                           (:request (htm "request"))
-                                           (t (htm (:span :class "none" "deleted offer or request")))))))))
+                                  latest-comment))
+                 (with (remove *userid* (getf conversation :participants)))
+                 (on-item (db (getf conversation :on)))
+                 (deleted-type (getf conversation :deleted-item-type))
+                 (on-type (getf on-item :type))
+                 (comments (gethash id *comment-index*)))
 
-                            (if (eql (getf it :by) *userid*)
-                              (htm
-                                (:p
-                                "You replied to "
-                                (str (person-link (or (getf item :by)
-                                                      (first with))))
-                                "'s "
-                                (str (inventory-url))
-                                ":"))
-                              (htm
-                                (:p
-                                  "A conversation with "
-                                  (str (person-link (getf it :by)))
-                                  " about "
-                                  (if (eq (getf item :by) *userid*)
-                                    (str "your ")
-                                    (str (s+ (db (getf item :by) :name)
-                                             "'s ")))
-                                  (str (inventory-url))
-                                  ":"))))
-                            (htm (:blockquote :class "review-text"
-                                   (awhen (getf item :title)
-                                     (htm
-                                       (:strong (str it))
-                                       (:br)
-                                       (:br)))
-                                   (str (html-text (or (getf item :details)
-                                                       (getf it :deleted-item-text)))))))))))
+            (pprint "trigger")
+            (terpri)
+            (conversation-html conversation
+                               type
+                               with
+                               on-item
+                               (conversation-comments conversation
+                                                      comments
+                                                      latest-seen)
+                               :deleted-type deleted-type
+                               :on-type on-type)
 
-                (let ((comments (gethash id *comment-index*)))
-                  (dolist (comment-id comments)
-                    (let* ((data (db comment-id))
-                           (participants (getf it :participants))
-                           (by (car (getf data :by)))
-                           (for (cdr (getf data :by)))
-                           (bydata (db by))
-                           (text (if (and (= comment-id (first comments))
-                                          (getf it :deleted-item-type))
-                                   (deleted-invalid-item-reply-text
-                                     (db (car (remove by participants)) :name)
-                                     (getf bydata :name)
-                                     (case (getf it :deleted-item-type)
-                                       (:offer "offer")
-                                       (:request "request"))
-                                     (getf data :text))
-                                   (getf data :text))))
-                      (str
-                        (card
-                          (html
-                            (str (h3-timestamp (getf data :created)))
-                            (:p (:a :href (s+ "/people/" (username-or-id by))
-                                 (str (getf bydata :name)))
-                                (when for
-                                  (htm
-                                    " for "
-                                    (:a :href (s+ "/groups/" (username-or-id ))
-                                     (str (db for :name))))))
-
-                            (:p :class (when (>= (or latest-seen 0) comment-id) "new")
-                              (str (regex-replace-all "\\n" text "<br>")))))))))
-
-                (:div :class "item" :id "reply"
-                  (:h4 "post a reply")
-                  (:form :method "post" :action (script-name*)
-                    (:table :class "post"
-                      (:tr
-                        (:td (:textarea :cols "150" :rows "4" :name "text"))
-                        (:td
-                          (:button :class "yes" :type "submit" :class "submit" "Send"))))))
-
-                (when (or (not (eql (message-latest-comment message)
-                                    (cdr (assoc-assoc *userid* (message-people message)))))
-                          (member *userid* (getf (message-folders message) :unread)))
-                  (update-folder-data message :read :last-read-comment (message-latest-comment message)))
-                ; get most recent comment seen
-                ; get comments for
-              )
-
-              :selected "messages"))
+             ; get most recent comment seen
+             ; get comments for
+             (when (or (not (eql (message-latest-comment message)
+                                 (cdr (assoc-assoc *userid*
+                                                   (message-people message)))))
+                       (member *userid*
+                               (getf (message-folders message) :unread)))
+              (update-folder-data message :read :last-read-comment (message-latest-comment message))))
 
           (permission-denied))
       (not-found)))))

@@ -20,11 +20,12 @@
 (defun new-comment-notice-handler ()
   (send-comment-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-comment (&key on (by (list *userid*)) text (time (get-universal-time)))
+(defun create-comment (&key on (by (list *userid*)) text (time (get-universal-time)) reply-type)
   (let* ((id (insert-db (list :type :comment
                               :on on
                               :by by ;(personid . groupid)
                               :text text
+                              :reply-type reply-type
                               :created time)))
          (on-message (gethash on *db-messages*))
          (on-type (message-type on-message))

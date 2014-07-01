@@ -98,6 +98,9 @@
 (defstruct result
   latitude longitude time tags people id type privacy)
 
+(defun get-result (id)
+  (gethash id *db-results*))
+
 (defstruct message
   id ; message-id
   latest-comment ; latest comment on the conversation/reply
