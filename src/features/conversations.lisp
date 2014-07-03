@@ -403,26 +403,25 @@
                  (on-type (getf on-item :type))
                  (comments (gethash id *comment-index*)))
 
-            (pprint "trigger")
-            (terpri)
-            (conversation-html conversation
-                               type
-                               with
-                               on-item
-                               (conversation-comments conversation
-                                                      comments
-                                                      latest-seen)
-                               :deleted-type deleted-type
-                               :on-type on-type)
+            (prog1
+              (conversation-html conversation
+                                 type
+                                 with
+                                 on-item
+                                 (conversation-comments conversation
+                                                        comments
+                                                        latest-seen)
+                                 :deleted-type deleted-type
+                                 :on-type on-type)
 
-             ; get most recent comment seen
-             ; get comments for
-             (when (or (not (eql (message-latest-comment message)
-                                 (cdr (assoc-assoc *userid*
-                                                   (message-people message)))))
-                       (member *userid*
-                               (getf (message-folders message) :unread)))
-              (update-folder-data message :read :last-read-comment (message-latest-comment message))))
+              ; get most recent comment seen
+              ; get comments for
+              (when (or (not (eql (message-latest-comment message)
+                                  (cdr (assoc-assoc *userid*
+                                                    (message-people message)))))
+                        (member *userid*
+                                (getf (message-folders message) :unread)))
+                (update-folder-data message :read :last-read-comment (message-latest-comment message)))))
 
           (permission-denied))
       (not-found)))))
