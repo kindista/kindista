@@ -140,10 +140,11 @@
 "The people field for a conversation is a p-list of the status of the conversation for each participant: (:unread ((personid . last-read-comment)) ... "
   (let* ((type (getf data :type))
          (time (case type
-                 (:conversation 
+                 (:conversation
                   (db (getf data :latest-comment) :created))
                  (:transaction
-                   (getf (car (getf data :log)) :time))
+                   (or (getf (car (getf data :log)) :time)
+                       (getf data :latest-comment :created)))
                  ((or :group-membership-invitation
                       :group-membership-request)
                   (or (getf data :resent)
@@ -333,6 +334,8 @@
                          (:conversation
                            (str (conversation-inbox-item item groups)))
                          (:transaction
+                           (pprint item)
+                           (terpri)
                            (str (transaction-inbox-item item groups)))
                          (:contact-n
                            (htm
@@ -507,15 +510,15 @@
          (latest (message-latest-comment message))
          (comment-data (db latest))
          (comment-by (car (getf comment-data :by)))
-         (original-message (db (getf transaction :on)))
+         (inventory-item (db (getf transaction :on)))
          (deleted-type (getf transaction :deleted-item-type))
-         (original-message-type (or (getf original-message :type)
-                                 deleted-type))
+         (inventory-item-type (or (getf inventory-item :type)
+                                  deleted-type))
          (participants (db id :participants))
          (group-name (cdr (assoc (car participants) groups)))
-         (with (or (getf original-message :by)
+         (with (or (getf inventory-item :by)
                    (first (remove *userid* participants))))
-         (comments (length (gethash id *comment-index*)))
+         (comments (length (getf transaction :log)))
          (text (if (and (= comments 1)
                         deleted-type)
                  (deleted-invalid-item-reply-text
@@ -529,7 +532,7 @@
 
     (flet ((inventory-url ()
              (html
-               (case original-message-type
+               (case inventory-item-type
                  (:offer
                   (htm (:a :href (strcat "/offers/" (getf transaction :on))
                         "offer")))
@@ -565,8 +568,8 @@
 
         (:p :class "text"
           (:span :class "title"
-            (str (transaction-url (ellipsis (or (getf original-message :title)
-                                                 (getf original-message :details))
+            (str (transaction-url (ellipsis (or (getf inventory-item :title)
+                                                (getf inventory-item :details))
                                              :length 30)))
             (when (> comments 1)
               (htm

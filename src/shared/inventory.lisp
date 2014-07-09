@@ -22,7 +22,16 @@
     (let* ((data (db id))
            (type (getf data :type)))
       (when (eq type :reply)
-        (modify-db id :type :transaction)))))
+        (let ((comments (gethash id *comment-index*))
+              (log))
+          (dolist (comment-id comments)
+            (let ((data (db comment-id)))
+              (setf log (cons (list :time (getf data :created)
+                                    :party (getf data :by)
+                                    :comment comment-id)
+                              log))))
+          (modify-db id :type :transaction
+                        :log (remove nil log)))))))
 
 (defun mark-recent-inventory-active ()
 "To fix a bug introduced in commit f24b715bd4bb893f8bc6fc037910ee677b3e59dd in which new inventory items were not being marked as active"
@@ -357,7 +366,7 @@
                                        :time time))))
 
     (modify-db id :log (list (list :time time
-                                   :party userid
+                                   :party (list userid)
                                    :action action
                                    :comment comment-id)))
     (when match-id

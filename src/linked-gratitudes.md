@@ -8,14 +8,14 @@
 
 ## Tracking inventory item transaction conversations
 [x] change replies to transactions
-[ ] change data storage for new transactions (participant roles)
 [x] create a transaction log property for each transaction
      - (time person action &optional comment)
-[ ] write a function for data migration
+[x] write a function for data migration
+     - create a :log of all old comments
 [ ] edit transaction inbox item, conversation view, email notification as necessary (even when no comment has occured)
 [ ] test new email notification
 [ ] choose options and language to display based on current data structure (current state of participant role)
-[ ] change data structure as necessary with each new comment
+[ ] change :log as necessary with each new comment
 [ ] prompt statement of gratitude as necessary (in inbox, through email, through (see-other...) etc.
 
 ## TEST before server migration
@@ -24,6 +24,6 @@
 [ ] stop[ ]acceptor
 [ ] ,d on migrate[ ]to[ ]new[ ]transaction[ ]format
 [ ] quickload
-[ ] load[ ]db
+[ ] load-db
 [ ] pray
 
