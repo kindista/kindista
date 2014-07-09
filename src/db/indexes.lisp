@@ -26,6 +26,8 @@
      (defvar ,name (make-hash-table :synchronized t ,@flags))))
 
 (defun clear-indexes ()
+  (clrhash *db-results*)
+  (clrhash *db-messages*)
   (dolist (index *indexes*)
     (clrhash (symbol-value index)))
   (setf *feedback-index* ()
