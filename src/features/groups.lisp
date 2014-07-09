@@ -265,7 +265,7 @@
         (let ((message-id (message-id message))
               (people (message-people message)))
           (case (message-type message )
-            ((or :reply :conversation)
+            ((or :transaction :conversation)
              (setf (message-people message)
                    (subst pre-existing-duplicate-id id people))
              (modify-db message-id :people (message-people message))))))

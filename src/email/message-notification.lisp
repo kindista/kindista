@@ -21,9 +21,9 @@
   (let* ((comment (db comment-id)) ; get the comment
          (on-id (getf comment :on))
          (on-item (db on-id))  ; get the conversation
-         (on-type (getf on-item :type)) ; :converation or :reply
+         (on-type (getf on-item :type)) ; :converation or :transaction
          (participants (getf on-item :participants))
-         (inventory-item (db (getf on-item :on))) ; when reply, get inventory item
+         (inventory-item (db (getf on-item :on))) ; when transaction, get inventory item
          (inventory-type (if (eq (getf inventory-item :type) :request)
                            "request" "offer"))
          (inventory-text (or (getf inventory-item :title)
@@ -91,7 +91,7 @@
                  (getf comment :text))))
 
     (flet ((subject-text (groupid)
-             (if (eq on-type :reply)
+             (if (eq on-type :transaction)
                (if (eql sender-id inventory-poster)
                  (s+ sender-name " has replied to your question about their " inventory-type ":")
                  (s+ sender-name " has replied to "

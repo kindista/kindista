@@ -103,11 +103,11 @@
 
 (defstruct message
   id ; message-id
-  latest-comment ; latest comment on the conversation/reply
+  latest-comment ; latest comment on the conversation/transaction
   people ; an a-list of ((person-id . groupid) . (or last-read-comment :read))
   folders ; a p-list of folders for people e.g. (:inbox (userids) etc,)
   time ; time of the most recent comment, otherwise time created
-  type ; :conversation, :reply, or :gratitude
+  type ; :conversation, :transaction, or :gratitude
 )
 
 (defstruct alias
@@ -543,7 +543,8 @@
     (:group-membership-request (index-group-membership-request id data))
     (:group-membership-invitation (index-group-membership-invitation id data))
     (:contact-n (index-contact-notification id data))
-    ((or :reply :conversation) (index-message id data))))
+    ;; :reply can be removed once transactions have been fully implemented
+    ((or :reply :transaction :conversation) (index-message id data))))
 
 (defun contacts-alphabetically (&optional (user *user*))
   (sort (iter (for contact in (getf user :following))

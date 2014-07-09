@@ -17,6 +17,13 @@
 
 (in-package :kindista)
 
+(defun migrate-to-new-transaction-format ()
+  (dolist (id (hash-table-keys *db*))
+    (let* ((data (db id))
+           (type (getf data :type)))
+      (when (eq type :reply)
+        (modify-db id :type :transaction)))))
+
 (defun mark-recent-inventory-active ()
 "To fix a bug introduced in commit f24b715bd4bb893f8bc6fc037910ee677b3e59dd in which new inventory items were not being marked as active"
   (dolist (id (hash-table-keys *db*))
@@ -307,12 +314,12 @@
         #\linefeed
         from-name ", Kindista"))
 
-(defun create-reply (&key on text status match-id pending-deletion (user *userid*))
+(defun create-transaction (&key on text action match-id pending-deletion (userid *userid*))
   (let* ((time (get-universal-time))
          (on-item (db on))
          (by (getf on-item :by))
-         (participants (list user by))
-         (senders (mailbox-ids (list user)))
+         (participants (list userid by))
+         (senders (mailbox-ids (list userid)))
          (bys (mailbox-ids (list by)))
          (sender-boxes (mapcar #'(lambda (mailbox)
                                    (cons mailbox :read))
@@ -323,29 +330,36 @@
          (people (append by-boxes sender-boxes))
          (people-ids (mapcar #'car (remove-duplicates (append senders bys))))
          (message-folders (list :inbox people-ids
-                                :unread (remove user people-ids)))
+                                :unread (remove userid people-ids)))
          (id (insert-db (if pending-deletion
-                          (list :type :reply
+                          (list :type :transaction
                                 :on on
                                 :deleted-item-text (getf on-item :text)
                                 :deleted-item-details (getf on-item :details)
                                 :deleted-item-title (getf on-item :title)
                                 :deleted-item-type (getf on-item :type)
-                                :by user
+                                :by userid
                                 :participants participants
                                 :message-folders message-folders
                                 :people people
                                 :created time)
-                          (list :type :reply
+                          (list :type :transaction
                                 :on on
-                                :by user
-                                :status status
+                                :by userid
                                 :participants participants
                                 :message-folders message-folders
                                 :people people
-                                :created time)))))
+                                :created time))))
+         (comment-id (when text
+                       (create-comment :on id
+                                       :by (list userid)
+                                       :text text
+                                       :time time))))
 
-    (create-comment :on id :by (list user) :text text :reply-type status)
+    (modify-db id :log (list (list :time time
+                                   :party userid
+                                   :action action
+                                   :comment comment-id)))
     (when match-id
       (case (getf on-item :type)
         (:offer (hide-matching-offer match-id on))
@@ -459,7 +473,7 @@
     (let* ((id (parse-integer id))
            (item (db id))
            (by (getf item :by))
-           (reply-type (post-parameter-string "reply-type"))
+           (action-type (post-parameter-string "action-type"))
            (reply-text (post-parameter-string "reply-text"))
            (adminp (group-admin-p by))
            (next (post-parameter "next")))
@@ -479,22 +493,23 @@
          (see-other (or (referer) "/home")))
 
         ((and (post-parameter-string "reply-text")
-              reply-type)
-         (create-reply :on id
-                       :status (cond
-                                 ((string= reply-type "offer") :offered)
-                                 ((string= reply-type "request") :requested)
-                                 ((string= reply-type "inquiry") :inquiry)
-                                 ((string= reply-type "suggestion") :suggestion))
-                       :text (post-parameter "reply-text")
-                       :match-id (post-parameter-integer "match"))
+              action-type)
+         (create-transaction
+           :on id
+           :action (cond
+                     ((string= action-type "offer") :offered)
+                     ((string= action-type "request") :requested)
+                     ((string= action-type "inquiry") :inquired)
+                     ((string= action-type "suggestion") :suggested))
+           :text (post-parameter "reply-text")
+           :match-id (post-parameter-integer "match"))
          (flash "Your reply has been sent.")
          (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
          (see-other (or next (script-name*))))
 
         ((or (post-parameter "reply")
              (and (post-parameter "reply-text")
-                  (or (not reply-text) (not reply-type))))
+                  (or (not reply-text) (not action-type))))
 
          (flet ((reply-html (type)
                   (inventory-item-reply type
@@ -507,8 +522,8 @@
                                                  (cond
                                                    ((not reply-text)
                                                     :no-message)
-                                                   ((not reply-type)
-                                                    :no-reply-type))))))
+                                                   ((not action-type)
+                                                    :no-action-type))))))
            (case (getf item :type)
              (:offer (reply-html "offer"))
              (:request (reply-html "request"))
@@ -605,9 +620,9 @@
 
                 ((post-parameter "delete-inappropriate-item")
                  (require-admin
-                   (create-reply :on id
-                                 :pending-deletion t
-                                 :text (post-parameter "explanation"))
+                   (create-transaction :on id
+                                       :pending-deletion t
+                                       :text (post-parameter "explanation"))
                    (if (db by :pending)
                      (delete-pending-inventory-item id)
                      (deactivate-inventory-item id))
@@ -1074,7 +1089,7 @@
               (case error
                 (:no-message
                   "Please enter a message to send.")
-                (:no-reply-type
+                (:no-action-type
                   "Please indicate the type of reply you are sending."))
               :error t))
           (:h2 "Reply to "
@@ -1094,10 +1109,10 @@
 
               (:textarea :cols "1000" :rows "4" :name "reply-text" (str text))
 
-              (:div :class (when (eq error :no-reply-type) "error-border")
+              (:div :class (when (eq error :no-action-type) "error-border")
                (:div ;:class "inline-block"
                  (:input :type "radio"
-                  :name "reply-type"
+                  :name "action-type"
                   :value "suggestion")
                  "I have a comment or suggestion about this "
                  (str type)
@@ -1109,7 +1124,7 @@
 
                (:div ;:class "inline-block"
                  (:input :type "radio"
-                  :name "reply-type"
+                  :name "action-type"
                   :value "inquiry")
                  "I have a question about this "
                  (str type)
@@ -1122,14 +1137,14 @@
                  (htm
                    (:div ;:class "inline-block"
                      (:input :type "radio"
-                      :name "reply-type"
+                      :name "action-type"
                       :value "offer")
                      "I am offering to fulfill this request."))
 
                  (htm
                    (:div ;:class "inline-block"
                      (:input :type "radio"
-                      :name "reply-type"
+                      :name "action-type"
                       :value "request")
                      "I am requesting to recieve this offer."))))
 

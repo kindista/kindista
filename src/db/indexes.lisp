@@ -63,8 +63,8 @@
 (defindex *metaphone-index* :test 'equalp)
 (defindex *pending-person-items-index*)
 (defindex *pending-gratitude-index*)
-;; key=account-id, val=(:offers (list (result . reply-id))
-;;                      :requests (list (result . reply-id)))
+;; key=account-id, val=(:offers (list (result . transaction-id))
+;;                      :requests (list (result . transaction-id)))
 
 (defindex *people-geo-index*)
 (defindex *person-alias-index*)

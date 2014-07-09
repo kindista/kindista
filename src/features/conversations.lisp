@@ -256,7 +256,7 @@
       (str (menu-horiz "actions"
                        (html (:a :href "/messages" "back to messages"))
                        (html (:a :href "#reply" "reply"))
-                       (when (and (eql type :reply)
+                       (when (and (eql type :transaction)
                                   (eql (getf data :by) *userid*)
                                   (eql on-type :offer))
                          (html
@@ -283,7 +283,7 @@
                 (if with
                   (htm (:p "with " (str (name-list-all with))))
                   (htm (:p :class "error" "Everybody else has left this conversation."))))
-              (:reply
+              (:transaction
                 (flet ((inventory-url ()
                         (html
                           (case on-type
@@ -338,7 +338,7 @@
                            "error-border")
               (:div ;:class "inline-block"
                 (:input :type "radio"
-                 :name "reply-type"
+                 :name "action-type"
                  :value "suggestion")
                 "I have a comment or suggestion about this "
                 (str type)
@@ -350,7 +350,7 @@
 
               (:div ;:class "inline-block"
                 (:input :type "radio"
-                 :name "reply-type"
+                 :name "action-type"
                  :value "inquiry")
                 "I have a question about this "
                 (str type)
@@ -363,14 +363,14 @@
                 (htm
                   (:div ;:class "inline-block"
                     (:input :type "radio"
-                     :name "reply-type"
+                     :name "action-type"
                      :value "offer")
                     "I am offering to fulfill this request."))
 
                 (htm
                   (:div ;:class "inline-block"
                     (:input :type "radio"
-                     :name "reply-type"
+                     :name "action-type"
                      :value "request")
                     "I am requesting to recieve this offer."))))
           (:button :class "yes" :type "submit" :class "submit" "Send"))))
@@ -388,7 +388,7 @@
                                   collect person))
            (type (message-type message)))
 
-      (if (or (eq type :reply)
+      (if (or (eq type :transaction)
               (eq type :conversation))
         (if valid-mailboxes
           (let* ((conversation (db id))

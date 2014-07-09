@@ -20,9 +20,8 @@
 (defun new-gratitude-notice-handler ()
   (send-gratitude-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-gratitude (&key author subjects text on)
-  (let* ((time (get-universal-time))
-         (people-list (mailbox-ids subjects))
+(defun create-gratitude (&key author subjects text on (time (get-universal-time)))
+  (let* ((people-list (mailbox-ids subjects))
          (people (mapcar #'(lambda (mailbox)
                              (cons mailbox :unread))
                          people-list))
@@ -491,9 +490,9 @@
     &optional thankee-id
     &aux (pending-gratitudes-by-account (gethash thanker-id
                                                  *pending-gratitude-index*))
-         (pending-requests ; returns '((result . reply-id)...)
+         (pending-requests ; returns '((result . transaction-id)...)
            (mapcar #'car (getf pending-gratitudes-by-account :requests)))
-         (pending-offers ; returns '((result . reply-id)...)
+         (pending-offers ; returns '((result . transaction-id)...)
            (mapcar #'car (getf pending-gratitudes-by-account :offers))))
 
     (flet ((calculate-relevant-items (pending-items all-account-items-of-type)
@@ -610,11 +609,13 @@
                 subjects
                 text)
 
-           (let ((new-id (create-gratitude :author recipient-id
-                                           :subjects (remove recipient-id
-                                                             subjects)
-                                           :on on-id
-                                           :text text)))
+           (let* ((time (get-universal-time))
+                  (new-id (create-gratitude :author recipient-id
+                                            :subjects (remove recipient-id
+                                                              subjects)
+                                            :on on-id
+                                            :time time
+                                            :text text)))
 
              (if (getf *user* :pending)
                (progn
@@ -624,20 +625,25 @@
                (progn
                  (awhen on-id
                    (let* ((inventory-result (gethash on-id *db-results*))
-                          (pending-link (assoc inventory-result
-                                               (getf (gethash recipient-id
-                                                             *pending-gratitude-index*)
-                                                     on-types)))
-                          (reply-msg-id (cdr pending-link)))
+                          (pending-association (assoc inventory-result
+                                                 (getf (gethash recipient-id
+                                                               *pending-gratitude-index*)
+                                                       on-types)))
+                          (transaction-id (cdr pending-association)))
 
-                     (when pending-link
-                       (modify-db reply-msg-id :status :gratitude-posted)
+                     (when pending-association
+                       (amodify-db transaction-id
+                                   :log (cons (list :time time
+                                                    :party recipient-id
+                                                    :action :gratitude-posted
+                                                    :comment new-id)
+                                              it))
 
                        (with-locked-hash-table (*pending-gratitude-index*)
                          (asetf (getf (gethash recipient-id
                                                *pending-gratitude-index*)
                                       on-types)
-                                (remove pending-link it :test #'equal)))))
+                                (remove pending-association it :test #'equal)))))
 
                  (see-other (format nil "/gratitude/~A" new-id)))))))
 

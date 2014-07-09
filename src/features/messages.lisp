@@ -32,48 +32,48 @@
                   (gethash userid *person-mailbox-index*))
                 :unread)))
 
-(defun migrate-to-new-inboxes ()
-  (dolist (id (hash-table-keys *db*))
-    (let* ((data (db id))
-           (latest-comment (getf data :latest-comment))
-           (type (getf data :type))
-           (old-people (getf data :people))
-           (new-people nil)
-           (participants nil)
-           (inbox nil))
-      (case type
-        ((or :conversation :reply)
-         (dolist (person old-people)
-           (let ((new-person (cons (list (car person)) (cdr person))))
-             (when (or (and (cdr person)
-                          (= (cdr person) latest-comment))
-                     (equal (db latest-comment :by) (car person))
-                     (equal (db latest-comment :by) (list (car person)))
-                     (<= (db latest-comment :created)
-                         (or (db (car person) :last-checked-mail) 0)))
-                 (setf (cdr new-person) latest-comment))
-             (asetf new-people (push new-person it))
-             (asetf participants (push (car person) it))
-             (asetf inbox (push (car person) it))))
-         (modify-db id :people new-people
-                       :message-folders (list :inbox inbox)
-                       :participants participants))
-        (:gratitude
-         (dolist (subject (getf data :subjects))
-           (let ((new-person (cons (list subject) nil)))
-              (if (<= (getf data :created)
-                      (or (db subject :last-checked-mail) 0))
-                (setf (cdr new-person) :read)
-                (setf (cdr new-person) :unread))
-              (asetf inbox (push subject it))
-              (asetf new-people (push new-person it))))
-         (modify-db id :people new-people
-                       :message-folders (list :inbox inbox)))
-       (:comment
-         (amodify-db id :by (list it)))
-
-       (:person
-         (modify-db id :notify-group-membership-invites t))))))
+;(defun migrate-to-new-inboxes ()
+;  (dolist (id (hash-table-keys *db*))
+;    (let* ((data (db id))
+;           (latest-comment (getf data :latest-comment))
+;           (type (getf data :type))
+;           (old-people (getf data :people))
+;           (new-people nil)
+;           (participants nil)
+;           (inbox nil))
+;      (case type
+;        ((or :conversation :reply)
+;         (dolist (person old-people)
+;           (let ((new-person (cons (list (car person)) (cdr person))))
+;             (when (or (and (cdr person)
+;                          (= (cdr person) latest-comment))
+;                     (equal (db latest-comment :by) (car person))
+;                     (equal (db latest-comment :by) (list (car person)))
+;                     (<= (db latest-comment :created)
+;                         (or (db (car person) :last-checked-mail) 0)))
+;                 (setf (cdr new-person) latest-comment))
+;             (asetf new-people (push new-person it))
+;             (asetf participants (push (car person) it))
+;             (asetf inbox (push (car person) it))))
+;         (modify-db id :people new-people
+;                       :message-folders (list :inbox inbox)
+;                       :participants participants))
+;        (:gratitude
+;         (dolist (subject (getf data :subjects))
+;           (let ((new-person (cons (list subject) nil)))
+;              (if (<= (getf data :created)
+;                      (or (db subject :last-checked-mail) 0))
+;                (setf (cdr new-person) :read)
+;                (setf (cdr new-person) :unread))
+;              (asetf inbox (push subject it))
+;              (asetf new-people (push new-person it))))
+;         (modify-db id :people new-people
+;                       :message-folders (list :inbox inbox)))
+;       (:comment
+;         (amodify-db id :by (list it)))
+;
+;       (:person
+;         (modify-db id :notify-group-membership-invites t))))))
 
 (defun mailbox-ids (id-list)
 "Takes a list of group/people ids and returns their mailboxes."
@@ -140,8 +140,10 @@
 "The people field for a conversation is a p-list of the status of the conversation for each participant: (:unread ((personid . last-read-comment)) ... "
   (let* ((type (getf data :type))
          (time (case type
-                 ((or :conversation :reply)
+                 (:conversation 
                   (db (getf data :latest-comment) :created))
+                 (:transaction
+                   (getf (car (getf data :log)) :time))
                  ((or :group-membership-invitation
                       :group-membership-request)
                   (or (getf data :resent)
@@ -160,6 +162,7 @@
          (groups (unless (eql (getf data :type) :gratitude) ; index conversations only
                    (remove nil (mapcar #'cdar people))))
          (existing-message (gethash id *db-messages*))
+         (pending-gratitude-p)
          (new-message (unless existing-message
                         (make-message :id id
                                       :time time
@@ -183,27 +186,35 @@
         (pushnew message (gethash group *group-messages-index*))))
     (index-message-folders message)
 
-    (when (and (eql type :reply)
-               (not (eql (getf data :status) :gratitude-posted)))
-      (let* ((item-id (getf data :on))
-             (item (db item-id))
-             (by (getf item :by))
-             (result (when item ; prior to 6/3/2014 inventory items could be deleted
-                       (inventory-item-result item-id
-                                              :data item
-                                              :by-id by))))
+    (when (eql type :transaction)
+      ;; see if there is a :given or :received action more recently than a 
+      ;; :gratitude-posted
+      (loop for event in (getf data :log)
+            until (eq (getf event :action) :gratitude-posted)
+            when (or (eq (getf event :action) :given)
+                     (eq (getf event :action) :received))
+            do (setf pending-gratitude-p t))
 
-        (when result
-          (with-locked-hash-table (*pending-gratitude-index*)
-          (case (getf item :type)
-            (:offer
-              (push (cons result id)
-                    (getf (gethash (getf data :by) *pending-gratitude-index*)
-                          :offers)))
-            (:request
-              (push (cons result id)
-                    (getf (gethash by *pending-gratitude-index*)
-                          :requests))))))))))
+      (when pending-gratitude-p
+        (let* ((item-id (getf data :on))
+               (item (db item-id))
+               (by (getf item :by))
+               (result (when item ; prior to 6/3/2014 inventory items could be deleted
+                         (inventory-item-result item-id
+                                                :data item
+                                                :by-id by))))
+
+          (when result
+            (with-locked-hash-table (*pending-gratitude-index*)
+              (case (getf item :type)
+                (:offer
+                  (push (cons result id)
+                        (getf (gethash (getf data :by) *pending-gratitude-index*)
+                              :offers)))
+                (:request
+                  (push (cons result id)
+                        (getf (gethash by *pending-gratitude-index*)
+                              :requests)))))))))))
 
 (defun all-message-people (message)
 "a list of people with access to a given message"
@@ -321,8 +332,8 @@
                        (case (message-type item)
                          (:conversation
                            (str (conversation-inbox-item item groups)))
-                         (:reply
-                           (str (reply-inbox-item item groups)))
+                         (:transaction
+                           (str (transaction-inbox-item item groups)))
                          (:contact-n
                            (htm
                              (str (h3-timestamp (message-time item)))
@@ -490,14 +501,14 @@
           " - "
           (str (url (ellipsis (getf comment-data :text)))))))))
 
-(defun reply-inbox-item (message groups)
+(defun transaction-inbox-item (message groups)
   (let* ((id (message-id message))
-         (reply (db id))
+         (transaction (db id))
          (latest (message-latest-comment message))
          (comment-data (db latest))
          (comment-by (car (getf comment-data :by)))
-         (original-message (db (getf reply :on)))
-         (deleted-type (getf reply :deleted-message-type))
+         (original-message (db (getf transaction :on)))
+         (deleted-type (getf transaction :deleted-item-type))
          (original-message-type (or (getf original-message :type)
                                  deleted-type))
          (participants (db id :participants))
@@ -520,16 +531,16 @@
              (html
                (case original-message-type
                  (:offer
-                  (htm (:a :href (strcat "/offers/" (getf reply :on))
+                  (htm (:a :href (strcat "/offers/" (getf transaction :on))
                         "offer")))
                  (:request
-                  (htm (:a :href (strcat "/requests/" (getf reply :on))
+                  (htm (:a :href (strcat "/requests/" (getf transaction :on))
                         "request")))
                  (t (case deleted-type
                       (:offer (htm "offer"))
                       (:request (htm "request"))
                       (t (htm (:span :class "none" "deleted offer or request"))))))))
-           (reply-url (text)
+           (transaction-url (text)
              (html (:a :href (strcat "/conversations/" id)
                      (str text)))))
 
@@ -539,14 +550,14 @@
           (when (eql comment-by *userid*)
             (str "↪ "))
 
-          (if (eql (getf reply :by) *userid*)
+          (if (eql (getf transaction :by) *userid*)
             (htm
               "You replied to "
               (str (person-link with))
               "'s "
               (str (inventory-url)))
             (htm
-              (str (person-link (getf reply :by)))
+              (str (person-link (getf transaction :by)))
               " replied to "
               (str (if group-name (s+ group-name "'s ") "your "))
               (str (inventory-url))))
@@ -554,14 +565,14 @@
 
         (:p :class "text"
           (:span :class "title"
-            (str (reply-url (ellipsis (or (getf original-message :title)
-                                          (getf original-message :details))
-                                      :length 30)))
+            (str (transaction-url (ellipsis (or (getf original-message :title)
+                                                 (getf original-message :details))
+                                             :length 30)))
             (when (> comments 1)
               (htm
                 " (" (str comments) ") "))
             " - ")
-          (str (reply-url (ellipsis text))))))))
+          (str (transaction-url (ellipsis text))))))))
 
 (defun get-messages ()
   (require-user
