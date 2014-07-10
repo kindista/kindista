@@ -247,7 +247,7 @@
       (:p :class (when newp "new")
         (str (regex-replace-all "\\n" text "<br>"))))))
 
-(defun conversation-html (data type with on-item comments-html &key deleted-type on-type error)
+(defun conversation-html (data type with on-item comments-html &key deleted-type on-type transaction-options speaking-for error)
   (standard-page
     (aif (getf data :subject)
       (ellipsis it :length 24)
@@ -377,6 +377,28 @@
 
     :selected "messages"))
 
+(defun transaction-options-for-user
+  (transaction-id
+   &key (userid *userid*)
+        (transaction (db transaction-id))
+   &aux (transaction-mailboxes (mapcar #'car (getf transaction :people)))
+        (inventory-item (db (getf transaction :on)))
+        (inventory-type (getf inventory-item :type))
+        (inventory-by (getf inventory-item :by))
+        (inventory-by-self-p (or (eql userid inventory-by)
+                                 (eql inventory-by
+                                      (cdr (assoc userid transaction-mailboxes)))))
+        (representative-p (or (and inventory-by-self-p
+                                   (not (eql userid inventory-by)))
+                              (not (eql userid (getf transaction :by)))))
+        (give (list "will-give" "might-give" "will-not-give" "already-gave"))
+        (receive (list "want" "might-want" "do-not-want" "already-received")))
+
+  (values (if inventory-by-self-p
+            (case inventory-type (:offer give) (:request receive))
+            (case inventory-type (:offer receive) (:request give)))
+          (if representative-p :group :self)))
+
 (defun get-conversation (id)
 "when called, (modify-db conversation-id :people '((userid . this-comment-id) (other-user-id . whatever)))"
   (require-user
@@ -397,11 +419,18 @@
                  (latest-seen (or (when (numberp (cdr person))
                                     (cdr person))
                                   latest-comment))
-                 (with (remove *userid* (getf conversation :participants)))
                  (on-item (db (getf conversation :on)))
+                 (transaction-options)
+                 (speaking-for)
+                 (with (remove *userid* (getf conversation :participants)))
                  (deleted-type (getf conversation :deleted-item-type))
                  (on-type (getf on-item :type))
                  (comments (gethash id *comment-index*)))
+
+            (multiple-value-bind (options for)
+              (transaction-options-for-user id :transaction conversation)
+              (setf transaction-options options)
+              (setf speaking-for for))
 
             (prog1
               (conversation-html conversation
@@ -411,6 +440,8 @@
                                  (conversation-comments conversation
                                                         comments
                                                         latest-seen)
+                                 :speaking-for speaking-for
+                                 :transaction-options transaction-options
                                  :deleted-type deleted-type
                                  :on-type on-type)
 

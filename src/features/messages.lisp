@@ -144,7 +144,7 @@
                   (db (getf data :latest-comment) :created))
                  (:transaction
                    (or (getf (car (getf data :log)) :time)
-                       (getf data :latest-comment :created)))
+                       (db (getf data :latest-comment) :created)))
                  ((or :group-membership-invitation
                       :group-membership-request)
                   (or (getf data :resent)
@@ -334,8 +334,6 @@
                          (:conversation
                            (str (conversation-inbox-item item groups)))
                          (:transaction
-                           (pprint item)
-                           (terpri)
                            (str (transaction-inbox-item item groups)))
                          (:contact-n
                            (htm
