@@ -247,7 +247,35 @@
       (:p :class (when newp "new")
         (str (regex-replace-all "\\n" text "<br>"))))))
 
-(defun conversation-html (data type with on-item comments-html &key deleted-type on-type transaction-options speaking-for error)
+(defun conversation-html
+  (data
+   type
+   with
+   on-item
+   comments-html
+   &key deleted-type
+        on-type
+        other-party-name
+        other-party-link
+        transaction-options
+        speaking-for
+        error
+   &aux (on-type-string (string-downcase (symbol-name on-type)))
+        (inventory-url))
+
+  (when (eql type :transaction)
+    (setf inventory-url
+          (case on-type
+            (:offer
+             (html (:a :href (strcat "/offers/" (getf data :on)) "offer")))
+            (:request
+             (html (:a :href (strcat "/requests/" (getf data :on)) "request")))
+            (t (case deleted-type
+                 (:offer "offer")
+                 (:request "request")
+                 (t (html
+                      (:span :class "none" "deleted offer or request"))))))))
+
   (standard-page
     (aif (getf data :subject)
       (ellipsis it :length 24)
@@ -284,40 +312,26 @@
                   (htm (:p "with " (str (name-list-all with))))
                   (htm (:p :class "error" "Everybody else has left this conversation."))))
               (:transaction
-                (flet ((inventory-url ()
-                        (html
-                          (case on-type
-                            (:offer
-                             (htm (:a :href (strcat "/offers/" (getf data :on))
-                                   "offer")))
-                            (:request
-                             (htm (:a :href (strcat "/requests/" (getf data :on))
-                                   "request")))
-                            (t (case deleted-type
-                                 (:offer (htm "offer"))
-                                 (:request (htm "request"))
-                                 (t (htm (:span :class "none" "deleted offer or request")))))))))
-
                   (if (eql (getf data :by) *userid*)
                     (htm
                       (:p
                       "You replied to "
-                      (str (person-link (or (getf on-item :by)
-                                            (first with))))
+                      (str other-party-link)
                       "'s "
-                      (str (inventory-url))
+                      (str inventory-url)
                       ":"))
                     (htm
                       (:p
                         "A conversation with "
-                        (str (person-link (getf data :by)))
+                        (str other-party-link)
                         " about "
                         (if (eq (getf on-item :by) *userid*)
                           (str "your ")
                           (str (s+ (db (getf on-item :by) :name)
                                    "'s ")))
-                        (str (inventory-url))
-                        ":"))))
+                        (str inventory-url)
+                        ":")))
+
                   (htm (:blockquote :class "review-text"
                          (awhen (getf on-item :title)
                            (htm
@@ -331,50 +345,84 @@
 
       (:div :class "item" :id "reply"
         (:h4 "post a reply")
-        (:form :method "post" :action (script-name*)
-          (:textarea :cols "150" :rows "4" :name "text")
+        (flet ((radio-selector (status request-text offer-text)
+                 (when (find status transaction-options :test #'string=)
+                   (html
+                     (:div ;:class "inline-block"
+                       (:input :type "radio"
+                               :name "action-type"
+                               :value status)
+                               (str (if (eq on-type :request)
+                                      request-text offer-text)))))))
 
-            (:div :class (when (eq error :no-reply-type)
-                           "error-border")
-              (:div ;:class "inline-block"
-                (:input :type "radio"
-                 :name "action-type"
-                 :value "suggestion")
-                "I have a comment or suggestion about this "
-                (str type)
-                " , but I am "
-                (:strong "NOT ")
-                (str (if (string= type "request")
-                       "offering to fulfill it."
-                       "requesting to receive it.")))
+          (htm
+            (:form :method "post" :action (script-name*)
+              (:textarea :cols "150" :rows "4" :name "text")
 
-              (:div ;:class "inline-block"
-                (:input :type "radio"
-                 :name "action-type"
-                 :value "inquiry")
-                "I have a question about this "
-                (str type)
-                " and I might "
-                (str (if (string= type "request")
-                       "offer to fulfill it."
-                       "request to receive it.")))
+              (:div :class (when (eq error :no-reply-type)
+                             "error-border")
 
-              (if (string= type "request")
-                (htm
-                  (:div ;:class "inline-block"
-                    (:input :type "radio"
-                     :name "action-type"
-                     :value "offer")
-                    "I am offering to fulfill this request."))
+               (str (radio-selector
+                      "will-give"
+                      (s+ "I am offering to fulfill " other-party-name "'s " inventory-url ".")
+                      (s+ "I am offering to share this " inventory-url " with " other-party-name ".")))
 
-                (htm
-                  (:div ;:class "inline-block"
-                    (:input :type "radio"
-                     :name "action-type"
-                     :value "request")
-                    "I am requesting to recieve this offer."))))
-          (:button :class "yes" :type "submit" :class "submit" "Send"))))
+               (str (radio-selector
+                      "might-give"
+                      (s+ "I might offer to fulfill " other-party-name "'s " inventory-url ", but I need more information first.")
+                      (s+ "I might offer to share this " inventory-url " with " other-party-name ", but I need more information first.")))
 
+               (str (radio-selector
+                      "will-not-give"
+                      (s+ "I have a comment or suggestion, but I am "
+                          "<strong> NOT </strong>"
+                          " offering to fulfill "
+                          other-party-name
+                          "'s "
+                          inventory-url ".")
+                      (s+ "I have a comment or suggestion, but I am "
+                          "<strong> NOT </strong>"
+                          " offering to share this " inventory-url " with " other-party-name ".")))
+
+               (:div ;:class "inline-block"
+                 (:input :type "radio"
+                  :name "action-type"
+                  :value "suggestion")
+                 "I have a comment or suggestion about this "
+                 (str on-type-string)
+                 " , but I am "
+                 (:strong "NOT ")
+                 (str (if (eq on-type :request)
+                        "offering to fulfill it."
+                        "requesting to receive it.")))
+
+               (:div ;:class "inline-block"
+                 (:input :type "radio"
+                  :name "action-type"
+                  :value "inquiry")
+                 "I have a question about this "
+                 (str on-type-string)
+                 " and I might "
+                 (str (if (eq on-type :request)
+                        "offer to fulfill it."
+                        "request to receive it.")))
+
+               (if (eq on-type :request)
+                 (htm
+                   (:div ;:class "inline-block"
+                     (:input :type "radio"
+                      :name "action-type"
+                      :value "offer")
+                     "I am offering to fulfill this request."))
+
+                 (htm
+                   (:div ;:class "inline-block"
+                     (:input :type "radio"
+                      :name "action-type"
+                      :value "request")
+                     "I am requesting to recieve this offer."))))
+
+          (:button :class "yes" :type "submit" :class "submit" "Send"))))))
     :selected "messages"))
 
 (defun transaction-options-for-user
@@ -388,16 +436,19 @@
         (inventory-by-self-p (or (eql userid inventory-by)
                                  (eql inventory-by
                                       (cdr (assoc userid transaction-mailboxes)))))
-        (representative-p (or (and inventory-by-self-p
-                                   (not (eql userid inventory-by)))
-                              (not (eql userid (getf transaction :by)))))
+        (representing (if (or (eql userid inventory-by)
+                              (eql userid (getf transaction :by)))
+                        userid
+                        (cdr (assoc userid transaction-mailboxes))))
         (give (list "will-give" "might-give" "will-not-give" "already-gave"))
         (receive (list "want" "might-want" "do-not-want" "already-received")))
+
+  "Returns (1) a list of actions the user can take on a given transaction id and (2) the entity the user is representing (i.e. *userid* or a groupid)"
 
   (values (if inventory-by-self-p
             (case inventory-type (:offer give) (:request receive))
             (case inventory-type (:offer receive) (:request give)))
-          (if representative-p :group :self)))
+          representing))
 
 (defun get-conversation (id)
 "when called, (modify-db conversation-id :people '((userid . this-comment-id) (other-user-id . whatever)))"
@@ -422,6 +473,7 @@
                  (on-item (db (getf conversation :on)))
                  (transaction-options)
                  (speaking-for)
+                 (other-party)
                  (with (remove *userid* (getf conversation :participants)))
                  (deleted-type (getf conversation :deleted-item-type))
                  (on-type (getf on-item :type))
@@ -432,6 +484,9 @@
               (setf transaction-options options)
               (setf speaking-for for))
 
+            (when (eq type :transaction)
+              (setf other-party (car (remove speaking-for with))))
+
             (prog1
               (conversation-html conversation
                                  type
@@ -440,6 +495,8 @@
                                  (conversation-comments conversation
                                                         comments
                                                         latest-seen)
+                                 :other-party-name (db other-party :name)
+                                 :other-party-link (person-link other-party)
                                  :speaking-for speaking-for
                                  :transaction-options transaction-options
                                  :deleted-type deleted-type
