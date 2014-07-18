@@ -633,11 +633,12 @@
 
                      (when pending-association
                        (amodify-db transaction-id
-                                   :log (cons (list :time time
-                                                    :party recipient-id
-                                                    :action :gratitude-posted
-                                                    :comment new-id)
-                                              it))
+                                   :log (append 
+                                          it
+                                          (list (list :time time
+                                                       :party recipient-id
+                                                       :action :gratitude-posted
+                                                       :comment new-id))))
 
                        (with-locked-hash-table (*pending-gratitude-index*)
                          (asetf (getf (gethash recipient-id

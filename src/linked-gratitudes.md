@@ -7,6 +7,8 @@
 - value: plist (:offers (results) :requests (results))
 
 ## Tracking inventory item transaction conversations
+[x] combine top 2 options when replying to an inventory item (comment or question)
+[ ] change text in inbox for transaction items (is requesting/offering or has a question/comment)
 [x] change replies to transactions
 [x] create a transaction log property for each transaction
      - (time person action &optional comment)
@@ -17,6 +19,7 @@
 [ ] choose options and language to display based on current data structure (current state of participant role)
 [ ] change :log as necessary with each new comment
 [ ] prompt statement of gratitude as necessary (in inbox, through email, through (see-other...) etc.
+[ ] test deleting inappropriate offer/request/pending-account
 
 ## TEST before server migration
 

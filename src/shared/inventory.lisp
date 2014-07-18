@@ -508,8 +508,7 @@
            :action (cond
                      ((string= action-type "offer") :offered)
                      ((string= action-type "request") :requested)
-                     ((string= action-type "inquiry") :inquired)
-                     ((string= action-type "suggestion") :suggested))
+                     ((string= action-type "inquiry") :inquired))
            :text (post-parameter "reply-text")
            :match-id (post-parameter-integer "match"))
          (flash "Your reply has been sent.")
@@ -1119,28 +1118,14 @@
               (:textarea :cols "1000" :rows "4" :name "reply-text" (str text))
 
               (:div :class (when (eq error :no-action-type) "error-border")
-               (:div ;:class "inline-block"
-                 (:input :type "radio"
-                  :name "action-type"
-                  :value "suggestion")
-                 "I have a comment or suggestion about this "
-                 (str type)
-                 " , but I am "
-                 (:strong "NOT ")
-                 (str (if (string= type "request")
-                        "offering to fulfill it."
-                        "requesting to receive it.")))
 
                (:div ;:class "inline-block"
                  (:input :type "radio"
                   :name "action-type"
                   :value "inquiry")
-                 "I have a question about this "
+                 "I have a question or comment about this "
                  (str type)
-                 " and I might "
-                 (str (if (string= type "request")
-                        "offer to fulfill it."
-                        "request to receive it.")))
+                 ".")
 
                (if (string= type "request")
                  (htm

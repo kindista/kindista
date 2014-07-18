@@ -46,6 +46,9 @@
 (defmacro s+ (&rest strings)
   `(concatenate 'string ,@strings))
 
+(defun find-string (string list)
+  (find string list :test #'string=))
+
 (defun generate-js ()
   (paren-files:compile-script-file-to-js-file
     (s+ *kindista-root-path* "js/main.paren")
