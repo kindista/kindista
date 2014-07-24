@@ -22,16 +22,7 @@
     (let* ((data (db id))
            (type (getf data :type)))
       (when (eq type :reply)
-        (let ((comments (gethash id *comment-index*))
-              (log))
-          (dolist (comment-id comments)
-            (let ((data (db comment-id)))
-              (setf log (cons (list :time (getf data :created)
-                                    :party (getf data :by)
-                                    :comment comment-id)
-                              log))))
-          (modify-db id :type :transaction
-                        :log (remove nil log)))))))
+        (modify-db id :type :transaction)))))
 
 (defun create-transaction (&key on text action match-id pending-deletion (userid *userid*))
   (let* ((time (get-universal-time))
@@ -68,17 +59,15 @@
                                 :participants participants
                                 :message-folders message-folders
                                 :people people
-                                :created time))))
-         (comment-id (when text
-                       (create-comment :on id
-                                       :by (list userid)
-                                       :text text
-                                       :time time))))
+                                :log (list (list :time time :party (list userid) :action action))
+                                :created time)))))
 
-    (modify-db id :log (list (list :time time
-                                   :party (list userid)
-                                   :action action
-                                   :comment comment-id)))
+      (when text (create-comment :on id
+                                 :by (list userid)
+                                 :text text
+                                 :time (+ time 1) ; if there is both text/action, they need separate times for sorting in transaction log UI display
+                                 ))
+
     (when match-id
       (case (getf on-item :type)
         (:offer (hide-matching-offer match-id on))
@@ -86,30 +75,49 @@
 
     id))
 
-(defun transaction-log-details
+(defun transaction-history
   (transaction-id
    on-type
    inventory-by
    latest-seen
    &optional (transaction (db transaction-id))
-   &aux (events (getf transaction :log)))
+   &aux (actions (getf transaction :log))
+        (comments (gethash transaction-id *comment-index*))
+        (history))
+
+  (dolist (action actions)
+    (sort (cons action history) #'> :key :time))
+
+  (dolist (comment-id comments)
+    (let* ((data (db comment-id))
+           (participants (getf transaction :participants))
+           (by (car (getf data :by)))
+           (for (cdr (getf data :by)))
+           (bydata (db by))
+           (text (if (and (equal event (first events))
+                          (getf transaction :deleted-item-type))
+                   (deleted-invalid-item-reply-text
+                     (db (car (remove by participants)) :name)
+                     (getf bydata :name)
+                     (case (getf transaction :deleted-item-type)
+                       (:offer "offer")
+                       (:request "request"))
+                     (getf data :text))
+                   (getf data :text))))
+      (sort (cons (list :time (getf data :created)
+                        :by by
+                        :by-name (getf bydata :name)
+                        :for for
+                        :for-name (db for :name)
+                        :text text)
+                  history)
+            #'>
+            :key :time)))
+
   (html
     (dolist (event events)
       (let* ((data (awhen (getf event :comment) (db it)))
-             (participants (getf transaction :participants))
-             (by (car (getf event :party)))
-             (for (cdr (getf event :party)))
-             (bydata (db by))
-             (text (if (and (equal event (first events))
-                            (getf transaction :deleted-item-type))
-                     (deleted-invalid-item-reply-text
-                       (db (car (remove by participants)) :name)
-                       (getf bydata :name)
-                       (case (getf transaction :deleted-item-type)
-                         (:offer "offer")
-                         (:request "request"))
-                       (getf data :text))
-                     (getf data :text))))
+             )
 
          (str (conversation-comment-html
                 data
@@ -396,11 +404,11 @@
               (transaction-html transaction
                                 with
                                 on-item
-                                (transaction-log-details id
-                                                         on-type
-                                                         inventory-by
-                                                         latest-seen
-                                                         transaction)
+                                (transaction-history id
+                                                     on-type
+                                                     inventory-by
+                                                     latest-seen
+                                                     transaction)
                                 :other-party-name (db other-party :name)
                                 :other-party-link (person-link other-party)
                                 :speaking-for speaking-for
@@ -443,9 +451,9 @@
                                     it
                                     (list
                                       (list :time time
-                                             :party party
-                                             :action (post-parameter "transaction-action")
-                                             :comment new-comment-id)))))
+                                            :party party
+                                            :action (post-parameter "transaction-action")
+                                            :comment new-comment-id)))))
             (see-other (script-name*))))
 
          (permission-denied)))
