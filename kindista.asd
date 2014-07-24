@@ -101,7 +101,9 @@
                                            (:file "settings")
                                            (:file "signup")
                                            (:file "splash")
-                                           (:file "terms")))
+                                           (:file "terms")
+                                           (:file "transactions")
+                                           ))
                              (:file "routes")
                              (:file "main")
                              (:module email

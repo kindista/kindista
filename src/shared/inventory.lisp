@@ -17,22 +17,6 @@
 
 (in-package :kindista)
 
-(defun migrate-to-new-transaction-format ()
-  (dolist (id (hash-table-keys *db*))
-    (let* ((data (db id))
-           (type (getf data :type)))
-      (when (eq type :reply)
-        (let ((comments (gethash id *comment-index*))
-              (log))
-          (dolist (comment-id comments)
-            (let ((data (db comment-id)))
-              (setf log (cons (list :time (getf data :created)
-                                    :party (getf data :by)
-                                    :comment comment-id)
-                              log))))
-          (modify-db id :type :transaction
-                        :log (remove nil log)))))))
-
 (defun mark-recent-inventory-active ()
 "To fix a bug introduced in commit f24b715bd4bb893f8bc6fc037910ee677b3e59dd in which new inventory items were not being marked as active"
   (dolist (id (hash-table-keys *db*))
@@ -322,59 +306,6 @@
         "In gratitude,"
         #\linefeed
         from-name ", Kindista"))
-
-(defun create-transaction (&key on text action match-id pending-deletion (userid *userid*))
-  (let* ((time (get-universal-time))
-         (on-item (db on))
-         (by (getf on-item :by))
-         (participants (list userid by))
-         (senders (mailbox-ids (list userid)))
-         (bys (mailbox-ids (list by)))
-         (sender-boxes (mapcar #'(lambda (mailbox)
-                                   (cons mailbox :read))
-                               senders))
-         (by-boxes (mapcar #'(lambda (mailbox)
-                                   (cons mailbox :unread))
-                               bys))
-         (people (append by-boxes sender-boxes))
-         (people-ids (mapcar #'car (remove-duplicates (append senders bys))))
-         (message-folders (list :inbox people-ids
-                                :unread (remove userid people-ids)))
-         (id (insert-db (if pending-deletion
-                          (list :type :transaction
-                                :on on
-                                :deleted-item-text (getf on-item :text)
-                                :deleted-item-details (getf on-item :details)
-                                :deleted-item-title (getf on-item :title)
-                                :deleted-item-type (getf on-item :type)
-                                :by userid
-                                :participants participants
-                                :message-folders message-folders
-                                :people people
-                                :created time)
-                          (list :type :transaction
-                                :on on
-                                :by userid
-                                :participants participants
-                                :message-folders message-folders
-                                :people people
-                                :created time))))
-         (comment-id (when text
-                       (create-comment :on id
-                                       :by (list userid)
-                                       :text text
-                                       :time time))))
-
-    (modify-db id :log (list (list :time time
-                                   :party (list userid)
-                                   :action action
-                                   :comment comment-id)))
-    (when match-id
-      (case (getf on-item :type)
-        (:offer (hide-matching-offer match-id on))
-        (:request (hide-matching-offer on match-id))))
-
-    id))
 
 (defun post-new-inventory-item (type &key url)
   (require-active-user

@@ -542,7 +542,7 @@
                       (:request (htm "request"))
                       (t (htm (:span :class "none" "deleted offer or request"))))))))
            (transaction-url (text)
-             (html (:a :href (strcat "/conversations/" id)
+             (html (:a :href (strcat "/transactions/" id)
                      (str text)))))
 
       (html

@@ -264,6 +264,17 @@
   ("/conversations/<int:id>/leave"
     :get get-conversation-leave)
 
+  ("/transactions"
+    :get get-transactions)
+
+  ("/transactions/new"
+    :get get-transactions-new
+    :post post-transactions-new)
+
+  ("/transactions/<int:id>"
+    :get get-transaction
+    :post post-transaction)
+
   ("/messages"
     :get get-messages)
 

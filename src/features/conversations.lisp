@@ -204,62 +204,6 @@
 (defun go-conversation (id)
   (moved-permanently (strcat "/conversations/" id)))
 
-(defun transaction-log-details
-  (transaction-id
-   on-type
-   inventory-by
-   latest-seen
-   &optional (transaction (db transaction-id))
-   &aux (events (getf transaction :log)))
-  (html
-    (dolist (event events)
-      (let* ((data (awhen (getf event :comment) (db it)))
-             (participants (getf transaction :participants))
-             (by (car (getf event :party)))
-             (for (cdr (getf event :party)))
-             (bydata (db by))
-             (text (if (and (equal event (first events))
-                            (getf transaction :deleted-item-type))
-                     (deleted-invalid-item-reply-text
-                       (db (car (remove by participants)) :name)
-                       (getf bydata :name)
-                       (case (getf transaction :deleted-item-type)
-                         (:offer "offer")
-                         (:request "request"))
-                       (getf data :text))
-                     (getf data :text))))
-
-         (str (conversation-comment-html data
-                                         by
-                                         (db by :name)
-                                         for
-                                         (db for :name)
-                                         text
-                                         (when (>= (or latest-seen 0)
-                                                   (getf event :comment)))
-                                         :transaction-action (when (getf transaction :action)
-                                                               (transaction-action-html
-                                                                 event on-type
-                                                                 inventory-by
-                                                                 (getf transaction :by)))
-                                         ))))))
-
-(defun transaction-action-html (log-event on-type inventory-by transaction-initiator)
-  (html
-    (:strong
-      (str (case on-type
-             (:offer
-               (case (getf log-event :action)
-                 (:requested
-                   (s+ " requested to recieve this offer from " (db inventory-by :name)) )
-                 (:offered
-                   (s+ " agreed to share this offer with " (db transaction-initiator :name)))
-                 ))))
-      (awhen (cdr (getf log-event :party))
-        (str (s+ " on behalf of " (db it :name))))
-      "."
-      )))
-
 (defun conversation-comments (conversation-id latest-seen)
   (html
     (dolist (comment-id (gethash conversation-id *comment-index*))
@@ -270,59 +214,33 @@
 
         (when data
            (str (conversation-comment-html data
-                                          by
-                                          (db by :name)
-                                          for
-                                          (db for :name)
-                                          text
-                                          (when (>= (or latest-seen 0)
-                                                    comment-id)))))))))
+                                           by (db by :name)
+                                           for
+                                           (db for :name)
+                                           text
+                                           (when (>= (or latest-seen 0)
+                                                     comment-id)))))))))
 
-(defun conversation-comment-html (data by by-name for for-name text newp &key transaction-action)
+(defun conversation-comment-html (data by by-name for for-name text newp)
   (card
     (html
       (str (h3-timestamp (getf data :created)))
       (:p (:a :href (s+ "/people/" (username-or-id by))
            (str by-name))
-          (aif transaction-action
-            (str it)
             (when for
-             (htm
-               " for "
-               (:a :href (s+ "/groups/" (username-or-id ))
-                (str for-name))))))
+              (htm
+                " for "
+                (:a :href (s+ "/groups/" (username-or-id ))
+                 (str for-name)))))
 
       (:p :class (when newp "new")
         (str (regex-replace-all "\\n" text "<br>"))))))
 
 (defun conversation-html
   (data
-   type
    with
-   on-item
    comments-html
-   &key deleted-type
-        on-type
-        other-party-name
-        other-party-link
-        transaction-options
-        speaking-for
-        error
-   &aux (on-type-string (string-downcase (symbol-name on-type)))
-        (inventory-url))
-
-  (when (eql type :transaction)
-    (setf inventory-url
-          (case on-type
-            (:offer
-             (html (:a :href (strcat "/offers/" (getf data :on)) "offer")))
-            (:request
-             (html (:a :href (strcat "/requests/" (getf data :on)) "request")))
-            (t (case deleted-type
-                 (:offer "offer")
-                 (:request "request")
-                 (t (html
-                      (:span :class "none" "deleted offer or request"))))))))
+   &key error)
 
   (standard-page
     (aif (getf data :subject)
@@ -331,16 +249,7 @@
     (html
       (str (menu-horiz "actions"
                        (html (:a :href "/messages" "back to messages"))
-                       (html (:a :href "#reply" "reply"))
-                       (when (and (eql type :transaction)
-                                  (eql (getf data :by) *userid*)
-                                  (eql on-type :offer))
-                         (html
-                           (:a :href
-                               (str (url-compose "/gratitude/new"
-                                                 "subject"
-                                                 (getf on-item :by)))
-                                "express gratitude"))))
+                       (html (:a :href "#reply" "reply")))
                       ;(when (eq type :conversation)
                       ;  (html (:a :href (strcat "/conversations/" id "/leave") "leave conversation")))
                       ;  removed until we add the ability for
@@ -354,171 +263,24 @@
             (when (getf data :subject)
               (htm
                 (:h2 "Subject: " (str (getf data :subject)))))
-            (case type
-              (:conversation
-                (if with
-                  (htm (:p "with " (str (name-list-all with))))
-                  (htm (:p :class "error" "Everybody else has left this conversation."))))
-              (:transaction
-                  (if (eql (getf data :by) *userid*)
-                    (htm
-                      (:p
-                      "You replied to "
-                      (str other-party-link)
-                      "'s "
-                      (str inventory-url)
-                      ":"))
-                    (htm
-                      (:p
-                        "A conversation with "
-                        (str other-party-link)
-                        " about "
-                        (if (eq (getf on-item :by) *userid*)
-                          (str "your ")
-                          (str (s+ (db (getf on-item :by) :name)
-                                   "'s ")))
-                        (str inventory-url)
-                        ":")))
 
-                  (htm (:blockquote :class "review-text"
-                         (awhen (getf on-item :title)
-                           (htm
-                             (:strong (str it))
-                             (:br)
-                             (:br)))
-                         (str (html-text (or (getf on-item :details)
-                                             (getf data :deleted-item-text)))))))))))
+              (if with
+                (htm (:p "with " (str (name-list-all with))))
+                (htm (:p :class "error" "Everybody else has left this conversation."))))))
 
       (str comments-html)
 
-      (:form :method "post" :action (script-name*) :class "item"
-       (flet ((transaction-button (status icon request-text offer-text)
-                (when (find status transaction-options :test #'string=)
-                  (html
-                    (str icon)
-                    (:button :type "submit"
-                     :class "yes"
-                     :name "transaction-action"
-                     :value status
-                     (str (if (eq on-type :request)
-                            request-text offer-text)))
-                    (:br)))))
-
-         (str (transaction-button
-                "will-give"
-                (icon "offers")
-                (s+ "I want to fulfill " other-party-name "'s request.")
-                (s+ "I want to share this offering with " other-party-name ".")))
-
-         (str (transaction-button
-                "withhold"
-                nil
-                (s+ "I can't fulfill " other-party-name "'s request at this time.")
-                (s+ "I can't share this offering with " other-party-name " at this time.")))
-
-         (str (transaction-button
-                "already-gave"
-                (icon "share")
-                (s+ "I have fulfilled " other-party-name "'s request.")
-                (s+ "I have shared this offering with " other-party-name ".")))
-
-         (str (transaction-button
-                "want"
-                (icon "requests")
-                (s+ "I want to recieve what " other-party-name " is offering me.")
-                (s+ "I want to recieve this offer from " other-party-name ".")))
-
-         (str (transaction-button
-                "refuse"
-                nil
-                (s+ "I don't want what " other-party-name " has offered me.")
-                (s+ "I don't want this offer from " other-party-name ".")))
-
-         (str (transaction-button
-                "already-received"
-                (icon "share")
-                (s+ "I have received what " other-party-name " has offered me.")
-                (s+ "I have received this offer from " other-party-name ".")))
-
-         (str (transaction-button
-                "dispute"
-                nil
-                (s+ "I have not yet received what " other-party-name " has offered me.")
-                (s+ "I have not yet received this offer from " other-party-name "."))))
-        )
-
       (:div :class "item" :id "reply"
         (:h4 "post a reply")
-        (flet ((radio-selector (status request-text offer-text)
-                 (when (find status transaction-options :test #'string=)
-                   (html
-                     (:div ;:class "inline-block"
-                       (:input :type "radio"
-                               :name "action-type"
-                               :value status)
-                               (str (if (eq on-type :request)
-                                      request-text offer-text)))))))
 
-          (htm
-            (:form :method "post" :action (script-name*)
-              (:textarea :cols "150" :rows "4" :name "text")
+        (:form :method "post" :action (script-name*)
+          (:textarea :cols "150" :rows "4" :name "text")
 
-              (:div :class (when (eq error :no-reply-type)
-                             "error-border")
+          (:div :class (when (eq error :no-reply-type)
+                         "error-border"))
 
-               )
-
-          (:button :class "yes" :type "submit" :class "submit" "Send"))))))
+          (:button :class "yes" :type "submit" :class "submit" "Send"))))
     :selected "messages"))
-
-(defun transaction-options-for-user
-  (transaction-id
-   &key (userid *userid*)
-        (transaction (db transaction-id))
-   &aux (transaction-mailboxes (mapcar #'car (getf transaction :people)))
-        (inventory-item (db (getf transaction :on)))
-        (inventory-type (getf inventory-item :type))
-        (inventory-by (getf inventory-item :by))
-        (inventory-by-self-p (or (eql userid inventory-by)
-                                 (eql inventory-by
-                                      (cdr (assoc userid transaction-mailboxes)))))
-        (role (case inventory-type
-                (:offer (if inventory-by-self-p :giver :reciever))
-                (:request (if inventory-by-self-p :reciever :giver ))))
-        (representing (if (or (eql userid inventory-by)
-                              (eql userid (getf transaction :by)))
-                        userid
-                        (cdr (assoc userid transaction-mailboxes))))
-        (give (list "already-gave"))
-        (receive (list "already-received")))
-
-  "Returns (1) a list of actions the user can take on a given transaction id and (2) the entity the user is representing (i.e. *userid* or a groupid)"
-
-      (loop for event in (getf transaction :log)
-           ;when (eql representing (car (getf event :party)))
-            do (case (getf event :action)
-                 (:offered (unless (find-string "will-give" give)
-                             (pushnew "withhold" give :test #'string=)))
-                 (:requested (unless (find-string "want" receive)
-                               (pushnew "refuse" receive :test #'string=)))
-                 (:given
-                   (pushnew "dispute" receive :test #'string=)
-                   (pushnew "already-recieved" receive :test #'string=))
-                 (:gratitude-posted
-                   (when (getf inventory-item :active)
-                     (pushnew "gave-again" give :test #'string=)
-                     (pushnew "received-again" receive :test #'string=)
-                     (loop-finish))))
-            finally (case role
-                      (:giver (unless (find-string "withhold" give)
-                                (push "will-give" give)))
-                      (:reciever (unless (find-string "refuse" receive)
-                                   (push "want" receive)))))
-
-  (values (if inventory-by-self-p
-            (case inventory-type (:offer give) (:request receive))
-            (case inventory-type (:offer receive) (:request give)))
-          representing))
 
 (defun get-conversation (id)
 "when called, (modify-db conversation-id :people '((userid . this-comment-id) (other-user-id . whatever)))"
@@ -531,8 +293,7 @@
                                   collect person))
            (type (message-type message)))
 
-      (if (or (eq type :transaction)
-              (eq type :conversation))
+      (if (eq type :conversation)
         (if valid-mailboxes
           (let* ((conversation (db id))
                  (person (assoc-assoc *userid* people))
@@ -540,43 +301,13 @@
                  (latest-seen (or (when (numberp (cdr person))
                                     (cdr person))
                                   latest-comment))
-                 (on-item (db (getf conversation :on)))
-                 (inventory-by (getf on-item :by))
-                 (transaction-options)
-                 (speaking-for)
-                 (other-party)
-                 (with (remove *userid* (getf conversation :participants)))
-                 (deleted-type (getf conversation :deleted-item-type))
-                 (on-type (getf on-item :type)))
-
-            (when (eql type :transaction)
-              (multiple-value-bind (options for)
-                (transaction-options-for-user id :transaction conversation)
-                (setf transaction-options options)
-                (setf speaking-for for))
-              (setf other-party (car (remove speaking-for with))) )
+                 (with (remove *userid* (getf conversation :participants))))
 
             (prog1
               (conversation-html conversation
-                                 type
                                  with
-                                 on-item
-                                 (case type
-                                   (:transaction
-                                     (transaction-log-details id
-                                                              on-type
-                                                              inventory-by
-                                                              latest-seen
-                                                              conversation))
-                                   (:conversation
-                                     (conversation-comments id
-                                                            latest-seen)))
-                                 :other-party-name (db other-party :name)
-                                 :other-party-link (person-link other-party)
-                                 :speaking-for speaking-for
-                                 :transaction-options transaction-options
-                                 :deleted-type deleted-type
-                                 :on-type on-type)
+                                 (conversation-comments id
+                                                        latest-seen))
 
               ; get most recent comment seen
               ; get comments for
@@ -585,7 +316,9 @@
                                                     (message-people message)))))
                         (member *userid*
                                 (getf (message-folders message) :unread)))
-                (update-folder-data message :read :last-read-comment (message-latest-comment message)))))
+                (update-folder-data message
+                                   :read
+                                   :last-read-comment (message-latest-comment message)))))
 
           (permission-denied))
       (not-found)))))
@@ -634,22 +367,9 @@
            ((post-parameter "text")
             (flash "Your message has been sent.")
             (contact-opt-out-flash (mapcar #'caar people))
-            (let* ((time (get-universal-time))
-                   (new-comment-id (create-comment :on id
-                                                   :text (post-parameter "text")
-                                                   :time time
-                                                   :by party)))
-              (case (getf it :type)
-                (:transaction
-                  (send-metric* :message-sent new-comment-id)
-                  (amodify-db id :log (append
-                                        it
-                                        (list
-                                          (list :time time
-                                                 :party party
-                                                 :action (post-parameter "transaction-action")
-                                                 :comment new-comment-id))))
-                  )))
+            (create-comment :on id
+                            :text (post-parameter "text")
+                            :by party)
             (see-other (script-name*))))
 
          (permission-denied)))

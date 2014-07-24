@@ -21,8 +21,8 @@
 
 (setf (cl-who:html-mode) :sgml)
 
-(setf hunchentoot:*show-lisp-backtraces-p* nil)
-(setf hunchentoot:*show-lisp-errors-p* nil)
+(setf hunchentoot:*show-lisp-backtraces-p* t)
+(setf hunchentoot:*show-lisp-errors-p* t)
 
 (defvar *flashes* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 
