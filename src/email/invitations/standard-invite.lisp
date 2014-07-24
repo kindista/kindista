@@ -119,7 +119,7 @@ sender
           " has invited you to join "
 
           (awhen group-id
-            (htm "the " (str (group-link it)) " group on "))
+            (htm "the " (str (person-email-link it)) " group on "))
           "Kindista, the social network for building "
           "community and sharing skills, tools and other local resources. ")
 
