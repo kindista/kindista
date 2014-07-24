@@ -160,7 +160,7 @@ sender
         (:p :style *style-p*
           "Already on Kindista?"
           "Please click on this link or copy and paste it into your browser"
-          " to add this email address (" to
+          " to add this email address (" (str to)
           ") to your Kindista account:"
           (:a :href (s+ +base-url+ "settings/communication?edit=email#email")
               (str (s+ +base-url+ "settings/communication?edit=email#email"))))))))
