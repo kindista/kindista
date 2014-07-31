@@ -293,35 +293,38 @@
                                   collect person))
            (type (message-type message)))
 
-      (if (eq type :conversation)
-        (if valid-mailboxes
-          (let* ((conversation (db id))
-                 (person (assoc-assoc *userid* people))
-                 (latest-comment (getf conversation :latest-comment))
-                 (latest-seen (or (when (numberp (cdr person))
-                                    (cdr person))
-                                  latest-comment))
-                 (with (remove *userid* (getf conversation :participants))))
+      (case type
+        (:conversation
+          (if valid-mailboxes
+            (let* ((conversation (db id))
+                   (person (assoc-assoc *userid* people))
+                   (latest-comment (getf conversation :latest-comment))
+                   (latest-seen (or (when (numberp (cdr person))
+                                      (cdr person))
+                                    latest-comment))
+                   (with (remove *userid* (getf conversation :participants))))
 
-            (prog1
-              (conversation-html conversation
-                                 with
-                                 (conversation-comments id
-                                                        latest-seen))
+              (prog1
+                (conversation-html conversation
+                                   with
+                                   (conversation-comments id
+                                                          latest-seen))
 
-              ; get most recent comment seen
-              ; get comments for
-              (when (or (not (eql (message-latest-comment message)
-                                  (cdr (assoc-assoc *userid*
-                                                    (message-people message)))))
-                        (member *userid*
-                                (getf (message-folders message) :unread)))
-                (update-folder-data message
-                                   :read
-                                   :last-read-comment (message-latest-comment message)))))
+                ; get most recent comment seen
+                ; get comments for
+                (when (or (not (eql (message-latest-comment message)
+                                    (cdr (assoc-assoc *userid*
+                                                      (message-people message)))))
+                          (member *userid*
+                                  (getf (message-folders message) :unread)))
+                  (update-folder-data message
+                                     :read
+                                     :last-read-comment (message-latest-comment message)))))
 
-          (permission-denied))
-      (not-found)))))
+          (permission-denied)))
+      (:transaction
+        (see-other (strcat "/transactions/" id)))
+      (t (not-found))))))
 
 (defun get-conversation-leave (id)
   (require-user

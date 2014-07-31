@@ -41,6 +41,7 @@
          (people-ids (mapcar #'car (remove-duplicates (append senders bys))))
          (message-folders (list :inbox people-ids
                                 :unread (remove userid people-ids)))
+         (log (when action (list (list :time time :party (list userid) :action action))))
          (id (insert-db (if pending-deletion
                           (list :type :transaction
                                 :on on
@@ -59,7 +60,7 @@
                                 :participants participants
                                 :message-folders message-folders
                                 :people people
-                                :log (list (list :time time :party (list userid) :action action))
+                                :log log
                                 :created time)))))
 
       (when text (create-comment :on id
@@ -126,7 +127,7 @@
         (str (transaction-action-html event
                                       on-type
                                       inventory-by-name
-                                      (getf transaction :by))))
+                                      (db (getf transaction :by) :name))))
 
        ((getf event :text)
         (str (conversation-comment-html
@@ -139,7 +140,7 @@
                 (when (>= (or latest-seen 0)
                           (getf event :id))))))))))
 
-(defun transaction-action-html (log-event on-type inventory-by-name transaction-initiator)
+(defun transaction-action-html (log-event on-type inventory-by-name transaction-initiator-name)
   (card
     (html
       (str (h3-timestamp (getf log-event :time)))
@@ -155,16 +156,20 @@
                      (:requested
                        (s+ " requested to recieve this offer from " inventory-by-name) )
                      (:offered
-                       (s+ " agreed to share this offer with " (db transaction-initiator :name)))))
+                       (s+ " agreed to share this offer with " transaction-initiator-name))))
                  (:request
                    (case (getf log-event :action)
                      (:requested
-                       (htm " wants to receive what you are offering in fulfillment of their request." ))
+                       (s+ " wants to receive what "
+                           transaction-initiator-name
+                           " is offering") )
                      (:offered
-                       (s+ " agreed to fulfill this request from "  inventory-by-name))))
+                       (s+ " agreed to fulfill this request from "  inventory-by-name))
+                     (:declined
+                       (s+ " no longer wishes to receive this reqeust from " transaction-initiator-name)
+                       )
+                     ))
                  ))
-          (awhen (cdr (getf log-event :party))
-            (str (s+ " on behalf of " (db it :name))))
           "."
           )))))
 
@@ -208,14 +213,14 @@
       (flet ((transaction-button (status icon request-text offer-text)
                (when (find status transaction-options :test #'string=)
                  (html
-                   (str icon)
-                   (:button :type "submit"
-                    :class "green simple-link"
-                    :name "transaction-action"
-                    :value status
-                    (str (if (eq on-type :request)
-                           request-text offer-text)))
-                   (:br)))))
+                   (:div :class "transaction-option"
+                     (str icon)
+                     (:button :type "submit"
+                              :class "green simple-link"
+                              :name "transaction-action"
+                              :value status
+                      (str (if (eq on-type :request)
+                             request-text offer-text))))))))
 
         (str (transaction-button
                "will-give"
@@ -225,15 +230,15 @@
 
         (str (transaction-button
                "withhold"
-               nil
+               (icon "withhold")
                (s+ "I can't fulfill " other-party-name "'s request at this time.")
-               (s+ "I can't share this offering with " other-party-name " at this time.")))
+               (s+ "I can't share this offer with " other-party-name " at this time.")))
 
         (str (transaction-button
-               "checkmark"
-               (icon "share")
+               "already-given"
+               (icon "checkmark")
                (s+ "I have fulfilled " other-party-name "'s request.")
-               (s+ "I have shared this offering with " other-party-name ".")))
+               (s+ "I have shared this offer with " other-party-name ".")))
 
         (str (transaction-button
                "want"
@@ -242,16 +247,16 @@
                (s+ "I want to recieve this offer from " other-party-name ".")))
 
         (str (transaction-button
-               "refuse"
-               nil
-               (s+ "I don't want what " other-party-name " has offered me.")
-               (s+ "I don't want this offer from " other-party-name ".")))
-
-        (str (transaction-button
                "already-received"
                (icon "checkmark")
                (s+ "I have received what " other-party-name " has offered me.")
                (s+ "I have received this offer from " other-party-name ".")))
+
+        (str (transaction-button
+               "decline"
+               (icon "decline")
+               (s+ "I don't want what " other-party-name " has offered me.")
+               (s+ "I don't want this offer from " other-party-name ".")))
 
         (str (transaction-button
                "dispute"
@@ -350,42 +355,55 @@
                                  (eql inventory-by
                                       (cdr (assoc userid transaction-mailboxes)))))
         (role (case inventory-type
-                (:offer (if inventory-by-self-p :giver :reciever))
-                (:request (if inventory-by-self-p :reciever :giver ))))
+                (:offer (if inventory-by-self-p :giver :receiver))
+                (:request (if inventory-by-self-p :receiver :giver ))))
         (representing (if (or (eql userid inventory-by)
                               (eql userid (getf transaction :by)))
                         userid
                         (cdr (assoc userid transaction-mailboxes))))
-        (give (list "already-gave"))
-        (receive (list "already-received")))
+        (current-event (find userid
+                             (getf transaction :log)
+                             :test #'eql
+                             :key #'(lambda (event)
+                                       (car (getf event :party)))
+                             :from-end t))
+        (other-party-event (find-if-not
+                             #'(lambda (event)
+                                 (if representing
+                                   (eql representing (cdr (getf event :party)))
+                                   (eql userid (car (getf event :party)))))
+                             (getf transaction :log)
+                             :from-end t))
+        (options))
 
   "Returns (1) a list of actions the user can take on a given transaction id and (2) the entity the user is representing (i.e. *userid* or a groupid)"
 
-      (loop for event in (getf transaction :log)
-           ;when (eql representing (car (getf event :party)))
-            do (case (getf event :action)
-                 (:offered (unless (find-string "will-give" give)
-                             (pushnew "withhold" give :test #'string=)))
-                 (:requested (unless (find-string "want" receive)
-                               (pushnew "refuse" receive :test #'string=)))
-                 (:given
-                   (pushnew "dispute" receive :test #'string=)
-                   (pushnew "already-recieved" receive :test #'string=))
-                 (:gratitude-posted
-                   (when (getf inventory-item :active)
-                     (pushnew "gave-again" give :test #'string=)
-                     (pushnew "received-again" receive :test #'string=)
-                     (loop-finish))))
-            finally (case role
-                      (:giver (unless (find-string "withhold" give)
-                                (push "will-give" give)))
-                      (:reciever (unless (find-string "refuse" receive)
-                                   (push "want" receive)))))
+  (setf options
+        (case role
+          (:receiver
+             (case (getf current-event :action)
+               (:requested
+                 (case (getf other-party-event :action)
+                   (:given '("already-received" "dispute"))
+                   (t '("decline" "already-received"))))
+               (:declined '("want" "already-received"))
+               (:disputed '("already-received"))
+               (t (case (getf other-party-event :action)
+                    (:given '("already-received" "dispute"))
+                    (t '("want" "already-received"))))))
+          (:giver
+            (case (getf current-event :action)
+              (:offered
+                (case (getf other-party-event :action)
+                  (:received nil)
+                  (t '("withheld" "already-given"))))
+              (t '("will-give" "already-given"))))))
 
-  (values (if inventory-by-self-p
-            (case inventory-type (:offer give) (:request receive))
-            (case inventory-type (:offer receive) (:request give)))
-          representing))
+  (values options
+          representing
+          role
+          current-event
+          other-party-event))
 
 (defun get-transaction (id)
 "when called, (modify-db conversation-id :people '((userid . this-comment-id) (other-user-id . whatever)))"
@@ -461,33 +479,53 @@
 (defun post-transaction (id)
   (require-active-user
     (setf id (parse-integer id))
-    (aif (db id)
-      (let* ((people (getf it :people))
-             (mailbox (assoc-assoc *userid* people))
-             (party (car mailbox))
-             (action (post-parameter-string "transaction-action"))
-             (url (strcat "/transactions/" id)))
-        (if party
-         (cond
-           ((post-parameter "cancel")
-            (see-other url))
-           ((post-parameter "text")
-            (flash "Your message has been sent.")
-            (contact-opt-out-flash (mapcar #'caar people))
-            (let* ((time (get-universal-time))
-                   (new-comment-id (create-comment :on id
-                                                   :text (post-parameter "text")
-                                                   :time time
-                                                   :by party)))
-              (send-metric* :message-sent new-comment-id)
-              (amodify-db id :log (append
-                                    it
-                                    (list
-                                      (list :time time
-                                            :party party
-                                            :action (post-parameter "transaction-action")
-                                            :comment new-comment-id)))))
-            (see-other (script-name*))))
+    (let ((transaction (db id)))
+      (if (eq (getf transaction :type) :transaction)
+        (let* ((people (getf transaction :people))
+               (mailbox (assoc-assoc *userid* people))
+               (party (car mailbox))
+               (action-string (post-parameter-string "transaction-action"))
+               (action)
+               (url (strcat "/transactions/" id)))
+          (setf action
+                (cond
+                  ((string= action-string "want")
+                   :requested)
+                  ((string= action-string "will-give")
+                   :offered)
+                  ((string= action-string "decline")
+                   :declined)
+                  ((string= action-string "withhold")
+                   :withheld)
+                  ((string= action-string "already-given")
+                   :given)
+                  ((string= action-string "already-received")
+                   :received)
+                  ((string= action-string "dispute")
+                   :disputed)))
+          (if party
+            (cond
+              ((post-parameter "cancel")
+               (see-other url))
+              ((post-parameter "text")
+               (flash "Your message has been sent.")
+               (contact-opt-out-flash (mapcar #'caar people))
+               (let* ((time (get-universal-time))
+                      (new-comment-id (create-comment :on id
+                                                      :text (post-parameter "text")
+                                                      :time time
+                                                      :by party)))
+                 (send-metric* :message-sent new-comment-id))
+               (see-other url))
+              (action
+                 (amodify-db id :log (append
+                                       it
+                                       (list
+                                         (list :time (get-universal-time)
+                                               :party party
+                                               :action action))))
+                 (see-other url))
+              )
+            (permission-denied)))
 
-         (permission-denied)))
-      (not-found))))
+      (not-found)))))

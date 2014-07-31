@@ -438,8 +438,7 @@
            :on id
            :action (cond
                      ((string= action-type "offer") :offered)
-                     ((string= action-type "request") :requested)
-                     ((string= action-type "inquiry") :inquired))
+                     ((string= action-type "request") :requested))
            :text (post-parameter "reply-text")
            :match-id (post-parameter-integer "match"))
          (flash "Your reply has been sent.")

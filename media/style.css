@@ -3427,6 +3427,10 @@ span.highlight {
  padding: 0 1em 0.1em;
 }
 
+div.transaction-option {
+ margin-bottom: 0.8em;
+}
+
 .transaction-options a {
  margin-left: 0.6em;
 }
