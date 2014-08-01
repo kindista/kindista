@@ -154,9 +154,24 @@
                  (:offer
                    (case (getf log-event :action)
                      (:requested
-                       (s+ " requested to recieve this offer from " inventory-by-name) )
+                       (s+ " requested to recieve this offer from "
+                           inventory-by-name) )
                      (:offered
-                       (s+ " agreed to share this offer with " transaction-initiator-name))))
+                       (s+ " agreed to share this offer with "
+                           transaction-initiator-name))
+                     (:declined
+                       (s+ " no longer wishes to receive this offer from "
+                           inventory-by-name))
+                     (:gave
+                       (s+ " has shared this offer with "
+                           transaction-initiator-name))
+                     (:received
+                       (s+ " has received this offer from "
+                           inventory-by-name))
+                     (:disputed
+                       (s+ " claims that they have not yet received this offer from "
+                           inventory-by-name))
+                     ))
                  (:request
                    (case (getf log-event :action)
                      (:requested
@@ -164,10 +179,20 @@
                            transaction-initiator-name
                            " is offering") )
                      (:offered
-                       (s+ " agreed to fulfill this request from "  inventory-by-name))
+                       (s+ " agreed to fulfill this request from "
+                           inventory-by-name))
                      (:declined
-                       (s+ " no longer wishes to receive this reqeust from " transaction-initiator-name)
-                       )
+                       (s+ " no longer wishes to receive this request from "
+                           transaction-initiator-name))
+                     (:gave
+                       (s+ " has fulfilled this request from "
+                           inventory-by-name))
+                     (:received
+                       (s+ " has received this request from "
+                           transaction-initiator-name))
+                     (:disputed
+                       (s+ " claims that they have not yet received this request from "
+                           transaction-initiator-name))
                      ))
                  ))
           "."
@@ -260,9 +285,10 @@
 
         (str (transaction-button
                "dispute"
-               nil
-               (s+ "I have not yet received what " other-party-name " has offered me.")
-               (s+ "I have not yet received this offer from " other-party-name ".")))))
+               (icon "caution")
+               (s+ "I have <strong>not</strong> yet received what "
+                   other-party-name " has offered me.")
+               (s+ "I have <strong>not</strong> yet received this offer from " other-party-name ".")))))
 
        (str (icon "comment"))
        (:a :href (url-compose url "add-comment" "t")
@@ -384,12 +410,12 @@
              (case (getf current-event :action)
                (:requested
                  (case (getf other-party-event :action)
-                   (:given '("already-received" "dispute"))
+                   (:gave '("already-received" "dispute"))
                    (t '("decline" "already-received"))))
                (:declined '("want" "already-received"))
                (:disputed '("already-received"))
                (t (case (getf other-party-event :action)
-                    (:given '("already-received" "dispute"))
+                    (:gave '("already-received" "dispute"))
                     (t '("want" "already-received"))))))
           (:giver
             (case (getf current-event :action)
@@ -397,6 +423,11 @@
                 (case (getf other-party-event :action)
                   (:received nil)
                   (t '("withheld" "already-given"))))
+              (:gave
+                (when (and (eql (getf other-party-event :action)
+                              :gratitude-posted)
+                           (getf inventory-item :active))
+                  '("will-give" "already-given")))
               (t '("will-give" "already-given"))))))
 
   (values options
@@ -498,7 +529,7 @@
                   ((string= action-string "withhold")
                    :withheld)
                   ((string= action-string "already-given")
-                   :given)
+                   :gave)
                   ((string= action-string "already-received")
                    :received)
                   ((string= action-string "dispute")

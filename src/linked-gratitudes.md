@@ -23,8 +23,8 @@
 ## TEST before server migration
 
 ## Server migration
-[ ] stop[ ]acceptor
-[ ] ,d on migrate[ ]to[ ]new[ ]transaction[ ]format
+[ ] stop-acceptor
+[ ] ,d on migrate-to-new-transaction-format
 [ ] quickload
 [ ] load-db
 [ ] pray
