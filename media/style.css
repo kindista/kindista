@@ -3427,12 +3427,16 @@ span.highlight {
  padding: 0 1em 0.1em;
 }
 
-div.transaction-option {
- margin-bottom: 0.8em;
+div.transaction-option button,
+div.transaction-options a {
+ margin-bottom: 1em;
+ padding-left: 0;
+ margin-left: 0;
 }
 
-.transaction-options a {
- margin-left: 0.6em;
+div.transaction-option button > img,
+div.transaction-options a > img {
+ margin-right: 0.5em;
 }
 
 .item.reply:first-child {

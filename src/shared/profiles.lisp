@@ -453,24 +453,9 @@
         (when (and (eql type :gratitude)
                    (not (eql id *userid*))
                    (eql (getf entity :active) t))
-          (htm
-            (:div :class "item"
-             (:h4 "Do you have gratitude to share for " (str (getf entity :name)) "?")
-             (:form :method "post" :action "/gratitude/new"
-               (unless (member *userid* (getf entity :admins))
-                 (awhen (groups-with-user-as-admin)
-                   (htm
-                     (:strong :class "small" "Post gratitude from "))
-                     (str (identity-selection-html (or groupid *userid*)
-                                                   it
-                                                   :class "identity small profile-gratitude"))))
-               (:input :type "hidden" :name "subject" :value id)
-               (:input :type "hidden" :name "next" :value (strcat *base-url* "/reputation"))
-               (:table :class "post"
-                (:tr
-                  (:td (:textarea :cols "1000" :rows "4" :name "text"))
-                  (:td
-                    (:button :class "yes submit" :type "submit" :name "create" "Post"))))))))
+          (str (simple-gratitude-compose id
+                                         :entity entity
+                                         :next (strcat *base-url* "/reputation"))))
 
         (:div :class "activity"
           (when groupid

@@ -88,8 +88,9 @@
         (history))
 
   (dolist (action actions)
-    (sort (push action history) #'< :key #'(lambda (entry)
-                                             (getf entry :time))))
+    (unless (getf action :comment)
+      (sort (push action history) #'> :key #'(lambda (entry)
+                                               (getf entry :time)))))
 
   (dolist (comment-id comments)
     (let* ((data (db comment-id))
@@ -117,17 +118,21 @@
                         :for-name (db for :name)
                         :text text)
                   history)
-            #'<
+            #'>
             :key #'(lambda (entry) (getf entry :time)))))
 
   (html
     (dolist (event history)
-      (cond
+      (acond
        ((getf event :action)
-        (str (transaction-action-html event
+        (if (eql it :gratitude-posted)
+          (str (gratitude-activity-item (gethash (getf event :id) *db-results*)
+                                        ))
+
+          (str (transaction-action-html event
                                       on-type
                                       inventory-by-name
-                                      (db (getf transaction :by) :name))))
+                                      (db (getf transaction :by) :name)))))
 
        ((getf event :text)
         (str (conversation-comment-html
@@ -234,16 +239,25 @@
    url)
   (html
     (:div :class "transaction-options item"
+
+     (when (find "post-gratitude" transaction-options :test #'string=)
+       (htm
+         (:a :href (url-compose url "post-gratitude" "t")
+          (str (icon "checkmark"))
+          (str (s+ "I have gratitude to share about "
+                   other-party-name
+                   " for this gift.")))))
+
      (:form :method "post" :action url
       (flet ((transaction-button (status icon request-text offer-text)
                (when (find status transaction-options :test #'string=)
                  (html
                    (:div :class "transaction-option"
-                     (str icon)
                      (:button :type "submit"
                               :class "green simple-link"
                               :name "transaction-action"
                               :value status
+                      (str icon)
                       (str (if (eq on-type :request)
                              request-text offer-text))))))))
 
@@ -290,8 +304,8 @@
                    other-party-name " has offered me.")
                (s+ "I have <strong>not</strong> yet received this offer from " other-party-name ".")))))
 
-       (str (icon "comment"))
        (:a :href (url-compose url "add-comment" "t")
+        (str (icon "comment"))
         (str (s+ "I have a question or comment for " other-party-name ".")))) ))
 
 (defun transaction-html
@@ -362,11 +376,9 @@
                  (str (html-text (or (getf on-item :details)
                                      (getf data :deleted-item-text))))))))
 
-      (str history-html)
-
       (str form-elements-html)
+      (str history-html))
 
-      )
     :selected "messages"))
 
 (defun transaction-options-for-user
@@ -410,10 +422,11 @@
              (case (getf current-event :action)
                (:requested
                  (case (getf other-party-event :action)
-                   (:gave '("already-received" "dispute"))
+                   (:gave '("post-gratitude" "dispute"))
                    (t '("decline" "already-received"))))
                (:declined '("want" "already-received"))
                (:disputed '("already-received"))
+               (:received '("post-gratitude"))
                (t (case (getf other-party-event :action)
                     (:gave '("already-received" "dispute"))
                     (t '("want" "already-received"))))))
@@ -457,12 +470,14 @@
                  (latest-seen (or (when (numberp (cdr person))
                                     (cdr person))
                                   latest-comment))
-                 (on-item (db (getf transaction :on)))
+                 (on-id (getf transaction :on))
+                 (on-item (db on-id))
                  (inventory-by (getf on-item :by))
                  (transaction-options)
                  (speaking-for)
                  (other-party)
                  (other-party-name)
+                 (post-gratitude-p (get-parameter-string "post-gratitude"))
                  (with (remove *userid* (getf transaction :participants)))
                  (deleted-type (getf transaction :deleted-item-type))
                  (on-type (getf on-item :type)))
@@ -482,13 +497,22 @@
                                                      inventory-by
                                                      latest-seen
                                                      transaction)
-                                (if add-comment
-                                  (transaction-comment-input id)
-                                  (transaction-buttons-html
-                                     transaction-options
-                                     other-party-name
-                                     on-type
-                                     url))
+                                (cond
+                                  (post-gratitude-p
+                                    (simple-gratitude-compose
+                                      other-party
+                                      :next url
+                                      :post-as speaking-for
+                                      :on-id on-id
+                                      :submit-name "create"
+                                      :button-location :bottom))
+                                  (add-comment
+                                    (transaction-comment-input id))
+                                  (t (transaction-buttons-html
+                                       transaction-options
+                                       other-party-name
+                                       on-type
+                                       url)))
                                 :data transaction
                                 :other-party-link (person-link other-party)
                                 :deleted-type deleted-type

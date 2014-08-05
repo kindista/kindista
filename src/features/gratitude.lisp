@@ -291,6 +291,48 @@
                                        :truncate t
                                        :show-distance t)))))))
 
+(defun simple-gratitude-compose
+  (entity-id
+   &key (entity (db entity-id))
+        (button-location :right)
+        next
+        post-as
+        on-id
+        (submit-name "submit")
+   &aux (groupid (when (eql (getf entity :type) :group) entity-id))
+        (submit-button (html (:button :class "yes submit" :type "submit" :name submit-name "Post"))))
+  (html
+    (:div :class "item"
+     (:h4 "Do you have gratitude to share for " (str (getf entity :name)) "?")
+     (:form :method "post" :action "/gratitude/new"
+       (unless (or post-as (member *userid* (getf entity :admins)))
+         (awhen (groups-with-user-as-admin)
+           (htm
+             (:strong :class "small" "Post gratitude from "))
+             (str (identity-selection-html (or groupid *userid*)
+                                           it
+                                           :class "identity small profile-gratitude"))))
+       (awhen post-as
+         (htm (:input :type "hidden" :name "identity-selection" :value it)))
+       (awhen on-id
+         (htm (:input :type "hidden" :name "on-id" :value it)))
+       (:input :type "hidden" :name "subject" :value entity-id)
+       (:input :type "hidden" :name "next" :value next)
+       (:table :class "post"
+        (:tr
+          (:td (:textarea :cols "1000" :rows "4" :name "text"))
+          (when (eq button-location :right)
+            (htm (:td (str submit-button)))))
+        (when (eql button-location :bottom)
+          (htm
+            (:tr
+              (:td
+                (:button :class "cancel"
+                         :type "submit"
+                         :name "cancel"
+                  "Cancel")
+                (str submit-button))))))))))
+
 (defun gratitude-compose
   (&key error
         subjects
@@ -537,6 +579,7 @@
                        ((string= posted-on-type "request") :requests)))
            (on-id (post-parameter-integer "on-id"))
            (text (post-parameter "text"))
+           (next (post-parameter-string "next"))
            (subjects (parse-subject-list
                        (format nil "~A,~A" (post-parameter "add")
                                            (post-parameter "subject"))
@@ -557,7 +600,7 @@
                                   :single-recipient-name single-recipient-name
                                   :groupid (when adminp groupid)
                                   :text text
-                                  :next (post-parameter "next")
+                                  :next next
                                   :on-type posted-on-type
                                   :on-id on-id
                                   :error error
@@ -568,16 +611,16 @@
                (gratitude-add-subject :results results
                                       :subjects subjects
                                       :text (post-parameter "text")
-                                      :next (post-parameter "next")
+                                      :next next
                                       :groupid (when adminp groupid))))
 
         (cond
           ((post-parameter "cancel")
-           (see-other (or (post-parameter "next") "/home")))
+           (see-other (or next "/home")))
 
           ((not (confirmed-location))
            (flash "You must set your street address on your settings page before you can post gratitude about someone." :error t)
-           (see-other (or (post-parameter "next") "/home")))
+           (see-other (or next "/home")))
 
           ((post-parameter "add")
            (if (string= (post-parameter "add") "new")
@@ -594,6 +637,7 @@
                             (search-people (post-parameter "name")))))
 
           ((and (or relevant-offers relevant-requests)
+                (not on-id)
                 (not posted-on-type))
            (g-compose :error '(:text "Please let us know what this statement of gratitude is in reference to."
                                :field "on-type")))
@@ -621,7 +665,7 @@
                (progn
                  new-id
                  (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
-                 (see-other (or (post-parameter "next") "/home")))
+                 (see-other (or next "/home")))
                (progn
                  (awhen on-id
                    (let* ((inventory-result (gethash on-id *db-results*))
@@ -646,7 +690,7 @@
                                       on-types)
                                 (remove pending-association it :test #'equal)))))
 
-                 (see-other (format nil "/gratitude/~A" new-id)))))))
+                 (see-other (or next (format nil "/gratitude/~A" new-id))))))))
 
           (t
            (g-compose :subjects subjects)))))))
