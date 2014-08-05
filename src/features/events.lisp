@@ -17,6 +17,10 @@
 
 (in-package :kindista)
 
+(defun activate-incorrectly-inactive-events
+  (&aux (events '(17726 17711 17477 17290 16769)))
+  (dolist (id events) (modify-db id :active t)))
+
 (defun create-event (&key (host *userid*) lat long title details privacy local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date)
   (insert-db (remove-nil-plist-pairs (list :type :event
                                            :hosts (list host)
@@ -34,6 +38,7 @@
                                            :by-day-or-date by-day-or-date
                                            :weeks-of-month weeks-of-month
                                            :local-end-date local-end-date
+                                           :active t
                                            :created (get-universal-time)))))
 
 (defun stale-eventp (item &optional time)
