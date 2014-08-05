@@ -15,11 +15,26 @@
 ;;; You should have received a copy of the GNU Affero General Public License
 ;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
+
 (in-package :kindista)
 
 (defun activate-incorrectly-inactive-events
   (&aux (events '(17726 17711 17477 17290 16769)))
+"To fix a bug introduced in commit f24b715bd4bb893f8bc6fc037910ee677b3e59dd which required events to be marked active, but didn't do so for new events"
   (dolist (id events) (modify-db id :active t)))
+
+(defun find-incorrectly-inactive-events
+  (&aux (time (parse-datetime "08/04/2014"))
+        (events))
+"To find events to add to activate-incorrectly-inactive-events from the last day or so"
+  (dolist (id (hash-table-keys *db*))
+    (let* ((data (db id))
+           (type (getf data :type))
+           (created (getf data :created)))
+      (when (and (eq type :event)
+                 (> created time))
+        (push id events))))
+  (sort events #'>))
 
 (defun create-event (&key (host *userid*) lat long title details privacy local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date)
   (insert-db (remove-nil-plist-pairs (list :type :event
