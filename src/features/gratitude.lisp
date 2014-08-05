@@ -296,6 +296,7 @@
    &key (entity (db entity-id))
         (button-location :right)
         next
+        transaction-id
         post-as
         on-id
         (submit-name "submit")
@@ -316,6 +317,8 @@
          (htm (:input :type "hidden" :name "identity-selection" :value it)))
        (awhen on-id
          (htm (:input :type "hidden" :name "on-id" :value it)))
+       (awhen transaction-id
+         (htm (:input :type "hidden" :name "transaction-id" :value it)))
        (:input :type "hidden" :name "subject" :value entity-id)
        (:input :type "hidden" :name "next" :value next)
        (:table :class "post"
@@ -673,22 +676,26 @@
                                                  (getf (gethash recipient-id
                                                                *pending-gratitude-index*)
                                                        on-types)))
-                          (transaction-id (cdr pending-association)))
+                          (transaction-id (or (cdr pending-association)
+                                              (post-parameter-integer "transaction-id"))))
 
                      (when pending-association
-                       (amodify-db transaction-id
-                                   :log (append 
-                                          it
-                                          (list (list :time time
-                                                       :party recipient-id
-                                                       :action :gratitude-posted
-                                                       :comment new-id))))
 
                        (with-locked-hash-table (*pending-gratitude-index*)
                          (asetf (getf (gethash recipient-id
                                                *pending-gratitude-index*)
                                       on-types)
-                                (remove pending-association it :test #'equal)))))
+                                (remove pending-association it :test #'equal))))
+
+                     (amodify-db transaction-id
+                                 :log (append
+                                        it
+                                        (list (list :time time
+                                                    :party (if adminp
+                                                             (cons *userid* groupid)
+                                                             (list *userid*))
+                                                    :action :gratitude-posted
+                                                    :comment new-id)))))
 
                  (see-other (or next (format nil "/gratitude/~A" new-id))))))))
 

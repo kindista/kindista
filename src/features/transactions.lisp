@@ -88,7 +88,7 @@
         (history))
 
   (dolist (action actions)
-    (unless (getf action :comment)
+    (when (getf action :action)
       (sort (push action history) #'> :key #'(lambda (entry)
                                                (getf entry :time)))))
 
@@ -123,16 +123,14 @@
 
   (html
     (dolist (event history)
+      (pprint event)
+      (terpri)
       (acond
        ((getf event :action)
-        (if (eql it :gratitude-posted)
-          (str (gratitude-activity-item (gethash (getf event :id) *db-results*)
-                                        ))
-
-          (str (transaction-action-html event
-                                      on-type
-                                      inventory-by-name
-                                      (db (getf transaction :by) :name)))))
+        (str (transaction-action-html event
+                                    on-type
+                                    inventory-by-name
+                                    (db (getf transaction :by) :name))))
 
        ((getf event :text)
         (str (conversation-comment-html
@@ -146,62 +144,66 @@
                           (getf event :id))))))))))
 
 (defun transaction-action-html (log-event on-type inventory-by-name transaction-initiator-name)
-  (card
-    (html
-      (str (h3-timestamp (getf log-event :time)))
-      (:p
-        (:strong
-          (str (person-link (car (getf log-event :party))))
-          (awhen (cdr (getf log-event :party))
-            (htm " (on behalf of "
-                 (str (group-link it)) ")" ))
-          (str (case on-type
-                 (:offer
-                   (case (getf log-event :action)
-                     (:requested
-                       (s+ " requested to recieve this offer from "
-                           inventory-by-name) )
-                     (:offered
-                       (s+ " agreed to share this offer with "
-                           transaction-initiator-name))
-                     (:declined
-                       (s+ " no longer wishes to receive this offer from "
-                           inventory-by-name))
-                     (:gave
-                       (s+ " has shared this offer with "
-                           transaction-initiator-name))
-                     (:received
-                       (s+ " has received this offer from "
-                           inventory-by-name))
-                     (:disputed
-                       (s+ " claims that they have not yet received this offer from "
-                           inventory-by-name))
+  (case (getf log-event :action)
+    (:gratitude-posted
+      (gratitude-activity-item (gethash (getf log-event :comment) *db-results*)))
+    (t
+      (card
+        (html
+          (str (h3-timestamp (getf log-event :time)))
+          (:p
+            (:strong
+              (str (person-link (car (getf log-event :party))))
+              (awhen (cdr (getf log-event :party))
+                (htm " (on behalf of "
+                     (str (group-link it)) ")" ))
+              (str (case on-type
+                     (:offer
+                       (case (getf log-event :action)
+                         (:requested
+                           (s+ " requested to recieve this offer from "
+                               inventory-by-name) )
+                         (:offered
+                           (s+ " agreed to share this offer with "
+                               transaction-initiator-name))
+                         (:declined
+                           (s+ " no longer wishes to receive this offer from "
+                               inventory-by-name))
+                         (:gave
+                           (s+ " has shared this offer with "
+                               transaction-initiator-name))
+                         (:received
+                           (s+ " has received this offer from "
+                               inventory-by-name))
+                         (:disputed
+                           (s+ " claims that they have not yet received this offer from "
+                               inventory-by-name))
+                         ))
+                     (:request
+                       (case (getf log-event :action)
+                         (:requested
+                           (s+ " wants to receive what "
+                               transaction-initiator-name
+                               " is offering") )
+                         (:offered
+                           (s+ " agreed to fulfill this request from "
+                               inventory-by-name))
+                         (:declined
+                           (s+ " no longer wishes to receive this request from "
+                               transaction-initiator-name))
+                         (:gave
+                           (s+ " has fulfilled this request from "
+                               inventory-by-name))
+                         (:received
+                           (s+ " has received this request from "
+                               transaction-initiator-name))
+                         (:disputed
+                           (s+ " claims that they have not yet received this request from "
+                               transaction-initiator-name))
+                         ))
                      ))
-                 (:request
-                   (case (getf log-event :action)
-                     (:requested
-                       (s+ " wants to receive what "
-                           transaction-initiator-name
-                           " is offering") )
-                     (:offered
-                       (s+ " agreed to fulfill this request from "
-                           inventory-by-name))
-                     (:declined
-                       (s+ " no longer wishes to receive this request from "
-                           transaction-initiator-name))
-                     (:gave
-                       (s+ " has fulfilled this request from "
-                           inventory-by-name))
-                     (:received
-                       (s+ " has received this request from "
-                           transaction-initiator-name))
-                     (:disputed
-                       (s+ " claims that they have not yet received this request from "
-                           transaction-initiator-name))
-                     ))
-                 ))
-          "."
-          )))))
+              "."
+              )))))))
 
 (defun transaction-comments (transaction-id latest-seen)
   (html
@@ -295,7 +297,7 @@
                "decline"
                (icon "decline")
                (s+ "I don't want what " other-party-name " has offered me.")
-               (s+ "I don't want this offer from " other-party-name ".")))
+               (s+ "I no longer want this offer from " other-party-name ".")))
 
         (str (transaction-button
                "dispute"
@@ -502,6 +504,7 @@
                                     (simple-gratitude-compose
                                       other-party
                                       :next url
+                                      :transaction-id id
                                       :post-as speaking-for
                                       :on-id on-id
                                       :submit-name "create"
