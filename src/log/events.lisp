@@ -41,7 +41,10 @@
   (loop
     (let ((*notice* (receive-message *notice-mailbox*)))
       (if (eq *notice* 'exit)
-        (return)
+        (progn
+          (terminate-thread *notice-thread*)
+          (setf *notice-thread* nil)
+          (return))
         (progn
           (dolist (handler (gethash (first *notice*) *notice-handlers*))
             (funcall handler))
@@ -49,12 +52,10 @@
             (funcall handler)))))))
 
 (defun start-notice-thread ()
-  (if (or (not *notice-thread*)
-          (and *notice-thread* (not (thread-alive-p *notice-thread*))))
+  (when (or (not *notice-thread*)
+            (and *notice-thread* (not (thread-alive-p *notice-thread*))))
     (setf *notice-thread* (make-thread #'notice-thread-loop))))
 
 (defun stop-notice-thread ()
   (when *notice-thread*
-    (send-message *notice-mailbox* 'exit)
-    (join-thread *notice-thread*) 
-    (setf *notice-thread* nil)))
+    (send-message *notice-mailbox* 'exit)))
