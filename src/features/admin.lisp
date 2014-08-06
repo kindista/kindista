@@ -67,8 +67,7 @@
                              (htm (:strong (str it))))
                            (awhen (getf data :details)
                              (htm (:br)
-                                  (str it)))
-                           (str (getf data :details)))
+                                  (str it))))
                          (:p (:strong "Tags: ")
                           (str (format nil *english-list* (getf data :tags))))
                          (:form :method "post"

@@ -754,25 +754,24 @@
                                (:offer *offer-stem-index*)
                                (t *request-stem-index*))
                              q)))
-           (nearby (if q
-                     (result-id-intersection
-                       (geo-index-query (case type
-                                          (:offer *offer-geo-index*)
-                                          (t *request-geo-index*))
-                                        *latitude*
-                                        *longitude*
-                                        distance)
-                       (mapcar #'car stem-results))
-                     (geo-index-query (case type
+           (nearby (geo-index-query (case type
                                         (:offer *offer-geo-index*)
                                         (t *request-geo-index*))
                                         *latitude*
                                         *longitude*
-                                      distance)))
+                                      distance))
+           (nearby-stem-matches (when q
+                                  (remove-if-not #'(lambda (stem-result)
+                                                     (find stem-result nearby))
+                                                 stem-results
+                                                 :key #'car)))
+           (nearby-matches (if q
+                             (mapcar #'car nearby-stem-matches)
+                             nearby))
            (items nil))
 
       (let ((tags (make-hash-table :test 'equalp)))
-        (dolist (item nearby)
+        (dolist (item nearby-matches)
           (dolist (tag (result-tags item))
             (push item (gethash tag tags))))
 
@@ -791,7 +790,7 @@
                       (setf (gethash tag tags) new-items)
                       (remhash tag tags)))))
 
-          (setf items nearby))
+          (setf items nearby-matches))
 
         ; for each tag, number of contents + ordered list of subtags (up to 4)
         (values (iter (for (tag tag-items) in-hashtable tags)
@@ -817,10 +816,10 @@
                 (inventory-rank (if q
                                   (remove-if-not
                                     #'(lambda (result)
-                                        (find result nearby))
-                                    stem-results
+                                        (find result items))
+                                    nearby-stem-matches
                                     :key #'car)
-                                  (mapcar #'list nearby)))
+                                  (mapcar #'list items)))
 
                ;(safe-sort items #'> :key #'inventory-rank)
                )))))

@@ -50,12 +50,13 @@
                       #'new-group-membership-invitation-notice-handler)
   (add-notice-handler :new-gratitude #'new-gratitude-notice-handler))
 
+;; first check to make sure *notice-mailbox* is empty
 (defun end ()
-  (stop *acceptor*)
   (stop (acceptor-metric-system *acceptor*))
+  ;;there is currently no way to stop the metric system after the *acceptor* stops
+  (stop *acceptor*)
   (save-db)
   (save-tokens)
-  (terminate-thread *acceptor-thread*)
   (stop-notice-thread))
 
 (defun reboot-acceptor ()

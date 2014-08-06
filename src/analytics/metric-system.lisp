@@ -88,7 +88,7 @@
               (setf checked-mailbox (union checked-mailbox (getf data :checked-mailbox)))
               (setf used-search (union used-search (getf data :used-search)))
               (setf got-offers (union got-offers (getf data :got-offers)))
-              (setf got-requests (union got-requests (getf data :got-requests)))    
+              (setf got-requests (union got-requests (getf data :got-requests)))
               (setf messages-sent (union messages-sent (getf data :messages-sent)))))))
 
       (ensure-directories-exist dirname)
