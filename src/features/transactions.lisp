@@ -123,8 +123,6 @@
 
   (html
     (dolist (event history)
-      (pprint event)
-      (terpri)
       (acond
        ((getf event :action)
         (str (transaction-action-html event
