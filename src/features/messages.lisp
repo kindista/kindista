@@ -143,7 +143,7 @@
                  (:conversation
                   (db (getf data :latest-comment) :created))
                  (:transaction
-                   (or (getf (car (getf data :log)) :time)
+                   (or (getf (car (last (getf data :log))) :time)
                        (db (getf data :latest-comment) :created)))
                  ((or :group-membership-invitation
                       :group-membership-request)
@@ -192,7 +192,7 @@
       ;; :gratitude-posted
       (loop for event in (getf data :log)
             until (eq (getf event :action) :gratitude-posted)
-            when (or (eq (getf event :action) :given)
+            when (or (eq (getf event :action) :gave)
                      (eq (getf event :action) :received))
             do (setf pending-gratitude-p t))
 

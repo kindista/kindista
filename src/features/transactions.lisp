@@ -78,6 +78,7 @@
 
 (defun transaction-history
   (transaction-id
+   on-id
    on-type
    inventory-by
    latest-seen
@@ -126,9 +127,10 @@
       (acond
        ((getf event :action)
         (str (transaction-action-html event
-                                    on-type
-                                    inventory-by-name
-                                    (db (getf transaction :by) :name))))
+                                      on-id
+                                      on-type
+                                      (person-link inventory-by)
+                                      (person-link (getf transaction :by)))))
 
        ((getf event :text)
         (str (conversation-comment-html
@@ -141,7 +143,85 @@
                 (when (>= (or latest-seen 0)
                           (getf event :id))))))))))
 
-(defun transaction-action-html (log-event on-type inventory-by-name transaction-initiator-name)
+(defun transaction-action-text 
+  (log-event
+   on-id
+   on-type
+   inventory-by-name
+   transaction-initiator-name
+   &aux  (on-type-string (case on-type
+                           (:offer "offer")
+                           (:request "request")))
+         (on-url (html (:a :href (url-compose (strcat "/" on-type-string "s/" on-id))
+                          (str on-type-string)))))
+  (html
+    (str (person-link (car (getf log-event :party))))
+    (awhen (cdr (getf log-event :party))
+      (htm " (on behalf of "
+           (str (group-link it)) ")" ))
+    (str (case on-type
+           (:offer
+             (case (getf log-event :action)
+               (:requested
+                 (strcat " requested to recieve this "
+                     on-url
+                     " from "
+                     inventory-by-name) )
+               (:offered
+                 (strcat " agreed to share this " on-url " with "
+                     transaction-initiator-name))
+               (:declined
+                 (strcat " no longer wishes to receive this " on-url " from "
+                     inventory-by-name))
+               (:gave
+                 (strcat " has shared this " on-url " with "
+                     transaction-initiator-name))
+               (:received
+                 (strcat " has received this "
+                         on-url
+                         " from "
+                     inventory-by-name))
+               (:disputed
+                 (strcat " claims that they have not yet received this " on-url " from "
+                     inventory-by-name))
+               ))
+           (:request
+             (case (getf log-event :action)
+               (:requested
+                 (strcat " wants to receive what "
+                     transaction-initiator-name
+                     " is offering") )
+               (:offered
+                 (strcat " agreed to fulfill this " on-url " from "
+                     inventory-by-name))
+               (:declined
+                 (strcat " no longer wishes to receive this " on-url " from "
+                     transaction-initiator-name))
+               (:gave
+                 (strcat " has fulfilled this " on-url " from "
+                     inventory-by-name))
+               (:received
+                 (strcat " has received this " on-url " from "
+                     transaction-initiator-name))
+               (:disputed
+                 (strcat " claims that they have not yet received this " on-url " from "
+                     transaction-initiator-name))
+               ))))
+    "."
+    )
+  )
+
+(defun transaction-action-html
+  (log-event
+   on-id
+   on-type
+   inventory-by-name
+   transaction-initiator-name
+   &aux  (on-type-string (case on-type
+                           (:offer "offer")
+                           (:request "request")))
+         (on-url (html (:a :href (url-compose (strcat "/" on-type-string "s/" on-id))
+                          (str on-type-string)))))
   (case (getf log-event :action)
     (:gratitude-posted
       (gratitude-activity-item (gethash (getf log-event :comment) *db-results*)))
@@ -159,44 +239,48 @@
                      (:offer
                        (case (getf log-event :action)
                          (:requested
-                           (s+ " requested to recieve this offer from "
+                           (strcat " requested to recieve this "
+                               on-url
+                               " from "
                                inventory-by-name) )
                          (:offered
-                           (s+ " agreed to share this offer with "
+                           (strcat " agreed to share this " on-url " with "
                                transaction-initiator-name))
                          (:declined
-                           (s+ " no longer wishes to receive this offer from "
+                           (strcat " no longer wishes to receive this " on-url " from "
                                inventory-by-name))
                          (:gave
-                           (s+ " has shared this offer with "
+                           (strcat " has shared this " on-url " with "
                                transaction-initiator-name))
                          (:received
-                           (s+ " has received this offer from "
+                           (strcat " has received this "
+                                   on-url
+                                   " from "
                                inventory-by-name))
                          (:disputed
-                           (s+ " claims that they have not yet received this offer from "
+                           (strcat " claims that they have not yet received this " on-url " from "
                                inventory-by-name))
                          ))
                      (:request
                        (case (getf log-event :action)
                          (:requested
-                           (s+ " wants to receive what "
+                           (strcat " wants to receive what "
                                transaction-initiator-name
                                " is offering") )
                          (:offered
-                           (s+ " agreed to fulfill this request from "
+                           (strcat " agreed to fulfill this " on-url " from "
                                inventory-by-name))
                          (:declined
-                           (s+ " no longer wishes to receive this request from "
+                           (strcat " no longer wishes to receive this " on-url " from "
                                transaction-initiator-name))
                          (:gave
-                           (s+ " has fulfilled this request from "
+                           (strcat " has fulfilled this " on-url " from "
                                inventory-by-name))
                          (:received
-                           (s+ " has received this request from "
+                           (strcat " has received this " on-url " from "
                                transaction-initiator-name))
                          (:disputed
-                           (s+ " claims that they have not yet received this request from "
+                           (strcat " claims that they have not yet received this " on-url " from "
                                transaction-initiator-name))
                          ))
                      ))
@@ -493,6 +577,7 @@
               (transaction-html id
                                 on-item
                                 (transaction-history id
+                                                     on-id
                                                      on-type
                                                      inventory-by
                                                      latest-seen

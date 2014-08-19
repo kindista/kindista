@@ -121,13 +121,21 @@
         new-data)))) )
 
 (defun index-gratitude-link (gratitude-id on-item-id &optional (time (get-universal-time)))
-  (with-mutex (*linked-gratitudes-mutex*)
+  (with-mutex (*completed-transactions-mutex*)
     (stable-sort (push (list :time time
-                             :gratiude gratitude-id
+                             :gratitude gratitude-id
                              :on on-item-id)
-                       *linked-gratitudes-index*)
+                       *completed-transactions-index*)
                  #'>
                  :key #'(lambda (item) (getf item :time)))))
+
+(defun deindex-gratitude-link (gratitude-id)
+  (with-mutex (*completed-transactions-mutex*)
+    (asetf *completed-transactions-index*
+           (remove gratitude-id
+                   it
+                   :key #'(lambda (link)
+                            (getf link :gratitude))))))
 
 (defun index-gratitude (id data)
   (let* ((author-id (getf data :author))
@@ -149,7 +157,8 @@
         (push id (gethash author-id *pending-person-items-index*))))
 
       (t
-       (index-message id data)
+       (unless (getf data :on)
+         (index-message id data))
 
        (with-locked-hash-table (*db-results*)
          (setf (gethash id *db-results*) result))
@@ -213,6 +222,8 @@
   (let* ((result (gethash id *db-results*))
          (data (db id))
          (people (cons (getf data :author) (getf data :subjects))))
+
+    (when (getf data :on) (deindex-gratitude-link id))
 
     (with-locked-hash-table (*gratitude-results-index*)
       (dolist (result (gethash id *gratitude-results-index*))
