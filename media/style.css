@@ -1738,6 +1738,7 @@ table.messages {
 
 .mail.card p.text {
  height: 1.7em;
+ width: 100%;
  line-height: 1.5em;
  margin-top: 0;
  overflow: hidden;
@@ -1747,8 +1748,8 @@ table.messages {
  background: #faf8f0;
 }
 
-.read.mail.card p.text > a {
- color: #666666;
+.mail.card p.text span.title {
+ color:#5c8a2f;
 }
 
 .card {
@@ -3411,7 +3412,8 @@ span.highlight {
  background-color: #F0F137;
 }
 
-.card .text > a {
+.card .text > a,
+.card a > p.text {
  color: #333;
  font-weight: normal;
 }

@@ -14,7 +14,7 @@
      - (:time time :party (personid . groupid) :action :value :gratitude gratitudeid)
 [x] write a function for data migration
 [ ] edit transaction inbox item, conversation view, email notification as necessary (even when no comment has occured)
-[ ] date and title of inbox item
+[ ] what about gratitudes on inventory items w/o transactions (need a way to index for inbox)
 [ ] test new email notification
 [ ] choose options and language to display based on current data structure (current state of participant role)
 [ ] change :log as necessary with each new comment

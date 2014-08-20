@@ -493,22 +493,33 @@
 
           (str (group-message-indicator message groups)))
 
-        (:p :class "text"
-          (:span :class "title"
-           (str (url (ellipsis (getf conversation :subject) :length 30)))
-            (when (> comments 1)
-              (htm
-                " (" (str comments) ")")))
-          " - "
-          (str (url (ellipsis (getf comment-data :text)))))))))
+        (str
+          (url
+            (html
+              (:p :class "text"
+                (:span :class "title"
+                  (str (ellipsis (getf conversation :subject) :length 30))
+                  (when (> comments 1)
+                    (htm
+                      " (" (str comments) ")")))
+                (:strong " - ")
+                (str (ellipsis (getf comment-data :text)))))))))))
 
 (defun transaction-inbox-item (message groups)
   (let* ((id (message-id message))
          (transaction (db id))
-         (latest (message-latest-comment message))
-         (comment-data (db latest))
+         (latest-comment (message-latest-comment message))
+         (latest-transaction-action (car (last (getf transaction :log))))
+         (latest-gratitude-entry (find :gratitude-posted
+                                   (getf transaction :log)
+                                   :from-end t
+                                   :key #'(lambda (log-entry)
+                                            (getf log-entry :action))))
+         (comment-data (db latest-comment))
          (comment-by (car (getf comment-data :by)))
-         (inventory-item (db (getf transaction :on)))
+         (inventory-item-id (getf transaction :on))
+         (inventory-item (db inventory-item-id))
+         (inventory-by (getf inventory-item :by))
          (deleted-type (getf transaction :deleted-item-type))
          (inventory-item-type (or (getf inventory-item :type)
                                   deleted-type))
@@ -517,31 +528,32 @@
          (with (or (getf inventory-item :by)
                    (first (remove *userid* participants))))
          (comments (length (getf transaction :log)))
-         (text (if (and (= comments 1)
-                        deleted-type)
-                 (deleted-invalid-item-reply-text
-                   (db (second participants) :name)
-                   (db (first participants) :name)
-                   (case deleted-type
-                     (:offer "offer")
-                     (:request "request"))
-                   (getf comment-data :text))
-                 (getf comment-data :text))))
+         (text (cond
+                 ((and (= comments 1) deleted-type)
+                  (deleted-invalid-item-reply-text
+                    (db (second participants) :name)
+                    (db (first participants) :name)
+                    (case deleted-type
+                      (:offer "offer")
+                      (:request "request"))
+                    (getf comment-data :text)))
+                 ((> (or (getf comment-data :created) 0)
+                     (or (getf latest-gratitude-entry :time) 0))
+                  (getf comment-data :text))
+                 (t (db (getf latest-gratitude-entry :comment) :text))))
+         (inventory-url (case inventory-item-type
+                          (:offer
+                           (html (:a :href (strcat "/offers/" (getf transaction :on))
+                                   "offer")))
+                          (:request
+                           (html (:a :href (strcat "/requests/" (getf transaction :on))
+                                   "request")))
+                          (t (case deleted-type
+                               (:offer "offer")
+                               (:request "request")
+                               (t (html (:span :class "none" "deleted offer or request"))))))))
 
-    (flet ((inventory-url ()
-             (html
-               (case inventory-item-type
-                 (:offer
-                  (htm (:a :href (strcat "/offers/" (getf transaction :on))
-                        "offer")))
-                 (:request
-                  (htm (:a :href (strcat "/requests/" (getf transaction :on))
-                        "request")))
-                 (t (case deleted-type
-                      (:offer (htm "offer"))
-                      (:request (htm "request"))
-                      (t (htm (:span :class "none" "deleted offer or request"))))))))
-           (transaction-url (text)
+    (flet ((transaction-url (text)
              (html (:a :href (strcat "/transactions/" id)
                      (str text)))))
 
@@ -551,29 +563,46 @@
           (when (eql comment-by *userid*)
             (str "↪ "))
 
-          (if (eql (getf transaction :by) *userid*)
-            (htm
-              "You replied to "
-              (str (person-link with))
-              "'s "
-              (str (inventory-url)))
-            (htm
-              (str (person-link (getf transaction :by)))
-              " replied to "
-              (str (if group-name (s+ group-name "'s ") "your "))
-              (str (inventory-url))))
+          (str
+            (if (> (or (getf comment-data :created) 0)
+                   (or (getf latest-transaction-action :time) 0))
+
+              (if (eql (getf transaction :by) *userid*)
+                (strcat*
+                  "You replied to "
+                  (person-link with)
+                  "'s "
+                  inventory-url)
+                (strcat*
+                  (person-link (getf transaction :by))
+                  " replied to "
+                  (if group-name (s+ group-name "'s ") "your ")
+                  inventory-url))
+
+              (transaction-action-text latest-transaction-action
+                                       inventory-item-id
+                                       (getf inventory-item :type)
+                                       (if (eql inventory-by *userid*)
+                                         "you"
+                                         (person-link inventory-by))
+                                       (if (eql (getf transaction :by) *userid*)
+                                         "you"
+                                         (person-link (getf transaction :by))))))
           (str (group-message-indicator message groups)) )
 
-        (:p :class "text"
-          (:span :class "title"
-            (str (transaction-url (ellipsis (or (getf inventory-item :title)
-                                                (getf inventory-item :details))
-                                             :length 30)))
-            (when (> comments 1)
-              (htm
-                " (" (str comments) ") "))
-            " - ")
-          (str (transaction-url (ellipsis text))))))))
+        (str
+          (transaction-url
+            (html
+              (:p :class "text"
+                (:span :class "title"
+                 (str (ellipsis (or (getf inventory-item :title)
+                                    (getf inventory-item :details))
+                                :length 30)))
+                (:span
+                 (when (> comments 1)
+                   (str (strcat " (" comments ") ")))
+                 " - ")
+                (str (ellipsis text))))))))))
 
 (defun get-messages ()
   (require-user
