@@ -516,6 +516,9 @@
                                    :key #'(lambda (log-entry)
                                             (getf log-entry :action))))
          (comment-data (db latest-comment))
+         (latest-thing-is-a-comment-p (> (or (getf comment-data :created) 0)
+                                         (or (getf latest-transaction-action
+                                                   :time) 0)))
          (comment-by (car (getf comment-data :by)))
          (inventory-item-id (getf transaction :on))
          (inventory-item (db inventory-item-id))
@@ -560,13 +563,13 @@
       (html
         (str (h3-timestamp (message-time message)))
         (:p :class "people"
-          (when (eql comment-by *userid*)
+          (when (if latest-thing-is-a-comment-p
+                  (eql comment-by *userid*)
+                  (eql (car (getf latest-transaction-action :party)) *userid*))
             (str "↪ "))
 
           (str
-            (if (> (or (getf comment-data :created) 0)
-                   (or (getf latest-transaction-action :time) 0))
-
+            (if latest-thing-is-a-comment-p
               (if (eql (getf transaction :by) *userid*)
                 (strcat*
                   "You replied to "

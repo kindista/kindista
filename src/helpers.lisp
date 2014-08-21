@@ -49,6 +49,11 @@
 (defun find-string (string list)
   (find string list :test #'string=))
 
+(defun progress-bar (percent)
+  (html
+    (:div :class "progress-bar"
+      (:span :style (strcat "width: " percent "%")))))
+
 (defun generate-js ()
   (paren-files:compile-script-file-to-js-file
     (s+ *kindista-root-path* "js/main.paren")

@@ -268,7 +268,6 @@
                 (htm (:p "with " (str (name-list-all with))))
                 (htm (:p :class "error" "Everybody else has left this conversation."))))))
 
-      (str comments-html)
 
       (:div :class "item" :id "reply"
         (:h4 "post a reply")
@@ -279,7 +278,9 @@
           (:div :class (when (eq error :no-reply-type)
                          "error-border"))
 
-          (:button :class "yes" :type "submit" :class "submit" "Send"))))
+          (:button :class "yes" :type "submit" :class "submit" "Send")))
+
+      (str comments-html))
     :selected "messages"))
 
 (defun get-conversation (id)

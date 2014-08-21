@@ -295,7 +295,7 @@
      (when (find "post-gratitude" transaction-options :test #'string=)
        (htm
          (:a :href (url-compose url "post-gratitude" "t")
-          (str (icon "checkmark"))
+          (str (icon "heart-person"))
           (str (s+ "I have gratitude to share about "
                    other-party-name
                    " for this gift.")))))
@@ -327,7 +327,7 @@
 
         (str (transaction-button
                "already-given"
-               (icon "checkmark")
+               (icon "gift")
                (s+ "I have fulfilled " other-party-name "'s request.")
                (s+ "I have shared this offer with " other-party-name ".")))
 
@@ -339,7 +339,7 @@
 
         (str (transaction-button
                "already-received"
-               (icon "checkmark")
+               (icon "gift")
                (s+ "I have received what " other-party-name " has offered me.")
                (s+ "I have received this offer from " other-party-name ".")))
 
@@ -363,6 +363,7 @@
 (defun transaction-html
   (transaction-id
    on-item
+   role
    history-html
    form-elements-html
    &key (data (db transaction-id))
@@ -389,7 +390,10 @@
     (html
       (str (menu-horiz "actions"
                        (html (:a :href "/messages" "back to messages"))
-                       (html (:a :href "#reply" "reply"))
+                       (html (:a :href (url-compose (strcat "/transactions/"
+                                                            transaction-id)
+                                                    "add-comment" "t" )
+                              "reply"))
                        (when (and (eql (getf data :by) *userid*)
                                   (eql on-type :offer))
                          (html
@@ -398,39 +402,47 @@
                                                  "subject"
                                                  (getf on-item :by)))
                                 "express gratitude")))))
-      (str
-        (html
-          (if (eql (getf data :by) *userid*)
-            (htm
-              (:p
-              "You replied to "
-              (str other-party-link)
-              "'s "
-              (str inventory-url)
-              ":"))
-            (htm
-              (:p
-                (str other-party-link)
-                " has responded to "
-                (cond
-                  ((eq (getf on-item :by) *userid*)
-                   (str "your "))
-                  ((not (getf on-item :by))
-                   (str "a ")) ; for old inventory items that got deleted
-                  (t (str (s+ (db (getf on-item :by) :name) "'s "))))
-                (str inventory-url)
-                (when on-item (htm ":")))))
 
-          (when on-item
-            (htm (:blockquote :class "review-text"
-                   (awhen (getf on-item :title)
-                     (htm
-                       (:strong (str it))
-                       (:br)
-                       (:br)))
-                   (str (html-text (or (getf on-item :details)
-                                       (getf data :deleted-item-text)))))))))
 
+       (if (eql (getf data :by) *userid*)
+         (htm
+           (:p
+           "You replied to "
+           (str other-party-link)
+           "'s "
+           (str inventory-url)
+           ":"))
+         (htm
+           (:p
+             (str other-party-link)
+             " has responded to "
+             (cond
+               ((eq (getf on-item :by) *userid*)
+                (str "your "))
+               ((not (getf on-item :by))
+                (str "a ")) ; for old inventory items that got deleted
+               (t (str (s+ (db (getf on-item :by) :name) "'s "))))
+             (str inventory-url)
+             (when on-item (htm ":")))))
+
+       (when on-item
+         (htm (:blockquote :class "review-text"
+                (awhen (getf on-item :title)
+                  (htm
+                    (:strong (str it))
+                    (:br)
+                    (:br)))
+                (str (html-text (or (getf on-item :details)
+                                    (getf data :deleted-item-text)))))))
+
+      (:table :class "transaction-progress"
+        (:tr :class "steps"
+          (:td "Requested")
+          (:td "Committed")
+          (:td (str (case role (:giver "Given") (:receiver "Received"))))
+          (:td "Gratitude Posted"))
+        (:tr
+          (:td :colspan "4" (str (progress-bar 50)))))
       (str form-elements-html)
       (str history-html))
 
@@ -532,21 +544,25 @@
                  (speaking-for)
                  (other-party)
                  (other-party-name)
+                 (user-role)
                  (post-gratitude-p (get-parameter-string "post-gratitude"))
                  (with (remove *userid* (getf transaction :participants)))
                  (deleted-type (getf transaction :deleted-item-type))
                  (on-type (getf on-item :type)))
 
-            (multiple-value-bind (options for)
+            (multiple-value-bind (options for role)
               (transaction-options-for-user id :transaction transaction)
               (setf transaction-options options)
-              (setf speaking-for for))
+              (setf speaking-for for)
+              (setf user-role role))
+
             (setf other-party (car (remove speaking-for with)))
             (setf other-party-name (db other-party :name))
 
             (prog1
               (transaction-html id
                                 on-item
+                                user-role
                                 (transaction-history id
                                                      on-id
                                                      on-type

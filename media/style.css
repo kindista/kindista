@@ -3429,6 +3429,30 @@ span.highlight {
  padding: 0 1em 0.1em;
 }
 
+table.transaction-progress tr.steps td {
+ width: 25%;
+}
+
+div.progress-bar {
+ height: 2em;
+ max-width: 40em;
+ position: relative;
+ border-radius: 0.25em;
+ border-style: solid;
+ border-color: #bbb;
+ background: #f8f8f8;
+ border-width: 1px;
+ padding: 0.25em;
+}
+
+div.progress-bar > span {
+ display: block;
+ height: 100%;
+ position: relative;
+ background: #5c8a2f;
+ overflow: hidden;
+}
+
 div.transaction-option button,
 div.transaction-options a {
  margin-bottom: 1em;
