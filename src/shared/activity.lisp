@@ -198,7 +198,7 @@
                                  :see-more item-url)
                        (html-text (getf data :details)))))))))
 
-(defun gratitude-activity-item (result &key truncate reciprocity)
+(defun gratitude-activity-item (result &key truncate reciprocity (show-on-item t))
   ; we should probably get rid of these comments -DJB
          ; result-people is a list
          ; car of list is person showing gratitude
@@ -229,7 +229,7 @@
                    ;:comments (length (comments item-id))
                    :content (html
                               (:p (str (person-link user-id))
-                                  (str (if (getf data :edited) " edited " " shared "))
+                                  (str (if (getf data :edited) " edited " " expressed "))
                                   (:a :href item-url "gratitude")
                                   " for "
                                   (str (name-list (getf data :subjects) :maximum-links 100)))
@@ -244,7 +244,7 @@
                                 (str (activity-item-images images item-url "gift"))))
                    :related-items (html
                                     (:div
-                                      (when (getf data :on)
+                                      (when (and (getf data :on) show-on-item)
                                         (str (gratitude-on-item-html
                                                item-id
                                                :gratitude-data data)))

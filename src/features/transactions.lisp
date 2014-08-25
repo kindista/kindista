@@ -241,7 +241,8 @@
                           (str on-type-string)))))
   (case (getf log-event :action)
     (:gratitude-posted
-      (gratitude-activity-item (gethash (getf log-event :comment) *db-results*)))
+      (gratitude-activity-item (gethash (getf log-event :comment) *db-results*)
+                               :show-on-item nil))
     (t
       (card
         (html
@@ -371,19 +372,21 @@
         on-type
         other-party-link
         error
-   &aux (inventory-url))
-
-   (setf inventory-url
-         (case on-type
-           (:offer
-            (html (:a :href (strcat "/offers/" (getf data :on)) "offer")))
-           (:request
-            (html (:a :href (strcat "/requests/" (getf data :on)) "request")))
-           (t (case deleted-type
-                (:offer "offer")
-                (:request "request")
-                (t (html
-                     (:span :class "none" "deleted offer or request")))))))
+   &aux (inventory-url (case on-type
+                         (:offer (strcat "/offers/" (getf data :on)))
+                         (:request (strcat "/requests/" (getf data :on)))))
+        (inventory-link (case on-type
+                          (:offer
+                            (html (:a :href inventory-url "offer")))
+                          (:request
+                            (html (:a :href inventory-url "request")))
+                          (t (case deleted-type
+                               (:offer "offer")
+                               (:request "request")
+                               (t (html
+                                    (:span :class "none" "deleted offer or request")))))))
+        (offer-p (eql on-type :offer))
+        (status (getf (car (last (getf data :log))) :action)))
 
   (standard-page
     "Transaction"
@@ -393,16 +396,7 @@
                        (html (:a :href (url-compose (strcat "/transactions/"
                                                             transaction-id)
                                                     "add-comment" "t" )
-                              "reply"))
-                       (when (and (eql (getf data :by) *userid*)
-                                  (eql on-type :offer))
-                         (html
-                           (:a :href
-                               (str (url-compose "/gratitude/new"
-                                                 "subject"
-                                                 (getf on-item :by)))
-                                "express gratitude")))))
-
+                              "reply"))))
 
        (if (eql (getf data :by) *userid*)
          (htm
@@ -410,7 +404,7 @@
            "You replied to "
            (str other-party-link)
            "'s "
-           (str inventory-url)
+           (str inventory-link)
            ":"))
          (htm
            (:p
@@ -422,7 +416,7 @@
                ((not (getf on-item :by))
                 (str "a ")) ; for old inventory items that got deleted
                (t (str (s+ (db (getf on-item :by) :name) "'s "))))
-             (str inventory-url)
+             (str inventory-link)
              (when on-item (htm ":")))))
 
        (when on-item
@@ -432,17 +426,44 @@
                     (:strong (str it))
                     (:br)
                     (:br)))
-                (str (html-text (or (getf on-item :details)
-                                    (getf data :deleted-item-text)))))))
+                (str (ellipsis (or (getf on-item :details)
+                                   (getf data :deleted-item-text))
+                               :see-more inventory-url)))))
 
-      (:table :class "transaction-progress"
-        (:tr :class "steps"
-          (:td "Requested")
-          (:td "Committed")
-          (:td (str (case role (:giver "Given") (:receiver "Received"))))
-          (:td "Gratitude Posted"))
-        (:tr
-          (:td :colspan "4" (str (progress-bar 50)))))
+      (when  (or (eq status :offered)
+                 (eq status :requested)
+                 (eq status :gave)
+                 (eq status :received)
+                 (eq status :disputed)
+                 (eq status :gratitude-posted))
+        (htm
+          (:table :class "transaction-progress"
+            (:tr
+              (:td :class "progress-header" :colspan "4" (:strong  "Transaction Progress:")))
+            (:tr :class "steps"
+              (:td :class "done"
+                (:div "1. ")
+                (:div (str (if offer-p "Requested" "Offered"))))
+              (:td :class (when (or (and offer-p (eq status :offered))
+                                    (and (not offer-p) (eq status :requested))
+                                    (eq status :gave)
+                                    (eq status :received)
+                                    (eq status :gratitude-posted))
+                            "done")
+                (:div "2. ")
+                (:div (str (if offer-p "Committed" "Accepted"))))
+              (:td :class (when (or (eq status :gratitude-posted)
+                                    (eq status :gave)
+                                    (eq status :received))
+                            "done")
+                (:div "3. ")
+                (:div (str (case role (:giver "Given") (:receiver "Received")))))
+              (:td :class (when (eq status :gratitude-posted)
+                            "done")
+                (:div "4. ")
+                (:div :class "gratitude-step" "Gratitude Posted " (when (eq status :gratitude-posted) (str (icon "white-checkmark")))))))))
+
+      (:div :class "trans-options" "Options:")
       (str form-elements-html)
       (str history-html))
 

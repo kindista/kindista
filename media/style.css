@@ -3429,28 +3429,55 @@ span.highlight {
  padding: 0 1em 0.1em;
 }
 
+table.transaction-progress {
+ margin-top: 0.8em;
+}
+
 table.transaction-progress tr.steps td {
  width: 25%;
+ font-size: 0.9em;
+ font-weight: bold;
+ color: #80876f;
+ background: #e1edc5;
+ padding: 0.3em;
 }
 
-div.progress-bar {
- height: 2em;
- max-width: 40em;
- position: relative;
- border-radius: 0.25em;
- border-style: solid;
- border-color: #bbb;
- background: #f8f8f8;
- border-width: 1px;
- padding: 0.25em;
-}
-
-div.progress-bar > span {
- display: block;
- height: 100%;
- position: relative;
+table.transaction-progress tr.steps td.done {
+ color: #fff;
  background: #5c8a2f;
- overflow: hidden;
+}
+
+table.transaction-progress tr.steps td > div {
+ display: table-cell;
+ padding-right: 0.1em;
+ vertical-align: middle;
+}
+
+table.transaction-progress tr.steps td img {
+ vertical-align: 5%;
+ height: 1em;
+ width: auto;
+}
+
+table.transaction-progress tr.steps td:first-child {
+ border-top-left-radius: 0.45em;
+ border-bottom-left-radius: 0.45em;
+ padding-left: 0.6em;
+}
+
+table.transaction-progress tr.steps td:last-child {
+ border-top-right-radius: 0.45em;
+ border-bottom-right-radius: 0.45em;
+ padding-right: 0.6em;
+}
+
+div.trans-options {
+ margin: 0.8em 0 0;
+ font-weight: bold;
+}
+
+div.transaction-options.item {
+ margin-top: 0.4em;
 }
 
 div.transaction-option button,
@@ -3462,6 +3489,7 @@ div.transaction-options a {
 
 div.transaction-option button > img,
 div.transaction-options a > img {
+ vertical-align: middle;
  margin-right: 0.5em;
 }
 
