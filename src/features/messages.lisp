@@ -505,8 +505,10 @@
                 (:strong " - ")
                 (str (ellipsis (getf comment-data :text)))))))))))
 
-(defun transaction-inbox-item (message groups)
-  (let* ((id (message-id message))
+(defun transaction-inbox-item
+  (message
+   groups
+   &aux (id (message-id message))
          (transaction (db id))
          (latest-comment (message-latest-comment message))
          (latest-transaction-action (car (last (getf transaction :log))))
@@ -545,67 +547,66 @@
                   (getf comment-data :text))
                  (t (db (getf latest-gratitude-entry :comment) :text))))
          (inventory-url (case inventory-item-type
-                          (:offer
-                           (html (:a :href (strcat "/offers/" (getf transaction :on))
-                                   "offer")))
-                          (:request
-                           (html (:a :href (strcat "/requests/" (getf transaction :on))
-                                   "request")))
+                          (:offer (strcat "/offers/" (getf transaction :on)))
+                          (:request (strcat "/requests/" (getf transaction :on)))))
+         (inventory-link (case inventory-item-type
+                          (:offer (html (:a :href inventory-url "offer")))
+                          (:request (html (:a :href inventory-url "request")))
                           (t (case deleted-type
                                (:offer "offer")
                                (:request "request")
                                (t (html (:span :class "none" "deleted offer or request"))))))))
 
-    (flet ((transaction-url (text)
-             (html (:a :href (strcat "/transactions/" id)
-                     (str text)))))
+  (flet ((transaction-url (text)
+           (html (:a :href (strcat "/transactions/" id)
+                   (str text)))))
 
-      (html
-        (str (h3-timestamp (message-time message)))
-        (:p :class "people"
-          (when (if latest-thing-is-a-comment-p
-                  (eql comment-by *userid*)
-                  (eql (car (getf latest-transaction-action :party)) *userid*))
-            (str "↪ "))
-
-          (str
-            (if latest-thing-is-a-comment-p
-              (if (eql (getf transaction :by) *userid*)
-                (strcat*
-                  "You replied to "
-                  (person-link with)
-                  "'s "
-                  inventory-url)
-                (strcat*
-                  (person-link (getf transaction :by))
-                  " replied to "
-                  (if group-name (s+ group-name "'s ") "your ")
-                  inventory-url))
-
-              (transaction-action-text latest-transaction-action
-                                       inventory-item-id
-                                       (getf inventory-item :type)
-                                       (if (eql inventory-by *userid*)
-                                         "you"
-                                         (person-link inventory-by))
-                                       (if (eql (getf transaction :by) *userid*)
-                                         "you"
-                                         (person-link (getf transaction :by))))))
-          (str (group-message-indicator message groups)) )
+    (html
+      (str (h3-timestamp (message-time message)))
+      (:p :class "people"
+        (when (if latest-thing-is-a-comment-p
+                (eql comment-by *userid*)
+                (eql (car (getf latest-transaction-action :party)) *userid*))
+          (str "↪ "))
 
         (str
-          (transaction-url
-            (html
-              (:p :class "text"
-                (:span :class "title"
-                 (str (ellipsis (or (getf inventory-item :title)
-                                    (getf inventory-item :details))
-                                :length 30)))
-                (:span
-                 (when (> comments 1)
-                   (str (strcat " (" comments ") ")))
-                 " - ")
-                (str (ellipsis text))))))))))
+          (if latest-thing-is-a-comment-p
+            (if (eql (getf transaction :by) *userid*)
+              (strcat*
+                "You replied to "
+                (person-link with)
+                "'s "
+                inventory-link)
+              (strcat*
+                (person-link (getf transaction :by))
+                " replied to "
+                (if group-name (s+ group-name "'s ") "your ")
+                inventory-link))
+
+            (transaction-action-text latest-transaction-action
+                                     inventory-item-type
+                                     inventory-link
+                                     (if (eql inventory-by *userid*)
+                                       "you"
+                                       (person-link inventory-by))
+                                     (if (eql (getf transaction :by) *userid*)
+                                       "you"
+                                       (person-link (getf transaction :by))))))
+        (str (group-message-indicator message groups)) )
+
+      (str
+        (transaction-url
+          (html
+            (:p :class "text"
+              (:span :class "title"
+               (str (ellipsis (or (getf inventory-item :title)
+                                  (getf inventory-item :details))
+                              :length 30)))
+              (:span
+               (when (> comments 1)
+                 (str (strcat " (" comments ") ")))
+               " - ")
+              (str (ellipsis text)))))))))
 
 (defun get-messages ()
   (require-user

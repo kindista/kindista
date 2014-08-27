@@ -17,7 +17,7 @@
 [ ] what about gratitudes on inventory items w/o transactions (need a way to index for inbox)
 [ ] test new email notification
 [ ] transaction action for cancelling an action
-[ ] allow giver to deactivate an offer within the trasaction UI
+[x] allow giver to deactivate an offer within the trasaction UI
 [ ] what about deleted gratitudes?
 [x] choose options and language to display based on current data structure (current state of participant role)
 [x] change :log as necessary with each new comment

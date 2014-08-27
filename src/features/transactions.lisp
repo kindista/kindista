@@ -78,13 +78,12 @@
 
 (defun transaction-history
   (transaction-id
-   on-id
    on-type
+   on-url
    inventory-by
    latest-seen
    &optional (transaction (db transaction-id))
    &aux (actions (getf transaction :log))
-        (inventory-by-name (db inventory-by :name))
         (comments (gethash transaction-id *comment-index*))
         (history))
 
@@ -127,8 +126,8 @@
       (acond
        ((getf event :action)
         (str (transaction-action-html event
-                                      on-id
                                       on-type
+                                      on-url
                                       (if (eql inventory-by *userid*)
                                         "you"
                                         (person-link inventory-by))
@@ -149,17 +148,12 @@
 
 (defun transaction-action-text
   (log-event
-   on-id
    on-type
+   on-url
    inventory-by-name
    transaction-initiator-name
-   &aux  (on-type-string (case on-type
-                           (:offer "offer")
-                           (:request "request")))
-         (on-url (html (:a :href (url-compose (strcat "/" on-type-string "s/" on-id))
-                          (str on-type-string))))
-         (action-party (car (getf log-event :party)))
-         (self (eql action-party *userid*)))
+   &aux (action-party (car (getf log-event :party)))
+        (self (eql action-party *userid*)))
   (strcat*
     (if self "You" (person-link action-party))
     (awhen (cdr (getf log-event :party))
@@ -230,15 +224,11 @@
 
 (defun transaction-action-html
   (log-event
-   on-id
    on-type
+   on-url
    inventory-by-name
-   transaction-initiator-name
-   &aux  (on-type-string (case on-type
-                           (:offer "offer")
-                           (:request "request")))
-         (on-url (html (:a :href (url-compose (strcat "/" on-type-string "s/" on-id))
-                          (str on-type-string)))))
+   transaction-initiator-name)
+
   (case (getf log-event :action)
     (:gratitude-posted
       (gratitude-activity-item (gethash (getf log-event :comment) *db-results*)
@@ -250,8 +240,8 @@
           (:p
             (:strong
               (str (transaction-action-text log-event
-                                            on-id
                                             on-type
+                                            on-url
                                             inventory-by-name
                                             transaction-initiator-name
                                             )))))))))
@@ -289,77 +279,123 @@
   (transaction-options
    other-party-name
    on-type
+   on-url
    url)
   (html
     (:div :class "transaction-options item"
 
-     (when (find "post-gratitude" transaction-options :test #'string=)
-       (htm
-         (:a :href (url-compose url "post-gratitude" "t")
-          (str (icon "heart-person"))
-          (str (s+ "I have gratitude to share about "
-                   other-party-name
-                   " for this gift.")))))
+      (when (find "post-gratitude" transaction-options :test #'string=)
+        (htm
+          (:a :href (url-compose url "post-gratitude" "t")
+           (str (icon "heart-person"))
+           (str (s+ "I have gratitude to share about "
+                    other-party-name
+                    " for this gift.")))))
 
-     (:form :method "post" :action url
-      (flet ((transaction-button (status icon request-text offer-text)
+      (flet ((transaction-button
+               (status icon request-text offer-text &optional (value status) (name "transaction-action"))
                (when (find status transaction-options :test #'string=)
                  (html
                    (:div :class "transaction-option"
-                     (:button :type "submit"
-                              :class "green simple-link"
-                              :name "transaction-action"
-                              :value status
-                      (str icon)
-                      (str (if (eq on-type :request)
-                             request-text offer-text))))))))
+                    (:button :type "submit"
+                     :class "green simple-link"
+                     :name name
+                     :value value
+                     (str icon)
+                     (str (if (eq on-type :request)
+                            request-text offer-text))))))))
 
-        (str (transaction-button
-               "will-give"
-               (icon "offers")
-               (s+ "I want to fulfill " other-party-name "'s request.")
-               (s+ "I want to share this offering with " other-party-name ".")))
+        (htm
+          (:form :method "post" :action url
 
-        (str (transaction-button
-               "withhold"
-               (icon "withhold")
-               (s+ "I can't fulfill " other-party-name "'s request at this time.")
-               (s+ "I can't share this offer with " other-party-name " at this time.")))
+            (str (transaction-button
+                   "will-give"
+                   (icon "offers")
+                   (s+ "I want to fulfill " other-party-name "'s request.")
+                   (s+ "I want to share this offering with " other-party-name ".")))
 
-        (str (transaction-button
-               "already-given"
-               (icon "gift")
-               (s+ "I have fulfilled " other-party-name "'s request.")
-               (s+ "I have shared this offer with " other-party-name ".")))
+            (str (transaction-button
+                   "will-give-again"
+                   (icon "offers")
+                   (s+ "I want to give this to " other-party-name "again.")
+                   (s+ "I want to share this offering with " other-party-name " again.")
+                   "will-give"))
 
-        (str (transaction-button
-               "want"
-               (icon "requests")
-               (s+ "I want to recieve what " other-party-name " is offering me.")
-               (s+ "I want to recieve this offer from " other-party-name ".")))
+            (str (transaction-button
+                   "withhold"
+                   (icon "withhold")
+                   (s+ "I can't fulfill " other-party-name "'s request at this time.")
+                   (s+ "I can't share this offer with " other-party-name " at this time.")))
 
-        (str (transaction-button
-               "already-received"
-               (icon "gift")
-               (s+ "I have received what " other-party-name " has offered me.")
-               (s+ "I have received this offer from " other-party-name ".")))
+            (str (transaction-button
+                   "already-given"
+                   (icon "gift")
+                   (s+ "I have fulfilled " other-party-name "'s request.")
+                   (s+ "I have shared this offer with " other-party-name ".")))
 
-        (str (transaction-button
-               "decline"
-               (icon "decline")
-               (s+ "I don't want what " other-party-name " has offered me.")
-               (s+ "I no longer want this offer from " other-party-name ".")))
+            (str (transaction-button
+                   "already-given-again"
+                   (icon "gift")
+                   (s+ "I have given this to " other-party-name "again.")
+                   (s+ "I have shared this offer with " other-party-name " again.")
+                   "already-given"))
 
-        (str (transaction-button
-               "dispute"
-               (icon "caution")
-               (s+ "I have <strong>not</strong> yet received what "
-                   other-party-name " has offered me.")
-               (s+ "I have <strong>not</strong> yet received this offer from " other-party-name ".")))))
+            (str (transaction-button
+                   "want"
+                   (icon "requests")
+                   (s+ "I want to recieve what " other-party-name " is offering me.")
+                   (s+ "I want to recieve this offer from " other-party-name ".")))
+
+            (str (transaction-button
+                   "want-again"
+                   (icon "requests")
+                   (s+ "I want to recieve this from " other-party-name " again.")
+                   (s+ "I want to recieve this offer from " other-party-name " again.")
+                   "want"))
+
+            (str (transaction-button
+                   "already-received"
+                   (icon "gift")
+                   (s+ "I have received what " other-party-name " has offered me.")
+                   (s+ "I have received this offer from " other-party-name ".")))
+
+            (str (transaction-button
+                   "already-received-again"
+                   (icon "gift")
+                   (s+ other-party-name " has given this to me again. ")
+                   (s+ other-party-name " has given this to me again. ")
+                   "already-received"))
+
+            (str (transaction-button
+                   "decline"
+                   (icon "decline")
+                   (s+ "I don't want what " other-party-name " has offered me.")
+                   (s+ "I no longer want this offer from " other-party-name ".")))
+
+            (str (transaction-button
+                   "dispute"
+                   (icon "caution")
+                   (s+ "I have <strong>not</strong> yet received what "
+                       other-party-name " has offered me.")
+                   (s+ "I have <strong>not</strong> yet received this offer from " other-party-name ".")))))
+
+        (when (find "deactivate" transaction-options :test #'string=)
+          (htm
+            (:form :method "post" :action on-url
+             (:input :type "hidden" :name "next" :value url)
+             (str (transaction-button
+                    "deactivate"
+                    (icon (if (eql on-type :offer)
+                            "empty-giving-hand"
+                            "empty-receiving-hand"))
+                    (s+ "I am no longer requesting this item.  Please deactivate it.")
+                    (s+ "I am no longer offering this item.  Please deactivate it.")
+                    t
+                    "deactivate"))))))
 
        (:a :href (url-compose url "add-comment" "t")
         (str (icon "comment"))
-        (str (s+ "I have a question or comment for " other-party-name ".")))) ))
+        (str (s+ "I have a question or comment for " other-party-name "."))))))
 
 (defun transaction-html
   (transaction-id
@@ -474,6 +510,7 @@
    &key (userid *userid*)
         (transaction (db transaction-id))
    &aux (transaction-mailboxes (mapcar #'car (getf transaction :people)))
+        (log (getf transaction :log))
         (inventory-item (db (getf transaction :on)))
         (inventory-type (getf inventory-item :type))
         (inventory-by (getf inventory-item :by))
@@ -487,8 +524,13 @@
                               (eql userid (getf transaction :by)))
                         userid
                         (cdr (assoc userid transaction-mailboxes))))
+        (gratitude-expressed-p (find :gratitude-posted
+                                     log
+                                     :key #'(lambda (event)
+                                              (getf event :action))
+                                     :from-end t))
         (current-event (find userid
-                             (getf transaction :log)
+                             log
                              :test #'eql
                              :key #'(lambda (event)
                                        (car (getf event :party)))
@@ -498,9 +540,9 @@
                                  (if representing
                                    (eql representing (cdr (getf event :party)))
                                    (eql userid (car (getf event :party)))))
-                             (getf transaction :log)
+                             log
                              :from-end t))
-        (options))
+        (options ()))
 
   "Returns (1) a list of actions the user can take on a given transaction id and (2) the entity the user is representing (i.e. *userid* or a groupid)"
 
@@ -526,10 +568,32 @@
                   (t '("withheld" "already-given"))))
               (:gave
                 (when (and (eql (getf other-party-event :action)
-                              :gratitude-posted)
+                                :gratitude-posted)
                            (getf inventory-item :active))
                   '("will-give" "already-given")))
               (t '("will-give" "already-given"))))))
+
+  (when (and inventory-item inventory-by-self-p)
+    (case role
+      (:giver
+        (if (getf inventory-item :active)
+          (push "deactivate" options)
+          (progn (push "reactivate" options)
+                 (remove "will-give" options :test #'string=))))
+      (:receiver
+        (if (getf inventory-item :active)
+          (push "deactivate" options)
+          (progn (push "reactivate" options)
+                 (remove "want" options :test #'string=))))))
+
+  (when gratitude-expressed-p
+    (flet ((subst-opt (new old)
+             (when (find old options :test #'string=)
+               (asetf options (cons new (remove old it :test #'string=))))))
+      (subst-opt "will-give-again" "will-give")
+      (subst-opt "already-given-again" "already-given")
+      (subst-opt "want-again" "want")
+      (subst-opt "already-received-again" "already-received")))
 
   (values options
           representing
@@ -569,7 +633,12 @@
                  (post-gratitude-p (get-parameter-string "post-gratitude"))
                  (with (remove *userid* (getf transaction :participants)))
                  (deleted-type (getf transaction :deleted-item-type))
-                 (on-type (getf on-item :type)))
+                 (on-type (getf on-item :type))
+                 (on-type-string (case on-type
+                           (:offer "offer")
+                           (:request "request")))
+                 (on-url (strcat "/" on-type-string "s/" on-id))
+                 (on-link (html (:a :href on-url (str on-type-string)))))
 
             (multiple-value-bind (options for role)
               (transaction-options-for-user id :transaction transaction)
@@ -585,8 +654,8 @@
                                 on-item
                                 user-role
                                 (transaction-history id
-                                                     on-id
                                                      on-type
+                                                     on-link
                                                      inventory-by
                                                      latest-seen
                                                      transaction)
@@ -606,6 +675,7 @@
                                        transaction-options
                                        other-party-name
                                        on-type
+                                       on-url
                                        url)))
                                 :data transaction
                                 :other-party-link (person-link other-party)

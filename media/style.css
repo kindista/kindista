@@ -3480,6 +3480,10 @@ div.transaction-options.item {
  margin-top: 0.4em;
 }
 
+div.transaction-options.item > form {
+ margin-top: 0;
+}
+
 div.transaction-option button,
 div.transaction-options a {
  margin-bottom: 1em;

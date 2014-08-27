@@ -260,10 +260,10 @@
       (case type
         (:request
           (with-locked-hash-table (*account-inactive-request-index*)
-            (push id (gethash by *account-inactive-requests-index*))))
+            (push id (gethash by *account-inactive-request-index*))))
         (:offer
           (with-locked-hash-table (*account-inactive-offer-index*)
-            (push id (gethash by *account-inactive-offers-index*)))))
+            (push id (gethash by *account-inactive-offer-index*)))))
 
       (unless (eq type :event)
         (with-locked-hash-table (*profile-activity-index*)
