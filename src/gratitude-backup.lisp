@@ -244,16 +244,13 @@
       (remhash id *db-results*)) ))
 
 (defun delete-gratitude (id)
-  (let ((data (db id)))
-    (dolist (image-id (getf data :images))
+    (dolist (image-id (db id :images))
       (delete-image image-id))
     (delete-comments id)
-    (when (getf data :on))
-    )
-  (when (gethash id *db-messages*)
-    (remove-message-from-indexes id))
-  (deindex-gratitude id)
-  (remove-from-db id))
+    (when (gethash id *db-messages*)
+      (remove-message-from-indexes id))
+    (deindex-gratitude id)
+    (remove-from-db id))
 
 (defun gratitude-on-item-html
   (gratitude-id
@@ -361,7 +358,7 @@
         single-recipient-name
         groupid
         on-type
-        on-id
+        on-id ;integer
         on-item
         relevant-offers
         relevant-requests
@@ -420,13 +417,18 @@
                                                 it
                                                 :class "identity recipients profile-gratitude"
                                                 :onchange "this.form.submit()"))))))
-           (:textarea :rows "8" :name "text" (str text))
+           (:textarea :class (when (string= (getf error :field) "text") "error-border")
+                      :rows "8"
+                      :name "text"
+              (str text))
 
            (:div :class (s+ "gratitude-selectors "
                             (when (string= (getf error :field) "on-type")
                               "error-border"))
-            (:h3 :class (when (string= (getf error :field) "on-type") "red")
-             "This statement of gratitude is for...")
+            (when (or relevant-offers relevant-requests on-id)
+              (htm
+                (:h3 :class (when (string= (getf error :field) "on-type") "red")
+                  "This statement of gratitude is for...")))
 
             (when (and relevant-offers
                        single-recipient-name)
@@ -485,23 +487,20 @@
                                   (htm
                                     (:tr (:td)
                                      (:td (str submit-buttons)))))))))
-
-             (htm
-               (awhen on-item
-                 (str it))
-
-               (:p
-                 (:button :type "submit"
-                  :class "cancel"
-                  :name "cancel"
-                  "Cancel")
-                 (:button :class "yes"
-                  :type "submit"
-                  :name "create"
-                  (str (if existing-url "Save" "Create")))))))))))
+              (htm
+                (:p
+                  (:button :type "submit"
+                           :class "cancel"
+                           :name "cancel"
+                           "Cancel")
+                   (:button :class "yes"
+                    :type "submit"
+                    :name "create"
+                    (str (if existing-url "Save" "Create"))))))
+           ))))
 
     ;; else
-    (gratitude-add-subject :text text :next next)))
+    (gratitude-add-subject :text text :next next))))
 
 (defun gratitude-add-subject (&key subjects text next (results 'none) groupid)
   (standard-page
@@ -785,14 +784,17 @@
                (single-recipient (when (= (length subjects) 1)
                                    (car subjects)))
                (on-item (awhen (getf gratitude :on)
-                          (html (:blockquote (str (html-text (db it :details)))))))
+                          (gratitude-activity-item (gethash it *db-results*)
+                                                   :truncate t
+                                                   :reciprocity nil
+                                                   :show-on-item nil)))
                (relevant-inventory (unless on-item
                                      (possible-inventory-for-gratitude
                                        author
                                        single-recipient)))
                (relevant-requests (getf relevant-inventory :requests))
                (relevant-offers (getf relevant-inventory :offers)))
-          (gratitude-compose :subjects subjects
+          (gratitude-compose :subjects (getf gratitude :subjects)
                              :text (getf gratitude :text)
                              :on-item on-item
                              :relevant-offers relevant-offers
@@ -810,7 +812,10 @@
                (single-recipient (when (= (length subjects) 1)
                                    (car subjects)))
                (on-item (awhen (getf gratitude :on)
-                          (html (:blockquote (str (html-text (db it :details)))))))
+                          (gratitude-activity-item (gethash it *db-results*)
+                                                   :truncate t
+                                                   :reciprocity nil
+                                                   :show-on-item nil)))
                (relevant-inventory (unless on-item
                                      (possible-inventory-for-gratitude
                                        author

@@ -286,11 +286,12 @@
 
       (when (find "post-gratitude" transaction-options :test #'string=)
         (htm
-          (:a :href (url-compose url "post-gratitude" "t")
-           (str (icon "heart-person"))
-           (str (s+ "I have gratitude to share about "
-                    other-party-name
-                    " for this gift.")))))
+          (:div :class "transaction-option"
+            (:a :href (url-compose url "post-gratitude" "t")
+              (str (icon "heart-person"))
+              (str (s+ "I have gratitude to share about "
+                       other-party-name
+                       " for this gift."))))))
 
       (flet ((transaction-button
                (status icon request-text offer-text &optional (value status) (name "transaction-action"))
@@ -298,7 +299,7 @@
                  (html
                    (:div :class "transaction-option"
                     (:button :type "submit"
-                     :class "green simple-link"
+                     :class "simple-link"
                      :name name
                      :value value
                      (str icon)
@@ -393,9 +394,10 @@
                     t
                     "deactivate"))))))
 
-       (:a :href (url-compose url "add-comment" "t")
-        (str (icon "comment"))
-        (str (s+ "I have a question or comment for " other-party-name "."))))))
+       (:div :class "transaction-option"
+         (:a :href (url-compose url "add-comment" "t")
+           (str (icon "comment"))
+           (str (s+ "I have a question or comment for " other-party-name ".")))))))
 
 (defun transaction-html
   (transaction-id

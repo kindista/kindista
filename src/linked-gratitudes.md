@@ -15,10 +15,12 @@
 [x] write a function for data migration
 [x] edit transaction inbox item, conversation view, email notification as necessary (even when no comment has occured)
 [ ] what about gratitudes on inventory items w/o transactions (need a way to index for inbox)
+   - may need special treatment when deleting the gratitude
 [ ] test new email notification
 [ ] transaction action for cancelling an action
 [x] allow giver to deactivate an offer within the trasaction UI
 [ ] what about deleted gratitudes?
+[ ] test deleting gratitude
 [x] choose options and language to display based on current data structure (current state of participant role)
 [x] change :log as necessary with each new comment
 [ ] prompt statement of gratitude as necessary (in inbox, through email, through (see-other...) etc.

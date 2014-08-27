@@ -1541,7 +1541,7 @@ form.matchmaker,
 div.privacy-selection-details,
 div.recurring-event-details,
 tr.select-linked-inventory div.option-text,
-blockquote.review-text {
+blockquote {
  margin: 0;
  background: #f8f8f8;
  padding: .5em;
@@ -1551,7 +1551,8 @@ blockquote.review-text {
  border-color: #bbb;
 }
 
-div.error-border {
+div.error-border,
+textarea.error-border {
  border-radius: .25em;
  border-style: solid;
  border-width: 1px;
@@ -3484,10 +3485,15 @@ div.transaction-options.item > form {
  margin-top: 0;
 }
 
-div.transaction-option button,
-div.transaction-options a {
- margin-bottom: 1em;
+div.transaction-option a,
+div.transaction-option button {
+ color: #3c6dc8;
  padding-left: 0;
+ font-weight: bold;
+}
+
+div.transaction-option {
+ margin-bottom: 1em;
  margin-left: 0;
 }
 
