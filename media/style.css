@@ -1713,7 +1713,7 @@ table.messages {
 }
 
 .mail.card .group-indicator {
- margin-left: 0.55em;
+ margin-right: 0.55em;
  border-radius:3px;
  padding: 0 0.3em;
  display: inline-block;
@@ -1733,6 +1733,17 @@ table.messages {
  width: 100%;
  padding: 0.6em 0;
 }
+
+.mail.card td.message-content a.gratitude {
+ padding: 0.3em 0.4em;
+ font-size: 0.9em;
+}
+
+.mail.card td.message-content a.gratitude img {
+ margin-right: 0.4em;
+ vertical-align: middle;
+}
+
 .mail.card p.people {
  margin: 0 0 0.2em;
 }

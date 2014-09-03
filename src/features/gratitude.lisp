@@ -20,7 +20,7 @@
 (defun new-gratitude-notice-handler ()
   (send-gratitude-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-gratitude (&key author subjects text on (time (get-universal-time)))
+(defun create-gratitude (&key author subjects text on transaction-id (time (get-universal-time)))
   (let* ((people-list (mailbox-ids subjects))
          (people (mapcar #'(lambda (mailbox)
                              (cons mailbox :unread))
@@ -30,6 +30,7 @@
                                  :author ,author
                                  :subjects ,subjects
                                  :people ,people
+                                 :transaction-id ,transaction-id
                                  :message-folders ,message-folders
                                  :text ,text
                                  :on ,on
@@ -172,7 +173,9 @@
                   (safe-sort (push result it) #'> :key #'result-time))))
 
        (awhen (getf data :on)
-         (index-gratitude-link id it created))
+         (index-gratitude-link id it created)
+         (when (not (getf data :transaction-id))
+           (index-message id data)))
 
        ;; unless gratitude is older than 180 days
        (unless (< (result-time result) (- (get-universal-time) 15552000))
@@ -244,12 +247,45 @@
       (remhash id *db-results*)) ))
 
 (defun delete-gratitude (id)
-  (let ((data (db id)))
+  (let* ((data (db id))
+         (transaction-id (getf data :transaction-id))
+         (transaction-pending-gratitude-p))
     (dolist (image-id (getf data :images))
       (delete-image image-id))
     (delete-comments id)
-    (when (getf data :on))
-    )
+    ;; remove it from the transaction-log
+    (when transaction-id
+      (amodify-db transaction-id
+                  :log (remove-if #'(lambda (event)
+                                      (eql (getf event :comment) id))
+                                  it))
+      (setf transaction-pending-gratitude-p
+            (transaction-pending-gratitude-p transaction-id))
+
+      (if (and transaction-pending-gratitude-p (getf data :on))
+        (let* ((item-id (getf data :on))
+               (item (db item-id))
+               (by (getf item :by))
+               (result (when item ; prior to 6/3/2014 inventory items could be deleted
+                         (inventory-item-result item-id
+                                                :data item
+                                                :by-id by))))
+
+          (when result
+            (with-locked-hash-table (*pending-gratitude-index*)
+              (case (getf item :type)
+                (:offer
+                  (pushnew (cons result id)
+                           (getf (gethash (getf data :by)
+                                          *pending-gratitude-index*)
+                                 :offers)
+                           :test #'equal))
+                (:request
+                  (pushnew (cons result id)
+                            (getf (gethash by *pending-gratitude-index*)
+                                  :requests)
+                            :test #'equal)))))))))
+
   (when (gethash id *db-messages*)
     (remove-message-from-indexes id))
   (deindex-gratitude id)
@@ -297,7 +333,6 @@
       (:td (:input :type "radio"
                    :name "on-id"
                    :value (str (result-id result))
-                   :onclick "this.form.submit()"
                    :checked (when (eql on-id (result-id result))
                               "checked")))
       (:td
@@ -614,6 +649,7 @@
                                  recipient-id
                                  single-recipient))
            (relevant-requests (getf relevant-inventory :requests))
+           (transaction-id (post-parameter-integer "transaction-id"))
            (relevant-offers (getf relevant-inventory :offers)))
 
       (flet ((g-compose (&key single-recipient (subjects subjects) error)
@@ -659,8 +695,14 @@
                             (search-people (post-parameter "name")))))
 
           ((not text)
-            (g-compose :error '(:text "Please enter some more details about what you are grateful for."
-                                :field "text")))
+            (if transaction-id
+              (progn
+                (flash "Please enter some more details about what you are grateful for." :error t)
+                (see-other (or (url-compose (post-parameter-string "next")
+                                            "post-gratitude" "t")
+                               "/home")))
+             (g-compose :error '(:text "Please enter some more details about what you are grateful for."
+                                 :field "text"))))
 
           ((and (or relevant-offers relevant-requests)
                 (not on-id)
@@ -684,6 +726,7 @@
                                             :subjects (remove recipient-id
                                                               subjects)
                                             :on on-id
+                                            :transaction-id transaction-id
                                             :time time
                                             :text text)))
 

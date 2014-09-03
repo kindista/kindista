@@ -163,7 +163,6 @@
          (groups (unless (eql (getf data :type) :gratitude) ; index conversations only
                    (remove nil (mapcar #'cdar people))))
          (existing-message (gethash id *db-messages*))
-         (pending-gratitude-p)
          (new-message (unless existing-message
                         (make-message :id id
                                       :time time
@@ -185,37 +184,7 @@
     (with-locked-hash-table (*group-messages-index*)
       (dolist (group groups)
         (pushnew message (gethash group *group-messages-index*))))
-    (index-message-folders message)
-
-    (when (eql type :transaction)
-      ;; see if there is a :given or :received action more recently than a 
-      ;; :gratitude-posted
-      (loop for event in (getf data :log)
-            until (eq (getf event :action) :gratitude-posted)
-            when (or (eq (getf event :action) :gave)
-                     (eq (getf event :action) :received))
-            do (setf pending-gratitude-p t))
-
-      (when pending-gratitude-p
-        (let* ((item-id (getf data :on))
-               (item (db item-id))
-               (by (getf item :by))
-               (result (when item ; prior to 6/3/2014 inventory items could be deleted
-                         (inventory-item-result item-id
-                                                :data item
-                                                :by-id by))))
-
-          (when result
-            (with-locked-hash-table (*pending-gratitude-index*)
-              (case (getf item :type)
-                (:offer
-                  (push (cons result id)
-                        (getf (gethash (getf data :by) *pending-gratitude-index*)
-                              :offers)))
-                (:request
-                  (push (cons result id)
-                        (getf (gethash by *pending-gratitude-index*)
-                              :requests)))))))))))
+    (index-message-folders message)))
 
 (defun all-message-people (message)
 "a list of people with access to a given message"
@@ -263,6 +232,7 @@
               :onchange "this.form.submit()"
        (:option :value "all" :selected (when (string= selected "all") "")
          "all mail")
+       (:option :value "pending-gratitude" :selected (when (string= selected "pending-gratitude") "") "gifts awaiting gratitude")
        (:option :value "unread" :selected (when (string= selected "unread") "")
          "unread mail")
        (:option :value "compost" :selected (when (string= selected "compost") "")
@@ -458,13 +428,13 @@
     (html
       (str (h3-timestamp (message-time message)))
       (:p :class "people"
+        (str (group-message-indicator message groups))
         (str (person-link (getf (db id) :author)))
         " shared "
         (:a :href (strcat "/gratitude/" id)
             "gratitude")
         " for "
-        (str (format nil *english-list* (remove nil (push self my-groups))))
-        (str (group-message-indicator message groups))))))
+        (str (format nil *english-list* (remove nil (push self my-groups))))))))
 
 (defun conversation-inbox-item (message groups)
   (let* ((id (message-id message))
@@ -484,14 +454,12 @@
      (html
         (str (h3-timestamp (message-time message)))
         (:p :class "people"
+          (str (group-message-indicator message groups)) 
           (when (eql comment-by *userid*)
             (str "↪ "))
-
           (aif participants
             (str (name-list it))
-            (htm (:span :class "nobody" "Empty conversation")))
-
-          (str (group-message-indicator message groups)))
+            (htm (:span :class "nobody" "Empty conversation"))) )
 
         (str
           (url
@@ -546,6 +514,7 @@
                      (or (getf latest-gratitude-entry :time) 0))
                   (getf comment-data :text))
                  (t (db (getf latest-gratitude-entry :comment) :text))))
+         (transaction-url (strcat "/transactions/" id))
          (inventory-url (case inventory-item-type
                           (:offer (strcat "/offers/" (getf transaction :on)))
                           (:request (strcat "/requests/" (getf transaction :on)))))
@@ -555,20 +524,29 @@
                           (t (case deleted-type
                                (:offer "offer")
                                (:request "request")
-                               (t (html (:span :class "none" "deleted offer or request"))))))))
+                               (t (html (:span :class "none" "deleted offer or request")))))))
+         (pending-gratitude-p (transaction-pending-gratitude-p id transaction))
+         (role)
+         (representing))
 
-  (flet ((transaction-url (text)
-           (html (:a :href (strcat "/transactions/" id)
+  (multiple-value-bind (options representing-whom user-role)
+    (transaction-options-for-user id :transaction transaction)
+    (declare (ignore options))
+    (setf role user-role)
+    (setf representing representing-whom))
+
+  (flet ((transaction-link (text)
+           (html (:a :href transaction-url
                    (str text)))))
 
     (html
       (str (h3-timestamp (message-time message)))
       (:p :class "people"
+        (str (group-message-indicator message groups))
         (when (if latest-thing-is-a-comment-p
                 (eql comment-by *userid*)
                 (eql (car (getf latest-transaction-action :party)) *userid*))
           (str "↪ "))
-
         (str
           (if latest-thing-is-a-comment-p
             (if (eql (getf transaction :by) *userid*)
@@ -591,11 +569,10 @@
                                        (person-link inventory-by))
                                      (if (eql (getf transaction :by) *userid*)
                                        "you"
-                                       (person-link (getf transaction :by))))))
-        (str (group-message-indicator message groups)) )
+                                       (person-link (getf transaction :by)))))))
 
       (str
-        (transaction-url
+        (transaction-link
           (html
             (:p :class "text"
               (:span :class "title"
@@ -606,7 +583,17 @@
                (when (> comments 1)
                  (str (strcat " (" comments ") ")))
                " - ")
-              (str (ellipsis text)))))))))
+              (str (ellipsis text))))))
+
+      (when (and pending-gratitude-p (eq role :receiver))
+        (htm
+          (:div
+            (:a :class "blue gratitude"
+                :href (url-compose transaction-url "post-gratitude" "t")
+              (str (icon "heart-person"))
+              "Express Gratitude"))))
+
+      )))
 
 (defun get-messages ()
   (require-user

@@ -76,6 +76,48 @@
 
     id))
 
+(defun transaction-pending-gratitude-p
+  (transaction-id &optional (data (db transaction-id))
+                  &aux (pending-gratitude-p))
+
+  (loop for event in (getf data :log)
+        until (eq (getf event :action) :gratitude-posted)
+        when (or (eq (getf event :action) :gave)
+                 (eq (getf event :action) :received))
+        do (setf pending-gratitude-p t))
+
+  pending-gratitude-p)
+
+(defun index-transaction
+  (id
+   data
+   &aux (pending-gratitude-p (transaction-pending-gratitude-p id data)))
+
+  (index-message id data)
+      ;; see if there is a :given or :received action more recently than a 
+      ;; :gratitude-posted
+
+  (when pending-gratitude-p
+    (let* ((item-id (getf data :on))
+           (item (db item-id))
+           (by (getf item :by))
+           (result (when item ; prior to 6/3/2014 inventory items could be deleted
+                     (inventory-item-result item-id
+                                            :data item
+                                            :by-id by))))
+
+      (when result
+        (with-locked-hash-table (*pending-gratitude-index*)
+          (case (getf item :type)
+            (:offer
+              (push (cons result id)
+                    (getf (gethash (getf data :by) *pending-gratitude-index*)
+                          :offers)))
+            (:request
+              (push (cons result id)
+                    (getf (gethash by *pending-gratitude-index*)
+                          :requests)))))))))
+
 (defun transaction-history
   (transaction-id
    on-type
@@ -584,7 +626,17 @@
                  (remove "will-give" options :test #'string=))))
       (:receiver
         (if (getf inventory-item :active)
-          (push "deactivate" options)
+          (unless (or (find "decline" options :test #'string=)
+                      (and (eql (getf other-party-event :action)
+                                 :gave)
+                           (find transaction-id
+                                 (getf (gethash representing
+                                                *pending-gratitude-index*)
+                                       (if (eq inventory-type :request)
+                                         :requests
+                                         :offers))
+                                 :key #'cdr)))
+            (push "deactivate" options))
           (progn (push "reactivate" options)
                  (remove "want" options :test #'string=))))))
 
@@ -592,10 +644,10 @@
     (flet ((subst-opt (new old)
              (when (find old options :test #'string=)
                (asetf options (cons new (remove old it :test #'string=))))))
-      (subst-opt "will-give-again" "will-give")
+      (subst-opt "already-received-again" "already-received")
       (subst-opt "already-given-again" "already-given")
-      (subst-opt "want-again" "want")
-      (subst-opt "already-received-again" "already-received")))
+      (asetf options (remove "want"
+                       (remove "will-give" it :test #'string=) :test #'string=))))
 
   (values options
           representing
