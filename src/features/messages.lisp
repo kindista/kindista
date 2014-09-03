@@ -232,9 +232,9 @@
               :onchange "this.form.submit()"
        (:option :value "all" :selected (when (string= selected "all") "")
          "all mail")
-       (:option :value "pending-gratitude" :selected (when (string= selected "pending-gratitude") "") "gifts awaiting gratitude")
        (:option :value "unread" :selected (when (string= selected "unread") "")
          "unread mail")
+       (:option :value "pending-gratitude" :selected (when (string= selected "pending-gratitude") "") "gifts awaiting gratitude")
        (:option :value "compost" :selected (when (string= selected "compost") "")
          "compost"))
       (:input :type "submit" :class "no-js" :value "apply"))))
@@ -244,14 +244,21 @@
                          *user-mailbox*
                          (gethash id *person-mailbox-index*))))
   ;; copy-list is needed to prevent destructive sort operation on the index
-   (safe-sort (cond
-               ((string= "all" filter)
-                (getf message-index :inbox))
-               ((string= "unread" filter)
-                (getf message-index :unread))
-               ((string= "compost" filter)
-                (getf message-index :compost)))
-    #'> :key #'message-time)))
+   (if (string= "pending-gratitude" filter)
+     (sort (mapcar #'(lambda (transaction)
+                       (gethash transaction *db-messages*))
+                   (transactions-pending-gratitude-for-user id))
+           #'>
+           :key #'message-time)
+     (safe-sort (cond
+                  ((string= "all" filter)
+                   (getf message-index :inbox))
+                  ((string= "unread" filter)
+                   (getf message-index :unread))
+                  ((string= "compost" filter)
+                   (getf message-index :compost)))
+                #'>
+                :key #'message-time))))
 
 (defun inbox-items (&key (page 0) (count 20))
   (let* ((start (* page count))

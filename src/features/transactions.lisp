@@ -76,6 +76,22 @@
 
     id))
 
+(defun transactions-pending-gratitude-for-account (account-id)
+  (let* ((all-pending (gethash account-id *pending-gratitude-index*)))
+    (mapcar #'cdr
+            (append (getf all-pending :offers)
+                    (getf all-pending :requests)))))
+
+(defun transactions-pending-gratitude-for-user
+  (&optional (userid *userid*)
+   &aux (groups (mapcar #'car (groups-with-user-as-admin userid)))
+        (transactions))
+  (dolist (account (cons userid groups))
+    (asetf transactions
+           (append (transactions-pending-gratitude-for-account account)
+                   it)))
+  (remove nil transactions))
+
 (defun transaction-pending-gratitude-p
   (transaction-id &optional (data (db transaction-id))
                   &aux (pending-gratitude-p))

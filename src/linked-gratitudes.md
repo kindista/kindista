@@ -14,11 +14,14 @@
      - (:time time :party (personid . groupid) :action :value :gratitude gratitudeid)
 [x] write a function for data migration
 [x] edit transaction inbox item, conversation view, email notification as necessary (even when no comment has occured)
-[ ] what about gratitudes on inventory items w/o transactions
+[x] what about gratitudes on inventory items w/o transactions
    - need a way to index for inbox
    - may need special treatment when deleting the gratitude
 [ ] test new email notification
 [ ] transaction action for cancelling an action
+[ ] calculate number of transactions pending gratitude
+   - number for user
+   - number for user's groups
 [x] allow giver to deactivate an offer within the trasaction UI
 [x] test deleting gratitude
 [x] choose options and language to display based on current data structure (current state of participant role)
