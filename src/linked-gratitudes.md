@@ -17,6 +17,7 @@
 [x] what about gratitudes on inventory items w/o transactions
    - need a way to index for inbox
    - may need special treatment when deleting the gratitude
+[ ] finish transaction-othe-party function
 [ ] test new email notification
 [ ] transaction action for cancelling an action
 [ ] calculate number of transactions pending gratitude

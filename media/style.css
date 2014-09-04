@@ -3441,6 +3441,10 @@ span.highlight {
  padding: 0 1em 0.1em;
 }
 
+div.reply.item input[type=radio] {
+ margin: 0.5em 0.3em 0.6em 0;
+}
+
 table.transaction-progress {
  margin-top: 0.8em;
 }

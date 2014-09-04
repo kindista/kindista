@@ -120,6 +120,7 @@
                                              text
                                              :group-name (getf sender-group
                                                                :name)
+                                             :on-type on-type
                                              :inventory-text inventory-text)
             :html-message (comment-notification-email-html
                             on-id
@@ -130,9 +131,10 @@
                                        :maximum-links 5)
                             text
                             :sender-group (person-email-link sender-group-id)
+                            :on-type on-type
                             :inventory-text inventory-text)))))))
 
-(defun comment-notification-email-text (on-id from subject people text &key inventory-text group-name)
+(defun comment-notification-email-text (on-id from subject people text &key inventory-text group-name on-type)
   (strcat*
 (no-reply-notice)
 "You can also reply to this message by clicking on the link below."
@@ -149,7 +151,7 @@ from (awhen group-name (s+ " from " it )) " says:"
 #\linefeed #\linefeed
 "You can see the conversation on Kindista here:"
 #\linefeed
-(strcat +base-url+ "conversations/" on-id)
+(strcat +base-url+ (if (eq on-type :transaction) "transactions/" "conversations/") on-id)
 #\linefeed #\linefeed
 "If you no longer wish to receive notifications when people send you messages, please edit your communication settings:
 "
@@ -159,7 +161,21 @@ from (awhen group-name (s+ " from " it )) " says:"
 -The Kindista Team"))
 
 
-(defun comment-notification-email-html (on-id from subject people text &key inventory-text sender-group)
+(defun comment-notification-email-html
+  (on-id
+   from
+   subject
+   people
+   text
+   &key inventory-text
+        sender-group
+        on-type
+   &aux (url (strcat +base-url+
+                     (if (eq on-type :transaction)
+                       "transactions/"
+                       "conversations/")
+                     on-id)))
+
   (html-email-base
     (html
       (:p :style *style-p* (:strong (str (no-reply-notice))))
@@ -193,8 +209,7 @@ from (awhen group-name (s+ " from " it )) " says:"
 
       (:p :style *style-p*
        "You can see the conversation on Kindista here: "
-       (:a :href (strcat +base-url+ "conversations/" on-id)
-                 (str (strcat +base-url+ "conversations/" on-id))))
+       (:a :href url (str url)))
 
       (:p :style *style-p*
           "If you no longer wish to receive notifications when people send you messages, please edit your communication settings:"

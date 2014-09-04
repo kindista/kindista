@@ -1039,7 +1039,7 @@
             (awhen (getf data :details)
               (str (html-text it))))
           (:h4 "Write your reply:")
-          (:div :class "item"
+          (:div :class "reply item"
             (:form :method "post" :action url
               (:input :type "hidden" :name "next" :value next)
               (:input :type "hidden" :name "match" :value match)

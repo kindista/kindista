@@ -90,7 +90,7 @@
     (asetf transactions
            (append (transactions-pending-gratitude-for-account account)
                    it)))
-  (remove nil transactions))
+  transactions)
 
 (defun transaction-pending-gratitude-p
   (transaction-id &optional (data (db transaction-id))
@@ -204,6 +204,12 @@
                 (when (>= (or latest-seen 0)
                           (getf event :id))))))))))
 
+(defun transaction-other-party
+  (transaction-id
+   &optional (userid *userid*)
+   &aux (transaction (db transaction-id))
+    )
+  )
 (defun transaction-action-text
   (log-event
    on-type
@@ -340,6 +346,7 @@
    on-url
    url)
   (html
+    (:div :class "trans-options" "Options:")
     (:div :class "transaction-options item"
 
       (when (find "post-gratitude" transaction-options :test #'string=)
@@ -467,7 +474,6 @@
         deleted-type
         on-type
         other-party-link
-        error
    &aux (inventory-url (case on-type
                          (:offer (strcat "/offers/" (getf data :on)))
                          (:request (strcat "/requests/" (getf data :on)))))
@@ -559,7 +565,6 @@
                 (:div "4. ")
                 (:div :class "gratitude-step" "Gratitude Posted " (when (eq status :gratitude-posted) (str (icon "white-checkmark")))))))))
 
-      (:div :class "trans-options" "Options:")
       (str form-elements-html)
       (str history-html))
 
@@ -775,6 +780,7 @@
                (party (car mailbox))
                (action-string (post-parameter-string "transaction-action"))
                (action)
+               (inventory-item (db (getf transaction :on)))
                (url (strcat "/transactions/" id)))
           (setf action
                 (cond
@@ -793,28 +799,66 @@
                   ((string= action-string "dispute")
                    :disputed)))
           (if party
-            (cond
-              ((post-parameter "cancel")
-               (see-other url))
-              ((post-parameter "text")
-               (flash "Your message has been sent.")
-               (contact-opt-out-flash (mapcar #'caar people))
-               (let* ((time (get-universal-time))
-                      (new-comment-id (create-comment :on id
-                                                      :text (post-parameter "text")
-                                                      :time time
-                                                      :by party)))
-                 (send-metric* :message-sent new-comment-id))
-               (see-other url))
-              (action
-                 (amodify-db id :log (append
-                                       it
-                                       (list
-                                         (list :time (get-universal-time)
-                                               :party party
-                                               :action action))))
+            (flet ((modify-log (new-action)
+                     (amodify-db id :log (append
+                                          it
+                                          (list
+                                            (list :time (get-universal-time)
+                                                  :party party
+                                                  :action new-action))))
+                     (see-other url)))
+              (cond
+                ((post-parameter "cancel")
                  (see-other url))
-              )
+
+                ((post-parameter "text")
+                 (flash "Your message has been sent.")
+                 (contact-opt-out-flash (mapcar #'caar people))
+                 (let* ((time (get-universal-time))
+                        (new-comment-id (create-comment :on id
+                                                        :text (post-parameter "text")
+                                                        :time time
+                                                        :by party)))
+                   (send-metric* :message-sent new-comment-id))
+                 (see-other url))
+
+                ((eq action :declined)
+                 (confirm-action
+                   "Decline Gift"
+                   (strcat "Please confirm that you no longer wish to receive this gift from "
+                           (case (getf inventory-item :type)
+                             (:offer (db (getf inventory-item :by) :name))
+                             (:request (db (getf transaction :by) :name)))
+                           ":")
+                   :url url
+                   :next-url url
+                   :details (or (getf inventory-item :title)
+                                (getf inventory-item :details))
+                   :post-parameter "confirm-decline"))
+
+                ((post-parameter "confirm-decline")
+                  (modify-log :declined))
+
+                ((eq action :withheld)
+                 (confirm-action
+                   "Withhold Gift"
+                   (strcat "Please confirm that you no longer wish to give this gift to "
+                           (case (getf inventory-item :type)
+                             (:request (db (getf inventory-item :by) :name))
+                             (:offer (db (getf transaction :by) :name)))
+                           ":")
+                   :url url
+                   :next-url url
+                   :details (or (getf inventory-item :title)
+                                (getf inventory-item :details))
+                   :post-parameter "confirm-withhold"))
+
+                ((post-parameter "confirm-withhold")
+                  (modify-log :withheld))
+
+                (action
+                  (modify-log action))))
+
             (permission-denied)))
 
       (not-found)))))

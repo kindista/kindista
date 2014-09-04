@@ -117,6 +117,7 @@
                                                    (:file "pending-account-approval")
                                                    (:file "reminders")
                                                    (:file "reset-password")
+                                                   (:file "transaction-actions")
                                                    (:file "group-membership-invitation-notification")
                                                    (:file "group-membership-request-notification")
                                                    (:file "matching-offer-notification")

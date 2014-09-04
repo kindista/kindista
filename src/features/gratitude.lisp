@@ -158,9 +158,6 @@
         (push id (gethash author-id *pending-person-items-index*))))
 
       (t
-       (unless (getf data :on)
-         (index-message id data))
-
        (with-locked-hash-table (*db-results*)
          (setf (gethash id *db-results*) result))
 
@@ -173,9 +170,10 @@
                   (safe-sort (push result it) #'> :key #'result-time))))
 
        (awhen (getf data :on)
-         (index-gratitude-link id it created)
-         (when (not (getf data :transaction-id))
-           (index-message id data)))
+         (index-gratitude-link id it created))
+
+       (unless (getf data :transaction-id)
+         (index-message id data))
 
        ;; unless gratitude is older than 180 days
        (unless (< (result-time result) (- (get-universal-time) 15552000))
