@@ -570,7 +570,11 @@
 
             (transaction-action-text latest-transaction-action
                                      inventory-item-type
-                                     inventory-link
+                                     (strcat (case inventory-item-type
+                                               (:offer "an ")
+                                               (:request "a "))
+                                             inventory-link)
+
                                      (if (eql inventory-by *userid*)
                                        "you"
                                        (person-link inventory-by))

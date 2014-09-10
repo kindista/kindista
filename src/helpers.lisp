@@ -240,6 +240,31 @@
                              #'> :key #'result-time))))
         (geo-index-insert *activity-geo-index* result)))))
 
+(defun resource-url
+  (resource-id
+   &optional (resource (db resource-id))
+             (omit-leading-forward-slash nil)
+   &aux
+             (id (case (getf resource :type)
+                   ((or :person :group)
+                    (username-or-id resource-id))
+                   (t resource-id))))
+
+  (strcat* (unless omit-leading-forward-slash "/")
+           (case (getf resource :type)
+           (:offer "offers")
+           (:request "requests")
+           (:event "events")
+           (:conversation "conversations")
+           (:transaction "transactions")
+           (:gratitude "gratitude")
+           (:image "image")
+           (:person "people")
+           (:group "groups")
+           (:gift "gifts"))
+           "/"
+           id))
+
 (defun url-compose (base &rest params)
   (do ((param-strings ()))
       ((not params)

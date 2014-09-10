@@ -24,6 +24,13 @@
       (when (eq type :reply)
         (modify-db id :type :transaction)))))
 
+(defun new-transaction-action-notice-handler ()
+  (let* ((log-event (getf (cddddr *notice*) :log-event))
+         (action (getf log-event :action)))
+    (send-transaction-action-notification-email (getf (cddddr *notice*)
+                                                      :transaction-id)
+                                                log-event)))
+
 (defun create-transaction (&key on text action match-id pending-deletion (userid *userid*))
   (let* ((time (get-universal-time))
          (on-item (db on))
@@ -185,7 +192,7 @@
        ((getf event :action)
         (str (transaction-action-html event
                                       on-type
-                                      on-url
+                                      (strcat* "this " on-url)
                                       (if (eql inventory-by *userid*)
                                         "you"
                                         (person-link inventory-by))
@@ -207,89 +214,114 @@
 (defun transaction-other-party
   (transaction-id
    &optional (userid *userid*)
-   &aux (transaction (db transaction-id))
-    )
-  )
+             (transaction (db transaction-id))
+   &aux (initiator (getf transaction :by)))
+  (if (or (eql initiator userid)
+          (group-admin-p initiator userid))
+    (db (getf transaction :on) :by)
+
+    initiator))
+
 (defun transaction-action-text
   (log-event
    on-type
-   on-url
+   inventory-descriptor
    inventory-by-name
    transaction-initiator-name
+   &key (html-p t)
+        (userid *userid*)
    &aux (action-party (car (getf log-event :party)))
-        (self (eql action-party *userid*)))
-  (strcat*
-    (if self "You" (person-link action-party))
+        (self (eql action-party userid)) )
+  (flet ((indirect-object (actor)
+           (if self actor "you")))
+    (strcat*
+    (cond
+      (self "You")
+      (html-p (person-link action-party))
+      (t (db action-party :name)))
     (awhen (cdr (getf log-event :party))
       (strcat* " (on behalf of " (group-link it) ")" ))
     (case on-type
       (:offer
         (case (getf log-event :action)
           (:requested
-            (strcat " requested to recieve this "
-                on-url
+            (strcat " requested to recieve "
+                inventory-descriptor
                 " from "
-                inventory-by-name) )
+                (indirect-object inventory-by-name)) )
           (:offered
-            (strcat " agreed to share this " on-url " with "
-                transaction-initiator-name))
+            (strcat " agreed to share " inventory-descriptor " with "
+                (indirect-object transaction-initiator-name)))
           (:declined
-            (strcat* " no longer wish" (unless self "es")
-                     " to receive this " on-url " from "
-                    inventory-by-name))
+            (strcat* " declined to receive a gift from "
+                     (indirect-object inventory-by-name)))
+          (:withheld
+            (strcat* " indicated that "
+                     (if self "you" "they")
+                     " can no longer share "
+                     inventory-descriptor
+                     " with "
+                     (indirect-object transaction-initiator-name)))
           (:gave
-            (strcat " shared this " on-url " with "
-                transaction-initiator-name))
+            (strcat " shared " inventory-descriptor " with "
+                (indirect-object transaction-initiator-name)))
           (:received
-            (strcat " received this "
-                    on-url
-                    " from "
-                inventory-by-name))
+            (strcat " received a gift from "
+                (indirect-object inventory-by-name)))
           (:disputed
-            (strcat " disputed having received this " on-url " from "
-                inventory-by-name))
+            (strcat " disputed having received a gift from "
+                    (indirect-object inventory-by-name)))
           (:gratitude-posted
             (strcat " posted a statement of gratitude about "
                     inventory-by-name
-                    " for this "
-                    on-url))))
+                    " for a gift "
+                    (if self "you" "they")
+                    " received from "
+                    (if self "them" "you")))))
       (:request
         (case (getf log-event :action)
           (:requested
             (strcat* " want" (unless self "s")
                      " to receive what "
-                     transaction-initiator-name
-                     (if (string= transaction-initiator-name "you")
+                     (indirect-object transaction-initiator-name)
+                     (if (string= (indirect-object transaction-initiator-name) "you")
                        " are" " is")
                      " offering") )
           (:offered
-            (strcat " agreed to fulfill this " on-url " from "
-                inventory-by-name))
+            (strcat " agreed to fulfill " inventory-descriptor " made by "
+                (indirect-object inventory-by-name)))
           (:declined
-            (strcat* " no longer wish" (unless self "es")
-                     " to receive this " on-url " from "
-                     transaction-initiator-name))
+            (strcat* " declined to receive a gift from "
+                     (indirect-object transaction-initiator-name)))
+          (:withheld
+            (strcat* " indicated that"
+
+                     (if self "you" "they")
+                     " can no longer share "
+                     inventory-descriptor
+                     " with "
+                     (indirect-object inventory-by-name)))
           (:gave
-            (strcat " fulfilled this " on-url " from "
-                inventory-by-name))
+            (strcat " fulfilled " inventory-descriptor " from "
+                (indirect-object inventory-by-name)))
           (:received
-            (strcat " received this " on-url " from "
-                transaction-initiator-name))
+            (strcat " received " inventory-descriptor " from "
+                (indirect-object transaction-initiator-name)))
           (:disputed
-            (strcat " disputed having received this " on-url " from "
-                transaction-initiator-name))
+            (strcat " disputed having received a gift from "
+                (indirect-object transaction-initiator-name)))
           (:gratitude-posted
             (strcat " posted a statement of gratitude about "
-                    transaction-initiator-name
-                    " for this "
-                    on-url)))))
+                    (indirect-object transaction-initiator-name)
+                    " for "
+                    inventory-descriptor)))))
     "."
-    ))
+    )))
 
 (defun transaction-action-html
   (log-event
    on-type
-   on-url
+   inventory-descriptor
    inventory-by-name
    transaction-initiator-name)
 
@@ -305,7 +337,7 @@
             (:strong
               (str (transaction-action-text log-event
                                             on-type
-                                            on-url
+                                            inventory-descriptor
                                             inventory-by-name
                                             transaction-initiator-name
                                             )))))))))
@@ -630,7 +662,7 @@
               (:offered
                 (case (getf other-party-event :action)
                   (:received nil)
-                  (t '("withheld" "already-given"))))
+                  (t '("withhold" "already-given"))))
               (:gave
                 (when (and (eql (getf other-party-event :action)
                                 :gratitude-posted)
@@ -642,7 +674,8 @@
     (case role
       (:giver
         (if (getf inventory-item :active)
-          (push "deactivate" options)
+          (when (not (find "withhold" options :test #'string=))
+            (push "deactivate" options))
           (progn (push "reactivate" options)
                  (remove "will-give" options :test #'string=))))
       (:receiver
@@ -800,13 +833,18 @@
                    :disputed)))
           (if party
             (flet ((modify-log (new-action)
-                     (amodify-db id :log (append
-                                          it
-                                          (list
-                                            (list :time (get-universal-time)
-                                                  :party party
-                                                  :action new-action))))
-                     (see-other url)))
+                     (let* ((time (get-universal-time))
+                            (log-event (list :time time
+                                             :party party
+                                             :action new-action)))
+                       (amodify-db id :log (append
+                                             it
+                                             (list log-event)))
+                       (unless (eq action :received)
+                         (notice :new-transaction-action :time time
+                                                         :transaction-id id
+                                                         :log-event log-event))
+                       (see-other url))))
               (cond
                 ((post-parameter "cancel")
                  (see-other url))
