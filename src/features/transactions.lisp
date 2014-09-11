@@ -104,42 +104,63 @@
                   &aux (pending-gratitude-p))
 
   (loop for event in (getf data :log)
-        until (eq (getf event :action) :gratitude-posted)
         when (or (eq (getf event :action) :gave)
                  (eq (getf event :action) :received))
-        do (setf pending-gratitude-p t))
+        do (setf pending-gratitude-p t)
+        when (or (eq (getf event :action) :withheld)
+                 (eq (getf event :action) :decline))
+        do (setf pending-gratitude-p nil)
+        when (eq (getf event :action) :gratitude-posted)
+        do (progn (setf pending-gratitude-p nil)
+                  (loop-finish)))
 
   pending-gratitude-p)
 
-(defun index-transaction
-  (id
-   data
-   &aux (pending-gratitude-p (transaction-pending-gratitude-p id data)))
+(defun sitewide-transaction-gratitude (&aux (completed 0) (pending 0))
+  (setf completed (length *completed-transactions-index*))
 
-  (index-message id data)
-      ;; see if there is a :given or :received action more recently than a 
-      ;; :gratitude-posted
+  (flet ((count-pending (account-id pending-plist)
+           (declare (ignore account-id))
+           (asetf pending
+                  (+ it
+                     (length (append (getf pending-plist :offers)
+                                     (getf pending-plist :requests)))))))
+    (maphash #'count-pending *pending-gratitude-index*))
 
-  (when pending-gratitude-p
-    (let* ((item-id (getf data :on))
-           (item (db item-id))
-           (by (getf item :by))
-           (result (when item ; prior to 6/3/2014 inventory items could be deleted
-                     (inventory-item-result item-id
-                                            :data item
-                                            :by-id by))))
+  (list :completed completed :pending pending))
 
-      (when result
-        (with-locked-hash-table (*pending-gratitude-index*)
-          (case (getf item :type)
-            (:offer
-              (push (cons result id)
-                    (getf (gethash (getf data :by) *pending-gratitude-index*)
-                          :offers)))
-            (:request
-              (push (cons result id)
-                    (getf (gethash by *pending-gratitude-index*)
-                          :requests)))))))))
+(defun index-transaction (id data)
+  (index-message id data) )
+
+(defun index-pending-transactions ()
+"Populates *pending-gratitude-index*. Must be run after indexing all results since no guarantee can be made that results are created in numeric order."
+  (flet ((index-transaction (transaction-id message)
+           (when (eq (message-type message) :transaction)
+             (let ((transaction (db transaction-id)))
+               (when (transaction-pending-gratitude-p
+                       transaction-id
+                       transaction)
+                 (let* ((item-id (getf transaction :on))
+                        (item (db item-id))
+                        (by (getf item :by))
+                        (result (when item ; prior to 6/3/2014 inventory items could be deleted
+                                  (inventory-item-result item-id
+                                                         :data item
+                                                         :by-id by))))
+
+                   (when result
+                     (with-locked-hash-table (*pending-gratitude-index*)
+                       (case (getf item :type)
+                         (:offer
+                           (push (cons result transaction-id)
+                                 (getf (gethash (getf transaction :by) *pending-gratitude-index*)
+                                       :offers)))
+                         (:request
+                           (push (cons result transaction-id)
+                                 (getf (gethash by *pending-gratitude-index*)
+                                       :requests))))))))))))
+    (with-locked-hash-table (*pending-gratitude-index*)
+      (maphash #'index-transaction *db-messages*))))
 
 (defun transaction-history
   (transaction-id
@@ -413,13 +434,6 @@
                    (s+ "I want to share this offering with " other-party-name ".")))
 
             (str (transaction-button
-                   "will-give-again"
-                   (icon "offers")
-                   (s+ "I want to give this to " other-party-name "again.")
-                   (s+ "I want to share this offering with " other-party-name " again.")
-                   "will-give"))
-
-            (str (transaction-button
                    "withhold"
                    (icon "withhold")
                    (s+ "I can't fulfill " other-party-name "'s request at this time.")
@@ -432,37 +446,16 @@
                    (s+ "I have shared this offer with " other-party-name ".")))
 
             (str (transaction-button
-                   "already-given-again"
-                   (icon "gift")
-                   (s+ "I have given this to " other-party-name "again.")
-                   (s+ "I have shared this offer with " other-party-name " again.")
-                   "already-given"))
-
-            (str (transaction-button
                    "want"
                    (icon "requests")
                    (s+ "I want to recieve what " other-party-name " is offering me.")
                    (s+ "I want to recieve this offer from " other-party-name ".")))
 
             (str (transaction-button
-                   "want-again"
-                   (icon "requests")
-                   (s+ "I want to recieve this from " other-party-name " again.")
-                   (s+ "I want to recieve this offer from " other-party-name " again.")
-                   "want"))
-
-            (str (transaction-button
                    "already-received"
                    (icon "gift")
                    (s+ "I have received what " other-party-name " has offered me.")
                    (s+ "I have received this offer from " other-party-name ".")))
-
-            (str (transaction-button
-                   "already-received-again"
-                   (icon "gift")
-                   (s+ other-party-name " has given this to me again. ")
-                   (s+ other-party-name " has given this to me again. ")
-                   "already-received"))
 
             (str (transaction-button
                    "decline"
@@ -663,12 +656,8 @@
                 (case (getf other-party-event :action)
                   (:received nil)
                   (t '("withhold" "already-given"))))
-              (:gave
-                (when (and (eql (getf other-party-event :action)
-                                :gratitude-posted)
-                           (getf inventory-item :active))
-                  '("will-give" "already-given")))
-              (t '("will-give" "already-given"))))))
+              (t (unless (eq (getf current-event :action) :gave)
+                   '("will-give" "already-given")))))))
 
   (when (and inventory-item inventory-by-self-p)
     (case role
@@ -695,13 +684,8 @@
                  (remove "want" options :test #'string=))))))
 
   (when gratitude-expressed-p
-    (flet ((subst-opt (new old)
-             (when (find old options :test #'string=)
-               (asetf options (cons new (remove old it :test #'string=))))))
-      (subst-opt "already-received-again" "already-received")
-      (subst-opt "already-given-again" "already-given")
-      (asetf options (remove "want"
-                       (remove "will-give" it :test #'string=) :test #'string=))))
+    (asetf options (remove "want"
+                     (remove "will-give" it :test #'string=) :test #'string=)))
 
   (values options
           representing

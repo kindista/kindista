@@ -17,9 +17,9 @@
 [x] what about gratitudes on inventory items w/o transactions
    - need a way to index for inbox
    - may need special treatment when deleting the gratitude
-[ ] finish editing indirect-object for transaction action text
-[ ] finish transaction-othe-party function
-[ ] test new email notification
+[x] finish editing indirect-object for transaction action text
+[x] finish transaction-othe-party function
+[x] test new email notification
 [ ] transaction action for cancelling an action
 [ ] calculate number of transactions pending gratitude
    - number for user
@@ -30,6 +30,9 @@
 [x] change :log as necessary with each new comment
 [ ] prompt statement of gratitude as necessary (in inbox, through email, through (see-other...) etc.
 [ ] test deleting inappropriate offer/request/pending-account
+[x] inbox items have gratitude post link after gratitude has been posted
+[x] gratitude activity item doesn't include the title for the on-item description
+[x] maybe remove the "has shared this again" link from completed transactions
 
 ## TEST before server migration
 

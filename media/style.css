@@ -1358,6 +1358,11 @@ a > img {
  vertical-align:middle;
 }
 
+.card div.gratitude-on-item h3 {
+ font-size: 1.1em;
+ margin: 0.5em 0 0.2em;
+ }
+
 menu .newcount {
  display:inline-block;
  padding: .17em .35em;
@@ -1866,6 +1871,7 @@ div.item-matches p.inventory-match-title {
 }
 
 div.gratitude-on-item {
+ margin-top: 0.4em;
  
 }
 

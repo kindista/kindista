@@ -68,6 +68,7 @@
          (locationp (and (result-latitude result)
                         (result-longitude result))))
 
+    ;; other code (e.g. index transaction) requires results for inactive items
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 

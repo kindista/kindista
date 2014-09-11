@@ -199,7 +199,6 @@
                        (html-text (getf data :details)))))))))
 
 (defun gratitude-activity-item (result &key truncate reciprocity (show-on-item t))
-  ; we should probably get rid of these comments -DJB
          ; result-people is a list
          ; car of list is person showing gratitude
          ; cdr of list is subjects

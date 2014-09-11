@@ -454,6 +454,7 @@
   (clear-indexes)
   (maphash #'index-item *db*)
   (index-matching-requests-by-account) ;must be run after all requests have been indexed
+  (index-pending-transactions) ;must be run after all inventory items have results
   )
 
 

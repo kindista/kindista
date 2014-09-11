@@ -321,7 +321,7 @@
         (:div
           (when on-title
             (htm
-              (:a :href on-url on-title)))
+              (:h3 (:a :href on-url (str on-title)))))
           (when on-details
             (str (ellipsis on-details :length 81 :see-more on-url))))))))
 
@@ -751,15 +751,16 @@
                                       on-types)
                                 (remove pending-association it :test #'equal))))
 
-                     (amodify-db transaction-id
-                                 :log (append
-                                        it
-                                        (list (list :time time
-                                                    :party (if adminp
-                                                             (cons *userid* groupid)
-                                                             (list *userid*))
-                                                    :action :gratitude-posted
-                                                    :comment new-id)))))
+                     (when transaction-id
+                       (amodify-db transaction-id
+                                   :log (append
+                                          it
+                                          (list (list :time time
+                                                      :party (if adminp
+                                                               (cons *userid* groupid)
+                                                               (list *userid*))
+                                                      :action :gratitude-posted
+                                                      :comment new-id))))))
 
                  (see-other (or next (format nil "/gratitude/~A" new-id))))))))
 
