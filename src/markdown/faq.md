@@ -130,7 +130,7 @@ to someone.
 
 <a id="sharing-privacy"></a>
 
-### Can I limit who can see tye offers and requests I post?
+### Can I limit who can see the offers and requests I post?
 
 To limit who can see your offers and requests, 
 you must first join one or more [groups](#joining-groups). 
