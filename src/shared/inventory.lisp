@@ -1044,33 +1044,38 @@
             (:form :method "post" :action url
               (:input :type "hidden" :name "next" :value next)
               (:input :type "hidden" :name "match" :value match)
+              (:input :type "hidden"
+                      :name "action-type"
+                      :value (if (string= type "request")
+                               "request"
+                               "offer"))
 
               (:textarea :cols "1000" :rows "4" :name "reply-text" (str text))
 
-              (:div :class (when (eq error :no-action-type) "error-border")
+             ;(:div :class (when (eq error :no-action-type) "error-border")
 
-               (:div ;:class "inline-block"
-                 (:input :type "radio"
-                  :name "action-type"
-                  :value "inquiry")
-                 "I have a question or comment about this "
-                 (str type)
-                 ".")
+             ; (:div ;:class "inline-block"
+             ;   (:input :type "radio"
+             ;    :name "action-type"
+             ;    :value "inquiry")
+             ;   "I have a question or comment about this "
+             ;   (str type)
+             ;   ".")
 
-               (if (string= type "request")
-                 (htm
-                   (:div ;:class "inline-block"
-                     (:input :type "radio"
-                      :name "action-type"
-                      :value "offer")
-                     "I am offering to fulfill this request."))
+             ; (if (string= type "request")
+             ;   (htm
+             ;     (:div ;:class "inline-block"
+             ;       (:input :type "radio"
+             ;        :name "action-type"
+             ;        :value "offer")
+             ;       "I am offering to fulfill this request."))
 
-                 (htm
-                   (:div ;:class "inline-block"
-                     (:input :type "radio"
-                      :name "action-type"
-                      :value "request")
-                     "I am requesting to recieve this offer."))))
+             ;   (htm
+             ;     (:div ;:class "inline-block"
+             ;       (:input :type "radio"
+             ;        :name "action-type"
+             ;        :value "request")
+             ;       "I am requesting to recieve this offer."))))
 
 
               (:button :class "yes" :type "submit" :class "submit" "Reply"))))

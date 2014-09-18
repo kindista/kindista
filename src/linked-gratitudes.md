@@ -33,13 +33,18 @@
 [x] inbox items have gratitude post link after gratitude has been posted
 [x] gratitude activity item doesn't include the title for the on-item description
 [x] maybe remove the "has shared this again" link from completed transactions
+[ ] remove dates from offers/requests pages
+[ ] big fucking button on inventory items to request/offer or reply
+[ ] test "on behalf of" in group transaction email titles has html
+[ ] link to the transaction from the inventory-item
 
 ## TEST before server migration
 
 ## Server migration
-[ ] stop-acceptor
+[ ] stop-acceptor or end
 [ ] ,d on migrate-to-new-transaction-format
 [ ] quickload
 [ ] load-db
 [ ] pray
+[ ] (run)
 

@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker)
+(defun activity-item (&key id url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -69,6 +69,11 @@
             (str (activity-icons :hearts hearts :comments comments :url url))
             (:form :method "post" :action url
               (:input :type "hidden" :name "next" :value (request-uri*))
+              (awhen primary-action
+                (htm (:input :type "submit"
+                             :name it
+                             :value (str (string-capitalize it)))))
+              (:br)
               (if (member *userid* (gethash id *love-index*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
                 (htm (:input :type "submit" :name "love" :value "Love")))
@@ -302,6 +307,9 @@
                                  (if images
                                    "Add/remove photos"
                                    "Add photos"))
+                   :primary-action (if (string= type "request")
+                                     "offer"
+                                     "request")
                    :class (s+ type " inventory-item")
                    :reply (unless self t)
                    :hearts (length (loves item-id))

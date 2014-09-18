@@ -2315,7 +2315,6 @@ div.membership-request button:last-child {
  border-top:1px solid #dfdfdf;
  padding-top:5px;*/
  color:#aaa;
- text-align: right;
 }
 
 .card .actions form {
@@ -2335,7 +2334,7 @@ input::-moz-focus-inner {
 
 .card .icons {
  position:absolute;
- left: 0;
+ right: 0;
  /*color:#375497;*/
  color:#5c8a2f;
  font-size:0.9em;
@@ -2346,6 +2345,11 @@ input::-moz-focus-inner {
  height:1em;
  vertical-align:middle;
  margin:0 0.5em 0 0.75em;
+}
+
+.card .actions input[name=request],
+.card .actions input[name=offer] {
+ font-weight: bold;
 }
 
 .card .icons img:first-child {
@@ -2396,7 +2400,8 @@ div.profile-buttons div.float-right {
  padding:0;
  border:0;
  background:none;
- color:#5c8a2f;
+ color: #3c6dc8;
+ /*color:#5c8a2f;*/
  /*color:#375497;*/
  font-size: 1em;
 }
@@ -2406,6 +2411,7 @@ div.profile-buttons div.float-right {
 }
 
 .card .actions a {
+ color: #3c6dc8;
  font-size: 0.8em;
  font-weight: normal;
 }
@@ -3526,10 +3532,6 @@ div.transaction-options a > img {
 
 .item.reply:first-child {
  padding-top: 1em;
-}
-
-input[name=reply] {
- font-weight: bold;
 }
 
 .nobody {

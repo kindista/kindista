@@ -347,6 +347,7 @@
         transaction-id
         post-as
         on-id
+        autofocus-p
         (submit-name "submit")
    &aux (groupid (when (eql (getf entity :type) :group) entity-id))
         (submit-button (html (:button :class "yes submit" :type "submit" :name submit-name "Post"))))
@@ -371,7 +372,7 @@
        (:input :type "hidden" :name "next" :value next)
        (:table :class "post"
         (:tr
-          (:td (:textarea :cols "1000" :rows "4" :name "text"))
+          (:td (:textarea :cols "1000" :rows "4" :name "text" :autofocus autofocus-p))
           (when (eq button-location :right)
             (htm (:td (str submit-button)))))
         (when (eql button-location :bottom)

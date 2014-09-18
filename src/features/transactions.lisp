@@ -261,7 +261,10 @@
       (html-p (person-link action-party))
       (t (db action-party :name)))
     (awhen (cdr (getf log-event :party))
-      (strcat* " (on behalf of " (group-link it) ")" ))
+      (strcat* " (on behalf of " (if html-p
+                                   (group-link it)
+                                   (db it :name))
+               ")" ))
     (case on-type
       (:offer
         (case (getf log-event :action)
@@ -326,7 +329,7 @@
             (strcat " fulfilled " inventory-descriptor " from "
                 (indirect-object inventory-by-name)))
           (:received
-            (strcat " received " inventory-descriptor " from "
+            (strcat " received a gift from "
                 (indirect-object transaction-initiator-name)))
           (:disputed
             (strcat " disputed having received a gift from "
@@ -636,6 +639,8 @@
 
   "Returns (1) a list of actions the user can take on a given transaction id and (2) the entity the user is representing (i.e. *userid* or a groupid)"
 
+  (pprint (strcat transaction-id " " gratitude-expressed-p))
+  (terpri)
   (setf options
         (case role
           (:receiver
@@ -647,15 +652,18 @@
                (:declined '("want" "already-received"))
                (:disputed '("already-received"))
                (:received '("post-gratitude"))
-               (t (case (getf other-party-event :action)
-                    (:gave '("already-received" "dispute"))
+               (t (cond
+                    (gratitude-expressed-p nil)
+                    ((eq (getf other-party-event :action) :gave)
+                     '("already-received" "dispute"))
                     (t '("want" "already-received"))))))
           (:giver
-            (case (getf current-event :action)
-              (:offered
-                (case (getf other-party-event :action)
-                  (:received nil)
-                  (t '("withhold" "already-given"))))
+            (cond
+              (gratitude-expressed-p nil)
+              ((eq (getf current-event :action) :offered)
+               (case (getf other-party-event :action)
+                 (:received nil)
+                 (t '("withhold" "already-given"))))
               (t (unless (eq (getf current-event :action) :gave)
                    '("will-give" "already-given")))))))
 
@@ -760,6 +768,7 @@
                                       :post-as speaking-for
                                       :on-id on-id
                                       :submit-name "create"
+                                      :autofocus-p t
                                       :button-location :bottom))
                                   (add-comment
                                     (transaction-comment-input id))
