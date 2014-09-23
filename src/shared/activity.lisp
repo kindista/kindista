@@ -70,9 +70,13 @@
             (:form :method "post" :action url
               (:input :type "hidden" :name "next" :value (request-uri*))
               (awhen primary-action
-                (htm (:input :type "submit"
-                             :name it
-                             :value (str (string-capitalize it)))))
+                (htm (:button :type "submit"
+                              :class "small blue primary-action"
+                              :name (getf it :name)
+                              :value (getf it :value)
+                       (when (getf it :image)
+                         (str (getf it :image)))
+                       (:span (str (getf it :text))))))
               (:br)
               (if (member *userid* (gethash id *love-index*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
@@ -307,9 +311,16 @@
                                  (if images
                                    "Add/remove photos"
                                    "Add photos"))
-                   :primary-action (if (string= type "request")
-                                     "offer"
-                                     "request")
+                   :primary-action (unless self
+                                     (if (string= type "request")
+                                       (list :name "action-type"
+                                             :value "offer"
+                                             :text "Offer This"
+                                             :image (icon "white-offer"))
+                                       (list :name "action-type"
+                                             :value "request"
+                                             :text "Request This"
+                                             :image (icon "white-request"))))
                    :class (s+ type " inventory-item")
                    :reply (unless self t)
                    :hearts (length (loves item-id))

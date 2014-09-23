@@ -912,9 +912,15 @@ a.cancel {
 
 button.small, a.small {
  font-size: 0.8em;
- line-height: 1.1em;
- padding: 0.4em;
+ line-height: normal;
+ height: 2.5em;
+ padding: 0 0.4em;
 }
+
+button span {
+ vertical-align: middle;
+}
+
 
 button.input-height {
  font-size: 1em;
@@ -2332,12 +2338,17 @@ input::-moz-focus-inner {
  border:0;
 }
 
-.card .icons {
+.card a.icons {
  position:absolute;
  right: 0;
+ bottom: 1.45em;
  /*color:#375497;*/
  color:#5c8a2f;
  font-size:0.9em;
+}
+
+.card .actions a.icons {
+ color:#5c8a2f;
 }
 
 .card .icons img {
@@ -2407,7 +2418,7 @@ div.profile-buttons div.float-right {
 }
 
 .actions > form input, button.text {
- font-size:0.8em;
+ font-size:0.9em;
 }
 
 .card .actions a {
@@ -2447,6 +2458,16 @@ button.text.large {
 
 .card.inventory-item .timestamp {
  margin-top: 0;
+}
+
+.card .actions button.primary-action img,
+.card .actions button.primary-action span,{
+ vertical-align: middle;
+ vertical-align: baseline;
+}
+
+.card .actions button.primary-action img {
+ vertical-align: middle;
 }
 
 #preview-cards .card.inventory-item,
@@ -3453,8 +3474,8 @@ span.highlight {
  padding: 0 1em 0.1em;
 }
 
-div.reply.item input[type=radio] {
- margin: 0.5em 0.3em 0.6em 0;
+.inventory-reply blockquote {
+ margin-bottom: 1em;
 }
 
 table.transaction-progress {

@@ -81,6 +81,9 @@
         (:offer (hide-matching-offer match-id on))
         (:request (hide-matching-offer on match-id))))
 
+    (notice :new-transaction-action :time time
+                                    :transaction-id id
+                                    :log-event (car log))
     id))
 
 (defun transactions-pending-gratitude-for-account (account-id)
@@ -785,11 +788,14 @@
 
               ; get most recent comment seen
               ; get comments for
-              (when (or (not (eql (message-latest-comment message)
-                                  (cdr (assoc-assoc *userid*
-                                                    (message-people message)))))
-                        (member *userid*
-                                (getf (message-folders message) :unread)))
+              (when (and (message-latest-comment message) ;unless it's a new transaction
+                         (or (not (eql (message-latest-comment message)
+                                       (cdr (assoc-assoc *userid*
+                                                         (message-people message)))))
+                             (member *userid*
+                                     (getf (message-folders message)
+                                           :unread))))
+
                 (update-folder-data message :read :last-read-comment (message-latest-comment message)))))
 
           (permission-denied))

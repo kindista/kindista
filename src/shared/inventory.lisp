@@ -433,40 +433,56 @@
          (pending-flash "contact other Kindista members")
          (see-other (or (referer) "/home")))
 
-        ((and (post-parameter-string "reply-text")
-              action-type)
+        ((post-parameter-string "reply-text")
          (create-transaction
            :on id
-           :action (cond
-                     ((string= action-type "offer") :offered)
-                     ((string= action-type "request") :requested))
-           :text (post-parameter "reply-text")
            :match-id (post-parameter-integer "match"))
          (flash "Your reply has been sent.")
          (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
          (see-other (or next (script-name*))))
 
         ((or (post-parameter "reply")
+             action-type
+             ;; if ther's no action type
              (and (post-parameter "reply-text")
-                  (or (not reply-text) (not action-type))))
+                  (not reply-text)
+                  (not action-type)))
 
          (flet ((reply-html (type)
-                  (inventory-item-reply type
-                                        id
-                                        item
-                                        :text reply-text
-                                        :next next
-                                        :match (post-parameter-integer "match")
-                                        :error (unless (post-parameter "reply")
-                                                 (cond
-                                                   ((not reply-text)
-                                                    :no-message)
-                                                   ((not action-type)
-                                                    :no-action-type))))))
+                  (inventory-item-reply
+                    type
+                    id
+                    item
+                    :text reply-text
+                    :action-type action-type
+                    :next next
+                    :match (post-parameter-integer "match")
+                    :error (when (and (not (post-parameter "reply"))
+                                      (not reply-text)
+                                      (not action-type))
+                             :no-message))))
            (case (getf item :type)
              (:offer (reply-html "offer"))
              (:request (reply-html "request"))
              (t (not-found)))))
+
+        ((or (post-parameter-string "reply-text")
+             (and (post-parameter "reply-text")
+                  (or (string= action-type "offer")
+                      (string= action-type "request"))))
+         (create-transaction :on id
+                             :text (post-parameter "reply-text")
+                             :action (cond
+                                       ((string= action-type "offer")
+                                        :offered)
+                                       ((string= action-type "request")
+                                        :requested))
+                             :match-id (post-parameter-integer "match"))
+           (flash (s+ "Your "
+                      (or action-type "reply")
+                      " has been sent."))
+           (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
+           (see-other (or next (script-name*))))
 
         ((post-parameter "love")
          (love id)
@@ -1014,7 +1030,7 @@
                      (unless (= i 1)
                        (str ", ")))))))))))))
 
-(defun inventory-item-reply (type id data &key next match text error)
+(defun inventory-item-reply (type id data &key action-type next match text error)
   (let ((next (or next (get-parameter "next")))
         (url (strcat "/" type "s/" id)))
     (if (item-view-denied (result-privacy (gethash id *db-results*)))
@@ -1023,61 +1039,38 @@
         "Reply"
         (html
           (when error
-            (flash
-              (case error
-                (:no-message
-                  "Please enter a message to send.")
-                (:no-action-type
-                  "Please indicate the type of reply you are sending."))
-              :error t))
-          (:h2 "Reply to "
-               (str (person-link (getf data :by) :possessive t))
-               (str type))
-          (:p
-            (awhen (getf data :title)
-              (htm (:strong (:a :href url (str (html-text it))))
-                   (:br)))
-            (awhen (getf data :details)
-              (str (html-text it))))
-          (:h4 "Write your reply:")
+            (flash "Please enter a message to send." :error t))
+          (htm
+            (:h2
+              (str (s+ (if action-type "Respond" "Reply")
+                       " to "
+                       (person-link (getf data :by) :possessive t)
+                       type))))
+          (:blockquote
+            (:p
+              (awhen (getf data :title)
+                (htm (:strong (:a :href url (str (html-text it))))
+                     (:br)))
+              (awhen (getf data :details)
+                (str (html-text it)))))
+          (if action-type
+            (htm (:h4 "Include a message: (optional)"))
+            (htm (:h4 "Write your reply:")))
           (:div :class "reply item"
             (:form :method "post" :action url
               (:input :type "hidden" :name "next" :value next)
               (:input :type "hidden" :name "match" :value match)
-              (:input :type "hidden"
-                      :name "action-type"
-                      :value (if (string= type "request")
-                               "request"
-                               "offer"))
+              (:input :type "hidden" :name "action-type" :value action-type)
 
               (:textarea :cols "1000" :rows "4" :name "reply-text" (str text))
 
-             ;(:div :class (when (eq error :no-action-type) "error-border")
+              (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
+              (:button :class "yes"
+                       :type "submit"
+                       :class "submit"
+                (str (aif action-type
+                       (s+ (string-capitalize it) " This")
+                       "Reply"))))))
 
-             ; (:div ;:class "inline-block"
-             ;   (:input :type "radio"
-             ;    :name "action-type"
-             ;    :value "inquiry")
-             ;   "I have a question or comment about this "
-             ;   (str type)
-             ;   ".")
-
-             ; (if (string= type "request")
-             ;   (htm
-             ;     (:div ;:class "inline-block"
-             ;       (:input :type "radio"
-             ;        :name "action-type"
-             ;        :value "offer")
-             ;       "I am offering to fulfill this request."))
-
-             ;   (htm
-             ;     (:div ;:class "inline-block"
-             ;       (:input :type "radio"
-             ;        :name "action-type"
-             ;        :value "request")
-             ;       "I am requesting to recieve this offer."))))
-
-
-              (:button :class "yes" :type "submit" :class "submit" "Reply"))))
-
-        :selected (s+ type "s")))))
+        :selected (s+ type "s")
+        :class "inventory-reply"))))
