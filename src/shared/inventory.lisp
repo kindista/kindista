@@ -418,6 +418,8 @@
            (reply-text (post-parameter-string "reply-text"))
            (adminp (group-admin-p by))
            (next (post-parameter "next")))
+      (pprint action-type)
+      (terpri)
 
       (cond
         ((and (not (eql by *userid*))
@@ -433,11 +435,21 @@
          (pending-flash "contact other Kindista members")
          (see-other (or (referer) "/home")))
 
-        ((post-parameter-string "reply-text")
-         (create-transaction
-           :on id
-           :match-id (post-parameter-integer "match"))
-         (flash "Your reply has been sent.")
+        ((or (post-parameter-string "reply-text")
+             (and (post-parameter "reply-text")
+                  (or (string= action-type "offer")
+                      (string= action-type "request"))))
+         (create-transaction :on id
+                             :text (post-parameter "reply-text")
+                             :action (cond
+                                       ((string= action-type "offer")
+                                        :offered)
+                                       ((string= action-type "request")
+                                        :requested))
+                             :match-id (post-parameter-integer "match"))
+         (flash (s+ "Your "
+                    (or action-type "reply")
+                    " has been sent."))
          (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
          (see-other (or next (script-name*))))
 
@@ -465,24 +477,6 @@
              (:offer (reply-html "offer"))
              (:request (reply-html "request"))
              (t (not-found)))))
-
-        ((or (post-parameter-string "reply-text")
-             (and (post-parameter "reply-text")
-                  (or (string= action-type "offer")
-                      (string= action-type "request"))))
-         (create-transaction :on id
-                             :text (post-parameter "reply-text")
-                             :action (cond
-                                       ((string= action-type "offer")
-                                        :offered)
-                                       ((string= action-type "request")
-                                        :requested))
-                             :match-id (post-parameter-integer "match"))
-           (flash (s+ "Your "
-                      (or action-type "reply")
-                      " has been sent."))
-           (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
-           (see-other (or next (script-name*))))
 
         ((post-parameter "love")
          (love id)

@@ -20,7 +20,7 @@
 (defun new-comment-notice-handler ()
   (send-comment-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-comment (&key on (by (list *userid*)) text (time (get-universal-time)))
+(defun create-comment (&key on (by (list *userid*)) (send-email-p t) text (time (get-universal-time)))
   (let* ((id (insert-db (list :type :comment
                               :on on
                               :by by ;(personid . groupid)
@@ -54,8 +54,9 @@
                                       :people people))
       (modify-db on :latest-comment id))
 
-    (when (or (eq on-type :conversation)
-              (eq on-type :transaction))
+    (when (and (or (eq on-type :conversation)
+                   (eq on-type :transaction))
+               send-email-p)
       (notice :new-comment :time time :id id))
     id))
 

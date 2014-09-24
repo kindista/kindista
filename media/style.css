@@ -2460,10 +2460,9 @@ button.text.large {
  margin-top: 0;
 }
 
-.card .actions button.primary-action img,
-.card .actions button.primary-action span,{
- vertical-align: middle;
- vertical-align: baseline;
+/*stupid firefox bug */
+.card .actions button.primary-action > div {
+ display: inline;
 }
 
 .card .actions button.primary-action img {

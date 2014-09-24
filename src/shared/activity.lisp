@@ -76,7 +76,9 @@
                               :value (getf it :value)
                        (when (getf it :image)
                          (str (getf it :image)))
-                       (:span (str (getf it :text))))))
+                       ;; following needs div instead of span because of a
+                       ;; firefox hover/underline bug
+                       (:div (str (getf it :text))))))
               (:br)
               (if (member *userid* (gethash id *love-index*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))

@@ -20,6 +20,7 @@
 (defun send-transaction-action-notification-email
   (transaction-id
    log-event
+   &optional message
    &aux (transaction (db transaction-id))
         (transaction-initiator (db (getf transaction :by)))
         (inventory-id (getf transaction :on))
@@ -81,7 +82,7 @@
       (let ((recipient (db recipient-id)))
         (cl-smtp:send-email
           +mail-server+
-          "DoNotReply <noreply@kindista.org>"
+          "PleaseDoNotReply <noreply@kindista.org>"
            (car (getf recipient :emails))
            (notification-text (case on-type
                                 (:offer "an offer")
@@ -95,6 +96,7 @@
                                   (:offer "an offer")
                                   (:request "a request"))
                                 :html-p nil)
+             message
              transaction-url
              (cdr event-party))
            :html-message (transaction-action-notification-email-html
@@ -110,8 +112,10 @@
                                         (:offer "offer")
                                         (:request "request")))))
                              :html-p t)
-                            transaction-url
-                            (cdr event-party)))))))
+                           message
+                           transaction-url
+                           (cdr event-party))
+           )))))
 
 (defun gift-given-notification-text
   (giver-name
@@ -135,7 +139,7 @@
      (regex-replace-all "\\n" text "<br>")
      text))
 
-(defun transaction-action-notification-email-text (name other-party-name text url group-id)
+(defun transaction-action-notification-email-text (name other-party-name text message url group-id)
   (strcat*
 (no-reply-notice)
 #\linefeed
@@ -144,6 +148,12 @@
 "We're writing to let you know about recent activity in transaction you are part of on Kindista."
 #\linefeed #\linefeed
 text
+(when message
+  (strcat* #\linefeed #\linefeed
+           other-party-name
+           " says:"
+           #\linefeed #\linefeed
+           message))
 #\linefeed #\linefeed
 "For more information, or to reply to "
 other-party-name
@@ -162,7 +172,7 @@ url
 "-The Kindista Team"))
 
 (defun transaction-action-notification-email-html
-  (name other-party-name text url group-id)
+  (name other-party-name text message url group-id)
   (html-email-base
     (html
       (:p :style *style-p* (:strong (str (no-reply-notice))))
@@ -177,6 +187,14 @@ url
               :style *style-quote-box*
         (:tr (:td :style "padding: 4px 12px;"
                (str text))))
+
+      (when message
+        (htm
+          (:p :style *style-p*  (str other-party-name) " says:")
+          (:table :cellspacing 0 :cellpadding 0
+                  :style *style-quote-box*
+            (:tr (:td :style "padding: 4px 12px;"
+                   (str message))))))
 
       (:p :style *style-p*
         "For more information, or to reply to "

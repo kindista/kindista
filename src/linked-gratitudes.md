@@ -37,6 +37,9 @@
 [x] big fucking button on inventory items to request/offer or reply
 [ ] test "on behalf of" in group transaction email titles has html
 [ ] link to the transaction from the inventory-item
+[ ] test replying w/o offering/requesting
+[ ] test offering/requesting w/o a message
+[ ] test to make sure requesting/offering w/ a comment sends only one email
 
 ## TEST before server migration
 

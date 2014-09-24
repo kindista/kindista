@@ -26,10 +26,11 @@
 
 (defun new-transaction-action-notice-handler ()
   (let* ((log-event (getf (cddddr *notice*) :log-event))
-         (action (getf log-event :action)))
+         (text (getf (cddddr *notice*) :text)))
     (send-transaction-action-notification-email (getf (cddddr *notice*)
                                                       :transaction-id)
-                                                log-event)))
+                                                log-event
+                                                text)))
 
 (defun create-transaction (&key on text action match-id pending-deletion (userid *userid*))
   (let* ((time (get-universal-time))
@@ -70,12 +71,12 @@
                                 :log log
                                 :created time)))))
 
-      (when text (create-comment :on id
-                                 :by (list userid)
-                                 :text text
-                                 :time (+ time 1) ; if there is both text/action, they need separate times for sorting in transaction log UI display
-                                 ))
-
+    (when text (create-comment :on id
+                               :by (list userid)
+                               :text text
+                               :send-email-p nil
+                               :time (+ time 1) ; if there is both text/action, they need separate times for sorting in transaction log UI display
+                               ))
     (when match-id
       (case (getf on-item :type)
         (:offer (hide-matching-offer match-id on))
@@ -83,7 +84,8 @@
 
     (notice :new-transaction-action :time time
                                     :transaction-id id
-                                    :log-event (car log))
+                                    :log-event (car log)
+                                    :text text)
     id))
 
 (defun transactions-pending-gratitude-for-account (account-id)
