@@ -44,7 +44,7 @@
 (defun group-membership-invitation-notification-email-text (host-name group-id group-name)
   (strcat
     (no-reply-notice)
-    #\linefeed
+    #\linefeed #\linefeed
     host-name
     " invited you to join their group, "
     group-name

@@ -875,7 +875,7 @@
       (:div :class "activity"
         (when *user*
           (str
-            (menu-horiz "actions"
+            (menu-horiz
               (html (:a :href (s+ "/people/" (username-or-id) "/" type "s") (str (s+ "show my " type "s")))))))
 
         (unless (or (not *user*)

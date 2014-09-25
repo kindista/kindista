@@ -40,6 +40,18 @@
 [ ] test replying w/o offering/requesting
 [ ] test offering/requesting w/o a message
 [ ] test to make sure requesting/offering w/ a comment sends only one email
+[ ] change transaction email text before link
+[ ] communication group settings only for group admins
+[ ] only one link in a message
+[ ] same for gratitudes
+[ ] change the inbox message for transactions where last action is a message
+[ ] remove the other party's name from transaction option buttons and make them actual buttons
+[ ] confirm page for receipt or having given it
+[ ] on confirm receipt, send an email "congrats on receiving a gift, post gratitude"
+[ ] remove the option to message when it's time to post gratitude
+[ ] when you post an offer/request, flash "congrats, your offer/req has been posted"
+[ ] top line of transaction should be a status of what's happening below
+[ ] change news to "current activity"
 
 ## TEST before server migration
 

@@ -55,8 +55,7 @@
     "Home"
     (html
       (:div :class "activity"
-        (str (menu-horiz "actions"
-                          (html (:a :href "/gratitude/new" "express gratitude"))
+        (str (menu-horiz (html (:a :href "/gratitude/new" "express gratitude"))
                           (html (:a :href "/offers/new" "post an offer"))
                           (html (:a :href "/requests/new" "make a request"))
                           ;(:a :href "/announcements/new" "post announcement")
@@ -98,7 +97,7 @@
                                         :class "item")))
         (with-location
           (str (local-activity-items :page page))))))
-    :selected "home"
+    :selected "activity"
     :top (cond
            ((not *user*)
             (welcome-bar

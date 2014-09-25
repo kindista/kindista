@@ -18,13 +18,11 @@
 (in-package :kindista)
 
 (defun group-contacts-action-menu ()
-  (menu-horiz "actions"
-              (html (:a :href "/groups/new" "create a new group"))
+  (menu-horiz (html (:a :href "/groups/new" "create a new group"))
               (html (:a :href "/gratitude/new" "express gratitude"))))
 
 (defun people-contacts-action-menu ()
-  (menu-horiz "actions"
-              (html (:a :href "/gratitude/new" "express gratitude"))
+  (menu-horiz (html (:a :href "/gratitude/new" "express gratitude"))
               (html (:a :href "/conversations/new" "send a message"))
               (html (:a :href "/invite" "invite friends"))))
 

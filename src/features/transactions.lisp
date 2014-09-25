@@ -1,4 +1,5 @@
 ;;; Copyright 2012-2013 CommonGoods Network, Inc.
+
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -526,12 +527,12 @@
   (standard-page
     "Transaction"
     (html
-      (str (menu-horiz "actions"
-                       (html (:a :href "/messages" "back to messages"))
-                       (html (:a :href (url-compose (strcat "/transactions/"
-                                                            transaction-id)
-                                                    "add-comment" "t" )
-                              "reply"))))
+      (str (menu-horiz
+             (html (:a :href "/messages" "back to messages"))
+             (html (:a :href (url-compose (strcat "/transactions/"
+                                                  transaction-id)
+                                          "add-comment" "t" )
+                    "reply"))))
 
        (if (eql (getf data :by) *userid*)
          (htm

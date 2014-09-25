@@ -211,7 +211,7 @@ menu.horiz {
 menu.horiz li {
  display: inline-block;
  font-weight: bold;
- margin-left:1em;
+ margin-right:1em;
 }
 
 input[type=text], input[type=password] {

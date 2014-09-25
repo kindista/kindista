@@ -557,7 +557,7 @@
                        (str (menu (list `("Messages" "messages" ,(when (> inbox-count 0) inbox-count)))
                                   selected))))
 
-                   (str (menu (list '("News" "home")
+                   (str (menu (list '("Recent Activity" "activity")
                                     '("Offers" "offers")
                                     '("Requests" "requests")
                                     '("People" "people") 

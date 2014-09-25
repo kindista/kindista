@@ -247,8 +247,7 @@
       (ellipsis it :length 24)
       "Conversation")
     (html
-      (str (menu-horiz "actions"
-                       (html (:a :href "/messages" "back to messages"))
+      (str (menu-horiz (html (:a :href "/messages" "back to messages"))
                        (html (:a :href "#reply" "reply")))
                       ;(when (eq type :conversation)
                       ;  (html (:a :href (strcat "/conversations/" id "/leave") "leave conversation")))

@@ -17,9 +17,8 @@
 
 (in-package :kindista)
 
-(defun menu-horiz (title &rest contents)
+(defun menu-horiz (&rest contents)
   (html
     (:menu :type "toolbar" :class "horiz"
-      (:strong (str title))
       (dolist (item contents)
         (htm (:li (str item)))))))

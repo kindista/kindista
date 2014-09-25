@@ -42,29 +42,19 @@
                         (list other-party-id))))
         (transaction-url (strcat +base-url+
                                  "transactions/"
-                                 transaction-id))
-        (inventory-url (strcat +base-url+
-                               (resource-url inventory-id
-                                             inventory-item
-                                             t))))
+                                 transaction-id)))
 
   (labels ((gift-text (&key html-p)
              (gift-given-notification-text (aif group-actor
-                                             (if html-p
-                                               (group-link (cdr event-party))
-                                               (getf it :name))
-                                             (if html-p
-                                               (person-link event-actor-id)
-                                               event-actor-name))
-                                           (case (getf other-party :type)
-                                             (:group
-                                               (if html-p
-                                                 (group-link other-party-id)
-                                                 (getf other-party :name)))
-                                             (t "you"))
+                                               (getf it :name)
+                                               event-actor-name)
+                                           (if (eq (getf other-party :type)
+                                                   :group)
+                                             (getf other-party :name)
+                                             "you")
                                            transaction-url
                                            :html-p html-p))
-           (notification-text (inventory-descriptor &key html-p title-p)
+           (notification-text (inventory-descriptor &key title-p (html-p nil))
              (cond
                ((and (eq (getf log-event :action) :gave) title-p)
                 "Please confirm the gift you received through Kindista")
@@ -75,8 +65,7 @@
                     on-type
                     inventory-descriptor
                     (getf inventory-by :name)
-                    (getf transaction-initiator :name)
-                    :html-p html-p)))))
+                    (getf transaction-initiator :name))))))
 
     (dolist (recipient-id recipients)
       (let ((recipient (db recipient-id)))
@@ -87,31 +76,23 @@
            (notification-text (case on-type
                                 (:offer "an offer")
                                 (:request "a request"))
-                              :html-p nil
                               :title-p t)
            (transaction-action-notification-email-text
              (getf other-party :name)
              event-actor-name
              (notification-text (case on-type
                                   (:offer "an offer")
-                                  (:request "a request"))
-                                :html-p nil)
+                                  (:request "a request")))
              message
              transaction-url
              (cdr event-party))
            :html-message (transaction-action-notification-email-html
                            (getf other-party :name)
                            event-actor-name
-                           (notification-text
-                             (html
-                               (str (case on-type
-                                      (:offer "an ")
-                                      (:request "a ")))
-                               (:a :href inventory-url
-                                 (str (case on-type
-                                        (:offer "offer")
-                                        (:request "request")))))
-                             :html-p t)
+                           (notification-text (case on-type
+                                                (:offer "an ")
+                                                (:request "a "))
+                                              :html-p t)
                            message
                            transaction-url
                            (cdr event-party))
@@ -122,6 +103,7 @@
    recipient-name
    transaction-url
    &key (html-p nil)
+
    &aux (text (strcat*
                  giver-name
                  " has indicated that they have given "
@@ -141,11 +123,9 @@
 
 (defun transaction-action-notification-email-text (name other-party-name text message url group-id)
   (strcat*
-(no-reply-notice)
-#\linefeed
-"Hi " name ","
+(no-reply-notice " use the link below to reply to this transaction on Kindista.org")
 #\linefeed #\linefeed
-"We're writing to let you know about recent activity in transaction you are part of on Kindista."
+"Hi " name ","
 #\linefeed #\linefeed
 text
 (when message
@@ -155,7 +135,7 @@ text
            #\linefeed #\linefeed
            message))
 #\linefeed #\linefeed
-"For more information, or to reply to "
+"To reply to "
 other-party-name
 ", please go to:"
 #\linefeed
@@ -175,18 +155,11 @@ url
   (name other-party-name text message url group-id)
   (html-email-base
     (html
-      (:p :style *style-p* (:strong (str (no-reply-notice))))
+      (:p :style *style-p* (:strong (str (no-reply-notice " use the link below to reply to this transaction on Kindista.org"))))
 
       (:p :style *style-p* "Hi " (str name) ",")
 
-      (:p :style *style-p*
-        "We're writing to let you know about recent activity in a transaction you are part of on Kindista."
-        )
-
-      (:table :cellspacing 0 :cellpadding 0
-              :style *style-quote-box*
-        (:tr (:td :style "padding: 4px 12px;"
-               (str text))))
+      (:p :style *style-p* (str text))
 
       (when message
         (htm
@@ -197,7 +170,7 @@ url
                    (str message))))))
 
       (:p :style *style-p*
-        "For more information, or to reply to "
+        "To reply to "
         (str other-party-name)
         ", please go to:"
         (:br)

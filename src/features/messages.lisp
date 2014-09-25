@@ -617,9 +617,10 @@
       (standard-page
         "Messages"
         (html
-          (str (menu-horiz "actions"
-                           (html (:a :href "/conversations/new" "start a new conversation"))
-                           (html (:a :href "/gratitude/new" "express gratitude"))))
+          (str (menu-horiz
+                 (html (:a :href "/conversations/new"
+                         "start a new conversation"))
+                 (html (:a :href "/gratitude/new" "express gratitude"))))
           (str (inbox-items :page (if (scan +number-scanner+ (get-parameter "p"))
                                     (parse-integer (get-parameter "p"))
                                     0))))

@@ -64,7 +64,7 @@
           (html
             (:div :class "inventory-item-page"
               (when (or matchmaker-admin self)
-                (str (menu-horiz "actions"
+                (str (menu-horiz
                        (when self
                          (html (:a :href (s+ "/people/"
                                              (username-or-id)

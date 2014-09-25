@@ -1071,8 +1071,7 @@
       (html
         (:div :class "activity event"
           (str
-            (menu-horiz "actions"
-                        (html (:a :href "/events/new" "+add an event"))))
+            (menu-horiz (html (:a :href "/events/new" "+add an event"))))
           (str (distance-selection-html "/events"
                                         :text "show events within "
                                         :class "item"))

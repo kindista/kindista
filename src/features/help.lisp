@@ -60,7 +60,7 @@
 (defun help-tabs-html (&key tab)
   (html
     (str
-      (menu-horiz "actions"
+      (menu-horiz
         (html
           (if *userid*
             (htm (:a :href "/contact-us" "contact us"))
