@@ -1729,6 +1729,8 @@ table.messages {
  padding: 0 0.3em;
  display: inline-block;
  background: #ae9fcd;
+ font-weight: normal;
+ color: #eee;
 }
 
 .mail.card .group-indicator a {
@@ -1768,7 +1770,7 @@ table.messages {
 }
 
 .read.mail.card {
- background: #faf8f0;
+ background: #f7f5ef;
 }
 
 .mail.card p.text span.title {
@@ -3477,8 +3479,21 @@ span.highlight {
  margin-bottom: 1em;
 }
 
-table.transaction-progress {
- margin-top: 0.8em;
+.mail.card .transaction.message-content a.transaction-link:hover {
+ text-decoration: none;
+}
+
+.mail.card p.transaction-title {
+ color: #555;
+}
+
+.transaction #body > h2 {
+ margin: 1.2em 0 0.2em;
+ font-size: 1.15em;
+}
+
+.transaction #body > h2:first-child {
+ margin-top: 0;
 }
 
 table.transaction-progress tr.steps td {
@@ -3534,9 +3549,9 @@ div.transaction-options.item > form {
 
 div.transaction-option a,
 div.transaction-option button {
- color: #3c6dc8;
- padding-left: 0;
- font-weight: bold;
+ display: inline-block;
+ height: 3em;
+ line-height: 2em;
 }
 
 div.transaction-option {
@@ -3548,6 +3563,20 @@ div.transaction-option button > img,
 div.transaction-options a > img {
  vertical-align: middle;
  margin-right: 0.5em;
+}
+
+.transaction div#transaction-history {
+background-color: #f8f8f8;
+}
+
+.transaction div#transaction-history div.card {
+ border-bottom-color: #fff;
+ margin: 0;
+ padding: 0.5em 0.4em;
+}
+
+.transaction div#transaction-history div.card p {
+ margin: 0.5em 0;
 }
 
 .item.reply:first-child {
