@@ -36,14 +36,12 @@
 [ ] remove dates from offers/requests pages
 [x] big fucking button on inventory items to request/offer or reply
 [ ] test "on behalf of" in group transaction email titles has html
-[ ] link to the transaction from the inventory-item
 [ ] test replying w/o offering/requesting
 [ ] test offering/requesting w/o a message
 [ ] test to make sure requesting/offering w/ a comment sends only one email
-[ ] change transaction email text before link
-[ ] communication group settings only for group admins
+[x] change transaction email text before link
 [ ] only one link in a message
-[ ] same for gratitudes
+[ ] only one link in gratitude
 [ ] change the inbox message for transactions where last action is a message
 [ ] remove the other party's name from transaction option buttons and make them actual buttons
 [ ] confirm page for receipt or having given it

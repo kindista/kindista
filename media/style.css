@@ -3549,7 +3549,11 @@ div.transaction-options.item > form {
 
 div.transaction-option a,
 div.transaction-option button {
+ color: #3c6dc8;
+ font-weight: bold;
  display: inline-block;
+ margin: 0;
+ padding: 0;
  height: 3em;
  line-height: 2em;
 }
@@ -3577,6 +3581,11 @@ background-color: #f8f8f8;
 
 .transaction div#transaction-history div.card p {
  margin: 0.5em 0;
+}
+
+.confirm-transaction div.fine-print {
+ margin-top: 1em;
+ font-style: italic;
 }
 
 .item.reply:first-child {

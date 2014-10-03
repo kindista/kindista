@@ -54,7 +54,7 @@
                                              "you")
                                            transaction-url
                                            :html-p html-p))
-           (notification-text (inventory-descriptor &key title-p (html-p nil))
+           (notification-text (&key title-p (html-p nil))
              (cond
                ((and (eq (getf log-event :action) :gave) title-p)
                 "Please confirm the gift you received through Kindista")
@@ -63,40 +63,35 @@
                (t (transaction-action-text
                     log-event
                     on-type
-                    inventory-descriptor
+                    (case on-type
+                      (:offer "an offer")
+                      (:request "a request"))
                     (getf inventory-by :name)
                     (getf transaction-initiator :name))))))
 
     (dolist (recipient-id recipients)
-      (let ((recipient (db recipient-id)))
+      (let ((recipient (db recipient-id))
+            (recipient-group-id (cdar (assoc-assoc recipient-id
+                                                   (getf transaction :people)))))
         (cl-smtp:send-email
           +mail-server+
           "PleaseDoNotReply <noreply@kindista.org>"
            (car (getf recipient :emails))
-           (notification-text (case on-type
-                                (:offer "an offer")
-                                (:request "a request"))
-                              :title-p t)
+           (notification-text :title-p t)
            (transaction-action-notification-email-text
              (getf other-party :name)
              event-actor-name
-             (notification-text (case on-type
-                                  (:offer "an offer")
-                                  (:request "a request")))
-             message
              transaction-url
-             (cdr event-party))
+             recipient-group-id
+             :text (notification-text)
+             :message message)
            :html-message (transaction-action-notification-email-html
                            (getf other-party :name)
                            event-actor-name
-                           (notification-text (case on-type
-                                                (:offer "an ")
-                                                (:request "a "))
-                                              :html-p t)
-                           message
                            transaction-url
-                           (cdr event-party))
-           )))))
+                           recipient-group-id
+                           :text (notification-text :html-p t)
+                           :message message))))))
 
 (defun gift-given-notification-text
   (giver-name
@@ -121,7 +116,12 @@
      (regex-replace-all "\\n" text "<br>")
      text))
 
-(defun transaction-action-notification-email-text (name other-party-name text message url group-id)
+(defun transaction-action-notification-email-text
+  (name other-party-name
+        url
+        recipient-group-id
+        &key text
+             message)
   (strcat*
 (no-reply-notice " use the link below to reply to this transaction on Kindista.org")
 #\linefeed #\linefeed
@@ -145,14 +145,14 @@ url
 "
 (s+ +base-url+
     "settings/communication"
-    (awhen group-id (strcat "?groupid=" it)))
+    (awhen recipient-group-id (strcat "?groupid=" it)))
 #\linefeed #\linefeed
 "Thank you for sharing your gifts with us!"
 #\linefeed
 "-The Kindista Team"))
 
 (defun transaction-action-notification-email-html
-  (name other-party-name text message url group-id)
+  (name other-party-name url recipient-group-id &key text message)
   (html-email-base
     (html
       (:p :style *style-p* (:strong (str (no-reply-notice " use the link below to reply to this transaction on Kindista.org"))))
@@ -182,10 +182,10 @@ url
        (:br)
        (:a :href (s+ +base-url+
                      "settings/communication"
-                     (awhen group-id (strcat "?groupid=" it)))
+                     (awhen recipient-group-id (strcat "?groupid=" it)))
            (str (s+ +base-url+
                     "settings/communication"
-                    (awhen group-id (strcat "?groupid=" it))))))
+                    (awhen recipient-group-id (strcat "?groupid=" it))))))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
       (:p "-The Kindista Team"))))

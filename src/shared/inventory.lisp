@@ -418,8 +418,6 @@
            (reply-text (post-parameter-string "reply-text"))
            (adminp (group-admin-p by))
            (next (post-parameter "next")))
-      (pprint action-type)
-      (terpri)
 
       (cond
         ((and (not (eql by *userid*))

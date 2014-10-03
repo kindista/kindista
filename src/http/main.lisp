@@ -557,7 +557,7 @@
                        (str (menu (list `("Messages" "messages" ,(when (> inbox-count 0) inbox-count)))
                                   selected))))
 
-                   (str (menu (list '("Recent Activity" "activity")
+                   (str (menu (list '("Activity" "activity")
                                     '("Offers" "offers")
                                     '("Requests" "requests")
                                     '("People" "people") 
@@ -618,7 +618,7 @@
         (:button :class "yes" :type "submit" :class "submit" :name "really-delete" "Yes")))
     :class class))
 
-(defun confirm-action (title text &key url next-url class item-id details (post-parameter "confirm-action"))
+(defun confirm-action (title text &key url next-url class item-id details (post-parameter "confirm-action") fine-print button-text)
   (standard-page
     title
     (html
@@ -626,11 +626,13 @@
         (:h2 (str text))
         (when details
           (htm (:div (str details))))
+        (when fine-print
+          (htm (:div :class "fine-print" (str fine-print))))
         (:form :method "post" :action url :class "item confirm-delete"
           (awhen item-id
             (htm (:input :type "hidden" :name "item-id" :value it)))
           (awhen next-url
             (htm (:input :type "hidden" :name "next" :value it)))
           (:a :href next-url "No, I didn't mean it!")
-          (:button :class "yes" :type "submit" :class "submit" :name post-parameter "Yes"))))))
+          (:button :class "yes" :type "submit" :class "submit" :name post-parameter (str (or button-text "Yes"))))))))
 

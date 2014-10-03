@@ -52,6 +52,7 @@
       (index-message on (modify-db on :latest-comment id
                                       :message-folders (message-folders on-message)
                                       :people people))
+      ;; for feedback
       (modify-db on :latest-comment id))
 
     (when (and (or (eq on-type :conversation)

@@ -260,13 +260,39 @@
                 #'>
                 :key #'message-time))))
 
-(defun inbox-items (&key (page 0) (count 20))
-  (let* ((start (* page count))
-         (groups (mapcar #'(lambda (id)
-                             (cons id (db id :name)))
-                         (getf *user-group-privileges* :admin)))
-         (filter (or (get-parameter "filter") "all"))
-         (items (filter-inbox-items filter)))
+(defun inbox-items
+  (&key (page 0)
+        (count 20)
+   &aux (start (* page count))
+        (groups (mapcar #'(lambda (id)
+                            (cons id (db id :name)))
+                        (getf *user-group-privileges* :admin)))
+        (filter (or (get-parameter "filter") "all"))
+        (items (filter-inbox-items filter)))
+
+  (flet ((inbox-item-cell (item-id item)
+           (html
+             (:td :class (s+ (string-downcase
+                               (symbol-name (message-type item)))
+                             " message-content")
+               (case (message-type item)
+                        (:conversation
+                          (str (conversation-inbox-item item groups)))
+                        (:transaction
+                          (str (transaction-inbox-item item groups)))
+                        (:contact-n
+                          (htm
+                            (str (h3-timestamp (message-time item)))
+                            (:p (str (person-link (getf (db item-id)
+                                                        :subject)))
+                             " added you as a contact.")))
+                        (:group-membership-request
+                          (str (group-membership-request-inbox-item item)))
+                        (:group-membership-invitation
+                          (str (group-membership-invitation-inbox-item item)))
+                        (:gratitude
+                          (htm
+                            (str (gratitude-inbox-item item groups)))))))))
     (html
       (str (message-filter filter))
       (:form :method "post" :action "/messages"
@@ -306,25 +332,7 @@
                        (:input :type "checkbox"
                                :name "message-id"
                                :value item-id))
-                     (:td :class "message-content"
-                       (case (message-type item)
-                         (:conversation
-                           (str (conversation-inbox-item item groups)))
-                         (:transaction
-                           (str (transaction-inbox-item item groups)))
-                         (:contact-n
-                           (htm
-                             (str (h3-timestamp (message-time item)))
-                             (:p (str (person-link (getf (db item-id)
-                                                         :subject)))
-                              " added you as a contact.")))
-                         (:group-membership-request
-                           (str (group-membership-request-inbox-item item)))
-                         (:group-membership-invitation
-                           (str (group-membership-invitation-inbox-item item)))
-                         (:gratitude
-                           (htm
-                             (str (gratitude-inbox-item item groups))))))))))
+                     (str (inbox-item-cell item-id item))))))
              (setf items (cdr items)))
 
             ((and (eql i start)
@@ -355,10 +363,9 @@
       (html
         (dolist (group my-groups)
           (htm (:span :class "group-indicator"
-                  (:a :href (s+ "/groups/" (username-or-id group))
-                    (str (or (cdr (assoc group groups))
-                            ;in case they are no longer an admin for the group
-                            (db group :name)))))))))))
+                 (str (or (cdr (assoc group groups))
+                         ;in case they are no longer an admin for the group
+                         (db group :name))))))))))
 
 (defun group-membership-request-inbox-item-old (message)
   (let* ((id (message-id message))
@@ -484,57 +491,54 @@
   (message
    groups
    &aux (id (message-id message))
-         (transaction (db id))
-         (latest-comment (message-latest-comment message))
-         (latest-transaction-action (car (last (getf transaction :log))))
-         (latest-gratitude-entry (find :gratitude-posted
-                                   (getf transaction :log)
-                                   :from-end t
-                                   :key #'(lambda (log-entry)
-                                            (getf log-entry :action))))
-         (comment-data (db latest-comment))
-         (latest-thing-is-a-comment-p (> (or (getf comment-data :created) 0)
-                                         (or (getf latest-transaction-action
-                                                   :time) 0)))
-         (comment-by (car (getf comment-data :by)))
-         (inventory-item-id (getf transaction :on))
-         (inventory-item (db inventory-item-id))
-         (inventory-by (getf inventory-item :by))
-         (deleted-type (getf transaction :deleted-item-type))
-         (inventory-item-type (or (getf inventory-item :type)
-                                  deleted-type))
-         (participants (db id :participants))
-         (group-name (cdr (assoc (car participants) groups)))
-         (with (or (getf inventory-item :by)
-                   (first (remove *userid* participants))))
-         (comments (length (getf transaction :log)))
-         (text (cond
-                 ((and (= comments 1) deleted-type)
-                  (deleted-invalid-item-reply-text
-                    (db (second participants) :name)
-                    (db (first participants) :name)
-                    (case deleted-type
-                      (:offer "offer")
-                      (:request "request"))
-                    (getf comment-data :text)))
-                 ((> (or (getf comment-data :created) 0)
-                     (or (getf latest-gratitude-entry :time) 0))
-                  (getf comment-data :text))
-                 (t (db (getf latest-gratitude-entry :comment) :text))))
-         (transaction-url (strcat "/transactions/" id))
-         (inventory-url (case inventory-item-type
-                          (:offer (strcat "/offers/" (getf transaction :on)))
-                          (:request (strcat "/requests/" (getf transaction :on)))))
-         (inventory-link (case inventory-item-type
-                          (:offer (html (:a :href inventory-url "offer")))
-                          (:request (html (:a :href inventory-url "request")))
-                          (t (case deleted-type
-                               (:offer "offer")
-                               (:request "request")
-                               (t (html (:span :class "none" "deleted offer or request")))))))
-         (pending-gratitude-p (transaction-pending-gratitude-p id transaction))
-         (role)
-         (representing))
+        (transaction (db id))
+        (latest-comment (message-latest-comment message))
+        (latest-transaction-action (car (last (getf transaction :log))))
+        (latest-gratitude-entry (find :gratitude-posted
+                                  (getf transaction :log)
+                                  :from-end t
+                                  :key #'(lambda (log-entry)
+                                           (getf log-entry :action))))
+        (comment-data (db latest-comment))
+        (latest-thing-is-a-comment-p (> (or (getf comment-data :created) 0)
+                                        (or (getf latest-transaction-action
+                                                  :time) 0)))
+        (comment-by (car (getf comment-data :by)))
+        (inventory-item-id (getf transaction :on))
+        (inventory-item (db inventory-item-id))
+        (inventory-by-id (getf inventory-item :by))
+        (inventory-by (db inventory-by-id))
+        (inventory-by-self-p (eql inventory-by-id *userid*))
+        (deleted-type (getf transaction :deleted-item-type))
+        (inventory-item-type (or (getf inventory-item :type)
+                                 deleted-type))
+        (inventory-type-string (string-downcase
+                                      (symbol-name inventory-item-type)))
+        (inventory-descriptor (ellipsis (or (getf inventory-item :title)
+                                            (getf inventory-item :details) )
+                                        :length 30))
+        (participants (getf transaction :participants))
+       ;(group-name (cdr (assoc (car participants) groups)))
+       ;(with (or (getf inventory-item :by)
+       ;          (first (remove *userid* participants))))
+        (comments (length (getf transaction :log)))
+        (text (cond
+                ((and (= comments 1) deleted-type)
+                 (deleted-invalid-item-reply-text
+                   (db (second participants) :name)
+                   (db (first participants) :name)
+                   (case deleted-type
+                     (:offer "offer")
+                     (:request "request"))
+                   (getf comment-data :text)))
+                ((> (or (getf comment-data :created) 0)
+                    (or (getf latest-gratitude-entry :time) 0))
+                 (getf comment-data :text))
+                (t (db (getf latest-gratitude-entry :comment) :text))))
+        (transaction-url (strcat "/transactions/" id))
+        (pending-gratitude-p (transaction-pending-gratitude-p id transaction))
+        (role)
+        (representing))
 
   (multiple-value-bind (options representing-whom user-role)
     (transaction-options-for-user id :transaction transaction)
@@ -542,69 +546,55 @@
     (setf role user-role)
     (setf representing representing-whom))
 
-  (flet ((transaction-link (text)
-           (html (:a :href transaction-url
-                   (str text)))))
+  (html
+    (str (h3-timestamp (message-time message)))
 
-    (html
-      (str (h3-timestamp (message-time message)))
-      (:p :class "people"
-        (str (group-message-indicator message groups))
+    (:a :href transaction-url
+        :class "transaction-link"
+
+      (:p :class "transaction-title"
+       (str (group-message-indicator message groups))
+       (str (strcat* "Re: "
+                     (if inventory-by-self-p
+                       "your "
+                       (s+ (getf inventory-by :name) "'s "))
+                     inventory-type-string
+                     " - "
+                     inventory-descriptor)))
+      (:p
         (when (if latest-thing-is-a-comment-p
                 (eql comment-by *userid*)
                 (eql (car (getf latest-transaction-action :party)) *userid*))
           (str "↪ "))
         (str
           (if latest-thing-is-a-comment-p
-            (if (eql (getf transaction :by) *userid*)
-              (strcat*
-                "You replied to "
-                (person-link with)
-                "'s "
-                inventory-link)
-              (strcat*
-                (person-link (getf transaction :by))
-                " replied to "
-                (if group-name (s+ group-name "'s ") "your ")
-                inventory-link))
+            (strcat*
+              (unless (eql comment-by *userid*)
+                (strcat*
+                  (db comment-by :name)
+                  " replied - "))
+              text)
 
             (transaction-action-text latest-transaction-action
                                      inventory-item-type
-                                     (strcat (case inventory-item-type
-                                               (:offer "an ")
-                                               (:request "a "))
-                                             inventory-link)
-
-                                     (if (eql inventory-by *userid*)
+                                     "this"
+                                     (if (eql inventory-by-id *userid*)
                                        "you"
-                                       (person-link inventory-by))
+                                       (person-link inventory-by-id))
                                      (if (eql (getf transaction :by) *userid*)
                                        "you"
-                                       (person-link (getf transaction :by)))))))
+                                       (person-link (getf transaction :by)))
+                                     :basic-action t)))))
 
-      (str
-        (transaction-link
-          (html
-            (:p :class "text"
-              (:span :class "title"
-               (str (ellipsis (or (getf inventory-item :title)
-                                  (getf inventory-item :details))
-                              :length 30)))
-              (:span
-               (when (> comments 1)
-                 (str (strcat " (" comments ") ")))
-               " - ")
-              (str (ellipsis text))))))
+    (when (and pending-gratitude-p (eq role :receiver))
+      (htm
+        (:div
+          (:a :class "blue gratitude"
+              :href (url-compose transaction-url "post-gratitude" "t")
+            (str (icon "heart-person"))
+            "Express Gratitude"))))
 
-      (when (and pending-gratitude-p (eq role :receiver))
-        (htm
-          (:div
-            (:a :class "blue gratitude"
-                :href (url-compose transaction-url "post-gratitude" "t")
-              (str (icon "heart-person"))
-              "Express Gratitude"))))
-
-      )))
+    ))
 
 (defun get-messages ()
   (require-user

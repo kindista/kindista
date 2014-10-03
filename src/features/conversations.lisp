@@ -221,17 +221,24 @@
                                            (when (>= (or latest-seen 0)
                                                      comment-id)))))))))
 
-(defun conversation-comment-html (data by by-name for for-name text newp)
+(defun conversation-comment-html
+  (data by by-name for for-name text newp &key transaction-p)
   (card
     (html
       (str (h3-timestamp (getf data :created)))
-      (:p (:a :href (s+ "/people/" (username-or-id by))
-           (str by-name))
-            (when for
-              (htm
-                " for "
-                (:a :href (s+ "/groups/" (username-or-id ))
-                 (str for-name)))))
+      (:p
+        (if transaction-p
+          (htm (:strong (str by-name)))
+          (htm
+            (:a :href (s+ "/people/" (username-or-id by))
+                (str by-name))))
+        (when for
+          (htm
+            " for "
+            (:a :href (s+ "/groups/" (username-or-id ))
+             (str for-name))))
+        (when transaction-p
+          (htm (:strong " responded:"))))
 
       (:p :class (when newp "new")
         (str (regex-replace-all "\\n" text "<br>"))))))
