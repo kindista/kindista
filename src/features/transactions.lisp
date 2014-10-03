@@ -170,12 +170,15 @@
 
 (defun transaction-history
   (transaction-id
-   on-type
-   on-url
-   inventory-by
+   inventory-item-id
    latest-seen
-   &optional (transaction (db transaction-id))
+   &key (transaction (db transaction-id))
+        (inventory-item (db inventory-item-id))
    &aux (actions (getf transaction :log))
+        (on-type (getf inventory-item :type))
+        (on-type-string (case on-type
+                          (:offer "offer")
+                          (:request "request")))
         (comments (gethash transaction-id *comment-index*))
         (history))
 
@@ -219,15 +222,11 @@
       (dolist (event history)
         (acond
          ((getf event :action)
-          (str (transaction-action-html event
-                                        on-type
-                                        (strcat* "this " on-url)
-                                        (if (eql inventory-by *userid*)
-                                          "you"
-                                          (db inventory-by :name))
-                                        (if (eql (getf transaction :by) *userid*)
-                                          "you"
-                                          (db (getf transaction :by) :name)))))
+          (str (transaction-action-html
+                 event
+                 transaction
+                 inventory-item
+                 (strcat* "this " on-type-string))))
 
          ((getf event :text)
           (str (conversation-comment-html
@@ -254,18 +253,31 @@
 
 (defun transaction-action-text
   (log-event
-   on-type
-   inventory-descriptor
-   inventory-by-name
-   transaction-initiator-name
-   &key basic-action
+   transaction
+   inventory-item
+   &key inventory-descriptor
+        (inventory-by-id (getf inventory-item :by))
+        (inventory-by-name (db inventory-by-id :name))
+        (transaction-by-id (getf transaction :by))
+        (transaction-by-name (db transaction-by-id :name))
+        basic-action
         (userid *userid*)
         name-links-p
-   &aux (action-party-id (car (getf log-event :party)))
+   &aux (on-type (getf inventory-item :type))
+        (action-party-id (car (getf log-event :party)))
         (action-party (db action-party-id))
         (self (eql action-party-id userid)) )
-  (flet ((indirect-object (actor)
-           (if self actor "you")))
+
+  (flet ((indirect-object (initiator)
+           (case initiator
+             (:transaction
+               (if (eql transaction-by-id *userid*)
+                 "you"
+                 transaction-by-name))
+             (:inventory
+               (if (eql inventory-by-id *userid*)
+                 "you"
+                 inventory-by-name)))))
   (strcat*
     (cond
       (self "You")
@@ -287,29 +299,29 @@
             (strcat " requested to recieve "
                 inventory-descriptor
                 " from "
-                (indirect-object inventory-by-name)) )
+                (indirect-object :inventory)))
           (:offered
             (strcat " agreed to share " inventory-descriptor " with "
-                (indirect-object transaction-initiator-name)))
+                (indirect-object :transaction)))
           (:declined
             (strcat* " declined to receive a gift from "
-                     (indirect-object inventory-by-name)))
+                     (indirect-object :inventory)))
           (:withheld
             (strcat* " indicated that "
                      (if self "you" "they")
                      " can no longer share "
                      inventory-descriptor
                      " with "
-                     (indirect-object transaction-initiator-name)))
+                     (indirect-object :transaction)))
           (:gave
             (strcat " shared " inventory-descriptor " with "
-                (indirect-object transaction-initiator-name)))
+                (indirect-object :transaction)))
           (:received
             (strcat " received a gift from "
-                (indirect-object inventory-by-name)))
+                (indirect-object :inventory)))
           (:disputed
             (strcat " disputed having received a gift from "
-                    (indirect-object inventory-by-name)))
+                    (indirect-object :inventory)))
           (:gratitude-posted
             (strcat " posted a statement of gratitude about "
                     inventory-by-name
@@ -322,16 +334,16 @@
           (:requested
             (strcat* " want" (unless self "s")
                      " to receive what "
-                     (indirect-object transaction-initiator-name)
-                     (if (string= (indirect-object transaction-initiator-name) "you")
+                     (indirect-object :transaction)
+                     (if (string= (indirect-object :transaction) "you")
                        " are" " is")
                      " offering") )
           (:offered
             (strcat " agreed to fulfill " inventory-descriptor " made by "
-                (indirect-object inventory-by-name)))
+                (indirect-object :inventory)))
           (:declined
             (strcat* " declined to receive a gift from "
-                     (indirect-object transaction-initiator-name)))
+                     (indirect-object :transaction)))
           (:withheld
             (strcat* " indicated that"
 
@@ -339,19 +351,19 @@
                      " can no longer share "
                      inventory-descriptor
                      " with "
-                     (indirect-object inventory-by-name)))
+                (indirect-object :inventory)))
           (:gave
             (strcat " fulfilled " inventory-descriptor " from "
-                (indirect-object inventory-by-name)))
+                (indirect-object :inventory)))
           (:received
             (strcat " received a gift from "
-                (indirect-object transaction-initiator-name)))
+                (indirect-object :transaction)))
           (:disputed
             (strcat " disputed having received a gift from "
-                (indirect-object transaction-initiator-name)))
+                (indirect-object :transaction)))
           (:gratitude-posted
             (strcat " posted a statement of gratitude about "
-                    (indirect-object transaction-initiator-name)
+                    (indirect-object :transaction)
                     " for "
                     inventory-descriptor)))))
     "."
@@ -359,10 +371,10 @@
 
 (defun transaction-action-html
   (log-event
-   on-type
+   transaction
+   inventory-item
    inventory-descriptor
-   inventory-by-name
-   transaction-initiator-name)
+   )
 
   (case (getf log-event :action)
     (:gratitude-posted
@@ -374,11 +386,11 @@
           (str (h3-timestamp (getf log-event :time)))
           (:p
             (:strong
-              (str (transaction-action-text log-event
-                                            on-type
-                                            inventory-descriptor
-                                            inventory-by-name
-                                            transaction-initiator-name)))))))))
+              (str (transaction-action-text
+                     log-event
+                     transaction
+                     inventory-item
+                     :inventory-descriptor inventory-descriptor)))))))))
 
 (defun transaction-comment-input (transaction-id &key error)
   (html
@@ -591,15 +603,10 @@
                   (:strong
                     (str (transaction-action-text
                            most-recent-log-event
-                           on-type
-                           (s+ " this "
-                               inventory-description)
-                           (if (eql inventory-by *userid*)
-                             "you"
-                             inventory-by-link)
-                           (if (eql (getf data :by) *userid*)
-                             "you"
-                             (person-link (getf data :by)))))))))))
+                           data
+                           on-item
+                           :inventory-descriptor
+                             (s+ " this " inventory-description)))))))))
 
       (str form-elements-html)
       (str history-html))
@@ -734,13 +741,11 @@
                                   latest-comment))
                  (on-id (getf transaction :on))
                  (on-item (db on-id))
-                 (inventory-by (getf on-item :by))
                  (transaction-options)
                  (speaking-for)
                  (other-party)
                  (other-party-name)
                  (user-role)
-                 (comment-p t)
                  (post-gratitude-p (get-parameter-string "post-gratitude"))
                  (with (remove *userid* (getf transaction :participants)))
                  (deleted-type (getf transaction :deleted-item-type))
@@ -789,11 +794,8 @@
                                 user-role
                                 other-party
                                 (transaction-history id
-                                                     on-type
-                                                     on-type-string
-                                                     inventory-by
-                                                     latest-seen
-                                                     transaction)
+                                                     on-id
+                                                     latest-seen)
                                 (cond
                                   (post-gratitude-p
                                     (simple-gratitude-compose

@@ -22,10 +22,8 @@
    log-event
    &optional message
    &aux (transaction (db transaction-id))
-        (transaction-initiator (db (getf transaction :by)))
         (inventory-id (getf transaction :on))
         (inventory-item (db inventory-id))
-        (inventory-by (db (getf inventory-item :by)))
         (on-type (getf inventory-item :type))
         (event-party (getf log-event :party))
         (event-actor-id (car event-party))
@@ -62,12 +60,11 @@
                 (gift-text :html-p html-p))
                (t (transaction-action-text
                     log-event
-                    on-type
-                    (case on-type
-                      (:offer "an offer")
-                      (:request "a request"))
-                    (getf inventory-by :name)
-                    (getf transaction-initiator :name))))))
+                    transaction
+                    inventory-item
+                    :inventory-descriptor (case on-type
+                                            (:offer "an offer")
+                                            (:request "a request")))))))
 
     (dolist (recipient-id recipients)
       (let ((recipient (db recipient-id))

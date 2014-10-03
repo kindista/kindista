@@ -450,42 +450,62 @@
         " for "
         (str (format nil *english-list* (remove nil (push self my-groups))))))))
 
-(defun conversation-inbox-item (message groups)
-  (let* ((id (message-id message))
+(defun conversation-inbox-item
+  (message
+   groups
+   &aux (id (message-id message))
          (conversation (db id))
          (latest (message-latest-comment message))
          (comment-data (db latest))
          (comment-by (car (getf comment-data :by)))
-         (comments (length (gethash id *comment-index*)))
+         (comment-count (length (gethash id *comment-index*)))
          (participants (remove *userid*
-                         (cons comment-by
-                               (remove comment-by
-                                       (getf conversation :participants))))))
-    (flet ((url (text)
-             (html
-               (:a :href (strcat "/conversations/" id)
-                   (str text)))))
-     (html
-        (str (h3-timestamp (message-time message)))
-        (:p :class "people"
-          (str (group-message-indicator message groups)) 
-          (when (eql comment-by *userid*)
-            (str "↪ "))
-          (aif participants
-            (str (name-list it))
-            (htm (:span :class "nobody" "Empty conversation"))) )
+                               (cons comment-by
+                                     (remove comment-by
+                                             (getf conversation :participants))))))
 
-        (str
-          (url
-            (html
-              (:p :class "text"
-                (:span :class "title"
-                  (str (ellipsis (getf conversation :subject) :length 30))
-                  (when (> comments 1)
-                    (htm
-                      " (" (str comments) ")")))
-                (:strong " - ")
-                (str (ellipsis (getf comment-data :text)))))))))))
+  (inbox-message-content-html
+    message
+    :url (strcat "/conversations/" id)
+    :subject (strcat* (when (> comment-count 1) "Re: ")
+                      (ellipsis (getf conversation :subject) :length 30))
+    :comment-count comment-count
+    :details-by-name (s+ (if (eql comment-by *userid*)
+                           "↪ You"
+                           (strcat (db comment-by :name)))
+                         " - ")
+    :details (getf comment-data :text)
+    :participants participants
+    :group-indicator (group-message-indicator message groups)))
+
+(defun inbox-message-content-html
+  (message
+   &key url
+        subject
+        comment-count
+        details-by-name
+        details
+        participants
+        group-indicator)
+
+  (html
+    (:a :href url :class "message-link"
+      (str (h3-timestamp (message-time message)))
+      (:p :class "message-people"
+       (aif participants
+         (str (name-list it :links nil))
+         (htm (:span :class "nobody" "Empty conversation")))
+       (aif group-indicator (str it)))
+
+      (:p :class "message-title"
+       (str subject)
+       (when (> comment-count 1)
+         (htm " (" (str comment-count) ")")))
+
+      (:p :class "message-details"
+        (awhen details-by-name (str it))
+        (:span :class "comment"
+         (str details))))))
 
 (defun transaction-inbox-item
   (message
@@ -517,13 +537,20 @@
         (inventory-descriptor (ellipsis (or (getf inventory-item :title)
                                             (getf inventory-item :details) )
                                         :length 30))
+        (subject (strcat* "Re: "
+                          (if inventory-by-self-p
+                            "your "
+                            (s+ (getf inventory-by :name) "'s "))
+                          inventory-type-string
+                          " - "
+                          inventory-descriptor))
         (participants (getf transaction :participants))
        ;(group-name (cdr (assoc (car participants) groups)))
        ;(with (or (getf inventory-item :by)
        ;          (first (remove *userid* participants))))
-        (comments (length (getf transaction :log)))
+        (comment-count (length (getf transaction :log)))
         (text (cond
-                ((and (= comments 1) deleted-type)
+                ((and (= comment-count 1) deleted-type)
                  (deleted-invalid-item-reply-text
                    (db (second participants) :name)
                    (db (first participants) :name)
@@ -547,44 +574,31 @@
     (setf representing representing-whom))
 
   (html
-    (str (h3-timestamp (message-time message)))
-
-    (:a :href transaction-url
-        :class "transaction-link"
-
-      (:p :class "transaction-title"
-       (str (group-message-indicator message groups))
-       (str (strcat* "Re: "
-                     (if inventory-by-self-p
-                       "your "
-                       (s+ (getf inventory-by :name) "'s "))
-                     inventory-type-string
-                     " - "
-                     inventory-descriptor)))
-      (:p
-        (when (if latest-thing-is-a-comment-p
-                (eql comment-by *userid*)
-                (eql (car (getf latest-transaction-action :party)) *userid*))
-          (str "↪ "))
-        (str
-          (if latest-thing-is-a-comment-p
-            (strcat*
-              (unless (eql comment-by *userid*)
-                (strcat*
-                  (db comment-by :name)
-                  " replied - "))
-              text)
-
-            (transaction-action-text latest-transaction-action
-                                     inventory-item-type
-                                     "this"
-                                     (if (eql inventory-by-id *userid*)
-                                       "you"
-                                       (person-link inventory-by-id))
-                                     (if (eql (getf transaction :by) *userid*)
-                                       "you"
-                                       (person-link (getf transaction :by)))
-                                     :basic-action t)))))
+    (str
+      (inbox-message-content-html
+        message
+        :url transaction-url
+        :subject subject
+        :comment-count comment-count
+        :details-by-name (if latest-thing-is-a-comment-p
+                           (s+ (if (eql comment-by *userid*)
+                                 "↪ You"
+                                 (db comment-by :name))
+                              " - ")
+                           (when (eql (car (getf latest-transaction-action
+                                                 :party))
+                                      *userid*)
+                             "↪ "))
+        :details (if latest-thing-is-a-comment-p
+                        text
+                        (transaction-action-text
+                          latest-transaction-action
+                          transaction
+                          inventory-item
+                          :inventory-descriptor "this"
+                          :basic-action t))
+        :participants (remove representing participants)
+        :group-indicator (group-message-indicator message groups)))
 
     (when (and pending-gratitude-p (eq role :receiver))
       (htm
@@ -592,9 +606,7 @@
           (:a :class "blue gratitude"
               :href (url-compose transaction-url "post-gratitude" "t")
             (str (icon "heart-person"))
-            "Express Gratitude"))))
-
-    ))
+            "Express Gratitude"))))))
 
 (defun get-messages ()
   (require-user

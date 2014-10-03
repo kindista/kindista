@@ -1733,9 +1733,10 @@ table.messages {
  color: #eee;
 }
 
-.mail.card .group-indicator a {
+.mail.card .group-indicator {
  color: #fcfbf5;
  text-decoration: none;
+ margin-left: 0.4em;
 }
 
 .mail.card input[type=checkbox] {
@@ -1744,7 +1745,7 @@ table.messages {
 
 .mail.card td.message-content {
  width: 100%;
- padding: 0.6em 0;
+ padding: 0.3em 0;
 }
 
 .mail.card td.message-content a.gratitude {
@@ -1757,11 +1758,11 @@ table.messages {
  vertical-align: middle;
 }
 
-.mail.card p.people {
- margin: 0 0 0.2em;
+.mail.card p {
+ margin: 0.3em 0;
 }
 
-.mail.card p.text {
+.mail.card p.message-details {
  height: 1.7em;
  width: 100%;
  line-height: 1.5em;
@@ -1773,8 +1774,25 @@ table.messages {
  background: #f7f5ef;
 }
 
-.mail.card p.text span.title {
+.mail.card p.message-title {
  color:#5c8a2f;
+}
+
+.mail.card a.message-link:hover {
+ text-decoration: none;
+}
+
+.mail.card a.message-link p.message-title:hover {
+ text-decoration: underline;
+}
+
+.mail.card p.message-people,
+.mail.card p.message-details {
+ color: #555;
+}
+
+.mail.card p.message-details {
+ font-weight: normal;
 }
 
 .card {
@@ -3479,14 +3497,6 @@ span.highlight {
  margin-bottom: 1em;
 }
 
-.mail.card .transaction.message-content a.transaction-link:hover {
- text-decoration: none;
-}
-
-.mail.card p.transaction-title {
- color: #555;
-}
-
 .transaction #body > h2 {
  margin: 1.2em 0 0.2em;
  font-size: 1.15em;
@@ -3539,14 +3549,6 @@ div.trans-options {
  font-weight: bold;
 }
 
-div.transaction-options.item {
- margin-top: 0.4em;
-}
-
-div.transaction-options.item > form {
- margin-top: 0;
-}
-
 div.transaction-option a,
 div.transaction-option button {
  color: #3c6dc8;
@@ -3554,8 +3556,13 @@ div.transaction-option button {
  display: inline-block;
  margin: 0;
  padding: 0;
- height: 3em;
- line-height: 2em;
+}
+
+@media (max-width:40em) {
+ div.transaction-option a,
+ div.transaction-option button {
+   line-height: 2.5em;
+ }
 }
 
 div.transaction-option {

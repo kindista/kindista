@@ -42,10 +42,10 @@
 [x] change transaction email text before link
 [ ] only one link in a message
 [ ] only one link in gratitude
-[ ] change the inbox message for transactions where last action is a message
+[x] change the inbox message for transactions where last action is a message
 [ ] remove the other party's name from transaction option buttons and make them actual buttons
 [ ] confirm page for receipt or having given it
-[ ] on confirm receipt, send an email "congrats on receiving a gift, post gratitude"
+[x] on confirm receipt, send an email "congrats on receiving a gift, post gratitude"
 [ ] remove the option to message when it's time to post gratitude
 [ ] when you post an offer/request, flash "congrats, your offer/req has been posted"
 [ ] top line of transaction should be a status of what's happening below

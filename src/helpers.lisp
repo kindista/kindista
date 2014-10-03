@@ -434,7 +434,7 @@
   (html
     (:a :href (s+ "/groups/" (username-or-id id)) (str (getf (db id) :name)))))
 
-(defun name-list (ids &key (func #'person-link) (maximum-links 3))
+(defun name-list (ids &key (func #'person-link) (maximum-links 3) (links t))
   (let* ((name-count (length ids))
          (count-displayed (cond
                             ((= name-count (+ maximum-links 1))
@@ -445,9 +445,13 @@
          (display-ids (subseq ids 0 count-displayed))
          (others (when (> name-count count-displayed)
                    (strcat (- name-count count-displayed) " others"))))
-    (format nil *english-list* (aif others
-                                 (append (mapcar func display-ids ) (list it))
-                                 (mapcar func display-ids)))))
+    (flet ((format-function (id)
+             (if links (apply func (list id)) (db id :name))))
+     (format nil
+            *english-list*
+            (aif others
+              (append (mapcar #'format-function display-ids ) (list it))
+              (mapcar #'format-function display-ids))))))
 
 (defun name-list-all (ids &key stringp)
   (format nil *english-list* (if stringp
