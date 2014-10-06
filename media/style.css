@@ -812,6 +812,10 @@ button.gray {
  color: #999;
 }
 
+.dark-gray-text {
+ color: #555;
+}
+
 a.red {
  color: #900;
 }
@@ -913,8 +917,8 @@ a.cancel {
 button.small, a.small {
  font-size: 0.8em;
  line-height: normal;
- height: 2.5em;
- padding: 0 0.4em;
+ height: auto;
+ padding: 0.3em;
 }
 
 button span {
@@ -1702,6 +1706,10 @@ table.messages {
  border-collapse: collapse;
 }
 
+.mail.card p:last-child {
+ margin-bottom: 0.3em;
+}
+
 .mail.card:last-child {
  border-bottom: 1px solid #eee;
 }
@@ -2223,7 +2231,6 @@ div.membership-request div.member-approval {
 div.membership-request button {
  height: 2em;
  line-height: 1em;
- padding-bottom: 0.6em;
  margin-right: 0.3em;
 }
 

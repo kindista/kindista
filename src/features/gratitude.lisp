@@ -773,15 +773,24 @@
   (setf id (parse-integer id))
   (aif (db id)
     (require-user
-      (standard-page
-        "Gratitude"
-        (html
-          (:div :class "gratitude item"
-            (str (gratitude-activity-item (make-result :id id
-                                                     :time (getf it :created)
-                                                     :people (cons (getf it :author)
-                                                                   (getf it :subjects))))))
-          (str (item-images-html id)))))
+      (let* ((message (gethash id *db-messages*))
+             (mailboxes (loop for person in (message-people message)
+                             when (eq (caar person) *userid*)
+                             collect (car person))))
+
+        (when (member (list *userid*) mailboxes :test #'equal)
+          (update-folder-data message :read))
+
+        (standard-page
+          "Gratitude"
+          (html
+            (:div :class "gratitude item"
+              (str (gratitude-activity-item (make-result :id id
+                                                         :time (getf it :created)
+                                                         :people (cons (getf it :author)
+                                                                       (getf it :subjects))))))
+            (str (item-images-html id)))
+          :selected (awhen (get-parameter-string "menu") it))))
     (not-found)))
 
 (defun post-gratitude (id)

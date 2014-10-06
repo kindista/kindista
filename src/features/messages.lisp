@@ -93,21 +93,31 @@
            (people (message-people message))
            (valid-participants (loop for person in people
                                      when (eql *userid* (caar person))
-                                     collect person)))
+                                     collect person))
+           (updated-people)
+           (updated-folders))
 
       (when valid-participants
-        (when last-read-comment
+        (when (or last-read-comment (eq new-status :read))
           (dolist (participant valid-participants)
-            (asetf (cdr (assoc (car participant) people :test #'equal)) last-read-comment))))
+            (asetf (cdr (assoc (car participant)
+                               (message-people message)
+                               :test #'equal))
+                   (or last-read-comment :read)))
+          (setf updated-people t)))
 
 
       (flet ((remove-from-folders (folders)
                (dolist (folder folders)
-                 (asetf (getf (message-folders message) folder)
-                        (remove *userid* it))))
+                 (when (find *userid* (getf (message-folders message) folder))
+                   (asetf (getf (message-folders message) folder)
+                          (remove *userid* it))
+                   (setf updated-folders t))))
              (add-to-folder (folder)
-               (asetf (getf (message-folders message) folder)
-                      (pushnew *userid* it))))
+               (unless (find *userid* (getf (message-folders message) folder))
+                 (asetf (getf (message-folders message) folder)
+                        (pushnew *userid* it))
+                 (setf updated-folders t))))
 
         (case new-status
           (:inbox
@@ -129,8 +139,9 @@
             (add-to-folder :deleted)
             (remove-from-folders (list :inbox :compost :unread)))))
 
-  (modify-db id :message-folders (message-folders message)
-                :people (message-people message))
+  (when (or updated-people updated-folders)
+    (modify-db id :message-folders (message-folders message)
+                  :people (message-people message)))
   (index-message-folders message))))
 
 (defun message-groups (message)
@@ -441,14 +452,16 @@
                             mailboxes)))
     (html
       (str (h3-timestamp (message-time message)))
-      (:p :class "people"
-        (str (group-message-indicator message groups))
-        (str (person-link (getf (db id) :author)))
-        " shared "
-        (:a :href (strcat "/gratitude/" id)
-            "gratitude")
-        " for "
-        (str (format nil *english-list* (remove nil (push self my-groups))))))))
+      (:a :href (url-compose (strcat "/gratitude/" id) "menu" "messages")
+        (:p :class "people"
+         (str (group-message-indicator message groups))
+         (:span :class "dark-gray-text"
+           (str (db (getf (db id) :author) :name))
+           " shared ")
+         "gratitude"
+         (:span :class "dark-gray-text"
+           " for "
+           (str (format nil *english-list* (remove nil (push self my-groups))))))))))
 
 (defun conversation-inbox-item
   (message
@@ -471,7 +484,7 @@
                       (ellipsis (getf conversation :subject) :length 30))
     :comment-count comment-count
     :details-by-name (s+ (if (eql comment-by *userid*)
-                           "↪ You"
+                           "↪ Me"
                            (strcat (db comment-by :name)))
                          " - ")
     :details (getf comment-data :text)
@@ -530,6 +543,8 @@
         (inventory-by (db inventory-by-id))
         (inventory-by-self-p (eql inventory-by-id *userid*))
         (deleted-type (getf transaction :deleted-item-type))
+        ;; for inventory items that got deleted before we switched to deactivating them instead
+        (totally-deleted-inventory-item (not inventory-item))
         (inventory-item-type (or (getf inventory-item :type)
                                  deleted-type))
         (inventory-type-string (string-downcase
@@ -538,12 +553,14 @@
                                             (getf inventory-item :details) )
                                         :length 30))
         (subject (strcat* "Re: "
-                          (if inventory-by-self-p
-                            "your "
-                            (s+ (getf inventory-by :name) "'s "))
-                          inventory-type-string
-                          " - "
-                          inventory-descriptor))
+                          (if totally-deleted-inventory-item
+                            "a deleted offer or request"
+                            (s+ (if inventory-by-self-p
+                                  "my "
+                                  (s+ (getf inventory-by :name) "'s "))
+                                inventory-type-string
+                                " - "
+                                inventory-descriptor))))
         (participants (getf transaction :participants))
        ;(group-name (cdr (assoc (car participants) groups)))
        ;(with (or (getf inventory-item :by)
@@ -582,7 +599,7 @@
         :comment-count comment-count
         :details-by-name (if latest-thing-is-a-comment-p
                            (s+ (if (eql comment-by *userid*)
-                                 "↪ You"
+                                 "↪ Me"
                                  (db comment-by :name))
                               " - ")
                            (when (eql (car (getf latest-transaction-action

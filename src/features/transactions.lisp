@@ -265,6 +265,8 @@
         name-links-p
    &aux (on-type (getf inventory-item :type))
         (action-party-id (car (getf log-event :party)))
+        (action-party-group-id (cdr (getf log-event :party)))
+        (action-party-group (db action-party-group-id))
         (action-party (db action-party-id))
         (self (eql action-party-id userid)) )
 
@@ -280,17 +282,17 @@
                  inventory-by-name)))))
   (strcat*
     (cond
-      (self "You")
-      (name-links-p
-       (case (getf action-party :type)
-         (:group (group-link action-party-id))
-         (:person (person-link action-party-id))))
+      (self "I")
+      ((and name-links-p (not basic-action))
+       (person-link action-party-id))
+      ((and basic-action action-party-group)
+       (getf action-party-group :name))
       (t (getf action-party :name)))
 
-    (when (and (cdr (getf log-event :party))
+    (when (and action-party-group
                (not basic-action))
       (strcat* " (on behalf of "
-               (db (cdr (getf log-event :party)) :name)
+               (getf action-party-group :name)
                ")" ))
     (case on-type
       (:offer
@@ -543,9 +545,14 @@
                   (:group (group-link other-party-id))
                   (:person (person-link other-party-id))))
            " regarding "
-           (str (if (eql (getf on-item :by) *userid*)
-                  "your "
-                  (strcat* inventory-by-link "'s ")))
+           (str (cond
+                  ((eql (getf on-item :by) *userid*)
+                   "your ")
+                  (inventory-by
+                    (strcat* inventory-by-link "'s "))
+                  ;; for old inventory items that got deleted before we switched to
+                  ;; deactivating them instead
+                  (t "a ")))
            (str inventory-description)
            ;; some old ones may have been deleted
            (when on-item (htm ":")))
