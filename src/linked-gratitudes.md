@@ -43,6 +43,8 @@
 [ ] only one link in a message
 [ ] only one link in gratitude
 [x] change the inbox message for transactions where last action is a message
+[ ] activity/home link
+[ ] fulfilled request has incorrect identity
 [ ] remove the other party's name from transaction option buttons and make them actual buttons
 [ ] confirm page for receipt or having given it
 [x] on confirm receipt, send an email "congrats on receiving a gift, post gratitude"
