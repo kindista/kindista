@@ -312,14 +312,15 @@
                                  (send-metric (acceptor-metric-system acceptor) :active *userid*))
                                (schedule-timer
                                  timer
-                                 (if (and (string= (header-in* :x-real-ip)
+                                 (if (string= (header-in* :x-real-ip)
                                                    *local-ip-address*)
-                                          (string= (script-name*)
-                                                   "/send-all-reminders"))
-                                   30
+                                   (cond
+                                     ((string= (script-name*) "/send-all-reminders") 30)
+                                     ((string= (script-name*) "/admin/sendmail") 600)
+                                     (t 5))
                                    5))
                                (unwind-protect
-                                 (apply (fdefinition rule-function) (coerce results 'list)) 
+                                 (apply (fdefinition rule-function) (coerce results 'list))
                                  (unschedule-timer timer)))))
                     (finally
                       (setf (return-code*) +http-method-not-allowed+)
