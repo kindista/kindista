@@ -312,13 +312,13 @@
                                  (send-metric (acceptor-metric-system acceptor) :active *userid*))
                                (schedule-timer
                                  timer
-                                 (if (string= (header-in* :x-real-ip)
-                                                   *local-ip-address*)
-                                   (cond
-                                     ((string= (script-name*) "/send-all-reminders") 30)
-                                     ((string= (script-name*) "/admin/sendmail") 600)
-                                     (t 5))
-                                   5))
+                                 (cond
+                                   ((and (string= (header-in* :x-real-ip) *local-ip-address*)
+                                         (string= (script-name*) "/send-all-reminders"))
+                                    30)
+                                   ((and (getf *user* :admin)
+                                         (string= (script-name*) "/admin/sendmail")) 600)
+                                   (t 5)))
                                (unwind-protect
                                  (apply (fdefinition rule-function) (coerce results 'list))
                                  (unschedule-timer timer)))))
