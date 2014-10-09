@@ -313,7 +313,7 @@
               (str (person-link (getf gratitude-data :author)))))
           (:request
             (htm
-              (str (person-link (getf on-data :by)))
+              (str (name-list (getf gratitude-data :subjects)))
               " fulfilled "
               (str (person-link (getf gratitude-data :author) :possessive t))
               (:a :href on-url "request")

@@ -288,7 +288,7 @@
       (str (timestamp (result-time result)))
       (:p (str (person-link (first (result-people result)))) " joined Kindista"))))
 
-(defun inventory-activity-item (result &key truncate show-distance show-what show-tags)
+(defun inventory-activity-item (result &key truncate show-distance show-what show-tags (show-when t))
   (let* ((user-id (first (result-people result)))
          (self (eql user-id *userid*))
          (item-id (result-id result))
@@ -303,7 +303,7 @@
 
     (activity-item :id item-id
                    :url item-url
-                   :time (result-time result)
+                   :time (when show-when (result-time result))
                    :edit (or self group-adminp (getf *user* :admin))
                    :deactivate (or self group-adminp (getf *user* :admin))
                    :admin-delete (and (getf *user* :admin)

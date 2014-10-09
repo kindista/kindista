@@ -1,5 +1,4 @@
 ;;; Copyright 2012-2013 CommonGoods Network, Inc.
-
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -273,11 +272,11 @@
   (flet ((indirect-object (initiator)
            (case initiator
              (:transaction
-               (if (eql transaction-by-id *userid*)
+               (if (eql transaction-by-id userid)
                  "you"
                  transaction-by-name))
              (:inventory
-               (if (eql inventory-by-id *userid*)
+               (if (eql inventory-by-id userid)
                  "you"
                  inventory-by-name)))))
   (strcat*
@@ -448,12 +447,6 @@
                    "I want to share this"))
 
             (str (transaction-button
-                   "withhold"
-                   (icon "withhold")
-                   "I can't fulfill this request now"
-                   "I can't share this now"))
-
-            (str (transaction-button
                    "already-given"
                    (icon "gift")
                    (s+ "I have fulfilled this request for " other-party-name)
@@ -470,6 +463,12 @@
                    (icon "gift")
                    (s+ "I have received this from " other-party-name)
                    (s+ "I have received this from " other-party-name)))
+
+            (str (transaction-button
+                   "withhold"
+                   (icon "withhold")
+                   "I can't fulfill this request now"
+                   "I can't share this now"))
 
             (str (transaction-button
                    "decline"
@@ -672,7 +671,7 @@
                (:requested
                  (case (getf other-party-event :action)
                    (:gave '("post-gratitude" "dispute"))
-                   (t '("decline" "already-received"))))
+                   (t '("already-received" "decline"))))
                (:declined '("want" "already-received"))
                (:disputed '("already-received"))
                (:received '("post-gratitude"))
@@ -686,7 +685,7 @@
               (case (getf current-event :action)
                 (:offered
                   (unless (eq (getf other-party-event :action) :received)
-                    '("withhold" "already-given")))
+                    '("already-given" "withhold")))
                 (:withheld '("will-give"))
                 (t (unless (eq (getf current-event :action) :gave)
                      '("will-give" "already-given"))))))))
@@ -841,6 +840,7 @@
                (mailbox (assoc-assoc *userid* people))
                (party (car mailbox))
                (people-list (all-message-people message))
+               (participants (getf transaction :participants))
                (action-string (post-parameter-string "transaction-action"))
                (action)
                (other-party-name)
@@ -878,6 +878,9 @@
                          (amodify-db id :message-folders folders
                                         :log (append it (list log-event))))
                        (unless (eq action :received)
+                         (flash "Your action has been recorded and the other party will be notified.")
+                         (contact-opt-out-flash participants
+                                                :item-type "transaction")
                          (notice :new-transaction-action :time time
                                                          :transaction-id id
                                                          :log-event log-event))
@@ -891,7 +894,7 @@
 
                 ((post-parameter "text")
                  (flash "Your message has been sent.")
-                 (contact-opt-out-flash (mapcar #'caar people))
+                 (contact-opt-out-flash participants)
                  (let* ((time (get-universal-time))
                         (new-comment-id (create-comment :on id
                                                         :text (post-parameter "text")

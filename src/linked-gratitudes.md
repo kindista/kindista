@@ -20,37 +20,37 @@
 [x] finish editing indirect-object for transaction action text
 [x] finish transaction-othe-party function
 [x] test new email notification
-[ ] transaction action for cancelling an action
 [ ] calculate number of transactions pending gratitude
    - number for user
    - number for user's groups
+
+
+![ ] sending reply (no transaction-action) is busted
+
+
 [x] allow giver to deactivate an offer within the trasaction UI
 [x] test deleting gratitude
 [x] choose options and language to display based on current data structure (current state of participant role)
-[x] change :log as necessary with each new comment
 [ ] prompt statement of gratitude as necessary (in inbox, through email, through (see-other...) etc.
 [ ] test deleting inappropriate offer/request/pending-account
 [x] inbox items have gratitude post link after gratitude has been posted
 [x] gratitude activity item doesn't include the title for the on-item description
 [x] maybe remove the "has shared this again" link from completed transactions
-[ ] remove dates from offers/requests pages
+[x] remove dates from offers/requests pages
 [x] big fucking button on inventory items to request/offer or reply
 [ ] test "on behalf of" in group transaction email titles has html
-[ ] test replying w/o offering/requesting
-[ ] test offering/requesting w/o a message
+[x] test replying w/o offering/requesting
+[x] test offering/requesting w/o a message
 [ ] test to make sure requesting/offering w/ a comment sends only one email
 [x] change transaction email text before link
-[ ] only one link in a message
-[ ] only one link in gratitude
 [x] change the inbox message for transactions where last action is a message
-[ ] activity/home link
-[ ] fulfilled request has incorrect identity
-[ ] remove the other party's name from transaction option buttons and make them actual buttons
-[ ] confirm page for receipt or having given it
+[ ] make transaction option buttons actual buttons
+[x] flashes when posting new transaction actions to let user know something happend
+[ ] test flash when the other user(s) have opted out from receiving notifications
+[x] confirm page for receipt or having given it
 [x] on confirm receipt, send an email "congrats on receiving a gift, post gratitude"
 [ ] remove the option to message when it's time to post gratitude
-[ ] when you post an offer/request, flash "congrats, your offer/req has been posted"
-[ ] top line of transaction should be a status of what's happening below
+[x] when you post an offer/request, flash "congrats, your offer/req has been posted"
 [ ] change news to "current activity"
 
 ## TEST before server migration

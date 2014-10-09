@@ -494,7 +494,8 @@
                     "<a href=\"/settings/communication\">"
                     "communication settings</a>.</p>")  :error t))
         (self-opt-out
-          (flash (s+ "<p>You have chosen not to be notified when people send "
+          (flash (s+ "<p>You have chosen not to be receive email"
+                     " notifiactions when people send "
                      "messages to you through Kindista.</p>"
                      "<p>In order to be notified when someone replies "
                      "to this " item-type

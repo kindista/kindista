@@ -401,6 +401,23 @@
                   (see-other "/home"))
                 (progn
                   (contact-opt-out-flash (list *userid*) :item-type type)
+                  (flash
+                    (s+ "Congratulations, your "
+                        type
+                        " has been posted! "
+                        " You will "
+                        (if (getf *user* :notify-message)
+                          " will be notified by email "
+                          " will recieve a notification on Kindista ")
+                        (s+ "when someone wants to "
+                            (if (string= type "offer")
+                              "receive this from you. "
+                              "wants to share this with you. "))
+                        " As a reminder, you are under no obligation to "
+                        (if (string= type "offer")
+                          "share with anyone"
+                          "accept gifts from anyone")
+                        "; you decide who you want to share with on Kindista."))
                   (when (string= type "offer")
                     (update-matchmaker-offer-data new-id))
                   (see-other (format nil (strcat "/" type "s/" new-id))))))
@@ -438,7 +455,7 @@
                   (or (string= action-type "offer")
                       (string= action-type "request"))))
          (create-transaction :on id
-                             :text (post-parameter "reply-text")
+                             :text (post-parameter-string "reply-text")
                              :action (cond
                                        ((string= action-type "offer")
                                         :offered)
@@ -902,6 +919,7 @@
 
                 ((and (>= i start) items)
                  (str (inventory-activity-item (pop items)
+                                               :show-when nil
                                                :show-distance t
                                                :truncate t
                                                :show-tags t)))

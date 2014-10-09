@@ -52,7 +52,7 @@
                                              "you")
                                            transaction-url
                                            :html-p html-p))
-           (notification-text (&key title-p (html-p nil))
+           (notification-text (userid &key title-p (html-p nil))
              (cond
                ((and (eq (getf log-event :action) :gave) title-p)
                 "Please confirm the gift you received through Kindista")
@@ -62,6 +62,7 @@
                     log-event
                     transaction
                     inventory-item
+                    :userid userid
                     :inventory-descriptor (case on-type
                                             (:offer "an offer")
                                             (:request "a request")))))))
@@ -70,25 +71,26 @@
       (let ((recipient (db recipient-id))
             (recipient-group-id (cdar (assoc-assoc recipient-id
                                                    (getf transaction :people)))))
-        (cl-smtp:send-email
-          +mail-server+
-          "PleaseDoNotReply <noreply@kindista.org>"
-           (car (getf recipient :emails))
-           (notification-text :title-p t)
-           (transaction-action-notification-email-text
-             (getf other-party :name)
-             event-actor-name
-             transaction-url
-             recipient-group-id
-             :text (notification-text)
-             :message message)
-           :html-message (transaction-action-notification-email-html
-                           (getf other-party :name)
-                           event-actor-name
-                           transaction-url
-                           recipient-group-id
-                           :text (notification-text :html-p t)
-                           :message message))))))
+        (when (getf recipient :notify-message)
+          (cl-smtp:send-email
+            +mail-server+
+            "PleaseDoNotReply <noreply@kindista.org>"
+             (car (getf recipient :emails))
+             (notification-text recipient-id :title-p t)
+             (transaction-action-notification-email-text
+               (getf other-party :name)
+               event-actor-name
+               transaction-url
+               recipient-group-id
+               :text (notification-text recipient-id)
+               :message message)
+             :html-message (transaction-action-notification-email-html
+                             (getf other-party :name)
+                             event-actor-name
+                             transaction-url
+                             recipient-group-id
+                             :text (notification-text recipient-id :html-p t)
+                             :message message)))))))
 
 (defun gift-given-notification-text
   (giver-name
