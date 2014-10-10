@@ -3502,6 +3502,16 @@ span.highlight {
 
 .inventory-reply blockquote {
  margin-bottom: 1em;
+ padding: 0.5em 0.4em;
+}
+
+.inventory-reply blockquote p {
+ margin: 0;
+}
+
+.inventory-reply blockquote strong {
+ display: inline-block;
+ margin-bottom: 0.4em;
 }
 
 .transaction #body > h2 {
@@ -3581,6 +3591,12 @@ div.transaction-option button > img,
 div.transaction-options a > img {
  vertical-align: middle;
  margin-right: 0.5em;
+ height: auto;
+}
+
+.transaction div.post-gratitude h4 {
+ margin-top: 1.3em;
+ font-size: 1.2em;
 }
 
 .transaction div#transaction-history {

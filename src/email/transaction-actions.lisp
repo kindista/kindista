@@ -23,9 +23,16 @@
    &optional message
    &aux (transaction (db transaction-id))
         (inventory-id (getf transaction :on))
-        (inventory-item (db inventory-id))
-        (on-type (getf inventory-item :type))
-        (event-party (getf log-event :party))
+        (on-item (db inventory-id))
+        (on-type (getf on-item :type))
+        (on-type-string (case on-type
+                          (:offer "offer")
+                          (:request "request")))
+        (on-title (getf on-item :title))
+        (on-details (getf on-item :details))
+        (event-party (if (getf transaction :log)
+                       (getf log-event :party)
+                       (list (getf transaction :by))))
         (event-actor-id (car event-party))
         (event-actor (db event-actor-id))
         (event-actor-name (getf event-actor :name))
@@ -33,11 +40,10 @@
         (other-party-id (transaction-other-party transaction-id
                                                  event-actor-id))
         (other-party (db other-party-id))
-        (recipients (case (getf other-party :type)
-                      (:group
-                        (getf other-party :admins))
-                      (:person
-                        (list other-party-id))))
+        (other-party-is-group-p (eq (getf other-party :type) :group))
+        (recipients (if other-party-is-group-p
+                      (getf other-party :admins)
+                      (list other-party-id)))
         (transaction-url (strcat +base-url+
                                  "transactions/"
                                  transaction-id)))
@@ -58,10 +64,18 @@
                 "Please confirm the gift you received through Kindista")
                ((eq (getf log-event :action) :gave)
                 (gift-text :html-p html-p))
+               ((not log-event)
+                (s+ event-actor-name
+                    " replied to "
+                    (if other-party-is-group-p
+                      (s+ (getf other-party :name) "'s ")
+                      "your ")
+                    on-type-string
+                    (unless title-p ".")))
                (t (transaction-action-text
                     log-event
                     transaction
-                    inventory-item
+                    on-item
                     :userid userid
                     :inventory-descriptor (case on-type
                                             (:offer "an offer")
@@ -82,6 +96,9 @@
                event-actor-name
                transaction-url
                recipient-group-id
+               :on-title on-title
+               :on-details on-details
+               :on-type-string on-type-string
                :text (notification-text recipient-id)
                :message message)
              :html-message (transaction-action-notification-email-html
@@ -89,6 +106,9 @@
                              event-actor-name
                              transaction-url
                              recipient-group-id
+                             :on-title on-title
+                             :on-details on-details
+                             :on-type-string on-type-string
                              :text (notification-text recipient-id :html-p t)
                              :message message)))))))
 
@@ -119,7 +139,10 @@
   (name other-party-name
         url
         recipient-group-id
-        &key text
+        &key on-title
+             on-details
+             on-type-string
+             text
              message)
   (strcat*
 (no-reply-notice " use the link below to reply to this transaction on Kindista.org")
@@ -127,6 +150,10 @@
 "Hi " name ","
 #\linefeed #\linefeed
 text
+#\linefeed #\linefeed
+(string-capitalize on-type-string) " details:"
+#\linefeed
+(ellipsis (or on-title on-details))
 (when message
   (strcat* #\linefeed #\linefeed
            other-party-name
@@ -151,7 +178,15 @@ url
 "-The Kindista Team"))
 
 (defun transaction-action-notification-email-html
-  (name other-party-name url recipient-group-id &key text message)
+  (name
+   other-party-name
+   url
+   recipient-group-id
+   &key on-title
+        on-details
+        on-type-string
+        text
+        message)
   (html-email-base
     (html
       (:p :style *style-p* (:strong (str (no-reply-notice " use the link below to reply to this transaction on Kindista.org"))))
@@ -159,6 +194,13 @@ url
       (:p :style *style-p* "Hi " (str name) ",")
 
       (:p :style *style-p* (str text))
+
+     (:p :style *style-p*
+      (str (string-capitalize on-type-string)) " details:")
+     (:table :cellspacing 0 :cellpadding 0
+             :style *style-quote-box*
+       (:tr (:td :style "padding: 4px 12px;"
+              (str (ellipsis (or on-title on-details))))))
 
       (when message
         (htm

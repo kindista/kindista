@@ -590,7 +590,7 @@
                    (if (db by :pending)
                      (delete-pending-inventory-item id)
                      (deactivate-inventory-item id))
-                   (flash (strcat (string-capitalize type) " " id " has been deleted."))
+                   (flash (strcat (string-capitalize type) " " id " has been deactivated."))
                    (see-other (if (string= (post-parameter "next")
                                            (strcat "/" type "s/" id))
                                 "/home"

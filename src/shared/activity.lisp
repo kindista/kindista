@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker)
+(defun activity-item (&key id url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t))
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -63,7 +63,7 @@
       (:div :class "item-text"(str content))
       (when (and matchmaker related-items)
         (str related-items))
-      (when *user*
+      (when (and *user* show-actions)
         (htm
           (:div :class "actions"
             (str (activity-icons :hearts hearts :comments comments :url url))
@@ -209,7 +209,7 @@
                                  :see-more item-url)
                        (html-text (getf data :details)))))))))
 
-(defun gratitude-activity-item (result &key truncate reciprocity (show-on-item t))
+(defun gratitude-activity-item (result &key truncate reciprocity (show-on-item t) (show-when t) (show-actions t))
          ; result-people is a list
          ; car of list is person showing gratitude
          ; cdr of list is subjects
@@ -229,7 +229,8 @@
     (str (activity-item :id item-id
                    :url item-url
                    :class "gratitude"
-                   :time (result-time result)
+                   :time (when show-when (result-time result))
+                   :show-actions show-actions
                    :edit (when (or self adminp (getf *user* :admin)) t)
                    :image-text (when (or self adminp)
                                  (if images

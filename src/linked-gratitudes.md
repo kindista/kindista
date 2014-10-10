@@ -23,22 +23,16 @@
 [ ] calculate number of transactions pending gratitude
    - number for user
    - number for user's groups
-
-
-![ ] sending reply (no transaction-action) is busted
-
-
 [x] allow giver to deactivate an offer within the trasaction UI
 [x] test deleting gratitude
 [x] choose options and language to display based on current data structure (current state of participant role)
-[ ] prompt statement of gratitude as necessary (in inbox, through email, through (see-other...) etc.
+[x] prompt statement of gratitude as necessary (in inbox, through email, through (see-other...) etc.
 [ ] test deleting inappropriate offer/request/pending-account
 [x] inbox items have gratitude post link after gratitude has been posted
 [x] gratitude activity item doesn't include the title for the on-item description
 [x] maybe remove the "has shared this again" link from completed transactions
 [x] remove dates from offers/requests pages
 [x] big fucking button on inventory items to request/offer or reply
-[ ] test "on behalf of" in group transaction email titles has html
 [x] test replying w/o offering/requesting
 [x] test offering/requesting w/o a message
 [ ] test to make sure requesting/offering w/ a comment sends only one email

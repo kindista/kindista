@@ -410,7 +410,9 @@
    on-type
    on-url
    url
-   &key (comment-p t))
+   &key (comment-p t)
+        representing-group-p
+   &aux (subject (if representing-group-p "We" "I")))
   (html
     (:h2 "Options:")
     (:div :class "transaction-options"
@@ -420,7 +422,7 @@
           (:div :class "transaction-option"
             (:a :href (url-compose url "post-gratitude" "t")
               (str (icon "heart-person"))
-              (str (s+ "I have gratitude to share about "
+              (str (s+ subject " have gratitude to share about "
                        other-party-name
                        " for this gift"))))))
 
@@ -443,44 +445,44 @@
             (str (transaction-button
                    "will-give"
                    (icon "offers")
-                   "I want to fulfill this request"
-                   "I want to share this"))
+                   (s+ subject " want to fulfill this request")
+                   (s+ subject " want to share this")))
 
             (str (transaction-button
                    "already-given"
                    (icon "gift")
-                   (s+ "I have fulfilled this request for " other-party-name)
-                   (s+ "I have shared this with " other-party-name)))
+                   (s+ subject " have fulfilled this request for " other-party-name)
+                   (s+ subject " have shared this with " other-party-name)))
 
             (str (transaction-button
                    "want"
                    (icon "requests")
-                   (s+ "I want what " other-party-name " is offering")
-                   "I want to recieve this"))
+                   (s+ subject " want what " other-party-name " is offering")
+                   (s+ subject " want to recieve this")))
 
             (str (transaction-button
                    "already-received"
                    (icon "gift")
-                   (s+ "I have received this from " other-party-name)
-                   (s+ "I have received this from " other-party-name)))
+                   (s+ subject " have received this from " other-party-name)
+                   (s+ subject " have received this from " other-party-name)))
 
             (str (transaction-button
                    "withhold"
                    (icon "withhold")
-                   "I can't fulfill this request now"
-                   "I can't share this now"))
+                   (s+ subject " can't fulfill this request now")
+                   (s+ subject " can't share this now")))
 
             (str (transaction-button
                    "decline"
                    (icon "decline")
-                   (s+ "I don't want what " other-party-name " is offering")
-                   "I no longer want this"))
+                   (s+ subject " don't want what " other-party-name " is offering")
+                   (s+ subject " no longer want this")))
 
             (str (transaction-button
                    "dispute"
                    (icon "caution")
-                   "I have <strong>not</strong> yet received this"
-                   "I have <strong>not</strong> yet received this"))))
+                   (s+ subject " have <strong>not</strong> yet received this")
+                   (s+ subject " have <strong>not</strong> yet received this")))))
 
         (when (find "deactivate" transaction-options :test #'string=)
           (htm
@@ -491,8 +493,8 @@
                     (icon (if (eql on-type :offer)
                             "empty-giving-hand"
                             "empty-receiving-hand"))
-                    (s+ "I am no longer requesting this.  Please deactivate it.")
-                    (s+ "I am no longer offering this.  Please deactivate it.")
+                    (s+ subject " no longer request this.  Please deactivate it.")
+                    (s+ subject " no longer offer this.  Please deactivate it.")
                     t
                     "deactivate"))))))
 
@@ -570,31 +572,36 @@
                 (eq status :received)
                 (eq status :disputed)
                 (eq status :gratitude-posted))
-       (htm
-         (:h2 "Progress:")
-         (:table :class "transaction-progress"
-           (:tr :class "steps"
-             (:td :class "done"
-               (:div "1. ")
-               (:div (str (if offer-p "Requested" "Offered"))))
-             (:td :class (when (or (and offer-p (eq status :offered))
-                                   (and (not offer-p) (eq status :requested))
-                                   (eq status :gave)
-                                   (eq status :received)
-                                   (eq status :gratitude-posted))
-                           "done")
-               (:div "2. ")
-               (:div (str (if offer-p "Committed" "Accepted"))))
-             (:td :class (when (or (eq status :gratitude-posted)
-                                   (eq status :gave)
-                                   (eq status :received))
-                           "done")
-               (:div "3. ")
-               (:div (str (case role (:giver "Given") (:receiver "Received")))))
-             (:td :class (when (eq status :gratitude-posted)
-                           "done")
-               (:div "4. ")
-               (:div :class "gratitude-step" "Gratitude Posted " (when (eq status :gratitude-posted) (str (icon "white-checkmark")))))))))
+
+       (flet ((find-status (status) (find status (getf data :log)
+                                          :key #'(lambda (event)
+                                                   (getf event :action)))))
+         (htm
+           (:h2 "Progress:")
+           (:table :class "transaction-progress"
+             (:tr :class "steps"
+               (:td :class "done"
+                 (:div "1. ")
+                 (:div (str (if offer-p "Requested" "Offered"))))
+               (:td :class (when (or (and offer-p (find-status :offered))
+                                     (and (not offer-p)
+                                          (find-status :requested))
+                                     (eq status :gave)
+                                     (eq status :received)
+                                     (eq status :gratitude-posted))
+                             "done")
+                 (:div "2. ")
+                 (:div (str (if offer-p "Committed" "Accepted"))))
+               (:td :class (when (or (eq status :gratitude-posted)
+                                     (eq status :gave)
+                                     (eq status :received))
+                             "done")
+                 (:div "3. ")
+                 (:div (str (case role (:giver "Given") (:receiver "Received")))))
+               (:td :class (when (eq status :gratitude-posted)
+                             "done")
+                 (:div "4. ")
+                 (:div :class "gratitude-step" "Gratitude Posted " (when (eq status :gratitude-posted) (str (icon "white-checkmark"))))))))))
 
      (when status
        (htm (:h2 "Status:")
@@ -603,6 +610,8 @@
                 (str (gratitude-activity-item
                        (gethash (getf most-recent-log-event :comment)
                                 *db-results*)
+                       :show-when nil
+                       :show-actions nil
                        :show-on-item nil)))
               (t
                 (htm
@@ -753,6 +762,10 @@
                  (other-party-name)
                  (user-role)
                  (post-gratitude-p (get-parameter-string "post-gratitude"))
+                 (gratitude-posted-p (find :gratitude-posted
+                                           (getf transaction :log)
+                                           :key #'(lambda (event)
+                                                    (getf event :action))))
                  (with (remove *userid* (getf transaction :participants)))
                  (deleted-type (getf transaction :deleted-item-type))
                  (on-type (getf on-item :type))
@@ -769,8 +782,12 @@
               (setf user-role role)
               (setf other-party (car (remove speaking-for with)))
               (setf other-party-name (db other-party :name))
-              (when (or (eq (getf current-event :action) :received)
-                        (eq (getf other-party-event :action) :gave))
+              (when (and
+                      (eq user-role :receiver)
+                      (not gratitude-posted-p)
+                      (or (eq (getf current-event :action) :received)
+                          (and (eq (getf other-party-event :action) :gave)
+                               (not (eq (getf current-event :action) :disputed)))))
                 (flash (strcat "Please post a "
                                "<a href=\"/transactions/"
                                id
@@ -795,36 +812,38 @@
 
                 (update-folder-data message :read :last-read-comment (message-latest-comment message)))
 
-              (transaction-html id
-                                on-item
-                                user-role
-                                other-party
-                                (transaction-history id
-                                                     on-id
-                                                     latest-seen)
-                                (cond
-                                  (post-gratitude-p
-                                    (simple-gratitude-compose
-                                      other-party
-                                      :next url
-                                      :transaction-id id
-                                      :post-as speaking-for
-                                      :on-id on-id
-                                      :submit-name "create"
-                                      :autofocus-p t
-                                      :button-location :bottom))
-                                  (add-comment
-                                    (transaction-comment-input id))
-                                  (t (transaction-buttons-html
-                                       transaction-options
-                                       other-party-name
-                                       on-type
-                                       on-url
-                                       url
-                                       :comment-p t
-                                       )))
-                                :data transaction
-                                :deleted-type deleted-type)))
+              (transaction-html
+                id
+                on-item
+                user-role
+                other-party
+                (transaction-history id
+                                     on-id
+                                     latest-seen)
+                (cond
+                  (post-gratitude-p
+                    (simple-gratitude-compose
+                      other-party
+                      :next url
+                      :transaction-id id
+                      :post-as speaking-for
+                      :on-id on-id
+                      :submit-name "create"
+                      :autofocus-p t
+                      :button-location :bottom))
+                  (add-comment
+                    (transaction-comment-input id))
+                  (t (transaction-buttons-html
+                       transaction-options
+                       other-party-name
+                       on-type
+                       on-url
+                       url
+                       :representing-group-p (eq (db speaking-for :type)
+                                                 :group)
+                       :comment-p t)))
+                :data transaction
+                :deleted-type deleted-type)))
 
           (permission-denied))
       (not-found)))))

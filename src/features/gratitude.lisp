@@ -352,7 +352,7 @@
    &aux (groupid (when (eql (getf entity :type) :group) entity-id))
         (submit-button (html (:button :class "yes submit" :type "submit" :name submit-name "Post"))))
   (html
-    (:div :class "item"
+    (:div :class "post-gratitude item"
      (:h4 "Do you have gratitude to share for " (str (getf entity :name)) "?")
      (:form :method "post" :action "/gratitude/new"
        (unless (or post-as (member *userid* (getf entity :admins)))
