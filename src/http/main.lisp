@@ -165,14 +165,16 @@
       nil)))
 
 (defun check-token-cookie ()
-  (let ((token-id (cookie-in "token")))
-    (when token-id
-      (let ((token (check-token token-id)))
-        (when (and (not token) token-id)
-          (delete-token-cookie))
-        token))))
+  (first (remove nil
+                 (mapcar #'check-token
+                         (mapcar #'cdr
+                                 (remove "token" (cookies-in*)
+                                          :key #'car
+                                          :test #'string-not-equal))))))
 
 (defmacro with-token (&body body)
+;;If the token was created less then 30 days ago, get the token, otherwise remove the token and start a new one.
+;;But what happens to the cookie?
   `(let ((*token* (or *token* (check-token-cookie) (start-token))))
      ,@body))
 
@@ -264,13 +266,14 @@
     (set-cookie "token" :value ""
                 :http-only t
                 :expires 0
+                :path "/"
                 :secure nil)))
 
 (defun reset-token-cookie ()
   (awhen (cookie-in "token")
     (awhen (gethash it *tokens*)
       (remhash it *tokens*))
-    (start-token))) 
+    (start-token)))
 
 (defun markdown-file (path)
   (nth-value 1 (markdown (pathname path) :stream nil)))
@@ -289,6 +292,10 @@
   ((metric-system :initform (make-instance 'metric-system)
                   :reader acceptor-metric-system)))
 
+(defun too-many-cookies-p ()
+  (let ((cookies (cookies-in*)))
+    (> (length (remove "token" cookies :key #'car :test #'string-not-equal)) 1)))
+
 (defmethod acceptor-dispatch-request ((acceptor k-acceptor) request)
   (with-token
     (dolist (rule *routes*)
@@ -304,16 +311,20 @@
                     (for rule-function in (cdadr rule) by #'cddr)
                     (when (eq method rule-method)
                       (leave (with-user
+                               (when (and (eq method :get) (too-many-cookies-p))
+                                 ;; earlier code erroneously set multiple tokens that might need to be cleared
+                                 (set-cookie "token" :value "" :expires 0 :path (script-name*)) )
                                (when *userid*
                                  (send-metric (acceptor-metric-system acceptor) :active *userid*))
                                (schedule-timer
                                  timer
-                                 (if (and (string= (header-in* :x-real-ip)
-                                                   *local-ip-address*)
-                                          (string= (script-name*)
-                                                   "/send-all-reminders"))
-                                   30
-                                   5))
+                                 (cond
+                                   ((and (string= (header-in* :x-real-ip) *local-ip-address*)
+                                         (string= (script-name*) "/send-all-reminders"))
+                                    30)
+                                   ((and (getf *user* :admin)
+                                         (string= (script-name*) "/admin/sendmail")) 600)
+                                   (t 5)))
                                (unwind-protect
                                  (apply (fdefinition rule-function) (coerce results 'list))
                                  (unschedule-timer timer)))))
