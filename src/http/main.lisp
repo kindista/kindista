@@ -57,6 +57,12 @@
     (see-other "/home")
     (see-other (or (referer) "/home"))))
 
+(defun item-violates-terms ()
+  (flash "This item violated Kindista's Terms of Use and has been deactivated." :error t)
+  (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
+    (see-other "/home")
+    (see-other (or (referer) "/home"))))
+
 (defun login-required ()
   (flash "The page you requested is only available when you are logged in to Kindista." :error t)
   (see-other (url-compose "/login" "next" (request-uri*))))

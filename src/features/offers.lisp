@@ -57,6 +57,11 @@
            (not (eql (getf offer :type) :offer)))
        (not-found))
 
+     ((and (getf offer :violates-terms)
+           (not mine)
+           (not (getf *user* :admin)))
+        (item-violates-terms))
+
      ((and (not mine)
            (item-view-denied (result-privacy result)))
        (permission-denied))

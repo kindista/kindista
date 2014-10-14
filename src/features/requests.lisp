@@ -54,9 +54,15 @@
           (not (eql (getf request :type) :request)))
       (not-found))
 
+     ((and (getf request :violates-terms)
+           (not self)
+           (not (getf *user* :admin)))
+        (item-violates-terms))
+
      ((and (not self)
            (item-view-denied (result-privacy result)))
        (permission-denied))
+
      (t
       (with-location
         (standard-page

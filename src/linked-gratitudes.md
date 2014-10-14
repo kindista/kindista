@@ -30,15 +30,13 @@
 [ ] test deleting inappropriate offer/request/pending-account
 [x] inbox items have gratitude post link after gratitude has been posted
 [x] gratitude activity item doesn't include the title for the on-item description
-[x] maybe remove the "has shared this again" link from completed transactions
 [x] remove dates from offers/requests pages
 [x] big fucking button on inventory items to request/offer or reply
 [x] test replying w/o offering/requesting
 [x] test offering/requesting w/o a message
 [ ] test to make sure requesting/offering w/ a comment sends only one email
 [x] change transaction email text before link
-[x] change the inbox message for transactions where last action is a message
-[ ] make transaction option buttons actual buttons
+[x] change the inbox message for transactions where last action is a message [ ] make transaction option buttons actual buttons
 [x] flashes when posting new transaction actions to let user know something happend
 [ ] test flash when the other user(s) have opted out from receiving notifications
 [x] confirm page for receipt or having given it

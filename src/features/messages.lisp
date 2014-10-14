@@ -565,7 +565,8 @@
        ;(group-name (cdr (assoc (car participants) groups)))
        ;(with (or (getf inventory-item :by)
        ;          (first (remove *userid* participants))))
-        (comment-count (length (getf transaction :log)))
+        (comment-count (+ (length (getf transaction :log))
+                          (length (gethash id *comment-index*))))
         (text (cond
                 ((and (= comment-count 1) deleted-type)
                  (deleted-invalid-item-reply-text
@@ -583,6 +584,9 @@
         (pending-gratitude-p (transaction-pending-gratitude-p id transaction))
         (role)
         (representing))
+
+  (pprint (strcat subject " " comment-count " " text))
+  (terpri)
 
   (multiple-value-bind (options representing-whom user-role)
     (transaction-options-for-user id :transaction transaction)

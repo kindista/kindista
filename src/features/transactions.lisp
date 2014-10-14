@@ -36,8 +36,11 @@
   (let* ((time (get-universal-time))
          (on-item (db on))
          (by (getf on-item :by))
-         (participants (list userid by))
-         (senders (mailbox-ids (list userid)))
+         (item-violates-terms-p (and (getf *user* :admin) pending-deletion))
+         (participants (list (if item-violates-terms-p +kindista-id+ userid) by))
+         (senders (if item-violates-terms-p
+                    (mailbox-ids (list +kindista-id+))
+                    (mailbox-ids (list userid))))
          (bys (mailbox-ids (list by)))
          (sender-boxes (mapcar #'(lambda (mailbox)
                                    (cons mailbox :read))
@@ -50,14 +53,13 @@
          (message-folders (list :inbox people-ids
                                 :unread (remove userid people-ids)))
          (log (when action (list (list :time time :party (list userid) :action action))))
-         (id (insert-db (if pending-deletion
+         (id (insert-db (if item-violates-terms-p
                           (list :type :transaction
                                 :on on
-                                :deleted-item-text (getf on-item :text)
                                 :deleted-item-details (getf on-item :details)
                                 :deleted-item-title (getf on-item :title)
                                 :deleted-item-type (getf on-item :type)
-                                :by userid
+                                :by +kindista-id+
                                 :participants participants
                                 :message-folders message-folders
                                 :people people
@@ -72,7 +74,9 @@
                                 :created time)))))
 
     (when text (create-comment :on id
-                               :by (list userid)
+                               :by (if item-violates-terms-p
+                                     (cons userid +kindista-id+)
+                                     (list userid))
                                :text text
                                :send-email-p nil
                                :time (+ time 1) ; if there is both text/action, they need separate times for sorting in transaction log UI display
@@ -412,12 +416,14 @@
    url
    &key (comment-p t)
         representing-group-p
+        violates-terms
    &aux (subject (if representing-group-p "We" "I")))
   (html
     (:h2 "Options:")
     (:div :class "transaction-options"
 
-      (when (find "post-gratitude" transaction-options :test #'string=)
+      (when (and (find "post-gratitude" transaction-options :test #'string=)
+                 (not violates-terms))
         (htm
           (:div :class "transaction-option"
             (:a :href (url-compose url "post-gratitude" "t")
@@ -439,52 +445,54 @@
                       (str (if (eq on-type :request)
                              request-text offer-text))))))))
 
-        (htm
-          (:form :method "post" :action url
+        (unless violates-terms
+          (htm
+            (:form :method "post" :action url
 
-            (str (transaction-button
-                   "will-give"
-                   (icon "offers")
-                   (s+ subject " want to fulfill this request")
-                   (s+ subject " want to share this")))
+              (str (transaction-button
+                     "will-give"
+                     (icon "offers")
+                     (s+ subject " want to fulfill this request")
+                     (s+ subject " want to share this")))
 
-            (str (transaction-button
-                   "already-given"
-                   (icon "gift")
-                   (s+ subject " have fulfilled this request for " other-party-name)
-                   (s+ subject " have shared this with " other-party-name)))
+              (str (transaction-button
+                     "already-given"
+                     (icon "gift")
+                     (s+ subject " have fulfilled this request for " other-party-name)
+                     (s+ subject " have shared this with " other-party-name)))
 
-            (str (transaction-button
-                   "want"
-                   (icon "requests")
-                   (s+ subject " want what " other-party-name " is offering")
-                   (s+ subject " want to recieve this")))
+              (str (transaction-button
+                     "want"
+                     (icon "requests")
+                     (s+ subject " want what " other-party-name " is offering")
+                     (s+ subject " want to recieve this")))
 
-            (str (transaction-button
-                   "already-received"
-                   (icon "gift")
-                   (s+ subject " have received this from " other-party-name)
-                   (s+ subject " have received this from " other-party-name)))
+              (str (transaction-button
+                     "already-received"
+                     (icon "gift")
+                     (s+ subject " have received this from " other-party-name)
+                     (s+ subject " have received this from " other-party-name)))
 
-            (str (transaction-button
-                   "withhold"
-                   (icon "withhold")
-                   (s+ subject " can't fulfill this request now")
-                   (s+ subject " can't share this now")))
+              (str (transaction-button
+                     "withhold"
+                     (icon "withhold")
+                     (s+ subject " can't fulfill this request now")
+                     (s+ subject " can't share this now")))
 
-            (str (transaction-button
-                   "decline"
-                   (icon "decline")
-                   (s+ subject " don't want what " other-party-name " is offering")
-                   (s+ subject " no longer want this")))
+              (str (transaction-button
+                     "decline"
+                     (icon "decline")
+                     (s+ subject " don't want what " other-party-name " is offering")
+                     (s+ subject " no longer want this")))
 
-            (str (transaction-button
-                   "dispute"
-                   (icon "caution")
-                   (s+ subject " have <strong>not</strong> yet received this")
-                   (s+ subject " have <strong>not</strong> yet received this")))))
+              (str (transaction-button
+                     "dispute"
+                     (icon "caution")
+                     (s+ subject " have <strong>not</strong> yet received this")
+                     (s+ subject " have <strong>not</strong> yet received this"))))))
 
-        (when (find "deactivate" transaction-options :test #'string=)
+        (when (and (find "deactivate" transaction-options :test #'string=)
+                   (not violates-terms))
           (htm
             (:form :method "post" :action on-url
              (:input :type "hidden" :name "next" :value url)
@@ -539,6 +547,11 @@
   (standard-page
     "Transaction"
     (html
+      (when (getf on-item :violates-terms)
+        (flash (s+ "This "
+                   (string-downcase (symbol-name (getf on-item :type)))
+                   " violated Kindista's Terms of Use and has been deactivated.")
+               :error t))
       (:h2 "A "
            (str (if status "transaction" "conversation"))
            " with "
@@ -566,12 +579,13 @@
                  (str (ellipsis (or (getf on-item :title)
                                     (getf on-item :details)))))))))
 
-     (when  (or (eq status :offered)
-                (eq status :requested)
-                (eq status :gave)
-                (eq status :received)
-                (eq status :disputed)
-                (eq status :gratitude-posted))
+     (when  (and (or (eq status :offered)
+                     (eq status :requested)
+                     (eq status :gave)
+                     (eq status :received)
+                     (eq status :disputed)
+                     (eq status :gratitude-posted))
+                 (not (getf on-item :violates-terms)))
 
        (flet ((find-status (status) (find status (getf data :log)
                                           :key #'(lambda (event)
@@ -841,6 +855,7 @@
                        url
                        :representing-group-p (eq (db speaking-for :type)
                                                  :group)
+                       :violates-terms (getf on-item :violates-terms)
                        :comment-p t)))
                 :data transaction
                 :deleted-type deleted-type)))

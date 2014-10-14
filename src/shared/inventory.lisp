@@ -206,7 +206,7 @@
                   (modify-matchmaker id)
                   (update-matchmaker-request-data id))))))
 
-(defun deactivate-inventory-item (id)
+(defun deactivate-inventory-item (id &key violates-terms)
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
@@ -274,7 +274,7 @@
         (with-mutex (*recent-activity-mutex*)
           (asetf *recent-activity-index* (remove id it :key #'result-id)))))
 
-    (modify-db id :active nil)))
+    (modify-db id :active nil :violates-terms violates-terms)))
 
 (defun delete-pending-inventory-item (id)
   (let ((data (db id)))
@@ -589,7 +589,7 @@
                                        :text (post-parameter "explanation"))
                    (if (db by :pending)
                      (delete-pending-inventory-item id)
-                     (deactivate-inventory-item id))
+                     (deactivate-inventory-item id :violates-terms t))
                    (flash (strcat (string-capitalize type) " " id " has been deactivated."))
                    (see-other (if (string= (post-parameter "next")
                                            (strcat "/" type "s/" id))
