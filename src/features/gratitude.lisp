@@ -35,9 +35,8 @@
                                  :text ,text
                                  :on ,on
                                  :created ,time))))
-    (unless (getf *user* :pending)
-      (notice :new-gratitude :time time
-                             :id gratitude))
+    (notice :new-gratitude :time time
+                           :id gratitude)
     gratitude))
 
 (defun add-gratitude-subjects (gratitude-id subject-ids)
@@ -141,7 +140,6 @@
 (defun index-gratitude (id data)
   (let* ((author-id (getf data :author))
          (author (db author-id))
-         (pending (getf author :pending))
          (created (getf data :created))
          (subjects (getf data :subjects))
          (people (cons (getf data :author) subjects))
@@ -152,51 +150,45 @@
                               :type :gratitude
                               :id id)))
 
-    (cond
-      (pending
-       (with-locked-hash-table (*pending-person-items-index*)
-        (push id (gethash author-id *pending-person-items-index*))))
+   (with-locked-hash-table (*db-results*)
+     (setf (gethash id *db-results*) result))
 
-      (t
-       (with-locked-hash-table (*db-results*)
-         (setf (gethash id *db-results*) result))
+   (with-locked-hash-table (*gratitude-index*)
+     (push id (gethash author-id *gratitude-index*)))
 
-       (with-locked-hash-table (*gratitude-index*)
-         (push id (gethash author-id *gratitude-index*)))
+   (with-locked-hash-table (*profile-activity-index*)
+     (dolist (person people)
+       (asetf (gethash person *profile-activity-index*)
+              (safe-sort (push result it) #'> :key #'result-time))))
 
-       (with-locked-hash-table (*profile-activity-index*)
-         (dolist (person people)
-           (asetf (gethash person *profile-activity-index*)
-                  (safe-sort (push result it) #'> :key #'result-time))))
+   (awhen (getf data :on)
+     (index-gratitude-link id it created))
 
-       (awhen (getf data :on)
-         (index-gratitude-link id it created))
+   (unless (getf data :transaction-id)
+     (index-message id data))
 
-       (unless (getf data :transaction-id)
-         (index-message id data))
+   ;; unless gratitude is older than 180 days
+   (unless (< (result-time result) (- (get-universal-time) 15552000))
 
-       ;; unless gratitude is older than 180 days
-       (unless (< (result-time result) (- (get-universal-time) 15552000))
+     (geo-index-insert *activity-geo-index* result)
 
-         (geo-index-insert *activity-geo-index* result)
+     ;;unless gratitude is older than 30 days
+     (unless (< (result-time result) (- (get-universal-time) 2592000))
+       (with-mutex (*recent-activity-mutex*)
+         (push result *recent-activity-index*)))
 
-         ;;unless gratitude is older than 30 days
-         (unless (< (result-time result) (- (get-universal-time) 2592000))
-           (with-mutex (*recent-activity-mutex*)
-             (push result *recent-activity-index*)))
-
-         (with-locked-hash-table (*gratitude-results-index*)
-           (dolist (subject subjects)
-             (let* ((user (db subject))
-                    (location (getf user :location))
-                    (result (make-result :type :gratitude
-                                         :latitude (getf user :lat)
-                                         :longitude (getf user :long)
-                                         :people people
-                                         :id id
-                                         :time created)))
-               (push result (gethash id *gratitude-results-index*))
-               (when location (geo-index-insert *activity-geo-index* result))))))))))
+     (with-locked-hash-table (*gratitude-results-index*)
+       (dolist (subject subjects)
+         (let* ((user (db subject))
+                (location (getf user :location))
+                (result (make-result :type :gratitude
+                                     :latitude (getf user :lat)
+                                     :longitude (getf user :long)
+                                     :people people
+                                     :id id
+                                     :time created)))
+           (push result (gethash id *gratitude-results-index*))
+           (when location (geo-index-insert *activity-geo-index* result))))))))
 
 (defun parse-subject-list (subject-list &key remove)
   (delete-duplicates
@@ -417,7 +409,6 @@
       (if existing-url "Edit your statement of gratitude" "Express gratitude")
       (html
         (when error (flash (getf error :text) :error t))
-        (str (pending-disclaimer "statement of gratitude"))
         (:div :class "item"
          (:h2 (str (if existing-url "Edit your statement of gratitude"
                      "Express gratitude")))
@@ -732,7 +723,7 @@
              (if (getf *user* :pending)
                (progn
                  new-id
-                 (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
+                 (flash "Your item has been recorded. It will be posted after you post an offer and we have a chance to review it. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
                  (see-other (or next "/home")))
                (progn
                  (awhen on-id

@@ -20,28 +20,26 @@
 [x] finish editing indirect-object for transaction action text
 [x] finish transaction-othe-party function
 [x] test new email notification
-[ ] calculate number of transactions pending gratitude
+[x] calculate number of transactions pending gratitude
    - number for user
    - number for user's groups
 [x] allow giver to deactivate an offer within the trasaction UI
 [x] test deleting gratitude
 [x] choose options and language to display based on current data structure (current state of participant role)
 [x] prompt statement of gratitude as necessary (in inbox, through email, through (see-other...) etc.
-[ ] test deleting inappropriate offer/request/pending-account
+[x] test deleting inappropriate offer/request/pending-account
 [x] inbox items have gratitude post link after gratitude has been posted
 [x] gratitude activity item doesn't include the title for the on-item description
 [x] remove dates from offers/requests pages
 [x] big fucking button on inventory items to request/offer or reply
 [x] test replying w/o offering/requesting
 [x] test offering/requesting w/o a message
-[ ] test to make sure requesting/offering w/ a comment sends only one email
+[x] test to make sure requesting/offering w/ a comment sends only one email
 [x] change transaction email text before link
-[x] change the inbox message for transactions where last action is a message [ ] make transaction option buttons actual buttons
-[x] flashes when posting new transaction actions to let user know something happend
-[ ] test flash when the other user(s) have opted out from receiving notifications
+[x] change the inbox message for transactions where last action is a message
+[ ] make transaction option buttons actual buttons
 [x] confirm page for receipt or having given it
 [x] on confirm receipt, send an email "congrats on receiving a gift, post gratitude"
-[ ] remove the option to message when it's time to post gratitude
 [x] when you post an offer/request, flash "congrats, your offer/req has been posted"
 [ ] change news to "current activity"
 

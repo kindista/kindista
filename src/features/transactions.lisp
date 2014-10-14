@@ -235,7 +235,9 @@
           (str (conversation-comment-html
                   (getf event :data)
                   (getf event :by)
-                  (getf event :by-name)
+                  (if (eq (getf event :by) *userid*)
+                    "I"
+                    (getf event :by-name))
                   (getf event :for)
                   (getf event :for-name)
                   (getf event :text)
@@ -775,6 +777,7 @@
                  (other-party)
                  (other-party-name)
                  (user-role)
+                 (enable-comment-option-p t)
                  (post-gratitude-p (get-parameter-string "post-gratitude"))
                  (gratitude-posted-p (find :gratitude-posted
                                            (getf transaction :log)
@@ -796,6 +799,9 @@
               (setf user-role role)
               (setf other-party (car (remove speaking-for with)))
               (setf other-party-name (db other-party :name))
+              (when (and (eq user-role :receiver)
+                         (eq (getf current-event :action) :received))
+                (setf enable-comment-option-p nil))
               (when (and
                       (eq user-role :receiver)
                       (not gratitude-posted-p)
@@ -816,13 +822,11 @@
             (progn
               ; get most recent comment seen
               ; get comments for
-              (when (and (message-latest-comment message) ;unless it's a new transaction
-                         (or (not (eql (message-latest-comment message)
-                                       (cdr (assoc-assoc *userid*
-                                                         (message-people message)))))
-                             (member *userid*
-                                     (getf (message-folders message)
-                                           :unread))))
+              (when (or (not (eql (message-latest-comment message)
+                                  (cdr (assoc-assoc *userid*
+                                                    (message-people message)))))
+                        (member *userid*
+                                (getf (message-folders message) :unread)))
 
                 (update-folder-data message :read :last-read-comment (message-latest-comment message)))
 
@@ -856,7 +860,7 @@
                        :representing-group-p (eq (db speaking-for :type)
                                                  :group)
                        :violates-terms (getf on-item :violates-terms)
-                       :comment-p t)))
+                       :comment-p enable-comment-option-p)))
                 :data transaction
                 :deleted-type deleted-type)))
 
@@ -1019,6 +1023,7 @@
                    :button-text "Yes, I have received this"))
 
                 ((post-parameter "confirm-received")
+                 (setf action :received)
                  (modify-log :received))
 
                 (action

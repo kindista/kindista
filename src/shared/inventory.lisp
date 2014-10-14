@@ -397,7 +397,9 @@
                   (contact-opt-out-flash (list *userid*) :item-type type)
                   (when (string= type "offer")
                     (notice :new-pending-offer :id new-id))
-                  (flash "Your item has been recorded. It will be posted after we have a chance to review your initial account activity. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
+                  (if (string= type "request")
+                    (flash "Your item has been recorded. It will be posted after you post an offer and we have a chance to review it. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
+                    (flash "Your item has been recorded. It will be posted after we have a chance to review it. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience."))
                   (see-other "/home"))
                 (progn
                   (contact-opt-out-flash (list *userid*) :item-type type)

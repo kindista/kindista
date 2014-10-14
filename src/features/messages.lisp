@@ -585,9 +585,6 @@
         (role)
         (representing))
 
-  (pprint (strcat subject " " comment-count " " text))
-  (terpri)
-
   (multiple-value-bind (options representing-whom user-role)
     (transaction-options-for-user id :transaction transaction)
     (declare (ignore options))

@@ -233,7 +233,10 @@
             (:a :href (s+ "/people/" (username-or-id by))
                 (str by-name))))
         (when for
-          (htm (:strong " (from " (str for-name) ") ")))
+          (htm (:strong (str (if transaction-p
+                               " (on behalf of "
+                               " (from "))
+                        (str for-name) ") ")))
         (when transaction-p
           (htm (:strong " responded:"))))
 

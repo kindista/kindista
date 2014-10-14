@@ -124,13 +124,13 @@
                                              :inventory-text inventory-text)
             :html-message (comment-notification-email-html
                             on-id
-                            (person-email-link sender-id)
+                            sender-name
                             subject
                             (name-list (remove (caar recipient) participants)
-                                       :func #'person-email-link
+                                       :func #'person-name
                                        :maximum-links 5)
                             text
-                            :sender-group (person-email-link sender-group-id)
+                            :group-name (getf sender-group :name)
                             :on-type on-type
                             :inventory-text inventory-text)))))))
 
@@ -168,7 +168,7 @@ from (awhen group-name (s+ " from " it )) " says:"
    people
    text
    &key inventory-text
-        sender-group
+        group-name
         on-type
    &aux (url (strcat +base-url+
                      (if (eq on-type :transaction)
@@ -182,7 +182,7 @@ from (awhen group-name (s+ " from " it )) " says:"
       (:p :style *style-p* "You can also reply to this message by clicking on the link below." )
 
       (:p :style *style-p*
-        "A conversation with " (str people))
+        "A conversation with " (:strong (str people)))
 
       (:p :style *style-p*
         (:strong "Subject: " (str subject)))
@@ -196,9 +196,9 @@ from (awhen group-name (s+ " from " it )) " says:"
              (:br)))
 
       (:p :style *style-p*
-        (str from)
-        (when sender-group
-          (htm " from " (str sender-group)))
+        (:strong (str from))
+        (when group-name
+          (htm " from " (:strong (str group-name))))
         " says:")
 
       (:table :cellspacing 0
