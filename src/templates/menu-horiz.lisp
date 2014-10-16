@@ -28,7 +28,9 @@
   (html
     (:div :class "horiz"
       (dolist (item contents)
-        (htm (:button :class "blue"
-               (:a :href (first item)
-                (str (icon (second item))) (str (third item)))))))))
+        (htm (:a :href (first item)
+                 :class "blue button"
+                 (:span
+                   (str (icon (second item)))
+                   (str (third item)))))))))
 

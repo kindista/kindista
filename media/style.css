@@ -667,14 +667,17 @@ a.blue {
  box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);
 }
 
-div.horiz button.blue {
+div.horiz a.button.blue {
  font-size: 0.9em;
  margin-right: 0.8em;
+ color: #fff;
  padding: 0.5em;
 }
 
-div.horiz button.blue a {
- color: #fff;
+div.horiz a.button.blue img {
+ vertical-align: middle;
+ margin-right: 0.3em;
+ margin-bottom: 0.2em;
 }
 
 button.yes, a.yes {
