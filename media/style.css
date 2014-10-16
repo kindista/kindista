@@ -667,6 +667,16 @@ a.blue {
  box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);
 }
 
+div.horiz button.blue {
+ font-size: 0.9em;
+ margin-right: 0.8em;
+ padding: 0.5em;
+}
+
+div.horiz button.blue a {
+ color: #fff;
+}
+
 button.yes, a.yes {
  font-weight: bold;
  color: #fff;

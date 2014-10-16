@@ -22,3 +22,13 @@
     (:menu :type "toolbar" :class "horiz"
       (dolist (item contents)
         (htm (:li (str item)))))))
+
+
+(defun buttons-horiz (&rest contents)
+  (html
+    (:div :class "horiz"
+      (dolist (item contents)
+        (htm (:button :class "blue"
+               (:a :href (first item)
+                (str (icon (second item))) (str (third item)))))))))
+
