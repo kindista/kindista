@@ -765,9 +765,10 @@
   (aif (db id)
     (require-user
       (let* ((message (gethash id *db-messages*))
-             (mailboxes (loop for person in (message-people message)
-                             when (eq (caar person) *userid*)
-                             collect (car person))))
+             (mailboxes (when message
+                          (loop for person in (message-people message)
+                                when (eq (caar person) *userid*)
+                                collect (car person)))))
 
         (when (member (list *userid*) mailboxes :test #'equal)
           (update-folder-data message :read))
