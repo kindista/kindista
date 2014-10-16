@@ -55,9 +55,9 @@
     "Home"
     (html
       (:div :class "activity"
-        (str (buttons-horiz '("/gratitude/new" "heart-person"  "express gratitude")
-                            '("/offers/new" "offer-button" "post an offer")
-                            '("/requests/new" "request-button" "make a request")
+        (str (buttons-horiz '("/gratitude/new" "heart-person"  "Express Gratitude")
+                            '("/offers/new" "offer-button" "Post an Offer")
+                            '("/requests/new" "request-button" "Make a Request")
                              ;(:a :href "/announcements/new" "post announcement")
                           ))
 
@@ -97,6 +97,7 @@
                                         :class "item")))
         (with-location
           (str (local-activity-items :page page))))))
+    :class "home"
     :selected "activity"
     :top (cond
            ((not *user*)
