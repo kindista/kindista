@@ -26,6 +26,14 @@
     *active-people-index*
     :test #'equal))
 
+(defun give-users-unsubscribe-keys ()
+  "To generate unsubscribe keys for existing accounts, for one-click unsubscribe"
+  (dolist (id (hash-table-keys *db*))
+    (let ((data (db id)))
+      (when (or (eq (getf data :type) :person)
+                (eq (getf data :type) :deleted-person-account))
+        (modify-db id :unsubscribe-key (random-password 18))))))
+
 (defun create-person (&key name email password host (pending nil))
   (insert-db `(:type :person
                :name ,name
@@ -36,6 +44,7 @@
                :help t
                :pass ,(new-password password)
                :created ,(get-universal-time)
+               :unsubscribe-key (random-password 18)
                :notify-gratitude t
                :notify-message t
                :notify-reminders t

@@ -45,20 +45,30 @@
   (&optional (instructions "do so from their profile on Kindista.org"))
   (strcat "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER. If you want to contact the sender, please " instructions "."))
 
-(defun unsubscribe-notice-ps-text ()
+(defun unsubscribe-notice-ps-text (unsubscribe-code email-address)
 (strcat
 #\linefeed #\linefeed
-"P.S. If you no longer wish to receive occasional updates like this from Kindista, please edit your communication settings: "
+"-------------------------------------"
 #\linefeed
-(strcat +base-url+ "settings/communication")))
+"Why am I receiving this? You subscribed to receive updates from Kindista when you created your "
+"Kindista account. "
+"If you no longer wish to receive occasional updates like this from Kindista, you may unsubscribe: "
+#\linefeed
+(url-compose (strcat +base-url+ "settings/communication")
+             "email" email-address
+             "k" unsubscribe-code)))
 
-(defun unsubscribe-notice-ps-html ()
+(defun unsubscribe-notice-ps-html (unsubscribe-code email-address)
 (html
   (:p :style *style-p*
-    "P.S. If you no longer wish to receive occasional updates like this from Kindista, please edit your communication settings: "
-    (:br)
-    (:a :href (strcat +base-url+ "settings/communication")
-        (str (strcat +base-url+ "settings/communication"))))))
+    "Why am I receiving this?"
+    " You subscribed to receive updates from Kindista when you created your Kindista account."
+    " If you no longer wish to receive occasional updates like this from Kindista, you may "
+    (:a :href (url-compose (strcat +base-url+ "settings/communication")
+                           "email" email-address
+                           "k" unsubscribe-code)
+        "unsubscribe")
+    ".")))
 
 (defun html-email-base (content)
   (html

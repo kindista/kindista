@@ -1,2 +1,3 @@
 /src/settings.lisp
 data/*.csv
+/src/to-do.md

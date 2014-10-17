@@ -293,31 +293,40 @@
              (post-parameter "from")
              (post-parameter "subject"))
       (let* ((text (post-parameter "markdown"))
-             (html (html-email-base (strcat (nth-value 1 (markdown text :stream nil))
-                                            (unsubscribe-notice-ps-html))))
+             (markdown (nth-value 1 (markdown text :stream nil)))
              (subject (post-parameter "subject"))
-             (text-with-unsubscribe (s+ text (unsubscribe-notice-ps-text)))
              (from (post-parameter "from")))
-        (cond
+        (flet ((html-message (code email)
+                 (html-email-base
+                   (strcat markdown
+                           (unsubscribe-notice-ps-html code email))))
+               (text-message (code email)
+                 (s+ text (unsubscribe-notice-ps-text code email))))
+         (cond
           ((post-parameter "test")
            (cl-smtp:send-email +mail-server+
                                from
                                from
                                subject
-                               text-with-unsubscribe
-                               :html-message html))
+                               (text-message (getf *user* :unsubscribe-key)
+                                             from)
+                               :html-message (html-message
+                                               (getf *user* :unsubscribe-key)
+                                               from)))
           ((post-parameter "unread-mail")
            (dolist (id (users-with-new-mail))
              (let* ((data (db id))
                     (name (getf data :name))
-                    (email (first (getf data :emails))))
+                    (email (first (getf data :emails)))
+                    (unsubscribe (getf data :unsubscribe-key)))
                (when email
                 (cl-smtp:send-email +mail-server+
                                     from
                                     (format nil "\"~A\" <~A>" name email)
                                     subject
-                                    text
-                                    :html-message html)))))
+                                    (text-message unsubscribe email)
+                                    :html-message (html-message unsubscribe
+                                                                email))))))
 
           ((< *last-broadcast-email-time* (- (get-universal-time) 900))
            (setf *last-broadcast-email-time* (get-universal-time))
@@ -325,14 +334,17 @@
                     (let ((data (db id)))
                       (when (getf data :notify-kindista)
                         (let ((name (getf data :name))
-                              (email (first (getf data :emails))))
+                              (email (first (getf data :emails)))
+                              (unsubscribe (getf data :unsubscribe-key)))
                           (when email
                             (cl-smtp:send-email +mail-server+
                                                 from
                                                 (format nil "\"~A\" <~A>" name email)
                                                 subject
-                                                text-with-unsubscribe
-                                                :html-message html)))))))
+                                                (text-message unsubscribe email)
+                                                :html-message (html-message
+                                                                unsubscribe
+                                                                email))))))))
              (dolist (id (cond
                            ((not *productionp*)
                             (when (getf *user* :admin)
@@ -340,7 +352,7 @@
                            ((post-parameter "eugene-only")
                             (remove-duplicates (local-members)))
                            (t (remove-duplicates *active-people-index*))))
-               (send-mail id)))))
+               (send-mail id))))))
         (flash "your message has been sent"))
 
       (flash "specify everything please" :error t))
