@@ -667,6 +667,33 @@ a.blue {
  box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);
 }
 
+div.horiz a.button.blue {
+ font-size: 0.9em;
+ margin-right: 0.7em;
+ color: #fff;
+ padding: 0.4em;
+ display: inline-block;
+ line-height: 1em;
+}
+
+div.horiz a.button.blue img {
+ vertical-align: middle;
+ margin-right: 0.4em;
+}
+
+@media (max-width:28em) {
+ .home div.horiz a.button.blue {
+   display: block;
+   width: 100%;
+   font-size: 1em;
+   text-align: center;
+   margin-bottom: 0.6em;
+ }
+ .home div.horiz a.button.blue span {
+   display: inline-block;
+ }
+}
+
 button.yes, a.yes {
  font-weight: bold;
  color: #fff;

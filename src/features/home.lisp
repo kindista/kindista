@@ -55,10 +55,10 @@
     "Home"
     (html
       (:div :class "activity"
-        (str (menu-horiz (html (:a :href "/gratitude/new" "express gratitude"))
-                          (html (:a :href "/offers/new" "post an offer"))
-                          (html (:a :href "/requests/new" "make a request"))
-                          ;(:a :href "/announcements/new" "post announcement")
+        (str (buttons-horiz '("/gratitude/new" "heart-person"  "Express Gratitude")
+                            '("/offers/new" "offer-button" "Post an Offer")
+                            '("/requests/new" "request-button" "Make a Request")
+                             ;(:a :href "/announcements/new" "post announcement")
                           ))
 
       (let ((page (if (scan +number-scanner+ (get-parameter "p"))
@@ -97,6 +97,7 @@
                                         :class "item")))
         (with-location
           (str (local-activity-items :page page))))))
+    :class "home"
     :selected "activity"
     :top (cond
            ((not *user*)
