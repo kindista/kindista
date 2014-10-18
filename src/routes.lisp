@@ -244,6 +244,9 @@
   ("/settings/communication"
     :get get-settings-communication)
 
+  ("/settings/notifications"
+    :post post-settings-notification)
+
   ("/settings/admin-roles"
     :get get-settings-admin-roles)
 
