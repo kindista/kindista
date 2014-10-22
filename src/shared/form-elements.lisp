@@ -108,13 +108,16 @@
             :checked (when (string= current "invite-only") "checked"))
     "By invitaion only. Members must be invited by group admins and cannot request membership."))
 
-(defun identity-selection-html (selected groups &key (class "identity") onchange)
+(defun identity-selection-html (selected groups &key (class "identity") onchange (userid *userid*))
 "Groups should be an a-list of (groupid . group-name)"
   (html
     (:select :name "identity-selection" :class class :onchange onchange
-      (:option :value *userid*
-               :selected (when (eql selected *userid*) "")
-               (str (getf *user* :name))" ")
+      (:option :value userid
+               :selected (when (eql selected userid) "")
+               (str (or (getf *user* :name)
+                        ;; for unsubscribing emails for non-logged in users
+                        (db userid :name)))
+               " ")
       (dolist (group (safe-sort groups #'string< :key #'cdr))
         (htm (:option :value (car group)
                       :selected (when (eql selected (car group)) "")

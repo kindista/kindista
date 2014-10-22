@@ -51,11 +51,11 @@
     (see-other "/home")
     (see-other (or (referer) "/home"))))
 
-(defun permission-denied ()
+(defun permission-denied (&optional next)
   (flash "The page you requested is private." :error t)
   (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
     (see-other "/home")
-    (see-other (or (referer) "/home"))))
+    (see-other (or next (referer) "/home"))))
 
 (defun item-violates-terms ()
   (flash "This item violated Kindista's Terms of Use and has been deactivated." :error t)

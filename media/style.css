@@ -3101,8 +3101,13 @@ div.settings menu.bar {
  width: 20em;
 }
 
-.settings-item {
+.settings-item,
+.logged-out.unsubscribe {
  max-width: 60em;
+}
+
+.logged-out.unsubscribe {
+ margin: 2em auto;
 }
 
 .settings-item .title {

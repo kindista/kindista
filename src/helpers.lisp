@@ -592,6 +592,10 @@
 (defun get-parameter-string (name)
   (awhen (get-parameter name) (unless (string= it "") it)))
 
+(defun get-parameter-integer (name)
+  (when (scan +number-scanner+ (get-parameter name))
+    (parse-integer (get-parameter name))))
+
 (defun post-parameter-float (name)
   (awhen (post-parameter name) (when (scan +float-scanner+ it) (read-from-string it))))
 
