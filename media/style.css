@@ -143,6 +143,7 @@ select {
 select.identity,
 select.privacy-selection,
 select.distance-selection,
+select.sort,
 select.message-filter {
   background: #fbfbfb;
   border:1px solid #999;

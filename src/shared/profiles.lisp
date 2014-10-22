@@ -27,18 +27,33 @@
               (html (:a :href "/invite" "invite friends"))))
 
 
-(defun nearby-profiles (index)
+(defun nearby-profiles
+  (index
+    &optional (userid *userid*)
+              (user (if (eq *userid* userid)
+                      *user*
+                      (db userid)))
+    &aux (u-distance (getf *user* :distance)))
   (with-location
     (labels ((distance (result)
                (air-distance *latitude* *longitude* (result-latitude result) (result-longitude result))))
       (mapcar #'result-id
-              (sort (remove *userid* (geo-index-query index *latitude* *longitude* 50) :key #'result-id)
+              (sort (remove *userid*
+                            (if (or (not u-distance) (= u-distance 0))
+                              (all-groups)
+                              (geo-index-query index
+                                               *latitude*
+                                               *longitude*
+                                                u-distance))
+                            :key #'result-id)
                     #'< :key #'distance)))))
 
 (defun nearby-profiles-html (type tabs)
-  (let* ((page (if (scan +number-scanner+ (get-parameter "p"))
+  (let* ((sort-by (get-parameter-string "sort"))
+         (page (if (scan +number-scanner+ (get-parameter "p"))
                 (parse-integer (get-parameter "p"))
                 0))
+         (url (url-compose "/groups/nearby" "sort" sort-by))
          (start (* page 20)))
     (standard-page
       (s+ "Nearby " type)
@@ -46,11 +61,33 @@
         (if (string= type "groups")
           (str (group-contacts-action-menu))
           (str (people-contacts-action-menu)))
+
         (str tabs)
+
+        (str (distance-selection-html url :text "within "))
+
+        (:form :method "get"
+               :action "/groups/nearby"
+         (:strong "sort ")
+         (:select :class "sort"
+                  :name "sort"
+                  :onchange "this.form.submit()"
+           (:option :value "alpha"
+                    :selected (when (string= sort-by "alpha") "")
+                    "alphabetically")
+           (:option :value "dist"
+                    :selected (unless (string= sort-by "alpha") "")
+                    "by distance"))
+         (:input :type "submit" :class "no-js" :value "apply"))
+
         (multiple-value-bind (ids more)
-          (sublist (nearby-profiles (if (string= type "people")
+          (sublist (if (and (string= sort-by "alpha")
+                            (string= type "groups"))
+                     (safe-sort (mapcar #'result-id (all-groups))
+                       #'string-lessp :key #'person-name)
+                     (nearby-profiles (if (string= "sort" "people")
                                       *people-geo-index*
-                                      *groups-geo-index*))
+                                      *groups-geo-index*)) )
                    start 20)
           (when (> page 0)
             (str (paginate-links page more)))
