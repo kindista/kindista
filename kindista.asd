@@ -120,6 +120,7 @@
                                                    (:file "transaction-actions")
                                                    (:file "group-membership-invitation-notification")
                                                    (:file "group-membership-request-notification")
+                                                   (:file "unsubscribe")
                                                    (:file "matching-offer-notification")
                                                    (:module invitations
                                                             :serial t

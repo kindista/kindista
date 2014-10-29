@@ -5,6 +5,7 @@
 [ ] send verification email
 [ ] if *user* is same as that from link, go ahead and show logged in
 version
+
 [ ] change unsubscribe links on:
     - messages
     - broadcasts

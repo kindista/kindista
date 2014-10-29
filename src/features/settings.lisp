@@ -466,9 +466,7 @@
                  "")))
       (settings-item-html "notifications"
         (html
-          (:form :method "post" :action (if (and user (not *user*))
-                                          "/settings/notifications"
-                                          "/settings")
+          (:form :method "post" :action "/settings/notifications"
             (:input :type "hidden" :name "next" :value *base-url*)
             (awhen (get-parameter-string "k")
               (htm (:input :type "hidden" :name "k" :value it)))
@@ -902,6 +900,7 @@
                     :notify-membership-request (if (post-parameter "group-membership-request")
                                                  (pushnew userid it)
                                                  (remove userid it)))
+         (notice :updated-notifications :userid userid :groupid groupid)
          (flash "Your notification preferences have been saved.")
          (see-other next) )
         (save
@@ -912,6 +911,7 @@
                     :notify-expired-invites (when (post-parameter "expired-invites") t)
                     :notify-group-membership-invites (when (post-parameter "group-membership-invites") t)
                    :notify-kindista (when (post-parameter "kindista") t))
+         (notice :updated-notifications :userid userid)
          (flash "Your personal notification preferences have been saved.")
          (see-other next))))))
 
@@ -1100,31 +1100,6 @@
            (reactivate-person *userid*)
            (flash "You have reactivated your Kindista account.")
            (see-other "/settings/personal"))
-
-          ((post-parameter "save-notifications")
-           (when (and (getf *user* :notify-message)
-                      (not groupid)
-                      (not (post-parameter "message")))
-             (flash "Warning: You will not recieve any email notifications when people reply to your Offers and Requests unless you choose to be notified \"when someone sends me a message\"!" :error t))
-           (if groupid
-             (amodify-db id
-                         :notify-gratitude (if (post-parameter "gratitude")
-                                                (pushnew *userid* it)
-                                                (remove *userid* it))
-                         :notify-message (if (post-parameter "message")
-                                                (pushnew *userid* it)
-                                                (remove *userid* it))
-                         :notify-membership-request (if (post-parameter "group-membership-request")
-                                                      (pushnew *userid* it)
-                                                      (remove *userid* it)))
-             (modify-db *userid* :notify-gratitude (when (post-parameter "gratitude") t)
-                                 :notify-message (when (post-parameter "message") t)
-                                 :notify-reminders (when (post-parameter "reminders") t)
-                                 :notify-expired-invites (when (post-parameter "expired-invites") t)
-                                 :notify-group-membership-invites (when (post-parameter "group-membership-invites") t)
-                                 :notify-kindista (when (post-parameter "kindista") t)))
-           (flash "Your notification preferences have been saved.")
-           (see-other (or (post-parameter "next") "/home")))
 
           ((post-parameter "new-email")
            (let* ((new-email (post-parameter "new-email"))
