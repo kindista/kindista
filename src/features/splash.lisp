@@ -28,7 +28,7 @@
           (:a :id "logo" :href "/"
            (:img :id "symbol" :src "/media/logo.png"))
           (:div :id "splashlogin"
-            (:form :id "splashlogin" :action "/login" :method "post"
+            (:form :action "/login" :method "post"
               (:label :for "username" "Email")
               (:input :id "username"
                       :type "text"
