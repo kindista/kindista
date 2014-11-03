@@ -45,30 +45,48 @@
   (&optional (instructions "do so from their profile on Kindista.org"))
   (strcat "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER. If you want to contact the sender, please " instructions "."))
 
-(defun unsubscribe-notice-ps-text (unsubscribe-code email-address)
-(strcat
+(defun unsubscribe-notice-ps-text
+  (unsubscribe-code
+   email-address
+   notification-type
+   &optional (detailed-notification-type notification-type))
+
+(strcat*
 #\linefeed #\linefeed
 "-------------------------------------"
 #\linefeed
-"Why am I receiving this? You subscribed to receive updates from Kindista when you created your "
-"Kindista account. "
-"If you no longer wish to receive occasional updates like this from Kindista, you may unsubscribe: "
+"Why am I receiving this? You subscribed to receive "
+notification-type
+" when you created your Kindista account. "
+"If you no longer wish to receive "
+detailed-notification-type
+", you may unsubscribe: "
 #\linefeed
-(url-compose (strcat +base-url+ "settings/communication")
-             "email" email-address
-             "k" unsubscribe-code)))
+(unsubscribe-url email-address unsubscribe-code)))
 
-(defun unsubscribe-notice-ps-html (unsubscribe-code email-address)
+
+(defun unsubscribe-notice-ps-html
+  (unsubscribe-code
+   email-address
+   notification-type
+   &optional (detailed-notification-type notification-type))
 (html
   (:p :style *style-p*
     "Why am I receiving this?"
-    " You subscribed to receive updates from Kindista when you created your Kindista account."
-    " If you no longer wish to receive occasional updates like this from Kindista, you may "
-    (:a :href (url-compose (strcat +base-url+ "settings/communication")
-                           "email" email-address
-                           "k" unsubscribe-code)
+    " You subscribed to receive "
+    (str notification-type)
+    " when you created your Kindista account."
+    " If you no longer wish to receive "
+    (str detailed-notification-type)
+    ", you may "
+    (:a :href (unsubscribe-url email-address unsubscribe-code)
         "unsubscribe")
     ".")))
+
+(defun unsubscribe-url (email-address unsubscribe-code)
+  (url-compose (strcat +base-url+ "settings/communication")
+               "email" email-address
+               "k" unsubscribe-code))
 
 (defun html-email-base (content)
   (html
