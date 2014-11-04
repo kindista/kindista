@@ -41,7 +41,8 @@
                                    (username-or-id new-contact-id))
                      (str (db new-contact-id :name)))
                  " has been added to your contacts.")))
-   (create-contact-notification :follower userid :contact new-contact-id))
+
+  (create-contact-notification :follower userid :contact new-contact-id))
 
 (defun remove-contact (contact-id userid)
   (amodify-db *userid* :following (remove contact-id it))
