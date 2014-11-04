@@ -14,4 +14,7 @@ version
     - gratitudes
     - etc
 
+[ ] add contact notification option on communication settings
+[ ] enable deletion of contact-n items
+
 [ ] allow unsubsribes for group admins as necessary

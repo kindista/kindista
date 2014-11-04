@@ -19,7 +19,7 @@
 
 (defun create-contact-notification (&key follower contact)
   (let* ((time (get-universal-time))
-         (recipient-mailboxes (maphash #'list (mailbox-ids contact)))
+         (recipient-mailboxes (maphash #'list (mailbox-ids (list contact))))
          (id (insert-db (list :type :contact-n
                               :follower follower
                               :mailboxes (list :unread recipient-mailboxes)
@@ -41,10 +41,7 @@
                                    (username-or-id new-contact-id))
                      (str (db new-contact-id :name)))
                  " has been added to your contacts.")))
-  ;at some point we can start notifing people when oters add them to their 
-  ;contacts
-  ;(create-contact-notification :follower userid :contact new-contact-id)
-  )
+   (create-contact-notification :follower userid :contact new-contact-id))
 
 (defun remove-contact (contact-id userid)
   (amodify-db *userid* :following (remove contact-id it))
