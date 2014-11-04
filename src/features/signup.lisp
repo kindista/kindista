@@ -84,16 +84,18 @@
        (:form :method "POST" :action "/signup" :id "signup"
         (:input :type "hidden" :name "token" :value token)
         (:input :type "hidden" :name "email" :value email)
+        (awhen name
+          (htm (:input :type "hidden" :name "name" :value it)))
         (unless (eq host +kindista-id+)
           (htm (:h2 "Create an account")))
         (:label :for "name" "Full Name")
         (:input :type "text" :id "name" :name "name" :value name)
         (:br)
         (:label :for "password" "Password")
-        (:input :type "password" :id "password" :name "password")
+        (:input :type "password" :id "password" :name "password" :value "")
         (:br)
         (:label :for "password-2" "Confirm Password")
-        (:input :type "password" :id "password" :name "password-2")
+        (:input :type "password" :id "password" :name "password-2" :value "")
         (:div
           (str (signup-identity-selection)))
         (:p :class "fineprint" "By creating an account, you are agreeing to our "
@@ -164,11 +166,12 @@
     (let* ((token (post-parameter "token"))
            (person-p (string= (post-parameter "account-type") "person"))
            (group-p (string= (post-parameter "account-type") "group"))
-           (name (unless group-p (post-parameter "name")))
            (email (post-parameter "email"))
            (email2 (post-parameter "email-2"))
            (valid-email-invites (gethash email *invitation-index*))
            (valid-token (rassoc token valid-email-invites :test #'equal))
+           (name (unless (and group-p (not valid-token))
+                   (post-parameter "name")))
            (id (or (car valid-token) (post-parameter-integer "invite-id")))
            (invitation (db id))
            (host (getf invitation :host))
@@ -208,9 +211,6 @@
 
             ((< (getf invitation :valid-until) (get-universal-time))
              (try-again "Your invitation has expired. Please contact the person who invited you to join Kindista and request another invitation."))
-
-            (group-p
-             (try-again "This form is for creating personal accounts only. Once you create your personal account you can create group accounts from the \"Groups\" section of Kindista. If you ignore this warning you will create mass confusion for our community and will not be able to invite people to join your group. (Also we will probably end up deleting group accounts created with this form.)"))
 
             ((not (and (< 0 (length name))
                        (< 0 (length (post-parameter "password")))
