@@ -52,11 +52,11 @@
     #\linefeed #\linefeed
     "You can accept the invitation here:"
     #\linefeed
-    +base-url+ "groups/" (username-or-id group-id)
+    *email-url* "groups/" (username-or-id group-id)
     #\linefeed #\linefeed
     " If you no longer wish to receive notifications when people invite you to join groups on Kindista, please edit your settings:"
     #\linefeed
-    +base-url+ "settings/communication"
+    *email-url* "settings/communication"
     #\linefeed #\linefeed
     "Thank you for sharing your gifts with us!"
     #\linefeed
@@ -77,15 +77,15 @@
       (:p :style *style-p*
         "You can join " (str group-name) " here:"
         (:br)
-        (:a :href (s+ +base-url+ "groups/" (username-or-id group-id))
-            (str (s+ +base-url+ "groups/" (username-or-id group-id)))))
+        (:a :href (s+ *email-url* "groups/" (username-or-id group-id))
+            (str (s+ *email-url* "groups/" (username-or-id group-id)))))
 
       (:p :style *style-p* 
           "If you no longer wish to receive notifications when people invite you to join groups on Kindista, please edit your settings:"
        (:br)
-       (:a :href (s+ +base-url+
+       (:a :href (s+ *email-url*
                      "settings/communication")
-           (str (s+ +base-url+
+           (str (s+ *email-url*
                     "settings/communication"))))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")

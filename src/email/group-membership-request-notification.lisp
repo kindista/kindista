@@ -54,11 +54,11 @@ group-name
 #\linefeed #\linefeed
 "You can accept the invitation here:"
 #\linefeed
-+base-url+ "groups/" (username-or-id group-id) "/members"
+*email-url* "groups/" (username-or-id group-id) "/members"
 #\linefeed #\linefeed
 " If you no longer wish to receive notifications when people request to join this group, please edit your settings:"
 #\linefeed
-+base-url+ "settings/communication" (strcat "?grouipid=" group-id)
+*email-url* "settings/communication" (strcat "?grouipid=" group-id)
 #\linefeed #\linefeed
 "Thank you for sharing your gifts with us!
 -The Kindista Team"))
@@ -78,17 +78,17 @@ group-name
       (:p :style *style-p*
         "You can approve or deny this request here:"
         (:br)
-        (:a :href (s+ +base-url+ (username-or-id group-id) "/members")
-            (str (s+ +base-url+ (username-or-id group-id) "/members"))))
+        (:a :href (s+ *email-url* (username-or-id group-id) "/members")
+            (str (s+ *email-url* (username-or-id group-id) "/members"))))
 
 
       (:p :style *style-p*
           "If you no longer wish to receive notifications when people request to join this group, please edit your settings:"
        (:br)
-       (:a :href (s+ +base-url+
+       (:a :href (s+ *email-url*
                      "settings/communication"
                      (strcat "?groupid=" group-id))
-           (str (s+ +base-url+
+           (str (s+ *email-url*
                     "settings/communication"
                     (strcat "?groupid=" group-id)))))
 

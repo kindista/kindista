@@ -151,11 +151,11 @@ from (awhen group-name (s+ " from " it )) " says:"
 #\linefeed #\linefeed
 "You can see the conversation on Kindista here:"
 #\linefeed
-(strcat +base-url+ (if (eq on-type :transaction) "transactions/" "conversations/") on-id)
+(strcat *email-url* (if (eq on-type :transaction) "transactions/" "conversations/") on-id)
 #\linefeed #\linefeed
 "If you no longer wish to receive notifications when people send you messages, please edit your communication settings:
 "
-(strcat +base-url+ "settings/communication")
+(strcat *email-url* "settings/communication")
 #\linefeed #\linefeed
 "Thank you for sharing your gifts with us!
 -The Kindista Team"))
@@ -170,7 +170,7 @@ from (awhen group-name (s+ " from " it )) " says:"
    &key inventory-text
         group-name
         on-type
-   &aux (url (strcat +base-url+
+   &aux (url (strcat *email-url*
                      (if (eq on-type :transaction)
                        "transactions/"
                        "conversations/")
@@ -214,8 +214,8 @@ from (awhen group-name (s+ " from " it )) " says:"
       (:p :style *style-p*
           "If you no longer wish to receive notifications when people send you messages, please edit your communication settings:"
        (:br)
-       (:a :href (strcat +base-url+ "settings/communication")
-                 (str (strcat +base-url+ "settings/communication"))))
+       (:a :href (strcat *email-url* "settings/communication")
+                 (str (strcat *email-url* "settings/communication"))))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
       (:p "-The Kindista Team"))))

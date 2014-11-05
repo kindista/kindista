@@ -44,7 +44,7 @@
         (recipients (if other-party-is-group-p
                       (getf other-party :admins)
                       (list other-party-id)))
-        (transaction-url (strcat +base-url+
+        (transaction-url (strcat *email-url*
                                  "transactions/"
                                  transaction-id)))
 
@@ -169,7 +169,7 @@ url
 #\linefeed #\linefeed
 "If you no longer wish to receive notifications when people send you messages, please edit your communication settings:
 "
-(s+ +base-url+
+(s+ *email-url*
     "settings/communication"
     (awhen recipient-group-id (strcat "?groupid=" it)))
 #\linefeed #\linefeed
@@ -221,10 +221,10 @@ url
       (:p :style *style-p*
           "If you no longer wish to receive notifications when people send you messages, please edit your settings:"
        (:br)
-       (:a :href (s+ +base-url+
+       (:a :href (s+ *email-url*
                      "settings/communication"
                      (awhen recipient-group-id (strcat "?groupid=" it)))
-           (str (s+ +base-url+
+           (str (s+ *email-url*
                     "settings/communication"
                     (awhen recipient-group-id (strcat "?groupid=" it))))))
 

@@ -28,10 +28,14 @@
                            margin: 8px;
                            border: thin solid #bac2b2;")
 
+(defvar *email-url* (or (awhen *test-email-ip*
+                          (s+ it "/"))
+                        +base-url+))
+
 (defun person-email-link (id)
   (awhen (db id)
     (html
-      (:a :href (strcat +base-url+
+      (:a :href (strcat *email-url*
                         (if (eql (getf it :type) :person)
                           "people/"
                           "groups/")
@@ -50,15 +54,15 @@
 #\linefeed #\linefeed
 "P.S. If you no longer wish to receive occasional updates like this from Kindista, please edit your communication settings: "
 #\linefeed
-(strcat +base-url+ "settings/communication")))
+(strcat *email-url* "settings/communication")))
 
 (defun unsubscribe-notice-ps-html ()
 (html
   (:p :style *style-p*
     "P.S. If you no longer wish to receive occasional updates like this from Kindista, please edit your communication settings: "
     (:br)
-    (:a :href (strcat +base-url+ "settings/communication")
-        (str (strcat +base-url+ "settings/communication"))))))
+    (:a :href (strcat *email-url* "settings/communication")
+        (str (strcat *email-url* "settings/communication"))))))
 
 (defun html-email-base (content)
   (html

@@ -70,11 +70,11 @@ author-name
 #\linefeed #\linefeed
 "You can see the statement on Kindista here:"
 #\linefeed
-+base-url+ "gratitude/" gratitude-id
+*email-url* "gratitude/" gratitude-id
 #\linefeed #\linefeed
 " If you no longer wish to receive notifications when people post gratitude about you, please edit your settings:"
 #\linefeed
-+base-url+ "settings/communication" (awhen group-id (strcat "?groupid=" it))
+*email-url* "settings/communication" (awhen group-id (strcat "?groupid=" it))
 #\linefeed #\linefeed
 "Thank you for sharing your gifts with us!
 -The Kindista Team"))
@@ -90,7 +90,7 @@ author-name
       (:p :style *style-p* 
           (str (person-email-link from))
             " has shared a "
-            (:a :href (strcat +base-url+ "gratitude/" gratitude-id)
+            (:a :href (strcat *email-url* "gratitude/" gratitude-id)
                           "statement of gratitude")
                 " about "
                 (str (or group-name "you"))
@@ -104,10 +104,10 @@ author-name
       (:p :style *style-p* 
           "If you no longer wish to receive notifications when people post gratitude about you, please edit your settings:"
        (:br)
-       (:a :href (s+ +base-url+
+       (:a :href (s+ *email-url*
                      "settings/communication"
                      (awhen group-id (strcat "?groupid=" it)))
-           (str (s+ +base-url+
+           (str (s+ *email-url*
                     "settings/communication"
                     (awhen group-id (strcat "?groupid=" it))))))
 
