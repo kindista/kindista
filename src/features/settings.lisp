@@ -273,7 +273,17 @@
                  "of at least 8 words.")))
 
 (defun settings-donate ()
-  (let ((plan (getf *user* :plan)))
+  (let* ((plan (getf *user* :plan))
+         (customer (stripe:retrieve-customer (getf *user* :custid)))
+        ;(default-card-id (stripe:sstruct-get customer :default-card))
+         (active-card (stripe:sstruct-get customer :active-card))
+        ;(active-card-id (stripe:sstruct-get active-card :id))
+        ;(card-is-active-p (string= default-card-id active-card-id))
+         (last-4 (stripe:sstruct-get active-card :last4))
+         (card-type (stripe:sstruct-get active-card :type))
+         (exp-month (stripe:sstruct-get active-card :exp-month))
+         (exp-year (stripe:sstruct-get active-card :exp-year)))
+
     (settings-item-html "donate"
       (html
         (:form :method "post" :class "password" :action "/settings"
@@ -290,7 +300,19 @@
              (:option :value "20" "$20/month")
              (:option :value "35" "$35/month")
              (:option :value "50" "$50/month")
-             (:option :value "100" "$100/month")))))
+             (:option :value "100" "$100/month")))
+         (:div
+           (:lavel "Card info:")
+           (:div
+             (:strong (str card-type))
+             "****" (str last-4)
+             (:strong "Expires:")
+             (str exp-month)
+             "/"
+             (str exp-year)
+             )
+           )
+         ))
 
     :editable t
     :help-text (s+ "Your monthly donation is specified in US Dollars. Changes take place on your "
@@ -955,12 +977,21 @@
                 (progn (stripe:delete-subscription it)
                        (flash "Your plan has been cancelled, effective immediately. Thank you for your financial support!") 
                        (notice :cancel-plan :plan (getf *user* :plan) :custid (getf *user* :custid)) 
-                       (modify-db *userid* :plan nil) 
+                       (modify-db *userid* :plan nil)
+                       (see-other "/settings/personal"))
+                (stripe::stripe-not-found (err)
+                   (declare (ignore err))
+                       (modify-db *userid* :plan nil)
+                       (flash "Your plan has been cancelled, effective immediately. Thank you for your financial support!")
                        (see-other "/settings/personal"))
                 (t (err)
                    (declare (ignore err))
                    (flash "There was an error deleting your subscription. Humans have been notified!" :error t)
-                   (notice :error :on :cancel-plan :custid (getf *user* :custid)))))
+                   (notice :error
+                           :on :cancel-plan
+                           :url "/settings/personal"
+                           :userid *userid*
+                           :custid (getf *user* :custid)))))
 
              (t
               (flash "You do not currently have an active subscription.")

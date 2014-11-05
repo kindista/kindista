@@ -450,7 +450,8 @@
                       :prorate nil
                       :card (donate-info-token*))
                     (when *user*
-                      (modify-db *userid* :plan (donate-info-amount*)))
+                      (modify-db *userid*
+                                 :plan (donate-info-amount*)))
                     (flash "Thank you so much for your donation! You will receive email from us shortly.")
                     (see-other "/"))
                   (let ((customer (stripe:create-customer
@@ -461,7 +462,10 @@
                     (acond
                       ((stripe:sstruct-get customer :id)
                        (when *user*
-                         (modify-db *userid* :donated t :custid it :plan (donate-info-amount*)))
+                         (modify-db *userid*
+                                    :donated t
+                                    :custid it
+                                    :plan (donate-info-amount*)))
                        (flash "Thank you so much for your donation! You will receive email from us shortly.")
                        (see-other "/"))
 
