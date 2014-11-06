@@ -313,8 +313,6 @@
         (exp-month (stripe:sstruct-get card :exp-month))
         (exp-year (stripe:sstruct-get card :exp-year)))
 
-  (pprint "foo2")
-  (terpri)
   (html
     (:form :method "post" :action "/settings/ccard"
       (:blockquote :id "card-info"
