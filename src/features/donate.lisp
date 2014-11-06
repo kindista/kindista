@@ -203,55 +203,112 @@
      ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
       ))))
 
+(defun stripe-tokenize ()
+  (html
+    (:script :type "text/javascript" :src "https://js.stripe.com/v1/")
+    (:script :type "text/javascript"
+      (str
+        (ps
+          (defvar *processing* nil)
+          (defun tokenize (form)
+            (unless *processing*
+              (setf *processing* t)
+              (dolist (element ((@ document get-elements-by-tag-name) "label"))
+                ((@ element set-attribute) "class" ""))
+              ((@ *stripe set-publishable-key) (ps:lisp *stripe-publish-key*))
+              ((@ *stripe create-token)
+               (create
+                 :number (@ ((@ document get-element-by-id) "ccn") value)
+                 :cvc (@ ((@ document get-element-by-id) "cvc") value)
+                 :exp_month (@ ((@ document get-element-by-id) "ccm") value)
+                 :exp_year (@ ((@ document get-element-by-id) "ccy") value)
+                 :name (or name (ps:lisp (donate-info-name*)))
+                 :address_city (or city (ps:lisp (donate-info-city*)))
+                 :address_line1 (or address (ps:lisp (donate-info-address*)))
+                 :address_state (or state (ps:lisp (donate-info-state*)))
+                 :address_zip (or zip (ps:lisp (donate-info-zip*))))
+               (lambda (status response)
+                 ((@ console log) response)
+                 (cond
+                   ((@ response :error)
+                    (setf *processing* nil)
+                    (cond
+                      ((or (eq (@ response :error :code) "invalid_number")
+                           (eq (@ response :error :code) "incorrect_number"))
+                       ((@ ((@ document get-element-by-id) "lccn") set-attribute) "class" "error"))
+                      ((eq (@ response :error :code) "invalid_cvc")
+                       ((@ ((@ document get-element-by-id) "lcvc") set-attribute) "class" "error"))
+                      ((eq (@ response :error :code) "card_declined")
+                       (alert "Your card was declined by our payment processor.")
+                       ((@ ((@ document get-element-by-id) "lccn") set-attribute) "class" "error"))
+                      ((eq (@ response :error :code) "invalid_expiry_month")
+                       ((@ ((@ document get-element-by-id) "lccm") set-attribute) "class" "error") 
+                       ((@ ((@ document get-element-by-id) "lccy") set-attribute) "class" "error"))
+                      ((eq (@ response :error :code) "invalid_expiry_year")
+                       ((@ ((@ document get-element-by-id) "lccm") set-attribute) "class" "error")
+                       ((@ ((@ document get-element-by-id) "lccy") set-attribute) "class" "error"))
+                      (t (alert "unknown error!"))))
+                   (t (setf (@ ((@ document get-element-by-id) "cctoken") value)
+                            (@ response :id))
+                      ((@ form submit)))))))
+            f))))))
+
+(defun credit-card-details-form (&optional show-error)
+  (html
+    (:li :class "full"
+      (:label :class (when (and show-error
+                                (empty-string-p (donate-info-token*)))
+                       "error")
+              :id "lccn"
+              "*Card number")
+      (:input :id "ccn" :type "text"))
+    (:li :class "quarter"
+      (:label :class (when (and show-error
+                                (empty-string-p (donate-info-token*)))
+                       "error")
+              :id "lcvc"
+              "*CVC " (:a :href "http://en.wikipedia.org/wiki/Card_security_code" :target "_blank" "(?)"))
+      (:input :id "cvc" :type "text"))
+    (:li :class "half"
+      (:label :class (when (and show-error
+                                (empty-string-p (donate-info-token*)))
+                       "error")
+              :id "lccm"
+              "*Exp month")
+      (:select :id "ccm"
+        (:option :value "01" "01")
+        (:option :value "02" "02")
+        (:option :value "03" "03")
+        (:option :value "04" "04")
+        (:option :value "05" "05")
+        (:option :value "06" "06")
+        (:option :value "07" "07")
+        (:option :value "08" "08")
+        (:option :value "09" "09")
+        (:option :value "10" "10")
+        (:option :value "11" "11")
+        (:option :value "12" "12")))
+    (:li :class "quarter"
+      (:label :class (when (and show-error
+                                (empty-string-p (donate-info-token*)))
+                       "error")
+              :id "lccy"
+              "*Exp year")
+      (:select :id "ccy"
+        (let ((current-year (current-year)))
+          (loop for i from current-year to (+ current-year 10)
+                do (htm (:option :value i (str i))))))) 
+
+  (:button :id "ccnext" :class "nav" :type "submit" "Next >")
+
+  (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
+; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
+))
+
 (defun donate-dialog-3 (&key show-error show-amount)
   (with-donate-info
     (html
-      (:script :type "text/javascript" :src "https://js.stripe.com/v1/")
-      (:script :type "text/javascript"
-        (str (ps
-               (defvar *processing* nil)
-               (defun tokenize (form)
-                 (unless *processing*
-                   (setf *processing* t)
-                   (dolist (element ((@ document get-elements-by-tag-name) "label"))
-                     ((@ element set-attribute) "class" ""))
-                   ((@ *stripe set-publishable-key) (ps:lisp *stripe-publish-key*))
-                   ((@ *stripe create-token)
-                    (create
-                      :number (@ ((@ document get-element-by-id) "ccn") value)
-                      :cvc (@ ((@ document get-element-by-id) "cvc") value)
-                      :exp_month (@ ((@ document get-element-by-id) "ccm") value)
-                      :exp_year (@ ((@ document get-element-by-id) "ccy") value)
-                      :name (ps:lisp (donate-info-name*))
-                      :address_city (ps:lisp (donate-info-city*))
-                      :address_line1 (ps:lisp (donate-info-address*))
-                      :address_state (ps:lisp (donate-info-state*))
-                      :address_zip (ps:lisp (donate-info-zip*)))
-                    (lambda (status response)
-                      ((@ console log) response)
-                      (cond
-                        ((@ response :error)
-                         (setf *processing* nil)
-                         (cond
-                           ((or (eq (@ response :error :code) "invalid_number")
-                                (eq (@ response :error :code) "incorrect_number"))
-                            ((@ ((@ document get-element-by-id) "lccn") set-attribute) "class" "error"))
-                           ((eq (@ response :error :code) "invalid_cvc")
-                            ((@ ((@ document get-element-by-id) "lcvc") set-attribute) "class" "error"))
-                           ((eq (@ response :error :code) "card_declined")
-                            (alert "Your card was declined by our payment processor.")
-                            ((@ ((@ document get-element-by-id) "lccn") set-attribute) "class" "error"))
-                           ((eq (@ response :error :code) "invalid_expiry_month")
-                            ((@ ((@ document get-element-by-id) "lccm") set-attribute) "class" "error") 
-                            ((@ ((@ document get-element-by-id) "lccy") set-attribute) "class" "error"))
-                           ((eq (@ response :error :code) "invalid_expiry_year")
-                            ((@ ((@ document get-element-by-id) "lccm") set-attribute) "class" "error")
-                            ((@ ((@ document get-element-by-id) "lccy") set-attribute) "class" "error"))
-                           (t (alert "unknown error!"))))
-                        (t (setf (@ ((@ document get-element-by-id) "cctoken") value)
-                                 (@ response :id))
-                           ((@ form submit)))))))
-                 f))))
+      (str (stripe-tokenize))
       (:form :id "donate" :method "post" :action "/donate" :onsubmit "return tokenize(this);"
         (:a :href "/" (:img :src "/media/logo.png"))
         (:h2 "Step 3/4")
@@ -306,17 +363,9 @@
                     :id "lccy"
                     "*Exp year")
             (:select :id "ccy"
-              (:option :value "2013" "2013")
-              (:option :value "2014" "2014")
-              (:option :value "2015" "2015")
-              (:option :value "2016" "2016")
-              (:option :value "2017" "2017")
-              (:option :value "2018" "2018")
-              (:option :value "2019" "2019")
-              (:option :value "2020" "2020")
-              (:option :value "2021" "2021")
-              (:option :value "2022" "2022")
-              (:option :value "2023" "2023"))))
+              (let ((current-year (current-year)))
+                (loop for i from current-year to (+ current-year 10)
+                      do (htm (:option :value i (str i))))))))
 
         (:button :id "ccnext" :class "nav" :type "submit" "Next >")
 

@@ -110,6 +110,9 @@
       (year-first (strcat year "-" month "-" date))
       (t (values time date-name formatted-date))))))
 
+(defun current-year ()
+  (sixth (multiple-value-list (decode-universal-time (get-universal-time)))))
+
 (defun day-of-month (datetime &key formatted-date)
   (timestamp-day (universal-to-timestamp (if formatted-date
                                            (parse-datetime datetime)

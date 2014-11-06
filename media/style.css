@@ -3167,6 +3167,23 @@ div.settings-item.content > a {
  padding: .3em .5em;
 }
 
+.settings-item blockquote#card-info {
+ display: relative;
+ overflow:hidden;
+ margin-top: 0.5em;
+ padding: 0.25em;
+ max-width: 33em;
+}
+
+div#card-info button {
+ margin: 0 0.1em;
+ padding: 0.1em 0.3em;
+}
+
+div#card-info span {
+ display: inline-block;
+ margin: 0.1em 0.4em 0.1em 0.1em;
+}
 
 div.setup p.help-text {
  margin-bottom: 0;

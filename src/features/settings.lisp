@@ -279,45 +279,97 @@
          (active-card (stripe:sstruct-get customer :active-card))
         ;(active-card-id (stripe:sstruct-get active-card :id))
         ;(card-is-active-p (string= default-card-id active-card-id))
-         (last-4 (stripe:sstruct-get active-card :last4))
-         (card-type (stripe:sstruct-get active-card :type))
-         (exp-month (stripe:sstruct-get active-card :exp-month))
-         (exp-year (stripe:sstruct-get active-card :exp-year)))
-
+        )
     (settings-item-html "donate"
       (html
+        (:a :id "donate")
         (:form :method "post" :class "password" :action "/settings"
-         (:input :type "hidden" :name "next" :value *base-url*)
-         (:div :class "submit-settings"
-           (:button :class "cancel" :type "submit" :name "cancel-plan" "Cancel plan")
-           (:button :class "yes" :type "submit" "Change plan"))
-         (:div
-           (:label "Current monthly donation: " (:strong "$" (str plan)))
-           (:select :name "plan"
+          (:input :type "hidden" :name "next" :value *base-url*)
+          (:div :class "submit-settings"
+           (:button :class "cancel small" :type "submit" :name "cancel-plan" "Cancel plan")
+           (:button :class "yes small" :type "submit" "Change plan"))
+          (:div
+            (:label "Current monthly donation: " (:strong "$" (str plan)))
+            (:select :name "plan"
              (:option :disabled "disabled" "Select a new plan")
              (:option :value "5" "$5/month")
              (:option :value "10" "$10/month")
              (:option :value "20" "$20/month")
              (:option :value "35" "$35/month")
              (:option :value "50" "$50/month")
-             (:option :value "100" "$100/month")))
-         (:div
-           (:lavel "Card info:")
-           (:div
-             (:strong (str card-type))
-             "****" (str last-4)
-             (:strong "Expires:")
-             (str exp-month)
-             "/"
-             (str exp-year)
-             )
-           )
-         ))
+             (:option :value "100" "$100/month"))))
+        (str (settings-card-details active-card)))
 
     :editable t
     :help-text (s+ "Your monthly donation is specified in US Dollars. Changes take place on your "
                    "next monthly bill&mdash;we do not prorate plan changes. Thank you for your "
                    "financial support!"))))
+
+(defun settings-card-details
+  (card
+   &aux (edit-card-p (string= (get-parameter-string "edit") "card"))
+        (last-4 (stripe:sstruct-get card :last4))
+        (card-type (stripe:sstruct-get card :type))
+        (exp-month (stripe:sstruct-get card :exp-month))
+        (exp-year (stripe:sstruct-get card :exp-year)))
+
+  (pprint "foo2")
+  (terpri)
+  (html
+    (:form :method "post" :action "/settings/ccard"
+      (:blockquote :id "card-info"
+        (if edit-card-p
+          (htm 
+            (str (stripe-tokenize))
+            (:h3 "Billing address")
+            (:ul
+              (:li :class "full"
+                (:label :for "name" "*Name on card")
+                (:input :type "text"
+                        :id "name"
+                        :name "name"
+                        :value (stripe:sstruct-get card :name)))
+              (:li :class "full"
+                (:label :for "address" "*Address")
+                (:input :type "text"
+                        :id "address"
+                        :name "address"
+                        :value (strcat*
+                                 (stripe:sstruct-get card :address-line1)
+                                 " "
+                                 (stripe:sstruct-get card :address-line2))))
+              (:li :class "half"
+                (:label :for "city" "*City")
+                (:input :type "text"
+                        :id "city"
+                        :name "city"
+                        :value (stripe:sstruct-get card :address-city)))
+              (:li :class "quarter"
+                (:label :for "state" "*State")
+                (:select :name "state"
+                   (str (state-options
+                          (stripe:sstruct-get card :address-state)))))
+              (:li :class "quarter"
+                (:label :for "zip" "*Zip")
+                (:input :type "text"
+                        :name "zip"
+                        :value (stripe:sstruct-get card :address-zip))))
+
+            (:h3 "Credit card info")
+            (str (credit-card-details-form t)))
+
+          (htm
+            (:span (:strong "Card info:"))
+            (:span (:strong (str card-type)))
+            (:span "****" (str last-4))
+            (:span (:strong "Expires:"))
+            (:span (str exp-month)
+                   "/"
+                   (str exp-year))
+            (:button :class "blue small float-right" :type "submit" :name "edit-card" "Update card"))))) 
+    )
+  
+  )
 
 (defun settings-deactivate ()
   (let ((action (if (eq (getf *user* :active) t)
@@ -820,6 +872,14 @@
 (defun get-settings-error ()
   (flash "the avatar you uploaded is too large. please upload an image smaller than 10mb." :error t)
   (go-settings))
+
+(defun post-settings-ccard ()
+  (require-user
+    (cond
+      ((post-parameter "edit-card")
+       (see-other "/settings/personal?edit=card#donate"))
+      
+      )))
 
 (defun post-settings ()
   (require-user
