@@ -203,7 +203,7 @@
      ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
       ))))
 
-(defun stripe-tokenize ()
+(defun stripe-tokenize (&key name address city state zip)
   (html
     (:script :type "text/javascript" :src "https://js.stripe.com/v1/")
     (:script :type "text/javascript"
@@ -222,11 +222,16 @@
                  :cvc (@ ((@ document get-element-by-id) "cvc") value)
                  :exp_month (@ ((@ document get-element-by-id) "ccm") value)
                  :exp_year (@ ((@ document get-element-by-id) "ccy") value)
-                 :name (or name (ps:lisp (donate-info-name*)))
-                 :address_city (or city (ps:lisp (donate-info-city*)))
-                 :address_line1 (or address (ps:lisp (donate-info-address*)))
-                 :address_state (or state (ps:lisp (donate-info-state*)))
-                 :address_zip (or zip (ps:lisp (donate-info-zip*))))
+                 :name (ps:lisp (or name
+                                    (donate-info-name*)))
+                 :address_city (ps:lisp (or city
+                                           (donate-info-city*)))
+                 :address_line1 (ps:lisp (or address
+                                             (donate-info-address*)))
+                 :address_state (ps:lisp (or state
+                                             (donate-info-state*)))
+                 :address_zip (ps:lisp (or zip
+                                           (donate-info-zip*))))
                (lambda (status response)
                  ((@ console log) response)
                  (cond
@@ -253,25 +258,28 @@
                       ((@ form submit)))))))
             f))))))
 
-(defun credit-card-details-form (&optional show-error)
+(defun credit-card-details-form (&key show-error card)
   (html
     (:li :class "full"
       (:label :class (when (and show-error
-                                (empty-string-p (donate-info-token*)))
+                                (or card
+                                    (empty-string-p (donate-info-token*))))
                        "error")
               :id "lccn"
               "*Card number")
       (:input :id "ccn" :type "text"))
     (:li :class "quarter"
       (:label :class (when (and show-error
-                                (empty-string-p (donate-info-token*)))
+                                (or card
+                                    (empty-string-p (donate-info-token*))))
                        "error")
               :id "lcvc"
               "*CVC " (:a :href "http://en.wikipedia.org/wiki/Card_security_code" :target "_blank" "(?)"))
       (:input :id "cvc" :type "text"))
     (:li :class "half"
       (:label :class (when (and show-error
-                                (empty-string-p (donate-info-token*)))
+                                (or card
+                                    (empty-string-p (donate-info-token*))))
                        "error")
               :id "lccm"
               "*Exp month")
@@ -290,7 +298,8 @@
         (:option :value "12" "12")))
     (:li :class "quarter"
       (:label :class (when (and show-error
-                                (empty-string-p (donate-info-token*)))
+                                (or card
+                                    (empty-string-p (donate-info-token*))))
                        "error")
               :id "lccy"
               "*Exp year")
@@ -298,8 +307,6 @@
         (let ((current-year (current-year)))
           (loop for i from current-year to (+ current-year 10)
                 do (htm (:option :value i (str i))))))) 
-
-  (:button :id "ccnext" :class "nav" :type "submit" "Next >")
 
   (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
 ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
@@ -309,7 +316,7 @@
   (with-donate-info
     (html
       (str (stripe-tokenize))
-      (:form :id "donate" :method "post" :action "/donate" :onsubmit "return tokenize(this);"
+      (:form :id "donate":method "post" :action "/donate" :onsubmit "return tokenize(this);"
         (:a :href "/" (:img :src "/media/logo.png"))
         (:h2 "Step 3/4")
         (:h3 "Credit card info")

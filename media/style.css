@@ -3167,17 +3167,21 @@ div.settings-item.content > a {
  padding: .3em .5em;
 }
 
-.settings-item blockquote#card-info {
- display: relative;
+.settings-item blockquote#donate {
+ position: relative;
  overflow:hidden;
  margin-top: 0.5em;
- padding: 0.25em;
- max-width: 33em;
+ padding: 0.5em 0 0.5em 0.5em;
+ max-width: 35em;
 }
 
-div#card-info button {
+blockquote#donate button {
  margin: 0 0.1em;
  padding: 0.1em 0.3em;
+}
+
+blockquote#donate h3 {
+ line-height:1em;
 }
 
 div#card-info span {
@@ -3329,6 +3333,7 @@ body.donate {
 
 #donate h3 {
  margin: 0.5em 0;
+ margin-bottom: 0.8em;
 }
 
 #donate button {
@@ -3372,42 +3377,38 @@ body.donate {
  display: inline-block;
 }
 
-#donate li {
- display: inline-block;
- vertical-align: top;
-}
-
 #donate input, #donate select {
  color: #000;
  background: #eee;
  border: 2px solid #aaa;
  border-radius: 3px;
- padding: 0.5em 0.25em;
+ padding: 0.25em 0.25em;
  font-size: 1.1em;
  width: 100%;
 }
 
 #donate select {
- font-size: 1.05em;
+ margin-top: 0.3em;
+ height: 2.05em;
 }
 
+#donate li {
+ display: inline-block;
+ vertical-align: top;
+ margin: 0 0 0.5em;
+ padding-right: 0.5em;
+}
 
 #donate li.quarter {
- margin: 0.5em 0.5em 0.5em 0;
- padding: 0;
- width: 5em;
+ width: 25%;
 }
 
 #donate li.half {
- margin: 0.5em 0.5em 0.5em 0;
- padding: 0;
- width: 10.5em;
+ width: 50%;
 }
 
 #donate li.full {
- margin: 0.5em 0 0.5em 0;
- padding: 0;
- width: 21.5em;
+ width: 100%;
 }
 
 #donate label {

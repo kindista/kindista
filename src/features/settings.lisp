@@ -308,6 +308,15 @@
 (defun settings-card-details
   (card
    &aux (edit-card-p (string= (get-parameter-string "edit") "card"))
+        (name (stripe:sstruct-get card :name))
+        (address (strcat* (stripe:sstruct-get card :address-line1)
+                          (unless (string= (stripe:sstruct-get card
+                                                               :address-line2)
+                                           "NULL")
+                            (s+ " " (stripe:sstruct-get card :address-line2)))))
+        (city (stripe:sstruct-get card :address-city))
+        (state (stripe:sstruct-get card :address-state))
+        (zip (stripe:sstruct-get card :address-zip))
         (last-4 (stripe:sstruct-get card :last4))
         (card-type (stripe:sstruct-get card :type))
         (exp-month (stripe:sstruct-get card :exp-month))
@@ -315,10 +324,15 @@
 
   (html
     (:form :method "post" :action "/settings/ccard"
-      (:blockquote :id "card-info"
+      (:blockquote :id "donate"
+        (:input :id "cctoken" :name "token" :type "hidden")
         (if edit-card-p
-          (htm 
-            (str (stripe-tokenize))
+          (htm
+            (str (stripe-tokenize :name name
+                                  :address address
+                                  :city city
+                                  :state state
+                                  :zip zip))
             (:h3 "Billing address")
             (:ul
               (:li :class "full"
@@ -326,35 +340,34 @@
                 (:input :type "text"
                         :id "name"
                         :name "name"
-                        :value (stripe:sstruct-get card :name)))
+                        :value name))
               (:li :class "full"
                 (:label :for "address" "*Address")
                 (:input :type "text"
                         :id "address"
                         :name "address"
-                        :value (strcat*
-                                 (stripe:sstruct-get card :address-line1)
-                                 " "
-                                 (stripe:sstruct-get card :address-line2))))
+                        :value address))
               (:li :class "half"
                 (:label :for "city" "*City")
                 (:input :type "text"
                         :id "city"
                         :name "city"
-                        :value (stripe:sstruct-get card :address-city)))
+                        :value city))
               (:li :class "quarter"
                 (:label :for "state" "*State")
                 (:select :name "state"
-                   (str (state-options
-                          (stripe:sstruct-get card :address-state)))))
+                   (str (state-options state))))
               (:li :class "quarter"
                 (:label :for "zip" "*Zip")
                 (:input :type "text"
                         :name "zip"
-                        :value (stripe:sstruct-get card :address-zip))))
+                        :value zip)))
 
             (:h3 "Credit card info")
-            (str (credit-card-details-form t)))
+            (str (credit-card-details-form :show-error t :card card))
+            (:button :class "blue small float-right" :type "submit" :name "update-card" "Submit changes")
+            (:button :class "cancel small float-right" :type "submit" :name "cancel" "Cancel")
+            )
 
           (htm
             (:span (:strong "Card info:"))
