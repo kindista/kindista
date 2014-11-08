@@ -908,7 +908,7 @@ button.link:hover {
  text-decoration: underline;
 }
 
-button.cancel, input.cancel {
+button.cancel, input.cancel, a.button.cancel {
  font-weight: bold;
  color: #fff;
  background: -moz-linear-gradient(
@@ -3175,9 +3175,14 @@ div.settings-item.content > a {
  max-width: 35em;
 }
 
-blockquote#donate button {
- margin: 0 0.1em;
- padding: 0.1em 0.3em;
+blockquote#donate button,
+blockquote#donate a.button {
+ display: block;
+ margin: 0 0.5em 0 0.2em;
+}
+
+blockquote#donate span {
+ line-height: 1.7em;
 }
 
 blockquote#donate h3 {
@@ -3336,7 +3341,7 @@ body.donate {
  margin-bottom: 0.8em;
 }
 
-#donate button {
+form#donate button {
  outline: medium none;
  padding: 0.25em 0.1em;
  background: -moz-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #008FC5;

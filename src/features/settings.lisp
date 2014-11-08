@@ -323,7 +323,11 @@
         (exp-year (stripe:sstruct-get card :exp-year)))
 
   (html
-    (:form :method "post" :action "/settings/ccard"
+    (:form :method "post"
+           :action "/settings/ccard"
+           :onsubmit (when (and edit-card-p
+                                (not (post-parameter "cancel")))
+                       "return tokenize(this);")
       (:blockquote :id "donate"
         (:input :id "cctoken" :name "token" :type "hidden")
         (if edit-card-p
@@ -365,9 +369,8 @@
 
             (:h3 "Credit card info")
             (str (credit-card-details-form :show-error t :card card))
-            (:button :class "blue small float-right" :type "submit" :name "update-card" "Submit changes")
-            (:button :class "cancel small float-right" :type "submit" :name "cancel" "Cancel")
-            )
+            (:button :class "blue float-right" :type "submit" :name "update-card" "Submit changes")
+            (:a :href "/settings/personal#donate" :class "cancel button float-right" "Cancel"))
 
           (htm
             (:span (:strong "Card info:"))
@@ -887,10 +890,34 @@
 (defun post-settings-ccard ()
   (require-user
     (cond
+      ((post-parameter "cancel")
+       (see-other "/settings/personal#donate"))
       ((post-parameter "edit-card")
        (see-other "/settings/personal?edit=card#donate"))
-      
-      )))
+      ((post-parameter "token")
+       (let ((token (post-parameter "token")))
+         (handler-case
+           (progn
+             (stripe:update-customer (getf *user* :custid) :card token)
+             (flash "Your card has been updated")
+             (see-other "/settings/personal#donate"))
+           (stripe::stripe-error (err)
+             (let ((code (stripe:sstruct-get (stripe::stripe-error-reply err) :error :code)))
+               (flash
+                 (cond
+                   ((string= code "card_declined")
+                    "Your card was declined")
+
+                   ((string= code "processing_error")
+                    "Our payment processor encountered an error while processing your card.")
+
+                   ((string= code "invalid_cvc")
+                    "The CVC provided was incorrect.")
+
+                   (t "An error occurred while processing your card.")))
+               (see-other "/settings/personal?edit=card#donate")    
+               ))))
+       ))))
 
 (defun post-settings ()
   (require-user

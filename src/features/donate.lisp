@@ -521,6 +521,7 @@
                          (modify-db *userid*
                                     :donated t
                                     :custid it
+                                    :phone phone
                                     :plan (donate-info-amount*)))
                        (flash "Thank you so much for your donation! You will receive email from us shortly.")
                        (see-other "/"))
