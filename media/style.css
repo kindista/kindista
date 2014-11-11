@@ -3185,6 +3185,13 @@ blockquote#donate a.button {
  margin: 0 0.5em 0 0.2em;
 }
 
+blockquote#donate button.update,
+blockquote#donate a.button.update {
+ font-size: 1em;
+ height: 2.5em;
+ padding: 0.5em 0.7em;
+}
+
 blockquote#donate span {
  line-height: 1.7em;
 }

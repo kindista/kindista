@@ -371,8 +371,8 @@
 
             (:h3 "Credit card info")
             (str (credit-card-details-form :show-error t :card card))
-            (:button :class "blue float-right" :type "submit" :name "update-card" "Submit changes")
-            (:a :href "/settings/personal#donate" :class "cancel button float-right" "Cancel"))
+            (:button :class "blue float-right update" :type "submit" :name "update-card" "Submit changes")
+            (:a :href "/settings/personal#donate" :class "cancel button float-right update" "Cancel"))
 
           (htm
             (:span (:strong "Card info:"))
@@ -905,6 +905,8 @@
              (see-other "/settings/personal#donate"))
            (stripe::stripe-error (err)
              (let ((code (stripe:sstruct-get (stripe::stripe-error-reply err) :error :code)))
+               (pprint code)
+               (terpri)
                (flash
                  (cond
                    ((string= code "card_declined")
@@ -912,9 +914,6 @@
 
                    ((string= code "processing_error")
                     "Our payment processor encountered an error while processing your card.")
-
-                   ((string= code "invalid_cvc")
-                    "The CVC provided was incorrect.")
 
                    ((string= code "expired_card")
                     "This card has expired.")

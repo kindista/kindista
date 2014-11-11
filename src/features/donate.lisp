@@ -136,7 +136,7 @@
       (when *user* (htm (:h3 (:a :href "/donate" "Or, make a monthly donation"))))
 
       (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
-      (:img :src "/media/pbs.png" :width "119" :height "26")
+     ; (:img :src "/media/pbs.png" :width "119" :height "26") no such file in filesystem
      ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
       (:p "We also appreciate checks mailed to:"
            (:br)
@@ -262,24 +262,24 @@
   (html
     (:li :class "full"
       (:label :class (when (and show-error
-                                (or card
-                                    (empty-string-p (donate-info-token*))))
+                                (not card)
+                                (empty-string-p (donate-info-token*)))
                        "error")
               :id "lccn"
               "*Card number")
       (:input :id "ccn" :type "text"))
     (:li :class "quarter"
       (:label :class (when (and show-error
-                                (or card
-                                    (empty-string-p (donate-info-token*))))
+                                (not card)
+                                (empty-string-p (donate-info-token*)))
                        "error")
               :id "lcvc"
               "*CVC " (:a :href "http://en.wikipedia.org/wiki/Card_security_code" :target "_blank" "(?)"))
       (:input :id "cvc" :type "text"))
     (:li :class "half"
       (:label :class (when (and show-error
-                                (or card
-                                    (empty-string-p (donate-info-token*))))
+                                (not card)
+                                (empty-string-p (donate-info-token*)))
                        "error")
               :id "lccm"
               "*Exp month")
@@ -298,8 +298,8 @@
         (:option :value "12" "12")))
     (:li :class "quarter"
       (:label :class (when (and show-error
-                                (or card
-                                    (empty-string-p (donate-info-token*))))
+                                (not card)
+                                (empty-string-p (donate-info-token*)))
                        "error")
               :id "lccy"
               "*Exp year")
@@ -330,53 +330,9 @@
                                  "error")
                         :for "amount" "*Donation amount")
                 (:input :name "amount" :type "text" :value (donate-info-amount*))))) 
-          (:li :class "full"
-            (:label :class (when (and show-error
-                                      (empty-string-p (donate-info-token*)))
-                             "error")
-                    :id "lccn"
-                    "*Card number")
-            (:input :id "ccn" :type "text"))
-          (:li :class "quarter"
-            (:label :class (when (and show-error
-                                      (empty-string-p (donate-info-token*)))
-                             "error")
-                    :id "lcvc"
-                    "*CVC " (:a :href "http://en.wikipedia.org/wiki/Card_security_code" :target "_blank" "(?)"))
-            (:input :id "cvc" :type "text"))
-          (:li :class "half"
-            (:label :class (when (and show-error
-                                      (empty-string-p (donate-info-token*)))
-                             "error")
-                    :id "lccm"
-                    "*Exp month")
-            (:select :id "ccm"
-              (:option :value "01" "01")
-              (:option :value "02" "02")
-              (:option :value "03" "03")
-              (:option :value "04" "04")
-              (:option :value "05" "05")
-              (:option :value "06" "06")
-              (:option :value "07" "07")
-              (:option :value "08" "08")
-              (:option :value "09" "09")
-              (:option :value "10" "10")
-              (:option :value "11" "11")
-              (:option :value "12" "12")))
-          (:li :class "quarter"
-            (:label :class (when (and show-error
-                                      (empty-string-p (donate-info-token*)))
-                             "error")
-                    :id "lccy"
-                    "*Exp year")
-            (:select :id "ccy"
-              (let ((current-year (current-year)))
-                (loop for i from current-year to (+ current-year 10)
-                      do (htm (:option :value i (str i))))))))
-
+          (str (credit-card-details-form :show-error show-error))
+          )
         (:button :id "ccnext" :class "nav" :type "submit" "Next >")
-
-        (:p "We do not store your credit card information, and we have a really good " (:a :href "/privacy" "privacy policy") ".")
      ; (:p "For information on other ways to donate, " (:a :href "/donate/more" "click here") ".")
       ))))
 
