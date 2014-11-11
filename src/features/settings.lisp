@@ -332,6 +332,8 @@
         (:input :id "cctoken" :name "token" :type "hidden")
         (if edit-card-p
           (htm
+            (dolist (flash (flashes))
+              (str flash))
             (str (stripe-tokenize :name name
                                   :address address
                                   :city city
@@ -914,7 +916,11 @@
                    ((string= code "invalid_cvc")
                     "The CVC provided was incorrect.")
 
-                   (t "An error occurred while processing your card.")))
+                   ((string= code "expired_card")
+                    "This card has expired.")
+
+                   (t "An error occurred while processing your card."))
+                 :error t)
                (see-other "/settings/personal?edit=card#donate")    
                ))))
        ))))

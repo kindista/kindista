@@ -1330,6 +1330,10 @@ img.small {
   margin-left:16em;
  }
 
+ .item .flash {
+  margin-left: 0;
+ }
+
  .hide-menu .flash,
  .signup.flash {
   margin-left: 0;
