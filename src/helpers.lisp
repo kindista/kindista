@@ -157,20 +157,23 @@
         (when (ppcre:scan +email-scanner+ email)
           (collect email))))
 
-(defun mailinate-user-emails (&optional accounts-to-omit)
+(defun mailinate-user-emails (&key (accounts-to-omit (list 1)) groups-to-omit)
   "For use in development environment only. Gives all users a mailinator email address for testing functionality and to prevent emails from being sent to users by mistake."
   (unless *productionp*
-    (dolist (id *active-people-index*)
-      (unless (find id accounts-to-omit)
-        (let ((user (db id)))
-          (amodify-db id
-                      :emails (cons (s+ "k-"
-                                        (ppcre:regex-replace-all
-                                          " "
-                                          (string-downcase (getf user :name))
-                                          "-" )
-                                        "@mailinator.com")
-                                    it)))))))
+    (let ((group-members (flatten (mapcar #'(lambda (id) (gethash id *group-members-index*))
+                                          groups-to-omit))))
+      (dolist (id *active-people-index*)
+        (unless (or (find id accounts-to-omit)
+                    (find id group-members))
+          (let ((user (db id)))
+            (amodify-db id
+                        :emails (cons (s+ "k-"
+                                          (ppcre:regex-replace-all
+                                            " "
+                                            (string-downcase (getf user :name))
+                                            "-" )
+                                          "@mailinator.com")
+                                      it))))))))
 
 (defun separate-with-commas (list)
   (format nil "~{~A, ~}" list))
