@@ -241,6 +241,9 @@
   ("/settings/verify-address"
     :get get-verify-address)
 
+  ("/settings/ccard"
+    :post post-settings-ccard)
+
   ("/settings/communication"
     :get get-settings-communication)
 

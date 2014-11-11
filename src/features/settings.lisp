@@ -273,29 +273,119 @@
                  "of at least 8 words.")))
 
 (defun settings-donate ()
-  (let ((plan (getf *user* :plan)))
+  (let* ((plan (getf *user* :plan))
+         (customer (stripe:retrieve-customer (getf *user* :custid)))
+        ;(default-card-id (stripe:sstruct-get customer :default-card))
+         (active-card (stripe:sstruct-get customer :active-card))
+        ;(active-card-id (stripe:sstruct-get active-card :id))
+        ;(card-is-active-p (string= default-card-id active-card-id))
+        )
     (settings-item-html "donate"
       (html
+        (:a :id "donate")
         (:form :method "post" :class "password" :action "/settings"
-         (:input :type "hidden" :name "next" :value *base-url*)
-         (:div :class "submit-settings"
-           (:button :class "cancel" :type "submit" :name "cancel-plan" "Cancel plan")
-           (:button :class "yes" :type "submit" "Change plan"))
-         (:div
-           (:label "Current monthly donation: " (:strong "$" (str plan)))
-           (:select :name "plan"
+          (:input :type "hidden" :name "next" :value *base-url*)
+          (:div :class "submit-settings"
+           (:button :class "cancel small" :type "submit" :name "cancel-plan" "Cancel plan")
+           (:button :class "yes small" :type "submit" "Change plan"))
+          (:div
+            (:label "Current monthly donation: " (:strong "$" (str plan)))
+            (:select :name "plan"
              (:option :disabled "disabled" "Select a new plan")
              (:option :value "5" "$5/month")
              (:option :value "10" "$10/month")
              (:option :value "20" "$20/month")
              (:option :value "35" "$35/month")
              (:option :value "50" "$50/month")
-             (:option :value "100" "$100/month")))))
+             (:option :value "100" "$100/month"))))
+        (str (settings-card-details active-card)))
 
     :editable t
     :help-text (s+ "Your monthly donation is specified in US Dollars. Changes take place on your "
                    "next monthly bill&mdash;we do not prorate plan changes. Thank you for your "
                    "financial support!"))))
+
+(defun settings-card-details
+  (card
+   &aux (edit-card-p (string= (get-parameter-string "edit") "card"))
+        (name (stripe:sstruct-get card :name))
+        (address (strcat* (stripe:sstruct-get card :address-line1)
+                          (unless (string= (stripe:sstruct-get card
+                                                               :address-line2)
+                                           "NULL")
+                            (s+ " " (stripe:sstruct-get card :address-line2)))))
+        (city (stripe:sstruct-get card :address-city))
+        (state (stripe:sstruct-get card :address-state))
+        (zip (stripe:sstruct-get card :address-zip))
+        (last-4 (stripe:sstruct-get card :last4))
+        (card-type (stripe:sstruct-get card :type))
+        (exp-month (stripe:sstruct-get card :exp-month))
+        (exp-year (stripe:sstruct-get card :exp-year)))
+
+  (html
+    (:form :method "post"
+           :action "/settings/ccard"
+           :onsubmit (when (and edit-card-p
+                                (not (post-parameter "cancel")))
+                       "return tokenize(this);")
+      (:blockquote :id "donate"
+        (:input :id "cctoken" :name "token" :type "hidden")
+        (if edit-card-p
+          (htm
+            (dolist (flash (flashes))
+              (str flash))
+            (str (stripe-tokenize :name name
+                                  :address address
+                                  :city city
+                                  :state state
+                                  :zip zip))
+            (:h3 "Billing address")
+            (:ul
+              (:li :class "full"
+                (:label :for "name" "*Name on card")
+                (:input :type "text"
+                        :id "name"
+                        :name "name"
+                        :value name))
+              (:li :class "full"
+                (:label :for "address" "*Address")
+                (:input :type "text"
+                        :id "address"
+                        :name "address"
+                        :value address))
+              (:li :class "half"
+                (:label :for "city" "*City")
+                (:input :type "text"
+                        :id "city"
+                        :name "city"
+                        :value city))
+              (:li :class "quarter"
+                (:label :for "state" "*State")
+                (:select :name "state"
+                   (str (state-options state))))
+              (:li :class "quarter"
+                (:label :for "zip" "*Zip")
+                (:input :type "text"
+                        :name "zip"
+                        :value zip)))
+
+            (:h3 "Credit card info")
+            (str (credit-card-details-form :show-error t :card card))
+            (:button :class "blue float-right update" :type "submit" :name "update-card" "Submit changes")
+            (:a :href "/settings/personal#donate" :class "cancel button float-right update" "Cancel"))
+
+          (htm
+            (:span (:strong "Card info:"))
+            (:span (:strong (str card-type)))
+            (:span "****" (str last-4))
+            (:span (:strong "Expires:"))
+            (:span (str exp-month)
+                   "/"
+                   (str exp-year))
+            (:button :class "blue small float-right" :type "submit" :name "edit-card" "Update card"))))) 
+    )
+  
+  )
 
 (defun settings-deactivate ()
   (let ((action (if (eq (getf *user* :active) t)
@@ -799,6 +889,41 @@
   (flash "the avatar you uploaded is too large. please upload an image smaller than 10mb." :error t)
   (go-settings))
 
+(defun post-settings-ccard ()
+  (require-user
+    (cond
+      ((post-parameter "cancel")
+       (see-other "/settings/personal#donate"))
+      ((post-parameter "edit-card")
+       (see-other "/settings/personal?edit=card#donate"))
+      ((post-parameter "token")
+       (let ((token (post-parameter "token")))
+         (handler-case
+           (progn
+             (stripe:update-customer (getf *user* :custid) :card token)
+             (flash "Your card has been updated")
+             (see-other "/settings/personal#donate"))
+           (stripe::stripe-error (err)
+             (let ((code (stripe:sstruct-get (stripe::stripe-error-reply err) :error :code)))
+               (pprint code)
+               (terpri)
+               (flash
+                 (cond
+                   ((string= code "card_declined")
+                    "Your card was declined")
+
+                   ((string= code "processing_error")
+                    "Our payment processor encountered an error while processing your card.")
+
+                   ((string= code "expired_card")
+                    "This card has expired.")
+
+                   (t "An error occurred while processing your card."))
+                 :error t)
+               (see-other "/settings/personal?edit=card#donate")    
+               ))))
+       ))))
+
 (defun post-settings ()
   (require-user
     (let* ((groupid (or (post-parameter "on")
@@ -955,12 +1080,21 @@
                 (progn (stripe:delete-subscription it)
                        (flash "Your plan has been cancelled, effective immediately. Thank you for your financial support!") 
                        (notice :cancel-plan :plan (getf *user* :plan) :custid (getf *user* :custid)) 
-                       (modify-db *userid* :plan nil) 
+                       (modify-db *userid* :plan nil)
+                       (see-other "/settings/personal"))
+                (stripe::stripe-not-found (err)
+                   (declare (ignore err))
+                       (modify-db *userid* :plan nil)
+                       (flash "Your plan has been cancelled, effective immediately. Thank you for your financial support!")
                        (see-other "/settings/personal"))
                 (t (err)
                    (declare (ignore err))
                    (flash "There was an error deleting your subscription. Humans have been notified!" :error t)
-                   (notice :error :on :cancel-plan :custid (getf *user* :custid)))))
+                   (notice :error
+                           :on :cancel-plan
+                           :url "/settings/personal"
+                           :userid *userid*
+                           :custid (getf *user* :custid)))))
 
              (t
               (flash "You do not currently have an active subscription.")

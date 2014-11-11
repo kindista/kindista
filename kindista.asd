@@ -110,6 +110,7 @@
                                       :serial t
                                       :components ((:file "helpers")
                                                    (:file "email-verification")
+                                                   (:file "error-notifications")
                                                    (:file "feedback-notification")
                                                    (:file "gratitude-notification")
                                                    (:file "message-notification")
