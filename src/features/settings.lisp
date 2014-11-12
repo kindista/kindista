@@ -490,6 +490,10 @@
                             " a message or responds to "
                             (if group "our" "my")
                             " offers/requests")))
+              (:li (:input :type "checkbox"
+                    :name "new-contact"
+                    :checked (checkbox-value :notify-new-contact))
+                   "when someone adds me to their list of contacts")
               (unless group
                 (htm
                   (:li (:input :type "checkbox"
@@ -907,6 +911,7 @@
          (modify-db userid
                     :notify-gratitude (when (post-parameter "gratitude") t)
                     :notify-message (when (post-parameter "message") t)
+                    :notify-new-contact (when (post-parameter "new-contact") t)
                     :notify-reminders (when (post-parameter "reminders") t)
                     :notify-expired-invites (when (post-parameter "expired-invites") t)
                     :notify-group-membership-invites (when (post-parameter "group-membership-invites") t)

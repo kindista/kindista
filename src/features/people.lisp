@@ -36,6 +36,16 @@
                       :notify-new-contact (and (getf data :notify-message)
                                                (getf data :active)))))))
 
+(defun find-people-without-emails ()
+  (let (ids)
+    (dolist (id (hash-table-keys *db*))
+      (let ((data (db id)))
+        (when (eq (getf data :type) :person)
+          (when (equal (getf data :emails) '(nil))
+            (push id ids)
+            ))))
+    ids))
+
 (defun create-person (&key name email password host (pending nil))
   (insert-db `(:type :person
                :name ,name
@@ -74,7 +84,8 @@
                (not (getf data :banned)))
       (with-locked-hash-table (*email-index*)
         (dolist (email (getf data :emails))
-          (setf (gethash email *email-index*) id))))
+          (when email ;some deleted accounts might have :emails (nil)
+            (setf (gethash email *email-index*) id)))))
 
     (awhen (getf data :banned)
       (with-locked-hash-table (*banned-emails-index*)
