@@ -303,13 +303,13 @@
                              code
                              email
                              "updates from Kindista"
-                             "occasional updates like this from Kindista"))))
+                             :detailed-notification-type "occasional updates like this from Kindista"))))
                (text-message (code email)
                  (s+ text (unsubscribe-notice-ps-text
                             code
                             email
                             "updates from Kindista"
-                            "occasional updates like this from Kindista"))))
+                            :detailed-notification-type "occasional updates like this from Kindista"))))
          (cond
           ((post-parameter "test")
            (cl-smtp:send-email +mail-server+

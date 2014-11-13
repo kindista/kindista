@@ -49,7 +49,8 @@
   (unsubscribe-code
    email-address
    notification-type
-   &optional (detailed-notification-type notification-type))
+   &key (detailed-notification-type notification-type)
+        groupid)
 
 (strcat*
 #\linefeed #\linefeed
@@ -62,14 +63,15 @@ notification-type
 detailed-notification-type
 ", you may unsubscribe: "
 #\linefeed
-(unsubscribe-url email-address unsubscribe-code)))
+(unsubscribe-url email-address unsubscribe-code groupid)))
 
 
 (defun unsubscribe-notice-ps-html
   (unsubscribe-code
    email-address
    notification-type
-   &optional (detailed-notification-type notification-type))
+   &key (detailed-notification-type notification-type)
+        groupid)
 (html
   (:p :style *style-p*
     "Why am I receiving this?"
@@ -79,12 +81,13 @@ detailed-notification-type
     " If you no longer wish to receive "
     (str detailed-notification-type)
     ", you may "
-    (:a :href (unsubscribe-url email-address unsubscribe-code)
+    (:a :href (unsubscribe-url email-address unsubscribe-code groupid)
         "unsubscribe")
     ".")))
 
-(defun unsubscribe-url (email-address unsubscribe-code)
+(defun unsubscribe-url (email-address unsubscribe-code &optional groupid)
   (url-compose (strcat +base-url+ "settings/communication")
+               "groupid" groupid
                "email" email-address
                "k" unsubscribe-code))
 

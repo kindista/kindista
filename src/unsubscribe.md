@@ -7,12 +7,13 @@
 version
 
 [ ] change unsubscribe links on:
-    - messages
-    - broadcasts
-    - reminders
-    - expired invite reminders
-    - gratitudes
-    - etc
+    [ ] messages
+    [ ] broadcasts
+    [ ] reminders
+    [ ] expired invite reminders
+    [x] gratitudes
+    [ ] etc
+    (grep "receive notifications")
 
 [ ] add contact notification option on communication settings
 [ ] enable deletion of contact-n items
