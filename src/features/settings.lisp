@@ -490,12 +490,12 @@
                             " a message or responds to "
                             (if group "our" "my")
                             " offers/requests")))
-              (:li (:input :type "checkbox"
-                    :name "new-contact"
-                    :checked (checkbox-value :notify-new-contact))
-                   "when someone adds me to their list of contacts")
               (unless group
                 (htm
+                  (:li (:input :type "checkbox"
+                        :name "new-contact"
+                        :checked (checkbox-value :notify-new-contact))
+                       "when someone adds me to their list of contacts")
                   (:li (:input :type "checkbox"
                         :name "expired-invites"
                         :checked (checkbox-value :notify-expired-invites))
@@ -856,12 +856,13 @@
 
     (let* ((unverified-userid (gethash unverified-email *email-index*))
            (unverified-user (db unverified-userid))
-           (verified-user (when (string= (getf unverified-user :unsubscribe-key) k)
+           (verified-user (when (string= (getf unverified-user
+                                               :unsubscribe-key)
+                                         k)
                               unverified-user))
            (userid (or (when verified-user unverified-userid)
                        *userid*))
            (user (or verified-user *user*))
-           (k (post-parameter-string "k"))
            (save (post-parameter "save-notifications"))
            ;; for identity-selection-html
            (identity (post-parameter-integer "identity-selection"))

@@ -41,12 +41,30 @@
 (defun post-requests-new ()
   (post-new-inventory-item "request" :url "/requests/new"))
 
-(defun get-request (id &key all-terms any-terms without-terms distance notify-matches)
+(defun get-request
+  (id
+   &key all-terms
+        any-terms
+        without-terms
+        distance
+        notify-matches
+   &aux (k (get-parameter-string "k"))
+        (unverified-email (get-parameter-string "email")))
+
   (unless (integerp id)
     (setf id (parse-integer id)))
+
   (let* ((request (db id))
          (by (getf request :by))
-         (self (eql *userid* by))
+         (unverified-userid (gethash unverified-email *email-index*))
+         (unverified-user (db unverified-userid))
+         (verified-user (when (string= (getf unverified-user
+                                             :unsubscribe-key)
+                                       k)
+                            unverified-user))
+         (userid (or (when verified-user unverified-userid)
+                     *userid*))
+         (self (eql userid by))
          (matchmaker-admin (matchmaker-admin-p))
          (result (gethash id *db-results*)))
     (cond
@@ -69,7 +87,8 @@
           "Requests"
           (html
             (:div :class "inventory-item-page"
-              (when (or matchmaker-admin self)
+              (when (and *userid*
+                         (or matchmaker-admin self))
                 (str (menu-horiz
                        (when self
                          (html (:a :href (s+ "/people/"
@@ -82,6 +101,7 @@
               (str (inventory-activity-item result :show-distance t :show-tags t))
               (when (or self (group-admin-p by) matchmaker-admin)
                 (str (item-matches-html id :data request
+                                           :self self
                                            :all-terms all-terms
                                            :any-terms any-terms
                                            :without-terms without-terms

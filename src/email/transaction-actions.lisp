@@ -41,6 +41,8 @@
                                                  event-actor-id))
         (other-party (db other-party-id))
         (other-party-is-group-p (eq (getf other-party :type) :group))
+        (groupid (when other-party-is-group-p other-party-id))
+        (group-name (when groupid (getf other-party :name)))
         (recipients (if other-party-is-group-p
                       (getf other-party :admins)
                       (list other-party-id)))
@@ -52,9 +54,8 @@
              (gift-given-notification-text (aif group-actor
                                                (getf it :name)
                                                event-actor-name)
-                                           (if (eq (getf other-party :type)
-                                                   :group)
-                                             (getf other-party :name)
+                                           (if groupid
+                                             group-name
                                              "you")
                                            transaction-url
                                            :html-p html-p))
@@ -67,8 +68,8 @@
                ((not log-event)
                 (s+ event-actor-name
                     " replied to "
-                    (if other-party-is-group-p
-                      (s+ (getf other-party :name) "'s ")
+                    (if groupid
+                      (s+ group-name "'s ")
                       "your ")
                     on-type-string
                     (unless title-p ".")))
@@ -82,35 +83,41 @@
                                             (:request "a request")))))))
 
     (dolist (recipient-id recipients)
-      (let ((recipient (db recipient-id))
-            (recipient-group-id (cdar (assoc-assoc recipient-id
-                                                   (getf transaction :people)))))
+      (let* ((recipient (db recipient-id))
+             (email (car (getf recipient :emails)))
+             (unsub-key (getf recipient :unsubscribe-key)))
         (when (getf recipient :notify-message)
           (cl-smtp:send-email
             +mail-server+
             "PleaseDoNotReply <noreply@kindista.org>"
-             (car (getf recipient :emails))
-             (notification-text recipient-id :title-p t)
-             (transaction-action-notification-email-text
-               (getf other-party :name)
-               event-actor-name
-               transaction-url
-               recipient-group-id
-               :on-title on-title
-               :on-details on-details
-               :on-type-string on-type-string
-               :text (notification-text recipient-id)
-               :message message)
-             :html-message (transaction-action-notification-email-html
-                             (getf other-party :name)
-                             event-actor-name
-                             transaction-url
-                             recipient-group-id
-                             :on-title on-title
-                             :on-details on-details
-                             :on-type-string on-type-string
-                             :text (notification-text recipient-id :html-p t)
-                             :message message)))))))
+            email
+            (notification-text recipient-id :title-p t)
+            (transaction-action-notification-email-text
+              (getf other-party :name)
+              event-actor-name
+              transaction-url
+              :email email
+              :unsubscribe-key unsub-key
+              :group-name group-name
+              :groupid groupid
+              :on-title on-title
+              :on-details on-details
+              :on-type-string on-type-string
+              :text (notification-text recipient-id)
+              :message message)
+            :html-message (transaction-action-notification-email-html
+                            (getf other-party :name)
+                            event-actor-name
+                            transaction-url
+                            :email email
+                            :unsubscribe-key unsub-key
+                            :group-name group-name
+                            :groupid groupid
+                            :on-title on-title
+                            :on-details on-details
+                            :on-type-string on-type-string
+                            :text (notification-text recipient-id :html-p t)
+                            :message message)))))))
 
 (defun gift-given-notification-text
   (giver-name
@@ -136,14 +143,18 @@
      text))
 
 (defun transaction-action-notification-email-text
-  (name other-party-name
-        url
-        recipient-group-id
-        &key on-title
-             on-details
-             on-type-string
-             text
-             message)
+  (name
+   other-party-name
+   url
+   &key on-title
+        on-details
+        on-type-string
+        text
+        message
+        unsubscribe-key
+        email
+        group-name
+        groupid)
   (strcat*
 (no-reply-notice " use the link below to reply to this transaction on Kindista.org")
 #\linefeed #\linefeed
@@ -167,11 +178,15 @@ other-party-name
 #\linefeed
 url
 #\linefeed #\linefeed
-"If you no longer wish to receive notifications when people send you messages, please edit your communication settings:
-"
-(s+ +base-url+
-    "settings/communication"
-    (awhen recipient-group-id (strcat "?groupid=" it)))
+(unsubscribe-notice-ps-text
+  unsubscribe-key
+  email
+  (s+ "notifications when people send "
+      (or group-name "you")
+      " messages and reply to "
+      (if groupid "its" "your")
+      " offers and requests")
+  :groupid groupid)
 #\linefeed #\linefeed
 "Thank you for sharing your gifts with us!"
 #\linefeed
@@ -181,12 +196,15 @@ url
   (name
    other-party-name
    url
-   recipient-group-id
    &key on-title
         on-details
         on-type-string
         text
-        message)
+        message
+        unsubscribe-key
+        email
+        group-name
+        groupid)
   (html-email-base
     (html
       (:p :style *style-p* (:strong (str (no-reply-notice " use the link below to reply to this transaction on Kindista.org"))))
@@ -218,15 +236,16 @@ url
         (:a :href url
          (str url)))
 
-      (:p :style *style-p*
-          "If you no longer wish to receive notifications when people send you messages, please edit your settings:"
-       (:br)
-       (:a :href (s+ +base-url+
-                     "settings/communication"
-                     (awhen recipient-group-id (strcat "?groupid=" it)))
-           (str (s+ +base-url+
-                    "settings/communication"
-                    (awhen recipient-group-id (strcat "?groupid=" it))))))
+      (str
+        (unsubscribe-notice-ps-html
+          unsubscribe-key
+          email
+          (s+ "notifications when people send "
+              (or group-name "you")
+              " messages and reply to "
+              (if groupid "its" "your")
+              " offers and requests")
+          :groupid groupid))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
       (:p "-The Kindista Team"))))

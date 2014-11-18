@@ -1931,6 +1931,12 @@ div.item-matches p.inventory-match-title {
  margin: 0.4em 0;
 }
 
+div.item-matches.card em {
+ display: inline-block;
+ margin-top: 0.5em;
+ max-width: 60em;
+}
+
 div.gratitude-on-item {
  margin-top: 0.4em;
  

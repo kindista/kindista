@@ -26,10 +26,13 @@
          (group-name (getf group :name))
          (admin-list (getf group :notify-membership-request)))
 
-    (dolist (admin admin-list)
-      (cl-smtp:send-email +mail-server+
+    (dolist (admin-id admin-list)
+      (let* ((admin (db admin-id))
+             (email (car (getf admin :emails)))
+             (unsubscribe-key (getf admin :unsubscribe-key)))
+        (cl-smtp:send-email +mail-server+
                           "DoNotReply <noreply@kindista.org>"
-                          (car (db admin :emails))
+                          email
                           (s+ requestor-name
                               " is requesting to join your group, "
                               group-name
@@ -37,12 +40,18 @@
                           (group-membership-request-notification-email-text
                             requestor-name
                             group-id
-                            group-name)
+                            group-name
+                            email
+                            unsubscribe-key)
                           :html-message (group-membership-request-notification-email-html
-                                          from
-                                          group-id)))))
+                                          requestor-name
+                                          group-id
+                                          group-name
+                                          email
+                                          unsubscribe-key))))))
 
-(defun group-membership-request-notification-email-text (requestor-name group-id group-name)
+(defun group-membership-request-notification-email-text
+  (requestor-name group-id group-name email unsubscribe-key)
   (strcat
 (no-reply-notice)
 #\linefeed #\linefeed
@@ -56,24 +65,27 @@ group-name
 #\linefeed
 +base-url+ "groups/" (username-or-id group-id) "/members"
 #\linefeed #\linefeed
-" If you no longer wish to receive notifications when people request to join this group, please edit your settings:"
-#\linefeed
-+base-url+ "settings/communication" (strcat "?grouipid=" group-id)
+(unsubscribe-notice-ps-text
+  unsubscribe-key
+  email
+  (s+ "notifications when people request to join " group-name)
+  :groupid group-id)
 #\linefeed #\linefeed
 "Thank you for sharing your gifts with us!
 -The Kindista Team"))
 
 
-(defun group-membership-request-notification-email-html (from group-id)
+(defun group-membership-request-notification-email-html
+  (requestor-name group-id group-name email unsubscribe-key)
   (html-email-base
     (html
       (:p :style *style-p* (:strong (str (no-reply-notice))))
 
-      (:p :style *style-p* 
-          (str (person-email-link from))
-            " is requesting to join your group, "
-            (str (person-email-link group-id))
-                ", on Kindista.")
+      (:p :style *style-p*
+          (str requestor-name)
+          " is requesting to join your group, "
+          (str group-name)
+          ", on Kindista.")
 
       (:p :style *style-p*
         "You can approve or deny this request here:"
@@ -81,16 +93,12 @@ group-name
         (:a :href (s+ +base-url+ (username-or-id group-id) "/members")
             (str (s+ +base-url+ (username-or-id group-id) "/members"))))
 
-
-      (:p :style *style-p*
-          "If you no longer wish to receive notifications when people request to join this group, please edit your settings:"
-       (:br)
-       (:a :href (s+ +base-url+
-                     "settings/communication"
-                     (strcat "?groupid=" group-id))
-           (str (s+ +base-url+
-                    "settings/communication"
-                    (strcat "?groupid=" group-id)))))
+      (str
+        (unsubscribe-notice-ps-text
+          unsubscribe-key
+          email
+          (s+ "notifications when people request to join " group-name)
+          :groupid group-id))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
       (:p "-The Kindista Team"))))

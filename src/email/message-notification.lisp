@@ -104,11 +104,14 @@
 
       (dolist (recipient all-recipients)
         (let* ((groupid (cdar recipient))
+               (person (cdr recipient))
+               (email (car (getf person :emails)))
+               (unsub-key (getf person :unsubscribe-key))
                (subject (subject-text groupid)))
           (cl-smtp:send-email
             +mail-server+
             "PleaseDoNotReply <noreply@kindista.org>"
-            (car (getf (cdr recipient) :emails))
+            email
             subject
             (comment-notification-email-text on-id
                                              sender-name
@@ -118,8 +121,11 @@
                                                         :func #'person-name
                                                         :maximum-links 5)
                                              text
+                                             :email email
+                                             :unsubscribe-key unsub-key
                                              :group-name (getf sender-group
                                                                :name)
+                                             :groupid groupid
                                              :on-type on-type
                                              :inventory-text inventory-text)
             :html-message (comment-notification-email-html
@@ -130,11 +136,25 @@
                                        :func #'person-name
                                        :maximum-links 5)
                             text
+                            :email email
+                            :unsubscribe-key unsub-key
                             :group-name (getf sender-group :name)
+                            :groupid groupid
                             :on-type on-type
                             :inventory-text inventory-text)))))))
 
-(defun comment-notification-email-text (on-id from subject people text &key inventory-text group-name on-type)
+(defun comment-notification-email-text
+  (on-id
+   from
+   subject
+   people
+   text
+   &key inventory-text
+        email
+        unsubscribe-key
+        group-name
+        groupid
+        on-type)
   (strcat*
 (no-reply-notice)
 "You can also reply to this message by clicking on the link below."
@@ -153,12 +173,16 @@ from (awhen group-name (s+ " from " it )) " says:"
 #\linefeed
 (strcat +base-url+ (if (eq on-type :transaction) "transactions/" "conversations/") on-id)
 #\linefeed #\linefeed
-"If you no longer wish to receive notifications when people send you messages, please edit your communication settings:
-"
-(strcat +base-url+ "settings/communication")
-#\linefeed #\linefeed
 "Thank you for sharing your gifts with us!
--The Kindista Team"))
+-The Kindista Team"
+#\linefeed #\linefeed #\linefeed
+(unsubscribe-notice-ps-text
+  unsubscribe-key
+  email
+  (s+ "notifications when people send "
+      (or group-name "you")
+      " messages through Kindista")
+  :groupid groupid)))
 
 
 (defun comment-notification-email-html
@@ -168,7 +192,10 @@ from (awhen group-name (s+ " from " it )) " says:"
    people
    text
    &key inventory-text
+        email
+        unsubscribe-key
         group-name
+        groupid
         on-type
    &aux (url (strcat +base-url+
                      (if (eq on-type :transaction)
@@ -211,12 +238,15 @@ from (awhen group-name (s+ " from " it )) " says:"
        "You can see the conversation on Kindista here: "
        (:a :href url (str url)))
 
-      (:p :style *style-p*
-          "If you no longer wish to receive notifications when people send you messages, please edit your communication settings:"
-       (:br)
-       (:a :href (strcat +base-url+ "settings/communication")
-                 (str (strcat +base-url+ "settings/communication"))))
-
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
-      (:p "-The Kindista Team"))))
+
+      (:p "-The Kindista Team")
+
+      (str (unsubscribe-notice-ps-html
+             unsubscribe-key
+             email
+             (s+ "notifications when people send "
+                 (or group-name "you")
+                 " messages through Kindista")
+             :groupid groupid)))))
 

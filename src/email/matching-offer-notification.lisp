@@ -20,22 +20,28 @@
 (defun send-matching-offer-notification-email (offer-id request-id)
   (let* ((request (db request-id))
          (requested-by (db (getf request :by)))
+         (email (car (getf requested-by :emails)))
+         (unsubscribe-key (getf requested-by :unsubscribe-key))
          (title (getf request :title)))
 
      (cl-smtp:send-email +mail-server+
                          "DoNotReply <noreply@kindista.org>"
-                         (car (getf requested-by :emails))
+                         email
                          (s+ "New Kindista offer matching your request"
                              (awhen title
                                (s+ ": " it)))
                          (matching-offer-notification-email-text
                            request-id
-                           offer-id)
+                           offer-id
+                           email
+                           unsubscribe-key)
                          :html-message (matching-offer-notification-email-html
                                          request-id
-                                         offer-id))))
+                                         offer-id
+                                         email
+                                         unsubscribe-key))))
 
-(defun matching-offer-notification-email-text (request-id offer-id)
+(defun matching-offer-notification-email-text (request-id offer-id email unsubscribe-key)
   (let ((offer (db offer-id))
         (request (db request-id)))
     (strcat*
@@ -72,18 +78,22 @@
       "If you no longer wish to receive notifications regarding this request, you can change your matchmaker notification preferences here:"
       #\linefeed
       (url-compose (strcat +base-url+ "requests" request-id)
-                   "selected" "matchmaker")
+                   "selected" "matchmaker"
+                   "email" email
+                   "k" unsubscribe-key)
       #\linefeed #\linefeed
       "Thank you for sharing your gifts with us!"
       #\linefeed
       "-The Kindista Team")))
 
 
-(defun matching-offer-notification-email-html (request-id offer-id)
+(defun matching-offer-notification-email-html (request-id offer-id email unsubscribe-key)
   (let* ((offer (db offer-id))
          (offer-link (strcat +base-url+ "offers/" offer-id))
          (request-link (url-compose (strcat +base-url+ "requests/" request-id)
-                                    "selected" "matchmaker"))
+                                    "selected" "matchmaker"
+                                    "email" email
+                                    "k" unsubscribe-key))
          (request (db request-id))
          (match-terms (union (getf request :match-all-terms)
                              (getf request :match-any-terms))))

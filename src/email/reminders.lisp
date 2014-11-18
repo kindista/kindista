@@ -23,14 +23,26 @@
   (let* ((data (db userid))
          (name (getf data :name))
          (email (first (getf data :emails)))
-         (html (html-email-base (nth-value 1 (markdown message :stream nil)))))
+         (unsubscribe-key (getf data :unsubscribe-key))
+         (text (s+ message
+                   (unsubscribe-notice-ps-text
+                     unsubscribe-key
+                     email
+                     "occasional email suggestions about how you can get the most out of Kindista"
+                     :detailed-notification-description "these occasional suggestions" )))
+         (html (s+ (html-email-base (nth-value 1 (markdown message :stream nil)))
+                   (unsubscribe-notice-ps-html
+                     unsubscribe-key
+                     email
+                     "occasional email suggestions about how you can get the most out of Kindista"
+                     :detailed-notification-description "these occasional suggestions" ))))
     (when email
      (cl-smtp:send-email +mail-server+
                          "Kindista <info@kindista.org>"
                          (format nil "\"~A\" <~A>" name email)
                          title
-                         message
-                         :html-message html))))
+                         text
+                        :html-message html))))
 
 (defun update-reminder-log (userid reminder-type)
   (amodify-db userid :activity-reminders (acons reminder-type
@@ -96,8 +108,9 @@
 
            (if (and (getf person :notify-expired-invites)
                     (or (not (assoc :expired-invites reminders))
-                         (> now (cdr (assoc :expired-invites reminders))
-                            (* 4 +week-in-seconds+)))
+                        (> (- now
+                              (cdr (assoc :expired-invites reminders)))
+                           (* 4 +week-in-seconds+)))
                     recently-expired-invitations)
              ;;send notice to person that invitations they sent have expired
              (progn

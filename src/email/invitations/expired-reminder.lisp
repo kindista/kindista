@@ -19,50 +19,57 @@
 
 (defun send-expired-invitations-reminder-email (userid email-list)
   (let* ((host (db userid))
+         (host-email (car (getf host :emails)))
+         (unsubscribe-key (getf host :unsubscribe-key))
          (name (getf host :name))
          (expired-count (length email-list)))
     (cl-smtp:send-email +mail-server+
                         "Kindista <noreply@kindista.org>"
-                        (car (getf host :emails))
+                        host-email
                         (if (> expired-count 1)
                             (strcat expired-count " of your Kindista invitations have expired")
                             "One of your Kindista invitations has expired")
                         (expired-invitations-reminder-text name
                                                            email-list
-                                                           expired-count)
-                        :html-message (expired-invitations-reminder-html name
-                                                                         email-list
-                                                                         expired-count))))
+                                                           expired-count
+                                                           host-email
+                                                           unsubscribe-key)
+                        :html-message (expired-invitations-reminder-html
+                                        name
+                                        email-list
+                                        expired-count
+                                        host-email
+                                        unsubscribe-key))))
 
-(defun expired-invitations-reminder-text (name email-list expired-count)
-(s+ 
-"Hi " name ",
-"
+(defun expired-invitations-reminder-text
+  (name email-list expired-count host-email unsubscribe-key)
+(strcat*
+"Hi " name ","
+#\linefeed #\linefeed
 "We're writing to let you know that the Kindista invitation"
 (if (> expired-count 1)
 "s you sent to the following email addresses have expired:"
 " you sent to the following email address has expired:")
-
-"
-
-"
+#\linefeed #\linefeed
 (dolist (email email-list)
   (format nil "~a~c~c" email #\return #\linefeed))
-"
-You can send them another invitation or delete the invitation if you don't think they are going to join:
-"
+#\linefeed
+" You can send them another invitation or delete the invitation if you don't think they are going to join: "
+#\linefeed
 +base-url+ "people/invited"
+#\linefeed #\linefeed
+" Thanks for helping spread the word about Kindista!"
+#\linefeed
+"-The Kindista Team"
+#\linefeed #\linefeed #\linefeed
+(unsubscribe-notice-ps-text unsubscribe-key
+                            host-email
+                            "notifications when invitations you send for people to join Kindista expire"
+                            :detailed-notification-description "these notifications")
+))
 
-"
-You can also change your communication settings if you no longer wish to receive these notifications from us:
-"
-+base-url+ "settings/communication"
-"
-Thanks for helping spread the word about Kindista!
-"
-"-The Kindista Team"))
-
-(defun expired-invitations-reminder-html (name email-list expired-count)
+(defun expired-invitations-reminder-html
+  (name email-list expired-count host-email unsubscribe-key)
   (html-email-base
     (html
       (:p :style *style-p*
@@ -86,14 +93,13 @@ Thanks for helping spread the word about Kindista!
                   (str (s+ +base-url+ "people/invited"))))
 
       (:p :style *style-p*
-        "You can also change your communication settings if you no longer wish to receive these "
-        "notifications from us:"
-        (:br)
-        (:a :href (url-compose (s+ +base-url+ "settings/communication"))
-                  (str (s+ +base-url+ "settings/communication"))))
-
-      (:p :style *style-p*
         "Thanks for helping spread the word about Kindista!")
 
-      (:p "-The Kindista Team"))))
+      (:p "-The Kindista Team")
+
+      (str (unsubscribe-notice-ps-html
+             unsubscribe-key
+             host-email
+             "notifications when invitations you send for people to join Kindista expire"
+             :detailed-notification-description "these notifications")))))
 

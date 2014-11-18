@@ -6,16 +6,22 @@
 [ ] if *user* is same as that from link, go ahead and show logged in
 version
 
-[ ] change unsubscribe links on:
-    [ ] messages
+[ ] test unsubscribe links on:
+    [x] messages
     [ ] broadcasts
-    [ ] reminders
-    [ ] expired invite reminders
-    [x] gratitudes
+    [x] reminders
+    [x] expired invite reminders
+    [ ] gratitudes
+    [ ] group invitations
+    [ ] group membership requests
     [ ] etc
     (grep "receive notifications")
+
+[ ] make sure groupid is only being passed on notifications on the group settings page
 
 [ ] add contact notification option on communication settings
 [ ] enable deletion of contact-n items
 
 [ ] allow unsubsribes for group admins as necessary
+
+

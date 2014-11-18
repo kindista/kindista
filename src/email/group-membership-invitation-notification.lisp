@@ -23,11 +23,14 @@
          (host-name (db from :name))
          (group-id (getf invitation :group-id))
          (group-name (db group-id :name))
-         (recipient (caaar (getf invitation :people))))
+         (recipient-id (caaar (getf invitation :people)))
+         (recipient (db recipient-id))
+         (email (car (getf recipient :emails)))
+         (unsubscribe-key (getf recipient :unsubscribe-key)))
 
      (cl-smtp:send-email +mail-server+
                          "DoNotReply <noreply@kindista.org>"
-                         (car (db recipient :emails))
+                         email
                          (s+ host-name
                              " has invited you to join their group, "
                              group-name
@@ -35,13 +38,18 @@
                          (group-membership-invitation-notification-email-text
                            host-name
                            group-id
-                           group-name)
+                           group-name
+                           email
+                           unsubscribe-key)
                          :html-message (group-membership-invitation-notification-email-html
                                          from
                                          group-id
-                                         group-name))))
+                                         group-name
+                                         email
+                                         unsubscribe-key))))
 
-(defun group-membership-invitation-notification-email-text (host-name group-id group-name)
+(defun group-membership-invitation-notification-email-text
+  (host-name group-id group-name email unsubscribe-key)
   (strcat
     (no-reply-notice)
     #\linefeed #\linefeed
@@ -54,16 +62,18 @@
     #\linefeed
     +base-url+ "groups/" (username-or-id group-id)
     #\linefeed #\linefeed
-    " If you no longer wish to receive notifications when people invite you to join groups on Kindista, please edit your settings:"
-    #\linefeed
-    +base-url+ "settings/communication"
+    (unsubscribe-notice-ps-text
+      unsubscribe-key
+      email
+      "notifications when people invite you to join groups on Kindista")
     #\linefeed #\linefeed
     "Thank you for sharing your gifts with us!"
     #\linefeed
     "-The Kindista Team"))
 
 
-(defun group-membership-invitation-notification-email-html (from group-id group-name)
+(defun group-membership-invitation-notification-email-html
+  (from group-id group-name email unsubscribe-key)
   (html-email-base
     (html
       (:p :style *style-p* (:strong (str (no-reply-notice))))
@@ -80,13 +90,10 @@
         (:a :href (s+ +base-url+ "groups/" (username-or-id group-id))
             (str (s+ +base-url+ "groups/" (username-or-id group-id)))))
 
-      (:p :style *style-p* 
-          "If you no longer wish to receive notifications when people invite you to join groups on Kindista, please edit your settings:"
-       (:br)
-       (:a :href (s+ +base-url+
-                     "settings/communication")
-           (str (s+ +base-url+
-                    "settings/communication"))))
+      (str (unsubscribe-notice-ps-html
+             unsubscribe-key
+             email
+             "notifications when people invite you to join groups on Kindista"))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
       (:p "-The Kindista Team"))))
