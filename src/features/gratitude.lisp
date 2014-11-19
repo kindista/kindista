@@ -753,6 +753,7 @@
                                                       :action :gratitude-posted
                                                       :comment new-id)))))))
 
+                 (flash "Your statement of gratitude has been posted")
                  (see-other (or next gratitude-url))))))
 
           (t

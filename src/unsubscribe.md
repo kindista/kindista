@@ -22,7 +22,9 @@ version
 [ ] add contact notification option on communication settings
 [ ] enable deletion of contact-n items
 
-[ ] allow unsubsribes for group admins as necessary
+[ ] go to the correct page when selecting whos settings are changed
+[ ] go to correct page when updating group communication settings
+
 
 ## On server
 [ ] run (give-users-unsubscribe-keys)

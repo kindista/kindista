@@ -623,6 +623,7 @@
         (htm (:input :type "hidden" :name "k" :value it)))
       (awhen (get-parameter-string "email")
         (htm (:input :type "hidden" :name "email" :value it)))
+      (:input :type "hidden" :name "tab" :value (script-name*))
       (:strong "Viewing settings for: ")
       (str (identity-selection-html selected
                                     groups
@@ -759,7 +760,7 @@
                   (str (settings-identity-selection-html (or groupid userid)
                                                          groups
                                                          :userid userid
-                                                         :url "/settings/notifications")))
+                                                         )))
                 (str (settings-notifications :user user
                                              :userid userid
                                              :group group
@@ -959,12 +960,11 @@
            (unverified-groupid (or (post-parameter-integer "groupid") identity))
            (groupid (when (group-admin-p unverified-groupid userid) unverified-groupid))
            (group (db groupid))
-           (next (cond
-                   ((and *userid* (not verified-user))
-                    "/settings/communication")
-                   ((and groupid *userid*)
-                    (url-compose "/settings/communication" "groupid" groupid))
-                   (verified-user (referer)))))
+           (next (or (post-parameter "next")
+                     (url-compose "/settings/communication"
+                          "groupid" groupid
+                          "email" unverified-email
+                          "k" k))))
 
       (unless (if save
                 (post-parameter "message")
@@ -1063,10 +1063,12 @@
            (see-other (or (post-parameter "next") "/home")))
 
           ((post-parameter "identity-selection")
-           (if (eql (parse-integer it) *userid*)
-             (see-other "/settings/personal")
-             (see-other (url-compose "/settings/public"
-                                     "groupid" it))))
+           (see-other
+             (url-compose (post-parameter-string "tab")
+                          "groupid" (post-parameter-integer
+                                      "identity-selection")
+                          "email" (post-parameter-string "email")
+                          "k" (post-parameter-string "k"))))
 
           ((post-parameter "image")
            (let ((groupid (awhen (post-parameter "on") (parse-integer it))))

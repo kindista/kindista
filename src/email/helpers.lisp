@@ -29,9 +29,9 @@
                                  margin: 8px;
                                  border: thin solid #bac2b2;")
 
-(defvar *email-url* (or (awhen *test-email-ip*
-                          (s+ it "/"))
-                        +base-url+))
+(defparameter *email-url* (or (awhen *test-email-ip*
+                                (s+ it "/"))
+                              +base-url+))
 
 (defun person-email-link (id)
   (awhen (db id)
@@ -86,7 +86,7 @@ detailed-notification-description
     "If you no longer wish to receive "
     (str detailed-notification-description)
     ", you may "
-    (:a :href (str (unsubscribe-url email-address unsubscribe-code groupid))
+    (:a :href (unsubscribe-url email-address unsubscribe-code groupid)
         "unsubscribe")
     ".")))
 
