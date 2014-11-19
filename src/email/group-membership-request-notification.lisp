@@ -63,10 +63,10 @@ group-name
 #\linefeed #\linefeed
 "You can accept the invitation here:"
 #\linefeed
-+base-url+ "groups/" (username-or-id group-id) "/members"
+*email-url* "groups/" (username-or-id group-id) "/members"
 #\linefeed #\linefeed
 "Thank you for sharing your gifts with us!
--The Kindista Team"  
+-The Kindista Team"
 #\linefeed #\linefeed
 (unsubscribe-notice-ps-text
   unsubscribe-key
@@ -90,8 +90,8 @@ group-name
       (:p :style *style-p*
         "You can approve or deny this request here:"
         (:br)
-        (:a :href (s+ +base-url+ (username-or-id group-id) "/members")
-            (str (s+ +base-url+ (username-or-id group-id) "/members"))))
+        (:a :href (s+ *email-url* (username-or-id group-id) "/members")
+            (str (s+ *email-url* (username-or-id group-id) "/members"))))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
 

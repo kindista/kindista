@@ -20,7 +20,7 @@
 "To validate this email address, click on this link or
  copy and paste it into your browser: "
 #\linefeed
-(url-compose (s+ +base-url+ "settings/communication")
+(url-compose (s+ *email-url* "settings/communication")
              "token" token
              "invitation-id" id
              "email" to)
@@ -48,11 +48,11 @@ next to this email address (" to
        "To validate this email address, click on this link or copy and paste "
        "it into your browser:")
       (:p :style *style-p*
-        (:a :href (url-compose (s+ +base-url+ "settings/communication")
+        (:a :href (url-compose (s+ *email-url* "settings/communication")
                                "invitation-id" id
                                "token" token
                                "email" to)
-                  (str (url-compose (s+ +base-url+ "settings/communication")
+                  (str (url-compose (s+ *email-url* "settings/communication")
                                     "invitation-id" id
                                     "token" token
                                     "email" to))))
@@ -63,7 +63,7 @@ next to this email address (" to
 
       (:p :style *style-p*
        "If you are unable to click on the above link, go to your "
-       (:a :href (s+ +base-url+ "settings/communication")
+       (:a :href (s+ *email-url* "settings/communication")
            "communications settings")
        ", click on the \"activate\" link next to this email address("
        (str to)

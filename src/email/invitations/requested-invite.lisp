@@ -69,7 +69,7 @@ text "\"
 "Please click on this link or copy and paste it into your browser"
 " to create your account:
 "
-(url-compose (s+ +base-url+ "signup")
+(url-compose (s+ *email-url* "signup")
              "email" email
              "token" token)
 
@@ -114,10 +114,10 @@ Thanks for sharing your gifts with us!
       "Please click on this link or copy and paste it into your browser"
       " to create your account: "
       (:br)
-      (:a :href (url-compose (s+ +base-url+ "signup")
+      (:a :href (url-compose (s+ *email-url* "signup")
                              "email" email
                              "token" token)
-                (str (url-compose (s+ +base-url+ "signup")
+                (str (url-compose (s+ *email-url* "signup")
                                   "email" email
                                   "token" token))))
     (:p :style *style-p*

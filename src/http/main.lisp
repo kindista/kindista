@@ -45,6 +45,12 @@
             (delete-duplicates (gethash *token* *flashes*) :test #'string=))
       (remhash *token* *flashes*))))
 
+(defun new-error-notice-handler ()
+  (let ((data (cddddr *notice*)))
+   (send-error-notification-email :on (getf data :on)
+                                  :url (getf data :url)
+                                  :userid (getf data :userid))))
+
 (defun not-found ()
   (flash "The page you requested could not be found." :error t)
   (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
@@ -261,6 +267,7 @@
 
 (defun delete-token-cookie ()
   (awhen (cookie-in "token")
+
     (awhen (gethash it *tokens*)
       (remhash it *tokens*))
     (set-cookie "token" :value ""

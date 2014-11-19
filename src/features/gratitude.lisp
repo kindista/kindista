@@ -688,9 +688,7 @@
             (if transaction-id
               (progn
                 (flash "Please enter some more details about what you are grateful for." :error t)
-                (see-other (or (url-compose (post-parameter-string "next")
-                                            "post-gratitude" "t")
-                               "/home")))
+                (see-other (or next "/home")))
              (g-compose :error '(:text "Please enter some more details about what you are grateful for."
                                  :field "text"))))
 
@@ -718,7 +716,8 @@
                                             :on on-id
                                             :transaction-id transaction-id
                                             :time time
-                                            :text text)))
+                                            :text text))
+                  (gratitude-url (format nil "/gratitude/~A" new-id)))
 
              (if (getf *user* :pending)
                (progn
@@ -729,9 +728,9 @@
                  (awhen on-id
                    (let* ((inventory-result (gethash on-id *db-results*))
                           (pending-association (assoc inventory-result
-                                                 (getf (gethash recipient-id
-                                                               *pending-gratitude-index*)
-                                                       on-types)))
+                                                      (getf (gethash recipient-id
+                                                                     *pending-gratitude-index*)
+                                                            on-types)))
                           (transaction-id (or (cdr pending-association)
                                               (post-parameter-integer "transaction-id"))))
 
@@ -752,9 +751,9 @@
                                                                (cons *userid* groupid)
                                                                (list *userid*))
                                                       :action :gratitude-posted
-                                                      :comment new-id))))))
+                                                      :comment new-id)))))))
 
-                 (see-other (or next (format nil "/gratitude/~A" new-id))))))))
+                 (see-other (or next gratitude-url))))))
 
           (t
            (g-compose :subjects subjects)))))))

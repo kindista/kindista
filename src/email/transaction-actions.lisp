@@ -41,6 +41,7 @@
                                                  event-actor-id))
         (other-party (db other-party-id))
         (other-party-is-group-p (eq (getf other-party :type) :group))
+<<<<<<< HEAD
         (groupid (when other-party-is-group-p other-party-id))
         (group-name (when groupid (getf other-party :name)))
         (recipients (remove nil
@@ -49,6 +50,12 @@
                               (when (getf other-party :notify-message)
                                 (list other-party-id)))))
         (transaction-url (strcat +base-url+
+=======
+        (recipients (if other-party-is-group-p
+                      (getf other-party :admins)
+                      (list other-party-id)))
+        (transaction-url (strcat *email-url*
+>>>>>>> master
                                  "transactions/"
                                  transaction-id)))
 

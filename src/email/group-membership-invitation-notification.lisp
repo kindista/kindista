@@ -61,7 +61,7 @@
     #\linefeed #\linefeed
     "You can accept the invitation here:"
     #\linefeed
-    +base-url+ "groups/" (username-or-id group-id)
+    *email-url* "groups/" (username-or-id group-id)
     #\linefeed #\linefeed
     "Thank you for sharing your gifts with us!"
     #\linefeed
@@ -89,8 +89,8 @@
       (:p :style *style-p*
         "You can join " (str group-name) " here:"
         (:br)
-        (:a :href (s+ +base-url+ "groups/" (username-or-id group-id))
-            (str (s+ +base-url+ "groups/" (username-or-id group-id)))))
+        (:a :href (s+ *email-url* "groups/" (username-or-id group-id))
+            (str (s+ *email-url* "groups/" (username-or-id group-id)))))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
 

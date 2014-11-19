@@ -32,7 +32,7 @@ To reset your password and access your account please click on
 the following link or cut and paste it into the address bar of your browser:
 
 "
-(url-compose (s+ +base-url+ "reset")
+(url-compose (s+ *email-url* "reset")
              "token" token
              "email" email)
 "
@@ -63,10 +63,10 @@ Thank you for sharing your gifts with us!
        "your browser:")
 
       (:p :style *style-p*
-        (:a :href (url-compose (s+ +base-url+ "reset")
+        (:a :href (url-compose (s+ *email-url* "reset")
                                "token" token
                                "email" email)
-                  (str (url-compose (s+ +base-url+ "reset")
+                  (str (url-compose (s+ *email-url* "reset")
                                     "token" token
                                     "email" email))))
 

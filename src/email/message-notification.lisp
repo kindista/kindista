@@ -171,7 +171,7 @@ from (awhen group-name (s+ " from " it )) " says:"
 #\linefeed #\linefeed
 "You can see the conversation on Kindista here:"
 #\linefeed
-(strcat +base-url+ (if (eq on-type :transaction) "transactions/" "conversations/") on-id)
+(strcat *email-url* (if (eq on-type :transaction) "transactions/" "conversations/") on-id)
 #\linefeed #\linefeed
 "Thank you for sharing your gifts with us!
 -The Kindista Team"
@@ -197,7 +197,7 @@ from (awhen group-name (s+ " from " it )) " says:"
         group-name
         groupid
         on-type
-   &aux (url (strcat +base-url+
+   &aux (url (strcat *email-url*
                      (if (eq on-type :transaction)
                        "transactions/"
                        "conversations/")

@@ -64,7 +64,7 @@
       "Here's a link to the offer if you want to check it out or ask to receive it:"
 
       #\linefeed
-      (strcat +base-url+ "offers/" offer-id)
+      (strcat *email-url* "offers/" offer-id)
       #\linefeed #\linefeed
       "This offer matches your request:"
       (awhen (getf request :title)
@@ -77,7 +77,7 @@
       #\linefeed #\linefeed
       "If you no longer wish to receive notifications regarding this request, you can change your matchmaker notification preferences here:"
       #\linefeed
-      (url-compose (strcat +base-url+ "requests" request-id)
+      (url-compose (strcat *email-url* "requests" request-id)
                    "selected" "matchmaker"
                    "email" email
                    "k" unsubscribe-key)
@@ -89,8 +89,8 @@
 
 (defun matching-offer-notification-email-html (request-id offer-id email unsubscribe-key)
   (let* ((offer (db offer-id))
-         (offer-link (strcat +base-url+ "offers/" offer-id))
-         (request-link (url-compose (strcat +base-url+ "requests/" request-id)
+         (offer-link (strcat *email-url* "offers/" offer-id))
+         (request-link (url-compose (strcat *email-url* "requests/" request-id)
                                     "selected" "matchmaker"
                                     "email" email
                                     "k" unsubscribe-key))

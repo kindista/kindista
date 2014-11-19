@@ -44,6 +44,7 @@
   (add-notice-handler :new-pending-offer #'new-pending-offer-notice-handler)
   (add-notice-handler :new-matching-offer #'new-matching-offer-notice-handler)
   (add-notice-handler :new-invite-request #'new-invite-request-notice-handler)
+  (add-notice-handler :error #'new-error-notice-handler)
   (add-notice-handler :new-transaction-action #'new-transaction-action-notice-handler)
   (add-notice-handler :new-group-membership-request
                       #'new-group-membership-request-notice-handler)

@@ -29,10 +29,14 @@
                                  margin: 8px;
                                  border: thin solid #bac2b2;")
 
+(defvar *email-url* (or (awhen *test-email-ip*
+                          (s+ it "/"))
+                        +base-url+))
+
 (defun person-email-link (id)
   (awhen (db id)
     (html
-      (:a :href (strcat +base-url+
+      (:a :href (strcat *email-url*
                         (if (eql (getf it :type) :person)
                           "people/"
                           "groups/")
@@ -67,7 +71,6 @@ detailed-notification-description
 #\linefeed
 (unsubscribe-url email-address unsubscribe-code groupid)))
 
-
 (defun unsubscribe-notice-ps-html
   (unsubscribe-code
    email-address
@@ -88,7 +91,7 @@ detailed-notification-description
     ".")))
 
 (defun unsubscribe-url (email-address unsubscribe-code &optional groupid)
-  (url-compose (strcat +base-url+ "settings/communication")
+  (url-compose (strcat *email-url* "settings/communication")
                "groupid" groupid
                "email" email-address
                "k" unsubscribe-code))

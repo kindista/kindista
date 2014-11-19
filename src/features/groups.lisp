@@ -356,6 +356,10 @@
       (progn (modify-db groupid :category newtype)
              (see-other next)))))
 
+(defun all-groups ()
+  (loop for id being the hash-keys in *group-members-index*
+        collect (gethash id *db-results*)))
+
 (defun group-members (groupid)
   (gethash groupid *group-members-index*))
 

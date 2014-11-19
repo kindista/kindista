@@ -91,7 +91,7 @@ sender
 "Please click on this link or copy and paste it into your browser"
 " to RSVP:"
 #\linefeed
-(url-compose (s+ +base-url+ "signup") "email" to "token" token)
+(url-compose (s+ *email-url* "signup") "email" to "token" token)
 #\linefeed #\linefeed
 "-The Kindista Team"
 #\linefeed #\linefeed
@@ -99,7 +99,7 @@ sender
 "Please click on this link or copy and paste it into your browser"
 " to add this email address (" to
 ") to your Kindista account:"
-(s+ +base-url+ "settings/communication?edit=email#email"))))
+(s+ *email-url* "settings/communication?edit=email#email"))))
 
 
 (defun invitation-email-html (token to from &key group-id text auto-reminder host-reminder)
@@ -148,10 +148,10 @@ sender
           "Please click on this link or copy and paste it into your browser"
           " to RSVP: "
           (:br)
-          (:a :href (url-compose (s+ +base-url+ "signup")
+          (:a :href (url-compose (s+ *email-url* "signup")
                                  "email" to
                                  "token" token)
-                    (str (url-compose (s+ +base-url+ "signup")
+                    (str (url-compose (s+ *email-url* "signup")
                                       "email" to
                                       "token" token))))
 
@@ -162,6 +162,6 @@ sender
           "Please click on this link or copy and paste it into your browser"
           " to add this email address (" (str to)
           ") to your Kindista account:"
-          (:a :href (s+ +base-url+ "settings/communication?edit=email#email")
-              (str (s+ +base-url+ "settings/communication?edit=email#email"))))))))
+          (:a :href (s+ *email-url* "settings/communication?edit=email#email")
+              (str (s+ *email-url* "settings/communication?edit=email#email"))))))))
 

@@ -78,11 +78,11 @@ author-name
 #\linefeed #\linefeed
 "You can see the statement on Kindista here:"
 #\linefeed
-+base-url+ "gratitude/" gratitude-id
+*email-url* "gratitude/" gratitude-id
 #\linefeed #\linefeed
-"Thank you for sharing your gifts with us!
+"Thank you for sharing your gifts with us!"
 #\linefeed
--The Kindista Team"
+";-The Kindista Team"
 #\linefeed #\linefeed
 (unsubscribe-notice-ps-text
   (getf recipient :unsubscribe-key)
@@ -102,7 +102,7 @@ author-name
       (:p :style *style-p* 
           (str (person-email-link from))
             " has shared a "
-            (:a :href (strcat +base-url+ "gratitude/" gratitude-id)
+            (:a :href (strcat *email-url* "gratitude/" gratitude-id)
                           "statement of gratitude")
                 " about "
                 (str (or (getf recipient :group-name) "you"))
