@@ -43,9 +43,11 @@
         (other-party-is-group-p (eq (getf other-party :type) :group))
         (groupid (when other-party-is-group-p other-party-id))
         (group-name (when groupid (getf other-party :name)))
-        (recipients (if other-party-is-group-p
-                      (getf other-party :admins)
-                      (list other-party-id)))
+        (recipients (remove nil
+                            (if other-party-is-group-p
+                              (getf other-party :notify-message)
+                              (when (getf other-party :notify-message)
+                                (list other-party-id)))))
         (transaction-url (strcat +base-url+
                                  "transactions/"
                                  transaction-id)))
@@ -82,11 +84,11 @@
                                             (:offer "an offer")
                                             (:request "a request")))))))
 
-    (dolist (recipient-id recipients)
-      (let* ((recipient (db recipient-id))
-             (email (car (getf recipient :emails)))
-             (unsub-key (getf recipient :unsubscribe-key)))
-        (when (getf recipient :notify-message)
+    (when (and recipients (> (length recipients) 0))
+      (dolist (recipient-id recipients)
+        (let* ((recipient (db recipient-id))
+               (email (car (getf recipient :emails)))
+               (unsub-key (getf recipient :unsubscribe-key)))
           (cl-smtp:send-email
             +mail-server+
             "PleaseDoNotReply <noreply@kindista.org>"
@@ -178,6 +180,10 @@ other-party-name
 #\linefeed
 url
 #\linefeed #\linefeed
+"Thank you for sharing your gifts with us!"
+#\linefeed
+"-The Kindista Team"  
+#\linefeed #\linefeed
 (unsubscribe-notice-ps-text
   unsubscribe-key
   email
@@ -186,11 +192,7 @@ url
       " messages and reply to "
       (if groupid "its" "your")
       " offers and requests")
-  :groupid groupid)
-#\linefeed #\linefeed
-"Thank you for sharing your gifts with us!"
-#\linefeed
-"-The Kindista Team"))
+  :groupid groupid)))
 
 (defun transaction-action-notification-email-html
   (name
@@ -236,6 +238,10 @@ url
         (:a :href url
          (str url)))
 
+      (:p :style *style-p* "Thank you for sharing your gifts with us!")
+
+      (:p "-The Kindista Team")
+
       (str
         (unsubscribe-notice-ps-html
           unsubscribe-key
@@ -245,7 +251,4 @@ url
               " messages and reply to "
               (if groupid "its" "your")
               " offers and requests")
-          :groupid groupid))
-
-      (:p :style *style-p* "Thank you for sharing your gifts with us!")
-      (:p "-The Kindista Team"))))
+          :groupid groupid)))))

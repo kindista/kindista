@@ -26,20 +26,20 @@
     (dolist (subject (getf gratitude :subjects))
       (let* ((data (db subject))
              (name (getf data :name)))
-        (awhen (getf data :notify-gratitude)
-          (if (eql (getf data :type) :person)
+        (if (eql (getf data :type) :person)
+          (when (getf data :notify-gratitude)
             (push (list :id subject
                         :email (car (getf data :emails))
                         :unsubscribe-key (getf data :unsubscribe-key))
-                  recipients)
-            (dolist (member it)
-              (let ((person (db member)))
-                (push (list :group-name name
-                            :group-id subject
-                            :email (car (getf person :emails))
-                            :unsubscribe-key (getf person :unsubscribe-key)
-                            :id member)
-                      recipients)))))))
+                recipients))
+          (dolist (admin (getf data :notify-gratitude))
+            (let ((person (db admin)))
+              (push (list :group-name name
+                          :group-id subject
+                          :email (car (getf person :emails))
+                          :unsubscribe-key (getf person :unsubscribe-key)
+                          :id admin)
+                    recipients))))))
 
     (dolist (recipient recipients)
       (cl-smtp:send-email +mail-server+
@@ -59,8 +59,7 @@
                                           gratitude-id
                                           gratitude
                                           from
-                                          recipient
-                                          )))))
+                                          recipient)))))
 
 (defun gratitude-notification-email-text
   (author-name
@@ -81,16 +80,16 @@ author-name
 #\linefeed
 +base-url+ "gratitude/" gratitude-id
 #\linefeed #\linefeed
+"Thank you for sharing your gifts with us!
+#\linefeed
+-The Kindista Team"
+#\linefeed #\linefeed
 (unsubscribe-notice-ps-text
   (getf recipient :unsubscribe-key)
    (getf recipient :email)
    (s+ "notifications when people post statements of gratitude about "
        (or (getf recipient :group-name) "you"))
-   :groupid (getf recipient :groupid))
-#\linefeed #\linefeed
-"Thank you for sharing your gifts with us!
--The Kindista Team"))
-
+   :groupid (getf recipient :groupid))))
 
 (defun gratitude-notification-email-html
   (gratitude-id gratitude from recipient)
@@ -114,13 +113,15 @@ author-name
         (:tr (:td :style "padding: 4px 12px;"
                (str (getf gratitude :text)))))
 
+      (:p :style *style-p* "Thank you for sharing your gifts with us!")
+
+      (:p "-The Kindista Team")
+
       (str (unsubscribe-notice-ps-html
              (getf recipient :unsubscribe-key)
              (getf recipient :email)
              (s+ "notifications when people post statements of gratitude about "
                  (or (getf recipient :group-name) "you"))
              :groupid (getf recipient :groupid)))
-
-      (:p :style *style-p* "Thank you for sharing your gifts with us!")
-      (:p "-The Kindista Team"))))
+      )))
 

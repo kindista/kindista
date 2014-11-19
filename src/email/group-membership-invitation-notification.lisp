@@ -28,25 +28,26 @@
          (email (car (getf recipient :emails)))
          (unsubscribe-key (getf recipient :unsubscribe-key)))
 
-     (cl-smtp:send-email +mail-server+
-                         "DoNotReply <noreply@kindista.org>"
-                         email
-                         (s+ host-name
-                             " has invited you to join their group, "
-                             group-name
-                             ", on Kindista")
-                         (group-membership-invitation-notification-email-text
-                           host-name
-                           group-id
-                           group-name
+     (when (getf recipient :notify-group-membership-invites)
+       (cl-smtp:send-email +mail-server+
+                           "DoNotReply <noreply@kindista.org>"
                            email
-                           unsubscribe-key)
-                         :html-message (group-membership-invitation-notification-email-html
-                                         from
-                                         group-id
-                                         group-name
-                                         email
-                                         unsubscribe-key))))
+                           (s+ host-name
+                               " has invited you to join their group, "
+                               group-name
+                               ", on Kindista")
+                           (group-membership-invitation-notification-email-text
+                             host-name
+                             group-id
+                             group-name
+                             email
+                             unsubscribe-key)
+                           :html-message (group-membership-invitation-notification-email-html
+                                           host-name
+                                           group-id
+                                           group-name
+                                           email
+                                           unsubscribe-key)))))
 
 (defun group-membership-invitation-notification-email-text
   (host-name group-id group-name email unsubscribe-key)
@@ -62,24 +63,25 @@
     #\linefeed
     +base-url+ "groups/" (username-or-id group-id)
     #\linefeed #\linefeed
+    "Thank you for sharing your gifts with us!"
+    #\linefeed
+    "-The Kindista Team"  
+    #\linefeed #\linefeed
     (unsubscribe-notice-ps-text
       unsubscribe-key
       email
       "notifications when people invite you to join groups on Kindista")
-    #\linefeed #\linefeed
-    "Thank you for sharing your gifts with us!"
-    #\linefeed
-    "-The Kindista Team"))
+    ))
 
 
 (defun group-membership-invitation-notification-email-html
-  (from group-id group-name email unsubscribe-key)
+  (host-name group-id group-name email unsubscribe-key)
   (html-email-base
     (html
       (:p :style *style-p* (:strong (str (no-reply-notice))))
 
-      (:p :style *style-p* 
-          (str (person-email-link from))
+      (:p :style *style-p*
+          (str host-name)
             " has invited you to join their group, "
             (str (person-email-link group-id))
                 ", on Kindista.")
@@ -90,11 +92,12 @@
         (:a :href (s+ +base-url+ "groups/" (username-or-id group-id))
             (str (s+ +base-url+ "groups/" (username-or-id group-id)))))
 
+      (:p :style *style-p* "Thank you for sharing your gifts with us!")
+
+      (:p "-The Kindista Team")
+
       (str (unsubscribe-notice-ps-html
              unsubscribe-key
              email
-             "notifications when people invite you to join groups on Kindista"))
-
-      (:p :style *style-p* "Thank you for sharing your gifts with us!")
-      (:p "-The Kindista Team"))))
+             "notifications when people invite you to join groups on Kindista")))))
 

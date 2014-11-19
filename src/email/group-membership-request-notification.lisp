@@ -65,14 +65,14 @@ group-name
 #\linefeed
 +base-url+ "groups/" (username-or-id group-id) "/members"
 #\linefeed #\linefeed
+"Thank you for sharing your gifts with us!
+-The Kindista Team"  
+#\linefeed #\linefeed
 (unsubscribe-notice-ps-text
   unsubscribe-key
   email
   (s+ "notifications when people request to join " group-name)
-  :groupid group-id)
-#\linefeed #\linefeed
-"Thank you for sharing your gifts with us!
--The Kindista Team"))
+  :groupid group-id)))
 
 
 (defun group-membership-request-notification-email-html
@@ -93,13 +93,14 @@ group-name
         (:a :href (s+ +base-url+ (username-or-id group-id) "/members")
             (str (s+ +base-url+ (username-or-id group-id) "/members"))))
 
+      (:p :style *style-p* "Thank you for sharing your gifts with us!")
+
+      (:p "-The Kindista Team")
+
       (str
-        (unsubscribe-notice-ps-text
+        (unsubscribe-notice-ps-html
           unsubscribe-key
           email
           (s+ "notifications when people request to join " group-name)
-          :groupid group-id))
-
-      (:p :style *style-p* "Thank you for sharing your gifts with us!")
-      (:p "-The Kindista Team"))))
+          :groupid group-id)))))
 

@@ -83,7 +83,7 @@ detailed-notification-description
     "If you no longer wish to receive "
     (str detailed-notification-description)
     ", you may "
-    (:a :href (unsubscribe-url email-address unsubscribe-code groupid)
+    (:a :href (str (unsubscribe-url email-address unsubscribe-code groupid))
         "unsubscribe")
     ".")))
 

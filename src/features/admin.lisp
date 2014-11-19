@@ -317,10 +317,10 @@
                                from
                                subject
                                (text-message (getf *user* :unsubscribe-key)
-                                             from)
+                                             (car (getf *user* :emails)))
                                :html-message (html-message
                                                (getf *user* :unsubscribe-key)
-                                               from)))
+                                               (car (getf *user* :emails)))))
           ((post-parameter "unread-mail")
            (dolist (id (users-with-new-mail))
              (let* ((data (db id))

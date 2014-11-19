@@ -8,12 +8,12 @@ version
 
 [ ] test unsubscribe links on:
     [x] messages
-    [ ] broadcasts
+    [x] broadcasts
     [x] reminders
     [x] expired invite reminders
-    [ ] gratitudes
-    [ ] group invitations
-    [ ] group membership requests
+    [x] gratitudes
+    [x] group invitations
+    [x] group membership requests
     [ ] etc
     (grep "receive notifications")
 
@@ -24,4 +24,5 @@ version
 
 [ ] allow unsubsribes for group admins as necessary
 
-
+## On server
+[ ] run (give-users-unsubscribe-keys)
