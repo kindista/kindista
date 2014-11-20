@@ -17,6 +17,15 @@
 
 (in-package :kindista)
 
+(defun sign-users-up-for-new-contact-notifications ()
+  "To be run when we implement contact notifications"
+  (dolist (id (hash-table-keys *db*))
+    (let ((data (db id)))
+      (when (or (eq (getf data :type) :person)
+                (eq (getf data :type) :deleted-person-account))
+        (modify-db id :notify-new-contact (and (getf data :notify-message)
+                                               (getf data :active)))))))
+
 (defun create-contact-notification (&key follower contact)
   (let* ((time (get-universal-time))
          (recipient-mailboxes (maphash #'list (mailbox-ids (list contact))))
@@ -27,6 +36,14 @@
 
 
     id))
+
+;; this doesn't appear be used for anything yet
+(defun index-contact-notification (id data)
+  (let ((result (make-result :id id
+                             :type :contact-n
+                             :time (getf data :time))))
+    (index-message id data)
+    (push result (gethash (getf data :object) *person-notification-index*))))
 
 (defun add-contact (new-contact-id userid)
   (amodify-db userid :following (cons new-contact-id it))
@@ -42,7 +59,9 @@
                      (str (db new-contact-id :name)))
                  " has been added to your contacts.")))
 
-  (create-contact-notification :follower userid :contact new-contact-id))
+  ;;is this really how we want to implement contact notifications?
+  ;(create-contact-notification :follower userid :contact new-contact-id)
+  )
 
 (defun remove-contact (contact-id userid)
   (amodify-db *userid* :following (remove contact-id it))

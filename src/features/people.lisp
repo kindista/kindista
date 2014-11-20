@@ -32,9 +32,7 @@
     (let ((data (db id)))
       (when (or (eq (getf data :type) :person)
                 (eq (getf data :type) :deleted-person-account))
-        (modify-db id :unsubscribe-key (random-password 18)
-                      :notify-new-contact (and (getf data :notify-message)
-                                               (getf data :active)))))))
+        (modify-db id :unsubscribe-key (random-password 18))))))
 
 (defun find-people-without-emails ()
   (let (ids)

@@ -1339,6 +1339,13 @@ img.small {
   margin-left: 0;
  }
 
+ .hide-menu .flash span,
+ .signup.flash span {
+  display: block;
+  max-width: 60em;
+  margin: 0 auto;
+ }
+
  #full .profile {
   margin-top: 1.5em;
  }
@@ -3106,7 +3113,7 @@ div.settings menu.bar {
 }
 
 .address input[type=text] {
- width: 20em;
+ width: 100%;
 }
 
 .settings-item,
@@ -3118,6 +3125,19 @@ div.settings menu.bar {
  margin: 2em auto;
 }
 
+.logged-out.unsubscribe a.blue {
+ display: block;
+ padding: 0.5em 0.7em;
+ line-height: normal;
+ text-align: center;
+ width: 15.5em;
+ margin: 1.5em 0.4em;
+}
+
+.settings-item {
+ max-width: 50em;
+}
+
 .settings-item .title {
  width: 7em;
  background: #f2f2f2;
@@ -3125,15 +3145,20 @@ div.settings menu.bar {
  font-size: 1em;
  padding: .25em .5em;
  border-radius: .125em;
+ margin-right: 1em;
+ margin-bottom: 0.5em;
  clear: both;
  float: left;
 }
 
 .settings-item .content {
- margin: 0 .5em 1.5em 8em;
+ margin: 0 0.5em 1.5em 0;
  display: block;
- position: relative;
- top: .2em;
+ float: left;
+}
+
+.settings-item .address-input.content {
+ max-width: 30em;
 }
 
 .settings-item ul, .settings-item p {

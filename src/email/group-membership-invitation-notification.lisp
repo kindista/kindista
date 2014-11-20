@@ -70,7 +70,8 @@
     (unsubscribe-notice-ps-text
       unsubscribe-key
       email
-      "notifications when people invite you to join groups on Kindista")
+      "notifications when people invite you to join groups on Kindista"
+      :detailed-notification-description "group invite notifications")
     ))
 
 
@@ -99,5 +100,6 @@
       (str (unsubscribe-notice-ps-html
              unsubscribe-key
              email
-             "notifications when people invite you to join groups on Kindista")))))
+             "notifications when people invite you to join groups on Kindista"
+             :detailed-notification-description "group invite notifications")))))
 

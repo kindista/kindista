@@ -33,8 +33,8 @@
     (push
       (format nil
               (if error
-                "<div class=\"flash err\">~a</div>"
-                "<div class=\"flash\">~a</div>")
+                "<div class=\"flash err\"><span>~a</span></div>"
+                "<div class=\"flash\"><span>~a</span></div>")
               message)
       (gethash *token* *flashes*))))
 

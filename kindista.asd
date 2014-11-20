@@ -90,7 +90,6 @@
                                            (:file "love")
                                            (:file "messages")
                                            (:file "conversations")
-                                           (:file "notifications")
                                            (:file "offers")
                                            (:file "people")
                                            (:file "privacy")
@@ -127,5 +126,4 @@
                                                             :serial t
                                                             :components ((:file "standard-invite")
                                                                          (:file "requested-invite")
-                                                                         (:file "prelaunch-invite-reminder")
                                                                          (:file "expired-reminder")))))))))

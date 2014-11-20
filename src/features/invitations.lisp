@@ -142,10 +142,7 @@
               *invitation-reminder-timer-index*
               :test #'equal))
     (if (eql (getf invitation :host) +kindista-id+)
-      (if (and (> id 4067)
-               (< id 4779))
-        (send-prelaunch-invite-reminder id)
-        (send-requested-invite-email id :auto-reminder t))
+      (send-requested-invite-email id :auto-reminder t)
       (send-invitation-email id :auto-reminder t))
     (amodify-db id :times-sent (push now it)
                    :auto-reminder-sent (push now it))))

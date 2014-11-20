@@ -17,41 +17,52 @@
 
 (in-package :kindista)
 
-(defun send-contact-notification-email (from to)
-  (cl-smtp:send-email +mail-server+
-                      "Kindista <noreply@kindista.org>"
-                      to
-                      (s+ from " added you to their contacts on Kindista!")
-                      (contact-notification-email-text from)
-                      :html-message (contact-notification-email-html from)))
+(defun send-contact-notification-email (from-id to-id)
+  (let* ((from (db from))
+         (from-name (getf from :name))
+         (to (db to))
+         (to-email (car (getf to :emails)))
+         (to-unsub-key (getf to :unsubscribe-key)))
+    (cl-smtp:send-email +mail-server+
+                        "Kindista <noreply@kindista.org>"
+                        to-email
+                        (s+ from-name
+                            " added you to their contacts on Kindista!")
+                        (contact-notification-email-text from-name
+                                                         to-email
+                                                         to-unsub-key)
+                        :html-message (contact-notification-email-html
+                                        from-id
+                                        to-email
+                                        to-unsub-key))))
 
-(defun contact-notification-email-text (from)
+(defun contact-notification-email-text (from-name email unsub-key)
   (strcat (getf (db from) :name)
-" has added you to their contacts on Kindista.
-"
+" has added you to their contacts on Kindista."
+#\linefeed #\linefeed
+"Thank you for sharing your gifts with us!"
+#\linefeed
+"-The Kindista Team"
+(unsubscribe-notice-ps-text
+  unsub-key
+  email
+  "notifications when people add you to their list of Kindista contacts "
+  :detailed-notification-description "notifications when people add you")))
 
-"
-If you no longer wish to receive notifications, please edit your settings:
-"
-*email-url* "settings/email"
-"
 
-Thank you for sharing your gifts with us!
--The Kindista Team"))
-
-
-(defun contact-notification-email-html (from)
+(defun contact-notification-email-html (from-id email unsub-key)
   (html-email-base
     (html
       (:p :style *style-p* 
-          (str (person-email-link from))
+          (str (person-email-link from-id))
             " has added you tho their contacts on Kindista.")
 
-      (:p :style *style-p* 
-          "If you no long wish to receive notifications, please edit your settings:"
-       (:br)
-       (:a :href (strcat *email-url* "settings/communication") (strcat *email-url* "settings/communication")))
-
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
-      (:p "-The Kindista Team"))))
+      (:p "-The Kindista Team")
+
+      (str (unsubscribe-notice-ps-html
+             unsub-key
+             email
+             "notifications when people add you to their list of Kindista contacts "
+             :detailed-notification-description "notifications when people add you")))))
 

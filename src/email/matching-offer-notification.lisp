@@ -75,16 +75,16 @@
       (or (getf request :details) (getf request :text))
       "\""
       #\linefeed #\linefeed
+      "Thank you for sharing your gifts with us!"
+      #\linefeed
+      "-The Kindista Team"
+      #\linefeed #\linefeed
       "If you no longer wish to receive notifications regarding this request, you can change your matchmaker notification preferences here:"
       #\linefeed
       (url-compose (strcat *email-url* "requests" request-id)
                    "selected" "matchmaker"
                    "email" email
-                   "k" unsubscribe-key)
-      #\linefeed #\linefeed
-      "Thank you for sharing your gifts with us!"
-      #\linefeed
-      "-The Kindista Team")))
+                   "k" unsubscribe-key))))
 
 
 (defun matching-offer-notification-email-html (request-id offer-id email unsubscribe-key)
@@ -144,11 +144,12 @@
                          (unless (eql term (car (last match-terms)))
                            (htm " · "))))))))
 
-        (:p :style *style-p*
+        (:p :style *style-p* "Thank you for sharing your gifts with us!")
+
+        (:p "-The Kindista Team")
+
+        (:p :style (s+ *style-p* " font-size: 0.85em;")
           "If you no longer wish to receive notifications regarding this request, you can change your matchmaker notification preferences here:"
          (:br)
-         (:a :href request-link (str request-link)))
-
-        (:p :style *style-p* "Thank you for sharing your gifts with us!")
-        (:p "-The Kindista Team")))))
+         (:a :href request-link (str request-link)))))))
 

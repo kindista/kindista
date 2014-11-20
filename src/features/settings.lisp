@@ -46,14 +46,16 @@
     (:div :class "settings-item item"
       (:div :class "settings-item title" (str (or title
                                                   (string-capitalize item))))
-      (:div :class "settings-item content"
-        (unless editable
-          (htm
-            (:div :class "button"
-              (:a :class "yes small" :href (url-compose *base-url* "edit" item)
-                                             (or (str edit-text) (htm "Edit"))))))
-        (str body)
-        (:p :class "help-text" (:em (str help-text)))))))
+      (:div :class (unless editable "settings-item content")
+       (str body))
+
+      (unless editable
+        (htm
+          (:div :class "button"
+           (:a :class "yes small" :href (url-compose *base-url* "edit" item)
+            (or (str edit-text) (htm "Edit"))))))
+
+      (:p :class "help-text" (:em (str help-text))))))
 
 (defun settings-group-category (editable groupid group)
  (settings-item-html
@@ -79,7 +81,7 @@
    (settings-item-html "avatar"
     (cond
       (editable
-        (new-image-form "/settings" *base-url* :class "submit-settings" :on groupid))
+        (new-image-form "/settings" *base-url* :class "content" :on groupid))
       (t
         (html
           (:div :class "settings-avatar"
@@ -109,21 +111,22 @@
               (:div :class "submit-settings"
                 (:button :class "cancel small" :type "submit" :name "cancel" "Cancel")
                 (:button :class "yes small" :type "submit" :name "submit" "Submit"))
-              (:ul
-                (:li (:span (:input :type "text"
-                                    :name "name"
-                                    :value (or group-name
-                                               (getf *user* :name))))
-                     (unless groupid
-                       (htm (:span (:strong "display name")))))
-                (unless groupid
-                  (loop for i to 3
-                        do (htm (:li
-                                  (:span (:input :type "text"
-                                                 :name "aliases"
-                                                 :value (awhen (nth i aliases)
-                                                          it)))
-                                  (:span "nickname")))))))))
+              (:div :class "content"
+                (:ul
+                  (:li (:span (:input :type "text"
+                                      :name "name"
+                                      :value (or group-name
+                                                 (getf *user* :name))))
+                       (unless groupid
+                         (htm (:span (:strong "display name")))))
+                  (unless groupid
+                    (loop for i to 3
+                          do (htm (:li
+                                    (:span (:input :type "text"
+                                                   :name "aliases"
+                                                   :value (awhen (nth i aliases)
+                                                            it)))
+                                    (:span "nickname"))))))))))
         (t
           (html
             (:ul
@@ -152,14 +155,15 @@
              (:div :class "submit-settings"
                (:button :class "cancel small" :type "submit" :name "cancel" "Cancel")
                (:button :class "yes small" :type "submit" :name "confirm-address" "Submit"))
-             (:input :type "text" :name "address" :value address)
-             (when groupid
-               (htm
-                 (:br)
-                 (:input :type "checkbox"
-                         :name "public-location"
-                         :value (when public-location "checked"))
-                 "Display this address publicly to anyone looking at this group's profile page.")))))
+             (:div :class "address-input content"
+              (:input :type "text" :name "address" :value address)
+              (when groupid
+                (htm
+                  (:br)
+                  (:input :type "checkbox"
+                   :name "public-location"
+                   :value (when public-location "checked"))
+                  "Display this address publicly to anyone looking at this group's profile page."))))))
         (t
           (if (and address (getf entity :location))
             (html (:p (str address)))
@@ -250,21 +254,22 @@
        (:input :type "hidden" :name "next" :value *base-url*)
        (:div :class "submit-settings"
          (:button :class "yes small" :type "submit" "Change password"))
-       (:div
-         (:label "Current password:")
-         (:input :type "password"
-                 :name "password"
-                 :placeholder "verify your current password"))
-       (:div
-         (:label "New password:")
-         (:input :type "password"
-                 :name "new-password-1"
-                 :placeholder "new password: at least 8 characters"))   
-       (:div
-         (:label "Confirm your new password:")
-         (:input :type "password"
-                 :name "new-password-2"
-                 :placeholder "please retype your new password"))))   
+       (:div :class "content"
+         (:div
+           (:label "Current password:")
+           (:input :type "password"
+            :name "password"
+            :placeholder "verify your current password"))
+         (:div
+           (:label "New password:")
+           (:input :type "password"
+            :name "new-password-1"
+            :placeholder "new password: at least 8 characters"))   
+         (:div
+           (:label "Confirm your new password:")
+           (:input :type "password"
+            :name "new-password-2"
+            :placeholder "please retype your new password")))))   
 
   :editable t
   :help-text (s+ "Minimum of 8 characters. "
@@ -394,7 +399,7 @@
     (settings-item-html action
       (html
         (:form :method "post" :action "/settings"
-          (:button :class "link no-padding green" 
+          (:button :class "link no-padding green float-right" 
                    :name action
                    :type "submit"
                    (str (s+ (string-capitalize action) " account")))))
@@ -557,7 +562,6 @@
       (settings-item-html "notifications"
         (html
           (:form :method "post" :action "/settings/notifications"
-            (:input :type "hidden" :name "next" :value *base-url*)
             (awhen (get-parameter-string "k")
               (htm (:input :type "hidden" :name "k" :value it)))
             (awhen (get-parameter-string "email")
@@ -565,7 +569,14 @@
             (when groupid
               (htm (:input :type "hidden" :name "groupid" :value groupid)))
             (:div :class "submit-settings"
-              (:button :class "yes small" :type "submit" :name "save-notifications" "Save notification preferences"))
+              (:button :class (s+ "yes " (when *user* "small"))
+                       :type "submit"
+                       :name "save-notifications"
+                 "Save notification preferences")
+              (unless *user*
+                (htm
+                  (:div (:a :class "blue"
+                            :href "/login" "Sign into Kindista")))))
             (:ul
               (:li (:input :type "checkbox"
                     :name "gratitude"
@@ -582,10 +593,10 @@
                             " offers/requests")))
               (unless group
                 (htm
-                  (:li (:input :type "checkbox"
-                        :name "new-contact"
-                        :checked (checkbox-value :notify-new-contact))
-                       "when someone adds me to their list of contacts")
+                 ;(:li (:input :type "checkbox"
+                 ;      :name "new-contact"
+                 ;      :checked (checkbox-value :notify-new-contact))
+                 ;     "when someone adds me to their list of contacts")
                   (:li (:input :type "checkbox"
                         :name "expired-invites"
                         :checked (checkbox-value :notify-expired-invites))
@@ -698,15 +709,16 @@
             (str (settings-item-html
                    "membership"
                    (html
-                     (:form :method "post"
-                            :class "membership-settings"
-                            :action (strcat "/groups/" groupid)
-                       (str (group-membership-method-selection
-                              (if (eql (getf group :membership-method) :invite-only)
-                                "invite-only"
-                                "admin-approval")
-                              :auto-submit t))
-                       (:input :type "submit" :class "no-js" :value "apply")))
+                     (:div :class "content"
+                       (:form :method "post"
+                              :class "membership-settings"
+                              :action (strcat "/groups/" groupid)
+                         (str (group-membership-method-selection
+                                (if (eql (getf group :membership-method) :invite-only)
+                                  "invite-only"
+                                  "admin-approval")
+                                :auto-submit t))
+                         (:input :type "submit" :class "no-js" :value "apply"))))
                    :editable t)))
           (when (not groupid)
             (htm (str (settings-password))
@@ -760,6 +772,7 @@
                   (str (settings-identity-selection-html (or groupid userid)
                                                          groups
                                                          :userid userid
+                                                         :url "/settings/notifications"
                                                          )))
                 (str (settings-notifications :user user
                                              :userid userid

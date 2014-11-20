@@ -543,10 +543,10 @@
     (:group (index-group id data))
     (:group-membership-request (index-group-membership-request id data))
     (:group-membership-invitation (index-group-membership-invitation id data))
-    (:contact-n (index-contact-notification id data))
+   ;(:contact-n (index-contact-notification id data))
     ;; :reply can be removed once transactions have been fully implemented
     (:transaction (index-transaction id data))
-    ((or :reply :conversation :contact-n) (index-message id data))))
+    ((or :reply :conversation) (index-message id data))))
 
 (defun contacts-alphabetically (&optional (user *user*))
   (sort (iter (for contact in (getf user :following))
