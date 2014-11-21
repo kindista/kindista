@@ -40,37 +40,69 @@
 
          )))
 
-(defun settings-item-html (item body &key title help-text editable edit-text)
+(defun settings-item-html
+  (item
+   body
+   &key title
+        help-text
+        editable
+        edit-text
+        buttons
+        class
+        (form-markup t)
+        (method "post")
+        (action "/settings")
+   &aux (title-div
+          (html (:div :class "title-container"
+                 (:div :class "title"
+                  (str (or title (string-capitalize item))))))))
   (html
     (:a :id item)
-    (:div :class "settings-item item"
-      (:div :class "settings-item title" (str (or title
-                                                  (string-capitalize item))))
-      (:div :class (unless editable "settings-item content")
-       (str body))
-
-      (unless editable
-        (htm
-          (:div :class "button"
-           (:a :class "yes small" :href (url-compose *base-url* "edit" item)
-            (or (str edit-text) (htm "Edit"))))))
-
-      (:p :class "help-text" (:em (str help-text))))))
+    (:div :class "item"
+     (:div :class "settings-item"
+      (if editable
+        (if form-markup
+          (htm (:form :method method
+                :action action
+                :class (s+ "details " class)
+                (str title-div)
+                (:div :class "content-container"
+                 (if buttons
+                   (htm
+                     (:div :class "form-elements" (str body))
+                     (:div :class "buttons" (str buttons)))
+                   (str body)))))
+          (htm (:div :class "details"
+                (str title-div)
+                (:div :class "content-container"
+                 (str body)
+                 (when buttons
+                   (htm (:div :class "buttons" (str buttons))))))))
+        (htm (:div :class (s+ "details " class)
+              (str title-div)
+              (:div :class "content-container"
+               (:div :class "current-value" (str body))
+               (:div :class "buttons"
+                (:a :class "yes small"
+                 :href (url-compose *base-url* "edit" item)
+                 (or (str edit-text)
+                     (htm "Edit")))))))))
+     (:p :class "help-text" (:em (str help-text))))))
 
 (defun settings-group-category (editable groupid group)
  (settings-item-html
    "category"
    (if (or editable (not (getf group :category)))
-     (html
-       (:form :method "post"
-              :class "group-category-selection"
-              :action (strcat "/groups/" groupid)
-          (str (group-category-selection
-                 :next *base-url*
-                 :submit-buttons t
-                 :selected (or (get-parameter "group-category")
-                               (getf group :category))))))
-     (html (str (getf group :category))))
+     (group-category-selection
+            :next *base-url*
+            :selected (or (get-parameter "group-category")
+                          (getf group :category)))
+     (getf group :category))
+   :class "group-category"
+   :buttons (html
+              (:button :type "input" :class "yes small" "Save Changes")
+              (:button :type "input" :class "cancel small" :name "cancel" "Cancel"))
+   :action (strcat "/groups/" groupid)
    :editable editable ))
 
 (defun settings-avatar (editable &optional groupid)
@@ -78,11 +110,10 @@
         (entity (aif groupid
                   (db it)
                   *user*)))
-   (settings-item-html "avatar"
-    (cond
-      (editable
-        (new-image-form "/settings" *base-url* :class "content" :on groupid))
-      (t
+   (settings-item-html
+     "avatar"
+      (if editable
+        (new-image-form "/settings" *base-url* :on groupid)
         (html
           (:div :class "settings-avatar"
             (:img :class "bigavatar"
@@ -95,47 +126,61 @@
                      (:button :class "simple-link green"
                               :type "submit"
                               :name "rotate-avatar"
-                              "Rotate"))))))))
+                              "Rotate")))))))
+  :buttons (html (:form :action "/settings"
+                        :method "post"
+                   (:input :type "hidden"
+                           :name "next"
+                           :value (url-compose "/settings"
+                                               "groupid" groupid))
+                   (:button :type "input"
+                            :class "cancel small"
+                            :name "cancel"
+                            "Cancel")))
+  :form-markup nil
   :editable editable)))
 
 (defun settings-name (editable &optional groupid group-name)
   (let ((aliases (unless groupid (getf *user* :aliases))))
     (settings-item-html "name"
-      (cond
-        (editable
-          (html
-            (:form :method "post" :action "/settings"
-              (:input :type "hidden" :name "next" :value *base-url*)
-              (when groupid
-                (htm (:input :type "hidden" :name "groupid" :value groupid)))
-              (:div :class "submit-settings"
-                (:button :class "cancel small" :type "submit" :name "cancel" "Cancel")
-                (:button :class "yes small" :type "submit" :name "submit" "Submit"))
-              (:div :class "content"
-                (:ul
-                  (:li (:span (:input :type "text"
-                                      :name "name"
-                                      :value (or group-name
-                                                 (getf *user* :name))))
-                       (unless groupid
-                         (htm (:span (:strong "display name")))))
-                  (unless groupid
-                    (loop for i to 3
-                          do (htm (:li
-                                    (:span (:input :type "text"
-                                                   :name "aliases"
-                                                   :value (awhen (nth i aliases)
-                                                            it)))
-                                    (:span "nickname"))))))))))
-        (t
-          (html
+      (if editable
+        (html
+          (when groupid
+            (htm (:input :type "hidden" :name "groupid" :value groupid)))
+          (:input :type "hidden" :name "next" :value *base-url*)
             (:ul
-              (:li (:span (:strong (str (or group-name (getf *user* :name)))))
-                   (when aliases (htm (:span (str "(displayed)")))))
-              (dolist (alias aliases)
-                (htm (:li (:span (str alias))
-                          (:span :class "help-text" "(nickname)"))))))))
+              (:li (:span (:input :type "text"
+                                  :name "name"
+                                  :value (or group-name
+                                             (getf *user* :name))))
+                   (unless groupid
+                     (htm (:span (:strong "display name")))))
+              (unless groupid
+                (loop for i to 3
+                      do (htm (:li
+                                (:span (:input :type "text"
+                                               :name "aliases"
+                                               :value (awhen (nth i aliases)
+                                                        it)))
+                                (:span "nickname")))))))
+        (html
+          (:ul
+            (:li (:span (:strong (str (or group-name (getf *user* :name)))))
+                 (when aliases (htm (:span (str "(displayed)")))))
+            (dolist (alias aliases)
+              (htm (:li (:span (str alias))
+                        (:span :class "help-text" "(nickname)")))))))
     :editable editable
+    :buttons (html
+                (:button :class "cancel small"
+                         :type "submit"
+                         :name "cancel"
+                         "Cancel")
+                (:button :class "yes small"
+                         :type "submit"
+                         :name "submit"
+                         "Submit"))
+
     :help-text (unless groupid
                  (s+ "If you are known by multiple names or nicknames, "
                      "enter up to 5 to help people find you. ")))))
@@ -144,31 +189,35 @@
   (let* ((entity (or group *user*))
          (address (getf entity :address))
          (public-location (awhen (eql (getf group :location-privacy) :public) it)))
-    (settings-item-html "address"
-      (cond
-        (editable
-          (html
-            (:form :method "post" :class "address" :action "/settings"
-             (:input :type "hidden" :name "next" :value *base-url*)
-             (when groupid
-               (htm (:input :type "hidden" :name "groupid" :value groupid)))
-             (:div :class "submit-settings"
-               (:button :class "cancel small" :type "submit" :name "cancel" "Cancel")
-               (:button :class "yes small" :type "submit" :name "confirm-address" "Submit"))
-             (:div :class "address-input content"
-              (:input :type "text" :name "address" :value address)
-              (when groupid
-                (htm
-                  (:br)
-                  (:input :type "checkbox"
-                   :name "public-location"
-                   :value (when public-location "checked"))
-                  "Display this address publicly to anyone looking at this group's profile page."))))))
-        (t
-          (if (and address (getf entity :location))
-            (html (:p (str address)))
-            (html (:p (:strong "You have not set your address yet."))))))
+    (settings-item-html
+      "address"
+      (if editable
+        (html
+          (:input :type "hidden" :name "next" :value *base-url*)
+          (when groupid
+            (htm (:input :type "hidden" :name "groupid" :value groupid)))
+          (:div :class "address-input"
+           (:input :type "text" :name "address" :value address)
+           (when groupid
+             (htm
+               (:br)
+               (:input :type "checkbox"
+                :name "public-location"
+                :value (when public-location "checked"))
+               "Display this address publicly to anyone looking at this group's profile page."))))
+        (if (and address (getf entity :location))
+          (html (:p (str address)))
+          (html (:p (:strong "You have not set your address yet.")))))
     :editable editable
+    :class "address"
+    :buttons (html (:button :class "yes small"
+                            :type "submit"
+                            :name "confirm-address"
+                            "Submit") 
+                   (:button :class "cancel small"
+                            :type "submit"
+                            :name "cancel"
+                            "Cancel"))
     :edit-text (unless address "Add address")
     :help-text (cond
                  (groupid
@@ -248,7 +297,8 @@
         (permission-denied))))
 
 (defun settings-password ()
-  (settings-item-html "password"
+  (settings-item-html
+    "password"
     (html
       (:form :method "post" :class "password" :autocomplete "off" :action "/settings"
        (:input :type "hidden" :name "next" :value *base-url*)
@@ -271,6 +321,7 @@
             :name "new-password-2"
             :placeholder "please retype your new password")))))   
 
+  :form-markup nil
   :editable t
   :help-text (s+ "Minimum of 8 characters. "
                  "We strongly recommend using either a mix of upper- and "
@@ -287,24 +338,27 @@
         )
     (settings-item-html "donate"
       (html
-        (:a :id "donate")
-        (:form :method "post" :class "password" :action "/settings"
-          (:input :type "hidden" :name "next" :value *base-url*)
-          (:div :class "submit-settings"
-           (:button :class "cancel small" :type "submit" :name "cancel-plan" "Cancel plan")
-           (:button :class "yes small" :type "submit" "Change plan"))
-          (:div
-            (:label "Current monthly donation: " (:strong "$" (str plan)))
-            (:select :name "plan"
-             (:option :disabled "disabled" "Select a new plan")
-             (:option :value "5" "$5/month")
-             (:option :value "10" "$10/month")
-             (:option :value "20" "$20/month")
-             (:option :value "35" "$35/month")
-             (:option :value "50" "$50/month")
-             (:option :value "100" "$100/month"))))
+        (:input :type "hidden" :name "next" :value *base-url*)
+        (:div
+          (:label "Current monthly donation: " (:strong "$" (str plan)))
+          (:select :name "plan"
+           (:option :disabled "disabled" "Select a new plan")
+           (:option :value "5" "$5/month")
+           (:option :value "10" "$10/month")
+           (:option :value "20" "$20/month")
+           (:option :value "35" "$35/month")
+           (:option :value "50" "$50/month")
+           (:option :value "100" "$100/month")))
         (str (settings-card-details active-card)))
 
+    :buttons (html (:button :class "cancel small"
+                            :type "submit"
+                            :name "cancel-plan"
+                            "Cancel plan")
+                   (:button :class "yes small"
+                            :type "submit"
+                            "Change plan"))
+    :class "password"
     :editable t
     :help-text (s+ "Your monthly donation is specified in US Dollars. Changes take place on your "
                    "next monthly bill&mdash;we do not prorate plan changes. Thank you for your "
@@ -387,31 +441,30 @@
             (:span (str exp-month)
                    "/"
                    (str exp-year))
-            (:button :class "blue small float-right" :type "submit" :name "edit-card" "Update card"))))) 
-    )
-  
-  )
+            (:button :class "blue small float-right" :type "submit" :name "edit-card" "Update card")))))
+    ))
 
 (defun settings-deactivate ()
   (let ((action (if (eq (getf *user* :active) t)
                   "deactivate"
-                  "reactivate"))) 
-    (settings-item-html action
-      (html
-        (:form :method "post" :action "/settings"
-          (:button :class "link no-padding green float-right" 
-                   :name action
-                   :type "submit"
-                   (str (s+ (string-capitalize action) " account")))))
-    :editable t
-    :help-text (s+ "Warning: "
-                   "Deactivating your account will delete all of your current offers "
-                   "and requests, and prevent people from "
-                   "contacting you through Kindista or finding you using the search bar. "
-                   "Deactivating your account will not remove any statements of gratitude "
-                   "you have given or received. "
-                   "You may reactivate your account anytime by logging into Kindista and "
-                   "clicking \"Reactivate account\" on this page."))))
+                  "reactivate")))
+    (settings-item-html
+      action
+      nil
+      :buttons (html
+                 (:button :class "link no-padding green"
+                          :name action
+                          :type "submit"
+                          (str (s+ (string-capitalize action) " account"))))
+      :editable t
+      :help-text (s+ "Warning: "
+                     "Deactivating your account will delete all of your current offers "
+                     "and requests, and prevent people from "
+                     "contacting you through Kindista or finding you using the search bar. "
+                     "Deactivating your account will not remove any statements of gratitude "
+                     "you have given or received. "
+                     "You may reactivate your account anytime by logging into Kindista and "
+                     "clicking \"Reactivate account\" on this page."))))
 
 (defun confirm-deactivation ()
   (standard-page
@@ -442,72 +495,72 @@
   (let* ((emails (getf *user* :emails))
          (alternates (cdr emails))
          (pending (getf *user* :pending-alt-emails)))
-    (settings-item-html "email"
+    (settings-item-html
+      "email"
       (html
-        (:form :method "post" :action "/settings"
-          (:input :type "hidden" :name "next" :value "/settings/communication")
-          (:ul
-            (:li (:span :class "email-item" (:strong (str (car emails))))
-                 (:span :class "help-text" (:em "primary email")))
-            (dolist (email alternates)
-              (htm (:li (:span :class "email-item" (str email))
-                        (:button :class "simple-link green"
-                                 :name "make-email-primary"
-                                 :type "submit"
-                                 :value email
-                                 "Make primary")
-                        " | "
-                        (:button :class "simple-link gray"
-                                 :name "remove-email"
-                                 :type "submit"
-                                 :value email
-                                 "Remove")
-                        )))
-            (dolist (invite-id pending)
-              (let ((email (getf (db invite-id) :recipient-email)))
-                (htm
-                  (:li
-                    (:span :class "email-item" (str email))
-                    (:input :type "hidden"
-                            :name "invitation-id" :value invite-id)
-                    (cond
-                      ((string= email activate)
-                       (htm
-                         (:span
-                           (:input :type "text"
-                                   :name "token"
-                                   :placeholder "please enter your activation code"))
-                         (:button :class "yes"
-                                  :type "submit"
-                                  "Activate")
-                         (:a :class "red" :href "/settings/communication" "Cancel")))
-                      (t
-                       (htm
-                         (:span :class "red" "(pending)")
-                         (:a :href (url-compose "/settings/communication"
-                                                "edit" "email"
-                                                "activate" email)
-                             "Enter code")
-                         (when (not editable)
-                           (htm
-                             " | "
-                             (:button :type "submit"
-                                      :class "simple-link "
-                                      :name "resend-code"
-                                      :value email
-                                      "Resend code")))))))))))
-
-          (cond
-            ((not editable)
-             (htm (:p (:a :href "/settings/communication?edit=email" "add another email address"))))
-            ((not activate)
+        (:input :type "hidden" :name "next" :value "/settings/communication")
+        (:ul
+          (:li (:span :class "email-item" (:strong (str (car emails))))
+               (:span :class "help-text" (:em "primary email")))
+          (dolist (email alternates)
+            (htm (:li (:span :class "email-item" (str email))
+                      (:button :class "simple-link green"
+                               :name "make-email-primary"
+                               :type "submit"
+                               :value email
+                               "Make primary")
+                      " | "
+                      (:button :class "simple-link gray"
+                               :name "remove-email"
+                               :type "submit"
+                               :value email
+                               "Remove")
+                      )))
+          (dolist (invite-id pending)
+            (let ((email (getf (db invite-id) :recipient-email)))
               (htm
                 (:li
-                  (:input :type "text"
-                          :name "new-email"
-                          :placeholder "new alternate email")
-                  (:button :class "yes" :type "submit" :name "submit" "Confirm new email")
-                  (:a :class "red" :href "/settings/communication" "Cancel"))) ))))
+                  (:span :class "email-item" (str email))
+                  (:input :type "hidden"
+                          :name "invitation-id" :value invite-id)
+                  (cond
+                    ((string= email activate)
+                     (htm
+                       (:span
+                         (:input :type "text"
+                                 :name "token"
+                                 :placeholder "please enter your activation code"))
+                       (:button :class "yes"
+                                :type "submit"
+                                "Activate")
+                       (:a :class "red" :href "/settings/communication" "Cancel")))
+                    (t
+                     (htm
+                       (:span :class "red" "(pending)")
+                       (:a :href (url-compose "/settings/communication"
+                                              "edit" "email"
+                                              "activate" email)
+                           "Enter code")
+                       (when (not editable)
+                         (htm
+                           " | "
+                           (:button :type "submit"
+                                    :class "simple-link "
+                                    :name "resend-code"
+                                    :value email
+                                    "Resend code")))))))))))
+
+        (cond
+          ((not editable)
+           (htm (:p (:a :href "/settings/communication?edit=email" "add another email address"))))
+          ((not activate)
+            (htm
+              (:li
+                (:input :type "text"
+                        :name "new-email"
+                        :placeholder "new alternate email")
+                (:button :class "yes" :type "submit" :name "submit" "Confirm new email")
+                (:a :class "red" :href "/settings/communication" "Cancel"))) )))
 
       :editable T
       :help-text (s+ "Adding additional email address helps people find you "
@@ -559,69 +612,70 @@
                        (member userid (getf entity notify-key))
                        (getf entity notify-key))
                  "")))
-      (settings-item-html "notifications"
+      (settings-item-html
+        "notifications"
         (html
-          (:form :method "post" :action "/settings/notifications"
-            (awhen (get-parameter-string "k")
-              (htm (:input :type "hidden" :name "k" :value it)))
-            (awhen (get-parameter-string "email")
-              (htm (:input :type "hidden" :name "email" :value it)))
-            (when groupid
-              (htm (:input :type "hidden" :name "groupid" :value groupid)))
-            (:div :class "submit-settings"
-              (:button :class (s+ "yes " (when *user* "small"))
-                       :type "submit"
-                       :name "save-notifications"
-                 "Save notification preferences")
-              (unless *user*
-                (htm
-                  (:div (:a :class "blue"
-                            :href "/login" "Sign into Kindista")))))
-            (:ul
-              (:li (:input :type "checkbox"
-                    :name "gratitude"
-                    :checked (checkbox-value :notify-gratitude))
-                   "when someone posts gratitude about "
-                   (str subject))
-              (:li (:input :type "checkbox"
-                    :name "message"
-                    :checked (checkbox-value :notify-message))
-                   (str (s+ "when someone sends "
-                            (if group "us" "me")
-                            " a message or responds to "
-                            (if group "our" "my")
-                            " offers/requests")))
-              (unless group
-                (htm
-                 ;(:li (:input :type "checkbox"
-                 ;      :name "new-contact"
-                 ;      :checked (checkbox-value :notify-new-contact))
-                 ;     "when someone adds me to their list of contacts")
-                  (:li (:input :type "checkbox"
-                        :name "expired-invites"
-                        :checked (checkbox-value :notify-expired-invites))
-                       "when invitatations I send for my friends to join Kindista expire")
-                  (:li (:input :type "checkbox"
-                        :name "group-membership-invites"
-                        :checked (checkbox-value :notify-group-membership-invites))
-                       "when someone invites me to join a group on Kindista (e.g. a business, non-profit, or other organization I belong to within my community)")
-                  (:li (:input :type "checkbox"
-                        :name "reminders"
-                        :checked (checkbox-value :notify-reminders))
-                       "with occasional suggestions about how "
-                       (str (if group "our group" "I"))
-                       " can get the most out of Kindista")
-                  (:li (:input :type "checkbox"
-                         :name "kindista"
-                         :checked (checkbox-value :notify-kindista))
-                        "with updates and information about Kindista")))
-              (when group
-                (htm
-                  (:li (:input :type "checkbox"
-                         :name "group-membership-request"
-                         :checked (checkbox-value :notify-membership-request))
-                        (str (s+ "when someone wants to join " group-name))))))))
+          (awhen (get-parameter-string "k")
+            (htm (:input :type "hidden" :name "k" :value it)))
+          (awhen (get-parameter-string "email")
+            (htm (:input :type "hidden" :name "email" :value it)))
+          (when groupid
+            (htm (:input :type "hidden" :name "groupid" :value groupid)))
+          (:div :class "submit-settings"
+            (unless *user*
+              (htm
+                (:div (:a :class "blue"
+                          :href "/login" "Sign into Kindista")))))
+          (:ul
+            (:li (:input :type "checkbox"
+                  :name "gratitude"
+                  :checked (checkbox-value :notify-gratitude))
+                 "when someone posts gratitude about "
+                 (str subject))
+            (:li (:input :type "checkbox"
+                  :name "message"
+                  :checked (checkbox-value :notify-message))
+                 (str (s+ "when someone sends "
+                          (if group "us" "me")
+                          " a message or responds to "
+                          (if group "our" "my")
+                          " offers/requests")))
+            (unless group
+              (htm
+               ;(:li (:input :type "checkbox"
+               ;      :name "new-contact"
+               ;      :checked (checkbox-value :notify-new-contact))
+               ;     "when someone adds me to their list of contacts")
+                (:li (:input :type "checkbox"
+                      :name "expired-invites"
+                      :checked (checkbox-value :notify-expired-invites))
+                     "when invitatations I send for my friends to join Kindista expire")
+                (:li (:input :type "checkbox"
+                      :name "group-membership-invites"
+                      :checked (checkbox-value :notify-group-membership-invites))
+                     "when someone invites me to join a group on Kindista (e.g. a business, non-profit, or other organization I belong to within my community)")
+                (:li (:input :type "checkbox"
+                      :name "reminders"
+                      :checked (checkbox-value :notify-reminders))
+                     "with occasional suggestions about how "
+                     (str (if group "our group" "I"))
+                     " can get the most out of Kindista")
+                (:li (:input :type "checkbox"
+                       :name "kindista"
+                       :checked (checkbox-value :notify-kindista))
+                      "with updates and information about Kindista")))
+            (when group
+              (htm
+                (:li (:input :type "checkbox"
+                       :name "group-membership-request"
+                       :checked (checkbox-value :notify-membership-request))
+                      (str (s+ "when someone wants to join " group-name)))))))
 
+     :buttons (html (:button :class (s+ "yes " (when *user* "small"))
+                             :type "submit"
+                             :name "save-notifications"
+                       "Save preferences"))
+     :action "/settings/notifications"
      :title "Notify me"
      :editable t))))
 
@@ -709,16 +763,16 @@
             (str (settings-item-html
                    "membership"
                    (html
-                     (:div :class "content"
-                       (:form :method "post"
-                              :class "membership-settings"
-                              :action (strcat "/groups/" groupid)
-                         (str (group-membership-method-selection
-                                (if (eql (getf group :membership-method) :invite-only)
-                                  "invite-only"
-                                  "admin-approval")
-                                :auto-submit t))
-                         (:input :type "submit" :class "no-js" :value "apply"))))
+                     (str
+                       (group-membership-method-selection
+                         (if (eql (getf group :membership-method)
+                                  :invite-only)
+                           "invite-only"
+                           "admin-approval")
+                         :auto-submit t))
+                     (:input :type "submit" :class "no-js" :value "apply"))
+                   :class "membership-settings"
+                   :action (strcat "/groups/" groupid)
                    :editable t)))
           (when (not groupid)
             (htm (str (settings-password))

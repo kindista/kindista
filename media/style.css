@@ -3104,6 +3104,10 @@ select.recipients {
  top: -.5em;
 }
 
+div.settings {
+ max-width: 55em;
+}
+
 div.settings menu.bar {
  margin-top: 1em;
 }
@@ -3116,7 +3120,6 @@ div.settings menu.bar {
  width: 100%;
 }
 
-.settings-item,
 .logged-out.unsubscribe {
  max-width: 60em;
 }
@@ -3134,27 +3137,60 @@ div.settings menu.bar {
  margin: 1.5em 0.4em;
 }
 
-.settings-item {
- max-width: 50em;
-}
-
 .settings-item .title {
  width: 7em;
  background: #f2f2f2;
  font-weight: 500;
  font-size: 1em;
  padding: .25em .5em;
+ margin-bottom: 1em;
  border-radius: .125em;
- margin-right: 1em;
- margin-bottom: 0.5em;
- clear: both;
- float: left;
 }
 
-.settings-item .content {
- margin: 0 0.5em 1.5em 0;
- display: block;
- float: left;
+.settings-item {
+ display: table;
+ width: 100%;
+ max-width: 55em;
+}
+
+.settings-item .title-container {
+ padding-right: 1em;
+ width: 8em;
+}
+
+.settings-item .details {
+ display: table-row;
+}
+
+.settings-item .details .title-container,
+.settings-item .details .content-container > div {
+ display: table-cell;
+ vertical-align: top;
+}
+
+.settings-item .details .content-container {
+ display: table;
+ width: 100%;
+}
+
+.settings-item .details .current-value,
+.settings-item .details .form-elements {
+ text-align: left;
+}
+
+.settings-item .details .buttons {
+ text-align: right;
+ vertical-align: top;
+}
+
+.settings-item .details .buttons button {
+ margin: 0 0 0.6em 0.6em;
+}
+
+@media (max-width:40em) {
+ .settings-item .details {
+   display: block;
+ }
 }
 
 .settings-item .address-input.content {
@@ -3165,7 +3201,6 @@ div.settings menu.bar {
  margin: 0;
  padding-left: 0;
  margin-bottom: 0.5em;
- width: 100%;
 }
 
 .settings-item li {
@@ -3185,10 +3220,6 @@ div.settings menu.bar {
  margin-left: .8em;
 }
 
-div.settings-item.content > a {
- margin-bottom: 1.3em;
-}
-
 .settings-item li > button.simple-link {
  margin-left:0;
  font-weight: 500;
@@ -3196,7 +3227,7 @@ div.settings-item.content > a {
  padding:0.2em;
 }
 
-.settings-item  span {
+.settings-item span {
  margin: 0 1.1em 0 0;
  padding: 0;
 }
@@ -3247,6 +3278,7 @@ div.setup p.help-text {
 
 div.settings p.help-text {
  margin-top: 0.4em;
+ width: 100%
  max-width: 55em;
 }
 

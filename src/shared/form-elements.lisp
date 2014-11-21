@@ -39,7 +39,7 @@
       (:option :value "100" :selected (when (eql distance 100) "") "100 miles")
       (:option :value "0" :selected (when (eql distance 0) "") "everywhere"))))
 
-(defun group-category-selection (&key next selected submit-buttons (class "identity"))
+(defun group-category-selection (&key next selected (class "identity"))
   (let* ((default-options '("business"
                             "church/spiritual community"
                             "community organization"
@@ -52,42 +52,36 @@
                                  :test #'equalp)
                    selected)))
     (html
-      (awhen next (htm (:input :type "hidden" :name "next" :value it)))
-      (:select :name "group-category"
-               :class (s+ "group-category-selection " class)
-               :onchange "this.form.submit()"
-         (unless selected
-           (htm (:option :value ""
-                         :style "display:none;"
-                         :selected "selected"
-                   "Please select ...")))
-         (dolist (option default-options)
-           (htm (:option :value option
-                         :selected (when (string= selected option) "")
-                         (str (string-capitalize option)))))
-         (:option :value "other"
-                  :selected (when (or (string= selected "other")
-                                      custom)
-                              "")
-                  "Other ..."))
+      (:div :class "form-elements"
+        (awhen next (htm (:input :type "hidden" :name "next" :value it)))
+        (:select :name "group-category"
+                 :class (s+ "group-category-selection " class)
+                 :onchange "this.form.submit()"
+           (unless selected
+             (htm (:option :value ""
+                           :style "display:none;"
+                           :selected "selected"
+                     "Please select ...")))
+           (dolist (option default-options)
+             (htm (:option :value option
+                           :selected (when (string= selected option) "")
+                           (str (string-capitalize option)))))
+           (:option :value "other"
+                    :selected (when (or (string= selected "other")
+                                        custom)
+                                "")
+                    "Other ..."))
 
-      (:input :type "submit" :class "no-js" :value "apply")
+        (when (or (string= selected "other") custom)
+          (htm
+            (:br)
+            (:input :type "text"
+                    :class "group-category-selection float-left"
+                    :name "custom-group-category"
+                    :placeholder "Please specify..."
+                    :value (awhen custom (escape-for-html it)))))
 
-      (when (or (string= selected "other") custom)
-        (htm
-          (:br)
-          (:input :type "text"
-                  :class "group-category-selection float-left"
-                  :name "custom-group-category"
-                  :placeholder (if submit-buttons
-                                 "What type of group is this?"
-                                 "Please specify...")
-                  :value (awhen custom (escape-for-html it)))
-          (when submit-buttons
-            (htm
-              (:div :class "group-category-buttons float-left"
-               (:button :type "input" :class "yes input-height" "Save Changes")
-               (:button :type "input" :class "cancel input-height" :name "cancel" "Cancel")))))))))
+        (:input :type "submit" :class "no-js" :value "apply")))))
 
 (defun group-membership-method-selection (current &key auto-submit)
   (html
