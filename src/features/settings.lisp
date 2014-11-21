@@ -621,11 +621,6 @@
             (htm (:input :type "hidden" :name "email" :value it)))
           (when groupid
             (htm (:input :type "hidden" :name "groupid" :value groupid)))
-          (:div :class "submit-settings"
-            (unless *user*
-              (htm
-                (:div (:a :class "blue"
-                          :href "/login" "Sign into Kindista")))))
           (:ul
             (:li (:input :type "checkbox"
                   :name "gratitude"
@@ -674,7 +669,10 @@
      :buttons (html (:button :class (s+ "yes " (when *user* "small"))
                              :type "submit"
                              :name "save-notifications"
-                       "Save preferences"))
+                       "Save preferences")
+                    (unless *user*
+                      (htm (:div (:a :class "blue" :href "/login"
+                                   "Log into Kindista")))))
      :action "/settings/notifications"
      :title "Notify me"
      :editable t))))
@@ -787,7 +785,15 @@
         (activate-email-address (parse-integer (get-parameter "invitation-id"))
                                 (get-parameter "token"))
 
-        (settings-template-html
+        (progn
+          (when (and (get-parameter "k")
+                     (get-parameter "email")
+                     (not (find (get-parameter-string "email")
+                                (getf *user* :emails)
+                                :test #'string=)))
+            (flash "You must first sign out of this account before you can change settings on a different account." :error t))
+
+         (settings-template-html
           (aif (get-parameter "groupid")
             (url-compose "/settings/communication"
                          "groupid" it)
@@ -802,7 +808,7 @@
            (str (settings-notifications :groupid groupid :group group))
            (unless groupid
              (str (settings-emails (string= (get-parameter "edit") "email")
-                                   :activate (get-parameter "activate")))))))
+                                   :activate (get-parameter "activate"))))))))
 
      (if (and (get-parameter "k") (get-parameter "email"))
        (let* ((email (get-parameter-string "email"))

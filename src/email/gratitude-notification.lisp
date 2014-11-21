@@ -35,7 +35,7 @@
           (dolist (admin (getf data :notify-gratitude))
             (let ((person (db admin)))
               (push (list :group-name name
-                          :group-id subject
+                          :groupid subject
                           :email (car (getf person :emails))
                           :unsubscribe-key (getf person :unsubscribe-key)
                           :id admin)

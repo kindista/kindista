@@ -3128,13 +3128,18 @@ div.settings menu.bar {
  margin: 2em auto;
 }
 
+.logged-out.unsubscribe .settings-item button.yes {
+ width: 100%;
+ margin-left: 0;
+}
+
 .logged-out.unsubscribe a.blue {
  display: block;
- padding: 0.5em 0.7em;
+ padding: 0.5em 0;
+ font-size: 0.93em;
  line-height: normal;
  text-align: center;
- width: 15.5em;
- margin: 1.5em 0.4em;
+ margin: 1.5em 0;
 }
 
 .settings-item .title {
