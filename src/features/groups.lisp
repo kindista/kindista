@@ -727,8 +727,7 @@
             (:h3 "What kind of a group is this?")
             (:div :class "group-category-selection"
               (str
-                (group-category-selection :submit-buttons nil
-                                          :class "new-group identity"
+                (group-category-selection :class "new-group identity"
                                           :selected (or (post-parameter "group-category")
                                                         (post-parameter "custom-group-category")))))
             (:div :class "long"
