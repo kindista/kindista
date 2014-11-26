@@ -272,7 +272,10 @@
         (:div :class "item" :id "broadcast"
           (:p (:a :href "/admin" "back to admin"))
           (:h1 "send broadcast email") 
-          (:form :action "/admin/sendmail" :method "post"
+          (:form :action "/admin/sendmail"
+                 :name "broadcast-form"
+                 :enctype "multipart/form-data"
+                 :method "post"
             (:p
               (:label "From:")
               (:input :type "text" :name "from" :value "\"Benjamin Crandall\" <ben@kindista.org>"))
@@ -280,87 +283,89 @@
               (:label "Subject:")
               (:input :type "text" :name "subject"))
             (:textarea :name "markdown")
-            (:button :type "submit" :name "eugene-only" :class "yes" "Send to Eugene Members")
+            (:div
+              (:span "Add a markdown file:")
+              (:br)
+              (:input :type "file"
+                      :name "markdown-file"
+                      :onchange (ps-inline (submit-image-form)))
+              (:div :id "spinner" :class "spinner"))
+            (:div
+              (:input :type "checkbox"
+                      :name "blog-p"
+                      :value "checked")
+              "Post this message to the blog")
             (:button :type "submit" :name "test" :class "yes" "Send Test")
-            (:button :type "submit" :class "yes" "Send to everyone"))))
+            (:button :type "submit" :class "yes" "Send to everyone")   
+            (:button :type "submit" :name "eugene-only" :class "yes" "Send to Eugene Members")
+            )))
       :selected "admin")))
 
 (defvar *last-broadcast-email-time* 0)
 
+(defvar *latest-broadcast*)
+
 (defun post-admin-sendmail ()
   (require-admin
-    (if (and (post-parameter "markdown")
+    (if (and (or (post-parameter "markdown") (post-parameter "markdown-file"))
              (post-parameter "from")
              (post-parameter "subject"))
-      (let* ((text (post-parameter "markdown"))
-             (markdown (nth-value 1 (markdown text :stream nil)))
-             (subject (post-parameter "subject"))
+      (let* ((text (post-parameter-string "markdown"))
+             (markdown-file (post-parameter "markdown-file"))
+             (markdown (markdown-file
+                         (or (first markdown-file)
+                             (nth-value 1 (markdown text :stream nil)))))
+             (subject (post-parameter-string "subject"))
              (from (post-parameter "from")))
-        (flet ((html-message (code email)
-                 (html-email-base
-                   (strcat markdown
-                           (unsubscribe-notice-ps-html
-                             code
-                             email
-                             "updates from Kindista"
-                             :detailed-notification-description "occasional updates like this from Kindista"))))
-               (text-message (code email)
-                 (s+ text (unsubscribe-notice-ps-text
-                            code
-                            email
-                            "updates from Kindista"
-                            :detailed-notification-description "occasional updates like this from Kindista"))))
-         (cond
+
+        (cond
           ((post-parameter "test")
            (cl-smtp:send-email +mail-server+
-                               from
+                               "info@kindista.org"
                                from
                                subject
-                               (text-message (getf *user* :unsubscribe-key)
-                                             (car (getf *user* :emails)))
-                               :html-message (html-message
-                                               (getf *user* :unsubscribe-key)
-                                               (car (getf *user* :emails)))))
-          ((post-parameter "unread-mail")
-           (dolist (id (users-with-new-mail))
-             (let* ((data (db id))
-                    (name (getf data :name))
-                    (email (first (getf data :emails)))
-                    (unsubscribe (getf data :unsubscribe-key)))
-               (when email
-                (cl-smtp:send-email +mail-server+
-                                    from
-                                    (format nil "\"~A\" <~A>" name email)
-                                    subject
-                                    (text-message unsubscribe email)
-                                    :html-message (html-message unsubscribe
-                                                                email))))))
+                               (s+ markdown
+                                   (unsubscribe-notice-ps-text
+                                     (getf *user* :unsubscribe-key)
+                                     from
+                                     "updates from Kindista"
+                                     :detailed-notification-description "occasional updates like this from Kindista"))
+                               :html-message (html-email-base
+                                               (strcat markdown
+                                                       (unsubscribe-notice-ps-html
+                                                         (getf *user*
+                                                               :unsubscribe-key)
+                                                         from
+                                                         "updates from Kindista"
+                                                         :detailed-notification-description "occasional updates like this from Kindista")))))
 
-          ((< *last-broadcast-email-time* (- (get-universal-time) 900))
+          ((or (not *productionp*)
+               (< *last-broadcast-email-time* (- (get-universal-time) 900)))
            (setf *last-broadcast-email-time* (get-universal-time))
-           (flet ((send-mail (id)
-                    (let ((data (db id)))
-                      (when (getf data :notify-kindista)
-                        (let ((name (getf data :name))
-                              (email (first (getf data :emails)))
-                              (unsubscribe (getf data :unsubscribe-key)))
-                          (when email
-                            (cl-smtp:send-email +mail-server+
-                                                from
-                                                (format nil "\"~A\" <~A>" name email)
-                                                subject
-                                                (text-message unsubscribe email)
-                                                :html-message (html-message
-                                                                unsubscribe
-                                                                email))))))))
+           (let* ((saved-file (save-broadcast
+                                (first markdown-file)
+                                subject))
+                  (blog-p (post-parameter "blog-p"))
+                  (broadcast (create-broadcast :path saved-file
+                                               :title (hyphenate subject)
+                                               :author *userid*
+                                               :blog-p blog-p)))
+             (setf *latest-broadcast* (list :id broadcast
+                                            :author-email from
+                                            :markdown (markdown-file saved-file)))
              (dolist (id (cond
                            ((not *productionp*)
                             (when (getf *user* :admin)
                               (list *userid*)))
+                           ((post-parameter "unread-mail")
+                            (users-with-new-mail))
                            ((post-parameter "eugene-only")
                             (remove-duplicates (local-members)))
                            (t (remove-duplicates *active-people-index*))))
-               (send-mail id))))))
+
+               (notice :broadcast-email :time (get-universal-time)
+                                        :broadcast-id broadcast
+                                        :user-id id)))))
         (flash "your message has been sent"))
 
       (flash "specify everything please" :error t))

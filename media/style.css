@@ -331,10 +331,13 @@ input[type=radio].first-option {
  margin: 1.5em 0 .8em 0em;
 }
 
-#signup button, #broadcast button, #login button {
- min-width: 5em;
+#signup button, #login button {
  padding-left: 0;
  padding-right: 0;
+}
+
+#signup button, #broadcast button, #login button {
+ min-width: 5em;
  margin-right: 1.2em;
  vertical-align: middle;
 }
@@ -343,7 +346,7 @@ input[type=radio].first-option {
  margin: 1em;
 }
 
-#request-invite div, #request-invite ul {
+#request-invite div, #broadcast div, #request-invite ul {
  margin-bottom: 1em;
  max-width: 200em;
 }

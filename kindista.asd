@@ -76,6 +76,7 @@
                               :serial t
                               :components ((:file "about")
                                            (:file "admin")
+                                           (:file "blog")
                                            (:file "comments")
                                            (:file "contacts")
                                            (:file "invitations")

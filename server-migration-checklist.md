@@ -13,3 +13,5 @@
 - kindista directory
 - books directory (financial statments)
 
+## Make sure root directory has all necessary subdirectories
+- media/blog

@@ -147,6 +147,14 @@
   (equalp (symbol-name symbol-a)
           (symbol-name symbol-b)))
 
+(defun hyphenate (string)
+  (ppcre:regex-replace-all " "
+                           (remove-if #'(lambda (char)
+                                          (find char '("," "." "!" "?" "(" ")" "'")
+                                                :test #'string=))
+                                      (string-downcase string))
+                           "-"))
+
 (defun words-from-string (string)
   (iter (for word in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
         (when (ppcre:scan +text-scanner+ word)
