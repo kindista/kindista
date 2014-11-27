@@ -31,14 +31,15 @@
              (broadcast (db broadcast-id))
              (author-email (car (db (getf broadcast :author) :emails)))
              (amazon-smile-p (getf broadcast :amazon-smile-p))
+             (broadcast-path (s+ *blog-path* (getf broadcast :path)))
              (latest-broadcast-p (eql (getf *latest-broadcast* :id)
                                       broadcast-id))
              (text-broadcast (if latest-broadcast-p
                                (getf *latest-broadcast* :text)
-                               (read-file-into-string (getf broadcast :path))))
+                               (read-file-into-string broadcast-path)))
              (html-broadcast (if latest-broadcast-p
                                (getf *latest-broadcast* :html)
-                               (markdown-file (getf broadcast :path))))
+                               (markdown-file broadcast-path)))
              (html-message (html-email-base
                              (strcat html-broadcast
                                     (when amazon-smile-p
@@ -83,14 +84,14 @@
    title
    &aux (now (local-time:now))
         (hyphenated-title (hyphenate title))
-        (dirname (strcat
-                   *blog-path*
-                   (with-output-to-string (str)
-                     (format-timestring str
-                                        now
-                                        :format '((:year 4) #\/ (:month 2) #\/ (:day 2) #\/)))))
-        (new-file-path (merge-pathnames dirname
-                                        (s+ hyphenated-title ".md"))))
+        (local-dir (with-output-to-string (str)
+                     (format-timestring
+                       str
+                       now
+                       :format '((:year 4) #\/ (:month 2) #\/ (:day 2) #\/))))
+        (dirname (strcat *blog-path* local-dir))
+        (filename (s+ hyphenated-title ".md"))
+        (new-file-path (merge-pathnames dirname filename)))
 
   (ensure-directories-exist dirname)
   (with-open-file (file new-file-path :direction :output
@@ -100,6 +101,6 @@
         (prin1 text file))
       (terpri)))
  ;(copy-file file new-file-path)
-  new-file-path)
+  (s+ local-dir filename))
 
 

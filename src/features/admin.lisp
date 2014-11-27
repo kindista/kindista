@@ -324,7 +324,7 @@
                                (markdown-file (first markdown-upload))
                                (markdown-text text)))
              (subject (post-parameter-string "subject"))
-             (amazon-smile-p (post-parameter "amazon-smile-p"))
+             (amazon-smile-p (when (post-parameter "amazon-smile-p") t))
              (from (post-parameter "from")))
 
         (cond
@@ -358,7 +358,7 @@
            (let* ((saved-file (save-broadcast
                                 text-broadcast
                                 subject))
-                  (blog-p (post-parameter "blog-p"))
+                  (blog-p (when (post-parameter "blog-p") t))
                   (broadcast (create-broadcast :path saved-file
                                                :title subject
                                                :author *userid*
