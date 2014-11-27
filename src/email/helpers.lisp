@@ -50,6 +50,19 @@
   (&optional (instructions "do so from their profile on Kindista.org"))
   (strcat "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER. If you want to contact the sender, please " instructions "."))
 
+(defun amazon-smile-reminder (&optional html)
+  (if html
+    (html
+      (:div :class *style-p*
+         "Do you shop at Amazon.com? If so, please "
+         (:a :href *amazon-smile-link* "click here")
+         " and Amazon will donate a portion of your purchases to Kindista through our parent organization, CommonGoods Network."))
+    (strcat
+      #\linefeed #\linefeed
+      "Do you shop at Amazon.com? If so, please click here and Amazon will donate a portion of your purchases to Kindista through our parent organization, CommonGoods Network:"
+      #\linefeed
+      *amazon-smile-link*)))
+
 (defun unsubscribe-notice-ps-text
   (unsubscribe-code
    email-address

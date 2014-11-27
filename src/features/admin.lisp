@@ -295,6 +295,11 @@
                       :name "blog-p"
                       :value "checked")
               "Post this message to the blog")
+            (:div
+              (:input :type "checkbox"
+                      :name "amazon-smile-p"
+                      :value "checked")
+              "Plug Kindista at AmazonSmile")
             (:button :type "submit" :name "test" :class "yes" "Send Test")
             (:button :type "submit" :class "yes" "Send to everyone")   
             (:button :type "submit" :name "eugene-only" :class "yes" "Send to Eugene Members")
@@ -311,11 +316,15 @@
              (post-parameter "from")
              (post-parameter "subject"))
       (let* ((text (post-parameter-string "markdown"))
-             (markdown-file (post-parameter "markdown-file"))
-             (markdown (markdown-file
-                         (or (first markdown-file)
-                             (nth-value 1 (markdown text :stream nil)))))
+             (markdown-upload (post-parameter "markdown-file"))
+             (text-broadcast (if markdown-upload
+                               (read-file-into-string (first markdown-upload))
+                               text))
+             (html-broadcast (if markdown-upload
+                               (markdown-file (first markdown-upload))
+                               (markdown-text text)))
              (subject (post-parameter-string "subject"))
+             (amazon-smile-p (post-parameter "amazon-smile-p"))
              (from (post-parameter "from")))
 
         (cond
@@ -324,35 +333,41 @@
                                "info@kindista.org"
                                from
                                subject
-                               (s+ markdown
+                               (s+ text-broadcast
+                                   (when amazon-smile-p
+                                     (amazon-smile-reminder))
                                    (unsubscribe-notice-ps-text
                                      (getf *user* :unsubscribe-key)
                                      from
                                      "updates from Kindista"
                                      :detailed-notification-description "occasional updates like this from Kindista"))
                                :html-message (html-email-base
-                                               (strcat markdown
-                                                       (unsubscribe-notice-ps-html
-                                                         (getf *user*
-                                                               :unsubscribe-key)
-                                                         from
-                                                         "updates from Kindista"
-                                                         :detailed-notification-description "occasional updates like this from Kindista")))))
+                                               (strcat* html-broadcast
+                                                        (when amazon-smile-p
+                                                          (amazon-smile-reminder :html))
+                                                        (unsubscribe-notice-ps-html
+                                                          (getf *user*
+                                                                :unsubscribe-key)
+                                                          from
+                                                          "updates from Kindista"
+                                                          :detailed-notification-description "occasional updates like this from Kindista")))))
 
           ((or (not *productionp*)
                (< *last-broadcast-email-time* (- (get-universal-time) 900)))
            (setf *last-broadcast-email-time* (get-universal-time))
            (let* ((saved-file (save-broadcast
-                                (first markdown-file)
+                                text-broadcast
                                 subject))
                   (blog-p (post-parameter "blog-p"))
                   (broadcast (create-broadcast :path saved-file
-                                               :title (hyphenate subject)
+                                               :title subject
                                                :author *userid*
+                                               :amazon-smile-p amazon-smile-p
                                                :blog-p blog-p)))
              (setf *latest-broadcast* (list :id broadcast
                                             :author-email from
-                                            :markdown (markdown-file saved-file)))
+                                            :text text-broadcast
+                                            :html html-broadcast))
              (dolist (id (cond
                            ((not *productionp*)
                             (when (getf *user* :admin)

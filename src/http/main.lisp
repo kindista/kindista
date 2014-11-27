@@ -285,6 +285,9 @@
 (defun markdown-file (path)
   (nth-value 1 (markdown (pathname path) :stream nil)))
 
+(defun markdown-text (string)
+  (nth-value 1 (markdown string :stream nil)))
+
 (defun see-other (url)
   (setf (return-code*) +http-see-other+)
   (setf (header-out :location) url)

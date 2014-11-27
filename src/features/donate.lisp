@@ -19,6 +19,8 @@
 
 (defvar *donation-plans* (make-hash-table :synchronized t))
 
+(defparameter *amazon-smile-link* "http://smile.amazon.com/ch/26-3664513")
+
 (defun load-donation-plans ()
   (do* ((offset 0)
         (plans (stripe:sstruct-get
