@@ -1,5 +1,3 @@
-[ ] include multi-part form data
-[ ] save a db object if it's a blog
 [ ] save md file to blog directory
 [ ] create a notice for each subscribed user
    - notice should have a reference to the filepath
