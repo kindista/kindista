@@ -15,3 +15,4 @@
 
 ## Make sure root directory has all necessary subdirectories
 - media/blog
+- data/broadcasts

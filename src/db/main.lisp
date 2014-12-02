@@ -531,6 +531,7 @@
 
 (defun index-item (id data)
   (case (getf data :type)
+    (:blog (index-blog id data))
     (:comment (index-comment id data))
     (:invitation (index-invitation id data))
     (:invite-request (index-invite-request id data))

@@ -88,6 +88,7 @@
 (defparameter *route-param-scanner*
   (create-scanner "<((\\w+):)?([-\\w]+)>"))
 
+
 (defun make-path-scanner (path)
 
   (let ((names ())
@@ -113,6 +114,8 @@
            (setf pattern "(\\d+)"))
           ((string= param-type "email")
            (setf pattern "(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})"))
+          ((string= param-type "str")
+           (setf pattern  "([a-zA-Z0-9_%+-]+)"))
           (t
            (setf pattern "([^\/]+)")))
 
@@ -311,6 +314,9 @@
     (dolist (rule *routes*)
       (multiple-value-bind (match results)
           (scan-to-strings (car rule) (script-name*))
+
+          (pprint results)
+          (terpri)
         (when match
           (return-from acceptor-dispatch-request
             (let ((method (request-method*))

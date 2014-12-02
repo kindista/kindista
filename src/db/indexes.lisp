@@ -31,6 +31,7 @@
   (dolist (index *indexes*)
     (clrhash (symbol-value index)))
   (setf *active-people-index* ()
+        *blog-index* ()
         *completed-transactions-index* ()
         *event-index* ()
         *feedback-index* ()
@@ -90,6 +91,8 @@
 
 (defvar *active-people-mutex* (make-mutex))
 (defvar *active-people-index* ())
+(defvar *blog-mutex* (make-mutex))
+(defvar *blog-index* ())
 (defvar *completed-transactions-mutex* (make-mutex))
 (defvar *completed-transactions-index* ())
 (defvar *event-mutex* (make-mutex))

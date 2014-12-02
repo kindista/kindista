@@ -34,6 +34,12 @@
   ("/home"
     :get get-home)
 
+  ("/blog"
+    :get get-blog)
+
+  ("/blog/<int:year>/<int:month>/<int:day>/<str:title>"
+    :get get-blog-post)
+
   ("/search"
     :get get-search)
 
