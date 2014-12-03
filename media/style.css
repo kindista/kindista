@@ -19,6 +19,7 @@
 
 @charset "UTF-8";
 
+/*
 @font-face {
   font-family: 'Ubuntu';
   font-style: normal;
@@ -62,12 +63,13 @@
        url('fonts/ubuntu-bold.woff') format('woff'),
        url('fonts/ubuntu-bold.ttf') format('truetype');
 }
+*/
 
 * {
  box-sizing: border-box;
  -moz-box-sizing: border-box;
  -webkit-box-sizing: border-box;
- font-family: Ubuntu, Roboto, "Segoe UI", "Helvetica Neue", Tahoma, sans-serif;
+ font-family: "Varela Round", Ubuntu, Roboto, "Segoe UI", "Helvetica Neue", Tahoma, sans-serif;
 }
 
 body {
@@ -138,6 +140,13 @@ h4 {
 
 select {
  max-width: 20em;
+}
+
+div.title-bar {
+ padding: 0.5em;
+ font-size: 1.3em;
+ background:#E2EBBE;
+ color:#627A2F;
 }
 
 select.identity,
@@ -364,6 +373,10 @@ input[type=radio].first-option {
 
 #request-invite textarea {
  width: 100%;
+}
+
+#broadcast textarea {
+ min-height: 10em;
 }
 
 #request-invite label {
@@ -3597,6 +3610,24 @@ form#donate button {
 #admin-page li {
  font-size: 1.3em;
  line-height: 2.5em;
+}
+
+.blog.item {
+ margin: 0.4em 0 3em;
+}
+
+.blog-title {
+ margin-bottom: 1em;
+}
+
+.blog-title strong {
+ font-size: 0.8em;
+}
+
+.blog.item .blog-title h3 {
+ font-size: 1.5em;
+ margin: 0.1em 0;
+ line-height: 1.5em;
 }
 
 .card .people a {

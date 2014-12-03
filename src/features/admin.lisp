@@ -283,6 +283,9 @@
               (:label "Subject:")
               (:input :type "text" :name "subject"))
             (:textarea :name "markdown")
+            (:p
+              (:label "Tags: (optional)")
+              (:input :type "text" :name "tags"))
             (:div
               (:span "Add a markdown file:")
               (:br)
@@ -316,6 +319,7 @@
              (post-parameter "from")
              (post-parameter "subject"))
       (let* ((text (post-parameter-string "markdown"))
+             (tags (tags-from-string (post-parameter "tags")))
              (markdown-upload (post-parameter "markdown-file"))
              (text-broadcast (if markdown-upload
                                (read-file-into-string (first markdown-upload))
@@ -363,6 +367,7 @@
                                                :title subject
                                                :author *userid*
                                                :amazon-smile-p amazon-smile-p
+                                               :tags tags
                                                :blog-p blog-p)))
              (setf *latest-broadcast* (list :id broadcast
                                             :author-email from

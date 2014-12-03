@@ -54,6 +54,11 @@
     (:div :class "progress-bar"
       (:span :style (strcat "width: " percent "%")))))
 
+(defun page-title-bar (title)
+  (html
+    (:div :class "title-bar"
+     (:h2 (str title)))))
+
 (defun generate-js ()
   (paren-files:compile-script-file-to-js-file
     (s+ *kindista-root-path* "js/main.paren")

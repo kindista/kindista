@@ -314,9 +314,6 @@
     (dolist (rule *routes*)
       (multiple-value-bind (match results)
           (scan-to-strings (car rule) (script-name*))
-
-          (pprint results)
-          (terpri)
         (when match
           (return-from acceptor-dispatch-request
             (let ((method (request-method*))
@@ -473,6 +470,9 @@
         (:meta :name "HandheldFriendly" :content "True")
         ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
         (:link :rel "stylesheet" :href "/media/style.css")
+        (:link :href "http://fonts.googleapis.com/css?family=Varela+Round"
+               :rel "stylesheet"
+               :type "text/css")
         (:script :type "text/javascript" :src "/kindista.js")
         ;(str "<!--[if lt IE 9]>")
         ;(:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")

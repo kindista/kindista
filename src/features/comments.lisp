@@ -83,7 +83,7 @@
 
 (defun get-comment-delete (id)
   (require-user
-    (setf id (parse-integer id)) 
+    (setf id (parse-integer id))
     (let ((it (db id)))
       (if (eq (getf it :type) :comment)
         (confirm-delete :url (strcat "/comments/" id) :next-url (referer) :type "comment" :text (getf it :text))

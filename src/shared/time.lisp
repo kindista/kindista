@@ -110,6 +110,13 @@
       (year-first (strcat year "-" month "-" date))
       (t (values time date-name formatted-date))))))
 
+(defun universal-to-datestring (universal)
+ (with-output-to-string (str)
+   (format-timestring
+     str
+     (universal-to-timestamp universal)
+     :format '((:year 4) #\/ (:month 2) #\/ (:day 2) #\/))))
+
 (defun current-year ()
   (sixth (multiple-value-list (decode-universal-time (get-universal-time)))))
 

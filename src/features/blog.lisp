@@ -70,11 +70,12 @@
 
   )
 
-(defun create-broadcast (&key path title author blog-p amazon-smile-p)
+(defun create-broadcast (&key path title author tags blog-p amazon-smile-p)
   (insert-db `(:type ,(if blog-p :blog :broadcast)
                :created ,(get-universal-time)
                :title ,title
                :author ,author
+               :tags ,tags
                :amazon-smile-p ,amazon-smile-p
                :path ,path
                )))
@@ -106,7 +107,7 @@
   (with-mutex (*blog-mutex*)
     (setf *blog-index*
           (safe-sort (push result *blog-index*)
-                     #'<
+                     #'>
                      :key #'result-time)))
 
   (unless (file-exists-p blog-path)
@@ -146,6 +147,52 @@
  ;(copy-file file new-file-path)
   (s+ local-dir filename))
 
+(defun blog-post-html
+  (id
+   &key contents
+   &aux (data (db (result-id id)))
+        (hyphenated-title (hyphenate (getf data :title)))
+        (date-string (universal-to-datestring (getf data :created)))
+        (path (merge-pathnames (s+ *blog-path*
+                                   date-string)
+                               hyphenated-title)))
+  (html
+    (:div :class "blog item" :id (result-id id)
+     (:div :class "blog-title"
+      (:strong (str (humanize-exact-time (getf data :created)
+                                         :detailed t)))
+      (:h3 (:a :href (s+ "/blog/" date-string hyphenated-title)
+            (str (getf data :title))))
+      (:strong
+        "By: " (str (person-link (getf data :author)))))
+     (str
+       (or contents
+           (with-open-file (file path :direction :input :if-does-not-exist nil)
+             (when file (cadr (read file))))))
+
+     ;; when we make tags searchable, use (display-tags)
+     (awhen (getf data :tags)
+       (htm
+         (:p :class "tags"
+           (:strong "tags: "
+            (dolist (tag it)
+              (str tag)
+              (unless (eql tag (car (last it)))
+                (htm " &middot ")))))))
+     )))
+
+(defun get-blog
+  (&key (page (or (get-parameter "p") 0))
+        (count 10)
+   &aux (start (* page count))
+        (posts (sublist *blog-index* start count)))
+  (standard-page
+    "Kindista Blog"
+    (html
+      (dolist (post posts)
+        (str (blog-post-html post))))
+    :top (page-title-bar "Kindista Blog - Adventures in Gift")))
+
 (defun get-blog-post
   (year
    month
@@ -162,10 +209,25 @@
              (data (db id)))
         (standard-page
           (getf data :title)
-          (html
-            (:div :class "blog item"
-             (str html))
+          (blog-post-html (gethash id *db-results*) :contents html)))
+      (not-found))))
+
+ (defun post-blog-post
+  (year
+   month
+   day
+   title
+   &aux (date-path (strcat *blog-path* year "/" month "/" day "/"))
+        (path (merge-pathnames date-path title)))
+
+  (require-user
+    (with-open-file (file path :direction :input :if-does-not-exist nil)
+      (if file
+        (let* ((file-contents (read file))
+               (id (car file-contents))
+               (html (cadr file-contents))
+               (data (db id)))
+          (cond
             )
           )
-        )
-      (not-found))))
+        (not-found)))))
