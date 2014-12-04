@@ -1478,6 +1478,7 @@ menu .newcount {
  max-width: 60em;
 }
 
+.blog.item label,
 .item.create-event label,
 .item.create-group label,
 .item.inventory-details label,
@@ -3174,6 +3175,11 @@ div.settings menu.bar {
  max-width: 55em;
 }
 
+.settings-item li.notifications.border-top {
+ border-color: #dadada;
+ padding-top: 0.5em;
+}
+
 .settings-item .title-container {
  padding-right: 1em;
  width: 8em;
@@ -3630,6 +3636,15 @@ form#donate button {
  line-height: 1.5em;
 }
 
+.blog.item textarea {
+ height: 7em;
+ max-width: 50em;
+}
+
+.blog.item button.yes {
+ display: block;
+}
+
 .card .people a {
  white-space: nowrap;
 }
@@ -3765,16 +3780,19 @@ div.transaction-options a > img {
  font-size: 1.2em;
 }
 
+div.blog-comments,
 .transaction div#transaction-history {
 background-color: #f8f8f8;
 }
 
+div.blog-comments div.card,
 .transaction div#transaction-history div.card {
  border-bottom-color: #fff;
  margin: 0;
  padding: 0.5em 0.4em;
 }
 
+div.blog-comments div.card p,
 .transaction div#transaction-history div.card p {
  margin: 0.5em 0;
 }
@@ -3797,6 +3815,10 @@ background-color: #f8f8f8;
 #site-error {
  text-align: center;
  margin: 2em;
+}
+
+.border-top {
+ border-top: 1px solid #fafafa;
 }
 
 .float-right {

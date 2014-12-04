@@ -148,21 +148,23 @@
   (s+ local-dir filename))
 
 (defun blog-post-html
-  (id
+  (result
    &key contents
-   &aux (data (db (result-id id)))
+   &aux (id (result-id result))
+        (data (db id))
         (hyphenated-title (hyphenate (getf data :title)))
         (date-string (universal-to-datestring (getf data :created)))
+        (url (s+ "/blog/" date-string hyphenated-title))
+        (comments (gethash id *comment-index*))
         (path (merge-pathnames (s+ *blog-path*
                                    date-string)
                                hyphenated-title)))
   (html
-    (:div :class "blog item" :id (result-id id)
+    (:div :class "blog item" :id id
      (:div :class "blog-title"
       (:strong (str (humanize-exact-time (getf data :created)
                                          :detailed t)))
-      (:h3 (:a :href (s+ "/blog/" date-string hyphenated-title)
-            (str (getf data :title))))
+      (:h3 (:a :href url (str (getf data :title))))
       (:strong
         "By: " (str (person-link (getf data :author)))))
      (str
@@ -179,6 +181,39 @@
               (str tag)
               (unless (eql tag (car (last it)))
                 (htm " &middot ")))))))
+
+     (when comments
+       (htm
+         (:h3 "Comments:")
+         (:div :class "blog-comments"
+           (dolist (comment-id comments)
+             (let* ((comment (db comment-id))
+                    (by (car (getf comment :by))))
+               (str
+                 (card
+                   (html
+                     (str (h3-timestamp (getf comment :created)))
+                     (:p (str (person-link by)) " replied:")
+
+                     (:p (str (regex-replace-all "\\n"
+                                                 (getf comment :text)
+                                                 "<br>")))))))))
+         )
+       )
+
+     (:form :method "post" :action (strcat "/blog/" id)
+      (if *user*
+        (htm (:label :for "new-comment" "Post a comment")
+             (:textarea :name "comment-text" :id "new-comment")
+             (:button :type "submit"
+                      :class "yes"
+                      :name "post-comment"
+               "Post Reply"))
+        (htm (:button :type "submit"
+                      :name "new-comment"
+                      :class "green link"
+               "Post a comment"
+                      ))))
      )))
 
 (defun get-blog
@@ -190,8 +225,7 @@
     "Kindista Blog"
     (html
       (dolist (post posts)
-        (str (blog-post-html post))))
-    :top (page-title-bar "Kindista Blog - Adventures in Gift")))
+        (str (blog-post-html post)))) :top (page-title-bar "Kindista Blog - Adventures in Gift")))
 
 (defun get-blog-post
   (year
@@ -213,21 +247,25 @@
       (not-found))))
 
  (defun post-blog-post
-  (year
-   month
-   day
-   title
-   &aux (date-path (strcat *blog-path* year "/" month "/" day "/"))
-        (path (merge-pathnames date-path title)))
+   (id
+    &aux (blog-id (parse-integer id))
+         (data (db blog-id)))
 
-  (require-user
-    (with-open-file (file path :direction :input :if-does-not-exist nil)
-      (if file
-        (let* ((file-contents (read file))
-               (id (car file-contents))
-               (html (cadr file-contents))
-               (data (db id)))
-          (cond
-            )
-          )
-        (not-found)))))
+   (require-user
+     (acond
+       ((not data)
+        (not-found))
+       ((post-parameter-string "comment-text")
+        (create-comment :on blog-id
+                        :send-email-p nil
+                        :text it
+                        )
+        (see-other "/blog")
+        )
+       (t (not-found))
+
+       )
+     
+     )
+
+   )

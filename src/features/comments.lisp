@@ -27,9 +27,9 @@
                               :text text
                               :created time)))
          (on-message (gethash on *db-messages*))
-         (on-type (message-type on-message))
-         (people (message-people on-message))
-         (people-list (all-message-people on-message))
+         (on-type (when on-message (message-type on-message)))
+         (people (when on-message (message-people on-message)))
+         (people-list (when on-message (all-message-people on-message)))
          (others (remove (car by) people-list))
          (user-boxes (loop for person in people
                            when (eql (car by) (caar person))
@@ -91,7 +91,7 @@
 
 (defun post-comment (id)
   (require-user
-    (setf id (parse-integer id)) 
+    (setf id (parse-integer id))
     (let ((it (db id)))
       (if (eq (getf it :type) :comment)
         (cond

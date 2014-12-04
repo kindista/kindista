@@ -635,6 +635,13 @@
                           " a message or responds to "
                           (if group "our" "my")
                           " offers/requests")))
+            (when group
+              (htm
+                (:li (:input :type "checkbox"
+                       :name "group-membership-request"
+                       :checked (checkbox-value :notify-membership-request))
+                      (str (s+ "when someone wants to join " group-name)))))
+
             (unless group
               (htm
                ;(:li (:input :type "checkbox"
@@ -649,22 +656,22 @@
                       :name "group-membership-invites"
                       :checked (checkbox-value :notify-group-membership-invites))
                      "when someone invites me to join a group on Kindista (e.g. a business, non-profit, or other organization I belong to within my community)")
-                (:li (:input :type "checkbox"
+                (:li :class "notifications border-top"
+                     (:input :type "checkbox"
                       :name "reminders"
                       :checked (checkbox-value :notify-reminders))
                      "with occasional suggestions about how "
                      (str (if group "our group" "I"))
                      " can get the most out of Kindista")
                 (:li (:input :type "checkbox"
+                       :name "k-blog"
+                       :checked (checkbox-value :notify-blog))
+                      "with new articles from the Kindista blog")
+                (:li (:input :type "checkbox"
                        :name "kindista"
                        :checked (checkbox-value :notify-kindista))
                       "with updates and information about Kindista")))
-            (when group
-              (htm
-                (:li (:input :type "checkbox"
-                       :name "group-membership-request"
-                       :checked (checkbox-value :notify-membership-request))
-                      (str (s+ "when someone wants to join " group-name)))))))
+            ))
 
      :buttons (html (:button :class (s+ "yes " (when *user* "small"))
                              :type "submit"
