@@ -17,6 +17,16 @@
 
 (in-package :kindista)
 
+(defun subscribe-kindista-update-subscribers-to-blog ()
+  "Subscribe all users who are receiving updates about Kindista to also receive the new blog"
+  (dolist (id (hash-table-keys *db*))
+    (let ((data (db id)))
+      (when (eq (getf data :type) :person)
+        (if (getf data :notify-kindista)
+          (modify-db id :notify-blog t)
+          (unless (getf data :notify-blog)
+            (modify-db id :notify-blog nil)))))))
+
 (defun broadcast-email-notice-handler ()
   (let ((notice (cddddr *notice*)))
     (send-broadcast-email (getf notice :broadcast-id)
@@ -173,7 +183,7 @@
              (when file (cadr (read file))))))
 
      ;; when we make tags searchable, use (display-tags)
-     (awhen (getf data :tags)
+     (awhen (and (getf *user* :admin) (getf data :tags))
        (htm
          (:p :class "tags"
            (:strong "tags: "
@@ -182,38 +192,24 @@
               (unless (eql tag (car (last it)))
                 (htm " &middot ")))))))
 
-     (when comments
-       (htm
-         (:h3 "Comments:")
-         (:div :class "blog-comments"
-           (dolist (comment-id comments)
-             (let* ((comment (db comment-id))
-                    (by (car (getf comment :by))))
-               (str
-                 (card
-                   (html
-                     (str (h3-timestamp (getf comment :created)))
-                     (:p (str (person-link by)) " replied:")
+     (:div :class "comments"
+      (when comments
+        (dolist (comment-id comments)
+          (str (comment-card comment-id))))
 
-                     (:p (str (regex-replace-all "\\n"
-                                                 (getf comment :text)
-                                                 "<br>")))))))))
-         )
-       )
-
-     (:form :method "post" :action (strcat "/blog/" id)
-      (if *user*
-        (htm (:label :for "new-comment" "Post a comment")
-             (:textarea :name "comment-text" :id "new-comment")
-             (:button :type "submit"
-                      :class "yes"
-                      :name "post-comment"
+      (:form :method "post" :action (strcat "/blog/" id)
+       (if *user*
+         (htm (:label :for "new-comment" "Post a comment")
+              (:textarea :name "comment-text" :id "new-comment")
+              (:button :type "submit"
+               :class "yes"
+               :name "post-comment"
                "Post Reply"))
-        (htm (:button :type "submit"
-                      :name "new-comment"
-                      :class "green link"
+         (htm (:button :type "submit"
+               :name "new-comment"
+               :class "green link"
                "Post a comment"
-                      ))))
+               )))))
      )))
 
 (defun get-blog

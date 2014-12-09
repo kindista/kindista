@@ -61,8 +61,9 @@
 
 (defun delete-image (id)
   (dolist (path (directory (strcat *images-path* id "-*.*")))
-    (delete-file path))
-  (delete-file (first (directory (strcat *original-images* id ".*"))))
+    (when path (delete-file path)))
+  (awhen (first (directory (strcat *original-images* id ".*")))
+    (delete-file it))
   (remove-from-db id))
 
 (defun get-image-thumbnail (id maxwidth maxheight &key (filetype "jpg"))

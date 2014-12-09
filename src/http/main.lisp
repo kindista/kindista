@@ -566,7 +566,7 @@
                               "Groups"))
                    (:input :type "text" :size "14" :name "q" :value (awhen search
                                                                       (escape-for-html it)))
-                   (:input :type "submit" :value "Search"))
+                   (:input :type "submit" :class "blue" :value "Search"))
 
                  (:div :id "menu"
                    (if *user*
@@ -601,12 +601,12 @@
                                       '("Admin" "admin")))
                               selected))
 
-                   (:div :id "fine-print-links"
-                     (:a :href "/about" "about")
-                     " &middot; "
-                     (:a :href "/terms" "terms")
-                     " &middot; "
-                     (:a :href "/privacy" "privacy"))
+                   (:menu :id "fine-print-links"
+                          :type "toolbar"
+                     (:li (:a :href "/blog" "blog"))
+                     (:li (:a :href "/about" "about"))
+                     (:li (:a :href "/terms" "terms"))
+                     (:li (:a :href "/privacy" "privacy")))
 
                    (:a :class "dark" :href "#top"
                        "Back to the top")))

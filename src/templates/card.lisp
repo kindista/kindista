@@ -81,19 +81,7 @@
 
           (:div :class "comments"
             (dolist (comment-id (gethash id *comment-index*))
-              (let* ((data (db comment-id))
-                     (by (getf data :by))
-                     (bydata (db by)))
-                (str
-                  (card
-                    (html
-                      (str (h3-timestamp (getf data :created)))
-                      (when (or (eql (getf data :by) *userid*)
-                                (getf *user* :admin))
-                        (htm (:a :class "right" :href (strcat "/comments/" comment-id "/delete") "delete"))) 
-                      (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
-                      (:p 
-                        (str (regex-replace-all "\\n" (db comment-id :text) "<br>")))))))) 
+              (str (comment-card comment-id)))
 
             (when (getf *user* :admin)
               (htm
@@ -105,3 +93,19 @@
                         (:td (:textarea :cols "150" :rows "4" :name "text"))
                         (:td
                           (:button :class "yes" :type "submit" :class "submit" "Reply")))))))))))))
+
+(defun comment-card (comment-id)
+  (let* ((data (db comment-id))
+         (by (car (getf data :by)))
+         (bydata (db by)))
+    (card
+      (html
+        (str (h3-timestamp (getf data :created)))
+        (:p (:a :href (s+ "/people/" (username-or-id by))
+             (str (getf bydata :name)))
+         " replied:")
+        (:p (str (regex-replace-all "\\n" (db comment-id :text) "<br>")))
+        (when (or (eql (getf data :by) *userid*)
+                  (getf *user* :admin))
+          (htm (:a :class "right" :href (strcat "/comments/" comment-id "/delete") "delete")))
+        ))))

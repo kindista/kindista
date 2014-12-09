@@ -664,7 +664,7 @@
                      (str (if group "our group" "I"))
                      " can get the most out of Kindista")
                 (:li (:input :type "checkbox"
-                       :name "k-blog"
+                       :name "blog"
                        :checked (checkbox-value :notify-blog))
                       "with new articles from the Kindista blog")
                 (:li (:input :type "checkbox"
@@ -1084,6 +1084,7 @@
                     :notify-message (when (post-parameter "message") t)
                     :notify-new-contact (when (post-parameter "new-contact") t)
                     :notify-reminders (when (post-parameter "reminders") t)
+                    :notify-blog (when (post-parameter "reminders") t)
                     :notify-expired-invites (when (post-parameter "expired-invites") t)
                     :notify-group-membership-invites (when (post-parameter "group-membership-invites") t)
                    :notify-kindista (when (post-parameter "kindista") t))
