@@ -54,11 +54,11 @@
                              (strcat html-broadcast
                                     (when amazon-smile-p
                                       (amazon-smile-reminder :html))
-                                     (unsubscribe-notice-ps-html
-                                       unsubscribe
-                                       email
-                                       "updates from Kindista"
-                                       :detailed-notification-description "occasional updates like this from Kindista"))))
+                                    (unsubscribe-notice-ps-html
+                                      unsubscribe
+                                      email
+                                      "updates from Kindista"
+                                      :detailed-notification-description "occasional updates like this from Kindista"))))
              (text-message (s+ text-broadcast
                                (when amazon-smile-p
                                  (amazon-smile-reminder))
@@ -155,11 +155,12 @@
         (princ text file))
       (terpri)))
  ;(copy-file file new-file-path)
-  (s+ local-dir filename))
+  (s+ local-dir hyphenated-title))
 
 (defun blog-post-html
   (result
    &key contents
+        preview-paragraph-count
    &aux (id (result-id result))
         (data (db id))
         (hyphenated-title (hyphenate (getf data :title)))
@@ -180,7 +181,14 @@
      (str
        (or contents
            (with-open-file (file path :direction :input :if-does-not-exist nil)
-             (when file (cadr (read file))))))
+             (when file
+               (let ((contents (cadr (read file))))
+                 (aif preview-paragraph-count
+                   (beginning-html-paragraphs contents :count it)
+                   contents))))))
+
+     (when preview-paragraph-count
+       (htm (:p (:a :href url "go to full article"))))
 
      ;; when we make tags searchable, use (display-tags)
      (awhen (and (getf *user* :admin) (getf data :tags))
@@ -220,8 +228,18 @@
   (standard-page
     "Kindista Blog"
     (html
+      (when (getf *user* :admin)
+        (str (menu-horiz
+               (html (:a :href "/blog/new" "sumbit new blog post")))))
       (dolist (post posts)
-        (str (blog-post-html post)))) :top (page-title-bar "Kindista Blog - Adventures in Gift")))
+        (str (blog-post-html post :preview-paragraph-count 3))))
+    :top (page-title-bar "Kindista Blog - Adventures in Gift")))
+
+(defun get-blog-new ()
+ (require-admin
+   (standard-page
+     "New Blog Entry"
+     (new-broadcast-html "Submit new blog entry" "/admin/sendmail" :blog-p t))))
 
 (defun get-blog-post
   (year

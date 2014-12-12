@@ -7,6 +7,10 @@
   (set-display ((@ #:document #:get-element-by-id) "spinner") "inline-block")
   ((@ #:document #:forms #:imageform #:submit)))
 
+(defun submit-markdown-form ()
+  (set-display ((@ #:document #:get-element-by-id) "spinner") "inline-block")
+  ((@ #:document #:forms #:markdown-file #:submit)))
+
 (defun limit-characters (message char-count indicator)
  (setf chars (length (@ message #:value)))
  ((@ #:console #:log) (@ ((@ #:document #:get-element-by-id) indicator)

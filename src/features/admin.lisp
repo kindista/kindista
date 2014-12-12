@@ -264,49 +264,50 @@
                                  :page page)))))
       :selected "admin")))
 
+(defun new-broadcast-html (title action-url &key blog-p)
+  (html
+    (:div :class "item" :id "broadcast"
+      (:h2 (str title))
+      (:form :action action-url
+             :name "broadcast-form"
+             :enctype "multipart/form-data"
+             :method "post"
+        (when blog-p
+          (htm (:input :type "hidden" :name "blog-p" :value "t")))
+        (:p
+          (:label (str (if blog-p "Author:" "From:")))
+          (:input :type "text" :name "from" :value "\"Benjamin Crandall\" <ben@kindista.org>"))
+        (:p
+          (:label (str (if blog-p "Title:" "Subject:")))
+          (:input :type "text" :name "subject"))
+        (:textarea :name "markdown" :placeholder "Email teaser text...")
+        (when blog-p
+          (htm
+            (:p
+              (:label "Tags: (optional)")
+              (:input :type "text" :name "tags"))))
+        (:div
+          (:span "Add a markdown file:")
+          (:br)
+          (:input :type "file"
+                  :name "markdown-file"
+                  :onchange (ps-inline (submit-markdown-form)))
+          (:div :id "spinner" :class "spinner"))
+        (:div
+          (:input :type "checkbox"
+                  :name "amazon-smile-p"
+                  :value "checked")
+          "Plug Kindista at AmazonSmile")
+        (:button :type "submit" :name "test" :class "yes" "Send Test")
+        (:button :type "submit" :class "yes" "Send to everyone")
+        (:button :type "submit" :name "eugene-only" :class "yes" "Send to Eugene Members")
+        ))))
+
 (defun get-admin-sendmail ()
   (require-admin
     (standard-page
       "Send Broadcast"
-      (html
-        (:div :class "item" :id "broadcast"
-          (:p (:a :href "/admin" "back to admin"))
-          (:h1 "send broadcast email") 
-          (:form :action "/admin/sendmail"
-                 :name "broadcast-form"
-                 :enctype "multipart/form-data"
-                 :method "post"
-            (:p
-              (:label "From:")
-              (:input :type "text" :name "from" :value "\"Benjamin Crandall\" <ben@kindista.org>"))
-            (:p
-              (:label "Subject:")
-              (:input :type "text" :name "subject"))
-            (:textarea :name "markdown")
-            (:p
-              (:label "Tags: (optional)")
-              (:input :type "text" :name "tags"))
-            (:div
-              (:span "Add a markdown file:")
-              (:br)
-              (:input :type "file"
-                      :name "markdown-file"
-                      :onchange (ps-inline (submit-image-form)))
-              (:div :id "spinner" :class "spinner"))
-            (:div
-              (:input :type "checkbox"
-                      :name "blog-p"
-                      :value "checked")
-              "Post this message to the blog")
-            (:div
-              (:input :type "checkbox"
-                      :name "amazon-smile-p"
-                      :value "checked")
-              "Plug Kindista at AmazonSmile")
-            (:button :type "submit" :name "test" :class "yes" "Send Test")
-            (:button :type "submit" :class "yes" "Send to everyone")   
-            (:button :type "submit" :name "eugene-only" :class "yes" "Send to Eugene Members")
-            )))
+      (new-broadcast-html "Send broadcast email" "/admin/sendmail")
       :selected "admin")))
 
 (defvar *last-broadcast-email-time* 0)
@@ -321,49 +322,63 @@
       (let* ((text (post-parameter-string "markdown"))
              (tags (tags-from-string (post-parameter "tags")))
              (markdown-upload (post-parameter "markdown-file"))
-             (text-broadcast (if markdown-upload
+             (text-broadcast (or text
+                                 (read-file-into-string
+                                   (first markdown-upload))))
+             (html-broadcast (if text
+                               (markdown-text text)
+                               (markdown-file (first markdown-upload))))
+             (text-to-save (if markdown-upload
                                (read-file-into-string (first markdown-upload))
                                text))
-             (html-broadcast (if markdown-upload
-                               (markdown-file (first markdown-upload))
-                               (markdown-text text)))
              (subject (post-parameter-string "subject"))
              (amazon-smile-p (when (post-parameter "amazon-smile-p") t))
              (from (post-parameter "from")))
 
         (cond
           ((post-parameter "test")
-           (cl-smtp:send-email +mail-server+
-                               "info@kindista.org"
-                               from
-                               subject
-                               (s+ text-broadcast
-                                   (when amazon-smile-p
-                                     (amazon-smile-reminder))
-                                   (unsubscribe-notice-ps-text
-                                     (getf *user* :unsubscribe-key)
-                                     from
-                                     "updates from Kindista"
-                                     :detailed-notification-description "occasional updates like this from Kindista"))
-                               :html-message (html-email-base
-                                               (strcat* html-broadcast
-                                                        (when amazon-smile-p
-                                                          (amazon-smile-reminder :html))
-                                                        (unsubscribe-notice-ps-html
-                                                          (getf *user*
-                                                                :unsubscribe-key)
-                                                          from
-                                                          "updates from Kindista"
-                                                          :detailed-notification-description "occasional updates like this from Kindista")))))
+           (cl-smtp:send-email
+             +mail-server+
+             "info@kindista.org"
+             from
+             subject
+             (s+ text-broadcast
+                 (when amazon-smile-p
+                   (amazon-smile-reminder))
+                 (unsubscribe-notice-ps-text
+                   (getf *user* :unsubscribe-key)
+                   from
+                   "updates from Kindista"
+                   :detailed-notification-description "occasional updates like this from Kindista"))
+             :html-message (html-email-base
+                             (strcat* html-broadcast
+                                      (when amazon-smile-p
+                                        (amazon-smile-reminder :html))
+                                      (unsubscribe-notice-ps-html
+                                        (getf *user*
+                                              :unsubscribe-key)
+                                        from
+                                        "updates from Kindista"
+                                        :detailed-notification-description "occasional updates like this from Kindista")))))
 
           ((or (not *productionp*)
                (< *last-broadcast-email-time* (- (get-universal-time) 900)))
            (setf *last-broadcast-email-time* (get-universal-time))
-           (let* ((saved-file (save-broadcast
-                                text-broadcast
-                                subject))
+           (let* ((saved-file (save-broadcast text-to-save subject))
+                  (saved-file-path (s+ saved-file ".md"))
                   (blog-p (when (post-parameter "blog-p") t))
-                  (broadcast (create-broadcast :path saved-file
+                  (blog-link (s+ +base-url+ "blog/" saved-file))
+                  (text-email (strcat text-broadcast
+                                      #\newline
+                                      #\newline
+                                      "Read the full essay here: "
+                                      blog-link))
+                  (html-email (html
+                                (str html-broadcast)
+                                (:div :class *style-p*
+                                 (:a :href blog-link
+                                   "Read the full essay here"))))
+                  (broadcast (create-broadcast :path saved-file-path
                                                :title subject
                                                :author *userid*
                                                :amazon-smile-p amazon-smile-p
@@ -371,8 +386,8 @@
                                                :blog-p blog-p)))
              (setf *latest-broadcast* (list :id broadcast
                                             :author-email from
-                                            :text text-broadcast
-                                            :html html-broadcast))
+                                            :text text-email
+                                            :html html-email))
              (dolist (id (cond
                            ((not *productionp*)
                             (when (getf *user* :admin)

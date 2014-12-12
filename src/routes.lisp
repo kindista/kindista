@@ -37,6 +37,9 @@
   ("/blog"
     :get get-blog)
 
+  ("/blog/new"
+    :get get-blog-new)
+
   ("/blog/<int:year>/<int:month>/<int:day>/<str:title>"
     :get get-blog-post)
 

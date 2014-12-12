@@ -1,6 +1,6 @@
 
 [ ] notification settings to receive blog
-[ ] blog link in the menu
+[ ] only show blog post preview in the email
 
 ## On Server ##
 [ ] add a notify blog setting for everyone with notify-kindista t

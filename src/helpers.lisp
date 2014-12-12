@@ -22,6 +22,7 @@
 (defparameter +bot-scanner+ (create-scanner "(spider)|(bot)" :case-insensitive-mode t))
 
 (defparameter +text-scanner+ (create-scanner "[a-zA-Z]+"))
+
 (defparameter +email-scanner+ (create-scanner
                                  "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"))
 (defparameter *english-list*
@@ -57,7 +58,7 @@
 (defun page-title-bar (title)
   (html
     (:div :class "title-bar"
-     (:h2 (str title)))))
+      (:h2 (str title)))))
 
 (defun generate-js ()
   (paren-files:compile-script-file-to-js-file
@@ -326,6 +327,13 @@
         (when see-more
           (htm (:a :href see-more " see more"))))
       (html-text newtext))))
+
+(defun beginning-html-paragraphs
+  (html-text
+   &key (count 2))
+
+  (scan-to-strings (create-scanner (strcat "(<p>.*?</p>){0," count "}"))
+                   html-text))
 
 (defun html-text (string)
   (if string
