@@ -59,7 +59,8 @@
                                            (:file "person-card")))
                              (:module shared
                               :serial t
-                              :components ((:file "form-elements")
+                              :components ((:file "broadcasts")
+                                           (:file "form-elements")
                                            (:file "inventory")
                                            (:file "images")
                                            (:file "activity")
@@ -102,8 +103,7 @@
                                            (:file "signup")
                                            (:file "splash")
                                            (:file "terms")
-                                           (:file "transactions")
-                                           ))
+                                           (:file "transactions")))
                              (:file "routes")
                              (:file "main")
                              (:module email
@@ -127,4 +127,5 @@
                                                             :serial t
                                                             :components ((:file "standard-invite")
                                                                          (:file "requested-invite")
-                                                                         (:file "expired-reminder")))))))))
+                                                                         (:file "expired-reminder")))))
+                                                                         ))))

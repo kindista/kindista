@@ -330,10 +330,16 @@
 
 (defun beginning-html-paragraphs
   (html-text
-   &key (count 2))
+    &key (count 2)
+    &aux (shorten-p (scan (strcat "(<p>.*?</p>){" (+ count 1) "}")
+                          html-text)))
 
-  (scan-to-strings (create-scanner (strcat "(<p>.*?</p>){0," count "}"))
-                   html-text))
+  (values (if shorten-p
+            (scan-to-strings
+              (create-scanner (strcat "(<p>.*?</p>){0," count "}"))
+              html-text)
+            html-text)
+          (when shorten-p t)))
 
 (defun html-text (string)
   (if string

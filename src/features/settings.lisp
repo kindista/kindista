@@ -1108,8 +1108,6 @@
              (see-other "/settings/personal#donate"))
            (stripe::stripe-error (err)
              (let ((code (stripe:sstruct-get (stripe::stripe-error-reply err) :error :code)))
-               (pprint code)
-               (terpri)
                (flash
                  (cond
                    ((string= code "card_declined")

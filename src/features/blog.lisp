@@ -27,69 +27,6 @@
           (unless (getf data :notify-blog)
             (modify-db id :notify-blog nil)))))))
 
-(defun broadcast-email-notice-handler ()
-  (let ((notice (cddddr *notice*)))
-    (send-broadcast-email (getf notice :broadcast-id)
-                          (getf notice :user-id))))
-
-(defun send-broadcast-email (broadcast-id user-id)
-  (let ((data (db user-id)))
-    (when (getf data :notify-kindista)
-      (let* ((name (getf data :name))
-             (email (first (getf data :emails)))
-             (unsubscribe (getf data :unsubscribe-key))
-             (broadcast (db broadcast-id))
-             (author-email (car (db (getf broadcast :author) :emails)))
-             (amazon-smile-p (getf broadcast :amazon-smile-p))
-             (broadcast-path (s+ *broadcast-path* (getf broadcast :path)))
-             (latest-broadcast-p (eql (getf *latest-broadcast* :id)
-                                      broadcast-id))
-             (text-broadcast (if latest-broadcast-p
-                               (getf *latest-broadcast* :text)
-                               (read-file-into-string broadcast-path)))
-             (html-broadcast (if latest-broadcast-p
-                               (getf *latest-broadcast* :html)
-                               (markdown-file broadcast-path)))
-             (html-message (html-email-base
-                             (strcat html-broadcast
-                                    (when amazon-smile-p
-                                      (amazon-smile-reminder :html))
-                                    (unsubscribe-notice-ps-html
-                                      unsubscribe
-                                      email
-                                      "updates from Kindista"
-                                      :detailed-notification-description "occasional updates like this from Kindista"))))
-             (text-message (s+ text-broadcast
-                               (when amazon-smile-p
-                                 (amazon-smile-reminder))
-                               (unsubscribe-notice-ps-text
-                                 unsubscribe
-                                 email
-                                 "updates from Kindista"
-                                 :detailed-notification-description "occasional updates like this from Kindista"))) )
-        (when email
-          (cl-smtp:send-email +mail-server+
-                              (if latest-broadcast-p
-                                (or (getf *latest-broadcast* :author-email)
-                                    author-email)
-                                author-email )
-                              (format nil "\"~A\" <~A>" name email)
-                              (getf broadcast :title)
-                              text-message
-                              :html-message html-message)))))
-
-  )
-
-(defun create-broadcast (&key path title author tags blog-p amazon-smile-p)
-  (insert-db `(:type ,(if blog-p :blog :broadcast)
-               :created ,(get-universal-time)
-               :title ,title
-               :author ,author
-               :tags ,tags
-               :amazon-smile-p ,amazon-smile-p
-               :path ,path
-               )))
-
 (defun index-blog
   (id
    data
@@ -133,29 +70,6 @@
              (prin1 (list id markdown) file))
            (terpri))))))
 
-(defun save-broadcast
-  (text
-   title
-   &aux (now (local-time:now))
-        (hyphenated-title (hyphenate title))
-        (local-dir (with-output-to-string (str)
-                     (format-timestring
-                       str
-                       now
-                       :format '((:year 4) #\/ (:month 2) #\/ (:day 2) #\/))))
-        (dirname (strcat *broadcast-path* local-dir))
-        (filename (s+ hyphenated-title ".md"))
-        (new-file-path (merge-pathnames dirname filename)))
-
-  (ensure-directories-exist dirname)
-  (with-open-file (file new-file-path :direction :output
-                                      :if-exists :supersede)
-    (with-standard-io-syntax
-      (let ((*print-pretty* t))
-        (princ text file))
-      (terpri)))
- ;(copy-file file new-file-path)
-  (s+ local-dir hyphenated-title))
 
 (defun blog-post-html
   (result
@@ -167,6 +81,7 @@
         (date-string (universal-to-datestring (getf data :created)))
         (url (s+ "/blog/" date-string hyphenated-title))
         (comments (gethash id *comment-index*))
+        (see-more t)
         (path (merge-pathnames (s+ *blog-path*
                                    date-string)
                                hyphenated-title)))
@@ -184,11 +99,15 @@
              (when file
                (let ((contents (cadr (read file))))
                  (aif preview-paragraph-count
-                   (beginning-html-paragraphs contents :count it)
+                   (multiple-value-bind (text shorten-p)
+                     (beginning-html-paragraphs contents :count it)
+                     (setf see-more shorten-p)
+                     text)
+
                    contents))))))
 
-     (when preview-paragraph-count
-       (htm (:p (:a :href url "go to full article"))))
+     (when (and preview-paragraph-count see-more)
+       (htm (:p (:a :href url "...go to full article"))))
 
      ;; when we make tags searchable, use (display-tags)
      (awhen (and (getf *user* :admin) (getf data :tags))
@@ -217,8 +136,7 @@
                :name "new-comment"
                :class "green link"
                "Post a comment"
-               )))))
-     )))
+               ))))))))
 
 (defun get-blog
   (&key (page (or (get-parameter "p") 0))
@@ -233,13 +151,21 @@
                (html (:a :href "/blog/new" "sumbit new blog post")))))
       (dolist (post posts)
         (str (blog-post-html post :preview-paragraph-count 3))))
-    :top (page-title-bar "Kindista Blog - Adventures in Gift")))
+    :top (page-title-bar "Adventures in Gift &middot; the Kindista blog"
+                         )))
 
 (defun get-blog-new ()
  (require-admin
    (standard-page
      "New Blog Entry"
-     (new-broadcast-html "Submit new blog entry" "/admin/sendmail" :blog-p t))))
+     (new-broadcast-html "Submit new blog entry" "/blog/new" :blog-p t))))
+
+(defun post-blog-new ()
+  (if (or (getf *user* :admin)
+          (getf *user* :blogger))
+    (progn (post-broadcast-new)
+           (see-other "/blog"))
+    (permission-denied)))
 
 (defun get-blog-post
   (year
@@ -276,10 +202,4 @@
                         )
         (see-other "/blog")
         )
-       (t (not-found))
-
-       )
-     
-     )
-
-   )
+       (t (not-found)))))
