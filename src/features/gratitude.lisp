@@ -558,7 +558,7 @@
          (:input :type "submit" :class "cancel" :name "cancel" :value "Back")
 
          (when groupid
-           (htm (:input :type "hidden" :name "subject" :value groupid)))
+           (htm (:input :type "hidden" :name "identity-selection" :value groupid)))
          (when subjects
            (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" subjects))))
          (when next
@@ -627,10 +627,11 @@
            (on-id (post-parameter-integer "on-id"))
            (text (post-parameter-string "text"))
            (next (post-parameter-string "next"))
-           (subjects (parse-subject-list
-                       (format nil "~A,~A" (post-parameter "add")
-                                           (post-parameter "subject"))
-                       :remove (write-to-string *userid*)))
+           (subjects (remove (post-parameter-integer "remove")
+                             (parse-subject-list
+                               (format nil "~A,~A" (post-parameter "add")
+                                                   (post-parameter "subject"))
+                               :remove (write-to-string *userid*))))
            (single-recipient (or (post-parameter-integer "single-recipient")
                                  (when (= (length subjects) 1)
                                    (car subjects))))
@@ -673,7 +674,7 @@
           ((post-parameter "add")
            (if (string= (post-parameter "add") "new")
              (g-add-subject
-               :subjects (parse-subject-list (post-parameter "subject")))
+               :subjects subjects)
              (g-compose
                :single-recipient (post-parameter "single-recipient")
                :subjects subjects)))
