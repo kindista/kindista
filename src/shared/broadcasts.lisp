@@ -88,11 +88,18 @@
              (email (first (getf data :emails)))
              (unsubscribe (getf data :unsubscribe-key))
              (broadcast (db broadcast-id))
+             (blog-p (eq (getf broadcast :type) :blog))
              (author-email (car (db (getf broadcast :author) :emails)))
              (amazon-smile-p (getf broadcast :amazon-smile-p))
              (broadcast-path (s+ *broadcast-path* (getf broadcast :path)))
              (latest-broadcast-p (eql (getf *latest-broadcast* :id)
                                       broadcast-id))
+             (from-email (cond
+                           (blog-p "\"Kindista Blog\" <blog@kindista.org>")
+                           (latest-broadcast-p
+                             (or (getf *latest-broadcast* :author-email)
+                                 author-email))
+                           (t author-email)))
              (text-broadcast (if latest-broadcast-p
                                (getf *latest-broadcast* :text)
                                (read-file-into-string broadcast-path)))
@@ -106,22 +113,24 @@
                                     (unsubscribe-notice-ps-html
                                       unsubscribe
                                       email
-                                      "updates from Kindista"
-                                      :detailed-notification-description "occasional updates like this from Kindista"))))
+                                      (if blog-p
+                                        "emails for new articles from the Kindista blog"
+                                        "updates from Kindista")
+                                      :detailed-notification-description
+                                        (unless blog-p "occasional updates like this from Kindista")))))
              (text-message (s+ text-broadcast
                                (when amazon-smile-p
                                  (amazon-smile-reminder))
                                (unsubscribe-notice-ps-text
                                  unsubscribe
                                  email
-                                 "updates from Kindista"
-                                 :detailed-notification-description "occasional updates like this from Kindista"))) )
+                                 (if blog-p
+                                   "emails for new articles from the Kindista blog"
+                                   "updates from Kindista")
+                                 :detailed-notification-description (unless blog-p "occasional updates like this from Kindista")))) )
         (when email
           (cl-smtp:send-email +mail-server+
-                              (if latest-broadcast-p
-                                (or (getf *latest-broadcast* :author-email)
-                                    author-email)
-                                author-email )
+                              from-email
                               (format nil "\"~A\" <~A>" name email)
                               (getf broadcast :title)
                               text-message
