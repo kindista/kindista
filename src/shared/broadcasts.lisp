@@ -89,7 +89,9 @@
              (unsubscribe (getf data :unsubscribe-key))
              (broadcast (db broadcast-id))
              (blog-p (eq (getf broadcast :type) :blog))
-             (author-email (car (db (getf broadcast :author) :emails)))
+             (author (db (getf broadcast :author)))
+             (author-email (car (getf author :emails)))
+             (author-name (getf author :name))
              (amazon-smile-p (getf broadcast :amazon-smile-p))
              (broadcast-path (s+ *broadcast-path* (getf broadcast :path)))
              (latest-broadcast-p (eql (getf *latest-broadcast* :id)
@@ -107,18 +109,28 @@
                                (getf *latest-broadcast* :html)
                                (markdown-file broadcast-path)))
              (html-message (html-email-base
-                             (strcat html-broadcast
-                                    (when amazon-smile-p
-                                      (amazon-smile-reminder :html))
-                                    (unsubscribe-notice-ps-html
-                                      unsubscribe
-                                      email
-                                      (if blog-p
-                                        "emails for new articles from the Kindista blog"
-                                        "updates from Kindista")
-                                      :detailed-notification-description
-                                        (unless blog-p "occasional updates like this from Kindista")))))
-             (text-message (s+ text-broadcast
+                             (strcat* (when blog-p
+                                        (html
+                                          (:h2 (str (getf broadcast :title)))
+                                          (:p (:strong "By: " (str author-name)))))
+                                      html-broadcast
+                                      (when amazon-smile-p
+                                        (amazon-smile-reminder :html))
+                                      (unsubscribe-notice-ps-html
+                                        unsubscribe
+                                        email
+                                        (if blog-p
+                                          "emails for new articles from the Kindista blog"
+                                          "updates from Kindista")
+                                        :detailed-notification-description
+                                          (unless blog-p "occasional updates like this from Kindista")))))
+             (text-message (s+ (when blog-p
+                                 (strcat
+                                   (getf broadcast :title)
+                                   #\linefeed #\linefeed
+                                   "By: " author-name
+                                   #\linefeed #\linefeed))
+                               text-broadcast
                                (when amazon-smile-p
                                  (amazon-smile-reminder))
                                (unsubscribe-notice-ps-text
@@ -132,7 +144,9 @@
           (cl-smtp:send-email +mail-server+
                               from-email
                               (format nil "\"~A\" <~A>" name email)
-                              (getf broadcast :title)
+                              (if blog-p
+                                "The Kindista Blog: Adventures in Gift"
+                                (getf broadcast :title))
                               text-message
                               :html-message html-message))))))
 
