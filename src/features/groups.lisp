@@ -545,7 +545,7 @@
                         (v-align-middle
                           (:form :class "member-approval-ui"
                                  :method "post"
-                                 :action (strcat "/groups/" groupid)
+                                 :action (strcat "/groups/" groupid "/members")
                              (:input :type "hidden"
                                      :name "membership-request-id"
                                      :value (cdr request))
@@ -1210,12 +1210,12 @@
          (cond
           ((post-parameter "approve-group-membership-request")
            (approve-group-membership-request
-             (parse-integer (post-parameter "membership-request-id")))
+             (post-parameter-integer "membership-request-id"))
            (see-other (referer)))
 
           ((post-parameter "deny-group-membership-request")
            (delete-group-membership-request
-             (parse-integer (post-parameter "membership-request-id")))
+             (post-parameter-integer "membership-request-id"))
            (see-other (referer)))))))))
 
 (defun groups-tabs-html (&key (tab :my-groups))
