@@ -383,6 +383,7 @@ input[type=radio].first-option {
  display: block;
 }
 
+.blog.item blockquote,
 .pending-account blockquote.review-text {
  margin-top: 1em;
 }

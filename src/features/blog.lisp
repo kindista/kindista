@@ -138,6 +138,12 @@
                "Post a comment"
                ))))))))
 
+(defun blog-sidebar ()
+  (html
+    (:h3 "Do you have a story you would like to contribute to the Kindista blog?")
+    (:p "Submissions can be made by emailing "
+        (:a :href "mailto:blog@kindista.org" "blog@kindista.org"))))
+
 (defun get-blog
   (&key (page (or (get-parameter "p") 0))
         (count 10)
@@ -152,7 +158,8 @@
       (dolist (post posts)
         (str (blog-post-html post :preview-paragraph-count 3))))
     :top (page-title-bar "Adventures in Gift &middot; the Kindista blog"
-                         )))
+                         )
+    :right (blog-sidebar)))
 
 (defun get-blog-new ()
  (require-admin
@@ -183,7 +190,8 @@
              (data (db id)))
         (standard-page
           (getf data :title)
-          (blog-post-html (gethash id *db-results*) :contents html)))
+          (blog-post-html (gethash id *db-results*) :contents html)
+          :right (blog-sidebar)))
       (not-found))))
 
  (defun post-blog-post
