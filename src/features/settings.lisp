@@ -518,37 +518,38 @@
                       )))
           (dolist (invite-id pending)
             (let ((email (getf (db invite-id) :recipient-email)))
-              (htm
-                (:li
-                  (:span :class "email-item" (str email))
-                  (:input :type "hidden"
-                          :name "invitation-id" :value invite-id)
-                  (cond
-                    ((string= email activate)
-                     (htm
-                       (:span
-                         (:input :type "text"
-                                 :name "token"
-                                 :placeholder "please enter your activation code"))
-                       (:button :class "yes"
-                                :type "submit"
-                                "Activate")
-                       (:a :class "red" :href "/settings/communication" "Cancel")))
-                    (t
-                     (htm
-                       (:span :class "red" "(pending)")
-                       (:a :href (url-compose "/settings/communication"
-                                              "edit" "email"
-                                              "activate" email)
-                           "Enter code")
-                       (when (not editable)
-                         (htm
-                           " | "
-                           (:button :type "submit"
-                                    :class "simple-link "
-                                    :name "resend-code"
-                                    :value email
-                                    "Resend code")))))))))))
+              (when email
+                (htm
+                  (:li
+                    (:span :class "email-item" (str email))
+                    (:input :type "hidden"
+                            :name "invitation-id" :value invite-id)
+                    (cond
+                      ((string= email activate)
+                       (htm
+                         (:span
+                           (:input :type "text"
+                                   :name "token"
+                                   :placeholder "please enter your activation code"))
+                         (:button :class "yes"
+                                  :type "submit"
+                                  "Activate")
+                         (:a :class "red" :href "/settings/communication" "Cancel")))
+                      (t
+                       (htm
+                         (:span :class "red" "(pending)")
+                         (:a :href (url-compose "/settings/communication"
+                                                "edit" "email"
+                                                "activate" email)
+                             "Enter code")
+                         (when (not editable)
+                           (htm
+                             " | "
+                             (:button :type "submit"
+                                      :class "simple-link "
+                                      :name "resend-code"
+                                      :value email
+                                      "Resend code"))))))))))))
 
         (cond
           ((not editable)
