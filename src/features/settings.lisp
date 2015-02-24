@@ -518,7 +518,7 @@
                       )))
           (dolist (invite-id pending)
             (let ((email (getf (db invite-id) :recipient-email)))
-              (when email
+              (when email ; there may be a bug that allows the pending invite item to be deleted without removing its id from the user's :pending-alt-emails
                 (htm
                   (:li
                     (:span :class "email-item" (str email))
