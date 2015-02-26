@@ -125,8 +125,8 @@
 ;;; {{{ geo stuff
 (define-constant earth-radius 6372.8) ; km
 
-(declaim (ftype (function ((double-float) (double-float) (double-float) (double-float))
-                          double-float) air-distance))
+(declaim (ftype (function ((float) (float) (float) (float))
+                          float) air-distance))
 
 (defun air-distance (lat1 long1 lat2 long2)
   "The great circle distance between two points."
