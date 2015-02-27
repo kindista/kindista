@@ -194,8 +194,6 @@
                (asetf new-timestamp
                       (adjust-timestamp (or it prior-timestamp)
                         (offset offset-period offset-count)))
-               (pprint new-timestamp)
-               (terpri)
                (cond
                  ((and end-timestamp
                        (local-time:timestamp> new-timestamp end-timestamp))
@@ -379,9 +377,6 @@
                                        :type 'event
                                        :privacy (result-privacy item))))
                       (incf event-repetition-count)
-                      (pprint event-list)
-                      (pprint event-repetition-count)
-                      (terpri)
                       (asetf next-occurance
                              (next-recurring-event-time id :data event
                                                            :prior-time it))
@@ -392,8 +387,6 @@
 
          (add-event-occurance item)))))
     event-list)
-
-; 3634713000
 
 (defun local-upcoming-events (&key (page 0) (count 20) (url "/events") (paginate t) (sidebar nil))
   (with-location
