@@ -458,7 +458,7 @@
             (:button :class "corner" :type "submit" :name "help" :value "0" "[ hide help text ]"))))
       (str content))))
 
-(defun base-page (title body &key class)
+(defun base-page (title body &key class extra-head)
   (declare (optimize (speed 3) (debug 0) (safety 0)))
   (html
     "<!DOCTYPE html>"
@@ -470,14 +470,14 @@
         (:meta :name "HandheldFriendly" :content "True")
         ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
         (:link :rel "stylesheet" :href "/media/style.css")
-        (:link :href "http://fonts.googleapis.com/css?family=Varela+Round"
+        (:link :href "//fonts.googleapis.com/css?family=Varela+Round"
                :rel "stylesheet"
                :type "text/css")
         (:script :type "text/javascript" :src "/kindista.js")
         ;(str "<!--[if lt IE 9]>")
         ;(:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
         ;(str "<![endif]-->")
-        )
+        (str extra-head))
       (:body :class class :onload "if(!location.hash){window.scrollTo(0,0);};document.body.className+=\" js\";"
         (str body)))))
 
@@ -502,15 +502,16 @@
         (:button :type "submit" :class "yes" "Log in")
         (:a :href "/reset" "Forgot your password?")))))
 
-(defun header-page (title header-extra body &key class hide-menu)
+(defun header-page (title header-extra body &key class hide-menu extra-head)
   (base-page title
              (html
                (unless hide-menu (htm (:a :id "top")))
                (str (page-header header-extra))
                (str body))
-             :class (s+ class (when hide-menu " hide-menu"))))
+             :class (s+ class (when hide-menu " hide-menu"))
+             :extra-head extra-head))
 
-(defun standard-page (title body &key selected top right search search-scope class)
+(defun standard-page (title body &key selected top right search search-scope class extra-head)
   (declare (optimize (speed 3) (debug 0) (safety 0)))
   (header-page title
                (html
@@ -610,6 +611,7 @@
 
                    (:a :class "dark" :href "#top"
                        "Back to the top")))
+               :extra-head extra-head
                :class (cond
                         ((and right class) (s+ "right " class))
                         (right "right")
