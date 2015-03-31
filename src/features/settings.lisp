@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -37,6 +37,10 @@
         (htm (:li :class "selected" "Communication Settings"))
         (htm (:li (:a :href (url-compose "/settings/communication" "groupid" groupid)
                       "Communication Settings"))))
+      (unless t; groupid
+        (if (equal tab "social")
+          (htm (:li :class "selected" "Social Media Settings"))
+          (htm (:li (:a :href "/settings/social" "Social Media Settings")))))
 
          )))
 
@@ -790,6 +794,86 @@
                  (when (getf *user* :plan)
                    (str (settings-donate))))
             (str (settings-deactivate)))))))
+
+(defun get-settings-social ()
+  (require-user
+    (when (get-parameter "code")
+      (let ((now (get-universal-time))
+            (reply (multiple-value-list
+                     (http-request
+                       (url-compose
+                         "https://graph.facebook.com/oauth/access_token"
+                         "client_id" "779034685520810"
+                         "redirect_uri" (s+ +base-url+ "settings/social") 
+                         "client_secret" *facebook-secret*
+                         "code" (get-parameter "code"))
+                       :force-binary t))))
+        (cond
+          ((<= (second reply) 200)
+           (let* ((alist (quri.decode:url-decode-params
+                           (octets-to-string (first reply))))
+                  (token (cdr (assoc "access_token" alist :test #'string=)))
+                  (expires (+ now (parse-integer (cdr (assoc "expires" alist :test #'string=))))))
+
+             (modify-db *userid* :fbtoken token :fbexpires expires)
+             
+           (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
+             (format s "~A ~A ~A~%" alist token expires))))
+          ((>= (second reply) 400)
+           (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
+             (format s "~S~%"
+                     (cdr (assoc :message (cdr (assoc :error (json:decode-json-from-string
+                       (octets-to-string (first reply) :external-format :utf-8)))))))))
+          (t
+           (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
+             (format s ":-("))
+           
+           )
+          
+          )
+        
+        )
+      ; take this code + facebook private to make a token
+      )
+
+   (settings-template-html
+    (aif (get-parameter "groupid")
+      (url-compose "/settings/settings"
+                   "groupid" it)
+      "/settings/communication")
+    (html
+     (str (settings-tabs-html "social" (awhen groupid it)))
+     (:p "You can connect your Kindista account with Facebook to have Kindista automatically post your offers and requests to your Facebook timeline.")
+     (str (settings-item-html
+        "notifications"
+        (html
+          (when (get-parameter "error")
+            (htm (:p :class "error" "Connecting with Facebook had an error: " (str (get-parameter "error_description")))))
+          (:p (:a :class "blue" :href (url-compose "https://www.facebook.com/dialog/oauth"
+                                 "client_id" "779034685520810"
+                                 "redirect_uri" (s+ +base-url+ "settings/social"))
+           "Log in to Facebook"))
+          (:p "Post to Facebook:")
+          (:ul
+            (:li (:input :type "checkbox"
+                  :name "offers"
+                  )
+                 "when you post an offer")
+            (:li (:input :type "checkbox"
+                  :name "requests"
+                  )
+                 "when you post a request")))
+
+     :buttons (html (:button :class (s+ "yes " (when *user* "small"))
+                             :type "submit"
+                             :name "save-notifications"
+                       "Save preferences")
+                    (unless *user*
+                      (htm (:div (:a :class "blue" :href "/login"
+                                   "Log into Kindista")))))
+     :action "/settings/social"
+     :title "Facebook"
+     :editable t))))))
 
 (defun get-settings-communication ()
   (if *user*

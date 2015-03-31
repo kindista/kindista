@@ -27,7 +27,8 @@
                :sb-concurrency
                :stem
                :adw-charting-vecto
-               :kindista-js)
+               :kindista-js
+               :quri)
   :components ((:module src
                 :serial t
                 :components ((:file "package")
@@ -72,7 +73,8 @@
                                            (:file "matchmaker")
                                            (:file "verify-location")
                                            (:file "time")
-                                           (:file "suggested-connections")))
+                                           (:file "suggested-connections")
+                                           (:file "facebook")))
                              (:module features
                               :serial t
                               :components ((:file "about")
