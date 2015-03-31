@@ -799,7 +799,7 @@
                        (url-compose
                          "https://graph.facebook.com/oauth/access_token"
                          "client_id" "779034685520810"
-                         "redirect_uri" (s+ +base-url+ "settings/social") 
+                         "redirect_uri" (s+ "http://" +base-url+ "settings/social") 
                          "client_secret" *facebook-secret*
                          "code" (get-parameter "code"))
                        :force-binary t))))
@@ -810,15 +810,15 @@
                   (token (cdr (assoc "access_token" alist :test #'string=)))
                   (expires (+ now (parse-integer (cdr (assoc "expires" alist :test #'string=))))))
              
-           (with-open-file (s "/tmp/log" :direction :output :if-exists :supersede)
+           (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
              (format s "~A ~A~%" token expires))))
           ((>= (second reply) 400)
-           (with-open-file (s "/tmp/log" :direction :output :if-exists :supersede)
+           (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
              (format s "~S~%"
                      (cdr (assoc :message (cdr (assoc :error (json:decode-json-from-string
                        (octets-to-string (first reply) :external-format :utf-8)))))))))
           (t
-           (with-open-file (s "/tmp/log" :direction :output :if-exists :supersede)
+           (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
              (format s ":-("))
            
            )
@@ -844,7 +844,7 @@
             (htm (:p :class "error" "Connecting with Facebook had an error: " (str (get-parameter "error_description")))))
           (:p (:a :class "blue" :href (url-compose "https://www.facebook.com/dialog/oauth"
                                  "client_id" "779034685520810"
-                                 "redirect_uri" (s+ +base-url+ "settings/social"))
+                                 "redirect_uri" (s+ "http://" +base-url+ "settings/social"))
            "Log in to Facebook"))
           (:p "Post to Facebook:")
           (:ul
