@@ -112,6 +112,68 @@
         when (eq (result-type result) :gratitude)
         collect (cons (result-id result) (db (result-id result) :text))))
 
+(defun completed-transactions-report
+  (&optional (start (- (get-universal-time) (* +day-in-seconds+ 365)))
+             (end (get-universal-time))
+   &aux (transactions))
+
+  (dolist (transaction (safe-sort *completed-transactions-index*
+                                  #'<
+                                  :key #'(lambda (transaction) (getf transaction :time))))
+    (when (and (< (getf transaction :time) end)
+               (> (getf transaction :time) start))
+      (push transaction transactions)))
+
+;; if we want to include gratitudes w/o transactions
+; (setf transaction-gratitude-ids
+;       (mapcar (lambda (transaction) (getf transaction :gratitude)) transactions))
+
+; (setf orphan-gratitudes
+;       (loop for result in (hash-table-values *db-results*)
+;             when (and (eq (result-type result) :gratitude)
+;                       (< (result-time result) end)
+;                       (> (result-time result) start)
+;                       (not (find (result-id result) transaction-gratitude-ids)))
+;             collect result))
+
+ (with-open-file (s (s+ +db-path+ "/metrics/transactions-report")
+                    :direction :output
+                    :if-exists :supersede)
+   (with-standard-io-syntax
+     (prin1 "######### Completed Transactions #########" s)
+     (fresh-line s)
+     (dolist (transaction transactions)
+       (let* ((gratitude (db (getf transaction :gratitude)))
+              (recipient (db (getf gratitude :author))))
+         (format s "DATE: ~A" (humanize-exact-time (getf transaction :time) :detailed t))
+         (fresh-line s)
+         (format s "LOCATION: ~A" (getf recipient :address))
+         (fresh-line s)
+         (format s "RECIPIENT: ~A (~A)"
+                        (getf recipient :name)
+                        (getf gratitude :author))
+         (fresh-line s)
+         (format s "GIFT GIVER(S): ")
+         (format s *english-list*
+                    (mapcar (lambda (subject)
+                              (strcat (db subject :name) " (" subject ")"))
+                            (getf gratitude :subjects)))
+         (fresh-line s)
+         (let ((inventory-item (db (getf transaction :on))))
+           (format s "~A text:" (symbol-name (getf inventory-item :type)))
+           (fresh-line s)
+           (prin1 (getf inventory-item :details) s)
+           (fresh-line s))
+
+         (let ((gratitude (db (getf transaction :gratitude))))
+           (format s "GRATITUDE TEXT:")
+           (fresh-line s)
+           (prin1 (getf gratitude :text) s)))
+       (fresh-line s)
+       (format s "------------------------")
+       (fresh-line s)
+       ))))
+
 (defun local-members (&key focal-point-id (distance 25))
 "Provides values for a list of people within :distance (default=25 miles) 
 of a given :focal-point-id (default=Eugene OR), followed by the length of that list.

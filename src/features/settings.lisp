@@ -518,8 +518,8 @@
                                :name "remove-email"
                                :type "submit"
                                :value email
-                               "Remove")
-                      )))
+                               "Remove"))))
+
           (dolist (invite-id pending)
             (let ((email (getf (db invite-id) :recipient-email)))
               (when email ; there may be a bug that allows the pending invite item to be deleted without removing its id from the user's :pending-alt-emails
@@ -553,7 +553,12 @@
                                       :class "simple-link "
                                       :name "resend-code"
                                       :value email
-                                      "Resend code"))))))))))))
+                                      "Resend code")))
+                         " | "
+                         (:button :class "simple-link gray"
+                                  :name "remove-pending-email"
+                                  :value invite-id
+                                  "Remove"))))))))))
 
         (cond
           ((not editable)
@@ -1472,6 +1477,18 @@
                (remhash email *email-index*))
              (flash (s+ email " has been removed from your Kindista account."))
              (see-other "/settings/communication")))
+
+          ((post-parameter "remove-pending-email")
+           (let* ((invitation-id (find (post-parameter-integer "remove-pending-email")
+                                      (getf *user* :pending-alt-emails)
+                                      :test #'eql))
+                  (invitation (db invitation-id))
+                  (email (getf invitation :recipient-email)))
+             (when invitation-id
+               (amodify-db *userid* :pending-alt-emails (remove invitation-id it :test #'eql))
+               (delete-invitation invitation-id)
+               (flash (s+ email " has been removed from your list of pending alternate emails.")))
+             (see-other "/settings-communication")))
 
           ((post-parameter "bio-doing")
            (unless (getf entity :bio)
