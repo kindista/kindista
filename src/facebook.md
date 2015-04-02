@@ -5,6 +5,7 @@ https://developers.facebook.com/docs/facebook-login/permissions/v2.3
 [ ] let users completely opt out of facebook integration (don't show them buttons for posting facebook stories)
 
 #Offers and Requests
+https://developers.facebook.com/docs/sharing/reference/share-dialog
 https://developers.facebook.com/docs/graph-api/using-graph-api/v2.3
 https://developers.facebook.com/docs/sharing/opengraph/custom
 [ ] create facebook story w/ new inventory items
