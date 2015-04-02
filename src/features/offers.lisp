@@ -72,7 +72,7 @@
           "Offers"
           (html
             (:div :class  "inventory-item-page"
-              (str (inventory-activity-item result :show-distance t :show-tags t :show-share t)))
+              (str (inventory-activity-item result :show-distance t :show-tags t)))
             (str (item-images-html id))
             (when (and (or mine (group-admin-p by))
                        matching-requests)

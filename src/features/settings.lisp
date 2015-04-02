@@ -803,8 +803,8 @@
                      (http-request
                        (url-compose
                          "https://graph.facebook.com/oauth/access_token"
-                         "client_id" "779034685520810"
-                         "redirect_uri" (s+ +base-url+ "settings/social") 
+                         "client_id" *facebook-app-id*
+                         "redirect_uri" (s+ +base-url+ "settings/social")
                          "client_secret" *facebook-secret*
                          "code" (get-parameter "code"))
                        :force-binary t))))
@@ -850,7 +850,7 @@
           (when (get-parameter "error")
             (htm (:p :class "error" "Connecting with Facebook had an error: " (str (get-parameter "error_description")))))
           (:p (:a :class "blue" :href (url-compose "https://www.facebook.com/dialog/oauth"
-                                 "client_id" "779034685520810"
+                                 "client_id" *facebook-app-id*
                                  "scope" "public_profile,publish_actions"
                                  "redirect_uri" (s+ +base-url+ "settings/social"))
            "Log in to Facebook"))

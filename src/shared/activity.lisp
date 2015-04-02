@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t) share)
+(defun activity-item (&key id url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t) share-url)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -83,22 +83,10 @@
               (if (member *userid* (gethash id *love-index*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
                 (htm (:input :type "submit" :name "love" :value "Love")))
-              (when share
+              (awhen share-url
                 (htm
                   " &middot; "
-                  (:a :href (url-compose "https://www.facebook.com/dialog/share"
-                                         "app_id" *facebook-app-id*
-                                         "display" "popup"
-                                         "action_type" "kindistadotorg:post"
-                                         "action_properties" (url-encode
-                                                               (json:encode-json-to-string
-                                                                 (list
-                                                                   (cons
-                                                                     "object"
-                                                                     (s+ "https://kindista.org" url)))))
-                                         "redirect_uri" "https://kindista.org/home")
-                   "Share on Facebook"
-                   )))
+                  (:a :href it "Share on Facebook")))
               (when reply
                 (htm
                  " &middot; "
@@ -342,7 +330,19 @@
                                              :image (icon "white-request"))))
                    :class (s+ type " inventory-item")
                    :reply (unless self t)
-                   :share (when self t)
+                   :share-url (when self
+                                (url-compose "https://www.facebook.com/dialog/share_open_graph"
+                                             "app_id" *facebook-app-id*
+                                             "display" "popup"
+                                             "action_type" "kindistadotorg:post"
+                                             "action_properties" (url-encode
+                                                                   (json:encode-json-to-string
+                                                                     (list
+                                                                       (cons
+                                                                         type
+                                                                         (s+ "https://kindista.org" item-url)))))
+                                             "redirect_uri" (s+ +base-url+ (request-uri*)))
+                                )
                    :hearts (length (loves item-id))
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")
