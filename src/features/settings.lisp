@@ -37,7 +37,7 @@
         (htm (:li :class "selected" "Communication Settings"))
         (htm (:li (:a :href (url-compose "/settings/communication" "groupid" groupid)
                       "Communication Settings"))))
-      (unless groupid
+      (unless t; groupid
         (if (equal tab "social")
           (htm (:li :class "selected" "Social Media Settings"))
           (htm (:li (:a :href "/settings/social" "Social Media Settings")))))
@@ -804,7 +804,7 @@
                        (url-compose
                          "https://graph.facebook.com/oauth/access_token"
                          "client_id" "779034685520810"
-                         "redirect_uri" (s+ "http://" +base-url+ "settings/social") 
+                         "redirect_uri" (s+ +base-url+ "settings/social") 
                          "client_secret" *facebook-secret*
                          "code" (get-parameter "code"))
                        :force-binary t))))
@@ -814,9 +814,11 @@
                            (octets-to-string (first reply))))
                   (token (cdr (assoc "access_token" alist :test #'string=)))
                   (expires (+ now (parse-integer (cdr (assoc "expires" alist :test #'string=))))))
+
+             (modify-db *userid* :fbtoken token :fbexpires expires)
              
            (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
-             (format s "~A ~A~%" token expires))))
+             (format s "~A ~A ~A~%" alist token expires))))
           ((>= (second reply) 400)
            (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
              (format s "~S~%"
@@ -849,7 +851,8 @@
             (htm (:p :class "error" "Connecting with Facebook had an error: " (str (get-parameter "error_description")))))
           (:p (:a :class "blue" :href (url-compose "https://www.facebook.com/dialog/oauth"
                                  "client_id" "779034685520810"
-                                 "redirect_uri" (s+ "http://" +base-url+ "settings/social"))
+                                 "scope" "public_profile,publish_actions"
+                                 "redirect_uri" (s+ +base-url+ "settings/social"))
            "Log in to Facebook"))
           (:p "Post to Facebook:")
           (:ul

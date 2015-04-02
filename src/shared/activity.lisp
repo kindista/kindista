@@ -51,7 +51,7 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t))
+(defun activity-item (&key id url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t) share)
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -83,6 +83,22 @@
               (if (member *userid* (gethash id *love-index*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
                 (htm (:input :type "submit" :name "love" :value "Love")))
+              (when share
+                (htm
+                  " &middot; "
+                  (:a :href (url-compose "https://www.facebook.com/dialog/share"
+                                         "app_id" *facebook-app-id*
+                                         "display" "popup"
+                                         "action_type" "kindistadotorg:post"
+                                         "action_properties" (url-encode
+                                                               (json:encode-json-to-string
+                                                                 (list
+                                                                   (cons
+                                                                     "object"
+                                                                     (s+ "https://kindista.org" url)))))
+                                         "redirect_uri" "https://kindista.org/home")
+                   "Share on Facebook"
+                   )))
               (when reply
                 (htm
                  " &middot; "
@@ -326,6 +342,7 @@
                                              :image (icon "white-request"))))
                    :class (s+ type " inventory-item")
                    :reply (unless self t)
+                   :share (when self t)
                    :hearts (length (loves item-id))
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")

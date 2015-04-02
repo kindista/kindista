@@ -72,12 +72,15 @@
           "Offers"
           (html
             (:div :class  "inventory-item-page"
-              (str (inventory-activity-item result :show-distance t :show-tags t)))
+              (str (inventory-activity-item result :show-distance t :show-tags t :show-share t)))
             (str (item-images-html id))
             (when (and (or mine (group-admin-p by))
                        matching-requests)
               (str (item-matches-html id :data offer
                                          :current-matches matching-requests))))
+          :extra-head (html
+                        (:meta :property "og:type" :content "kindistadotorg:offer")
+                        (:meta :property "og:title" :content (or (getf offer :title) "Kindista Offer")))
           :selected "offers"))))))
 
 (defun get-offer-reply (id)
