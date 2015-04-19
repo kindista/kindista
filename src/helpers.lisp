@@ -551,9 +551,9 @@
           (flash (s+ "<p>"
                      (name-list-all other-opt-outs)
                      (pluralize other-opt-outs " has " :plural-form " have " :hidenum t)
-                     "chosen not to recieve email notifications when other "
+                     "chosen not to receive email notifications when other "
                      " Kindista members send them messages.</p>"
-                     "<p>They will recieve your message next time they log into "
+                     "<p>They will receive your message next time they log into "
                      "Kindista. "
                      "If this is an urgent matter, please use other means to " 
                      "contact them.</p>")
@@ -562,9 +562,9 @@
           (flash (s+ "<p>The admins for "
 
                      (name-list-all other-group-opt-outs)
-                     " have chosen not to recieve email notifications when"
+                     " have chosen not to receive email notifications when"
                      " other Kindista members send them messages.</p>"
-                     "<p>They will recieve your message next time they log into "
+                     "<p>They will receive your message next time they log into "
                      "Kindista. "
                      "If this is an urgent matter, please use other means to "
                      "contact them.</p>")

@@ -1136,7 +1136,7 @@
                 (if groupid
                   (find userid (getf group :notify-message))
                   (getf user :notify-message)))
-        (flash "Warning: You will not recieve any email notifications when people reply to your Offers and Requests unless you choose to be notified \"when someone sends me a message\"!" :error t))
+        (flash "Warning: You will not receive any email notifications when people reply to your Offers and Requests unless you choose to be notified \"when someone sends me a message\"!" :error t))
 
       (cond
         ((and unverified-email (not userid))

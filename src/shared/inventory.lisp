@@ -410,7 +410,7 @@
                         " You will "
                         (if (getf *user* :notify-message)
                           " will be notified by email "
-                          " will recieve a notification on Kindista ")
+                          " will receive a notification on Kindista ")
                         (s+ "when someone wants to "
                             (if (string= type "offer")
                               "receive this from you. "

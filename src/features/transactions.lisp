@@ -303,7 +303,7 @@
       (:offer
         (case (getf log-event :action)
           (:requested
-            (strcat " requested to recieve "
+            (strcat " requested to receive "
                 inventory-descriptor
                 " from "
                 (indirect-object :inventory)))
@@ -467,7 +467,7 @@
                      "want"
                      (icon "requests")
                      (s+ subject " want what " other-party-name " is offering")
-                     (s+ subject " want to recieve this")))
+                     (s+ subject " want to receive this")))
 
               (str (transaction-button
                      "already-received"
