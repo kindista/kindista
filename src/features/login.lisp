@@ -40,12 +40,10 @@
              (:input :type "text"
                      :id "username"
                      :name "username"
-                     :autocomplete "off"
                      :value (get-parameter "retry"))
              (:label :for "password" "Password")
              (:input :type "password"
                      :id "password"
-                     :autocomplete "off"
                      :name "password")
              (:button :type "submit" :class "yes" "Log in")
              (:span (:a :href "/reset" "Forgot your password?")))))

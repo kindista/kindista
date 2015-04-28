@@ -32,12 +32,10 @@
               (:label :for "username" "Email")
               (:input :id "username"
                       :type "text"
-                      :autocomplete "off"
                       :name "username" )
               (:label :for "password" "Password")
               (:input :id "password"
                       :type "password"
-                      :autocomplete "off"
                       :name "password" )
               (:br)
               (:a :href "/reset" "Forgot your password?")   
