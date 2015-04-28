@@ -259,12 +259,12 @@
         (set-cookie "token" :value token
                             :http-only t
                             :path "/"
-                            :expires (+ (get-universal-time) 2592000)
+                            :expires (+ (get-universal-time) (* 12 +week-in-seconds+))
                             :secure nil))))))
 
 (defun check-token (cookie-value)
   (let ((token (gethash cookie-value *tokens*)))
-    (if (and token (< (get-universal-time) (+ (token-created token) 2592000)))
+    (if (and token (< (get-universal-time) (+ (token-created token) (* 12 +week-in-seconds+))))
       token
       (progn (remhash cookie-value *tokens*) nil))))
 
