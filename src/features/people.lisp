@@ -26,12 +26,13 @@
     *active-people-index*
     :test #'equal))
 
-(defun give-users-unsubscribe-keys ()
-  "To generate unsubscribe keys for existing accounts, for one-click unsubscribe"
+(defun fix-unsubscribe-keys ()
+  "To fix bad unsubscribe keys. Omitted , in older code mistakenly assigned unsubscribe keys to '(random-password 18)' instead of the result of calling that function."
   (dolist (id (hash-table-keys *db*))
     (let ((data (db id)))
-      (when (or (eq (getf data :type) :person)
-                (eq (getf data :type) :deleted-person-account))
+      (when (and (or (eq (getf data :type) :person)
+                     (eq (getf data :type) :deleted-person-account))
+                 (not (equal (length (getf data :unsubscribe-key)) 18)))
         (modify-db id :unsubscribe-key (random-password 18))))))
 
 (defun find-people-without-emails ()
@@ -54,7 +55,7 @@
                :help t
                :pass ,(new-password password)
                :created ,(get-universal-time)
-               :unsubscribe-key (random-password 18)
+               :unsubscribe-key ,(random-password 18)
                :notify-gratitude t
                :notify-message t
                :notify-reminders t
