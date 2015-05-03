@@ -131,6 +131,7 @@
             (case (message-type message)
               (:gratitude
                  (add-to-folder :deleted)
+                 (setf (cdr (assoc-assoc *userid* (message-people message))) :read)
                  (remove-from-folders (list :inbox :compost :unread)))
               (t
                (remove-from-folders (list :inbox :unread))
