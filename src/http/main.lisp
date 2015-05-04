@@ -622,7 +622,7 @@
       (:h2
         (str
           (or confirmation-question
-              (s+ "Are you sure you want to delete this " (str type) "?"))))
+              (s+ "Are you sure you want to delete this " type "?"))))
       (when text
         (htm (:p
                (:blockquote :class "review-text " (cl-who:esc text)))))
