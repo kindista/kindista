@@ -132,7 +132,7 @@
         ;    " &middot; "
         ;    (str (flag-button url))))))))
 
-(defun event-activity-item (result &key sidebar truncate (show-distance nil) time)
+(defun event-activity-item (result &key sidebar truncate (show-distance nil) time date)
   (let* ((host (first (result-people result)))
          (item-id (result-id result))
          (data (db item-id))
@@ -143,7 +143,7 @@
          (item-url (strcat "/events/" item-id)))
 
     (activity-item
-      :id (strcat item-id ":" local-time)
+      :id (strcat item-id ":" date)
       :url item-url
       :class "event"
       :edit (or (eql host *userid*)

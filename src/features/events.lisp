@@ -315,7 +315,7 @@
               ((and (>= i start) items)
                (let* ((item (car items))
                       (item-time (result-time item)))
-                 (multiple-value-bind (time date)
+                 (multiple-value-bind (time date short-date)
                      (humanize-exact-time item-time)
                    (unless (string= date calendar-date)
                      (setf calendar-date date)
@@ -324,6 +324,7 @@
                    (htm (str (event-activity-item item
                                                   :sidebar sidebar
                                                   :time time
+                                                  :date short-date
                                                   :truncate t
                                                   :show-distance location)))))
                (setf items (cdr items)))
