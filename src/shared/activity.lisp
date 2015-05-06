@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -137,13 +137,13 @@
          (item-id (result-id result))
          (data (db item-id))
          (group-adminp (group-admin-p host))
-         (event-time (or time (humanize-exact-time (getf data :local-time)
-                                                   :detailed t)))
+         (local-time (getf data :local-time))
+         (event-time (or time (humanize-exact-time local-time :detailed t)))
          (recurring (getf data :recurring))
          (item-url (strcat "/events/" item-id)))
 
     (activity-item
-      :id item-id
+      :id (strcat item-id ":" local-time)
       :url item-url
       :class "event"
       :edit (or (eql host *userid*)
