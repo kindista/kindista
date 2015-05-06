@@ -340,12 +340,12 @@ input[type=radio].first-option {
  margin: 1.5em 0 .8em 0em;
 }
 
-#signup button, #login button {
+#signup button, .login button {
  padding-left: 0;
  padding-right: 0;
 }
 
-#signup button, #broadcast button, #login button {
+#signup button, #broadcast button, .login button.yes {
  min-width: 5em;
  margin-right: 1.2em;
  vertical-align: middle;
@@ -2072,7 +2072,7 @@ button.card > img {
  padding: 0.3em;
 }
 
-.login.item #login button {
+.login.item button {
  min-width: 4.5em;
  height: 2em;
  font-size: 0.9em;
@@ -2080,15 +2080,16 @@ button.card > img {
  padding: 0;
 }
 
-#login a {
+.login a.reset {
+ font-size: 0.9em;
 }
 
-#login input[type=submit] {
+.login input[type=submit] {
  display: inline;
  margin-top: 0.6em;
 }
 
-#login label, #login input {
+.login label, .login input {
  width: 100%;
  display: block;
  max-width: 30em;

@@ -28,7 +28,7 @@
           (dolist (flash (flashes))
             (str flash))
           (:div :id "body"
-            (:form :method "POST" :action "/login" :id "login"
+            (:form :method "POST" :action "/login" :class "login"
              (awhen (get-parameter "retry")
                (htm (:p :class "error" "The email/username or password was incorrect.")
                     (unless (string= it "")
@@ -36,17 +36,17 @@
                                      "Would you like to create an account?"))))))
              (awhen (get-parameter "next")
                (htm (:input :type "hidden" :name "next" :value it)))
-             (:label :for "username" "Username or email")
-             (:input :type "text"
-                     :id "username"
-                     :name "username"
-                     :value (get-parameter "retry"))
-             (:label :for "password" "Password")
-             (:input :type "password"
-                     :id "password"
-                     :name "password")
+             (:label "Username or email"
+               (:input :type "text"
+                :class "username"
+                :name "username"
+                :value (get-parameter "retry")))
+             (:label "Password"
+               (:input :type "password"
+                :class "password"
+                :name "password"))
              (:button :type "submit" :class "yes" "Log in")
-             (:span (:a :href "/reset" "Forgot your password?")))))
+             (:span (:a :href "/reset" :class "reset"  "Forgot your password?")))))
         :hide-menu t))))
 
 (defun post-login ()

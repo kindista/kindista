@@ -484,21 +484,20 @@
 (defun login-box (&optional (mobile t))
   (html
     (:div :class (s+ (when mobile "mobile ") "login item")
-      (:form :method "POST" :action "/login" :id "login"
-        (:label :for "username" "Email")
-        (:input :type "hidden" :name "next" :value (request-uri*))
-        (:input :type "text"
-                :id "username"
-                :name "username"
-                :value (get-parameter "retry"))
-        (:label :for "password" "Password")
-        (:input :type "password"
-                :id "password"
-                :name "password")
-        (awhen (get-parameter-string "next")
+      (:form :method "POST" :action "/login"
+        (:label "Email"
+          (:input :type "text"
+           :class "username"
+           :name "username"
+           :value (get-parameter "retry")))
+        (:label "Password"
+          (:input :type "password"
+           :class "password"
+           :name "password"))
+         (awhen (get-parameter-string "next")
           (htm (:input :type "hidden" :name "next" :value it)))
         (:button :type "submit" :class "yes" "Log in")
-        (:a :href "/reset" "Forgot your password?")))))
+        (:a :href "/reset" :class "reset" "Forgot your password?")))))
 
 (defun header-page (title header-extra body &key class hide-menu extra-head)
   (base-page title
