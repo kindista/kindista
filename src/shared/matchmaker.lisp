@@ -689,7 +689,7 @@
           (dolist (term terms)
             (htm (str term))
             (unless (eql term (car (last terms)))
-              (htm " &middot ")))))
+              (htm " &middot; ")))))
 
         (unless mine
           (htm (:p :class "other-party-details"

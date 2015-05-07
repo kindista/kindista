@@ -117,7 +117,7 @@
             (dolist (tag it)
               (str tag)
               (unless (eql tag (car (last it)))
-                (htm " &middot ")))))))
+                (htm " &middot; ")))))))
 
      (:div :class "comments"
       (when comments

@@ -423,7 +423,7 @@
         (:a :href (url-compose (strcat "/" type "s") "kw" tag) (str tag))
         (unless (eql tag (car (last tags)))
           (htm
-            " &middot "))))))
+            " &middot; "))))))
 
 (defun activity-item-images (images url alt)
   (html
