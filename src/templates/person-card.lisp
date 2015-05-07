@@ -33,7 +33,7 @@
            (str it)))
 
        (:div :class "image"
-        (:a :href link (:img :src (get-avatar-thumbnail id 100 100))))
+        (:a :href link (:img :alt id :src (get-avatar-thumbnail id 100 100))))
 
         (awhen button
           (htm
