@@ -1220,8 +1220,8 @@
 
 (defun groups-tabs-html (&key (tab :my-groups))
   (html
-    (:menu :class "bar"
-           :type "toolbar"
+    (:menu :type "toolbar"
+           :class "bar"
            :id "groups-tabs"
       (:h3 :class "label" "Groups Menu")
 
