@@ -162,3 +162,22 @@
                                                   (set :minute 0)
                                                   (set :sec 0)))
                               :absolute-p t))))))))
+
+(defun monthly-activity-report 
+  (month
+   year
+   &aux active-users
+        checked mailbox
+        used-search
+        got-offers
+        got-requests
+        messages-sent
+        last-day-of-month)
+  (dolist (file (list-directory (merge-pathnames *metrics-path*
+                                                 (strcat year "/" month "/"))))
+    (with-standard-io-syntax
+      (with-open-file (s file) )
+      )
+    )
+  
+  )
