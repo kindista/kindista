@@ -104,6 +104,47 @@
 
     (values offers requests gratitudes)))
 
+(defun transactions-report ()
+  (with-standard-io-syntax
+    (with-open-file (s (merge-pathnames *metrics-path* "transaction-report")
+                       :direction :output
+                       :if-exists :supersede
+                       :if-does-not-exist :create)
+      (let ((*print-readably* nil))
+        (format s "######### Completed Transactions #########~%" ))
+        (dolist (transaction *completed-transactions-index*)
+          (let* ((gratitude-id (getf transaction :gratitude))
+                 (gratitude (db gratitude-id))
+                 (recipient-id (getf gratitude :author))
+                 (recipient (db recipient-id))
+                 (item-id (getf transaction :on))
+                 (item (db item-id)))
+            (format s "~A~%" (strcat "DATE: " (humanize-exact-time (getf transaction :time)
+                                                     :detailed t))
+                   )
+            (format s "~A~%" (strcat "LOCATION: " (getf recipient :address)))
+            (format s "~A~%" (strcat "RECIPIENT: " (getf recipient :name)
+                                       " (" recipient-id ")")
+                   )
+            (format s "~A~%" (strcat "GIFT GIVER(S): "
+                       (format nil
+                               *english-list*
+                               (loop for id in (getf gratitude :subjects)
+                                     collect (strcat (db id :name)
+                                                     " ("
+                                                     id
+                                                     ")"))))
+                   )
+            (format s "~A~%" (strcat (symbol-name (getf item :type))
+                       " TITLE: "
+                       (getf item :title))
+                   )
+            (format s "~A~%" (strcat (symbol-name (getf item :type)) " DETAILS: ") )
+            (format s "~A~%" (getf item :details))
+            (format s "~A~%" (strcat (symbol-name (getf gratitude :type)) " TEXT:") )
+            (format s "~A~%" (getf gratitude :text))
+            (format s "~A~%" "------------------" ))))))
+
 (defun outstanding-invitations-count ()
   (hash-table-count *invitation-index*))
 
