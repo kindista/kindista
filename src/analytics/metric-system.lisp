@@ -163,7 +163,7 @@
                                                   (set :sec 0)))
                               :absolute-p t))))))))
 
-(defun monthly-activity-report 
+(defun monthly-activity-report
   (month
    year
    &aux active-users
@@ -188,38 +188,39 @@
   (setf dir (strcat *metrics-path* year "/" month "/"))
   (setf summary-file (merge-pathnames dir "/monthly-summary"))
 
-  (dolist (file (cl-fad::list-directory dir))
-    (with-standard-io-syntax
-      (with-open-file (s file)
-        (let ((data (read s)))
-          (asetf active-users
-                (union it (getf data :active-today)))
-          (asetf checked-mailbox
-                (union it (getf data :checked-mailbox)))
-          (asetf used-search
-                (union it (getf data :used-search)))
-          (asetf got-offers
-                (union it (getf data :got-offers)))
-          (asetf got-requests
-                (union it (getf data :got-requests)))
-          (asetf messages-sent
-                 (+ it (length (getf data :messages-sent))))
-          (asetf total-active-accounts (getf data :total-active-users))
-          (asetf total-eugene-accounts (getf data :total-eugene-users))
-          (asetf total-requests (getf data :total-requests))
-          (asetf total-offers (getf data :total-offers))
-          (asetf total-gratitudes (getf data :total-gratitudes))))))
+  (unless (file-exists-p summary-file)
+    (dolist (file (cl-fad::list-directory dir))
+      (with-standard-io-syntax
+        (with-open-file (s file)
+          (let ((data (read s)))
+            (asetf active-users
+                   (union it (getf data :active-today)))
+            (asetf checked-mailbox
+                   (union it (getf data :checked-mailbox)))
+            (asetf used-search
+                   (union it (getf data :used-search)))
+            (asetf got-offers
+                   (union it (getf data :got-offers)))
+            (asetf got-requests
+                   (union it (getf data :got-requests)))
+            (asetf messages-sent
+                   (+ it (length (getf data :messages-sent))))
+            (asetf total-active-accounts (getf data :total-active-users))
+            (asetf total-eugene-accounts (getf data :total-eugene-users))
+            (asetf total-requests (getf data :total-requests))
+            (asetf total-offers (getf data :total-offers))
+            (asetf total-gratitudes (getf data :total-gratitudes))))))
 
-  (setf completed-transactions
-        (loop for transaction in *completed-transactions-index*
-              for timestamp = (universal-to-timestamp (getf transaction
-                                                            :time))
-              when (and (= (timestamp-year timestamp) year)
-                        (= (timestamp-month timestamp) (parse-integer month)))
-              collect (getf transaction :on)))
+    (setf completed-transactions
+          (loop for transaction in *completed-transactions-index*
+                for timestamp = (universal-to-timestamp (getf transaction
+                                                              :time))
+                when (and (= (timestamp-year timestamp) year)
+                          (= (timestamp-month timestamp) (parse-integer month)))
+                collect (getf transaction :on)))
 
-  (setf output
-        (list :active-users active-users
+    (setf output
+          (list :active-users active-users
                 :checked-mailbox checked-mailbox
                 :used-search used-search
                 :got-offers got-offers
@@ -232,7 +233,6 @@
                 :total-gratitudes total-gratitudes
                 :completed-transactions completed-transactions))
 
-  (unless (file-exists-p summary-file)
     (with-standard-io-syntax
       (let ((*print-pretty* t))
         (with-open-file (s (merge-pathnames dir "monthly-summary")

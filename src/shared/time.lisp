@@ -158,3 +158,12 @@
         (if url
           (htm (:a :href url (str inner)))
           (str inner))))))
+
+(defun format-month-for-activity-charts (universal-time)
+  (let* ((timestamp (universal-to-timestamp universal-time))
+         (month (timestamp-month timestamp)))
+    (strcat (timestamp-year timestamp)
+            "/"
+            (if (< (/ month 10) 1)
+              (strcat "0" month)
+              (strcat month)))))
