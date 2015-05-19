@@ -54,9 +54,7 @@
   (unless (string= (strcat +base-url+ "people/"
                            (username-or-id new-contact-id))
                    (referer))
-    (flash (html (:a :href (strcat +base-url+ "people/"
-                                   (username-or-id new-contact-id))
-                     (str (db new-contact-id :name)))
+    (flash (html (str (person-link new-contact-id))
                  " has been added to your contacts.")))
 
   ;;is this really how we want to implement contact notifications?
