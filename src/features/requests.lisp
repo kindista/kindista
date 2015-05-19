@@ -99,6 +99,7 @@
                               "show requests without matchmakers")))))
 
               (str (inventory-activity-item result :show-distance t :show-tags t))
+              (str (item-images-html id))
               (when (or self (group-admin-p by) matchmaker-admin)
                 (str (item-matches-html id :data request
                                            :self self

@@ -310,7 +310,7 @@
                    :admin-delete (and (getf *user* :admin)
                                       (not self)
                                       (not group-adminp))
-                   :image-text (when (and (string= type "offer") self)
+                   :image-text (when self
                                  (if images
                                    "Add/remove photos"
                                    "Add photos"))
