@@ -202,7 +202,7 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
                                                :messages-sent
                                                :completed-transactions)))))))
 
-  (with-gchart (:line 800 300)
+  (with-chart (:line 1200 600)
     (doplist (key val chart-data)
       (add-series (string-capitalize
                     (string-downcase
@@ -212,8 +212,8 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
     (set-axis :x "Month"
               :label-formatter #'format-month-for-activity-charts
               )
-    (add-title "Kindista Usage over time")
-    (add-feature :label)
+   ;(add-title "Kindista Usage over time")
+   ;(add-feature :label)
     (save-file (pathname (strcat *metrics-path* "/all-time-metrics.png")))))
 
 
