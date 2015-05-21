@@ -69,7 +69,9 @@
   (setf *acceptor-thread* (make-thread #'(lambda () (start *acceptor*)))))
 
 (defun reboot-notice-thread ()
-  (terminate-thread *notice-thread*)
+  (when (and *notice-thread* (thread-alive-p *notice-thread*))
+    (terminate-thread *notice-thread*))
+  (setf *notice-thread* nil)
   (start-notice-thread))
 
 (defun quit ()

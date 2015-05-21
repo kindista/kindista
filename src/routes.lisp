@@ -348,6 +348,10 @@
   ("/admin"
     :get get-admin)
 
+  ("/admin/mail-system"
+    :get get-admin-mail-system
+    :post post-admin-mail-system)
+
   ("/admin/invite-requests"
     :get get-admin-invite-requests)
 
