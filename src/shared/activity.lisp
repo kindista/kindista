@@ -325,7 +325,9 @@
                                              :text "Request This"
                                              :image (icon "white-request"))))
                    :class (s+ type " inventory-item")
-                   :reply (unless self t)
+                   :reply (unless (or self
+                                      (not (getf data :active)))
+                            t)
                    :hearts (length (loves item-id))
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")
@@ -376,12 +378,12 @@
         (htm (:div :class "inventory-title"
                (when (and title show-what)
                  (htm (str (icon (if requestp "requests" "offers")))))
-             (awhen title
-               (htm (:h3 :class "inventory-title"
-                      (:a :href item-url
-                        (str (if q
-                               (highlight-stems-in-text q it)
-                               it)))))))))
+               (awhen title
+                 (htm (:h3 :class "inventory-title"
+                        (:a :href item-url
+                          (str (if q
+                                 (highlight-stems-in-text q it)
+                                 it)))))))))
       (:div
         (str (if requestp
                "requested by "
