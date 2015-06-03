@@ -55,10 +55,11 @@
     "Home"
     (html
       (:div :class "activity"
-        (str (buttons-horiz '("/gratitude/new" "heart-person"  "Express Gratitude")
-                            '("/offers/new" "offer-button" "Post an Offer")
-                            '("/requests/new" "request-button" "Make a Request")
-                             ;(:a :href "/announcements/new" "post announcement")
+        (str (buttons-horiz
+               '("/offers/new" "offer-button" "Post an Offer")
+               '("/requests/new" "request-button" "Make a Request")
+               '("/gratitude/new" "heart-person"  "Express Gratitude")
+               ;(:a :href "/announcements/new" "post announcement")
                           ))
 
       (let ((page (if (scan +number-scanner+ (get-parameter "p"))
