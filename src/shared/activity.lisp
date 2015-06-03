@@ -65,21 +65,23 @@
         (str related-items))
       (when (and *user* show-actions)
         (htm
-          (:div :class "actions"
-            (str (activity-icons :hearts hearts :comments comments :url url))
-            (:form :method "post" :action url
-              (:input :type "hidden" :name "next" :value (request-uri*))
-              (awhen primary-action
-                (htm (:button :type "submit"
-                              :class "small blue primary-action"
-                              :name (getf it :name)
-                              :value (getf it :value)
+          (awhen primary-action
+            (htm
+              (:form :class "primary-action" :method "post" :action url
+                (:input :type "hidden" :name "next" :value (request-uri*))
+                (:button :type "submit"
+                         :class "small blue primary-action"
+                         :name (getf it :name)
+                         :value (getf it :value)
                        (when (getf it :image)
                          (str (getf it :image)))
                        ;; following needs div instead of span because of a
                        ;; firefox hover/underline bug
-                       (:div (str (getf it :text))))))
-              (:br)
+                       (:div (str (getf it :text)))))))
+          (:div :class "actions"
+            (str (activity-icons :hearts hearts :comments comments :url url))
+            (:form :method "post" :action url
+              (:input :type "hidden" :name "next" :value (request-uri*))
               (if (member *userid* (gethash id *love-index*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
                 (htm (:input :type "submit" :name "love" :value "Love")))

@@ -1986,7 +1986,7 @@ div.gratitude-on-item {
 
 div.reciprocity.matches {
  clear: both;
- margin-top: 0.4em;
+ margin-top: 0.6em;
  font-size: 0.8em;
 }
 
@@ -2423,10 +2423,7 @@ div.membership-request button:last-child {
  border-top:1px solid #dfdfdf;
  padding-top:5px;*/
  color:#aaa;
-}
-
-.card .actions form {
- margin-bottom: 0.2em;
+ margin: 0.3em 0;
 }
 
 .card a {
@@ -2441,7 +2438,6 @@ input::-moz-focus-inner {
 
 .card a.icons {
  float: right;
- margin: 1.6em 0 0;
  /*color:#375497;*/
  color:#5c8a2f;
  font-size:0.9em;
@@ -2523,7 +2519,7 @@ div.profile-buttons div.float-right {
 
 .card .actions a {
  color: #3c6dc8;
- font-size: 0.8em;
+ font-size: 0.9em;
  font-weight: normal;
 }
 
@@ -2560,12 +2556,20 @@ button.text.large {
  margin-top: 0;
 }
 
+.card form.primary-action {
+ clear: both;
+}
+
+.card button.primary-action {
+ margin: 0.9em 0.5em 0 0;
+}
+
 /*stupid firefox bug */
-.card .actions button.primary-action > div {
+.card button.primary-action > div {
  display: inline;
 }
 
-.card .actions button.primary-action img {
+.card button.primary-action img {
  vertical-align: middle;
 }
 
