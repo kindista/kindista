@@ -87,17 +87,20 @@
           "Requests"
           (html
             (:div :class "inventory-item-page"
-              (when (and *userid*
-                         (or matchmaker-admin self))
+              (when self
                 (str (menu-horiz
-                       (when self
-                         (html (:a :href (s+ "/people/"
-                                             (username-or-id)
-                                             "/requests")
-                                "show my requests")))
-                       (html (:a :href "/admin/matchmaker"
-                              "show requests without matchmakers")))))
+                       (html (:a :href (s+ "/people/"
+                                           (username-or-id)
+                                           "/requests")
+                              "show my requests"))
+                      ;to manually go through all items and create matchmakers for them
+                      ;(html (:a :href "/admin/matchmaker"
+                      ;       "show requests without matchmakers"))
+                       )))
 
+              (unless (getf request :active)
+                (htm
+                  (:h2 :class "red" "This request is no longer active.")))
               (str (inventory-activity-item result :show-distance t :show-tags t))
               (str (item-images-html id))
               (when (or self (group-admin-p by) matchmaker-admin)
