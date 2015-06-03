@@ -66,32 +66,22 @@
                    0)))
         (when *user*
           (unless (> page 0)
-            ;; get either the user's matching offers or matching requests
-            ;; at random
-            (let* ((offers-or-requests (rand-from-list (matching-inventory-items-by-user)))
-                   (random-item (rand-from-list (second offers-or-requests))))
+            ;; get one of the user's matching offers at random
+            ;; note:  we used to get either matching offers or requests
+            ;;        now we only present matching offers and leave it to the 
+            ;;        potential recipient to contact the potential giver
+            (let ((random-item (rand-from-list
+                                 (second (assoc :offers
+                                                (matching-inventory-items-by-user))))))
               (awhen random-item
-                (case (car offers-or-requests)
-                  (:offers
-                    (htm
-                      (:div :class "suggested-items card"
-                        (str (featured-offer-match-html (getf it :offer)
-                                                        (getf it :request)
-                                                        :featured t))
-                        (str (featured-request-match-html (getf it :request)
-                                                          :featured t)))))
-                  (:requests
-                    (let* ((request (db (getf it :request))))
-                      (htm
-                        (:div :class "suggested-items card"
-                          (str (featured-request-match-html (getf it :request)
-                                                            :offer-id (getf it
-                                                                            :offer)
-                                                            :featured t
-                                                            :request-data request))
-                          (str (featured-offer-match-html (getf it :offer)
-                                                          (getf it :request)
-                                                          :featured t))))))))))
+                (htm
+                  (:div :class "suggested-items card"
+                    (str (featured-offer-match-html (getf it :offer)
+                                                    (getf it :request)
+                                                    :featured t))
+                    (str (featured-request-match-html (getf it :request)
+                                                      :featured t)))))))
+
           (str (distance-selection-html "/home"
                                         :text "show activity within "
                                         :class "item")))

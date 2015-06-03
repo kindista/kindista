@@ -41,10 +41,13 @@
                               (getf item :match-any-terms)))
         (by (getf item :by))
         (user (or verified-user *user*))
-        (all-terms (post-parameter-words "match-all-terms"))
+        (all-terms (remove-duplicates (post-parameter-words "match-all-terms")
+                                      :test #'string=))
 
-        (any-terms (post-parameter-words "match-any-terms"))
-        (without-terms (post-parameter-words "match-no-terms"))
+        (any-terms (remove-duplicates (post-parameter-words "match-any-terms")
+                                      :test #'string=))
+        (without-terms (remove-duplicates (post-parameter-words "match-no-terms")
+                                          :test #'string=))
         (notify (when (post-parameter-string "notify-matches") t))
         (raw-distance (post-parameter-integer "distance"))
         (distance (unless (equal raw-distance 0)
@@ -603,10 +606,12 @@
             (list (when (caadr matching-offers) matching-offers)
                   (when (caadr matching-requests) matching-requests)))))
 
-(defun highlight-relevant-inventory-text (offer-id request-id)
+(defun highlight-relevant-inventory-text (offer-id request-id &key email-p)
   (let* ((matchmaker (gethash request-id *matchmaker-requests*))
          (offer (db offer-id))
-         (offer-url (strcat "/offers/" offer-id))
+         (offer-url (strcat (if email-p *email-url* "/")
+                            "offers/"
+                            offer-id))
          (stems (append (match-any-terms matchmaker)
                         (match-all-terms matchmaker))))
    (html
