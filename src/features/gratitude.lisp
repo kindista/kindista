@@ -291,7 +291,7 @@
          (on-type (getf on-data :type))
          (on-title (getf on-data :title))
          (on-details (getf on-data :details))
-         (on-url (strcat (if (eq on-type :offer) "offers/" "/requests/") on-id)))
+         (on-url (strcat (if (eq on-type :offer) "/offers/" "/requests/") on-id)))
 
   (html
     (:div
