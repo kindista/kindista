@@ -1405,7 +1405,7 @@ img.small {
 
 #menu li {
  padding:0.5em 1em;
- font-size: 1em;
+ font-size: 1.15em;
  font-weight: bold;
 }
 
@@ -2554,10 +2554,6 @@ button.text.large {
 
 .card.inventory-item .timestamp {
  margin-top: 0;
-}
-
-.card form.primary-action {
- clear: both;
 }
 
 .card button.primary-action {
