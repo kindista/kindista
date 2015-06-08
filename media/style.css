@@ -1438,6 +1438,7 @@ menu .newcount {
 #fine-print-links {
  color: #999;
  width: 100%;
+ font-size: 0.95em;
  margin: 1em auto;
  text-align: center;
 }
