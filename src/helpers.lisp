@@ -206,16 +206,19 @@
 (defun remove-private-items (items)
   (remove-if #'item-view-denied items :key #'result-privacy))
 
-(defun activity-rank (item)
-  (let ((contacts (getf *user* :following))
-        (age (- (get-universal-time) (or (result-time item) 0)))
+(defun activity-rank
+  (item
+   &key (contacts (getf *user* :following))
+        (lat *latitude*)
+        (long *longitude*)
+   &aux (age (- (get-universal-time) (or (result-time item) 0)))
         (distance (if (and (result-latitude item) (result-longitude item))
-                    (air-distance *latitude* *longitude*
+                    (air-distance lat long
                                   (result-latitude item) (result-longitude item))
                     5000)))
-    (round (- age
-             (/ 120000 (log (+ (if (intersection contacts (result-people item)) 1 distance) 4)))
-             (* (length (loves (result-id item))) 50000)))))
+  (round (- age
+           (/ 120000 (log (+ (if (intersection contacts (result-people item)) 1 distance) 4)))
+           (* (length (loves (result-id item))) 50000))))
 
 (defun event-rank (item)
   (let ((contacts (getf *user* :following))
@@ -318,15 +321,19 @@
               param-strings))
       (setf params (cddr params))))
 
-(defun ellipsis (text &key (length 160) see-more)
+(defun ellipsis (text &key (length 160) see-more plain-text)
   (let ((newtext (subseq text 0 (min (length text) length))))
     (if (> (length text) length)
-      (html
-        (str (html-text newtext))
-        "..."
-        (when see-more
-          (htm (:a :href see-more " see more"))))
-      (html-text newtext))))
+      (if plain-text
+        (s+ newtext "...")
+        (html
+          (str (html-text newtext))
+          "..."
+          (when see-more
+            (htm (:a :href see-more " see more")))))
+      (if plain-text
+        newtext
+        (html-text newtext)))))
 
 (defun beginning-html-paragraphs
   (html-text
