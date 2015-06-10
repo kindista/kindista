@@ -211,13 +211,21 @@
    &key (contacts (getf *user* :following))
         (lat *latitude*)
         (long *longitude*)
+        (contact-multiplier 1)
    &aux (age (- (get-universal-time) (or (result-time item) 0)))
+        (contact-p (intersection contacts (result-people item)))
         (distance (if (and (result-latitude item) (result-longitude item))
-                    (air-distance lat long
-                                  (result-latitude item) (result-longitude item))
+                    (air-distance lat
+                                  long
+                                  (result-latitude item)
+                                  (result-longitude item))
                     5000)))
+  "Lower scores rank higher."
+
   (round (- age
-           (/ 120000 (log (+ (if (intersection contacts (result-people item)) 1 distance) 4)))
+           (/ (* 120000 (if contact-p contact-multiplier 1))
+              (log (+ (if contact-p 1 distance)
+                      4)))
            (* (length (loves (result-id item))) 50000))))
 
 (defun event-rank (item)

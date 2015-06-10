@@ -17,17 +17,6 @@
 
 (in-package :kindista)
 
-(defun mark-recent-inventory-active ()
-"To fix a bug introduced in commit f24b715bd4bb893f8bc6fc037910ee677b3e59dd in which new inventory items were not being marked as active"
-  (dolist (id (hash-table-keys *db*))
-    (let* ((item (db id))
-           (type (getf item :type)))
-      (when (and (or (eql type :event)
-                     (eql type :request)
-                     (eql type :offer))
-                 (> (getf item :created) 3610734290))
-         (modify-db id :active t)))))
-
 (defun new-pending-offer-notice-handler ()
   (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
 

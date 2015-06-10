@@ -61,6 +61,7 @@
                :notify-reminders t
                :notify-expired-invites t
                :notify-blog t
+               :notify-inventory-digest t
                :notify-kindista t)))
 
 (defun index-person (id data)

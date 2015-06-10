@@ -17,6 +17,37 @@
 
 (in-package :kindista)
 
+(defun subscribe-current-users-to-inventory-digest
+  (&aux (subscribed-count 0))
+  (dolist (userid *active-people-index*)
+    (let ((user (db userid)))
+      (incf active-users)
+      (when (getf user :notify-message) (incf message))
+      (when (getf user :notify-reminders) (incf reminders))
+      (when (getf user :notify-expired-invites) (incf expired-invites))
+      (when (getf user :notify-blog) (incf blog))
+      (when (getf user :notify-kindista) (incf kindista))
+      (when (and (getf user :notify-expired-invites)
+                 (getf user :notify-reminders)
+                 (getf user :notify-blog)
+                 (getf user :notify-kindista)
+                 (and (getf user :location)
+                   (< (air-distance lat long
+                                  (getf user :lat)
+                                  (getf user :long)
+                                  )
+                    50
+                    ))
+                 )
+        (incf all))
+      (when (or (getf user :notify-expired-invites)
+                (getf user :notify-reminders)
+                (getf user :notify-blog)
+                (getf user :notify-kindista))
+        (incf any))) 
+    )
+  subscribed-count
+  )
 
 (defun plain-text-inventory-item
   (id
@@ -65,6 +96,7 @@
   (when (and (getf user :location) lat long)
     (labels ((rank (item)
                (activity-rank item :contacts (getf user :following)
+                                   :contact-multiplier 10
                                    :lat lat
                                    :long long))
              (get-inventory (index)
@@ -96,8 +128,20 @@
          (asetf requests (subseq it 0 (min (- 25 offer-count)
                                            request-count)))))
 
-      (list :offers offers
-            :requests requests
-            ))))
+      (list :offers (mapcar #'result-id  offers)
+            :requests (mapcar #'result-id requests)))))
 
+
+(defun daily-inventory-digest-mailer
+  (&aux (day (local-time:timestamp-day-of-week
+               (universal-to-timestamp (get-universal-time)))))
+  (with-open-file (file (s+ "/home/ben/kindista/data/tmp/inventory-digest")
+                        :direction :output
+                        :if-exists :supersede
+                        :if-does-not-exist :create)
+    (with-standard-io-syntax
+      (dolist (userid *active-people-index*)
+        ;; get 1/7th of the userbase
+        (when (= (mod userid day) 0)
+          (prin1 (recent-local-inventory userid) file))))))
 

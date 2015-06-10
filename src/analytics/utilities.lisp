@@ -153,6 +153,43 @@
         when (eq (result-type result) :gratitude)
         collect (cons (result-id result) (db (result-id result) :text))))
 
+(defun user-email-subscriptions-analysis
+  (&aux (active-users 0)
+        (message 0)
+        (reminders 0)
+        (expired-invites 0)
+        (blog 0)
+        (kindista 0)
+        (all 0)
+        (any 0)
+        )
+  (dolist (userid *active-people-index*)
+    (let ((user (db userid)))
+      (incf active-users)
+      (when (getf user :notify-message) (incf message))
+      (when (getf user :notify-reminders) (incf reminders))
+      (when (getf user :notify-expired-invites) (incf expired-invites))
+      (when (getf user :notify-blog) (incf blog))
+      (when (getf user :notify-kindista) (incf kindista))
+      (when (and (getf user :notify-reminders)
+                 (getf user :notify-blog)
+                 (getf user :notify-kindista))
+        (incf all))
+      (when (or (getf user :notify-reminders)
+                (getf user :notify-blog)
+                (getf user :notify-kindista))
+        (incf any))) 
+    )
+  (list :active active-users
+        :message message
+        :reminders reminders
+        :expired-invites expired-invites
+        :blog blog
+        :kindista kindista
+        :all all
+        :any any
+        )
+  )
 (defun local-members (&key focal-point-id (distance 25))
 "Provides values for a list of people within :distance (default=25 miles) 
 of a given :focal-point-id (default=Eugene OR), followed by the length of that list.
