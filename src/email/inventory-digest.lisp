@@ -19,34 +19,20 @@
 
 (defun subscribe-current-users-to-inventory-digest
   (&aux (subscribed-count 0))
+  "subscribe for users who receive either kindista notifications or activity reminders."
   (dolist (userid *active-people-index*)
     (let ((user (db userid)))
-      (incf active-users)
-      (when (getf user :notify-message) (incf message))
-      (when (getf user :notify-reminders) (incf reminders))
-      (when (getf user :notify-expired-invites) (incf expired-invites))
-      (when (getf user :notify-blog) (incf blog))
-      (when (getf user :notify-kindista) (incf kindista))
-      (when (and (getf user :notify-expired-invites)
-                 (getf user :notify-reminders)
-                 (getf user :notify-blog)
-                 (getf user :notify-kindista)
-                 (and (getf user :location)
-                   (< (air-distance lat long
-                                  (getf user :lat)
-                                  (getf user :long)
-                                  )
-                    50
-                    ))
-                 )
-        (incf all))
-      (when (or (getf user :notify-expired-invites)
-                (getf user :notify-reminders)
-                (getf user :notify-blog)
-                (getf user :notify-kindista))
-        (incf any))) 
-    )
-  subscribed-count
+      (if (or (getf user :notify-kindista)
+                (getf user :notify-reminders))
+        (progn
+          (modify-db userid :notify-inventory-digest t)
+          (incf subscribed-count))
+        (modify-db userid :notify-inventory-digest nil))))
+  subscribed-count)
+
+(defun html-email-inventory-item
+  ()
+  "Link title, action button, no other links"
   )
 
 (defun plain-text-inventory-item
@@ -60,9 +46,7 @@
   (strcat*
     "--------------------------------------------------------"
     #\linefeed
-    typestring
-    (awhen (getf item :title)
-      (s+ ": " it))
+    (awhen (getf item :title) it)
     #\linefeed
     (string-capitalize (string-downcase typestring))
     "ed by "
@@ -83,7 +67,7 @@
   (userid
    &key (user (db userid))
         (timeframe +week-in-seconds+)
-   &aux (distance (min 25 (max 5 (or (getf user :rdist) 25))))
+   &aux (distance (min 50 (max 5 (or (getf user :rdist) 25))))
         (lat (getf user :lat))
         (long (getf user :long))
         (now (get-universal-time))
@@ -142,6 +126,6 @@
     (with-standard-io-syntax
       (dolist (userid *active-people-index*)
         ;; get 1/7th of the userbase
-        (when (= (mod userid day) 0)
+        (when (= (mod userid 7) day)
           (prin1 (recent-local-inventory userid) file))))))
 
