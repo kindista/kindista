@@ -202,7 +202,7 @@
           ((post-parameter "test")
            (cl-smtp:send-email
              +mail-server+
-             "info@kindista.org"
+             "Kindista <info@kindista.org>"
              from
              subject
              (s+ text-broadcast
