@@ -329,7 +329,7 @@
               param-strings))
       (setf params (cddr params))))
 
-(defun ellipsis (text &key (length 160) see-more plain-text)
+(defun ellipsis (text &key (length 160) see-more plain-text email)
   (let ((newtext (subseq text 0 (min (length text) length))))
     (if (> (length text) length)
       (if plain-text
@@ -338,7 +338,11 @@
           (str (html-text newtext))
           "..."
           (when see-more
-            (htm (:a :href see-more " see more")))))
+            (htm (:a :href see-more
+                     :style (when email
+                              "color: #5c8a2f; font-weight: bold; text-decoration: none;"
+                              )
+                  " see more")))))
       (if plain-text
         newtext
         (html-text newtext)))))

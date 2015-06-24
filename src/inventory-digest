@@ -3,11 +3,9 @@
  - automatically create a chart
  - email chart to interested parties
 
-
-# Pre-launch
- - opt-in all users subscribed to either k-updates or activity reminders
-
 # Finish Development
  - make sure 1/7th algorithm really works
  - ask shaylor about color borders
  - html version
+ - remove test version from get-offer
+ - test trying to request/offer an item that has been deactivated

@@ -31,9 +31,90 @@
   subscribed-count)
 
 (defun html-email-inventory-item
-  ()
+  (id
+   &key (item (db id))
+        distance
+   &aux (type (getf item :type))
+        (title (getf item :title))
+        (typestring (string-downcase (symbol-name type)))
+        (response-type (if (eq type :offer) "request" "offer"))
+        (url (strcat *email-url* typestring "s/" id))
+        (author (db (getf item :by))))
   "Link title, action button, no other links"
-  )
+
+  (html
+    (:div :style (s+ *style-p* "border-top: 1px solid #eee;")
+      (:div :style "margin: 0.7em 0 0.3em;"
+        (awhen title
+          (htm
+            (:img :src (s+ "http://media.kindista.org/"
+                           typestring
+                           "s.png")
+                  :alt typestring
+                  :style "width: 1.47em; height: 1.47em; margin-right: 0.3em;")
+            (:h3 :style "font-size: 1.1em; margin-bottom: 0.3em; display: inline;"
+              (:a :href url
+                  :style "color: #5c8a2f; font-weight: bold; text-decoration: none;"
+                  (str it))))))
+      (:div :style "margin-bottom: 1em;"
+        (htm
+          (str (s+ typestring "ed by "))
+          (str (getf author :name))
+          (awhen distance
+            (htm
+              (:span :style "font-size: 0.8em;"
+                (str (strcat " (within " it " miles)")))))))
+      (:div
+        (str (ellipsis (getf item :details) :see-more url :email t)))
+
+      (:div
+        (:form :method "post" :action url
+               (:button :type "submit"
+                        :style "text-shadow: 1px 1px rgba(0,0,0,0.4);
+                                margin: 0.9em 0.5em 0 0;
+                                font-size: 0.8em;
+                                padding: 0.3em 0.4em;
+                                background: #3c6dc8;
+                                vertical-align: middle;
+                                cursor: pointer;
+                                background: -moz-linear-gradient(
+                                 top,
+                                 #3c6dc8 0%,
+                                 #29519c);
+                                background: -ms-linear-gradient(
+                                 top,
+                                 #3c6dc8 0%,
+                                 #29519c);
+                                background: -o-linear-gradient(
+                                 top,
+                                 #3c6dc8 0%,
+                                 #29519c);
+                                background: -webkit-linear-gradient(
+                                 top,
+                                 #3c6dc8 0%,
+                                 #29519c);
+                                background: -webkit-gradient(
+                                 linear, left top, left bottom, 
+                                 from(#3c6dc8),
+                                 to(#29519c));
+                                border: 1px solid #474747;
+                                text-shadow:
+                                 1px 1px 2px rgba(0,0,0,0.4);
+                                border-radius: 0.35em;
+                                color: #fff;
+                                box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);"
+                        :name "action-type"
+                        :value typestring
+                        (:img :src (s+ "http://media.kindista.org/white-"
+                                       response-type
+                                       ".png")
+                              :alt response-type
+                              :style "vertical-align: middle; width: 1.47em; height: 1.47em; margin-right: 0.3em;" 
+                         ) 
+                        ;; following needs div instead of span because of a
+                        ;; firefox hover/underline bug
+                        (:div :style "display: inline; font-weight: bold;"
+                          (str (s+ (string-capitalize response-type) " This")))))))))
 
 (defun plain-text-inventory-item
   (id
