@@ -52,7 +52,7 @@
                :class "recipients"
           (:div :class "recipients"
             (:label "With:")
-            (:menu :type "toolbar" :class "recipients"
+            (:ul :class "recipients"
               (unless people
                 (htm (:li (:em "nobody yet"))))
               (dolist (person people)
