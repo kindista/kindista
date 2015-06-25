@@ -100,7 +100,7 @@
             :value "invite-only"
             :onclick (when auto-submit "this.form.submit()")
             :checked (when (string= current "invite-only") "checked"))
-    "By invitaion only. Members must be invited by group admins and cannot request membership."))
+    "By invitation only. Members must be invited by group admins and cannot request membership."))
 
 (defun identity-selection-html (selected groups &key (class "identity") onchange (userid *userid*))
 "Groups should be an a-list of (groupid . group-name)"
