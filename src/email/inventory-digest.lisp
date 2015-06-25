@@ -17,18 +17,18 @@
 
 (in-package :kindista)
 
-(defun subscribe-current-users-to-inventory-digest
-  (&aux (subscribed-count 0))
-  "subscribe for users who receive either kindista notifications or activity reminders."
-  (dolist (userid *active-people-index*)
-    (let ((user (db userid)))
-      (if (or (getf user :notify-kindista)
-                (getf user :notify-reminders))
-        (progn
-          (modify-db userid :notify-inventory-digest t)
-          (incf subscribed-count))
-        (modify-db userid :notify-inventory-digest nil))))
-  subscribed-count)
+;(defun subscribe-current-users-to-inventory-digest
+;  (&aux (subscribed-count 0))
+;  "subscribe for users who receive either kindista notifications or activity reminders."
+;  (dolist (userid *active-people-index*)
+;    (let ((user (db userid)))
+;      (if (or (getf user :notify-kindista)
+;                (getf user :notify-reminders))
+;        (progn
+;          (modify-db userid :notify-inventory-digest t)
+;          (incf subscribed-count))
+;        (modify-db userid :notify-inventory-digest nil))))
+;  subscribed-count)
 
 (defun html-email-inventory-item
   (id
@@ -94,7 +94,7 @@
                                  #3c6dc8 0%,
                                  #29519c);
                                 background: -webkit-gradient(
-                                 linear, left top, left bottom, 
+                                 linear, left top, left bottom,
                                  from(#3c6dc8),
                                  to(#29519c));
                                 border: 1px solid #474747;
