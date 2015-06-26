@@ -32,11 +32,13 @@
 
          (location (cdr (assoc :location (cdr (assoc :geometry results)))))
          city
+         neighborhood
          country
          number
          street
          state
          zip)
+    ;; google doesn't reliably return the city name, so we are using the neighborhood name as a backup
 
     (iter (for component in (cdr (assoc :address--components results)))
           (until (and city state country number street zip))
@@ -57,6 +59,9 @@
               ((member "postal_code" types :test #'string=)
                (setf zip (cdr (assoc :short--name component))))
 
+              ((member "sublocality_level_1" types :test #'string=)
+               (setf neighborhood (cdr (assoc :short--name component))))
+
               ((member "locality" types :test #'string=)
                (setf city (cdr (assoc :long--name component)))))))
 
@@ -64,7 +69,7 @@
     (values (cdr (assoc :lat location))
             (cdr (assoc :lng location))
             (cdr (assoc :formatted--address results))
-            city
+            (or city neighborhood)
             state
             country
             (format nil "~a ~a" number street)
