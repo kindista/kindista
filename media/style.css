@@ -3301,12 +3301,18 @@ div.settings menu.bar {
  margin-bottom: 0;
 }
 
-.settings-item .emails li span,
-.settings-item .emails li button {
+.settings-item .emails li > span,
+.settings-item .emails li div.controls {
  display: table-cell;
 }
 
+.settings-item .emails li div.input-wrapper {
+ margin-right: 0.4em;
+ display: inline-block;
+}
+
 .settings-item .emails li span.help-text,
+.settings-item .emails li a,
 .settings-item .emails li button.simple-link.green {
  font-size: 0.9em;
  padding: 0 0.4em 0 0;
@@ -3321,7 +3327,8 @@ div.settings menu.bar {
 .settings-item .emails li button {
  font-size: .9em;
  padding: 0.3em 0.4em;;
- margin: 0;
+ margin: 0 0.4em 0 0;
+ height: inherit;
  font-weight: normal;
 }
 
