@@ -52,6 +52,7 @@
         editable
         edit-text
         buttons
+        extra-form
         class
         (form-markup t)
         (method "post")
@@ -62,35 +63,33 @@
                   (str (or title (string-capitalize item))))))))
   (html
     (:a :id item)
-    (:div :class "item"
-     (:div :class "settings-item"
-      (if editable
-        (if form-markup
-          (htm (:form :method method
-                :action action
-                :class (s+ "details " class)
-                (str title-div)
-                (:div :class "content-container"
-                 (if buttons
-                   (htm
-                     (:div :class "form-elements" (str body))
-                     (:div :class "buttons" (str buttons)))
-                   (str body)))))
-          (htm (:div :class "details"
-                (str title-div)
-                (:div :class "content-container"
-                 (str body)
-                 (when buttons
-                   (htm (:div :class "buttons" (str buttons))))))))
-        (htm (:div :class (s+ "details " class)
-              (str title-div)
-              (:div :class "content-container"
-               (:div :class "current-value" (str body))
-               (:div :class "buttons"
-                (:a :class "yes small"
-                 :href (url-compose *base-url* "edit" item)
-                 (or (str edit-text)
-                     (htm "Edit")))))))))
+    (:div :class "item settings-item"
+      (:div :class "settings-item-table"
+        (str title-div)
+        (:div :class (s+ "details " class)
+          (htm
+            (if editable
+              (if form-markup
+                (htm (:form :method method
+                            :action action
+                            (:div :class "content-container"
+                              (if buttons
+                                (htm
+                                  (:div :class "form-elements" (str body))
+                                  (:div :class "buttons" (str buttons)))
+                                (str body))))
+                     (awhen extra-form (str it)))
+                (htm (:div :class "content-container"
+                       (str body)
+                       (when buttons
+                         (htm (:div :class "buttons" (str buttons)))))))
+             (htm (:div :class "content-container"
+                    (:div :class "current-value" (str body))
+                    (:div :class "buttons"
+                      (:a :class "yes small"
+                          :href (url-compose *base-url* "edit" item)
+                          (or (str edit-text)
+                              (htm "Edit"))))))))))
      (:p :class "help-text" (:em (str help-text))))))
 
 (defun settings-group-category (editable groupid group)
@@ -456,7 +455,7 @@
       action
       nil
       :buttons (html
-                 (:button :class "link no-padding green"
+                 (:button :class "simple-link red link no-padding"
                           :name action
                           :type "submit"
                           (str (s+ (string-capitalize action) " account"))))
@@ -513,7 +512,7 @@
                                :type "submit"
                                :value email
                                "Make primary")
-                      " | "
+                      (:span "|")
                       (:button :class "simple-link gray"
                                :name "remove-email"
                                :type "submit"
@@ -548,7 +547,7 @@
                              "Enter code")
                          (when (not editable)
                            (htm
-                             " | "
+                             (:span "|")
                              (:button :type "submit"
                                       :class "simple-link "
                                       :name "resend-code"
@@ -568,6 +567,7 @@
                 (:a :class "red" :href "/settings/communication" "Cancel"))) )))
 
       :editable T
+      :class "emails"
       :help-text (s+ "Adding additional email address helps people find you "
                      "and keeps you from getting invites to Kindista at "
                      "your other addresses. "
@@ -669,18 +669,17 @@
                      (str (if group "our group" "I"))
                      " can get the most out of Kindista")
                 (:li (:input :type "checkbox"
-                      :name "inventory-digest"
-                      :checked (checkbox-value :notify-inventory-digest))
-                     "with a weekly email featuring new offers and requests in my area")
-                (:li (:input :type "checkbox"
                        :name "blog"
                        :checked (checkbox-value :notify-blog))
                       "with new articles from the Kindista blog")
                 (:li (:input :type "checkbox"
                        :name "kindista"
                        :checked (checkbox-value :notify-kindista))
-                      "with updates and information about Kindista")))
-            ))
+                      "with updates and information about Kindista")
+                (:li (:input :type "checkbox"
+                      :name "inventory-digest"
+                      :checked (checkbox-value :notify-inventory-digest))
+                     "with a weekly email featuring new offers and requests in my area")))))
 
      :buttons (html (:button :class (s+ "yes " (when *user* "small"))
                              :type "submit"
@@ -690,7 +689,13 @@
                       (htm (:div (:a :class "blue" :href "/login"
                                    "Log into Kindista")))))
      :action "/settings/notifications"
+     :class "notifications"
      :title "Notify me"
+     :extra-form (html
+                   (:a :id "digest-distance")
+                   (str (rdist-selection-html "/settings/communication"
+                                              :class "digest-dist"
+                                              :text "- email me offers/requests from within: ")))
      :editable t))))
 
 (defun settings-identity-selection-html (selected groups &key userid (url "/settings"))
