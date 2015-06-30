@@ -161,8 +161,7 @@
         (blog 0)
         (kindista 0)
         (all 0)
-        (any 0)
-        )
+        (any 0))
   (dolist (userid *active-people-index*)
     (let ((user (db userid)))
       (incf active-users)
@@ -178,8 +177,7 @@
       (when (or (getf user :notify-reminders)
                 (getf user :notify-blog)
                 (getf user :notify-kindista))
-        (incf any))) 
-    )
+        (incf any))))
   (list :active active-users
         :message message
         :reminders reminders
@@ -188,8 +186,8 @@
         :kindista kindista
         :all all
         :any any
-        )
-  )
+        ))
+
 (defun local-members (&key focal-point-id (distance 25))
 "Provides values for a list of people within :distance (default=25 miles) 
 of a given :focal-point-id (default=Eugene OR), followed by the length of that list.
@@ -234,6 +232,8 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
                                 (getf chart-data data-type))))
                    (mapcar #'record-data (list :active-users
                                                :used-search
+                                               :new-offers
+                                               :new-requests
                                                :got-offers
                                                :got-requests
                                                :messages-sent

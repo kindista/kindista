@@ -179,6 +179,8 @@
    &aux active-users
         checked-mailbox
         used-search
+        new-offers
+        new-requests
         got-offers
         got-requests
         (messages-sent 0)
@@ -215,6 +217,10 @@
                    (union it (getf data :got-requests)))
             (asetf messages-sent
                    (+ it (length (getf data :messages-sent))))
+            (asetf new-offers
+                   (+ it (length (getf data :new-offers))))
+            (asetf new-requests
+                   (+ it (length (getf data :new-requests))))
             (asetf total-active-accounts (getf data :total-active-users))
             (asetf total-eugene-accounts (getf data :total-eugene-users))
             (asetf total-requests (getf data :total-requests))
@@ -233,6 +239,8 @@
           (list :active-users active-users
                 :checked-mailbox checked-mailbox
                 :used-search used-search
+                :new-offers new-offers
+                :new-requests new-requests
                 :got-offers got-offers
                 :got-requests got-requests
                 :messages-sent messages-sent
