@@ -202,3 +202,66 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
          (people (mapcar #'result-id
                    (geo-index-query *people-geo-index* lat long distance))))
     (values people (length people))))
+
+
+(defun update-metrics-chart
+  (&key (start-month 1)
+        (start-year 2014)
+   &aux (chart-data)
+        (now (universal-to-timestamp (get-universal-time)))
+        (current-year (timestamp-year now))
+        (current-month (timestamp-month now)))
+
+  (loop for year from start-year to current-year
+        do (dolist (month '("01" "02" "03" "04" "05" "06" "07" "08" "09" "10" "11" "12"))
+             (let ((file (pathname (strcat *metrics-path* year "/" month "/monthly-summary")))
+                   (time (encode-universal-time 0 0 1 15 (parse-integer month) year))
+                   (file-data))
+               (when (and (file-exists-p file)
+                          (or (and (= year start-year)
+                                   (>= (parse-integer month) start-month))
+                              (> year start-year))
+                          (or (< year current-year)
+                              (< (parse-integer month) current-month)))
+                 (with-standard-io-syntax
+                   (with-open-file (summary file :direction :input)
+                     (setf file-data (read summary))))
+
+                 (flet ((record-data (data-type &aux (data (getf file-data data-type)))
+                          (push (list time (if (listp data)
+                                             (length data)
+                                             data))
+                                (getf chart-data data-type))))
+                   (mapcar #'record-data (list :active-users
+                                               :used-search
+                                               :got-offers
+                                               :got-requests
+                                               :messages-sent
+                                               :completed-transactions)))))))
+
+  (with-chart (:line 1200 600)
+    (doplist (key val chart-data)
+      (add-series (string-capitalize
+                    (string-downcase
+                      (ppcre:regex-replace-all "-" (symbol-name key) " ")))
+                  val))
+    (set-axis :y "" :data-interval 10)
+    (set-axis :x "Month"
+              :label-formatter #'format-month-for-activity-charts
+              )
+   ;(add-title "Kindista Usage over time")
+   ;(add-feature :label)
+    (save-file (pathname (strcat *metrics-path* "/all-time-metrics.png")))))
+
+
+(defun create-past-monthly-activity-reports (years)
+  (dolist (year years)
+    (loop for month from 1 to 12
+          for dir = (strcat *metrics-path* year
+                                           "/"
+                                           (if (< (/ month 10) 1)
+                                             (strcat "0" month)
+                                             (strcat month))
+                                           "/")
+          when (cl-fad::directory-exists-p dir)
+          do (monthly-activity-report month year))))
