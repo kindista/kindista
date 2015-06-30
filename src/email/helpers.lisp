@@ -54,14 +54,14 @@
   (if html
     (html
       (:div :class *style-p*
-         "-----------------------"
+         "------------------------------------"
          (:br)
          "Do you shop at Amazon.com? If so, please "
          (:a :href *amazon-smile-link* "click here")
          " and Amazon will donate a portion of your purchases to Kindista through our parent organization, CommonGoods Network."))
     (strcat
       #\linefeed #\linefeed
-      "-----------------------"
+      "------------------------------------"
       #\linefeed
       "Do you shop at Amazon.com? If so, please click here and Amazon will donate a portion of your purchases to Kindista through our parent organization, CommonGoods Network:"
       #\linefeed

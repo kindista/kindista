@@ -125,7 +125,6 @@
         (author (db (getf item :by))))
 
   (strcat*
-    "--------------------------------------------------------"
     #\linefeed
     (awhen (getf item :title) it)
     #\linefeed
@@ -142,7 +141,10 @@
     +base-url+
     (string-downcase typestring)
     "s/"
-    id))
+    id
+    #\linefeed
+    "------------------------------------"
+    #\linefeed))
 
 (defun recent-local-inventory
   (userid
@@ -195,6 +197,43 @@
 
       (list :offers (mapcar #'result-id  offers)
             :requests (mapcar #'result-id requests)))))
+
+(defun inventory-digest-email-text
+  (userid
+   recent-items
+   &key (user (db userid))
+   &aux (name (getf user :name))
+        (offers (getf recent-items :offers))
+        (requests (getf recent-items :requests)))
+
+(strcat* "Hi " name ","
+         #\linefeed #\linefeed
+         "Here are some"
+         (when offers " offers ")
+         (when (and offers requests) "and")
+         (when requests " requests ")
+         "your neighbors have posted to Kindista during the past week. "
+         "You are currently subscribed to receive notifications about items posted within "
+         (getf user :rdist)
+         " miles. You can change this distance on your settings page: "
+         *email-url*
+         "settings/communication#digest-distance"
+         (when offers
+           (strcat #\linefeed #\linefeed
+                   "OFFERS"
+                   #\linefeed
+                   (apply #'strcat (mapcar #'plain-text-inventory-item offers))))
+         (when requests
+           (strcat* #\linefeed
+                    (unless offers #\linefeed)
+                    "REQUESTS"
+                    #\linefeed
+                    (apply #'strcat (mapcar #'plain-text-inventory-item requests))))
+         (amazon-smile-reminder)
+         (unsubscribe-notice-ps-text (getf user :unsubscribe-key)
+                                     (car (getf user :emails))
+                                     "email summaries of new offers and requests in your area")
+         ))
 
 
 (defun daily-inventory-digest-mailer
