@@ -380,6 +380,7 @@
                             :title title
                             :details details
                             :tags tags)))
+              (send-metric* (if (string= type "request") :new-request :new-offers) new-id)
               (if (getf *user* :pending)
                 (progn
                   new-id

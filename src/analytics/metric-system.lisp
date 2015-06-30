@@ -25,6 +25,8 @@
    (active-today :initform (make-hash-table))
    (checked-mailbox :initform (make-hash-table))
    (used-search :initform (make-hash-table))
+   (new-offers :initform (make-hash-table))
+   (new-requests :initform (make-hash-table))
    (got-offers :initform (make-hash-table))
    (got-requests :initform (make-hash-table))
    (messages-sent :initform (make-hash-table))))
@@ -76,6 +78,8 @@
           (active-today (data 'active-today))
           (checked-mailbox (data 'checked-mailbox))
           (used-search (data 'used-search))
+          (new-offers (data 'new-offers))
+          (new-requests (data 'new-requests))
           (got-offers (data 'got-offers))
           (got-requests (data 'got-requests))
           (messages-sent (data 'messages-sent)))
@@ -87,6 +91,8 @@
               (setf active-today (union active-today (getf data :active-today)))
               (setf checked-mailbox (union checked-mailbox (getf data :checked-mailbox)))
               (setf used-search (union used-search (getf data :used-search)))
+              (setf new-offers (union new-offers (getf data :new-offers)))
+              (setf new-requests (union new-requests (getf data :new-requests)))
               (setf got-offers (union got-offers (getf data :got-offers)))
               (setf got-requests (union got-requests (getf data :got-requests)))
               (setf messages-sent (union messages-sent (getf data :messages-sent)))))))
@@ -102,6 +108,8 @@
               (prin1 (list :active-today active-today
                            :checked-mailbox checked-mailbox
                            :used-search used-search
+                           :new-offers new-offers
+                           :new-requests new-requests
                            :got-offers got-offers
                            :got-requests got-requests
                            :messages-sent messages-sent
@@ -148,12 +156,14 @@
             (:active (record 'active-today (second message)))
             (:checked-mailbox (record 'checked-mailbox (second message)))
             (:used-search (record 'used-search (second message)))
+            (:new-offer (record 'new-offers (second message)))
+            (:new-request (record 'new-requests (second message)))
             (:got-offers (record 'got-offers (second message)))
             (:got-requests (record 'got-requests (second message)))
             (:message-sent (record 'messages-sent (second message)))
             (:daily
               (save-metrics metric-system)
-              (clear 'active-today 'checked-mailbox 'used-search 'got-offers 'got-requests 'messages-sent)
+              (clear 'active-today 'checked-mailbox 'used-search 'new-offers 'new-requests 'got-offers 'got-requests 'messages-sent)
               (schedule-timer (slot-value metric-system 'timer)
                               (timestamp-to-universal
                                 (adjust-timestamp (local-time:now)
