@@ -30,11 +30,45 @@
 ;        (modify-db userid :notify-inventory-digest nil))))
 ;  subscribed-count)
 
-(defun html-email-inventory-item
+(defun send-inventory-digest-email
+  (userid
+   &aux (user (db userid))
+        (inventory-items (recent-local-inventory userid :user user))
+        (offers (getf inventory-items :offers))
+        (requests (getf inventory-items :requests))
+        (email (first (getf user :emails)))
+        (text (inventory-digest-email-text userid
+                                           inventory-items
+                                           :user user))
+        (html (inventory-digest-email-html userid
+                                           inventory-items
+                                           :user user)))
+
+  (when email
+    (cl-smtp:send-email +mail-server+
+                        "Kindista <info@kindista.org>"
+                         (format nil "\"~A\" <~A>" (getf user :name) email)
+                         (strcat* "Recent Kindista "
+                                  (when offers " Offers ")
+                                  (when (and offers requests) "and")
+                                  (when requests " Requests ")
+                                  "in Your Area")
+                         text
+                         :html-message html)))
+
+(defun email-inventory-item-html
   (id
    &key (item (db id))
-        distance
+        user
    &aux (type (getf item :type))
+        (result (gethash id *db-results*))
+        (item-lat (result-latitude result))
+        (item-long (result-longitude result))
+        (user-lat (getf user :lat))
+        (user-long (getf user :long))
+        (distance (when (and item-lat item-long user-lat user-long)
+                    (distance-string
+                      (air-distance item-lat item-long user-lat user-long))))
         (title (getf item :title))
         (typestring (string-downcase (symbol-name type)))
         (response-type (if (eq type :offer) "request" "offer"))
@@ -63,7 +97,7 @@
           (awhen distance
             (htm
               (:span :style "font-size: 0.8em;"
-                (str (strcat " (within " it " miles)")))))))
+                (str (strcat " (within " it ")")))))))
       (:div
         (str (ellipsis (getf item :details) :see-more url :email t)))
 
@@ -116,11 +150,19 @@
                         (:div :style "display: inline; font-weight: bold;"
                           (str (s+ (string-capitalize response-type) " This")))))))))
 
-(defun plain-text-inventory-item
+(defun email-inventory-item-plain-text
   (id
    &key (item (db id))
-        distance
+        user
    &aux (type (getf item :type))
+        (result (gethash id *db-results*))
+        (item-lat (result-latitude result))
+        (item-long (result-longitude result))
+        (user-lat (getf user :lat))
+        (user-long (getf user :long))
+        (distance (when (and item-lat item-long user-lat user-long)
+                    (distance-string
+                      (air-distance item-lat item-long user-lat user-long))))
         (typestring (symbol-name type))
         (author (db (getf item :by))))
 
@@ -132,7 +174,7 @@
     "ed by "
     (getf author :name)
     (awhen distance
-      (strcat " (within " it " miles)"))
+      (strcat " (within " it ")"))
     #\linefeed
     #\linefeed
     (ellipsis (getf item :details) :plain-text t)
@@ -163,7 +205,7 @@
   (when (and (getf user :location) lat long)
     (labels ((rank (item)
                (activity-rank item :contacts (getf user :following)
-                                   :contact-multiplier 10
+                                   :contact-multiplier 3
                                    :lat lat
                                    :long long))
              (get-inventory (index)
@@ -175,7 +217,7 @@
                                           (result-privacy result)
                                           userid)))
                                 (geo-index-query index lat long distance))
-                     #'>
+                     #'<
                      :key #'rank)))
 
       (setf offers (get-inventory *offer-geo-index*))
@@ -195,7 +237,7 @@
          (asetf requests (subseq it 0 (min (- 25 offer-count)
                                            request-count)))))
 
-      (list :offers (mapcar #'result-id  offers)
+      (list :offers (mapcar #'result-id offers)
             :requests (mapcar #'result-id requests)))))
 
 (defun inventory-digest-email-text
@@ -206,39 +248,82 @@
         (offers (getf recent-items :offers))
         (requests (getf recent-items :requests)))
 
-(strcat* "Hi " name ","
-         #\linefeed #\linefeed
-         "Here are some"
-         (when offers " offers ")
-         (when (and offers requests) "and")
-         (when requests " requests ")
-         "your neighbors have posted to Kindista during the past week. "
-         "You are currently subscribed to receive notifications about items posted within "
-         (getf user :rdist)
-         " miles. You can change this distance on your settings page: "
-         *email-url*
-         "settings/communication#digest-distance"
-         (when offers
-           (strcat #\linefeed #\linefeed
-                   "OFFERS"
-                   #\linefeed
-                   (apply #'strcat (mapcar #'plain-text-inventory-item offers))))
-         (when requests
-           (strcat* #\linefeed
-                    (unless offers #\linefeed)
-                    "REQUESTS"
-                    #\linefeed
-                    (apply #'strcat (mapcar #'plain-text-inventory-item requests))))
-         (amazon-smile-reminder)
-         (unsubscribe-notice-ps-text (getf user :unsubscribe-key)
-                                     (car (getf user :emails))
-                                     "email summaries of new offers and requests in your area")
-         ))
+(labels ((item-text (item-id)
+           (email-inventory-item-plain-text item-id :user user)))
 
+  (strcat* "Hi " name ","
+           #\linefeed #\linefeed
+           "Here are some"
+           (when offers " offers ")
+           (when (and offers requests) "and")
+           (when requests " requests ")
+           "your neighbors have posted to Kindista during the past week. "
+           "You are currently subscribed to receive notifications about items posted within "
+           (getf user :rdist)
+           " miles. You can change this distance on your settings page: "
+           *email-url*
+           "settings/communication#digest-distance"
+           (when offers
+             (strcat #\linefeed #\linefeed
+                     "OFFERS"
+                     #\linefeed
+                     (apply #'strcat (mapcar #'item-text offers))))
+           (when requests
+             (strcat* #\linefeed
+                      (unless offers #\linefeed)
+                      "REQUESTS"
+                      #\linefeed
+                      (apply #'strcat (mapcar #'item-text requests))))
+           (amazon-smile-reminder)
+           (unsubscribe-notice-ps-text (getf user :unsubscribe-key)
+                                       (car (getf user :emails))
+                                       "email summaries of new offers and requests in your area")
+         )))
+
+(defun inventory-digest-email-html
+  (userid
+    recent-items
+    &key (user (db userid))
+    &aux (offers (getf recent-items :offers))
+         (requests (getf recent-items :requests)))
+
+  (html-email-base
+    (html
+      (:p :style *style-p*
+       "Hi " (str (getf user :name)) ",")
+
+      (:p :style *style-p*
+       "Here are some "
+       (str (s+ (when offers " offers ")
+                (when (and offers requests) "and")
+                (when requests " requests ")))
+       "your neighbors have posted to Kindista during the past week. "
+       "You are currently subscribed to receive notifications about items posted within "
+       (str (getf user :rdist))
+       " miles. You can change this distance on your "
+       (:a :href (s+ *email-url* "settings/communication#digest-distance")
+        "settings page")
+       ".")
+
+      (:h2 "OFFERS")
+
+      (dolist (offer offers)
+        (str (email-inventory-item-html offer :user user)))
+
+      (:h2 "REQUESTS")
+
+      (dolist (request requests)
+        (str (email-inventory-item-html request :user user)))
+
+      (str (amazon-smile-reminder t))
+
+      (str (unsubscribe-notice-ps-html
+             (getf user :unsubscribe-key)
+             (car (getf user :emails))
+             "email summaries of new offers and requests in your area")))))
 
 (defun daily-inventory-digest-mailer
-  (&aux (day (local-time:timestamp-day-of-week
-               (universal-to-timestamp (get-universal-time)))))
+  (&aux (day (local-time:timestamp-day-of-week (local-time:now))) )
   (with-open-file (file (s+ "/home/ben/kindista/data/tmp/inventory-digest")
                         :direction :output
                         :if-exists :supersede
@@ -246,6 +331,8 @@
     (with-standard-io-syntax
       (dolist (userid *active-people-index*)
         ;; get 1/7th of the userbase
-        (when (= (mod userid 7) day)
-          (prin1 (recent-local-inventory userid) file))))))
+        (when (= (mod userid 7) n)
+         (prin1 (recent-local-inventory userid) file)))))
+  data
+  )
 

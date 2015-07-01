@@ -76,7 +76,7 @@
 
 (strcat*
 #\linefeed #\linefeed
-"-------------------------------------"
+"------------------------------------"
 #\linefeed
 "Why am I receiving this? "
 "In your Kindista communications settings, you are subscribed to receive "
