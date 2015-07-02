@@ -47,13 +47,15 @@
     (dolist (userid *active-people-index*)
       ;; get 1/7th of the userbase
       (when (= (mod userid 7) day)
-        (send-inventory-digest-email userid)))
+        (let ((user (db userid)))
+          (when (getf user :notify-inventory-digest)
+            (send-inventory-digest-email userid :user user)))))
     (see-other "/home")))
 
 (defun send-inventory-digest-email
   (userid
-   &aux (user (db userid))
-        (inventory-items (recent-local-inventory userid :user user))
+   &key (user (db userid))
+   &aux (inventory-items (recent-local-inventory userid :user user))
         (offers (getf inventory-items :offers))
         (requests (getf inventory-items :requests))
         (email (first (getf user :emails)))
@@ -63,7 +65,7 @@
         (html (inventory-digest-email-html userid
                                            inventory-items
                                            :user user)))
-  (when email
+  (when (and email (getf user :notify-inventory-digest))
     (cl-smtp:send-email +mail-server+
                         "Kindista <info@kindista.org>"
                          (format nil "\"~A\" <~A>" (getf user :name) email)
