@@ -628,17 +628,24 @@
                  (flash (s+ "Please shorten your description. Offers and Requests must be no longer than 1000 characters including line breaks."))
                  (inventory-tags))
 
-                ((post-parameter "create")
-                 (if (intersection tags *top-tags* :test #'string=)
-                   (progn
-                     (modify-inventory-item id :title (post-parameter "title")
-                                               :details (post-parameter "details")
-                                               :tags tags
-                                               :privacy (when restrictedp
-                                                          groups-selected))
-                     (see-other (or (post-parameter "next") (strcat "/" type "s/" id))))
+                ((not (intersection tags *top-tags* :test #'string=))
+                  (inventory-tags :error "You must select at least one category"))
 
-                   (inventory-tags :error "You must select at least one keyword")))
+                ((> (length (intersection tags *top-tags* :test #'string=))
+                    5)
+                  (inventory-tags :error "You entered too many categories. Please choose only the most relevant ones."))
+
+                ((> (length (set-difference tags *top-tags* :test #'string=))
+                    10)
+                  (inventory-tags :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
+
+                ((post-parameter "create")
+                 (modify-inventory-item id :title (post-parameter "title")
+                                           :details (post-parameter "details")
+                                           :tags tags
+                                           :privacy (when restrictedp
+                                                      groups-selected))
+                 (see-other (strcat "/" type "s/" id)))
 
                 (t
                   (inventory-tags)))))))))))
