@@ -208,25 +208,35 @@
 
 (defun activity-rank
   (item
-   &key (contacts (getf *user* :following))
-        (lat *latitude*)
-        (long *longitude*)
+   &key (user *user*)
+        (contacts (getf user :following))
+        (lat (if *user* *latitude* (getf user :lat)))
+        (long (if *user* *longitude* (getf user :long)))
         (contact-multiplier 1)
-   &aux (age (- (get-universal-time) (or (result-time item) 0)))
+        (distance-multiplier 1)
+   &aux (age (- (get-universal-time)
+                (or (result-time item) 0)))
         (contact-p (intersection contacts (result-people item)))
         (distance (if (and (result-latitude item) (result-longitude item))
-                    (air-distance lat
+                    (max 0.1
+                         (air-distance lat
                                   long
                                   (result-latitude item)
-                                  (result-longitude item))
-                    5000)))
+                                  (result-longitude item)))
+                    5000))
+        (distance-component (/ (* 100000 distance-multiplier)
+                               (log (+ 1.5 (* distance 2)))))
+        (contact-component (if contact-p
+                             (* 100000 contact-multiplier)
+                             0)))
   "Lower scores rank higher."
 
-  (round (- age
-           (/ (* 120000 (if contact-p contact-multiplier 1))
-              (log (+ (if contact-p 1 distance)
-                      4)))
-           (* (length (loves (result-id item))) 50000))))
+  (values (round (- age
+                    distance-component
+                    contact-component
+                    (* (length (loves (result-id item))) 100000)))
+          distance-component
+          contact-component))
 
 (defun event-rank (item)
   (let ((contacts (getf *user* :following))
