@@ -65,7 +65,8 @@
         (html (inventory-digest-email-html userid
                                            inventory-items
                                            :user user)))
-  (when (and email (getf user :notify-inventory-digest))
+  (when (and email (getf user :notify-inventory-digest)
+             (or offers requests))
     (cl-smtp:send-email +mail-server+
                         "Kindista <info@kindista.org>"
                          (format nil "\"~A\" <~A>" (getf user :name) email)
