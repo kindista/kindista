@@ -774,6 +774,7 @@ button.red  {
 button.red.simple-link {
  background: none;
  color: #900;
+ text-shadow: none;
 }
 
 button.green.simple-link {
@@ -3209,18 +3210,39 @@ div.settings menu.bar {
  width: 8em;
 }
 
-.settings-item .details {
- display: table-row;
-}
-
-.settings-item .details .title-container,
-.settings-item .details .content-container > div {
+.settings-item .title-container,
+.settings-item .details,
+.settings-item .details .buttons,
+.settings-item .details .current-value,
+.settings-item .details .form-elements {
  display: table-cell;
  vertical-align: top;
 }
 
-.settings-item .details .content-container {
- display: table;
+.settings-item .details .current-value,
+.settings-item .details .form-elements {
+ padding-top: 0.4em;
+}
+
+.settings-item .details form {
+ width: 100%;
+}
+
+.settings-item form.digest-dist strong {
+ font-weight: normal;
+ font-size: 1em;
+ padding-left: 1.6em;
+}
+
+.settings-item form.digest-dist select {
+ font-size: 0.8em;
+}
+
+.settings-item .details.notifications li:last-of-type {
+ margin-bottom: 0;
+}
+
+.settings-item .details {
  width: 100%;
 }
 
@@ -3229,9 +3251,14 @@ div.settings menu.bar {
  text-align: left;
 }
 
+.settings-item .content-container {
+ display: table;
+ width: 100%;
+}
+
 .settings-item .details .buttons {
- text-align: right;
  vertical-align: top;
+ text-align: right;
 }
 
 .settings-item .details .buttons button {
@@ -3271,22 +3298,47 @@ div.settings menu.bar {
  margin-left: .8em;
 }
 
-.settings-item li > button.simple-link {
- margin-left:0;
- font-weight: 500;
- font-size: .9em;
- padding:0.2em;
+.settings-item .emails li {
+ display: table-row;
 }
 
-.settings-item span {
- margin: 0 1.1em 0 0;
- padding: 0;
+.settings-item .emails span.email-item {
+ margin-bottom: 0.5em;
 }
 
-.settings-item li > button {
- margin-left: 1em;
+.settings-item .emails ul {
+ margin-bottom: 0;
+}
+
+.settings-item .emails li > span,
+.settings-item .emails li div.controls {
+ display: table-cell;
+}
+
+.settings-item .emails li div.input-wrapper {
+ margin-right: 0.4em;
+ display: inline-block;
+}
+
+.settings-item .emails li span.help-text,
+.settings-item .emails li a,
+.settings-item .emails li button.simple-link.green {
+ font-size: 0.9em;
+ padding: 0 0.4em 0 0;
+ margin: 0;
+}
+
+.settings-item .emails li span {
+ padding-right: 0.4em;
+ height: 2em;
+}
+
+.settings-item .emails li button {
  font-size: .9em;
- padding: .3em .5em;
+ padding: 0.3em 0.4em;;
+ margin: 0 0.4em 0 0;
+ height: inherit;
+ font-weight: normal;
 }
 
 .settings-item blockquote#donate {

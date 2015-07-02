@@ -418,6 +418,12 @@
 
          (t (inventory-tags)))))))
 
+(defun deactivated-item-error
+  (type
+   &optional (next (or (post-parameter "next") "/home")))
+  (flash (s+ "Sorry, this " type " has been deactivated.") :error t)
+  (see-other next))
+
 (defun post-existing-inventory-item (type &key id url)
   (require-user
     (let* ((id (parse-integer id))
@@ -429,6 +435,12 @@
            (next (post-parameter "next")))
 
       (cond
+        ((nor (getf item :active)
+              (eql by *userid*)
+             ;(getf *user* :admin)
+              )
+         (deactivated-item-error (string-downcase (getf item :type))))
+
         ((and (not (eql by *userid*))
               (item-view-denied (result-privacy (gethash id *db-results*))))
          (permission-denied))
