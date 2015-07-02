@@ -47,7 +47,8 @@
     (dolist (userid *active-people-index*)
       ;; get 1/7th of the userbase
       (when (= (mod userid 7) day)
-        (send-inventory-digest-email userid)))))
+        (send-inventory-digest-email userid)))
+    (see-other "/home")))
 
 (defun send-inventory-digest-email
   (userid
