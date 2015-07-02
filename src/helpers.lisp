@@ -293,6 +293,10 @@
                              #'> :key #'result-time))))
         (geo-index-insert *activity-geo-index* result)))))
 
+(defun url-parts (url)
+  (iter (for part in (split " " (ppcre:regex-replace-all "/" url " ")))
+        (collect part)))
+
 (defun resource-url
   (resource-id
    &optional (resource (db resource-id))

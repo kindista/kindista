@@ -51,7 +51,13 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t))
+(defun activity-item
+  (&key id url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
+   &aux (here (request-uri*))
+        (next (if (find (strcat id) (url-parts here) :test #'string=)
+                here
+                (strcat here "#" id))))
+
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -68,7 +74,9 @@
           (awhen primary-action
             (htm
               (:form :class "primary-action" :method "post" :action url
-                (:input :type "hidden" :name "next" :value (request-uri*))
+                (:input :type "hidden"
+                        :name "next"
+                        :value next)
                 (:button :type "submit"
                          :class "small blue primary-action"
                          :name (getf it :name)
@@ -81,7 +89,7 @@
           (:div :class "actions"
             (str (activity-icons :hearts hearts :comments comments :url url))
             (:form :method "post" :action url
-              (:input :type "hidden" :name "next" :value (request-uri*))
+              (:input :type "hidden" :name "next" :value next)
               (if (member *userid* (gethash id *love-index*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
                 (htm (:input :type "submit" :name "love" :value "Love")))
