@@ -38,13 +38,20 @@
 (defmethod start ((system metric-system))
   (unless (and (slot-boundp system 'thread)
                (thread-alive-p (slot-value system 'thread)))
-    (setf (slot-value system 'thread) (make-thread (fdefinition 'metric-system-loop) :arguments (list system)))
+    (setf (slot-value system 'thread)
+          (make-thread (fdefinition 'metric-system-loop)
+                       :arguments (list system)))
     (send-message (metric-system-mailbox system) '(:start))))
 
 (defmethod stop ((system metric-system) &key soft)
   (declare (ignore soft))
   (when (thread-alive-p (slot-value system 'thread))
     (send-message (metric-system-mailbox system) '(:stop))))
+
+(defun restart-metric-system
+  (&aux (system (acceptor-metric-system *acceptor*)))
+  (stop system)
+  (start system))
 
 (defun get-schedule-metric-system-timer ()
   (when (or (string= (header-in* :x-real-ip) "127.0.0.1")

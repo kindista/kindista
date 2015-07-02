@@ -380,7 +380,12 @@
                             :title title
                             :details details
                             :tags tags)))
-              (send-metric* (if (string= type "request") :new-request :new-offers) new-id)
+
+              (send-metric* (if (string= type "request")
+                              :new-request
+                              :new-offer)
+                            new-id)
+
               (if (getf *user* :pending)
                 (progn
                   new-id
@@ -437,8 +442,7 @@
       (cond
         ((nor (getf item :active)
               (eql by *userid*)
-             ;(getf *user* :admin)
-              )
+              (getf *user* :admin))
          (deactivated-item-error (string-downcase (getf item :type))))
 
         ((and (not (eql by *userid*))
