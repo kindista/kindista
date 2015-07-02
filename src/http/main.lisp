@@ -333,8 +333,9 @@
                                  timer
                                  (cond
                                    ((and (string= (header-in* :x-real-ip) *local-ip-address*)
-                                         (string= (script-name*) "/send-all-reminders"))
-                                    30)
+                                         (or (string= (script-name*) "/send-all-reminders")
+                                             (string= (script-name*) "/send-inventory-digest")))
+                                    60)
                                    ((and (getf *user* :admin)
                                          (string= (script-name*) "/admin/sendmail")) 600)
                                    (t 5)))

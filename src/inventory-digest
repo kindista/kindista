@@ -1,17 +1,3 @@
-# Metrics
- - track new offers/requests in given month
- - automatically create a chart
- - email chart to interested parties
-
-# Finish Development
- - make sure 1/7th algorithm really works
- - ask shaylor about color borders
- - confirm order of items
- - remove test version from get-offer
- - test trying to request/offer an item that has been deactivated
- - add timer to make sure it cron job doesn't go to often
- - create a route for the cron job
- - give inventory digest call its own thread
-
 # On Server
  - edit cron tab
+ - refresh routes
