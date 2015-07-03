@@ -129,17 +129,27 @@
          (asetf requests (subseq it 0 (min (- 25 offer-count)
                                            request-count)))))
 
-      (list :offers (mapcar #'result-id offers)
+      (let* ((offer-ids (mapcar #'result-id offers))
+             (request-ids (mapcar #'result-id requests))
+             (featured-offers-count (length offer-ids))
+             (featured-requests-count (length request-ids)))
+
+       (list :offers offer-ids
                    ;(mapcar #'(lambda (result)
                    ;            (cons (result-id result)
                    ;                  (rank result)))
                    ;        offers)
-            :requests (mapcar #'result-id requests)
+            :more-offers (when (> offer-count featured-offers-count)
+                           (- offer-count featured-offers-count))
+            :requests (setf requests
+                            (copy-list (mapcar #'result-id requests)))
+            :more-requests (when (> request-count featured-requests-count)
+                             (- request-count featured-requests-count))
                      ;(mapcar #'(lambda (result)
                      ;            (cons (result-id result)
                      ;                  (rank result)))
                      ;        requests)
-            ))))
+            )))))
 
 (defun inventory-digest-email-text
   (userid
@@ -147,7 +157,9 @@
    &key (user (db userid))
    &aux (name (getf user :name))
         (offers (getf recent-items :offers))
-        (requests (getf recent-items :requests)))
+        (requests (getf recent-items :requests))
+        (more-offers (getf recent-items :more-offers))
+        (more-requests (getf recent-items :more-requests)))
 
 (labels ((item-text (item-id)
            (email-inventory-item-plain-text item-id :user user)))
@@ -169,24 +181,45 @@
                      "OFFERS"
                      #\linefeed
                      (apply #'strcat (mapcar #'item-text offers))))
+           (when more-offers
+             (strcat* #\linefeed
+                      "See "
+                      more-offers
+                      " more recent offer"
+                      (when (> more-offers 1) "s")
+                      ": "
+                      *email-url*
+                      "offers"
+                       #\linefeed))
            (when requests
              (strcat* #\linefeed
                       (unless offers #\linefeed)
                       "REQUESTS"
                       #\linefeed
                       (apply #'strcat (mapcar #'item-text requests))))
+           (when more-requests
+             (strcat* #\linefeed
+                      "See "
+                      more-requests
+                       " more recent request"
+                       (when (> more-requests 1) "s")
+                       ": "
+                      *email-url*
+                      "requests"
+                       #\linefeed))
            (amazon-smile-reminder)
            (unsubscribe-notice-ps-text (getf user :unsubscribe-key)
                                        (car (getf user :emails))
-                                       "email summaries of new offers and requests in your area")
-         )))
+                                       "email summaries of new offers and requests in your area"))))
 
 (defun inventory-digest-email-html
   (userid
     recent-items
     &key (user (db userid))
     &aux (offers (getf recent-items :offers))
-         (requests (getf recent-items :requests)))
+         (requests (getf recent-items :requests))
+         (more-offers (getf recent-items :more-offers))
+         (more-requests (getf recent-items :more-requests)) )
 
   (html-email-base
     (html
@@ -203,6 +236,7 @@
        (str (getf user :rdist))
        " miles. You can change this distance on your "
        (:a :href (s+ *email-url* "settings/communication#digest-distance")
+           :style *style-a*
         "settings page")
        ".")
 
@@ -211,10 +245,26 @@
       (dolist (offer offers)
         (str (email-inventory-item-html offer :user user)))
 
+      (awhen more-offers
+        (htm (:a :href (s+ *email-url* "offers")
+                 :style *style-a*
+               (str (strcat* "See "
+                             more-offers
+                             " more recent offer"
+                             (when (> more-offers 1) "s"))))))
+
       (:h2 "REQUESTS")
 
       (dolist (request requests)
         (str (email-inventory-item-html request :user user)))
+
+      (awhen more-requests
+        (htm (:a :href (s+ *email-url* "requests")
+                 :style *style-a*
+               (str (strcat* "See "
+                             more-requests
+                             " more recent request"
+                             (when (> more-requests 1) "s"))))))
 
       (str (amazon-smile-reminder t))
 

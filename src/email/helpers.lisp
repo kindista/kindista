@@ -18,11 +18,13 @@
 (in-package :kindista)
 
 (defparameter *style-a* "color:#5c8a2f;
+                         font-weight:bold;
                          text-decoration:none;")
 
 (defparameter *style-p* "max-width:70em;
                          margin-top:.9em;
                          margin-bottom:.9em;")
+
 
 (defparameter *style-quote-box* "border-collapse: collapse;
                                  background: #ebf2e4;
@@ -57,7 +59,9 @@
          "------------------------------------"
          (:br)
          "Do you shop at Amazon.com? If so, please "
-         (:a :href *amazon-smile-link* "click here")
+         (:a :href *amazon-smile-link*
+             :style *style-a*
+          "click here")
          " and Amazon will donate a portion of your purchases to Kindista through our parent organization, CommonGoods Network."))
     (strcat
       #\linefeed #\linefeed
@@ -104,6 +108,7 @@ notification-description
     (str (or detailed-notification-description notification-description))
     ", you may "
     (:a :href (unsubscribe-url email-address unsubscribe-code groupid)
+        :style *style-a*
         "unsubscribe")
     ".")))
 
