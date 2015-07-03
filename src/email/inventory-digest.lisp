@@ -135,20 +135,11 @@
              (featured-requests-count (length request-ids)))
 
        (list :offers offer-ids
-                   ;(mapcar #'(lambda (result)
-                   ;            (cons (result-id result)
-                   ;                  (rank result)))
-                   ;        offers)
-            :more-offers (when (> offer-count featured-offers-count)
-                           (- offer-count featured-offers-count))
-            :requests (setf requests
-                            (copy-list (mapcar #'result-id requests)))
-            :more-requests (when (> request-count featured-requests-count)
-                             (- request-count featured-requests-count))
-                     ;(mapcar #'(lambda (result)
-                     ;            (cons (result-id result)
-                     ;                  (rank result)))
-                     ;        requests)
+              :more-offers (when (> offer-count featured-offers-count)
+                             (- offer-count featured-offers-count))
+              :requests request-ids
+              :more-requests (when (> request-count featured-requests-count)
+                               (- request-count featured-requests-count))
             )))))
 
 (defun inventory-digest-email-text
