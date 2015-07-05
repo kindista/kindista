@@ -738,7 +738,8 @@
          (unless (or groupid existingp)
            (awhen (groups-with-user-as-admin)
              (htm
-               (:label (str (s+ (string-capitalize typestring) "ed by")))
+               (:label :for "identity-selection"
+                 (str (s+ (string-capitalize typestring) "ed by")))
                (str (identity-selection-html identity-selection it :onchange "this.form.submit()")))))
 
          (when (or (getf *user-group-privileges* :member)

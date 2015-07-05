@@ -416,8 +416,10 @@
           (:form :method "post"
            :action (or existing-url "/gratitude/new")
            :class "recipients"
-           (:label "About:")
-           (:menu :type "toolbar" :class "recipients"
+           (:label :for "recipients" "About:")
+           (:menu :id "recipients"
+                  :type "toolbar"
+                  :class "recipients"
             (unless subjects
               (htm (:li (:em "nobody yet"))))
             (dolist (subject subjects)
@@ -440,7 +442,7 @@
              (awhen (groups-with-user-as-admin)
                (htm
                  (:div :class "clear"
-                  (:label :class "from" "From:")
+                  (:label :for "identity-selection" :class "from" "From:")
                   (str (identity-selection-html (or groupid *userid*)
                                                 it
                                                 :class "identity recipients profile-gratitude"

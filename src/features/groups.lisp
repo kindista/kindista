@@ -706,14 +706,16 @@
         (:div :class "item create-group"
           (:form :method "post" :action "/groups/new"
             (:div
-              (:label "Group name")
+              (:label :for "new-group-name" "Group name")
               (:input :type "text"
+                      :id "new-group-name"
                       :name "name"
                       :placeholder (escape-for-html "Enter your group's name")
                       :value (awhen name (escape-for-html it))))
             (:div
-              (:label "Group location")
+              (:label :for "new-group-location" "Group location")
               (:input :type "text"
+                      :id "new-group-location"
                       :name "location"
                       :placeholder (escape-for-html "Enter your group's address")
                       :value (awhen location (escape-for-html it)))

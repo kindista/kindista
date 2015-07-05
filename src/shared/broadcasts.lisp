@@ -44,11 +44,11 @@
         (when blog-p
           (htm (:input :type "hidden" :name "blog-p" :value "t")))
         (:p
-          (:label (str (if blog-p "Author:" "From:")))
-          (:input :type "text" :name "from" :value "\"Benjamin Crandall\" <ben@kindista.org>"))
+          (:label (str (if blog-p "Author:" "From:"))
+           (:input :type "text" :name "from" :value "\"Benjamin Crandall\" <ben@kindista.org>")))
         (:p
-          (:label (str (if blog-p "Title:" "Subject:")))
-          (:input :type "text" :name "subject"))
+          (:label (str (if blog-p "Title:" "Subject:"))
+           (:input :type "text" :name "subject")))
         (:textarea :name "markdown"
                    :placeholder (if blog-p
                                   "Email teaser text..."
@@ -57,8 +57,8 @@
         (when blog-p
           (htm
             (:p
-              (:label "Tags: (optional)")
-              (:input :type "text" :name "tags"))))
+              (:label "Tags: (optional)"
+               (:input :type "text" :name "tags")))))
         (:div
           (:span "Add a markdown file:")
           (:br)

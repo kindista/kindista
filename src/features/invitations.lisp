@@ -285,6 +285,7 @@
     recently-expired-invites))
 
 (defun quick-invite-page (&key text)
+  "for use at special events. normally not enabled."
   (standard-page "Send invitations"
     (html
       (:div :class "item create-event"
@@ -295,11 +296,15 @@
            "We will send you an invitation email to complete the signup process. "
            "If you do not see the invitation in your inbox, please check your spam folder.")
           (:div
-            (:label "Email address")
-            (:input :type "text" :name "email" :placeholder "Please enter your email address"))
+            (:label :for "new-account-email" "Email address")
+            (:input :id "new-account-email" :type "text" :name "email" :placeholder "Please enter your email address"))
           (:div 
-            (:label "Confirm your email address")
-            (:input :type "text" :name "confirm-email" :placeholder "Please confirm your email address"))
+            (:label :for "new-account-email-confirmation"
+             "Confirm your email address")
+            (:input :id "new-account-email-confirmation"
+                    :type "text"
+                    :name "confirm-email"
+                    :placeholder "Please confirm your email address"))
           (:p
             (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
             (:button :class "yes" :type "submit" :class "submit" :name "quick-invite" "Sign me up!")))))))

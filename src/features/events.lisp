@@ -466,8 +466,8 @@
 
     (flet ((day-or-date-selector (&optional reload)
              (html
-               (:label "Repeat by")
-               (:div :class "inline-block"
+               (:label :for "by-day-or-date" "Repeat by")
+               (:div :class "inline-block" :id "by-day-or-date"
                  (:input :type "radio"
                          :name "by-day-or-date"
                          :value "day"
@@ -498,8 +498,8 @@
              (str (day-or-date-selector t))
              (unless by-date
                (htm
-                 (:label "Repeat on")
-                 (:div
+                 (:label :for "repeat-on-options" "Repeat on")
+                 (:div :id "repeat-on-options"
                    (dolist (option +positions-of-day-in-month+)
                       (htm
                         (:div :class "inline-block"
@@ -519,8 +519,8 @@
                  (>= day-of-month (- days-in-month 7)))
             ;;for last week of 28day february's
             (htm
-              (:label "Repeat on")
-              (:div :class "inline-block"
+              (:label :for "repeat-on-options" "Repeat on")
+              (:div :class "inline-block" :id "repeat-on-options"
                 (:input :type "radio"
                         :name "position-in-month"
                         :value "date"
@@ -565,25 +565,26 @@
              (htm (:input :type "hidden" :name "groups-selected" :value group))))
          (:input :type "hidden" :name "prior-identity" :value identity-selection)
 
-         (:div (:label "When (date & time)")
+         (:div (:label :for "when" "When (date & time)")
 
-               (if editing-schedule
-                 (htm (:strong (str (s+ date " at " time)))
-                      (:button :class "green simple-link"
-                               :type "submit"
-                               :name "edit-datetime"
-                               "edit")
-                      (:input :type "hidden" :name "date" :value date)
-                      (:input :type "hidden" :name "time" :value time))
+               (:div :id "when"
+                 (if editing-schedule
+                   (htm (:strong (str (s+ date " at " time)))
+                        (:button :class "green simple-link"
+                                 :type "submit"
+                                 :name "edit-datetime"
+                                 "edit")
+                        (:input :type "hidden" :name "date" :value date)
+                        (:input :type "hidden" :name "time" :value time))
 
-                 (htm (:input :type "text"
-                              :name "date" :placeholder "mm/dd/yyyy"
-                              :value date)
-                      (:br)
-                      (:input :type "text"
-                              :name "time"
-                              :placeholder "Add a time? (ex. 2:30 PM)"
-                              :value time))))
+                   (htm (:input :type "text"
+                                :name "date" :placeholder "mm/dd/yyyy"
+                                :value date)
+                        (:br)
+                        (:input :type "text"
+                                :name "time"
+                                :placeholder "Add a time? (ex. 2:30 PM)"
+                                :value time)))))
 
          (if editing-schedule
            (htm (:input :type :hidden :name "recurring" :value recurring))
@@ -620,34 +621,36 @@
                              "edit"))
 
                (htm
-                  (:div :class "recurring-event-details"
+                 (:div :class "recurring-event-details"
+                   (:label :for "repeat-every"
+                           "Repeat "
+                           (when (and local-day-of-week
+                                      (nor monthly frequent))
+                             (htm " on " (str local-day-of-week)))
+                           " every")
+                   (:div :id "repeat-every"
                     (:div
-                      (:label "Repeat "
-                              (when (and local-day-of-week
-                                         (nor monthly frequent))
-                                (htm " on " (str local-day-of-week)))
-                              " every")
                       (str (number-selection-html "interval" 12
                                                   :selected (or interval 1)
                                                   :auto-submit t)))
 
                     (:div
                       (:select :onchange "this.form.submit()"
-                               :name "frequency"
-                        (:option :value "weekly"
-                                 :selected (unless monthly "")
-                                 "Week"
-                                 (unless frequent (htm "s")))
-                        (:option :value "monthly"
-                                 :selected (when monthly "")
-                                 "Month"
-                                 (unless frequent (htm "s")))))
+                       :name "frequency"
+                       (:option :value "weekly"
+                        :selected (unless monthly "")
+                        "Week"
+                        (unless frequent (htm "s")))
+                       (:option :value "monthly"
+                        :selected (when monthly "")
+                        "Month"
+                        (unless frequent (htm "s"))))))
 
                     (when (and (or (not frequency) (not monthly))
                                frequent)
                       (htm
-                        (:div
-                          (:label "Repeat on")
+                        (:label :for "repeat-on-options" "Repeat on")
+                        (:div :id "repeat-on-options"
                             (dolist (day +day-names+)
                               (htm
                                 (:input :type "checkbox"
@@ -669,23 +672,26 @@
                                                             weeks-of-month)))
 
                     (:div
-                      (:label "End Date (optional)")
+                      (:label :for "end-date"
+                       "End Date (optional)")
                       (:input :type "text"
+                              :id "end-date"
                               :name "end-date"
                               :placeholder "mm/dd/yyyy"
                               :value end-date)))))))
 
          (:div :class "long"
-           (:label "Event title")
+           (:label :for "title" "Event title")
            (:input :type "text"
+                   :id "title"
                    :name "title"
                    :placeholder "ex: Community Garden Work Party"
                    :value (awhen title (escape-for-html it))))
 
          (awhen (groups-with-user-as-admin)
            (htm
-             (:div
-               (:label "Posted by")
+             (:label :for "posted-by" "Posted by")
+             (:div :id "posted-by"
                (if existing-url
                  (htm (:h2 (str (db identity-selection :name))))
                  (str (identity-selection-html identity-selection
@@ -704,16 +710,17 @@
                             (groups-with-user-as-admin)))
                   groups-selected
                   :onchange "this.form.submit()")))
-         (:div
-           (:label "Details")
+         (:label :for "details" "Details")
+         (:div :id "details"
            (:textarea :rows "8"
                        :name "details"
                        :placeholder "Add some more info..."
                        (awhen details (str (escape-for-html it)))))
 
          (:div :class "long"
-           (:label "Where")
+           (:label :for "location" "Where")
            (:input :type "text"
+                   :id "location"
                    :name "location"
                    :placeholder "Street address for the event"
                    :value location))

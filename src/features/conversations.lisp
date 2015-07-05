@@ -51,8 +51,9 @@
                :action "/conversations/new"
                :class "recipients"
           (:div :class "recipients"
-            (:label "With:")
-            (:ul :class "recipients"
+            (:label :for "recipients" "With:")
+            (:ul :id "recipients"
+                 :class "recipients"
               (unless people
                 (htm (:li (:em "nobody yet"))))
               (dolist (person people)
@@ -68,7 +69,8 @@
             (htm (:input :type "hidden" :name "people" :value (format nil "~{~A~^,~}" people))))
           (when next
               (htm (:input :type "hidden" :name "next" :value next)))
-          (:p (:label "Subject: ") (:input :type "text" :name "subject" :value subject))
+          (:p (:label :for "subject" "Subject: ")
+           (:input :type "text" :id "subject" :name "subject" :value subject))
           (:textarea :rows "8" :name "text" (str text))
           (:p
             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")

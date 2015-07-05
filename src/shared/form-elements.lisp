@@ -105,7 +105,10 @@
 (defun identity-selection-html (selected groups &key (class "identity") onchange (userid *userid*))
 "Groups should be an a-list of (groupid . group-name)"
   (html
-    (:select :name "identity-selection" :class class :onchange onchange
+    (:select :id "identity-selection"
+             :name "identity-selection"
+             :class class
+             :onchange onchange
       (:option :value userid
                :selected (when (eql selected userid) "")
                (str (or (getf *user* :name)
@@ -124,8 +127,10 @@
          (groups-user-has-left (mapcar #'(lambda (id) (cons id (db id :name)))
                                        group-ids-user-has-left)))
     (html
-      (:label  "Who can see this " (str item-type) "?")
-      (:div :class (s+ class (when (and restrictedp
+      (:label :for "privacy-selection"
+        "Who can see this " (str item-type) "?")
+      (:div :id "privacy-selection"
+            :class (s+ class (when (and restrictedp
                                         (or groups-user-has-left
                                             (> (length my-groups) 1)))
                                " privacy-selection-details"))

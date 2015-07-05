@@ -1507,6 +1507,10 @@ menu#fine-print-links a {
  margin-top: 0.5em;
 }
 
+.item.create-event label {
+ margin-top: 0.8em;
+}
+
 .item.create-group label {
  font-size: 1.1em;
 }
@@ -1550,6 +1554,10 @@ menu#fine-print-links a {
  white-space: nowrap;
  height: 2.5em;
  max-width: 100%;
+}
+
+.item div#privacy-selection {
+ height: auto;
 }
 
 table.inventory-title {

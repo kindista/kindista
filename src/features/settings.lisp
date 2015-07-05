@@ -309,20 +309,24 @@
          (:button :class "yes small" :type "submit" "Change password"))
        (:div :class "content"
          (:div
-           (:label "Current password:")
+           (:label :for "current-password" "Current password:")
            (:input :type "password"
-            :name "password"
+                   :id "current-password"
+                   :name "password"
             :placeholder "verify your current password"))
          (:div
-           (:label "New password:")
+           (:label :for "new-password" "New password:")
            (:input :type "password"
-            :name "new-password-1"
-            :placeholder "new password: at least 8 characters"))   
+                   :id "new-password"
+                   :name "new-password-1"
+                   :placeholder "new password: at least 8 characters"))   
          (:div
-           (:label "Confirm your new password:")
+           (:label :for "confirm-new-password"
+             "Confirm your new password:")
            (:input :type "password"
-            :name "new-password-2"
-            :placeholder "please retype your new password")))))   
+                   :id "confirm-new-password"
+                   :name "new-password-2"
+                   :placeholder "please retype your new password")))))   
 
   :form-markup nil
   :editable t
@@ -343,8 +347,9 @@
       (html
         (:input :type "hidden" :name "next" :value *base-url*)
         (:div
-          (:label "Current monthly donation: " (:strong "$" (str plan)))
-          (:select :name "plan"
+          (:label :for "donation-plan"
+            "Current monthly donation: " (:strong "$" (str plan)))
+          (:select :id "donation-plan" :name "plan"
            (:option :disabled "disabled" "Select a new plan")
            (:option :value "5" "$5/month")
            (:option :value "10" "$10/month")
