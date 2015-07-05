@@ -409,7 +409,7 @@
       (if existing-url "Edit your statement of gratitude" "Express gratitude")
       (html
         (when error (flash (getf error :text) :error t))
-        (:div :class "item"
+        (:div :class "new-gratitude item"
          (:h2 (str (if existing-url "Edit your statement of gratitude"
                      "Express gratitude")))
          (:div :class "item"
@@ -419,7 +419,7 @@
            (:label :for "recipients" "About:")
            (:menu :id "recipients"
                   :type "toolbar"
-                  :class "recipients"
+                  :class "gratitude recipients"
             (unless subjects
               (htm (:li (:em "nobody yet"))))
             (dolist (subject subjects)
