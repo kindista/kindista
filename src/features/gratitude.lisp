@@ -452,8 +452,11 @@
            (:div :class (s+ "gratitude-selectors "
                             (when (string= (getf error :field) "on-type")
                               "error-border"))
-            (:h3 :class (when (string= (getf error :field) "on-type") "red")
-             "This statement of gratitude is for...")
+            (when (or relevant-offers relevant-requests)
+              (htm
+                (:h3 :class (when (string= (getf error :field) "on-type")
+                              "red")
+                 "This statement of gratitude is for...")))
 
             (when (and relevant-offers
                        single-recipient-name)
@@ -542,7 +545,12 @@
          (:input :type "text" :name "name")
          (:button :type "submit" :class "yes input-height" :name "search" "Search")
 
-         (if (eq results 'none)
+         (:button :type "submit"
+                  :class "cancel input-height"
+                  :name (if subjects "back" "cancel")
+                  "Back")
+
+         (if (or (eq results nil) (eq results 'none))
            (progn
              (htm
                (:h3 "Or, select one of your contacts")
@@ -557,7 +565,6 @@
                (dolist (person (cdr results))
                  (str (id-button (car person) "add" (cdr person)))))))
 
-         (:input :type "submit" :class "cancel" :name "cancel" :value "Back")
 
          (when groupid
            (htm (:input :type "hidden" :name "identity-selection" :value groupid)))
@@ -669,6 +676,9 @@
           ((post-parameter "cancel")
            (see-other (or next "/home")))
 
+          ((post-parameter "back")
+            (g-compose))
+
           ((not (confirmed-location))
            (flash "You must set your street address on your settings page before you can post gratitude about someone." :error t)
            (see-other (or next "/home")))
@@ -687,7 +697,7 @@
              :results (cons (search-groups (post-parameter "name"))
                             (search-people (post-parameter "name")))))
 
-          ((not text)
+          ((and (post-parameter "create") (not text))
             (if transaction-id
               (progn
                 (flash "Please enter some more details about what you are grateful for." :error t)

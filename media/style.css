@@ -2702,6 +2702,7 @@ div.activity-image {
  margin: 0 0.25em 0.15em 0;
 }
 
+.new-gratitude button.cancel,
 .new-gratitude button.yes {
  margin-left: 0.7em;
  padding-top: 0;
@@ -3095,6 +3096,10 @@ li.recipients:last-child {
 
 form.recipients menu.recipients li {
  vertical-align: top;
+}
+
+div.new-gratitude li.recipients button.text {
+ margin-top: 0.5em;
 }
 
 form.recipients menu.recipients li:first-of-type {

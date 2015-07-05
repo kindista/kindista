@@ -86,7 +86,7 @@
     (html
       (:div :class "item"
        (:form :method "post"
-              :class "recipients"
+              :class "conversation recipients"
               :action "/conversations/new"
          (:button :type "submit" :class "simple-link green" :name "cancel-add" "↩ go back")
          (:h2 "Who would you like to add to the conversation?")
