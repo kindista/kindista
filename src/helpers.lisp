@@ -210,8 +210,8 @@
   (item
    &key (user *user*)
         (contacts (getf user :following))
-        (lat (if *user* *latitude* (getf user :lat)))
-        (long (if *user* *longitude* (getf user :long)))
+        (lat *latitude* )
+        (long *longitude* )
         (contact-multiplier 1)
         (distance-multiplier 1)
    &aux (age (- (get-universal-time)
