@@ -52,6 +52,28 @@
             (send-inventory-digest-email userid :user user)))))
     (see-other "/home")))
 
+(defun test-inventory-digest ()
+  (with-open-file (s (s+ +db-path+ "/tmp/inventory-digest-test")
+                     :direction :output
+                     :if-does-not-exist :create
+                     :if-exists :supersede)
+    (dolist (userid *active-people-index*)
+      (let* ((user (db userid))
+             (email (first (getf user :emails))))
+        (when (and email (getf user :notify-inventory-digest))
+          (let* ((inventory-items (recent-local-inventory userid :user user))
+                 (offers (getf inventory-items :offers))
+                 (requests (getf inventory-items :requests))
+                 (text (inventory-digest-email-text userid
+                                                    inventory-items
+                                                    :user user))
+                 (html (inventory-digest-email-html userid
+                                                    inventory-items
+                                                    :user user)))
+            (when (or offers requests)
+              (print (list email text html) s))))))))
+
+
 (defun send-inventory-digest-email
   (userid
    &key (user (db userid))
