@@ -46,16 +46,19 @@
     (push result (gethash (getf data :object) *person-notification-index*))))
 
 (defun add-contact (new-contact-id userid)
-  (amodify-db userid :following (cons new-contact-id it))
-  (with-locked-hash-table (*followers-index*)
-    (push userid (gethash new-contact-id *followers-index*)))
-  (remove-suggestion new-contact-id userid)
-  (remove-suggestion new-contact-id userid :hidden t)
-  (unless (string= (strcat +base-url+ "people/"
-                           (username-or-id new-contact-id))
-                   (referer))
-    (flash (html (str (person-link new-contact-id))
-                 " has been added to your contacts.")))
+  (unless (find new-contact-id (db userid :following))
+    (amodify-db userid :following (cons new-contact-id it))
+    (with-locked-hash-table (*followers-index*)
+      (push userid (gethash new-contact-id *followers-index*)))
+    (remove-suggestion new-contact-id userid)
+    (remove-suggestion new-contact-id userid :hidden t)
+    (unless (or (not *userid*) ;if done from the REPL
+                (string= (strcat +base-url+
+                                   "people/"
+                                   (username-or-id new-contact-id))
+                       (referer)))
+      (flash (html (str (person-link new-contact-id))
+                   " has been added to your contacts."))))
 
   ;;is this really how we want to implement contact notifications?
   ;(create-contact-notification :follower userid :contact new-contact-id)

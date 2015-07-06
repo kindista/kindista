@@ -17,6 +17,10 @@
 
 (in-package :kindista)
 
+(defun add-kindista-to-all-user-contact-lists ()
+  (dolist (person *active-people-index*)
+    (add-contact +kindista-id+ person)))
+
 (defun signup-identity-selection ()
   (html
     (:div :class "identity-selection"
@@ -264,6 +268,8 @@
                (dolist (group (getf invitation :groups))
                  (add-group-member new-id group))
                (add-contact host new-id)
+               (unless (eql host +kindista-id+)
+                 (add-contact +kindista-id+ new-id))
                (with-locked-hash-table (*invited-index*)
                  (pushnew new-id (gethash host *invited-index*)))
                ;; see if anyone has invited this email to a group
