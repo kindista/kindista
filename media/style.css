@@ -2729,6 +2729,7 @@ div.activity-image {
 #nearby-profiles .selector {
  margin-right: 1em;
  display: inline-block;
+ margin-bottom: 1em;
 }
 
 #nearby-profiles .selector label {
@@ -3348,6 +3349,24 @@ div.settings menu.bar {
  display: table-cell;
 }
 
+@media (max-width:40em) {
+.settings-item .emails li > span,
+.settings-item .emails li span.help-text,
+.settings-item .emails li div.controls {
+ display: block;
+}
+.settings-item .emails li .email-item {
+ margin-bottom: 0;
+ height: inherit;
+}
+
+.settings-item div.emails li > span.help-text,
+.settings-item .emails li div.controls {
+ margin-bottom: 2em;
+}
+}
+
+ div.transaction-option a,
 .settings-item .emails li div.input-wrapper {
  margin-right: 0.4em;
  display: inline-block;
