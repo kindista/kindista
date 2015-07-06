@@ -360,8 +360,10 @@
       (html
         (str (page-header))
         (:div :id "site-error"
-          (:h1 "Something terrible happened")
-          (:p "Humans have been notified!"))))))
+          (:h1 "Something unexpected has happened")
+          (:p "If this problem persists, please "
+           (:a :href "mailto:errors@kindista.org" "email our development team")
+           "."))))))
 
 (defmethod acceptor-log-message ((acceptor k-acceptor) (log-level (eql :error)) format-string &rest format-arguments)
   "Print extra information when logging an error. Sends a formatted

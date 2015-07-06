@@ -1,6 +1,3 @@
-[ ] fix layout for new gratitudes
-[ ] thank eamon
-[ ] change error message
 [ ] test thursday/friday inventory digests to see if that killed lisp
 [ ] fix order of "nearby" people when listed by distance
 [ ] signup page clears info when you select "group"
