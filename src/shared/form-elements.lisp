@@ -27,17 +27,22 @@
                           :selected (when (eql selected num) "")
                           (str (strcat num))))))))
 
-(defun distance-selection-dropdown (distance &key auto-submit)
+(defun distance-selection-dropdown
+  (distance
+   &key auto-submit
+        (everywhere-option t))
   (html
     (:select :class "distance-selection"
              :name "distance"
+             :id "distance-selection"
              :onchange (when auto-submit "this.form.submit()")
       (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
       (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
       (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
       (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
       (:option :value "100" :selected (when (eql distance 100) "") "100 miles")
-      (:option :value "0" :selected (when (eql distance 0) "") "everywhere"))))
+      (when everywhere-option
+        (htm (:option :value "0" :selected (when (eql distance 0) "") "everywhere"))))))
 
 (defun group-category-selection (&key next selected (class "identity"))
   (let* ((default-options '("business"

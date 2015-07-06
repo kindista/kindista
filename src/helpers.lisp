@@ -220,9 +220,9 @@
         (distance (if (and (result-latitude item) (result-longitude item))
                     (max 0.1
                          (air-distance lat
-                                  long
-                                  (result-latitude item)
-                                  (result-longitude item)))
+                                       long
+                                       (result-latitude item)
+                                       (result-longitude item)))
                     5000))
         (distance-component (/ (* 100000 distance-multiplier)
                                (log (+ 1.5 (* distance 2)))))

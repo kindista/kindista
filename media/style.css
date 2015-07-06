@@ -2726,6 +2726,21 @@ div.activity-image {
  clear:both;
 }
 
+#nearby-profiles .selector {
+ margin-right: 1em;
+ display: inline-block;
+}
+
+#nearby-profiles .selector label {
+ font-weight: bold;
+ width: 3.4em;
+ display: inline-block;
+}
+
+#nearby-profiles .selector select {
+ width: 8em;
+}
+
 .people ul {
  list-style-type:none;
  padding:0;

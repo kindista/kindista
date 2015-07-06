@@ -1,5 +1,6 @@
+[ ] make labels into h2 tags where appropriate
 [ ] test thursday/friday inventory digests to see if that killed lisp
-[ ] fix order of "nearby" people when listed by distance
+[ ] lower activity-rank of self posts
 [ ] signup page clears info when you select "group"
 [ ] ask shaylor about top color borders for activity items
 [ ] automatically create monthly metrics chart
