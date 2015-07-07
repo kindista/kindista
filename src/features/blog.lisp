@@ -1,4 +1,4 @@
-;;; Copyright 2012-2014 CommonGoods Network, Inc.
+;;; Copyright 2014-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;

@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -100,7 +100,7 @@
           (:div
             (:label :for "into" "What else are you into? (minimum 150 characters)")
             (:textarea :cols "150" :rows "5" :name "into" :placeholder "Interests, activites, etc." (str into)))
-          
+
           (:p "Are you willing to help promote Kindista in your local community?")
           (:ul
             (:li (:input :type "checkbox"

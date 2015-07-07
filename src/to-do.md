@@ -1,5 +1,4 @@
-[ ] make labels into h2 tags where appropriate
-[ ] add kindista group to all new and existing account contact lists
+[ ] make invite people sidebar only for groups and people
 [ ] lower activity-rank of self posts
 [ ] signup page clears info when you select "group"
 [ ] ask shaylor about top color borders for activity items

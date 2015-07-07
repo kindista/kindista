@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -490,13 +490,13 @@
       (:form :method "POST" :action "/login"
         (:label "Email"
           (:input :type "text"
-           :class "username"
-           :name "username"
-           :value (get-parameter "retry")))
+                  :class "username"
+                  :name "username"
+                  :value (get-parameter "retry")))
         (:label "Password"
           (:input :type "password"
-           :class "password"
-           :name "password"))
+                  :class "password"
+                  :name "password"))
          (awhen (get-parameter-string "next")
           (htm (:input :type "hidden" :name "next" :value it)))
         (:button :type "submit" :class "yes" "Log in")

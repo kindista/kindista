@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -660,12 +660,12 @@
         (awhen groupid
           (htm (:input :type "hidden" :name "groupid" :value it)))
 
-        (:label :for "title"
-         (:strong "Post " (str preposition) " " (str type) " ")
-         (:span :class "inline-block"
-           " ("
-          (:span :id "title-count" "64")
-          " characters available)"))
+        (:label :for "title" :class "title"
+          "Post " (str preposition) " " (str type) " ")
+          (:span :class "inline-block"
+            " ("
+           (:span :id "title-count" "64")
+           " characters available)")
         (:table :class "inventory-title"
           (:tr
             (:td :class "inventory-details"

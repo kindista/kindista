@@ -17,9 +17,10 @@
 
 (in-package :kindista)
 
-(defun number-selection-html (name end &key selected auto-submit)
+(defun number-selection-html (name end &key id selected auto-submit)
   (html
     (:select :name name
+             :id id
              :onchange (when auto-submit "this.form.submit()")
       (loop for num from 1 to end
             do (htm
@@ -132,14 +133,16 @@
          (groups-user-has-left (mapcar #'(lambda (id) (cons id (db id :name)))
                                        group-ids-user-has-left)))
     (html
-      (:label :for "privacy-selection"
-        "Who can see this " (str item-type) "?")
       (:div :id "privacy-selection"
             :class (s+ class (when (and restrictedp
                                         (or groups-user-has-left
                                             (> (length my-groups) 1)))
                                " privacy-selection-details"))
-        (:select :name "privacy-selection" :class class :onchange onchange
+        (:label :for "basic-privacy" "Who can see this " (str item-type) "?")
+        (:select :name "privacy-selection"
+                 :id "basic-privacy"
+                 :class class
+                 :onchange onchange
           (:option :value "public"
                    :selected (unless restrictedp "")
                    "Anyone")
@@ -161,7 +164,6 @@
             (progn
               (dolist (group (safe-sort my-groups #'string-lessp :key #'cdr))
                 (htm
-                  (:br)
                   (:div :class "item-group-privacy"
                     (:input :type "checkbox"
                             :name "groups-selected"

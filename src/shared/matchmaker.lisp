@@ -529,29 +529,24 @@
               (:h3 "Show me offers related to the above request that...")
               (:label
                 "...contain " (:strong "ANY") " of these words:"
-                (:br)
                 (:input :type "text"
                         :name "match-any-terms"
                         :value (awhen any-terms
                                  (separate-with-spaces it))))
-              (:br)
               (:label
                 "...contain  " (:strong "ALL") " of these words:"
-                (:br)
                 (:input :type "text"
                         :name "match-all-terms"
                         :value (awhen all-terms
                                  (separate-with-spaces it))))
-              (:br)
               (:label
                 "...contain  " (:strong "NONE") " of these words:"
-                (:br)
                 (:input :type "text"
                         :name "match-no-terms"
                         :value (awhen without-terms
                                  (separate-with-spaces it))))
-              (:br)
-              (:label "...have any of these tags:"
+              (:div
+                "...have any of these tags:"
                 (:br)
                 (:div :class ""
                  (str (display-tags "request" (getf data :tags)))
@@ -567,7 +562,6 @@
                  "...are located within "
                  (str (distance-selection-dropdown (or distance
                                                        25))))
-               (:br)
                (when self
                  (htm
                    (:input :type "checkbox"

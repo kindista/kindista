@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -416,7 +416,7 @@
           (:form :method "post"
            :action (or existing-url "/gratitude/new")
            :class "recipients"
-           (:label :for "recipients" "About:")
+           (:h2 "About:")
            (:menu :id "recipients"
                   :type "toolbar"
                   :class "gratitude recipients"
@@ -447,7 +447,11 @@
                                                 it
                                                 :class "identity recipients profile-gratitude"
                                                 :onchange "this.form.submit()"))))))
-           (:textarea :rows "8" :name "text" (str text))
+           (:label :for "message" :class "message" "Message")
+           (:textarea :rows "8"
+                      :id "message"
+                      :name "text"
+                      (str text))
 
            (:div :class (s+ "gratitude-selectors "
                             (when (string= (getf error :field) "on-type")

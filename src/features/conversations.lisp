@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -44,14 +44,14 @@
     (standard-page
      "New conversation"
      (html
-       (:div :class "item"
+       (:div :class "item new-conversation"
         (:h2 "New Conversation")
        (:div :class "item"
         (:form :method "post"
                :action "/conversations/new"
                :class "recipients"
           (:div :class "recipients"
-            (:label :for "recipients" "With:")
+            (:h2 "With:")
             (:ul :id "recipients"
                  :class "recipients"
               (unless people
@@ -71,7 +71,11 @@
               (htm (:input :type "hidden" :name "next" :value next)))
           (:p (:label :for "subject" "Subject: ")
            (:input :type "text" :id "subject" :name "subject" :value subject))
-          (:textarea :rows "8" :name "text" (str text))
+          (:label :for "message" :class "message" "Message")
+          (:textarea :rows "8"
+                     :id "message"
+                     :name "text"
+                     (str text))
           (:p
             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
             (:button :class "yes" :type "submit"
