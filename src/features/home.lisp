@@ -44,7 +44,7 @@
 
     (str (donate-sidebar))
 
-    (str (invite-sidebar))
+    (str (invite-sidebar :mobile t))
 
     (str (suggestion-sidebar))
 
