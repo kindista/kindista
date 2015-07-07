@@ -24,6 +24,7 @@
 (defun signup-identity-selection ()
   (html
     (:div :class "identity-selection"
+      (:p (:strong "Important: ") "This form is for creating accounts for individuals only.  After you sign up, you will be able to create an account for your organization or group.")
       (:h3 "What kind of an account is this?")
       (:input :type "radio"
        :class "first-option"

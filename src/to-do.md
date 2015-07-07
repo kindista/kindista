@@ -1,4 +1,3 @@
-[ ] signup page clears info when you select "group"
 [ ] ask shaylor about top color borders for activity items
 [ ] automatically create monthly metrics chart
 [ ] automatically email metrics chart to interested parties
