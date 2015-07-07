@@ -2593,6 +2593,11 @@ button.text.large {
  margin-top: 0;
 }
 
+form.primary-action {
+ display: block;
+ clear: both;
+}
+
 .card button.primary-action {
  margin: 0.9em 0.5em 0 0;
 }
