@@ -1,5 +1,3 @@
-[ ] make invite people sidebar only for groups and people
-[ ] lower activity-rank of self posts
 [ ] signup page clears info when you select "group"
 [ ] ask shaylor about top color borders for activity items
 [ ] automatically create monthly metrics chart

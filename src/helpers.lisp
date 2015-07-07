@@ -209,14 +209,18 @@
 (defun activity-rank
   (item
    &key (user *user*)
+        (userid *userid*)
         (contacts (getf user :following))
-        (lat *latitude* )
-        (long *longitude* )
+        (lat (if *user* *latitude* (getf user :lat)))
+        (long (if *user* *longitude* (getf user :long)))
         (contact-multiplier 1)
         (distance-multiplier 1)
    &aux (age (- (get-universal-time)
                 (or (result-time item) 0)))
         (contact-p (intersection contacts (result-people item)))
+        (self-offset (if (= (car (result-people item)) userid)
+                       -100000
+                       0))
         (distance (if (and (result-latitude item) (result-longitude item))
                     (max 0.1
                          (air-distance lat
@@ -232,6 +236,7 @@
   "Lower scores rank higher."
 
   (values (round (- age
+                    self-offset
                     distance-component
                     contact-component
                     (* (length (loves (result-id item))) 100000)))
