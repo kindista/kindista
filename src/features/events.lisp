@@ -83,6 +83,11 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
+    (dolist (by-id by)
+       (with-locked-hash-table (*profile-activity-index*)
+         (asetf (gethash by-id *profile-activity-index*)
+                (safe-sort (push result it) #'> :key #'result-time))))
+
     (cond
      ((stale-eventp result); when it needs an :auto-updated-time
       (when (getf data :recurring)
