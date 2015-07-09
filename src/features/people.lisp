@@ -214,12 +214,13 @@
   (data-to-keep
     duplicate-account-id-list
     &aux (id-to-keep (apply #'min duplicate-account-id-list))
-    (ids-to-deactivate (remove id-to-keep duplicate-account-id-list))
-    (oldest-data (db id-to-keep)))
+         (ids-to-deactivate (remove id-to-keep duplicate-account-id-list))
+         (oldest-data (db id-to-keep)))
 
   "ALWAYS TEST THE MERGE ON A DEVELOPMENT SYSTEM WITH CURRENT DATA"
   ;; keep earliest id
   ;; mark pending as appropriate
+  ;; determine host
   ;; merge offers/requests
   ;; merge invitations
   ;; merge events
@@ -250,6 +251,12 @@
   ;; merge data/indexes from user's data
   (dolist (duplicate-id duplicate-account-id-list)
     (let ((data (db duplicate-id)))
+
+      (when (and (find (getf data-to-keep :host) (cons +kindista-id+
+                                                       ids-to-deactivate))
+                 (not (find (getf data :host) (cons +kindista-id+
+                                                     ids-to-deactivate))))
+        (setf (getf data-to-keep :host) (getf data :host)))
 
       (asetf (getf data-to-keep :aliases)
              (remove-duplicates
@@ -400,7 +407,13 @@
                                                                    it))
                                              :message-folders (subst id-to-keep
                                                                      duplicate-id
-                                                                     it)))))))))
+                                                                     it))))))))
+        (delete-active-account duplicate-id
+                               :reason (strcat "Duplicate account. "
+                                               "Merged into account #"
+                                               id-to-keep
+                                               ".")
+                               :merged-into id-to-keep))
 
       ;; for group invitations the user has SENT
       (dolist (group-id users-groups)
@@ -518,19 +531,25 @@
                   :username nil
                   :notify-kindista nil)))
 
-(defun delete-active-account (id &optional reason)
-  (let ((data (db id)))
-    (deactivate-person id)
+(defun delete-active-account
+  (id
+   &key reason
+        merged-into
+   &aux (data (db id)))
 
-    (awhen (getf data :emails)
-      (with-locked-hash-table (*email-index*)
-        (dolist (email it)
-          (remhash email *email-index*))))
+  (deactivate-person id)
 
-    (modify-db id :emails (list nil)
-                  :type :deleted-person-account
-                  :deleted t
-                  :reason-for-account-deletion reason)))
+  (awhen (getf data :emails)
+    (with-locked-hash-table (*email-index*)
+      (dolist (email it)
+        (remhash email *email-index*))))
+
+  (modify-db id :emails (list nil)
+                :type :deleted-person-account
+                :merged-into merged-into
+                :merge-date (when merged-into (get-universal-time))
+                :deleted t
+                :reason-for-account-deletion reason))
 
 (defun find-people-with-incorrect-communication-settings ()
   (sort (iter (for id in *active-people-index*)
