@@ -470,7 +470,7 @@
                 (,user-data (db ,user-id))
                 (,user-name (getf ,user-data :username))
                 (,merged-into (getf ,user-data :merged-into)))
-           (cond ,user-data
+           (cond
             ((not ,user-data)
              (not-found))
 
