@@ -35,43 +35,46 @@
 
 (defun get-daily-inventory-digest-mailer
   (&aux (day (local-time:timestamp-day-of-week (local-time:now))) )
-  (when (and *productionp*
+  (when (and (or (getf *user* :admin)
+               (string= (header-in* :x-real-ip) *local-ip-address*)
+               (string= (header-in* :x-real-ip) "127.0.0.1"))
              ;; wait if last called less than 22 hours ago
              ;;(in case of daylight savings time)
              (< *last-inventory-digst-mailer-time*
-                (- (get-universal-time) 79200))
-             (or (getf *user* :admin)
-               (string= (header-in* :x-real-ip) *local-ip-address*)
-               (string= (header-in* :x-real-ip) "127.0.0.1")))
+                (- (get-universal-time) 79200)))
+
     (setf *last-inventory-digst-mailer-time* (get-universal-time))
+
     (dolist (userid *active-people-index*)
       ;; get 1/7th of the userbase
       (when (= (mod userid 7) day)
         (let ((user (db userid)))
           (when (getf user :notify-inventory-digest)
-            (send-inventory-digest-email userid :user user)))))
+
+            ;; only send emails in a production environment
+            (if *productionp*
+              (send-inventory-digest-email userid :user user)
+              (test-inventory-digest-for-user userid user))))))
     (see-other "/home")))
 
-(defun test-inventory-digest ()
-  (with-open-file (s (s+ +db-path+ "/tmp/inventory-digest-test")
+(defun test-inventory-digest-for-user (userid &optional (user (db userid)))
+  (with-open-file (s (strcat +db-path+
+                             "/tmp/inventory-digest-test/"
+                             userid)
                      :direction :output
                      :if-does-not-exist :create
                      :if-exists :supersede)
-    (dolist (userid *active-people-index*)
-      (let* ((user (db userid))
-             (email (first (getf user :emails))))
-        (when (and email (getf user :notify-inventory-digest))
-          (let* ((inventory-items (recent-local-inventory userid :user user))
-                 (offers (getf inventory-items :offers))
-                 (requests (getf inventory-items :requests))
-                 (text (inventory-digest-email-text userid
-                                                    inventory-items
-                                                    :user user))
-                 (html (inventory-digest-email-html userid
-                                                    inventory-items
-                                                    :user user)))
-            (when (or offers requests)
-              (print (list email text html) s))))))))
+    (let* ((inventory-items (recent-local-inventory userid :user user))
+           (offers (getf inventory-items :offers))
+           (requests (getf inventory-items :requests))
+           (text (inventory-digest-email-text userid
+                                              inventory-items
+                                              :user user))
+           (html (inventory-digest-email-html userid
+                                              inventory-items
+                                              :user user)))
+      (when (or offers requests)
+        (print (list (first (getf user :emails)) text html) s)))))
 
 
 (defun send-inventory-digest-email
@@ -117,11 +120,9 @@
   (when (and (getf user :location) lat long)
     (labels ((rank (item)
                (activity-rank item :user user
-                                   :contacts (getf user :following)
+                                   :userid userid
                                    :contact-multiplier 4
-                                   :distance-multiplier 6
-                                   :lat lat
-                                   :long long))
+                                   :distance-multiplier 6))
              (get-inventory (index)
                (sort (remove-if #'(lambda (result)
                                     (or (find userid (result-people result))

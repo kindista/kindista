@@ -208,15 +208,15 @@
 
 (defun activity-rank
   (item
-   &key (user *user*)
-        (userid *userid*)
-        (contacts (getf user :following))
-        (lat (if *user* *latitude* (getf user :lat)))
-        (long (if *user* *longitude* (getf user :long)))
+   &key (userid *userid*)
+        (user *user*)
         (contact-multiplier 1)
         (distance-multiplier 1)
    &aux (age (- (get-universal-time)
                 (or (result-time item) 0)))
+        (contacts (getf user :following))
+        (lat (or (getf user :lat) *latitude*))
+        (long (or (getf user :long) *longitude*))
         (contact-p (intersection contacts (result-people item)))
         (self-offset (if (= (car (result-people item)) userid)
                        -100000
