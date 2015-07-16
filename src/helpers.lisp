@@ -513,7 +513,8 @@
 (defun person-link (id &key possessive)
   (let ((entity (db id)))
     (html
-      (:a :href (s+ (if (eql (getf entity :type) :person)
+      (:a :href (s+ (if (or (eql (getf entity :type) :person)
+                            (eql (getf entity :type) :deleted-person-account))
                       "/people/"
                       "/groups/")
                     (username-or-id id))

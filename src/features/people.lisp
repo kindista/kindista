@@ -245,6 +245,8 @@
   ;; test searching for deleted accounts
   ;; test requesting an invitation from account to be deleted
 
+  (declare (optimize (speed 0) (debug 3) (safety 2)))
+
   (setf (getf data-to-keep :created)
         (getf oldest-data :created))
 
@@ -352,7 +354,12 @@
   ;; must be run after group re-assignment
   (dolist (duplicate-id ids-to-deactivate)
     (let ((users-groups (get-users-groups id-to-keep)))
-      (dolist (message (copy-list (gethash duplicate-id *person-mailbox-index*)))
+      (dolist (message (apply #'append
+                              (remove nil
+                                      (remove-if-not
+                                        #'listp
+                                        (gethash duplicate-id
+                                                 *person-mailbox-index*)))))
         (case (message-type message)
 
           ((or :transaction :conversation)
@@ -407,13 +414,7 @@
                                                                    it))
                                              :message-folders (subst id-to-keep
                                                                      duplicate-id
-                                                                     it))))))))
-        (delete-active-account duplicate-id
-                               :reason (strcat "Duplicate account. "
-                                               "Merged into account #"
-                                               id-to-keep
-                                               ".")
-                               :merged-into id-to-keep))
+                                                                     it)))))))))
 
       ;; for group invitations the user has SENT
       (dolist (group-id users-groups)
@@ -434,6 +435,7 @@
                                                (substitute id-to-keep
                                                            duplicate-id
                                                            it))))))
+
         (:gift
           (let ((gift-id (result-id result)))
             (amodify-db gift-id :recipients (remove-duplicates
@@ -444,6 +446,7 @@
                                  id-to-keep
                                  it))
             (index-gift gift-id (db gift-id))))
+
         (:gratitude
           (let* ((gratitude-id (result-id result))
                  (gratitude (db gratitude-id))
@@ -460,14 +463,26 @@
                         :message-folders (subst id-to-keep
                                                 duplicate-id
                                                 it))
-            (index-gratitude gratitude-id (db gratitude-id)))))))
+            (index-gratitude gratitude-id (db gratitude-id))))))
+
+    (delete-active-account duplicate-id
+                           :reason (strcat "Duplicate account. "
+                                           "Merged into account #"
+                                           id-to-keep
+                                           ".")
+                           :merged-into id-to-keep))
+
 
   (dolist (result *feedback-index*)
     (when (find (car (result-people result)) ids-to-deactivate)
       (setf (result-people result) (list id-to-keep))
       (modify-db (result-id result) :by id-to-keep)))
 
-  (index-person id-to-keep (apply #'modify-db data-to-keep)))
+  (pprint data-to-keep)
+  (pprint (db id-to-keep))
+  (terpri)
+
+  (index-person id-to-keep (apply #'modify-db (cons id-to-keep data-to-keep))))
 
 (defun deactivate-person (id)
   (let ((result (gethash id *db-results*)))
