@@ -618,12 +618,12 @@ body.splash #symbol {
   background: none;
  }
  body.splash #header-container {
-  height: 15em;
+  height: 17em;
   background: url('hands.jpg') no-repeat;
   background-size: cover;
  }
  body.splash #header {
-  height: 15em;
+  height: 17em;
   background-color: rgba(255, 255, 255, 0.7);
  }
  body.splash #symbol {
