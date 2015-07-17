@@ -328,18 +328,19 @@
 
     (dolist (group (getf (copy-list (gethash duplicate-id
                                              *group-privileges-index*))
-                         :admins))
+                         :admin))
       (with-locked-hash-table (*group-members-index*)
         (remove duplicate-id (getf (gethash group *group-members-index*)
                                    :admins))
         (pushnew id-to-keep (getf (gethash group *group-members-index*)
                                   :admins)))
       (amodify-db group :admins (remove-duplicates
-                                  (substitute id-to-keep duplicate-id it))))
+                                  (substitute id-to-keep duplicate-id it))
+                        :members (remove id-to-keep it)))
 
     (dolist (group (getf (copy-list
                            (gethash duplicate-id *group-privileges-index*))
-                         :members))
+                         :member))
       (with-locked-hash-table (*group-members-index*)
         (remove duplicate-id (getf (gethash group *group-members-index*)
                                    :members))
