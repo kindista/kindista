@@ -211,11 +211,12 @@
     (metaphone-index-insert names result)))
 
 (defun merge-duplicate-accounts
-  (data-to-keep
-    duplicate-account-id-list
-    &aux (id-to-keep (apply #'min duplicate-account-id-list))
-         (ids-to-deactivate (remove id-to-keep duplicate-account-id-list))
-         (oldest-data (db id-to-keep)))
+  (most-active-id
+   duplicate-account-id-list
+   &aux (data-to-keep (copy-list (db most-active-id)))
+        (id-to-keep (apply #'min duplicate-account-id-list))
+        (ids-to-deactivate (remove id-to-keep duplicate-account-id-list))
+        (oldest-data (db id-to-keep)))
 
   "ALWAYS TEST THE MERGE ON A DEVELOPMENT SYSTEM WITH CURRENT DATA"
   ;; keep earliest id
@@ -254,11 +255,17 @@
   (dolist (duplicate-id duplicate-account-id-list)
     (let ((data (db duplicate-id)))
 
-      (when (and (find (getf data-to-keep :host) (cons +kindista-id+
-                                                       ids-to-deactivate))
-                 (not (find (getf data :host) (cons +kindista-id+
-                                                     ids-to-deactivate))))
+      (when (and (and (getf data :host)
+                      (not (find (getf data :host) ids-to-deactivate)))
+                 (or (not (getf data-to-keep :host))
+                     (find (getf data-to-keep :host)
+                           (cons +kindista-id+ ids-to-deactivate))))
         (setf (getf data-to-keep :host) (getf data :host)))
+
+      (dolist (prop '(:bio :bio-summary :bio-doing :bio-contact :bio-skills :bio-into))
+        (when (not (getf data-to-keep prop))
+          (setf (getf data-to-keep prop)
+                (getf data prop))))
 
       (asetf (getf data-to-keep :aliases)
              (remove-duplicates
@@ -283,8 +290,9 @@
         (setf (getf data-to-keep :following)
               (union (getf data-to-keep :following) it)))
 
-      (awhen (getf data-to-keep :pending)
-        (setf it (getf data :pending)))
+      (when (getf data-to-keep :pending)
+        (setf (getf data-to-keep :pending)
+              (getf data :pending)))
 
       (aif (getf data-to-keep :username)
         (with-locked-hash-table (*username-index*)
@@ -318,8 +326,8 @@
     (with-locked-hash-table (*invited-index*)
       (remhash duplicate-id *invited-index*))
 
-    (dolist (group (getf (copy-list
-                           (gethash duplicate-id *group-privileges-index*))
+    (dolist (group (getf (copy-list (gethash duplicate-id
+                                             *group-privileges-index*))
                          :admins))
       (with-locked-hash-table (*group-members-index*)
         (remove duplicate-id (getf (gethash group *group-members-index*)
@@ -478,8 +486,6 @@
       (setf (result-people result) (list id-to-keep))
       (modify-db (result-id result) :by id-to-keep)))
 
-  (pprint data-to-keep)
-  (pprint (db id-to-keep))
   (terpri)
 
   (index-person id-to-keep (apply #'modify-db (cons id-to-keep data-to-keep))))
