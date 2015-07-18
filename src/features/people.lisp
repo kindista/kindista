@@ -251,6 +251,21 @@
   (setf (getf data-to-keep :created)
         (getf oldest-data :created))
 
+  (setf data-to-keep
+        (merge-user-data id-to-keep data-to-keep duplicate-account-id-list ids-to-deactivate))
+
+  (merge-user-primary-indexes id-to-keep ids-to-deactivate)
+
+  (merge-user-secondary-indexes id-to-keep ids-to-deactivate)
+
+  (dolist (result *feedback-index*)
+    (when (find (car (result-people result)) ids-to-deactivate)
+      (setf (result-people result) (list id-to-keep))
+      (modify-db (result-id result) :by id-to-keep)))
+
+  (index-person id-to-keep (apply #'modify-db (cons id-to-keep data-to-keep))))
+
+(defun merge-user-data (id-to-keep data-to-keep duplicate-account-id-list ids-to-deactivate)
   ;; merge data/indexes from user's data
   (dolist (duplicate-id duplicate-account-id-list)
     (let ((data (db duplicate-id)))
@@ -288,7 +303,8 @@
             (remove duplicate-id (gethash person *followers-index*))
             (pushnew id-to-keep (gethash person *followers-index*))))
         (setf (getf data-to-keep :following)
-              (union (getf data-to-keep :following) it)))
+              (set-difference (union (getf data-to-keep :following) it)
+                              duplicate-account-id-list)))
 
       (when (getf data-to-keep :pending)
         (setf (getf data-to-keep :pending)
@@ -303,6 +319,9 @@
         (setf (getf data-to-keep :avatar)
               (getf data :avatar)))))
 
+  data-to-keep)
+
+(defun merge-user-primary-indexes (id-to-keep ids-to-deactivate)
   ;; update indexes based on other data
   (dolist (duplicate-id ids-to-deactivate)
 
@@ -326,31 +345,26 @@
     (with-locked-hash-table (*invited-index*)
       (remhash duplicate-id *invited-index*))
 
+    (merge-user-group-membership id-to-keep duplicate-id)))
+
+(defun merge-user-group-membership (id-to-keep duplicate-id)
     (dolist (group (getf (copy-list (gethash duplicate-id
                                              *group-privileges-index*))
                          :admin))
       (with-locked-hash-table (*group-members-index*)
-        (remove duplicate-id (getf (gethash group *group-members-index*)
-                                   :admins))
-        (pushnew id-to-keep (getf (gethash group *group-members-index*)
-                                  :admins)))
+        (remove duplicate-id (gethash group *group-members-index*))
+        (pushnew id-to-keep (gethash group *group-members-index*)))
       (amodify-db group :admins (remove-duplicates
                                   (substitute id-to-keep duplicate-id it))
                         :members (remove id-to-keep it)))
 
-    (dolist (group (getf (copy-list
-                           (gethash duplicate-id *group-privileges-index*))
+    (dolist (group (getf (copy-list (gethash duplicate-id
+                                             *group-privileges-index*))
                          :member))
       (with-locked-hash-table (*group-members-index*)
-        (remove duplicate-id (getf (gethash group *group-members-index*)
-                                   :members))
-        (unless (find id-to-keep (getf (gethash group *group-members-index*)
-                                       :admins))
-          (pushnew id-to-keep
-                   (getf (gethash group *group-members-index*)
-                         :members))))
-      (if (find id-to-keep
-                (getf (gethash group *group-members-index*) :admins))
+        (remove duplicate-id (gethash group *group-members-index*))
+        (pushnew id-to-keep (gethash group *group-members-index*)))
+      (if (find id-to-keep (db group :admins))
         (amodify-db group :members (remove duplicate-id it))
         (amodify-db group :members (remove-duplicates
                                      (substitute id-to-keep
@@ -360,6 +374,7 @@
     (with-locked-hash-table (*group-privileges-index*)
       (remhash duplicate-id *group-privileges-index*)))
 
+(defun merge-user-secondary-indexes (id-to-keep ids-to-deactivate)
   ;; must be run after group re-assignment
   (dolist (duplicate-id ids-to-deactivate)
     (let ((users-groups (get-users-groups id-to-keep)))
@@ -480,16 +495,7 @@
                                            id-to-keep
                                            ".")
                            :merged-into id-to-keep))
-
-
-  (dolist (result *feedback-index*)
-    (when (find (car (result-people result)) ids-to-deactivate)
-      (setf (result-people result) (list id-to-keep))
-      (modify-db (result-id result) :by id-to-keep)))
-
-  (terpri)
-
-  (index-person id-to-keep (apply #'modify-db (cons id-to-keep data-to-keep))))
+  )
 
 (defun deactivate-person (id)
   (let ((result (gethash id *db-results*)))

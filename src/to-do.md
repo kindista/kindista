@@ -1,4 +1,5 @@
 [ ] create function for merging duplicate accounts
+    [ ] fix invitation list
 [ ] automatically create monthly metrics chart
 [ ] automatically email metrics chart to interested parties
 [ ] statement of gratitude by email
