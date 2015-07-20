@@ -129,7 +129,12 @@
                            :total-offers offers
                            :total-gratitudes gratitudes)
                      file))
-            (terpri)))))))
+            (terpri))))
+
+      (when (= (local-time:timestamp-day now)
+               (days-in-month now))
+        (monthly-activity-report (local-time:timestamp-month now)
+                                 (local-time:timestamp-year now))))))
 
 
 
@@ -186,8 +191,8 @@
    &aux active-users
         checked-mailbox
         used-search
-        new-offers
-        new-requests
+        (new-offers 0)
+        (new-requests 0)
         got-offers
         got-requests
         (messages-sent 0)
