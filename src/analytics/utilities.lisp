@@ -265,3 +265,12 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
                                            "/")
           when (cl-fad::directory-exists-p dir)
           do (monthly-activity-report month year))))
+
+(defun send-progress-report-email ()
+  (smtp:send-email
+    +mail-server+
+    "Kindista <info@kindista.org>"
+    "Progress Reports <progress-reports@kindista.org>"
+    )
+  
+  )

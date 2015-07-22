@@ -129,13 +129,7 @@
                            :total-offers offers
                            :total-gratitudes gratitudes)
                      file))
-            (terpri))))
-
-      (when (= (local-time:timestamp-day now)
-               (days-in-month now))
-        (monthly-activity-report (local-time:timestamp-month now)
-                                 (local-time:timestamp-year now))))))
-
+            (terpri)))))))
 
 
 (defun metric-system-loop (metric-system)
@@ -173,9 +167,20 @@
             (:got-offers (record 'got-offers (second message)))
             (:got-requests (record 'got-requests (second message)))
             (:message-sent (record 'messages-sent (second message)))
+            (:monthly
+              (let ((now (local-time:now)))
+                (monthly-activity-report (local-time:timestamp-month now)
+                                         (local-time:timestamp-year now)))
+              (send-progress-report-email))
             (:daily
               (save-metrics metric-system)
               (clear 'active-today 'checked-mailbox 'used-search 'new-offers 'new-requests 'got-offers 'got-requests 'messages-sent)
+              (let ((now (local-time:now)))
+                (when (= (local-time:timestamp-day now)
+                       (days-in-month now))
+                  (send-message (metric-system-mailbox
+                                  (acceptor-metric-system *acceptor*))
+                                '(:monthly))))
               (schedule-timer (slot-value metric-system 'timer)
                               (timestamp-to-universal
                                 (adjust-timestamp (local-time:now)
