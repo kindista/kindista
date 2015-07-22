@@ -3936,21 +3936,27 @@ div.transaction-option a,
 div.transaction-option button {
  color: #3c6dc8;
  font-weight: bold;
- display: inline-block;
+ display: table;
+ text-align: left;
  margin: 0;
  padding: 0;
 }
 
-@media (max-width:40em) {
- div.transaction-option a,
- div.transaction-option button {
-   line-height: 2.5em;
- }
+div.transaction-option div {
+ display: table-cell;
+ vertical-align: middle;
+ padding-right: 0.5em;
 }
 
 div.transaction-option {
  margin-bottom: 1em;
  margin-left: 0;
+}
+
+@media (max-width:40em) {
+ div.transaction-option {
+  margin-bottom: 1.5em;
+ }
 }
 
 div.transaction-option button > img,

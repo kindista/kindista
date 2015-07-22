@@ -429,10 +429,10 @@
         (htm
           (:div :class "transaction-option"
             (:a :href (url-compose url "post-gratitude" "t")
-              (str (icon "heart-person"))
-              (str (s+ subject " have gratitude to share about "
-                       other-party-name
-                       " for this gift"))))))
+              (:div (str (icon "heart-person")))
+              (:div (str (s+ subject " have gratitude to share about "
+                             other-party-name
+                             " for this gift")))))))
 
       (flet ((transaction-button
                (status icon request-text offer-text &optional (value status) (name "transaction-action"))
@@ -443,9 +443,9 @@
                       :class "simple-link"
                       :name name
                       :value value
-                      (str icon)
-                      (str (if (eq on-type :request)
-                             request-text offer-text))))))))
+                      (:div (str icon))
+                      (:div (str (if (eq on-type :request)
+                                     request-text offer-text)))))))))
 
         (unless violates-terms
           (htm
@@ -511,8 +511,8 @@
        (when comment-p
          (htm (:div :class "transaction-option"
                  (:a :href (url-compose url "add-comment" "t")
-                   (str (icon "comment"))
-                   "I have a question or comment")))))))
+                   (:div (str (icon "comment")))
+                   (:div "I have a question or comment"))))))))
 
 (defun transaction-html
   (transaction-id
