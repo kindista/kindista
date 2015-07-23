@@ -541,7 +541,7 @@
   (standard-page
     "Express gratitude"
     (html
-      (:div :class "item"
+      (:div :class "new-gratitude recipient item"
        (str (pending-disclaimer "statement of gratitude"))
        (:h2 "Who would you like to write about?")
        (:h3 "Search for a person or group")
@@ -554,21 +554,13 @@
                   :name (if subjects "back" "cancel")
                   "Back")
 
-         (if (or (eq results nil) (eq results 'none))
-           (progn
-             (htm
-               (:h3 "Or, select one of your contacts")
-               (:menu :type "toolbar"
-                 (dolist (contact (contacts-alphabetically *user*))
-                   (htm (:li (:button :class "text" :type "submit" :value (car contact) :name "add" (str (cadr contact)))))))))
-           (progn
-             (htm
-               (:h3 "Search results")
-               (dolist (group (car results))
-                 (str (id-button (car group) "add")))
-               (dolist (person (cdr results))
-                 (str (id-button (car person) "add" (cdr person)))))))
-
+         (when (and results (not (eq results 'none)))
+           (htm
+             (:h3 "Search results")
+             (dolist (group (car results))
+               (str (id-button (car group) "add")))
+             (dolist (person (cdr results))
+               (str (id-button (car person) "add" (cdr person))))))
 
          (when groupid
            (htm (:input :type "hidden" :name "identity-selection" :value groupid)))
@@ -578,9 +570,30 @@
            (htm (:input :type "hidden" :name "next" :value next)))
 
          (when text
-           (htm (:input :type "hidden" :name "text" :value (escape-for-html text))))
+           (htm (:input :type "hidden" :name "text" :value (escape-for-html text)))))
+       (when (or (not results) (eq results 'none))
+         (htm
+           (:h2 "Or...")
+           (:div :id "gratitude-by-email"
+             (:h3 "Express gratitude about someone who isn't on Kindista yet")
+             (:p :class "small"
+              "They will get an email with your statement of gratitude and an invitation to join Kindista.  When they join, your gratitude will be added to their reputation.")
+             (:form :method "post" :action "/gratitude/new"
+              (:input :type "hidden" :name "send-invitation" :value "on")
+              (:label :for "invitation-name" "Full Name")
+              (:input :type "text"
+               :id "invitation-name"
+               :name "invitation-name")
+              (:label :for "invitation-email" "Email Address")
+              (:input :type "text"
+               :id "invitation-email"
+               :name "invitation-email")
+              (:button :type "submit" :class "yes input-height" :name "enter-details" "Next")
 
-         )))))
+              (:button :type "submit"
+               :class "cancel input-height"
+               :name "cancel"
+               "Cancel")))))))))
 
 (defun get-gratitudes-new ()
   (require-user

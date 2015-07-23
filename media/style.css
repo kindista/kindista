@@ -1506,6 +1506,7 @@ menu#fine-print-links a {
  max-width: 60em;
 }
 
+.new-gratitude label,
 .blog.item label,
 .item.create-event label,
 .item.create-group label,
@@ -3143,6 +3144,19 @@ form.recipients, ul.recipients {
 div.new-gratitude menu.gratitude.recipients {
  margin-top: 0;
  vertical-align: top;
+}
+
+div.new-gratitude.recipient form.new-gratitude {
+ margin-bottom: 1.5em;
+}
+
+div.new-gratitude div#gratitude-by-email h3 {
+ line-height: 1.2em;
+ margin-bottom: 0.2em;
+}
+
+div.new-gratitude div#gratitude-by-email p.small {
+ margin-top: 0;
 }
 
 div.new-gratitude label.recipients,
