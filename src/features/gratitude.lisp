@@ -537,7 +537,7 @@
     ;; else
     (gratitude-add-subject :text text :next next)))
 
-(defun gratitude-add-subject (&key subjects text next (results 'none) groupid)
+(defun gratitude-add-subject (&key subjects text next (results 'none) groupid invitation-name invitation-email)
   (standard-page
     "Express gratitude"
     (html
@@ -579,14 +579,16 @@
              (:p :class "small"
               "They will get an email with your statement of gratitude and an invitation to join Kindista.  When they join, your gratitude will be added to their reputation.")
              (:form :method "post" :action "/gratitude/new"
-              (:input :type "hidden" :name "send-invitation" :value "on")
+              (:input :type "hidden" :name "invitation-recipient" :value "on")
               (:label :for "invitation-name" "Full Name")
               (:input :type "text"
                :id "invitation-name"
+               :value invitation-name
                :name "invitation-name")
               (:label :for "invitation-email" "Email Address")
               (:input :type "text"
                :id "invitation-email"
+               :value invitation-email
                :name "invitation-email")
               (:button :type "submit" :class "yes input-height" :name "enter-details" "Next")
 
@@ -647,6 +649,8 @@
            (adminp (group-admin-p groupid))
            (recipient-id (if adminp groupid *userid*))
            (posted-on-type (post-parameter-string "on-type"))
+           (invitation-name (post-parameter-string "invitation-name"))
+           (invitation-email (post-parameter-string "invitation-email"))
            (on-types (cond
                        ((string= posted-on-type "offer") :offers)
                        ((string= posted-on-type "request") :requests)))
@@ -685,6 +689,8 @@
              (g-add-subject (&key results subjects)
                (gratitude-add-subject :results results
                                       :subjects subjects
+                                      :invitation-name invitation-name
+                                      :invitation-email invitation-email
                                       :text text
                                       :next next
                                       :groupid (when adminp groupid))))
@@ -699,6 +705,15 @@
           ((not (confirmed-location))
            (flash "You must set your street address on your settings page before you can post gratitude about someone." :error t)
            (see-other (or next "/home")))
+
+          ((post-parameter "invitation-recipient")
+           (cond
+             ((not invitation-name)
+              (g-add-subject)
+              
+              )
+             )
+            )
 
           ((post-parameter "add")
            (if (string= (post-parameter "add") "new")

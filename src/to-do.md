@@ -6,6 +6,7 @@
     [ ] create an email that requests feedback on proposed feedback from current users with (eq (getf *user* :notify-kindista) t)
 [ ] statement of gratitude by email
     [ ] change UI for posting gratitudes
+    [ ] allow settings to display more than 5 aliases
     [ ] include the person's name
     [ ] gratitude is "on" an invite id
     [ ] test with friends and contacts
