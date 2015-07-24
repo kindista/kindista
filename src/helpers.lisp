@@ -218,7 +218,7 @@
         (lat (or (getf user :lat) *latitude*))
         (long (or (getf user :long) *longitude*))
         (contact-p (intersection contacts (result-people item)))
-        (self-offset (if (eql (car (result-people item)) userid)
+        (self-offset (if (= (car (result-people item)) userid)
                        ;; don't use "=" because userid can be nil
                        -100000
                        0))
