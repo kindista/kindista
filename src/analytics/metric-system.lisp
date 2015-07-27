@@ -171,6 +171,7 @@
               (let ((now (local-time:now)))
                 (monthly-activity-report (local-time:timestamp-month now)
                                          (local-time:timestamp-year now))
+                (update-metrics-chart :start-year 2015)
                 (send-progress-report-email
                   (format-timestring t
                                      now

@@ -278,4 +278,4 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
       "Please note: Due to a bug in the graphing library we are using, some of the dates may be repeated on the x-axis. "
       "The data points should be correct and there is one data point per month for each metric . "
       "Also, we didn't start collecting metrics for new offers/requests until July/2015.")
-    :attachments (merge-pathnames +db-path+ "metrics/all-time-metrics.png")))
+    :attachments (merge-pathnames (s+ +db-path+ "metrics/") "all-time-metrics.png")))
