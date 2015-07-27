@@ -169,8 +169,7 @@
                                       :if-exists :supersede)
     (with-standard-io-syntax
       (let ((*print-pretty* t))
-        (princ text file))
-      (terpri)))
+        (princ text file))))
  ;(copy-file file new-file-path)
   (s+ local-dir hyphenated-title))
 

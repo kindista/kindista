@@ -128,8 +128,7 @@
                            :total-requests requests
                            :total-offers offers
                            :total-gratitudes gratitudes)
-                     file))
-            (terpri)))))))
+                     file))))))))
 
 
 (defun metric-system-loop (metric-system)
