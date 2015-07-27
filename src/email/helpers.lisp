@@ -50,7 +50,7 @@
 
 (defun no-reply-notice
   (&optional (instructions "do so from their profile on Kindista.org"))
-  (strcat "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER. If you want to contact the sender, please " instructions "."))
+  (s+ "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER. If you want to contact the sender, please " instructions ". "))
 
 (defun amazon-smile-reminder (&optional html)
   (if html

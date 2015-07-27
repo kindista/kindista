@@ -373,7 +373,7 @@
   (hunchentoot::with-log-stream (stream (acceptor-message-log-destination acceptor) hunchentoot::*message-log-lock*)
     (handler-case
       (flet ((error-message (destination)
-               (format destination "~A [~A~@[ [~A]~]] ~A ~A ~:S ~:S ~?~%"
+               (format destination "~A [~A~@[ [~A]~]] USERID: ~A ~A ~:S ~:S ~?~%"
                        (get-universal-time)
                        (hunchentoot::iso-time)
                        log-level
@@ -383,13 +383,14 @@
                        (post-parameters*)
                        format-string
                        format-arguments)))
-        (send-error-notification-email (error-message nil))
+        (send-hunchentoot-error-notification-email (error-message nil))
         (error-message stream))
       (error (e)
         (ignore-errors
          (format *trace-output* "error ~A while writing to error log, error not logged~%" e))))))
 
-(defun send-error-notification-email (message)
+(defun send-hunchentoot-error-notification-email (message)
+  "Another function exists for sending specific errors within the codebase. Seesend-error-notification-email in email/error-notifications.lisp"
   (cl-smtp:send-email +mail-server+
                       "Kindista <noreply@kindista.org>"
                       *error-message-email*
