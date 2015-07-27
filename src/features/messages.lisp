@@ -155,8 +155,12 @@
                  (:conversation
                   (db (getf data :latest-comment) :created))
                  (:transaction
-                   (or (getf (car (last (getf data :log))) :time)
-                       (db (getf data :latest-comment) :created)))
+                   (apply #'max
+                          (remove nil
+                                 (list (getf (car (last (getf data :log)))
+                                             :time)
+                                       (db (getf data :latest-comment)
+                                           :created)))))
                  ((or :group-membership-invitation
                       :group-membership-request)
                   (or (getf data :resent)
