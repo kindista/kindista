@@ -132,7 +132,6 @@
             (terpri)))))))
 
 
-
 (defun metric-system-loop (metric-system)
   ;; run stop and start on the metric-system after adding a new metric
   ;; e.g. (stop (acceptor-metric-system *acceptor*))
@@ -168,9 +167,27 @@
             (:got-offers (record 'got-offers (second message)))
             (:got-requests (record 'got-requests (second message)))
             (:message-sent (record 'messages-sent (second message)))
+            (:monthly
+              (let ((now (local-time:now)))
+                (monthly-activity-report (local-time:timestamp-month now)
+                                         (local-time:timestamp-year now))
+                (update-metrics-chart :start-year 2015)
+                (send-progress-report-email
+                  (format-timestring t
+                                     now
+                                     :format (list "Kindista user metrics as of "
+                                                   :long-month
+                                                   " "
+                                                   :year)))))
             (:daily
               (save-metrics metric-system)
               (clear 'active-today 'checked-mailbox 'used-search 'new-offers 'new-requests 'got-offers 'got-requests 'messages-sent)
+              (let ((now (local-time:now)))
+                (when (= (local-time:timestamp-day now)
+                       (days-in-month now))
+                  (send-message (metric-system-mailbox
+                                  (acceptor-metric-system *acceptor*))
+                                '(:monthly))))
               (schedule-timer (slot-value metric-system 'timer)
                               (timestamp-to-universal
                                 (adjust-timestamp (local-time:now)
@@ -186,8 +203,8 @@
    &aux active-users
         checked-mailbox
         used-search
-        new-offers
-        new-requests
+        (new-offers 0)
+        (new-requests 0)
         got-offers
         got-requests
         (messages-sent 0)
