@@ -1677,17 +1677,18 @@ div.error-border,
 textarea.error-border {
  border-radius: .25em;
  border-style: solid;
- border-width: 1px;
+ border-width: 2px;
  border-color: #900;
 }
 
 div.gratitude-selectors h3 {
  margin-top: 0;
  margin-left: 0.3em;
+
 }
 
 div.gratitude-selectors {
- margin-top: 1em;
+ margin: 1em 0;
 }
 
 tr.select-linked-inventory div.option-text {
@@ -3166,6 +3167,19 @@ menu.gratitude.recipients {
 
 li.recipients:last-child {
  margin-top: -0.5em;
+}
+
+.gratitude-invitation form.recipients div#gratitude-recipient {
+ margin-top: 1em;
+}
+
+.gratitude-invitation form.recipients div#gratitude-recipient span:first-child {
+ display: inline-block;
+ width: 4.5em;
+}
+
+.gratitude-invitation form.recipients button.cancel {
+ margin: 0;
 }
 
 form.recipients menu.recipients li {

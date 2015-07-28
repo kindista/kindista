@@ -1,8 +1,10 @@
 [ ] statement of gratitude by email
     [ ] change UI for posting gratitudes
     [ ] allow settings to display more than 5 aliases
+    [ ] what about posting to a deactivated account?
     [ ] include the person's name
     [ ] gratitude is "on" an invite id
+    [ ] when invitee signs up, remove aliases contained within name
     [ ] test with friends and contacts
 [ ] merge duplicate accounts
 [ ] top color borders for activity items

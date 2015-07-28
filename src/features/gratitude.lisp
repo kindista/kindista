@@ -393,7 +393,7 @@
         relevant-requests
    &aux (submit-buttons
           (html
-            (:tr :class "select-linked-inventory" 
+            (:tr :class "select-linked-inventory"
               (:td)
               (:td
                 (:button :type "submit"
@@ -403,7 +403,7 @@
                  (:button :class "yes"
                           :type "submit"
                           :name "create"
-                          (str (if existing-url "Save" "Create"))))))))
+                          (str (if existing-url "Save" "Post gratitude"))))))))
   (if subjects
     (standard-page
       (if existing-url "Edit your statement of gratitude" "Express gratitude")
@@ -414,8 +414,8 @@
                      "Express gratitude")))
          (:div :class "item"
           (:form :method "post"
-           :action (or existing-url "/gratitude/new")
-           :class "recipients"
+                 :action (or existing-url "/gratitude/new")
+                 :class "recipients"
            (:h2 "About:")
            (:menu :id "recipients"
                   :type "toolbar"
@@ -516,28 +516,18 @@
                         when (eql (mod i 3) 0)
                         do (str submit-buttons)
                         finally (unless (eql (mod i 3) 1)
-                                  (htm
-                                    (:tr (:td)
-                                     (:td (str submit-buttons)))))))))
+                                  (str submit-buttons))))))
 
              (htm
                (awhen on-item
                  (str it))
 
-               (:p
-                 (:button :type "submit"
-                  :class "cancel"
-                  :name "cancel"
-                  "Cancel")
-                 (:button :class "yes"
-                  :type "submit"
-                  :name "create"
-                  (str (if existing-url "Save" "Create")))))))))))
-
+               (:div
+                 (str submit-buttons)))))))))
     ;; else
     (gratitude-add-subject :text text :next next)))
 
-(defun gratitude-add-subject (&key subjects text next (results 'none) groupid invitation-name invitation-email)
+(defun gratitude-add-subject (&key subjects text next (results 'none) groupid invitation-name invitation-email error-field)
   (standard-page
     "Express gratitude"
     (html
@@ -547,12 +537,16 @@
        (:h3 "Search for a person or group")
        (:form :method "post" :class "new-gratitude" :action "/gratitude/new"
          (:input :type "text" :name "name")
-         (:button :type "submit" :class "yes input-height" :name "search" "Search")
+         (:div :class "inline-block"
+           (:button :type "submit"
+                    :class "yes input-height"
+                    :name "search"
+                    "Search")
 
-         (:button :type "submit"
-                  :class "cancel input-height"
-                  :name (if subjects "back" "cancel")
-                  "Back")
+          (:button :type "submit"
+                    :class "cancel input-height"
+                    :name (if subjects "back" "cancel")
+                    (str (if subjects "Back" "Cancel"))))
 
          (when (and results (not (eq results 'none)))
            (htm
@@ -580,22 +574,74 @@
               "They will get an email with your statement of gratitude and an invitation to join Kindista.  When they join, your gratitude will be added to their reputation.")
              (:form :method "post" :action "/gratitude/new"
               (:input :type "hidden" :name "invitation-recipient" :value "on")
-              (:label :for "invitation-name" "Full Name")
+              (:label :for "invitation-name"
+                      :class (when (eq error-field :invitation-name)
+                               "error")
+                      "Full Name")
               (:input :type "text"
-               :id "invitation-name"
-               :value invitation-name
-               :name "invitation-name")
-              (:label :for "invitation-email" "Email Address")
+                      :id "invitation-name"
+                      :name "invitation-name"
+                      :value invitation-name)
+              (:label :for "invitation-email"
+                      :class (when (eq error-field :invitation-email)
+                               "error")
+                      "Email Address")
               (:input :type "text"
-               :id "invitation-email"
-               :value invitation-email
-               :name "invitation-email")
-              (:button :type "submit" :class "yes input-height" :name "enter-details" "Next")
+                      :id "invitation-email"
+                      :name "invitation-email"
+                      :value invitation-email)
+              (:div :class "inline-block"
+               (:button :type "submit"
+                        :class "yes input-height"
+                        :name "enter-gratitude-invite-details"
+                        "Next")
 
-              (:button :type "submit"
-               :class "cancel input-height"
-               :name "cancel"
-               "Cancel")))))))))
+               (:button :type "submit"
+                        :class "cancel input-height"
+                        :name "cancel"
+                        "Cancel"))))))))))
+
+(defun gratitude-invitation-form-html (name email &key text groupid error)
+  (standard-page
+    "Express Gratitude"
+    (html
+      (:div :class "new-gratitude item"
+       (:h2 "Express gratitude")
+       (:form :method "post"
+              :action "/gratitude/new"
+              :class "recipients"
+         (:input :type "hidden" :name "invitation-name" :value name)
+         (:input :type "hidden" :name "invitation-email" :value email)
+         (:input :type "hidden" :name "invitation-gratitude" :value "on")
+         (:div :id "gratitude-recipient"
+           (:span "About:")
+           (:span "\"" (str name) "\" &lt;" (str email) " &gt;" ))
+
+         (awhen (groups-with-user-as-admin)
+           (htm
+             (:div :class "clear"
+              (:label :for "identity-selection" :class "from" "From:")
+              (str (identity-selection-html (or groupid *userid*)
+                                            it
+                                            :class "identity recipients profile-gratitude"
+                                            :onchange "this.form.submit()"))))) 
+       (:label :for "message" :class "message" "Message")
+       (:textarea :rows "8"
+                  :id "message"
+                  :class (when error "error-border")
+                  :name "text"
+                  (str text))
+       (:div
+         (:button :type "submit"
+                  :class "cancel"
+                  :name "back"
+                  "Back")
+         (:button :class "yes"
+                  :type "submit"
+                  :name "create"
+                  "Post gratitude")))))
+
+    :class "gratitude-invitation"))
 
 (defun get-gratitudes-new ()
   (require-user
@@ -650,7 +696,10 @@
            (recipient-id (if adminp groupid *userid*))
            (posted-on-type (post-parameter-string "on-type"))
            (invitation-name (post-parameter-string "invitation-name"))
-           (invitation-email (post-parameter-string "invitation-email"))
+           (unvalidated-invitation-email (post-parameter-string
+                                           "invitation-email"))
+           (invitation-email (when (scan +email-scanner+ unvalidated-invitation-email)
+                               unvalidated-invitation-email))
            (on-types (cond
                        ((string= posted-on-type "offer") :offers)
                        ((string= posted-on-type "request") :requests)))
@@ -686,11 +735,12 @@
                                   :relevant-offers relevant-offers
                                   :relevant-requests relevant-requests))
 
-             (g-add-subject (&key results subjects)
+             (g-add-subject (&key results subjects error-field)
                (gratitude-add-subject :results results
                                       :subjects subjects
                                       :invitation-name invitation-name
-                                      :invitation-email invitation-email
+                                      :invitation-email unvalidated-invitation-email
+                                      :error-field error-field
                                       :text text
                                       :next next
                                       :groupid (when adminp groupid))))
@@ -709,11 +759,34 @@
           ((post-parameter "invitation-recipient")
            (cond
              ((not invitation-name)
-              (g-add-subject)
-              
-              )
-             )
-            )
+              (flash "Please enter the name of the person you are expressing gratitude about."
+                     :error t)
+              (g-add-subject :error-field :invitation-name))
+
+             ((not invitation-email)
+              (flash "Please enter a valid email address for the person you are expressing gratitude about."
+                     :error t)
+              (g-add-subject :error-field :invitation-email))
+             (t
+              (aif (gethash invitation-email *email-index*)
+                (gratitude-compose :subjects (list it))
+                (gratitude-invitation-form-html invitation-name
+                                                invitation-email)))))
+
+          ((post-parameter "invitation-gratitude")
+           (cond
+            ((or (not invitation-email) (not invitation-name))
+             (flash "There was an error with the name or email address you entered. Please try again. " :error t)
+             (g-add-subject))
+            ((and (post-parameter "create")
+                  (< (word-count (post-parameter-string "text"))))
+             (flash (s+ "Please write a little more in your statement of gratitude to " invitation-name ".") :error t)
+             (gratitude-invitation-form-html invitation-name
+                                             invitation-email
+                                             :text (post-parameter-string "text")
+                                             :groupid (post-parameter "identity-selection")
+                                             :error t
+                                             ))))
 
           ((post-parameter "add")
            (if (string= (post-parameter "add") "new")
