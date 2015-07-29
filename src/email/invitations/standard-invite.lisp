@@ -40,10 +40,12 @@
         (auto-reminder
           (s+ "Reminder: your Kindista invitation from "
               host-name
-              " is expiring soon"))
+              " is expiring soon."))
         (host-reminder
           (s+ host-name
               " is reminding you to join them on Kindista."))
+        (gratitude
+          (s+ host-name " has shared gratitude for you on Kindista."))
         (group
           (s+ host-name
               " wants you to join the "

@@ -20,23 +20,29 @@
 (defun new-gratitude-notice-handler ()
   (send-gratitude-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-gratitude (&key author subjects text on transaction-id (time (get-universal-time)))
+(defun create-gratitude (&key author subjects pending text on transaction-id (time (get-universal-time)))
+;; when gratitude is posted on an invitation
+;; their will not be any subject until the recipient joins kindista
   (let* ((people-list (mailbox-ids subjects))
          (people (mapcar #'(lambda (mailbox)
                              (cons mailbox :unread))
                          people-list))
-         (message-folders (list :inbox (remove-duplicates (mapcar #'car people-list))))
+         (message-folders (when subjects
+                            (list :inbox (remove-duplicates
+                                           (mapcar #'car people-list)))))
          (gratitude (insert-db `(:type :gratitude
                                  :author ,author
                                  :subjects ,subjects
                                  :people ,people
+                                 :pending ,pending
                                  :transaction-id ,transaction-id
                                  :message-folders ,message-folders
                                  :text ,text
                                  :on ,on
                                  :created ,time))))
-    (notice :new-gratitude :time time
-                           :id gratitude)
+    (when subjects
+      (notice :new-gratitude :time time
+                             :id gratitude))
     gratitude))
 
 (defun add-gratitude-subjects (gratitude-id subject-ids)
@@ -153,43 +159,45 @@
    (with-locked-hash-table (*db-results*)
      (setf (gethash id *db-results*) result))
 
-   (with-locked-hash-table (*gratitude-index*)
-     (push id (gethash author-id *gratitude-index*)))
+   ;; don't index if we're waiting for the recipient to sign up for kindista
+   (unless (getf data :pending)
+     (with-locked-hash-table (*gratitude-index*)
+       (push id (gethash author-id *gratitude-index*)))
 
-   (with-locked-hash-table (*profile-activity-index*)
-     (dolist (person people)
-       (asetf (gethash person *profile-activity-index*)
-              (safe-sort (push result it) #'> :key #'result-time))))
+     (with-locked-hash-table (*profile-activity-index*)
+       (dolist (person people)
+         (asetf (gethash person *profile-activity-index*)
+                (safe-sort (push result it) #'> :key #'result-time))))
 
-   (awhen (getf data :on)
-     (index-gratitude-link id it created))
+     (awhen (getf data :on)
+       (index-gratitude-link id it created))
 
-   (unless (getf data :transaction-id)
-     (index-message id data))
+     (unless (getf data :transaction-id)
+       (index-message id data))
 
-   ;; unless gratitude is older than 180 days
-   (unless (< (result-time result) (- (get-universal-time) 15552000))
+     ;; unless gratitude is older than 180 days
+     (unless (< (result-time result) (- (get-universal-time) 15552000))
 
-     (geo-index-insert *activity-geo-index* result)
+       (geo-index-insert *activity-geo-index* result)
 
-     ;;unless gratitude is older than 30 days
-     (unless (< (result-time result) (- (get-universal-time) 2592000))
-       (with-mutex (*recent-activity-mutex*)
-         (push result *recent-activity-index*)))
+       ;;unless gratitude is older than 30 days
+       (unless (< (result-time result) (- (get-universal-time) 2592000))
+         (with-mutex (*recent-activity-mutex*)
+           (push result *recent-activity-index*)))
 
-     ;; to geo-index separately for each subject
-     (with-locked-hash-table (*gratitude-results-index*)
-       (dolist (subject subjects)
-         (let* ((user (db subject))
-                (location (getf user :location))
-                (result (make-result :type :gratitude
-                                     :latitude (getf user :lat)
-                                     :longitude (getf user :long)
-                                     :people people
-                                     :id id
-                                     :time created)))
-           (push result (gethash id *gratitude-results-index*))
-           (when location (geo-index-insert *activity-geo-index* result))))))))
+       ;; to geo-index separately for each subject
+       (with-locked-hash-table (*gratitude-results-index*)
+         (dolist (subject subjects)
+           (let* ((user (db subject))
+                  (location (getf user :location))
+                  (result (make-result :type :gratitude
+                                       :latitude (getf user :lat)
+                                       :longitude (getf user :long)
+                                       :people people
+                                       :id id
+                                       :time created)))
+             (push result (gethash id *gratitude-results-index*))
+             (when location (geo-index-insert *activity-geo-index* result)))))))))
 
 (defun parse-subject-list (subject-list &key remove)
   (delete-duplicates
@@ -649,7 +657,22 @@
   (invitation-name
    invitation-email
    gratitude-text
-   &key groupid)
+   &key groupid
+        (userid *userid*)
+   &aux (gratitude-id (create-gratitude :author (or groupid *userid*)
+                                        :pending :subject-account-creation
+                                        :text gratitude-text))
+        (existing-invitation
+          (car (remove nil
+                       (mapcar #'(lambda (invite)
+                           (find (car invite)
+                                 (gethash userid
+                                          *person-invitation-index*)))
+                       (gethash invitation-email
+                                *invitation-index*))))))
+  (if existing-invitation
+    :foo
+    )
   )
 
 (defun get-gratitudes-new ()

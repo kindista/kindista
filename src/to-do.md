@@ -15,11 +15,13 @@
     [ ] what happens when a person adds the email to an existing account?
        - features/invitations (defun add-alt-email...
     [ ] allow settings to display more than 5 aliases
+    [ ] test sending multiple gratitudes to same email address
     [ ] what about posting to a deactivated account?
     [ ] include the person's name
     [ ] gratitude is "on" an invite id
     [ ] when invitee signs up, remove aliases contained within name
     [ ] test with friends and contacts
+[ ] make sure blog/kindista/etc mailings don't go out to (db id :active nil) users
 [ ] merge duplicate accounts
 [ ] top color borders for activity items
 [ ] allow kindista offers tagged with "proposed-feature" to get a tab in the feedback section
