@@ -187,7 +187,8 @@
           (loop for name in (cons (getf user :name) (getf user :aliases))
                 when (search (getf invitation :name) name :test #'equalp)
                 collect name)
-          (amodify-db userid :aliases (cons invitee-name it)))
+          (amodify-db userid :aliases (cons invitee-name it))
+          (reindex-person-names userid))
         ;; see if anyone posted gratitude before the person joined
         (dolist (gratitude-id (getf invitation :gratitudes))
           (index-gratitude gratitude-id

@@ -55,6 +55,10 @@
 (defindex *geo-index-index* :test 'equal)
 (defindex *gratitude-index*)
 (defindex *gratitude-invitation-index*) ;key=gratitude-id, v=invitation-id
+;; *gratitude-invitation-index* is not yet being used.
+;; it is only useful if we need to find out what invitation a gratitude
+;; is associated with (since the gratitude subject id isn't determined
+;; until the subject joins kindista).
 (defindex *gratitude-results-index*)
 (defindex *group-membership-requests-index*) ;(personid . requestid)
 (defindex *group-membership-invitations-index*) ;(personid . invitationid)

@@ -3330,8 +3330,21 @@ div.settings menu.bar {
  vertical-align: top;
 }
 
+.settings-item ul#names li {
+ display: table-row;
+}
+
+.settings-item ul#names li span {
+ padding: 0 0.4em 0.4em 0;
+ display: table-cell;
+}
+
+.settings-item ul#names input[type=text]:first-child {
+ margin-top: 0;
+}
+
 .settings-item .details .current-value,
-.settings-item .details .form-elements {
+.settings-item .details ul.padding-top {
  padding-top: 0.4em;
 }
 
