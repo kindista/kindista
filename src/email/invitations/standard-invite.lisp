@@ -22,6 +22,7 @@
          (token (getf invitation :token))
          (host (getf invitation :host))
          (host-name (db host :name))
+         (invitee-name (getf invitation :name))
          (text (getf invitation :text))
          ;; the most recent group invite sent by the host
          (group-id (car (getf invitation :groups)))
@@ -55,6 +56,7 @@
       (invitation-email-text token
                              to
                              host
+                             :invitee-name invitee-name
                              :text text
                              :host-reminder host-reminder
                              :group-name (getf group :name)
@@ -63,16 +65,20 @@
       :html-message (invitation-email-html token
                                            to
                                            host
+                                           :invitee-name invitee-name
                                            :text text
                                            :host-reminder host-reminder
                                            :group-id group-id
                                            :gratitude gratitude
                                            :auto-reminder auto-reminder))))
 
-(defun invitation-email-text (token to from &key group-name gratitude text auto-reminder host-reminder)
+(defun invitation-email-text (token to from &key invitee-name group-name gratitude text auto-reminder host-reminder)
   (let ((sender (getf (db from) :name)))
     (strcat*
 (no-reply-notice)
+#\linefeed #\linefeed
+(when invitee-name
+  (s+ "Hi " invitee-name ","))
 #\linefeed #\linefeed
 (when auto-reminder
 "We are writing to let you know that your Kindista invitation will be expiring soon.")
@@ -119,11 +125,15 @@ sender
 (s+ *email-url* "settings/communication?edit=email#email"))))
 
 
-(defun invitation-email-html (token to from &key group-id text gratitude auto-reminder host-reminder)
+(defun invitation-email-html (token to from &key invitee-name group-id text gratitude auto-reminder host-reminder)
   (let ((sender (getf (db from) :name)))
     (html-email-base
       (html
         (:p :style *style-p* (str (no-reply-notice)))
+
+        (when invitee-name
+          (htm (:p :style *style-p*
+                "Hi " (str invitee-name) "," )) )
 
         (when auto-reminder
           (htm
@@ -147,7 +157,7 @@ sender
                         :style *style-quote-box*
                   (:tr (:td :style "padding: 4px 12px;"
 
-                        (str sender) " Posted a statement of gratitude about you:"
+                        (str sender) " shared a statement of gratitude about you:"
                         (:br)
                         "\"" (str (html-text it)) "\"")))
                 (:p :style *style-p*

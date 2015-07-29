@@ -658,22 +658,20 @@
    invitation-email
    gratitude-text
    &key groupid
+        ;; group is gratitude author. don't invite to join the group.
         (userid *userid*)
    &aux (gratitude-id (create-gratitude :author (or groupid *userid*)
                                         :pending :subject-account-creation
                                         :text gratitude-text))
-        (existing-invitation
-          (car (remove nil
-                       (mapcar #'(lambda (invite)
-                           (find (car invite)
-                                 (gethash userid
-                                          *person-invitation-index*)))
-                       (gethash invitation-email
-                                *invitation-index*))))))
-  (if existing-invitation
-    :foo
-    )
-  )
+        (existing-invitation-id (find-invitation-id-by-host userid
+                                                            invitation-email)))
+  (if existing-invitation-id
+    (resend-invitation existing-invitation-id
+                       :invitee-name invitation-name
+                       :new-gratitude-id gratitude-id)
+    (create-invitation invitation-email
+                       :name invitation-name
+                       :gratitude-id gratitude-id)))
 
 (defun get-gratitudes-new ()
   (require-user

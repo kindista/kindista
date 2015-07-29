@@ -31,7 +31,7 @@
      (t
       (send-invitation-email invitation-id)))))
 
-(defun create-invitation (email &key text invite-request-id groups (expires (* 90 +day-in-seconds+)) (host *userid*) self name)
+(defun create-invitation (email &key text invite-request-id groups (expires (* 90 +day-in-seconds+)) (host *userid*) self name gratitude-id)
 ; self invitations are verifications for alternate email addresses
   (let* ((time (get-universal-time))
          (invitation (insert-db `(:type :invitation
@@ -40,6 +40,8 @@
                                   :token ,(random-password 9)
                                   :self ,self
                                   :groups ,groups
+                                  :gratitudes ,(when gratitude-id
+                                                 (list gratitude-id))
                                   :recipient-email ,email
                                   :text ,text
                                   :name ,name
@@ -90,22 +92,31 @@
                (remove id it)))
       (remove-from-db id))))
 
-(defun resend-invitation (id &key text groupid)
+(defun resend-invitation (id &key text groupid invitee-name new-gratitude-id)
   (let* ((now (get-universal-time))
-         (message-data (db id))
-         (message-groups (copy-list (getf message-data :groups)))
-         (message-times-sent (getf message-data :times-sent))
-         (message-parameters (list :valid-until (+ now (* 90 +day-in-seconds+))
-                                   :expired-notice-sent nil
-                                   :times-sent (cons now message-times-sent))))
-    (awhen text (appendf message-parameters message-parameters (list :text it)))
-    (when groupid (appendf message-parameters
-                           message-parameters
-                          (list :groups (if message-groups
-                                           (pushnew groupid message-groups)
-                                           (list groupid)))))
+         (invite-data (db id))
+         (invite-name (if (> (length invitee-name)
+                             (length (getf invite-data :name)))
+                        invitee-name
+                        (getf invite-data :name)))
+         (invite-gratitudes (aif (getf invite-data :gratitudes)
+                              (cons new-gratitude-id it)
+                              (list new-gratitude-id)))
+         (invite-groups (copy-list (getf invite-data :groups)))
+         (invite-times-sent (getf invite-data :times-sent))
+         (invite-parameters (list :valid-until (+ now (* 90 +day-in-seconds+))
+                                  :expired-notice-sent nil
+                                  :gratitudes invite-gratitudes
+                                  :name invite-name
+                                  :times-sent (cons now invite-times-sent))))
+    (awhen text (appendf invite-parameters invite-parameters (list :text it)))
+    (when groupid (appendf invite-parameters
+                           invite-parameters
+                           (list :groups (if invite-groups
+                                            (pushnew groupid invite-groups)
+                                            (list groupid)))))
 
-    (apply #'modify-db id message-parameters)
+    (apply #'modify-db id invite-parameters)
 
     (with-mutex (*invitation-reminder-timer-mutex*)
       (asetf *invitation-reminder-timer-index*
@@ -147,11 +158,15 @@
     (amodify-db id :times-sent (push now it)
                    :auto-reminder-sent (push now it))))
 
-(defun pending-email-actions (email &optional (userid *userid*))
+(defun pending-email-actions
+  (email
+   &key (userid *userid*)
+   &aux (user (db userid)))
   (let ((group-invitations-sent nil))
     (dolist (invitation-id (mapcar #'car (gethash email *invitation-index*)))
       (let* ((invitation (db invitation-id))
              (host-id (getf invitation :host))
+             (invitee-name (getf invitation :name))
              (groups (getf invitation :groups)))
         ;; send group invites for invitations from groups
         ;; that the new user never replied to
@@ -166,6 +181,21 @@
                                                      userid
                                                      :host host-id))
             (asetf group-invitations-sent (push groupid it))))
+        ;; see if the name on the invitation is one of the user's
+        ;; aliases.  if not, add it.
+        (unless
+          (loop for name in (cons (getf user :name) (getf user :aliases))
+                when (search (getf invitation :name) name :test #'equalp)
+                collect name)
+          (amodify-db userid :aliases (cons invitee-name it)))
+        ;; see if anyone posted gratitude before the person joined
+        (dolist (gratitude-id (getf invitation :gratitudes))
+          (index-gratitude gratitude-id
+                           (modify-db gratitude-id
+                                      :subjects (list userid)
+                                      :people `(((,userid) . :unread))
+                                      :message-flders `(:inbox ,userid)
+                                      :pending nil)))
         ;; add new user to contacts of others who had invited them
         (unless (or (find host-id (list *userid* +kindista-id+))
                     (find userid (db host-id :following)))
@@ -199,6 +229,15 @@
     (sort unconfirmed
           #'<
           :key #'(lambda (item) (getf item :last-sent)))))
+
+(defun find-invitation-id-by-host (host-id invitation-email)
+  "For finding an invitation-id for a given host-id/invitation-email pair. More efficient than calling unconfirmed-invites."
+  (car (remove nil
+               (mapcar #'(lambda (invite)
+                           (find (car invite)
+                                 (gethash host-id *person-invitation-index*)))
+                       (gethash invitation-email
+                                *invitation-index*)))))
 
 
 (defun find-duplicate-invitations (&optional (host *userid*))
