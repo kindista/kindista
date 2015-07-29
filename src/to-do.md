@@ -1,5 +1,19 @@
 [ ] statement of gratitude by email
-    [ ] change UI for posting gratitudes
+    [ ] determine if gratitude should be visible before recipient signs up
+       - If yes or maybe...
+          - if author already invited recipient, add gratitude to author's
+            invitation for recipient, otherwise create a new invitation
+          - create gratitude with invitation ID as recipient
+          - when recipient signs up, reassign ID
+       - If yes...
+          - need to change profile pages, gratitude-items, and name-link to
+            allow for view of a person who hasn't yet signed up
+       - If no...
+          - add gratitude text as property of the invitation
+          - create statement of gratitude when the person signs up
+
+    [ ] what happens when a person adds the email to an existing account?
+       - features/invitations (defun add-alt-email...
     [ ] allow settings to display more than 5 aliases
     [ ] what about posting to a deactivated account?
     [ ] include the person's name

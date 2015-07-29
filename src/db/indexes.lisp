@@ -54,6 +54,7 @@
 (defindex *followers-index*)
 (defindex *geo-index-index* :test 'equal)
 (defindex *gratitude-index*)
+(defindex *gratitude-invitation-index*) ;key=gratitude-id, v=invitation-id
 (defindex *gratitude-results-index*)
 (defindex *group-membership-requests-index*) ;(personid . requestid)
 (defindex *group-membership-invitations-index*) ;(personid . invitationid)

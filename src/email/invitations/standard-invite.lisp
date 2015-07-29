@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -26,6 +26,9 @@
          ;; the most recent group invite sent by the host
          (group-id (car (getf invitation :groups)))
          (group (db group-id))
+         ;; the most recent statement of gratitude from the host
+         (gratitude-id (car (getf invitation :gratitudes)))
+         (gratitude (db gratitude-id))
          (host-reminder (and (not auto-reminder)
                              (> (length (getf invitation :times-sent)) 1)))
          (to (getf invitation :recipient-email)))
@@ -53,16 +56,18 @@
                              :text text
                              :host-reminder host-reminder
                              :group-name (getf group :name)
+                             :gratitude gratitude
                              :auto-reminder auto-reminder)
       :html-message (invitation-email-html token
                                            to
                                            host
-                                           :group-id group-id
                                            :text text
                                            :host-reminder host-reminder
+                                           :group-id group-id
+                                           :gratitude gratitude
                                            :auto-reminder auto-reminder))))
 
-(defun invitation-email-text (token to from &key group-name text auto-reminder host-reminder)
+(defun invitation-email-text (token to from &key group-name gratitude text auto-reminder host-reminder)
   (let ((sender (getf (db from) :name)))
     (strcat*
 (no-reply-notice)
@@ -76,11 +81,21 @@ sender
 "Kindista; the social network for building "
 "community and sharing skills, tools, and other local resources."
 #\linefeed #\linefeed
-"Your invitation code is " (write-to-string token) ". "
-#\linefeed #\linefeed
-(when text
-  (strcat* sender " says: \"" #\linefeed text "\""))
-#\linefeed #\linefeed
+(acond
+  ((getf gratitude :text)
+    (strcat* sender
+             " posted a statement of gratitude about you on Kindista: \""
+             #\linefeed
+             it
+             "\""
+             #\linefeed #\linefeed
+             " On Kindista, gratitude lets people know how you are contributing to your community.  When you sign up, this statement of gratitude will appear on your profile. It is a form of currency (like money) that encourages others in the network to share resources with you. "
+             #\linefeed #\linefeed))
+  (text
+    (strcat* sender
+             " says: \"" #\linefeed it "\""
+             #\linefeed #\linefeed)))
+
 sender
 (if host-reminder
   " is reminding you to join"
@@ -102,7 +117,7 @@ sender
 (s+ *email-url* "settings/communication?edit=email#email"))))
 
 
-(defun invitation-email-html (token to from &key group-id text auto-reminder host-reminder)
+(defun invitation-email-html (token to from &key group-id text gratitude auto-reminder host-reminder)
   (let ((sender (getf (db from) :name)))
     (html-email-base
       (html
@@ -123,18 +138,27 @@ sender
           "Kindista, the social network for building "
           "community and sharing skills, tools and other local resources. ")
 
-        (:p :style *style-p*
-         "Your invitation code is " (:strong (str (write-to-string token)) "."))
+        (acond
+          ((getf gratitude :text)
+           (htm (:table :cellspacing 0
+                        :cellpadding 0
+                        :style *style-quote-box*
+                  (:tr (:td :style "padding: 4px 12px;"
 
-        (when text
-          (htm (:table :cellspacing 0
-                       :cellpadding 0
-                       :style *style-quote-box*
-                 (:tr (:td :style "padding: 4px 12px;"
+                        (str sender) " Posted a statement of gratitude about you:"
+                        (:br)
+                        "\"" (str (html-text it)) "\"")))
+                (:p :style *style-p*
+                  "On Kindista, gratitude lets people know how you are contributing to your community.  When you sign up, this statement of gratitude will appear on your profile. It is a form of currency (like money) that encourages others in the network to share resources with you. ")))
+          (text
+            (htm (:table :cellspacing 0
+                         :cellpadding 0
+                         :style *style-quote-box*
+                   (:tr (:td :style "padding: 4px 12px;"
 
-                        (str sender) " says:"
-                          (:br)
-                          "\"" (str (html-text text)) "\"")))))
+                         (str sender) " says:"
+                         (:br)
+                         "\"" (str (html-text it)) "\""))))))
 
         (:p :style *style-p*
           (str sender)

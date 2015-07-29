@@ -177,6 +177,7 @@
        (with-mutex (*recent-activity-mutex*)
          (push result *recent-activity-index*)))
 
+     ;; to geo-index separately for each subject
      (with-locked-hash-table (*gratitude-results-index*)
        (dolist (subject subjects)
          (let* ((user (db subject))
@@ -565,7 +566,8 @@
 
          (when text
            (htm (:input :type "hidden" :name "text" :value (escape-for-html text)))))
-       (when (or (not results) (eq results 'none))
+       (when (and (not subjects)
+                  (or (not results) (eq results 'none)))
          (htm
            (:h2 "Or...")
            (:div :id "gratitude-by-email"
@@ -642,6 +644,13 @@
                   "Post gratitude")))))
 
     :class "gratitude-invitation"))
+
+(defun new-gratitude-invitation
+  (invitation-name
+   invitation-email
+   gratitude-text
+   &key groupid)
+  )
 
 (defun get-gratitudes-new ()
   (require-user
@@ -774,19 +783,35 @@
                                                 invitation-email)))))
 
           ((post-parameter "invitation-gratitude")
-           (cond
-            ((or (not invitation-email) (not invitation-name))
-             (flash "There was an error with the name or email address you entered. Please try again. " :error t)
-             (g-add-subject))
-            ((and (post-parameter "create")
-                  (< (word-count (post-parameter-string "text"))))
-             (flash (s+ "Please write a little more in your statement of gratitude to " invitation-name ".") :error t)
-             (gratitude-invitation-form-html invitation-name
-                                             invitation-email
-                                             :text (post-parameter-string "text")
-                                             :groupid (post-parameter "identity-selection")
-                                             :error t
-                                             ))))
+           (let ((groupid (unless (eql (post-parameter-integer
+                                         "identity-selection")
+                                       *userid*)
+                              (post-parameter-integer "identity-selection")))
+                 (retry (gratitude-invitation-form-html
+                          invitation-name
+                          invitation-email
+                          :text (post-parameter-string "text")
+                          :groupid groupid
+                          :error t)))
+             (cond
+               ((or (not invitation-email) (not invitation-name))
+                (flash "There was an error with the name or email address you entered. Please try again. " :error t)
+                (g-add-subject))
+
+               ((and (post-parameter "create")
+                     (< (word-count (post-parameter-string "text"))))
+                (flash (s+ "Please write a little more in your statement of gratitude to " invitation-name ".") :error t)
+                retry)
+
+               ((post-parameter "create")
+                (flash (s+ "You have sent a statment of gratitude to "
+                           invitation-email
+                           " along with an invitation to join Kindista."))
+                (new-gratitude-invitation invitation-name
+                                          invitation-email
+                                          text
+                                          :groupid groupid))
+               (t retry))))
 
           ((post-parameter "add")
            (if (string= (post-parameter "add") "new")
