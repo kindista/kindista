@@ -446,7 +446,7 @@
            (unless existing-url
              (awhen (groups-with-user-as-admin)
                (htm
-                 (:div :class "clear"
+                 (:div :class "clear identity-selection"
                   (:label :for "identity-selection" :class "from" "From:")
                   (str (identity-selection-html (or groupid *userid*)
                                                 it
