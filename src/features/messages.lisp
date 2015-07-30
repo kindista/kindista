@@ -159,6 +159,7 @@
                           (remove nil
                                  (list (getf (car (last (getf data :log)))
                                              :time)
+                                       (getf data :created)
                                        (db (getf data :latest-comment)
                                            :created)))))
                  ((or :group-membership-invitation
