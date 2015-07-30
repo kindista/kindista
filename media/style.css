@@ -3140,11 +3140,6 @@ form.recipients legend {
  padding: 0 0 0 0;
 }
 
-form.recipients h2 {
- font-size: 1em;
- vertical-align: top;
-}
-
 form.recipients, ul.recipients {
  display: inline-block;
  padding-left: 0;
