@@ -425,32 +425,37 @@
           (:form :method "post"
                  :action (or existing-url "/gratitude/new")
                  :class "recipients"
-           (:h2 "About:")
-           (:menu :id "recipients"
-                  :type "toolbar"
+           (:fieldset
+             (:legend "About:")
+             (:ul :id "recipients"
                   :class "gratitude recipients"
-            (unless subjects
-              (htm (:li (:em "nobody yet"))))
-            (dolist (subject subjects)
-              (htm
-                (:li
-                  (str (db subject :name))
-                  (unless (or single-recipient existing-url)
-                    (htm
-                      (:button :class "text large x-remove" :type "submit" :name "remove" :value subject " ⨯ "))))))
-            (unless (or single-recipient existing-url)
-              (htm
-                (:li :class "recipients" (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or group")))))
+              (unless subjects
+                (htm (:li (:em "nobody yet"))))
+              (dolist (subject subjects)
+                (htm
+                  (:li
+                    (:label :for subject (str (db subject :name)))
+                    (unless (or single-recipient existing-url)
+                      (htm
+                        (:button :class "text large x-remove"
+                                 :id subject
+                                 :type "submit"
+                                 :name "remove"
+                                 :value subject
+                                 " ⨯ "))))))
+              (unless (or single-recipient existing-url)
+                (htm
+                  (:li :class "recipients" (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or group")))))
 
-           (when subjects
-             (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" subjects))))
-           (when next
-             (htm (:input :type "hidden" :name "next" :value next)))
+             (when subjects
+               (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" subjects))))
+             (when next
+               (htm (:input :type "hidden" :name "next" :value next))))
 
            (unless existing-url
              (awhen (groups-with-user-as-admin)
                (htm
-                 (:div :class "clear"
+                 (:div :class "clear identity-selection"
                   (:label :for "identity-selection" :class "from" "From:")
                   (str (identity-selection-html (or groupid *userid*)
                                                 it
@@ -573,6 +578,7 @@
            (htm (:input :type "hidden" :name "next" :value next)))
 
          (when text
+<<<<<<< HEAD
            (htm (:input :type "hidden" :name "text" :value (escape-for-html text)))))
        (when (and (not subjects)
                   (or (not results) (eq results 'none)))
@@ -672,6 +678,9 @@
     (create-invitation invitation-email
                        :name invitation-name
                        :gratitude-id gratitude-id)))
+=======
+           (htm (:input :type "hidden" :name "text" :value (escape-for-html text)))))))))
+>>>>>>> master
 
 (defun get-gratitudes-new ()
   (require-user
