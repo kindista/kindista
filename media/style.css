@@ -3121,12 +3121,23 @@ form.recipients button.simple-link {
  margin-bottom: 0.8em;
 }
 
-form.recipients h2,
-form.recipients label {
+form.conversation.recipients button.yes.input-height {
+ margin-left: 0.5em;
+}
+
+form.recipients div.identity-selection label,
+form.recipients div#gratitude-by-email label {
  font-weight: normal;
  display: inline-block;
  width: 4.5em;
  height: 100%;
+}
+
+form.recipients legend {
+ float: left;
+ font-weight: normal;
+ width: 4.5em;
+ padding: 0 0 0 0;
 }
 
 form.recipients h2 {

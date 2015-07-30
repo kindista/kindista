@@ -50,8 +50,8 @@
         (:form :method "post"
                :action "/conversations/new"
                :class "recipients"
-          (:div :class "recipients"
-            (:h2 "With:")
+          (:fieldset :class "recipients"
+            (:legend "With:")
             (:ul :id "recipients"
                  :class "recipients"
               (unless people
@@ -59,9 +59,14 @@
               (dolist (person people)
                 (htm
                   (:li
-                    (str (getf (db person) :name))
+                    (:label :for person (str (getf (db person) :name)))
                     (unless single-recipient
-                      (htm (:button :class "text large x-remove" :type "submit" :name "remove" :value person " ⨯ "))))))
+                      (htm (:button :class "text large x-remove"
+                                    :id person
+                                    :type "submit"
+                                    :name "remove"
+                                    :value person
+                                    " ⨯ "))))))
               (unless single-recipient
                 (htm (:li (:button :type "submit" :class "text" :name "add" :value "new" "+ Add someone"))))))
 
