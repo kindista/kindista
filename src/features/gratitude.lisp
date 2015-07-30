@@ -807,32 +807,36 @@
            (let ((groupid (unless (eql (post-parameter-integer
                                          "identity-selection")
                                        *userid*)
-                              (post-parameter-integer "identity-selection")))
-                 (retry (gratitude-invitation-form-html
-                          invitation-name
-                          invitation-email
-                          :text (post-parameter-string "text")
-                          :groupid groupid
-                          :error t)))
-             (cond
-               ((or (not invitation-email) (not invitation-name))
-                (flash "There was an error with the name or email address you entered. Please try again. " :error t)
-                (g-add-subject))
+                              (post-parameter-integer "identity-selection"))))
+             (flet ((retry (&optional e) (gratitude-invitation-form-html
+                                           invitation-name
+                                           invitation-email
+                                           :text (post-parameter-string "text")
+                                           :groupid groupid
+                                           :error e)))
+               (cond
+                 ((or (not invitation-email) (not invitation-name))
+                  (flash "There was an error with the name or email address you entered. Please try again. " :error t)
+                  (g-add-subject))
 
-               ((and (post-parameter "create")
-                     (< (word-count (post-parameter-string "text"))))
-                (flash (s+ "Please write a little more in your statement of gratitude to " invitation-name ".") :error t)
-                retry)
+                 ((and (post-parameter "create")
+                       (< (word-count (post-parameter-string "text"))
+                          9))
+                  (flash (s+ "Please write a little more in your statement of gratitude to " invitation-name ".") :error t)
+                  (retry t))
 
-               ((post-parameter "create")
-                (flash (s+ "You have sent a statment of gratitude to "
-                           invitation-email
-                           " along with an invitation to join Kindista."))
-                (new-gratitude-invitation invitation-name
-                                          invitation-email
-                                          text
-                                          :groupid groupid))
-               (t retry))))
+                 ((post-parameter "create")
+                   (flash (s+ "You have sent a statment of gratitude to "
+                              invitation-email
+                              " along with an invitation to join Kindista. "
+                              "Your gratitude will be posted to "
+                              invitation-name " when they sign up for Kindista."))
+                   (new-gratitude-invitation invitation-name
+                                             invitation-email
+                                             text
+                                             :groupid groupid)
+                   (see-other "/home"))
+                 (t (retry))))))
 
           ((post-parameter "add")
            (if (string= (post-parameter "add") "new")

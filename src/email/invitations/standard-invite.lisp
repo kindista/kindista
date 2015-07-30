@@ -159,7 +159,7 @@ sender
 
                         (str sender) " shared a statement of gratitude about you:"
                         (:br)
-                        "\"" (str (html-text it)) "\"")))
+                        (:strong "\"" (str (html-text it)) "\""))))
                 (:p :style *style-p*
                   "On Kindista, gratitude lets people know how you are contributing to your community.  When you sign up, this statement of gratitude will appear on your profile. It is a form of currency (like money) that encourages others in the network to share resources with you. ")))
           (text
@@ -181,15 +181,14 @@ sender
           " Kindista community.  ")
 
         (:p :style *style-p*
-          "Please click on this link or copy and paste it into your browser"
-          " to RSVP: "
-          (:br)
-          (:a :href (url-compose (s+ *email-url* "signup")
+         (:strong "Please click on this link or copy and paste it into your browser to RSVP: ")
+         (:br)
+         (:strong (:a :href (url-compose (s+ *email-url* "signup")
                                  "email" to
                                  "token" token)
                     (str (url-compose (s+ *email-url* "signup")
                                       "email" to
-                                      "token" token))))
+                                      "token" token)))))
 
         (:p "-The Kindista Team")
 

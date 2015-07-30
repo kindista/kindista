@@ -1,8 +1,6 @@
 [ ] statement of gratitude by email
     [ ] determine if gratitude should be visible before recipient signs up
        - If yes or maybe...
-          - if author already invited recipient, add gratitude to author's
-            invitation for recipient, otherwise create a new invitation
           - create gratitude with invitation ID as recipient
           - when recipient signs up, reassign ID
        - If yes...
@@ -12,15 +10,13 @@
           - add gratitude text as property of the invitation
           - create statement of gratitude when the person signs up
 
-    [ ] add recipient name to invitation email
+    [ ] fix double posting of gratitude to person-activity
     [ ] what happens when a person adds the email to an existing account?
        - features/invitations (defun add-alt-email...
     [ ] allow settings to display more than 5 aliases
     [ ] test sending multiple gratitudes to same email address
     [ ] what about posting to a deactivated account?
-    [ ] include the person's name
     [ ] gratitude is "on" an invite id
-    [ ] when invitee signs up, remove aliases contained within name
     [ ] test with friends and contacts
 [ ] make sure blog/kindista/etc mailings don't go out to (db id :active nil) users
 [ ] merge duplicate accounts
