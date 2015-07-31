@@ -254,7 +254,7 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
               )
    ;(add-title "Kindista Usage over time")
    ;(add-feature :label)
-    (save-file (pathname (strcat *metrics-path* "/all-time-metrics.png")))))
+    (save-file (pathname (strcat *metrics-path* "/kindista-metrics-chart.png")))))
 
 
 (defun create-past-monthly-activity-reports (years)
