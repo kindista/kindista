@@ -206,7 +206,7 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
   (&key (start-month 1)
         (start-year 2014)
    &aux (chart-data)
-        (now (universal-to-timestamp (get-universal-time)))
+        (now (local-time:now))
         (current-year (timestamp-year now))
         (current-month (timestamp-month now)))
 
@@ -220,7 +220,10 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
                                    (>= (parse-integer month) start-month))
                               (> year start-year))
                           (or (< year current-year)
-                              (< (parse-integer month) current-month)))
+                              (< (parse-integer month) current-month)
+                              (and (= (parse-integer month) current-month)
+                                   (= (local-time:timestamp-day now)
+                                      (days-in-month now)))))
                  (with-standard-io-syntax
                    (with-open-file (summary file :direction :input)
                      (setf file-data (read summary))))
