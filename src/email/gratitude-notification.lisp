@@ -111,7 +111,7 @@ author-name
       (:table :cellspacing 0 :cellpadding 0
               :style *style-quote-box*
         (:tr (:td :style "padding: 4px 12px;"
-               (str (getf gratitude :text)))))
+               (str (email-text (getf gratitude :text))))))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
 

@@ -1386,7 +1386,7 @@ img.small {
 }
 
 #menu > table {
- margin:0.75em 0.75em 0;
+ margin:0.7em 0.7em 0;
 }
 
 #menu table img {
@@ -1404,7 +1404,7 @@ img.small {
 }
 
 #menu table tr:last-child a {
- padding: 2px;
+ padding: 2px 0;
 }
 
 
@@ -1506,7 +1506,6 @@ menu#fine-print-links a {
  max-width: 60em;
 }
 
-.new-gratitude label,
 .blog.item label,
 .item.create-event label,
 .item.create-group label,
@@ -3127,12 +3126,19 @@ form.conversation.recipients button.yes.input-height {
  margin-left: 0.5em;
 }
 
-form.recipients div.identity-selection label,
-form.recipients div#gratitude-by-email label {
+form.recipients div.identity-selection label {
  font-weight: normal;
  display: inline-block;
  width: 4.5em;
  height: 100%;
+}
+
+form.recipients div.identity-selection {
+ margin: 0.8em 0 0;
+}
+
+form.recipients textarea#message {
+ margin-top: 0.4em;
 }
 
 form.recipients legend {
@@ -3163,7 +3169,13 @@ div.new-gratitude div#gratitude-by-email h3 {
 }
 
 div.new-gratitude div#gratitude-by-email p.small {
+ max-width: 50em;
  margin-top: 0;
+}
+
+div#gratitude-by-email label {
+ margin-top: 0.5em;
+ display: block;
 }
 
 div.new-gratitude label.recipients,

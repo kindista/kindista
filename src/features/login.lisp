@@ -72,7 +72,9 @@
         ((password-match-p user (post-parameter "password"))
          (setf (token-userid *token*) user)
          (notice :login)
-         (see-other (or next "/home")))
+         (see-other (if (not (getf *user* :active))
+                      "/settings#reactivate"
+                      (or next "/home"))))
         (t
          (see-other (if next (url-compose "/login" "next" next) "/login"))
          (flash "The email or password you entered was not recognized.  Please try again." :error t)

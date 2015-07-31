@@ -45,6 +45,11 @@
                         (username-or-id id))
           (str (getf it :name))))))
 
+(defun email-text (string)
+  (if string
+    (regex-replace-all "\\n" string "<br>")
+    ""))
+
 (defun person-name (id)
   (db id :name))
 

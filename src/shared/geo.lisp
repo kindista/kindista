@@ -17,6 +17,22 @@
 
 (in-package :kindista)
 
+(defun log-unverified-token-location (address)
+  (multiple-value-bind (lat long address city state country street zip)
+    (geocode-address address)
+    (setf (getf (token-session-data *token*) :unverified-location)
+          (list :lat lat
+                :long long
+                :address address
+                :city city
+                :state state
+                :street street
+                :zip zip
+                :country country
+                :location-privacy (if (post-parameter "public-location")
+                                    :public
+                                    :private)))))
+
 (defun geocode-address (address)
   (let* ((results (first
                     (cdr

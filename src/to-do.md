@@ -1,22 +1,11 @@
 [ ] statement of gratitude by email
-    [ ] determine if gratitude should be visible before recipient signs up
-       - If yes or maybe...
-          - create gratitude with invitation ID as recipient
-          - when recipient signs up, reassign ID
-       - If yes...
-          - need to change profile pages, gratitude-items, and name-link to
-            allow for view of a person who hasn't yet signed up
-       - If no...
-          - add gratitude text as property of the invitation
-          - create statement of gratitude when the person signs up
-
-    [ ] fix double posting of gratitude to person-activity
     [ ] what happens when a person adds the email to an existing account?
        - features/invitations (defun add-alt-email...
+    [ ] fix html formatting of text in invitation emails
     [ ] allow settings to display more than 5 aliases
     [ ] test sending multiple gratitudes to same email address
     [ ] what about posting to a deactivated account?
-    [ ] gratitude is "on" an invite id
+    [ ] on server, ,d invitation-notice-handler and reload notice handlers
     [ ] test with friends and contacts
 [ ] make sure blog/kindista/etc mailings don't go out to (db id :active nil) users
 [ ] merge duplicate accounts

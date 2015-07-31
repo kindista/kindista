@@ -1339,19 +1339,7 @@
               (modify-db id :location-privacy (if (post-parameter "public-location") :public :private))
               (see-other (or (post-parameter "next") "/home")))
              (t
-              (multiple-value-bind (lat long address city state country street zip)
-                (geocode-address it)
-                (setf (getf (token-session-data *token*) :unverified-location)
-                      (list :lat lat
-                            :long long
-                            :address address
-                            :city city
-                            :state state
-                            :street street
-                            :zip zip
-                            :country country
-                            :location-privacy (if (post-parameter "public-location") :public :private))))
-
+              (log-unverified-token-location it)
               (see-other (if groupid
                            (url-compose "/settings/verify-address"
                                         "groupid" id
@@ -1395,8 +1383,7 @@
           ((post-parameter "confirm-deactivation")
            (deactivate-person *userid*)
            (flash "You have deactivated you account. If you change your mind you can reactivate your account on the settings page.")
-
-           (see-other "/settings/personal"))
+           (see-other "/"))
 
           ((post-parameter "cancel-plan")
 

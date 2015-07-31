@@ -20,6 +20,8 @@
 
 (defun send-invitation-notice-handler ()
   (let* ((invitation-id (getf (cddddr *notice*) :id))
+         (new-group (getf (cddddr *notice*) :new-group))
+         (new-gratitude (getf (cddddr *notice*) :new-gratitude))
          (invitation (db invitation-id))
          (host (getf invitation :host))
          (self (getf invitation :self)))
@@ -29,7 +31,9 @@
      ((eq host +kindista-id+)
       (send-requested-invite-email invitation-id))
      (t
-      (send-invitation-email invitation-id)))))
+      (send-invitation-email invitation-id
+                             :new-group new-group
+                             :new-gratitude new-gratitude)))))
 
 (defun create-invitation (email &key text invite-request-id groups (expires (* 90 +day-in-seconds+)) (host *userid*) self name gratitude-id)
 ; self invitations are verifications for alternate email addresses
@@ -48,7 +52,10 @@
                                   :times-sent ,(list time)
                                   :valid-until ,(+ time expires)))))
 
-    (notice :send-invitation :time time :id invitation)
+    (notice :send-invitation :time time
+                             :id invitation
+                             :new-group (car groups)
+                             :new-gratitude gratitude-id)
     invitation))
 
 (defun index-invitation (id data)
@@ -99,9 +106,10 @@
                              (length (getf invite-data :name)))
                         invitee-name
                         (getf invite-data :name)))
-         (invite-gratitudes (aif (getf invite-data :gratitudes)
-                              (cons new-gratitude-id it)
-                              (list new-gratitude-id)))
+         (invite-gratitudes (remove nil
+                                    (aif (getf invite-data :gratitudes)
+                                      (cons new-gratitude-id it)
+                                      (list new-gratitude-id))))
          (invite-groups (copy-list (getf invite-data :groups)))
          (invite-times-sent (getf invite-data :times-sent))
          (invite-parameters (list :valid-until (+ now (* 90 +day-in-seconds+))
@@ -112,9 +120,11 @@
     (awhen text (appendf invite-parameters invite-parameters (list :text it)))
     (when groupid (appendf invite-parameters
                            invite-parameters
-                           (list :groups (if invite-groups
-                                            (pushnew groupid invite-groups)
-                                            (list groupid)))))
+                           (list :groups (remove nil
+                                                 (if invite-groups
+                                                     (pushnew groupid
+                                                              invite-groups)
+                                                     (list groupid))))))
 
     (apply #'modify-db id invite-parameters)
 
@@ -125,7 +135,10 @@
                      :test #'equal))
       (safe-sort (push (cons now id) *invitation-reminder-timer-index*) #'<
                   :key #'car))
-  (notice :send-invitation :time now :id id))
+  (notice :send-invitation :time now
+                           :id id
+                           :new-group groupid
+                           :new-gratitude new-gratitude-id))
   id)
 
 (defun get-automatic-invitation-reminders ()
@@ -195,13 +208,13 @@
                            (modify-db gratitude-id
                                       :subjects (list userid)
                                       :people `(((,userid) . :unread))
-                                      :message-flders `(:inbox ,userid)
+                                      :message-folders `(:inbox (,userid))
                                       :pending nil)))
         ;; add new user to contacts of others who had invited them
         (unless (or (find host-id (list *userid* +kindista-id+))
                     (find userid (db host-id :following)))
           (add-contact userid host-id)))
-    (delete-invitation invitation-id))))
+      (delete-invitation invitation-id))))
 
 (defun add-alt-email (invitation-id)
   (let* ((invitation (db invitation-id))

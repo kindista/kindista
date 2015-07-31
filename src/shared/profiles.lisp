@@ -387,11 +387,11 @@
                     (:input :type "hidden" :name "next" :value (script-name*))
                     (:button :class "yes small" :type "submit" :name "add" :value id "Send a message"))))
 
-                (:form :method "GET"
-                       :action (case entity-type
-                                 (:person (strcat "/people/" (username-or-id id) "/reputation"))
-                                 (:group (strcat "/groups/" (username-or-id id) "/reputation")))
-                  (:button :class "yes small" :type "submit" "Express gratitude")) 
+              (:form :method "GET"
+                     :action (case entity-type
+                               (:person (strcat "/people/" (username-or-id id) "/reputation"))
+                               (:group (strcat "/groups/" (username-or-id id) "/reputation")))
+                (:button :class "yes small" :type "submit" "Express gratitude")) 
 
               (when (eql entity-type :group)
                 (cond

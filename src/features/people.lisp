@@ -45,9 +45,10 @@
             ))))
     ids))
 
-(defun create-person (&key name email password host (pending nil))
+(defun create-person (&key name email password host aliases (pending nil))
   (insert-db `(:type :person
                :name ,name
+               :aliases ,aliases
                :emails ,(list email)
                :host ,host
                :pending ,pending

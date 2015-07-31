@@ -83,14 +83,11 @@
          (htm (:h2 "Create a Kindista account")
               (:h3 "Step 2 of 3: Set your password"))
          (htm (:h2 "Please RSVP to your invitation. ")))
-       (:p "Your activation code is:  " (:strong (str token))
-        (:br) "Your email address is: " (:strong (str email)))
-       (:p "You will be able to change your email address on the Settings page after you sign up.")
+       (:p "Your email address is: " (:strong (str email)))
+       (:p "You will be able to change it or add additional email addresses on the Settings page after you sign up.")
        (:form :method "POST" :action "/signup" :id "signup"
         (:input :type "hidden" :name "token" :value token)
         (:input :type "hidden" :name "email" :value email)
-        (awhen name
-          (htm (:input :type "hidden" :name "name" :value it)))
         (unless (eq host +kindista-id+)
           (htm (:h2 "Create an account")))
         (:label :for "name" "Full Name")
@@ -276,7 +273,9 @@
    host
    invitation
    invite-request-id
-   &aux new-id )
+   &aux new-id
+        (aliases (unless (search (getf invitation :name) name :test #'equalp)
+                   (list (getf invitation :name)))))
 
   (setf new-id
         (if (integerp invite-request-id)
@@ -287,9 +286,7 @@
             (progn
               (modify-db it :type :person
                             :name name
-                            :aliases (awhen (getf invitation
-                                                  :name)
-                                       (list it))
+                            :aliases aliases
                             :emails (list email)
                             :host +kindista-id+
                             :active t
@@ -310,6 +307,7 @@
               (index-person it (db it))
               it))
           (create-person :name (post-parameter "name")
+                         :aliases aliases
                          :pending (when (eq host +kindista-id+) t)
                          :host host
                          :email (post-parameter "email")
@@ -318,13 +316,6 @@
   (dolist (group (getf invitation :groups))
     (add-group-member new-id group))
   (add-contact host new-id)
-  (dolist (gratitude-id (getf invitation :gratitudes))
-    (index-gratitude gratitude-id
-                     (modify-db gratitude-id
-                                :subjects (list new-id)
-                                :people `(((,new-id) . :unread))
-                                :message-flders `(:inbox ,new-id)
-                                :pending nil)))
   (unless (eql host +kindista-id+)
     (add-contact +kindista-id+ new-id))
   (with-locked-hash-table (*invited-index*)

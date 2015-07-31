@@ -17,8 +17,12 @@
 
 (in-package :kindista)
 
-(defun send-invitation-email (invitation-id &key auto-reminder)
-  (let* ((invitation (db invitation-id))
+(defun send-invitation-email
+  (invitation-id
+    &key auto-reminder
+         new-group
+         new-gratitude
+    &aux (invitation (db invitation-id))
          (token (getf invitation :token))
          (host (getf invitation :host))
          (host-name (db host :name))
@@ -31,46 +35,50 @@
          (gratitude-id (car (getf invitation :gratitudes)))
          (gratitude (db gratitude-id))
          (host-reminder (and (not auto-reminder)
-                             (> (length (getf invitation :times-sent)) 1)))
+                             (> (length (getf invitation :times-sent)) 1)
+                             (not new-group)
+                             (not new-gratitude)))
          (to (getf invitation :recipient-email)))
-    (cl-smtp:send-email
-      +mail-server+
-      "Kindista <noreply@kindista.org>"
-      to
-      (cond
-        (auto-reminder
-          (s+ "Reminder: your Kindista invitation from "
-              host-name
-              " is expiring soon."))
-        (host-reminder
-          (s+ host-name
-              " is reminding you to join them on Kindista."))
-        (gratitude
-          (s+ host-name " has shared gratitude for you on Kindista."))
-        (group
-          (s+ host-name
-              " wants you to join the "
-              (getf group :name)
-              " sharing network on Kindista!"))
-        (t (s+ host-name " wants you to join their sharing network!")))
-      (invitation-email-text token
-                             to
-                             host
-                             :invitee-name invitee-name
-                             :text text
-                             :host-reminder host-reminder
-                             :group-name (getf group :name)
-                             :gratitude gratitude
-                             :auto-reminder auto-reminder)
-      :html-message (invitation-email-html token
-                                           to
-                                           host
-                                           :invitee-name invitee-name
-                                           :text text
-                                           :host-reminder host-reminder
-                                           :group-id group-id
-                                           :gratitude gratitude
-                                           :auto-reminder auto-reminder))))
+
+  (cl-smtp:send-email
+    +mail-server+
+    "Kindista <noreply@kindista.org>"
+    to
+    (cond
+      (auto-reminder
+        (s+ "Reminder: your Kindista invitation from "
+            host-name
+            " is expiring soon."))
+      (host-reminder
+        (s+ host-name
+            " is reminding you to join them on Kindista."))
+      (new-gratitude
+        (s+ host-name " has shared gratitude for you on Kindista."))
+      (new-group
+        (s+ host-name
+            " wants you to join the "
+            (getf group :name)
+            " sharing network!"))
+      (t (s+ host-name " wants you to join their sharing network!")))
+    (invitation-email-text token
+                           to
+                           host
+                           :invitee-name invitee-name
+                           :text text
+                           :host-reminder host-reminder
+                           :group-name (when new-group (getf group :name))
+                           :gratitude (when new-gratitude gratitude)
+                           :auto-reminder auto-reminder)
+    :html-message (invitation-email-html token
+                                         to
+                                         host
+                                         :invitee-name invitee-name
+                                         :text text
+                                         :host-reminder host-reminder
+                                         :group-id (when new-group group-id)
+                                         :gratitude (when new-gratitude
+                                                      gratitude)
+                                         :auto-reminder auto-reminder)))
 
 (defun invitation-email-text (token to from &key invitee-name group-name gratitude text auto-reminder host-reminder)
   (let ((sender (getf (db from) :name)))
@@ -97,7 +105,7 @@ sender
              it
              "\""
              #\linefeed #\linefeed
-             " On Kindista, gratitude lets people know how you are contributing to your community.  When you sign up, this statement of gratitude will appear on your profile. It is a form of currency (like money) that encourages others in the network to share resources with you. "
+             " On Kindista, gratitude lets people know how you are contributing to your community.  When you sign up, this statement of gratitude will appear on your profile. It is a form of currency that encourages others in the network to share resources with you. "
              #\linefeed #\linefeed))
   (text
     (strcat* sender
@@ -159,9 +167,9 @@ sender
 
                         (str sender) " shared a statement of gratitude about you:"
                         (:br)
-                        (:strong "\"" (str (html-text it)) "\""))))
+                        (:strong "\"" (str (email-text it)) "\""))))
                 (:p :style *style-p*
-                  "On Kindista, gratitude lets people know how you are contributing to your community.  When you sign up, this statement of gratitude will appear on your profile. It is a form of currency (like money) that encourages others in the network to share resources with you. ")))
+                  "On Kindista, gratitude lets people know how you are contributing to your community.  When you sign up, this statement of gratitude will appear on your profile. It is a form of currency that encourages others in the network to share resources with you. ")))
           (text
             (htm (:table :cellspacing 0
                          :cellpadding 0
@@ -170,7 +178,7 @@ sender
 
                          (str sender) " says:"
                          (:br)
-                         "\"" (str (html-text it)) "\""))))))
+                         "\"" (str (email-text it)) "\""))))))
 
         (:p :style *style-p*
           (str sender)

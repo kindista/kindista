@@ -358,7 +358,9 @@
       (if plain-text
         (s+ newtext "...")
         (html
-          (str (html-text newtext))
+          (str (if email
+                 newtext
+                 (html-text newtext)))
           "..."
           (when see-more
             (htm (:a :href see-more

@@ -219,7 +219,7 @@ from (awhen group-name (s+ " from " it )) " says:"
                      :cellpadding 0
                      :style *style-quote-box*
                (:tr (:td :style "padding: 4px 12px;"
-                        "\"" (str (html-text it)) "\"")))
+                        "\"" (str (email-text it)) "\"")))
              (:br)))
 
       (:p :style *style-p*
@@ -232,7 +232,7 @@ from (awhen group-name (s+ " from " it )) " says:"
               :cellpadding 0
               :style *style-quote-box*
         (:tr (:td :style "padding: 4px 12px;"
-                 "\"" (str (html-text text)) "\"")))
+                 "\"" (str (email-text text)) "\"")))
 
       (:p :style *style-p*
        "You can see the conversation on Kindista here: "

@@ -56,7 +56,10 @@
                 (string= (strcat +base-url+
                                    "people/"
                                    (username-or-id new-contact-id))
-                       (referer)))
+                       (referer))
+                ;; if adding userid to host's contacts when RSVP'ing to
+                ;; an invitation
+                (= *userid* new-contact-id))
       (flash (html (str (person-link new-contact-id))
                    " has been added to your contacts."))))
 

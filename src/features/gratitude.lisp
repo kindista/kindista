@@ -578,7 +578,6 @@
            (htm (:input :type "hidden" :name "next" :value next)))
 
          (when text
-<<<<<<< HEAD
            (htm (:input :type "hidden" :name "text" :value (escape-for-html text)))))
        (when (and (not subjects)
                   (or (not results) (eq results 'none)))
@@ -635,7 +634,7 @@
 
          (awhen (groups-with-user-as-admin)
            (htm
-             (:div :class "clear"
+             (:div :class "clear identity-selection"
               (:label :for "identity-selection" :class "from" "From:")
               (str (identity-selection-html (or groupid *userid*)
                                             it
@@ -678,9 +677,6 @@
     (create-invitation invitation-email
                        :name invitation-name
                        :gratitude-id gratitude-id)))
-=======
-           (htm (:input :type "hidden" :name "text" :value (escape-for-html text)))))))))
->>>>>>> master
 
 (defun get-gratitudes-new ()
   (require-user
@@ -830,7 +826,7 @@
 
                  ((and (post-parameter "create")
                        (< (word-count (post-parameter-string "text"))
-                          9))
+                          7))
                   (flash (s+ "Please write a little more in your statement of gratitude to " invitation-name ".") :error t)
                   (retry t))
 
