@@ -239,6 +239,13 @@
     (geo-index-insert *activity-geo-index* result) 
     (with-mutex (*active-people-mutex*)
       (push id *active-people-index*))
+    (dolist (result (gethash id *profile-activity-index*))
+      (when (and (eq (result-type result) :gratitude)
+                 (find id (cdr (result-people result))))
+        (let* ((gratitude-id (result-id result))
+               (gratitude (db gratitude-id)))
+          (when (getf gratitude :pending)
+            (modify-db gratitude-id :pending nil)))))
     (modify-db id :active t
                   :notify-message t
                   :notify-kindista t

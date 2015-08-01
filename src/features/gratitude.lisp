@@ -160,7 +160,7 @@
      (setf (gethash id *db-results*) result))
 
    ;; don't index if we're waiting for the recipient to sign up for kindista
-   (unless (getf data :pending)
+   (unless (eq (getf data :pending) :subject-account-creation)
      (with-locked-hash-table (*gratitude-index*)
        (push id (gethash author-id *gratitude-index*)))
 
@@ -804,7 +804,9 @@
               (g-add-subject :error-field :invitation-email))
              (t
               (aif (gethash invitation-email *email-index*)
-                (gratitude-compose :subjects (list it))
+                (gratitude-compose :subjects (list it)
+                                   :single-recipient (unless (db it :active)
+                                                       t))
                 (gratitude-invitation-form-html invitation-name
                                                 invitation-email)))))
 
@@ -883,11 +885,17 @@
                 text)
 
            (let* ((time (get-universal-time))
+                  (g-subjects (remove recipient-id subjects))
+                  (inactive-subject (when (and (= (length g-subjects) 1)
+                                               (not (db (car g-subjects)
+                                                        :active)))
+                                      (db (car g-subjects))))
                   (new-id (create-gratitude :author recipient-id
-                                            :subjects (remove recipient-id
-                                                              subjects)
+                                            :subjects g-subjects
                                             :on on-id
                                             :transaction-id transaction-id
+                                            :pending (when inactive-subject
+                                                       :subject-account-reactivation)
                                             :time time
                                             :text text))
                   (gratitude-url (format nil "/gratitude/~A" new-id)))
@@ -926,8 +934,16 @@
                                                       :action :gratitude-posted
                                                       :comment new-id)))))))
 
-                 (flash "Your statement of gratitude has been posted")
-                 (see-other (or next gratitude-url))))))
+                 (flash (if inactive-subject
+                          (s+ (getf inactive-subject :name)
+                              " has deactivated their account. "
+                              "Your statement of gratitude will be posted "
+                              "when they reactivate their account.")
+                          "Your statement of gratitude has been posted"))
+                 (see-other (or next
+                                (if inactive-subject
+                                  "/home"
+                                  gratitude-url)))))))
 
           (t
            (g-compose :subjects subjects)))))))

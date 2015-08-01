@@ -219,11 +219,17 @@
                                  :see-more item-url)
                        (html-text (getf data :details)))))))))
 
-(defun gratitude-activity-item (result &key truncate reciprocity (show-on-item t) (show-when t) (show-actions t))
+(defun gratitude-activity-item
+  (result
+    &key truncate
+         reciprocity
+         (show-on-item t)
+         (show-when t)
+         (show-actions t)
          ; result-people is a list
          ; car of list is person showing gratitude
          ; cdr of list is subjects
-  (let* ((user-id (first (result-people result)))
+    &aux (user-id (first (result-people result)))
          ; tests to see if the user is the author of this item
          (self (eql user-id *userid*))
          ;item-id is derived from "result" which is passed in.
@@ -235,43 +241,50 @@
          (adminp (group-admin-p author))
          (images (getf data :images))
          (item-url (strcat "/gratitude/" item-id)))
+
+  (unless (getf data :pending)
     (html
-    (str (activity-item :id item-id
-                   :url item-url
-                   :class "gratitude"
-                   :time (when show-when (result-time result))
-                   :show-actions show-actions
-                   :edit (when (or self adminp (getf *user* :admin)) t)
-                   :image-text (when (or self adminp)
-                                 (if images
-                                   "Add/remove photos"
-                                   "Add photos"))
-                   :hearts (length (loves item-id))
-                   ;:comments (length (comments item-id))
-                   :content (html
-                              (:p (str (person-link user-id))
-                                  (str (if (getf data :edited) " edited " " expressed "))
-                                  (:a :href item-url "gratitude")
-                                  " for "
-                                  (str (name-list (getf data :subjects) :maximum-links 100)))
-                              (:p
-                                (str
-                                  (if truncate
-                                    (ellipsis (getf data :text)
-                                              :length 500
-                                              :see-more item-url)
-                                    (html-text (getf data :text)))))
-                              (unless (string= item-url (script-name*))
-                                (str (activity-item-images images item-url "gift"))))
-                   :related-items (html
-                                    (:div
-                                      (when (and (getf data :on) show-on-item)
-                                        (str (gratitude-on-item-html
-                                               item-id
-                                               :gratitude-data data)))
-                                      (when reciprocity
-                                        (str (display-gratitude-reciprocities
-                                               result))))))))))
+      (str
+        (activity-item
+          :id item-id
+          :url item-url
+          :class "gratitude"
+          :time (when show-when (result-time result))
+          :show-actions show-actions
+          :edit (when (or self adminp (getf *user* :admin)) t)
+          :image-text (when (or self adminp)
+                        (if images
+                          "Add/remove photos"
+                          "Add photos"))
+          :hearts (length (loves item-id))
+          ;:comments (length (comments item-id))
+          :content (html
+                     (:p (str (person-link user-id))
+                         (str (if (getf data :edited)
+                                " edited "
+                                " expressed "))
+                         (:a :href item-url "gratitude")
+                         " for "
+                         (str (name-list (getf data :subjects)
+                                         :maximum-links 100)))
+                     (:p
+                       (str
+                         (if truncate
+                           (ellipsis (getf data :text)
+                                     :length 500
+                                     :see-more item-url)
+                           (html-text (getf data :text)))))
+                     (unless (string= item-url (script-name*))
+                       (str (activity-item-images images item-url "gift"))))
+          :related-items (html
+                           (:div
+                             (when (and (getf data :on) show-on-item)
+                               (str (gratitude-on-item-html
+                                      item-id
+                                      :gratitude-data data)))
+                             (when reciprocity
+                               (str (display-gratitude-reciprocities
+                                      result))))))))))
 
 
 (defun gift-activity-item (result)
@@ -460,9 +473,10 @@
                  (let* ((item (car items)))
                    (case (result-type item)
                      (:gratitude
-                       (str (gratitude-activity-item item :truncate t
-                                                          :reciprocity
-                                                          reciprocity))) 
+                       (awhen (gratitude-activity-item item :truncate t
+                                                            :reciprocity
+                                                            reciprocity)
+                         (str it)))
                      (:gift
                        (str (gift-activity-item item)))
                      (:person

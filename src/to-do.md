@@ -1,13 +1,12 @@
 [ ] statement of gratitude by email
-    [ ] what happens when a person adds the email to an existing account?
-       - features/invitations (defun add-alt-email...
-    [ ] fix html formatting of text in invitation emails
-    [ ] allow settings to display more than 5 aliases
-    [ ] test sending multiple gratitudes to same email address
-    [ ] what about posting to a deactivated account?
     [ ] on server, ,d invitation-notice-handler and reload notice handlers
     [ ] test with friends and contacts
 [ ] make sure blog/kindista/etc mailings don't go out to (db id :active nil) users
+    [ ] if they want to be notified when gratitudes are posted to their account
+        let them know that they won't be shown on their profile until they
+        reactivate? (if this is so, then email should remind of this detail)
+[ ] add gratitude option for standard invitations
+[ ] email preferences for deactivated accounts
 [ ] merge duplicate accounts
 [ ] top color borders for activity items
 [ ] allow kindista offers tagged with "proposed-feature" to get a tab in the feedback section

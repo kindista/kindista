@@ -318,7 +318,10 @@
 
             (case (result-type item)
               (:gratitude
-                (str (gratitude-activity-item item)))
+                (awhen (gratitude-activity-item item)
+                  ;;don't display pending items that were posted when a
+                  ;;person deactivates the account.
+                  (str it)))
               (:person
                 (str (joined-activity-item item)))
               (:gift

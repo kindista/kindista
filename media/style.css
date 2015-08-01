@@ -3196,6 +3196,7 @@ li.recipients:last-child {
  width: 4.5em;
 }
 
+.new-gratitude.item form.recipients button.cancel,
 .gratitude-invitation form.recipients button.cancel {
  margin: 0;
 }
