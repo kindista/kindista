@@ -458,7 +458,9 @@
                             mailboxes)))
     (html
       (str (h3-timestamp (message-time message)))
-      (:a :href (url-compose (strcat "/gratitude/" id) "menu" "messages")
+      (:a :href (url-compose (strcat "/gratitude/" id)
+                             "menu""messages"
+                             "read" "t")
         (:p :class "people"
          (str (group-message-indicator message groups))
          (:span :class "dark-gray-text"
@@ -652,6 +654,15 @@
                                     0))))
         :selected "messages"))))
 
+(defun mark-messages-read (messages)
+  (dolist (id messages)
+    (let ((message (gethash id *db-messages*)))
+      (when (or (not (eql (message-latest-comment message)
+                       (cdr (assoc-assoc *userid* (message-people message)))))
+                (member *userid* (getf (message-folders message) :unread)))
+        (update-folder-data
+          message :read :last-read-comment (message-latest-comment message))))))
+
 (defun post-messages ()
   (require-user
     (let ((messages (loop for pair in (post-parameters*)
@@ -674,12 +685,7 @@
          (see-other next))
 
         ((post-parameter "mark-read")
-         (dolist (id messages)
-           (let ((message (gethash id *db-messages*)))
-             (when (or (not (eql (message-latest-comment message)
-                              (cdr (assoc-assoc *userid* (message-people message)))))
-                       (member *userid* (getf (message-folders message) :unread)))
-               (update-folder-data message :read :last-read-comment (message-latest-comment message)))))
+         (mark-messages-read messages)
          (see-other next))
 
         ((post-parameter "mark-unread")

@@ -68,7 +68,7 @@ Thanks for sharing your gifts with us!
              (:tr (:td :style "padding: 4px 12px;"
                      "Personal message from the Kindista crew: "
                       (:br)
-                      "\"" (str (html-text text)) "\"")))))
+                      "\"" (str (email-text text)) "\"")))))
 
     (:p :style *style-p*
       "Thanks for sharing your gifts with us!")

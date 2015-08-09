@@ -213,14 +213,14 @@ url
 
       (:p :style *style-p* "Hi " (str name) ",")
 
-      (:p :style *style-p* (str text))
+      (:p :style *style-p* (str (email-text text)))
 
      (:p :style *style-p*
       (str (string-capitalize on-type-string)) " details:")
      (:table :cellspacing 0 :cellpadding 0
              :style *style-quote-box*
        (:tr (:td :style "padding: 4px 12px;"
-              (str (ellipsis (or on-title on-details))))))
+              (str (ellipsis (or on-title on-details) :email t)))))
 
       (when message
         (htm
@@ -228,7 +228,7 @@ url
           (:table :cellspacing 0 :cellpadding 0
                   :style *style-quote-box*
             (:tr (:td :style "padding: 4px 12px;"
-                   (str message))))))
+                   (str (email-text message)))))))
 
       (:p :style *style-p*
         "To reply to "

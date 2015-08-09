@@ -166,6 +166,9 @@
         (when (ppcre:scan +text-scanner+ word)
           (collect word))))
 
+(defun word-count (string)
+  (length (words-from-string string)))
+
 (defun emails-from-string (string)
   (iter (for email in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
         (when (ppcre:scan +email-scanner+ email)
@@ -355,7 +358,9 @@
       (if plain-text
         (s+ newtext "...")
         (html
-          (str (html-text newtext))
+          (str (if email
+                 newtext
+                 (html-text newtext)))
           "..."
           (when see-more
             (htm (:a :href see-more
