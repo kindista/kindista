@@ -72,7 +72,7 @@
         ((password-match-p user (post-parameter "password"))
          (setf (token-userid *token*) user)
          (notice :login)
-         (see-other (if (not (getf *user* :active))
+         (see-other (if (not (db user :active))
                       "/settings#reactivate"
                       (or next "/home"))))
         (t
