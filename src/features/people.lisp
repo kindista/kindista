@@ -45,6 +45,15 @@
             ))))
     ids))
 
+(defun reset-notification-settings (userid)
+ (modify-db userid :notify-gratitude t
+                   :notify-message t
+                   :notify-reminders t
+                   :notify-expired-invites t
+                   :notify-blog t
+                   :notify-inventory-digest t
+                   :notify-kindista t))
+
 (defun create-person (&key name email password host aliases pending)
   (let* ((person-id (insert-db (list :type :person
                                      :name name
@@ -67,7 +76,8 @@
          (person (db person-id)))
 
     ;; to monitor mystery bug that occasionally records these values incorrectly
-    (unless (and (getf person :notify-gratitude)
+    (unless (and (getf person :active)
+                 (getf person :notify-gratitude)
                  (getf person :notify-message)
                  (getf person :notify-reminders)
                  (getf person :notify-expired-invites)
