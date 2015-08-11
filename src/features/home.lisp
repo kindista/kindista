@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -165,17 +165,16 @@
     :hide-menu t))
 
 (defun get-home ()
-  (with-user
-    (cond
-      ((or (confirmed-location) (not *user*))
-       (notice :home)
-       (standard-home))
+  (cond
+    ((or (confirmed-location) (not *user*))
+     (notice :home)
+     (standard-home))
 
-      ((and (getf *user* :lat)
-            (getf *user* :long))
-       (notice :home-verify-location)
-       (get-verify-address :next-url "/home"))
+    ((and (getf *user* :lat)
+          (getf *user* :long))
+     (notice :home-verify-location)
+     (get-verify-address :next-url "/home"))
 
-      (t
-       (notice :home-setup)
-       (newuser-home)))))
+    (t
+     (notice :home-setup)
+     (newuser-home))))

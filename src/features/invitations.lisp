@@ -38,19 +38,19 @@
 (defun create-invitation (email &key text invite-request-id groups (expires (* 90 +day-in-seconds+)) (host *userid*) self name gratitude-id)
 ; self invitations are verifications for alternate email addresses
   (let* ((time (get-universal-time))
-         (invitation (insert-db `(:type :invitation
-                                  :host ,host
-                                  :invite-request-id ,invite-request-id
-                                  :token ,(random-password 9)
-                                  :self ,self
-                                  :groups ,groups
-                                  :gratitudes ,(when gratitude-id
-                                                 (list gratitude-id))
-                                  :recipient-email ,email
-                                  :text ,text
-                                  :name ,name
-                                  :times-sent ,(list time)
-                                  :valid-until ,(+ time expires)))))
+         (invitation (insert-db (list :type :invitation
+                                      :host host
+                                      :invite-request-id invite-request-id
+                                      :token (random-password 9)
+                                      :self self
+                                      :groups groups
+                                      :gratitudes (when gratitude-id
+                                                     (list gratitude-id))
+                                      :recipient-email email
+                                      :text text
+                                      :name name
+                                      :times-sent (list time)
+                                      :valid-until (+ time expires)))))
 
     (notice :send-invitation :time time
                              :id invitation

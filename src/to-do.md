@@ -1,10 +1,15 @@
 [ ] statement of gratitude by email
-    [ ] on server, ,d invitation-notice-handler and reload notice handlers
     [ ] test with friends and contacts
 [ ] make sure blog/kindista/etc mailings don't go out to (db id :active nil) users
     [ ] if they want to be notified when gratitudes are posted to their account
         let them know that they won't be shown on their profile until they
         reactivate? (if this is so, then email should remind of this detail)
+[ ] highlight community tab
+[ ] group invite notification for new accounts
+[ ] notify of contact adds
+[ ] don't display message on group invite if there's no message
+[ ] enable gratitude recipients to hide gratitudes
+[ ] better matching of search results
 [ ] add gratitude option for standard invitations
 [ ] email preferences for deactivated accounts
 [ ] merge duplicate accounts

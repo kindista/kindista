@@ -45,25 +45,25 @@
             ))))
     ids))
 
-(defun create-person (&key name email password host aliases (pending nil))
-  (insert-db `(:type :person
-               :name ,name
-               :aliases ,aliases
-               :emails ,(list email)
-               :host ,host
-               :pending ,pending
-               :active t
-               :help t
-               :pass ,(new-password password)
-               :created ,(get-universal-time)
-               :unsubscribe-key ,(random-password 18)
-               :notify-gratitude t
-               :notify-message t
-               :notify-reminders t
-               :notify-expired-invites t
-               :notify-blog t
-               :notify-inventory-digest t
-               :notify-kindista t)))
+(defun create-person (&key name email password host aliases pending)
+  (insert-db (list :type :person
+                   :name name
+                   :aliases aliases
+                   :emails (list email)
+                   :host host
+                   :pending pending
+                   :active t
+                   :help t
+                   :pass (new-password password)
+                   :created (get-universal-time)
+                   :unsubscribe-key (random-password 18)
+                   :notify-gratitude t
+                   :notify-message t
+                   :notify-reminders t
+                   :notify-expired-invites t
+                   :notify-blog t
+                   :notify-inventory-digest t
+                   :notify-kindista t)))
 
 (defun index-person (id data)
   (let ((result (make-result :id id
@@ -297,8 +297,10 @@
 (defun find-people-with-incorrect-communication-settings ()
   (sort (iter (for id in *active-people-index*)
           (let ((data (db id)))
-            (when (or (not (getf data :notify-kindista))
-                      (not (getf data :notify-reminders)))
+            (when (or
+                      ;(not (getf data :notify-kindista))
+                      ;(not (getf data :notify-reminders))
+                       (not (getf data :notify-message)))
               (collect id)))) #'<))
 
 (defun find-people-with-incorrect-address-settings ()

@@ -30,16 +30,16 @@
          (message-folders (when subjects
                             (list :inbox (remove-duplicates
                                            (mapcar #'car people-list)))))
-         (gratitude (insert-db `(:type :gratitude
-                                 :author ,author
-                                 :subjects ,subjects
-                                 :people ,people
-                                 :pending ,pending
-                                 :transaction-id ,transaction-id
-                                 :message-folders ,message-folders
-                                 :text ,text
-                                 :on ,on
-                                 :created ,time))))
+         (gratitude (insert-db (list :type :gratitude
+                                     :author author
+                                     :subjects subjects
+                                     :people people
+                                     :pending pending
+                                     :transaction-id transaction-id
+                                     :message-folders message-folders
+                                     :text text
+                                     :on on
+                                     :created time))))
     (when subjects
       (notice :new-gratitude :time time
                              :id gratitude))
