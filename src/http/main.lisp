@@ -49,6 +49,7 @@
   (let ((data (cddddr *notice*)))
    (send-error-notification-email :on (getf data :on)
                                   :url (getf data :url)
+                                  :data (getf data :data)
                                   :userid (getf data :userid))))
 
 (defun not-found ()
@@ -390,7 +391,7 @@
          (format *trace-output* "error ~A while writing to error log, error not logged~%" e))))))
 
 (defun send-hunchentoot-error-notification-email (message)
-  "Another function exists for sending specific errors within the codebase. Seesend-error-notification-email in email/error-notifications.lisp"
+  "Another function exists for sending specific errors within the codebase. See send-error-notification-email in email/error-notifications.lisp"
   (cl-smtp:send-email +mail-server+
                       "Kindista <noreply@kindista.org>"
                       *error-message-email*

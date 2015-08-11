@@ -107,7 +107,7 @@
                             collect id)))
 
     (unless result
-      (notice :error :note "no db result on reindex-group-location"))
+      (notice :error :on "no db result on reindex-group-location"))
 
     (geo-index-remove *groups-geo-index* result)
     (geo-index-remove *activity-geo-index* result)
