@@ -166,6 +166,9 @@
         (when (ppcre:scan +text-scanner+ word)
           (collect word))))
 
+(defun word-count (string)
+  (length (words-from-string string)))
+
 (defun emails-from-string (string)
   (iter (for email in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
         (when (ppcre:scan +email-scanner+ email)
@@ -208,17 +211,18 @@
 
 (defun activity-rank
   (item
-   &key (user *user*)
-        (userid *userid*)
-        (contacts (getf user :following))
-        (lat (if *user* *latitude* (getf user :lat)))
-        (long (if *user* *longitude* (getf user :long)))
+   &key (userid *userid*)
+        (user *user*)
         (contact-multiplier 1)
         (distance-multiplier 1)
    &aux (age (- (get-universal-time)
                 (or (result-time item) 0)))
+        (contacts (getf user :following))
+        (lat (or (getf user :lat) *latitude*))
+        (long (or (getf user :long) *longitude*))
         (contact-p (intersection contacts (result-people item)))
-        (self-offset (if (= (car (result-people item)) userid)
+        (self-offset (if (eql (car (result-people item)) userid)
+                       ;; don't use "=" because userid can be nil
                        -100000
                        0))
         (distance (if (and (result-latitude item) (result-longitude item))
@@ -354,7 +358,9 @@
       (if plain-text
         (s+ newtext "...")
         (html
-          (str (html-text newtext))
+          (str (if email
+                 newtext
+                 (html-text newtext)))
           "..."
           (when see-more
             (htm (:a :href see-more

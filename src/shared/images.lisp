@@ -27,9 +27,9 @@
                    "gif")
                   (t
                    (error "~S is not a supported content type" content-type))))
-         (image (insert-db `(:type :image
-                             :content-type ,content-type
-                             :modified ,(get-universal-time))))
+         (image (insert-db (list :type :image
+                                 :content-type content-type
+                                 :modified (get-universal-time))))
          (filename (strcat image "." suffix)))
    (copy-file path (merge-pathnames *original-images* filename))
    (modify-db image :filename filename)

@@ -1386,7 +1386,7 @@ img.small {
 }
 
 #menu > table {
- margin:0.75em 0.75em 0;
+ margin:0.7em 0.7em 0;
 }
 
 #menu table img {
@@ -1404,7 +1404,7 @@ img.small {
 }
 
 #menu table tr:last-child a {
- padding: 2px;
+ padding: 2px 0;
 }
 
 
@@ -1676,17 +1676,18 @@ div.error-border,
 textarea.error-border {
  border-radius: .25em;
  border-style: solid;
- border-width: 1px;
+ border-width: 2px;
  border-color: #900;
 }
 
 div.gratitude-selectors h3 {
  margin-top: 0;
  margin-left: 0.3em;
+
 }
 
 div.gratitude-selectors {
- margin-top: 1em;
+ margin: 1em 0;
 }
 
 tr.select-linked-inventory div.option-text {
@@ -3121,17 +3122,30 @@ form.recipients button.simple-link {
  margin-bottom: 0.8em;
 }
 
-form.recipients h2,
-form.recipients label {
+form.conversation.recipients button.yes.input-height {
+ margin-left: 0.5em;
+}
+
+form.recipients div.identity-selection label {
  font-weight: normal;
  display: inline-block;
  width: 4.5em;
  height: 100%;
 }
 
-form.recipients h2 {
- font-size: 1em;
- vertical-align: top;
+form.recipients div.identity-selection {
+ margin: 0.8em 0 0;
+}
+
+form.recipients textarea#message {
+ margin-top: 0.4em;
+}
+
+form.recipients legend {
+ float: left;
+ font-weight: normal;
+ width: 4.5em;
+ padding: 0 0 0 0;
 }
 
 form.recipients, ul.recipients {
@@ -3145,6 +3159,25 @@ div.new-gratitude menu.gratitude.recipients {
  vertical-align: top;
 }
 
+div.new-gratitude.recipient form.new-gratitude {
+ margin-bottom: 1.5em;
+}
+
+div.new-gratitude div#gratitude-by-email h3 {
+ line-height: 1.2em;
+ margin-bottom: 0.2em;
+}
+
+div.new-gratitude div#gratitude-by-email p.small {
+ max-width: 50em;
+ margin-top: 0;
+}
+
+div#gratitude-by-email label {
+ margin-top: 0.5em;
+ display: block;
+}
+
 div.new-gratitude label.recipients,
 menu.gratitude.recipients {
  display:inline-block;
@@ -3152,6 +3185,20 @@ menu.gratitude.recipients {
 
 li.recipients:last-child {
  margin-top: -0.5em;
+}
+
+.gratitude-invitation form.recipients div#gratitude-recipient {
+ margin-top: 1em;
+}
+
+.gratitude-invitation form.recipients div#gratitude-recipient span:first-child {
+ display: inline-block;
+ width: 4.5em;
+}
+
+.new-gratitude.item form.recipients button.cancel,
+.gratitude-invitation form.recipients button.cancel {
+ margin: 0;
 }
 
 form.recipients menu.recipients li {
@@ -3302,8 +3349,21 @@ div.settings menu.bar {
  vertical-align: top;
 }
 
+.settings-item ul#names li {
+ display: table-row;
+}
+
+.settings-item ul#names li span {
+ padding: 0 0.4em 0.4em 0;
+ display: table-cell;
+}
+
+.settings-item ul#names input[type=text]:first-child {
+ margin-top: 0;
+}
+
 .settings-item .details .current-value,
-.settings-item .details .form-elements {
+.settings-item .details ul.padding-top {
  padding-top: 0.4em;
 }
 
@@ -3936,21 +3996,27 @@ div.transaction-option a,
 div.transaction-option button {
  color: #3c6dc8;
  font-weight: bold;
- display: inline-block;
+ display: table;
+ text-align: left;
  margin: 0;
  padding: 0;
 }
 
-@media (max-width:40em) {
- div.transaction-option a,
- div.transaction-option button {
-   line-height: 2.5em;
- }
+div.transaction-option div {
+ display: table-cell;
+ vertical-align: middle;
+ padding-right: 0.5em;
 }
 
 div.transaction-option {
  margin-bottom: 1em;
  margin-left: 0;
+}
+
+@media (max-width:40em) {
+ div.transaction-option {
+  margin-bottom: 1.5em;
+ }
 }
 
 div.transaction-option button > img,

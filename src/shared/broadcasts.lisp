@@ -24,14 +24,13 @@
                           (getf notice :user-id))))
 
 (defun create-broadcast (&key path title author tags blog-p amazon-smile-p)
-  (insert-db `(:type ,(if blog-p :blog :broadcast)
-               :created ,(get-universal-time)
-               :title ,title
-               :author ,author
-               :tags ,tags
-               :amazon-smile-p ,amazon-smile-p
-               :path ,path
-               )))
+  (insert-db (list :type (if blog-p :blog :broadcast)
+                   :created (get-universal-time)
+                   :title title
+                   :author author
+                   :tags tags
+                   :amazon-smile-p amazon-smile-p
+                   :path path)))
 
 (defun new-broadcast-html (title action-url &key blog-p)
   (html
@@ -169,8 +168,7 @@
                                       :if-exists :supersede)
     (with-standard-io-syntax
       (let ((*print-pretty* t))
-        (princ text file))
-      (terpri)))
+        (princ text file))))
  ;(copy-file file new-file-path)
   (s+ local-dir hyphenated-title))
 

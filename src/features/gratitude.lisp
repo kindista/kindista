@@ -20,23 +20,29 @@
 (defun new-gratitude-notice-handler ()
   (send-gratitude-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-gratitude (&key author subjects text on transaction-id (time (get-universal-time)))
+(defun create-gratitude (&key author subjects pending text on transaction-id (time (get-universal-time)))
+;; when gratitude is posted on an invitation
+;; their will not be any subject until the recipient joins kindista
   (let* ((people-list (mailbox-ids subjects))
          (people (mapcar #'(lambda (mailbox)
                              (cons mailbox :unread))
                          people-list))
-         (message-folders (list :inbox (remove-duplicates (mapcar #'car people-list))))
-         (gratitude (insert-db `(:type :gratitude
-                                 :author ,author
-                                 :subjects ,subjects
-                                 :people ,people
-                                 :transaction-id ,transaction-id
-                                 :message-folders ,message-folders
-                                 :text ,text
-                                 :on ,on
-                                 :created ,time))))
-    (notice :new-gratitude :time time
-                           :id gratitude)
+         (message-folders (when subjects
+                            (list :inbox (remove-duplicates
+                                           (mapcar #'car people-list)))))
+         (gratitude (insert-db (list :type :gratitude
+                                     :author author
+                                     :subjects subjects
+                                     :people people
+                                     :pending pending
+                                     :transaction-id transaction-id
+                                     :message-folders message-folders
+                                     :text text
+                                     :on on
+                                     :created time))))
+    (when subjects
+      (notice :new-gratitude :time time
+                             :id gratitude))
     gratitude))
 
 (defun add-gratitude-subjects (gratitude-id subject-ids)
@@ -153,42 +159,45 @@
    (with-locked-hash-table (*db-results*)
      (setf (gethash id *db-results*) result))
 
-   (with-locked-hash-table (*gratitude-index*)
-     (push id (gethash author-id *gratitude-index*)))
+   ;; don't index if we're waiting for the recipient to sign up for kindista
+   (unless (eq (getf data :pending) :subject-account-creation)
+     (with-locked-hash-table (*gratitude-index*)
+       (push id (gethash author-id *gratitude-index*)))
 
-   (with-locked-hash-table (*profile-activity-index*)
-     (dolist (person people)
-       (asetf (gethash person *profile-activity-index*)
-              (safe-sort (push result it) #'> :key #'result-time))))
+     (with-locked-hash-table (*profile-activity-index*)
+       (dolist (person people)
+         (asetf (gethash person *profile-activity-index*)
+                (safe-sort (push result it) #'> :key #'result-time))))
 
-   (awhen (getf data :on)
-     (index-gratitude-link id it created))
+     (awhen (getf data :on)
+       (index-gratitude-link id it created))
 
-   (unless (getf data :transaction-id)
-     (index-message id data))
+     (unless (getf data :transaction-id)
+       (index-message id data))
 
-   ;; unless gratitude is older than 180 days
-   (unless (< (result-time result) (- (get-universal-time) 15552000))
+     ;; unless gratitude is older than 180 days
+     (unless (< (result-time result) (- (get-universal-time) 15552000))
 
-     (geo-index-insert *activity-geo-index* result)
+       (geo-index-insert *activity-geo-index* result)
 
-     ;;unless gratitude is older than 30 days
-     (unless (< (result-time result) (- (get-universal-time) 2592000))
-       (with-mutex (*recent-activity-mutex*)
-         (push result *recent-activity-index*)))
+       ;;unless gratitude is older than 30 days
+       (unless (< (result-time result) (- (get-universal-time) 2592000))
+         (with-mutex (*recent-activity-mutex*)
+           (push result *recent-activity-index*)))
 
-     (with-locked-hash-table (*gratitude-results-index*)
-       (dolist (subject subjects)
-         (let* ((user (db subject))
-                (location (getf user :location))
-                (result (make-result :type :gratitude
-                                     :latitude (getf user :lat)
-                                     :longitude (getf user :long)
-                                     :people people
-                                     :id id
-                                     :time created)))
-           (push result (gethash id *gratitude-results-index*))
-           (when location (geo-index-insert *activity-geo-index* result))))))))
+       ;; to geo-index separately for each subject
+       (with-locked-hash-table (*gratitude-results-index*)
+         (dolist (subject subjects)
+           (let* ((user (db subject))
+                  (location (getf user :location))
+                  (result (make-result :type :gratitude
+                                       :latitude (getf user :lat)
+                                       :longitude (getf user :long)
+                                       :people people
+                                       :id id
+                                       :time created)))
+             (push result (gethash id *gratitude-results-index*))
+             (when location (geo-index-insert *activity-geo-index* result)))))))))
 
 (defun parse-subject-list (subject-list &key remove)
   (delete-duplicates
@@ -393,7 +402,7 @@
         relevant-requests
    &aux (submit-buttons
           (html
-            (:tr :class "select-linked-inventory" 
+            (:tr :class "select-linked-inventory"
               (:td)
               (:td
                 (:button :type "submit"
@@ -403,7 +412,7 @@
                  (:button :class "yes"
                           :type "submit"
                           :name "create"
-                          (str (if existing-url "Save" "Create"))))))))
+                          (str (if existing-url "Save" "Post gratitude"))))))))
   (if subjects
     (standard-page
       (if existing-url "Edit your statement of gratitude" "Express gratitude")
@@ -414,34 +423,39 @@
                      "Express gratitude")))
          (:div :class "item"
           (:form :method "post"
-           :action (or existing-url "/gratitude/new")
-           :class "recipients"
-           (:h2 "About:")
-           (:menu :id "recipients"
-                  :type "toolbar"
+                 :action (or existing-url "/gratitude/new")
+                 :class "recipients"
+           (:fieldset
+             (:legend "About:")
+             (:ul :id "recipients"
                   :class "gratitude recipients"
-            (unless subjects
-              (htm (:li (:em "nobody yet"))))
-            (dolist (subject subjects)
-              (htm
-                (:li
-                  (str (db subject :name))
-                  (unless (or single-recipient existing-url)
-                    (htm
-                      (:button :class "text large x-remove" :type "submit" :name "remove" :value subject " ⨯ "))))))
-            (unless (or single-recipient existing-url)
-              (htm
-                (:li :class "recipients" (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or group")))))
+              (unless subjects
+                (htm (:li (:em "nobody yet"))))
+              (dolist (subject subjects)
+                (htm
+                  (:li
+                    (:label :for subject (str (db subject :name)))
+                    (unless (or single-recipient existing-url)
+                      (htm
+                        (:button :class "text large x-remove"
+                                 :id subject
+                                 :type "submit"
+                                 :name "remove"
+                                 :value subject
+                                 " ⨯ "))))))
+              (unless (or single-recipient existing-url)
+                (htm
+                  (:li :class "recipients" (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or group")))))
 
-           (when subjects
-             (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" subjects))))
-           (when next
-             (htm (:input :type "hidden" :name "next" :value next)))
+             (when subjects
+               (htm (:input :type "hidden" :name "subject" :value (format nil "~{~A~^,~}" subjects))))
+             (when next
+               (htm (:input :type "hidden" :name "next" :value next))))
 
            (unless existing-url
              (awhen (groups-with-user-as-admin)
                (htm
-                 (:div :class "clear"
+                 (:div :class "clear identity-selection"
                   (:label :for "identity-selection" :class "from" "From:")
                   (str (identity-selection-html (or groupid *userid*)
                                                 it
@@ -516,59 +530,45 @@
                         when (eql (mod i 3) 0)
                         do (str submit-buttons)
                         finally (unless (eql (mod i 3) 1)
-                                  (htm
-                                    (:tr (:td)
-                                     (:td (str submit-buttons)))))))))
+                                  (str submit-buttons))))))
 
              (htm
                (awhen on-item
                  (str it))
 
-               (:p
-                 (:button :type "submit"
-                  :class "cancel"
-                  :name "cancel"
-                  "Cancel")
-                 (:button :class "yes"
-                  :type "submit"
-                  :name "create"
-                  (str (if existing-url "Save" "Create")))))))))))
-
+               (:div
+                 (str submit-buttons)))))))))
     ;; else
     (gratitude-add-subject :text text :next next)))
 
-(defun gratitude-add-subject (&key subjects text next (results 'none) groupid)
+(defun gratitude-add-subject (&key subjects text next (results 'none) groupid invitation-name invitation-email error-field)
   (standard-page
     "Express gratitude"
     (html
-      (:div :class "item"
+      (:div :class "new-gratitude recipient item"
        (str (pending-disclaimer "statement of gratitude"))
        (:h2 "Who would you like to write about?")
        (:h3 "Search for a person or group")
        (:form :method "post" :class "new-gratitude" :action "/gratitude/new"
          (:input :type "text" :name "name")
-         (:button :type "submit" :class "yes input-height" :name "search" "Search")
+         (:div :class "inline-block"
+           (:button :type "submit"
+                    :class "yes input-height"
+                    :name "search"
+                    "Search")
 
-         (:button :type "submit"
-                  :class "cancel input-height"
-                  :name (if subjects "back" "cancel")
-                  "Back")
+          (:button :type "submit"
+                    :class "cancel input-height"
+                    :name (if subjects "back" "cancel")
+                    (str (if subjects "Back" "Cancel"))))
 
-         (if (or (eq results nil) (eq results 'none))
-           (progn
-             (htm
-               (:h3 "Or, select one of your contacts")
-               (:menu :type "toolbar"
-                 (dolist (contact (contacts-alphabetically *user*))
-                   (htm (:li (:button :class "text" :type "submit" :value (car contact) :name "add" (str (cadr contact)))))))))
-           (progn
-             (htm
-               (:h3 "Search results")
-               (dolist (group (car results))
-                 (str (id-button (car group) "add")))
-               (dolist (person (cdr results))
-                 (str (id-button (car person) "add" (cdr person)))))))
-
+         (when (and results (not (eq results 'none)))
+           (htm
+             (:h3 "Search results")
+             (dolist (group (car results))
+               (str (id-button (car group) "add")))
+             (dolist (person (cdr results))
+               (str (id-button (car person) "add" (cdr person))))))
 
          (when groupid
            (htm (:input :type "hidden" :name "identity-selection" :value groupid)))
@@ -578,9 +578,105 @@
            (htm (:input :type "hidden" :name "next" :value next)))
 
          (when text
-           (htm (:input :type "hidden" :name "text" :value (escape-for-html text))))
+           (htm (:input :type "hidden" :name "text" :value (escape-for-html text)))))
+       (when (and (not subjects)
+                  (or (not results) (eq results 'none)))
+         (htm
+           (:h2 "Or...")
+           (:div :id "gratitude-by-email"
+             (:h3 "Express gratitude about someone who isn't on Kindista yet")
+             (:p :class "small"
+              "They will get an email with your statement of gratitude and an invitation to join Kindista.  When they join, your gratitude will be added to their reputation.")
+             (:form :method "post" :action "/gratitude/new"
+              (:input :type "hidden" :name "invitation-recipient" :value "on")
+              (:label :for "invitation-name"
+                      :class (when (eq error-field :invitation-name)
+                               "error")
+                      "Full Name")
+              (:input :type "text"
+                      :id "invitation-name"
+                      :name "invitation-name"
+                      :value invitation-name)
+              (:label :for "invitation-email"
+                      :class (when (eq error-field :invitation-email)
+                               "error")
+                      "Email Address")
+              (:input :type "text"
+                      :id "invitation-email"
+                      :name "invitation-email"
+                      :value invitation-email)
+              (:div :class "inline-block"
+               (:button :type "submit"
+                        :class "yes input-height"
+                        :name "enter-gratitude-invite-details"
+                        "Next")
 
-         )))))
+               (:button :type "submit"
+                        :class "cancel input-height"
+                        :name "cancel"
+                        "Cancel"))))))))))
+
+(defun gratitude-invitation-form-html (name email &key text groupid error)
+  (standard-page
+    "Express Gratitude"
+    (html
+      (:div :class "new-gratitude item"
+       (:h2 "Express gratitude")
+       (:form :method "post"
+              :action "/gratitude/new"
+              :class "recipients"
+         (:input :type "hidden" :name "invitation-name" :value name)
+         (:input :type "hidden" :name "invitation-email" :value email)
+         (:input :type "hidden" :name "invitation-gratitude" :value "on")
+         (:div :id "gratitude-recipient"
+           (:span "About:")
+           (:span "\"" (str name) "\" &lt;" (str email) " &gt;" ))
+
+         (awhen (groups-with-user-as-admin)
+           (htm
+             (:div :class "clear identity-selection"
+              (:label :for "identity-selection" :class "from" "From:")
+              (str (identity-selection-html (or groupid *userid*)
+                                            it
+                                            :class "identity recipients profile-gratitude"
+                                            :onchange "this.form.submit()"))))) 
+       (:label :for "message" :class "message" "Message")
+       (:textarea :rows "8"
+                  :id "message"
+                  :class (when error "error-border")
+                  :name "text"
+                  (str text))
+       (:div
+         (:button :type "submit"
+                  :class "cancel"
+                  :name "back"
+                  "Back")
+         (:button :class "yes"
+                  :type "submit"
+                  :name "create"
+                  "Post gratitude")))))
+
+    :class "gratitude-invitation"))
+
+(defun new-gratitude-invitation
+  (invitation-name
+   invitation-email
+   gratitude-text
+   &key groupid
+        ;; group is gratitude author. don't invite to join the group.
+        (userid *userid*)
+   &aux (gratitude-id (create-gratitude :author (or groupid *userid*)
+                                        :pending :subject-account-creation
+                                        :text gratitude-text))
+        (existing-invitation-id (find-invitation-id-by-host userid
+                                                            invitation-email)))
+  (if existing-invitation-id
+    (resend-invitation existing-invitation-id
+                       :invitee-name invitation-name
+                       :new-gratitude-id gratitude-id)
+    (create-invitation invitation-email
+                       :name invitation-name
+                       :gratitude-id gratitude-id)))
 
 (defun get-gratitudes-new ()
   (require-user
@@ -634,6 +730,11 @@
            (adminp (group-admin-p groupid))
            (recipient-id (if adminp groupid *userid*))
            (posted-on-type (post-parameter-string "on-type"))
+           (invitation-name (post-parameter-string "invitation-name"))
+           (unvalidated-invitation-email (post-parameter-string
+                                           "invitation-email"))
+           (invitation-email (when (scan +email-scanner+ unvalidated-invitation-email)
+                               unvalidated-invitation-email))
            (on-types (cond
                        ((string= posted-on-type "offer") :offers)
                        ((string= posted-on-type "request") :requests)))
@@ -669,9 +770,12 @@
                                   :relevant-offers relevant-offers
                                   :relevant-requests relevant-requests))
 
-             (g-add-subject (&key results subjects)
+             (g-add-subject (&key results subjects error-field)
                (gratitude-add-subject :results results
                                       :subjects subjects
+                                      :invitation-name invitation-name
+                                      :invitation-email unvalidated-invitation-email
+                                      :error-field error-field
                                       :text text
                                       :next next
                                       :groupid (when adminp groupid))))
@@ -686,6 +790,60 @@
           ((not (confirmed-location))
            (flash "You must set your street address on your settings page before you can post gratitude about someone." :error t)
            (see-other (or next "/home")))
+
+          ((post-parameter "invitation-recipient")
+           (cond
+             ((not invitation-name)
+              (flash "Please enter the name of the person you are expressing gratitude about."
+                     :error t)
+              (g-add-subject :error-field :invitation-name))
+
+             ((not invitation-email)
+              (flash "Please enter a valid email address for the person you are expressing gratitude about."
+                     :error t)
+              (g-add-subject :error-field :invitation-email))
+             (t
+              (aif (gethash invitation-email *email-index*)
+                (gratitude-compose :subjects (list it)
+                                   :single-recipient (unless (db it :active)
+                                                       t))
+                (gratitude-invitation-form-html invitation-name
+                                                invitation-email)))))
+
+          ((post-parameter "invitation-gratitude")
+           (let ((groupid (unless (eql (post-parameter-integer
+                                         "identity-selection")
+                                       *userid*)
+                              (post-parameter-integer "identity-selection"))))
+             (flet ((retry (&optional e) (gratitude-invitation-form-html
+                                           invitation-name
+                                           invitation-email
+                                           :text (post-parameter-string "text")
+                                           :groupid groupid
+                                           :error e)))
+               (cond
+                 ((or (not invitation-email) (not invitation-name))
+                  (flash "There was an error with the name or email address you entered. Please try again. " :error t)
+                  (g-add-subject))
+
+                 ((and (post-parameter "create")
+                       (< (word-count (post-parameter-string "text"))
+                          7))
+                  (flash (s+ "Please write a little more in your statement of gratitude to " invitation-name ".") :error t)
+                  (retry t))
+
+                 ((post-parameter "create")
+                   (flash (s+ "You have sent a statment of gratitude to "
+                              invitation-email
+                              " along with an invitation to join Kindista. "
+                              "Your gratitude will be posted to "
+                              invitation-name " when they sign up for Kindista."))
+                   (new-gratitude-invitation invitation-name
+                                             invitation-email
+                                             text
+                                             :groupid groupid)
+                   (see-other "/home"))
+                 (t (retry))))))
 
           ((post-parameter "add")
            (if (string= (post-parameter "add") "new")
@@ -727,11 +885,17 @@
                 text)
 
            (let* ((time (get-universal-time))
+                  (g-subjects (remove recipient-id subjects))
+                  (inactive-subject (when (and (= (length g-subjects) 1)
+                                               (not (db (car g-subjects)
+                                                        :active)))
+                                      (db (car g-subjects))))
                   (new-id (create-gratitude :author recipient-id
-                                            :subjects (remove recipient-id
-                                                              subjects)
+                                            :subjects g-subjects
                                             :on on-id
                                             :transaction-id transaction-id
+                                            :pending (when inactive-subject
+                                                       :subject-account-reactivation)
                                             :time time
                                             :text text))
                   (gratitude-url (format nil "/gratitude/~A" new-id)))
@@ -770,8 +934,16 @@
                                                       :action :gratitude-posted
                                                       :comment new-id)))))))
 
-                 (flash "Your statement of gratitude has been posted")
-                 (see-other (or next gratitude-url))))))
+                 (flash (if inactive-subject
+                          (s+ (getf inactive-subject :name)
+                              " has deactivated their account. "
+                              "Your statement of gratitude will be posted "
+                              "when they reactivate their account.")
+                          "Your statement of gratitude has been posted"))
+                 (see-other (or next
+                                (if inactive-subject
+                                  "/home"
+                                  gratitude-url)))))))
 
           (t
            (g-compose :subjects subjects)))))))

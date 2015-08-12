@@ -83,14 +83,11 @@
          (htm (:h2 "Create a Kindista account")
               (:h3 "Step 2 of 3: Set your password"))
          (htm (:h2 "Please RSVP to your invitation. ")))
-       (:p "Your activation code is:  " (:strong (str token))
-        (:br) "Your email address is: " (:strong (str email)))
-       (:p "You will be able to change your email address on the Settings page after you sign up.")
+       (:p "Your email address is: " (:strong (str email)))
+       (:p "You will be able to change it or add additional email addresses on the Settings page after you sign up.")
        (:form :method "POST" :action "/signup" :id "signup"
         (:input :type "hidden" :name "token" :value token)
         (:input :type "hidden" :name "email" :value email)
-        (awhen name
-          (htm (:input :type "hidden" :name "name" :value it)))
         (unless (eq host +kindista-id+)
           (htm (:h2 "Create an account")))
         (:label :for "name" "Full Name")
@@ -180,8 +177,7 @@
            (id (or (car valid-token) (post-parameter-integer "invite-id")))
            (invitation (db id))
            (host (getf invitation :host))
-           (invite-request-id (getf invitation :invite-request-id))
-           (new-id nil))
+           (invite-request-id (getf invitation :invite-request-id)))
       (when *user* (reset-token-cookie))
       (if invitation
         (labels ((try-again (e)
@@ -232,51 +228,12 @@
               (try-again "Please select an account type"))
 
             (t
-               (setf new-id
-                     (if (integerp invite-request-id)
-                       ;for legacy invitation requests
-                       ;this can be removed when there are no 
-                       ;invite requests in *invite-request-index*
-                       (let ((it invite-request-id))
-                         (progn
-                           (modify-db it :type :person
-                                         :name name
-                                         :emails (list email)
-                                         :host +kindista-id+
-                                         :active t
-                                         :help t
-                                         :pass (new-password (post-parameter "password"))
-                                         :created (get-universal-time)
-                                         :notify-gratitude t
-                                         :notify-message t
-                                         :notify-kindista t
-                                         :notify-reminders t
-                                         :email nil
-                                         :requested nil)
-                           (with-locked-hash-table (*db-results*)
-                             (remhash it *db-results*))
-                           (when (member it *invite-request-index* :key #'result-id)
-                             (with-mutex (*invite-request-mutex*)
-                              (setf *invite-request-index* (remove it *invite-request-index* :key #'result-id))))
-                           (index-person it (db it))
-                           it))
-                       (create-person :name (post-parameter "name")
-                                      :pending (when (eq host +kindista-id+) t)
-                                      :host host
-                                      :email (post-parameter "email")
-                                      :password (post-parameter "password"))))
-               (setf (token-userid *token*) new-id)
-               (dolist (group (getf invitation :groups))
-                 (add-group-member new-id group))
-               (add-contact host new-id)
-               (unless (eql host +kindista-id+)
-                 (add-contact +kindista-id+ new-id))
-               (with-locked-hash-table (*invited-index*)
-                 (pushnew new-id (gethash host *invited-index*)))
-               ;; see if anyone has invited this email to a group
-               ;; or added to contacts
-               (pending-email-actions email new-id)
-               (see-other "/home"))))
+             (create-new-person-account name
+                                        email
+                                        host
+                                        invitation
+                                        invite-request-id)
+             (see-other "/home"))))
 
     (labels ((try-again (e)
                (signup-page :error e
@@ -309,3 +266,62 @@
                                         :expires (* 90 +day-in-seconds+)))))
 
            (signup-confirmation-sent id email)))))))))
+
+(defun create-new-person-account
+  (name
+   email
+   host
+   invitation
+   invite-request-id
+   &aux new-id
+        (aliases (unless (search (getf invitation :name) name :test #'equalp)
+                   (list (getf invitation :name)))))
+
+  (setf new-id
+        (if (integerp invite-request-id)
+          ;for legacy invitation requests
+          ;this can be removed when there are no 
+          ;invite requests in *invite-request-index*
+          (let ((it invite-request-id))
+            (progn
+              (modify-db it :type :person
+                            :name name
+                            :aliases aliases
+                            :emails (list email)
+                            :host +kindista-id+
+                            :active t
+                            :help t
+                            :pass (new-password (post-parameter "password"))
+                            :created (get-universal-time)
+                            :notify-gratitude t
+                            :notify-message t
+                            :notify-kindista t
+                            :notify-reminders t
+                            :email nil
+                            :requested nil)
+              (with-locked-hash-table (*db-results*)
+                (remhash it *db-results*))
+              (when (member it *invite-request-index* :key #'result-id)
+                (with-mutex (*invite-request-mutex*)
+                 (setf *invite-request-index* (remove it *invite-request-index* :key #'result-id))))
+              (index-person it (db it))
+              it))
+          (create-person :name (post-parameter "name")
+                         :aliases aliases
+                         :pending (when (eq host +kindista-id+) t)
+                         :host host
+                         :email (post-parameter "email")
+                         :password (post-parameter "password"))))
+  (setf (token-userid *token*) new-id)
+  (dolist (group (getf invitation :groups))
+    (add-group-member new-id group))
+  (add-contact host new-id)
+  (unless (eql host +kindista-id+)
+    (add-contact +kindista-id+ new-id))
+  (with-locked-hash-table (*invited-index*)
+    (pushnew new-id (gethash host *invited-index*)))
+  ;; see if anyone has invited this email to a group
+  ;; posted gratitude
+  ;; or added to contacts
+  (pending-email-actions email :userid new-id))
+

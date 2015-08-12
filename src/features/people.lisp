@@ -45,24 +45,52 @@
             ))))
     ids))
 
-(defun create-person (&key name email password host (pending nil))
-  (insert-db `(:type :person
-               :name ,name
-               :emails ,(list email)
-               :host ,host
-               :pending ,pending
-               :active t
-               :help t
-               :pass ,(new-password password)
-               :created ,(get-universal-time)
-               :unsubscribe-key ,(random-password 18)
-               :notify-gratitude t
-               :notify-message t
-               :notify-reminders t
-               :notify-expired-invites t
-               :notify-blog t
-               :notify-inventory-digest t
-               :notify-kindista t)))
+(defun reset-notification-settings (userid)
+ (modify-db userid :notify-gratitude t
+                   :notify-message t
+                   :notify-reminders t
+                   :notify-expired-invites t
+                   :notify-blog t
+                   :notify-inventory-digest t
+                   :notify-kindista t))
+
+(defun create-person (&key name email password host aliases pending)
+  (let* ((person-id (insert-db (list :type :person
+                                     :name name
+                                     :aliases aliases
+                                     :emails (list email)
+                                     :host host
+                                     :pending pending
+                                     :active t
+                                     :help t
+                                     :pass (new-password password)
+                                     :created (get-universal-time)
+                                     :unsubscribe-key (random-password 18)
+                                     :notify-gratitude t
+                                     :notify-message t
+                                     :notify-reminders t
+                                     :notify-expired-invites t
+                                     :notify-blog t
+                                     :notify-inventory-digest t
+                                     :notify-kindista t)))
+         (person (db person-id)))
+
+    ;; to monitor mystery bug that occasionally records these values incorrectly
+    (unless (and (getf person :active)
+                 (getf person :notify-gratitude)
+                 (getf person :notify-message)
+                 (getf person :notify-reminders)
+                 (getf person :notify-expired-invites)
+                 (getf person :notify-blog)
+                 (getf person :notify-inventory-digest)
+                 (getf person :notify-kindista))
+      (notice :error
+              :on "incorrect notification flags on new account creation"
+              :userid person-id
+              :url "/signup"
+              :data person))
+
+    person-id))
 
 (defun index-person (id data)
   (let ((result (make-result :id id
@@ -145,7 +173,7 @@
                             collect id)))
 
     (unless result
-      (notice :error :note "no db result on ungeoindex-person"))
+      (notice :error :on "no db result on ungeoindex-person"))
 
     (geo-index-remove *people-geo-index* result)
     (geo-index-remove *activity-geo-index* result)
@@ -525,6 +553,13 @@
     (geo-index-insert *activity-geo-index* result) 
     (with-mutex (*active-people-mutex*)
       (push id *active-people-index*))
+    (dolist (result (gethash id *profile-activity-index*))
+      (when (and (eq (result-type result) :gratitude)
+                 (find id (cdr (result-people result))))
+        (let* ((gratitude-id (result-id result))
+               (gratitude (db gratitude-id)))
+          (when (getf gratitude :pending)
+            (modify-db gratitude-id :pending nil)))))
     (modify-db id :active t
                   :notify-message t
                   :notify-kindista t
@@ -582,8 +617,10 @@
 (defun find-people-with-incorrect-communication-settings ()
   (sort (iter (for id in *active-people-index*)
           (let ((data (db id)))
-            (when (or (not (getf data :notify-kindista))
-                      (not (getf data :notify-reminders)))
+            (when (or
+                      ;(not (getf data :notify-kindista))
+                      ;(not (getf data :notify-reminders))
+                       (not (getf data :notify-message)))
               (collect id)))) #'<))
 
 (defun find-people-with-incorrect-address-settings ()

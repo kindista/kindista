@@ -151,7 +151,7 @@
           (when groupid
             (htm (:input :type "hidden" :name "groupid" :value groupid)))
           (:input :type "hidden" :name "next" :value *base-url*)
-            (:ul
+            (:ul :id "names"
               (:li (:span (:input :type "text"
                                   :name "name"
                                   :value (or group-name
@@ -159,7 +159,7 @@
                    (unless groupid
                      (htm (:span (:strong "display name")))))
               (unless groupid
-                (loop for i to 3
+                (loop for i to (max 3 (length aliases))
                       do (htm (:li
                                 (:span (:input :type "text"
                                                :name "aliases"
@@ -167,7 +167,7 @@
                                                         it)))
                                 (:span "nickname")))))))
         (html
-          (:ul
+          (:ul :id "names"
             (:li (:span (:strong (str (or group-name (getf *user* :name)))))
                  (when aliases (htm (:span (str "(displayed)")))))
             (dolist (alias aliases)
@@ -507,7 +507,7 @@
       "email"
       (html
         (:input :type "hidden" :name "next" :value "/settings/communication")
-        (:ul
+        (:ul :class "padding-top"
           (:li (:span :class "email-item" (:strong (str (car emails))))
                (:span :class "help-text" (:em "primary email")))
           (dolist (email alternates)
@@ -655,7 +655,7 @@
             (htm (:input :type "hidden" :name "email" :value it)))
           (when groupid
             (htm (:input :type "hidden" :name "groupid" :value groupid)))
-          (:ul
+          (:ul :class "padding-top"
             (:li (:input :type "checkbox"
                   :name "gratitude"
                   :checked (checkbox-value :notify-gratitude))
@@ -1339,19 +1339,7 @@
               (modify-db id :location-privacy (if (post-parameter "public-location") :public :private))
               (see-other (or (post-parameter "next") "/home")))
              (t
-              (multiple-value-bind (lat long address city state country street zip)
-                (geocode-address it)
-                (setf (getf (token-session-data *token*) :unverified-location)
-                      (list :lat lat
-                            :long long
-                            :address address
-                            :city city
-                            :state state
-                            :street street
-                            :zip zip
-                            :country country
-                            :location-privacy (if (post-parameter "public-location") :public :private))))
-
+              (log-unverified-token-location it)
               (see-other (if groupid
                            (url-compose "/settings/verify-address"
                                         "groupid" id
@@ -1395,8 +1383,7 @@
           ((post-parameter "confirm-deactivation")
            (deactivate-person *userid*)
            (flash "You have deactivated you account. If you change your mind you can reactivate your account on the settings page.")
-
-           (see-other "/settings/personal"))
+           (see-other "/"))
 
           ((post-parameter "cancel-plan")
 

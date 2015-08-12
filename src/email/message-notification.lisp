@@ -107,7 +107,12 @@
                (person (cdr recipient))
                (email (car (getf person :emails)))
                (unsub-key (getf person :unsubscribe-key))
+               (people (name-list (remove (caar recipient)
+                                          participants)
+                                  :func #'person-name
+                                  :maximum-links 5))
                (subject (subject-text groupid)))
+
           (cl-smtp:send-email
             +mail-server+
             "PleaseDoNotReply <noreply@kindista.org>"
@@ -116,10 +121,7 @@
             (comment-notification-email-text on-id
                                              sender-name
                                              subject
-                                             (name-list (remove (caar recipient)
-                                                                participants)
-                                                        :func #'person-name
-                                                        :maximum-links 5)
+                                             people
                                              text
                                              :email email
                                              :unsubscribe-key unsub-key
@@ -132,9 +134,7 @@
                             on-id
                             sender-name
                             subject
-                            (name-list (remove (caar recipient) participants)
-                                       :func #'person-name
-                                       :maximum-links 5)
+                            people
                             text
                             :email email
                             :unsubscribe-key unsub-key
@@ -219,7 +219,7 @@ from (awhen group-name (s+ " from " it )) " says:"
                      :cellpadding 0
                      :style *style-quote-box*
                (:tr (:td :style "padding: 4px 12px;"
-                        "\"" (str (html-text it)) "\"")))
+                        "\"" (str (email-text it)) "\"")))
              (:br)))
 
       (:p :style *style-p*
@@ -232,7 +232,7 @@ from (awhen group-name (s+ " from " it )) " says:"
               :cellpadding 0
               :style *style-quote-box*
         (:tr (:td :style "padding: 4px 12px;"
-                 "\"" (str (html-text text)) "\"")))
+                 "\"" (str (email-text text)) "\"")))
 
       (:p :style *style-p*
        "You can see the conversation on Kindista here: "

@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -105,7 +105,7 @@ Thanks for sharing your gifts with us!
              (:tr (:td :style "padding: 4px 12px;"
                      "Personal message from the Kindista crew: "
                       (:br)
-                      "\"" (str (html-text text)) "\"")))))
+                      "\"" (str (email-text text)) "\"")))))
 
     (:p :style *style-p*
       "We are excited for you to join the Kindista community!")

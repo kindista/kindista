@@ -206,7 +206,7 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
   (&key (start-month 1)
         (start-year 2014)
    &aux (chart-data)
-        (now (universal-to-timestamp (get-universal-time)))
+        (now (local-time:now))
         (current-year (timestamp-year now))
         (current-month (timestamp-month now)))
 
@@ -220,7 +220,10 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
                                    (>= (parse-integer month) start-month))
                               (> year start-year))
                           (or (< year current-year)
-                              (< (parse-integer month) current-month)))
+                              (< (parse-integer month) current-month)
+                              (and (= (parse-integer month) current-month)
+                                   (= (local-time:timestamp-day now)
+                                      (days-in-month now)))))
                  (with-standard-io-syntax
                    (with-open-file (summary file :direction :input)
                      (setf file-data (read summary))))
@@ -251,7 +254,7 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
               )
    ;(add-title "Kindista Usage over time")
    ;(add-feature :label)
-    (save-file (pathname (strcat *metrics-path* "/all-time-metrics.png")))))
+    (save-file (pathname (strcat *metrics-path* "/kindista-metrics-chart.png")))))
 
 
 (defun create-past-monthly-activity-reports (years)
@@ -265,3 +268,17 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
                                            "/")
           when (cl-fad::directory-exists-p dir)
           do (monthly-activity-report month year))))
+
+(defun send-progress-report-email (title)
+  (cl-smtp:send-email
+    +mail-server+
+    "Kindista <info@kindista.org>"
+    "Progress Reports <progress-reports@kindista.org>"
+    title
+    (strcat
+      "Please see the attached file for a chart of various metrics we are collecting for Kindista usage. "
+      #\linefeed #\linefeed
+      "Please note: Due to a bug in the graphing library we are using, some of the dates may be repeated on the x-axis. "
+      "The data points should be correct and there is one data point per month for each metric . "
+      "Also, we didn't start collecting metrics for new offers/requests until July/2015.")
+    :attachments (merge-pathnames (s+ +db-path+ "metrics/") "all-time-metrics.png")))

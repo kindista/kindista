@@ -67,8 +67,7 @@
                                        :if-exists :supersede)
          (with-standard-io-syntax
            (let ((*print-pretty* t))
-             (prin1 (list id markdown) file))
-           (terpri))))))
+             (prin1 (list id markdown) file)))))))
 
 
 (defun blog-post-html
