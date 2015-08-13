@@ -252,12 +252,12 @@
 
 (defun start-token ()
   (with-locked-hash-table (*tokens*)
-    (do (token)
-      ((not (gethash (setf token (random-password 30)) *tokens*))
+    (do (cookie-value)
+      ((not (gethash (setf cookie-value (random-password 30)) *tokens*))
       (prog1
-        (setf (gethash token *tokens*)
+        (setf (gethash cookie-value *tokens*)
               (make-token :created (get-universal-time)))
-        (set-cookie "token" :value token
+        (set-cookie "token" :value cookie-value
                             :http-only t
                             :path "/"
                             :expires (+ (get-universal-time) (* 12 +week-in-seconds+))
@@ -269,10 +269,13 @@
       token
       (progn (remhash cookie-value *tokens*) nil))))
 
-(defun delete-token-cookie ()
+(defun delete-token-cookie (&optional (userid *userid*))
   (awhen (cookie-in "token")
 
     (awhen (gethash it *tokens*)
+      (with-locked-hash-table (*user-tokens-index*)
+        (asetf (gethash userid *user-tokens-index*)
+               (remove *token* it :key #'cdr)))
       (remhash it *tokens*))
     (set-cookie "token" :value ""
                 :http-only t

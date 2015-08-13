@@ -379,7 +379,11 @@
           (loop
             (handler-case
               (let ((item (read in)))
-                (setf (gethash (car item) *tokens*) (cdr item)))
+                (setf (gethash (car item) *tokens*)
+                      (cdr item))
+                (with-locked-hash-table (*user-tokens-index*)
+                  (asetf (gethash (token-userid (cdr item)) *user-tokens-index*)
+                         (push (cons (car item) (cdr item)) it))))
               (end-of-file (e) (declare (ignore e)) (return)))))))))
 
 

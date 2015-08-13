@@ -71,6 +71,9 @@
          (see-other "/home"))
         ((password-match-p user (post-parameter "password"))
          (setf (token-userid *token*) user)
+         (with-locked-hash-table (*user-tokens-index*)
+           (asetf (gethash user *user-tokens-index*)
+                  (push (cons (cookie-in "token") *token*) it)))
          (notice :login)
          (see-other (if (not (db user :active))
                       "/settings#reactivate"

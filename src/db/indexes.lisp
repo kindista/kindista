@@ -93,6 +93,7 @@
 (defindex *offer-stem-index* :test 'equalp) ;k=stem v=(:title :details :tags)
 (defindex *offers-with-matching-requests-index*)
 (defindex *username-index* :test 'equalp)
+(defindex *user-tokens-index*)
 
 (defvar *active-people-mutex* (make-mutex))
 (defvar *active-people-index* ())

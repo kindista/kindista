@@ -361,8 +361,8 @@
                             (modify-db request-id :by id-to-keep)))
 
     (dolist (invite-id (copy-list
-                         (gethash duplicate-id *person-invitation-index*)) )
-      (index-invitation invite-id (modify-db invite-id :host id-to-keep)) )
+                         (gethash duplicate-id *person-invitation-index*)))
+      (index-invitation invite-id (modify-db invite-id :host id-to-keep)))
 
     (with-locked-hash-table (*invited-index*)
       (dolist (guest-id (copy-list
@@ -470,8 +470,9 @@
 
       ;; for group invitations the user has SENT
       (dolist (group-id users-groups)
-        (dolist (invite-id (gethash group-id
-                                    *group-membership-invitations-index*))
+        (dolist (invite-id (mapcar #'cdr
+                                   (gethash group-id
+                                            *group-membership-invitations-index*)))
           (when (eql (db invite-id :invited-by) duplicate-id)
             (index-message invite-id
                            (modify-db invite-id :invited-by id-to-keep))))))

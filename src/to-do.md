@@ -9,7 +9,10 @@
         reactivate? (if this is so, then email should remind of this detail)
 [ ] expiration/renewals for inventory items
 [ ] merge duplicate accounts
-    [ ] fix invitation list
+    - fix invitation list
+    - sign out duplicate ids
+    - fix groups
+    - on server (load-tokens) to populate *user-tokens-index*
 [ ] make people go to the site to read their messages/gratitudes
     - track number of unread messages/per user
     - make sure that number is going down
