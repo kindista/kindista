@@ -89,7 +89,7 @@
         (with-location
           (str (local-activity-items :page page))))))
     :class "home"
-    :selected "activity"
+    :selected "home"
     :top (cond
            ((not *user*)
             (welcome-bar
@@ -128,6 +128,7 @@
                     (:span :class "menu-button" " (click the button on the header) ")
                     (:span :class "menu-showing" " on the left ")
                     " to explore the site.")))))
+  :selected "home"
   :right (home-rightbar)))
 
 (defun newuser-home ()
@@ -151,7 +152,7 @@
           (:h2 "Where do you call home?")
           (:em "If you are travelling or do not have a permanent address, you may enter the city or location where you will be sleeping tonight. You can change your address at any time on the settings page.")
           (:p :class "small help-text"
-            "Enter a street address and click \"Next\". We'll show you a map to confirm the location.")   
+            "Enter a street address and click \"Next\". We'll show you a map to confirm the location.")
           (:form :method "post" :action "/settings"
             (:input :type "hidden"
                      :name "next"

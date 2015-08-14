@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -90,7 +90,7 @@
       (str (help-tabs-html :tab :faq))
       (:div :class "legal faq"
         (str *faq-html*)))
-    :selected "help"
+    :selected "faq"
     :right (html
              (str (donate-sidebar))
              (str (invite-sidebar)))))
@@ -112,7 +112,7 @@
 
          (dolist (result *feedback-index*)
            (str (feedback-card (result-id result)))))
-      :selected "help"
+      :selected "faq"
       :right (html
                (str (donate-sidebar))
                (str (invite-sidebar))))
