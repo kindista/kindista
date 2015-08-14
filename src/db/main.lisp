@@ -376,6 +376,7 @@
       (with-standard-io-syntax
         (with-locked-hash-table (*tokens*)
           ;(clrhash *tokens*)
+          (clrhash *user-tokens-index*)
           (loop
             (handler-case
               (let ((item (read in)))

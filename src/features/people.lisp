@@ -276,6 +276,12 @@
 
   (declare (optimize (speed 0) (debug 3) (safety 2)))
 
+  (dolist (id ids-to-deactivate)
+    (dolist (token (gethash id *user-tokens-index*))
+      (delete-token-cookie :userid id
+                           :cookie (car token)))
+    (remhash id *user-tokens-index*))
+
   (setf (getf data-to-keep :created)
         (getf oldest-data :created))
 
@@ -364,6 +370,9 @@
                          (gethash duplicate-id *person-invitation-index*)))
       (index-invitation invite-id (modify-db invite-id :host id-to-keep)))
 
+    (with-locked-hash-table (*person-invitation-index*)
+      (remhash duplicate-id *person-invitation-index*))
+
     (with-locked-hash-table (*invited-index*)
       (dolist (guest-id (copy-list
                           (gethash duplicate-id *invited-index*)))
@@ -376,28 +385,47 @@
     (merge-user-group-membership id-to-keep duplicate-id)))
 
 (defun merge-user-group-membership (id-to-keep duplicate-id)
-    (dolist (group (getf (copy-list (gethash duplicate-id
-                                             *group-privileges-index*))
-                         :admin))
+    (dolist (group (copy-list (getf (gethash duplicate-id
+                                             *group-privileges-index*)
+                                    :admin)))
       (with-locked-hash-table (*group-members-index*)
-        (remove duplicate-id (gethash group *group-members-index*))
+        (asetf (gethash group *group-members-index*)
+          (remove duplicate-id it))
         (pushnew id-to-keep (gethash group *group-members-index*)))
+      (with-locked-hash-table (*group-privileges-index*)
+        (pushnew group (getf (gethash id-to-keep *group-privileges-index*)
+                             :admin))
+        (asetf (getf (gethash id-to-keep *group-privileges-index*) :member)
+               (remove group it)))
       (amodify-db group :admins (remove-duplicates
                                   (substitute id-to-keep duplicate-id it))
-                        :members (remove id-to-keep it)))
+                        :members (remove id-to-keep it)
+                        :creator (subst id-to-keep duplicate-id it)
+                        :notify-message (subst id-to-keep duplicate-id it)
+                        :notify-gratitude (subst id-to-keep duplicate-id it)
+                        :notify-reminders (subst id-to-keep duplicate-id it)
+                        :notify-membership-request (subst id-to-keep
+                                                          duplicate-id
+                                                          it)))
 
     (dolist (group (getf (copy-list (gethash duplicate-id
                                              *group-privileges-index*))
                          :member))
-      (with-locked-hash-table (*group-members-index*)
-        (remove duplicate-id (gethash group *group-members-index*))
-        (pushnew id-to-keep (gethash group *group-members-index*)))
-      (if (find id-to-keep (db group :admins))
-        (amodify-db group :members (remove duplicate-id it))
-        (amodify-db group :members (remove-duplicates
-                                     (substitute id-to-keep
-                                                 duplicate-id
-                                                 it)))))
+      (let ((already-group-admin-p (find id-to-keep (db group :admins))))
+        (with-locked-hash-table (*group-members-index*)
+          (asetf (gethash group *group-members-index*)
+                 (remove duplicate-id it))
+          (pushnew id-to-keep (gethash group *group-members-index*)))
+        (unless already-group-admin-p
+         (with-locked-hash-table (*group-privileges-index*)
+            (pushnew group (getf (gethash id-to-keep *group-privileges-index*)
+                                 :member))))
+        (if already-group-admin-p
+          (amodify-db group :members (remove duplicate-id it))
+          (amodify-db group :members (remove-duplicates
+                                       (substitute id-to-keep
+                                                   duplicate-id
+                                                   it))))))
 
     (with-locked-hash-table (*group-privileges-index*)
       (remhash duplicate-id *group-privileges-index*)))

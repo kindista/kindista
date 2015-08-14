@@ -269,19 +269,23 @@
       token
       (progn (remhash cookie-value *tokens*) nil))))
 
-(defun delete-token-cookie (&optional (userid *userid*))
-  (awhen (cookie-in "token")
+(defun delete-token-cookie
+  (&key (userid *userid*)
+        (cookie (when *token* (cookie-in "token")))
+   &aux (token (or *token* (gethash cookie *tokens*))))
 
-    (awhen (gethash it *tokens*)
+  (when cookie
+    (when (gethash cookie *tokens*)
       (with-locked-hash-table (*user-tokens-index*)
         (asetf (gethash userid *user-tokens-index*)
-               (remove *token* it :key #'cdr)))
-      (remhash it *tokens*))
-    (set-cookie "token" :value ""
-                :http-only t
-                :expires 0
-                :path "/"
-                :secure nil)))
+               (remove token it :key #'cdr)))
+      (remhash cookie *tokens*))
+    (when *token*
+      (set-cookie "token" :value ""
+                          :http-only t
+                          :expires 0
+                          :path "/"
+                          :secure nil))))
 
 (defun reset-token-cookie ()
   (awhen (cookie-in "token")
