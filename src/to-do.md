@@ -1,6 +1,5 @@
 [ ] statement of gratitude by email
     [ ] test with friends and contacts
-[ ] highlight community tab
 [ ] don't display message on group invite if there's no message
 [ ] group invite notification for new accounts
 [ ] make sure blog/kindista/etc mailings don't go out to (db id :active nil) users

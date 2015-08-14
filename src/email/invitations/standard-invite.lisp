@@ -27,7 +27,8 @@
          (host (getf invitation :host))
          (host-name (db host :name))
          (invitee-name (getf invitation :name))
-         (text (getf invitation :text))
+         (text-data (getf invitation :text))
+         (text (unless (string= text-data "" ) text-data))
          ;; the most recent group invite sent by the host
          (group-id (car (getf invitation :groups)))
          (group (db group-id))

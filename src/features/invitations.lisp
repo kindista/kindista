@@ -501,8 +501,7 @@
 
       ((post-parameter "quick-invite")
        (create-invitation (post-parameter "email")
-                          :text (unless (string= (post-parameter "text") "")
-                                  (post-parameter "text")))
+                          :text (post-parameter-string "text"))
        (flash (strcat "An invitation has been sent to "
 
                       (post-parameter "email")))
