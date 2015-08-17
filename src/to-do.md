@@ -1,7 +1,3 @@
-[ ] statement of gratitude by email
-    [ ] test with friends and contacts
-[ ] highlight community tab
-[ ] don't display message on group invite if there's no message
 [ ] group invite notification for new accounts
 [ ] fix group notifications for new group admins
 [ ] make sure blog/kindista/etc mailings don't go out to (db id :active nil) users
@@ -14,7 +10,6 @@
     - sign out duplicate ids
     - fix groups
     - anything for gratitude invites?
-(:MEMBER (20407 20402) :ADMIN (23271 20154 13685 10738 7222 2))
     - on server (load-tokens) to populate *user-tokens-index*
 [ ] make people go to the site to read their messages/gratitudes
     - track number of unread messages/per user

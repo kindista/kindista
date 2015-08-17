@@ -368,7 +368,12 @@
 
     (dolist (invite-id (copy-list
                          (gethash duplicate-id *person-invitation-index*)))
-      (index-invitation invite-id (modify-db invite-id :host id-to-keep)))
+      (let* ((invitation (db invite-id))
+             (invite-gratitudes (getf invitation :gratitudes)))
+        (when invite-gratitudes
+          (dolist (gratitude-id invite-gratitudes)
+            (modify-db gratitude-id :author id-to-keep)))
+        (index-invitation invite-id (modify-db invite-id :host id-to-keep))))
 
     (with-locked-hash-table (*person-invitation-index*)
       (remhash duplicate-id *person-invitation-index*))
