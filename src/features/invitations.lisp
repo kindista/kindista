@@ -456,20 +456,20 @@
        (dolist (email member-emails)
          (flash (strcat email " is already a Kindista member!") :error t))
        (flash "You must enter at least 1 valid email address." :error t)
-       (invite-page :text (post-parameter "text")
+       (invite-page :text text
                     :emails (post-parameter "bulk-emails")
                     :next-url next-url))
 
       ((post-parameter "review")
        (dolist (email member-emails)
          (flash (strcat email " is already a Kindista member!") :error t))
-       (confirm-invitations :text (post-parameter "text")
+       (confirm-invitations :text text
                             :emails valid-emails
                             :bulk-emails (post-parameter "bulk-emails")
                             :next-url next-url))
 
       ((post-parameter "edit")
-       (invite-page :text (post-parameter "text")
+       (invite-page :text text
                     :emails (post-parameter "bulk-emails")
                     :next-url next-url))
 
@@ -501,7 +501,7 @@
 
       ((post-parameter "quick-invite")
        (create-invitation (post-parameter "email")
-                          :text (post-parameter-string "text"))
+                          :text text)
        (flash (strcat "An invitation has been sent to "
 
                       (post-parameter "email")))
