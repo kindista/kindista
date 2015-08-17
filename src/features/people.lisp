@@ -556,8 +556,7 @@
                                            "Merged into account #"
                                            id-to-keep
                                            ".")
-                           :merged-into id-to-keep))
-  )
+                           :merged-into id-to-keep)))
 
 (defun deactivate-person (id)
   (let ((result (gethash id *db-results*)))
