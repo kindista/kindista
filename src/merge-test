@@ -1,0 +1,30 @@
+[x] delete tokens (gethash 1 *user-tokens-index*)
+[ ] host 3
+[ ] bio
+[x] aliases 5
+[x] search aliases
+[ ] emails 5
+[x] email index
+[x] username benjamin
+[ ] avatars (db 0 :merged-account-avatars)
+[ ] offers 22803
+    - marked inactive when original account is deleted
+[ ] requests 22408
+    - marked inactive when original account is deleted
+[x] invitations 23628
+[x] invitation gratitude 23627
+[x] invited people 4046
+[x] admin groups 23271 NfNC
+    - creator
+    - notify-message
+    - notify-reminders
+    - notify-membership-request
+[ ] add member when already admin 23741
+[ ] add member when not admin 20407
+[ ] transactions/conversations 23721/23457
+[ ] group membership request 23743
+[ ] group membership invitation received 23744
+[ ] group membership invitation sent 23745
+[ ] events 14462 taiji
+[ ] gratitude 23701 monitor
+[ ] check deleted account 1

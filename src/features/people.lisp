@@ -349,7 +349,10 @@
           (remhash (getf data :username) *username-index*))
         (setf it (getf data :username)))
 
-      (unless (getf data-to-keep :avatar)
+      ;; keep old avatars
+      (if (getf data-to-keep :avatar)
+        (awhen (getf data :avatar)
+          (push it (getf data-to-keep :merged-account-avatars)))
         (setf (getf data-to-keep :avatar)
               (getf data :avatar)))))
 
@@ -644,6 +647,7 @@
                 :type :deleted-person-account
                 :merged-into merged-into
                 :merge-date (when merged-into (get-universal-time))
+                :username nil
                 :deleted t
                 :reason-for-account-deletion reason))
 

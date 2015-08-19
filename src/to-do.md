@@ -7,9 +7,9 @@
 [ ] expiration/renewals for inventory items
 [ ] merge duplicate accounts
     - fix invitation list
-    - sign out duplicate ids
-    - fix groups
-    - anything for gratitude invites?
+    - primary email?
+    - suggested contacts?
+    - matchmakers?
     - on server (load-tokens) to populate *user-tokens-index*
 [ ] make people go to the site to read their messages/gratitudes
     - track number of unread messages/per user
