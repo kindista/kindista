@@ -4,11 +4,9 @@
     [ ] if they want to be notified when gratitudes are posted to their account
         let them know that they won't be shown on their profile until they
         reactivate? (if this is so, then email should remind of this detail)
+[ ] check functionality of (token-last-seen token)
 [ ] expiration/renewals for inventory items
 [ ] merge duplicate accounts
-    - primary email?
-    - matchmakers?
-    - pending gratitude?
     - on server (load-tokens) to populate *user-tokens-index*
 [ ] make people go to the site to read their messages/gratitudes
     - track number of unread messages/per user

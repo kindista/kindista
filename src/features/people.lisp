@@ -242,7 +242,7 @@
   (most-active-id
    duplicate-account-id-list
    &aux (data-to-keep (copy-list (db most-active-id)))
-        (id-to-keep (apply #'min duplicate-account-id-list))
+        (id-to-keep most-active-id)
         (ids-to-deactivate (remove id-to-keep duplicate-account-id-list))
         (oldest-data (db id-to-keep)))
 
@@ -286,7 +286,10 @@
         (getf oldest-data :created))
 
   (setf data-to-keep
-        (merge-user-data id-to-keep data-to-keep duplicate-account-id-list ids-to-deactivate))
+        (merge-user-data id-to-keep
+                         data-to-keep
+                         (remove most-active-id duplicate-account-id-list)
+                         ids-to-deactivate))
 
   (merge-user-primary-indexes id-to-keep ids-to-deactivate data-to-keep)
 
@@ -312,7 +315,8 @@
         (setf (getf data-to-keep :host) (getf data :host)))
 
       (dolist (prop '(:bio :bio-summary :bio-doing :bio-contact :bio-skills :bio-into))
-        (when (not (getf data-to-keep prop))
+        (when (or (not (getf data-to-keep prop))
+                  (string= (getf data-to-keep prop) ""))
           (setf (getf data-to-keep prop)
                 (getf data prop))))
 
@@ -326,13 +330,10 @@
                  :test #'equalp)
                :test #'equalp))
 
-      (pprint (getf data-to-keep :emails))
       (asetf (getf data-to-keep :emails)
              (remove-duplicates
                (append it (getf data :emails))
                :test #'equalp))
-      (pprint (getf data-to-keep :emails))
-      (terpri)
 
       (awhen (getf data :following)
         (with-locked-hash-table (*followers-index*)
@@ -353,16 +354,11 @@
         (setf it (getf data :username)))
 
       ;; keep old avatars
-      (pprint (getf data-to-keep :merged-account-avatars)) 
-      (pprint (getf data :avatar))
       (if (getf data-to-keep :avatar)
         (awhen (getf data :avatar)
           (push it (getf data-to-keep :merged-account-avatars)))
         (setf (getf data-to-keep :avatar)
-              (getf data :avatar)))
-      (pprint (getf data-to-keep :merged-account-avatars)))
-      (terpri)
-    )
+              (getf data :avatar)))))
 
   data-to-keep)
 
@@ -395,6 +391,22 @@
           (asetf (gethash duplicate-id *request-index*)
                  (remove request-id it))
           (push request-id (gethash id-to-keep *request-index*)))))
+
+    (with-locked-hash-table (*account-inventory-matches-index*)
+      (let ((duplicate-account-matches
+              (gethash duplicate-id *account-inventory-matches-index*)))
+        (asetf (getf (gethash id-to-keep *account-inventory-matches-index*)
+                     :offers)
+               (remove-duplicates (append (getf duplicate-account-matches
+                                                :offers)
+                                          it)
+                                  :test #'equal))
+        (asetf (getf (gethash id-to-keep *account-inventory-matches-index*)
+                     :requests)
+               (remove-duplicates (append (getf duplicate-account-matches
+                                                :requests)
+                                          it)
+                                  :test #'equal))))
 
     (when (and (db duplicate-id :pending)
                (not (getf data-to-keep :pending)))
