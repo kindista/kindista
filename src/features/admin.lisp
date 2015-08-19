@@ -139,11 +139,16 @@
          (see-other "/admin/pending-accounts"))
         ((post-parameter "approve")
          (modify-db userid :pending nil)
-         (let ((item-ids (gethash userid *pending-person-items-index*)))
+         (let ((item-ids (copy-list
+                           (gethash userid *pending-person-items-index*))))
             (dolist (item-id item-ids)
               (let ((item (db item-id)))
                 (index-item item-id item)
                 (case (getf item :type)
+                  ;; We probably don't have any more gratitudes in
+                  ;; *pending-person-items-index* because pending accounts
+                  ;; can now post gratitude.
+                  ;; Confirm, then delete the following line.
                   (:gratitude
                     (notice :new-gratitude :id item-id))
                   (:offer
