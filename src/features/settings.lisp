@@ -519,7 +519,7 @@
                           :value email
                           "Make primary")
                          (:span "|")
-                         (:button :class "simple-link gray"
+                         (:button :class "simple-link red"
                           :name "remove-email"
                           :type "submit"
                           :value email
@@ -542,7 +542,7 @@
                               :name "token"
                               :placeholder "enter activation code"))
                             (:span "|")
-                            (:button :class "yes"
+                            (:button :class "simple-link green"
                              :type "submit"
                              "Activate")
                             (:span "|")
@@ -552,19 +552,18 @@
                          (:div :class "controls"
                           (when (not editable)
                             (htm
-                              (:span :class "red" "(pending)")
                               (:a :href (url-compose "/settings/communication"
                                                      "edit" "email"
                                                      "activate" email)
                                   "Enter code")
                               (:span "|")
                               (:button :type "submit"
-                               :class "simple-link "
+                               :class "simple-link no-padding"
                                :name "resend-code"
                                :value email
                                "Resend code")
                               (:span "|")
-                              (:button :class "simple-link gray"
+                              (:button :class "simple-link red"
                                :name "remove-pending-email"
                                :type "submit"
                                :value email
