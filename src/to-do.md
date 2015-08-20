@@ -1,12 +1,13 @@
-[ ] statement of gratitude by email
-    [ ] test with friends and contacts
 [ ] group invite notification for new accounts
+[ ] fix group notifications for new group admins
 [ ] make sure blog/kindista/etc mailings don't go out to (db id :active nil) users
     [ ] if they want to be notified when gratitudes are posted to their account
         let them know that they won't be shown on their profile until they
         reactivate? (if this is so, then email should remind of this detail)
+[ ] check functionality of (token-last-seen token)
 [ ] expiration/renewals for inventory items
 [ ] merge duplicate accounts
+    - on server (load-tokens) to populate *user-tokens-index*
 [ ] make people go to the site to read their messages/gratitudes
     - track number of unread messages/per user
     - make sure that number is going down
@@ -29,4 +30,3 @@
 [ ] reply by email (maybe)
 [ ] t-shirts
 [ ] promote at unity, friends, unitarians, etc
-
