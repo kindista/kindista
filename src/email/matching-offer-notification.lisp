@@ -24,22 +24,23 @@
          (unsubscribe-key (getf requested-by :unsubscribe-key))
          (title (getf request :title)))
 
-     (cl-smtp:send-email +mail-server+
-                         "DoNotReply <noreply@kindista.org>"
-                         email
-                         (s+ "New Kindista offer matching your request"
-                             (awhen title
-                               (s+ ": " it)))
-                         (matching-offer-notification-email-text
-                           request-id
-                           offer-id
-                           email
-                           unsubscribe-key)
-                         :html-message (matching-offer-notification-email-html
-                                         request-id
-                                         offer-id
-                                         email
-                                         unsubscribe-key))))
+     (when (or *productionp* (getf requested-by :admin))
+       (cl-smtp:send-email +mail-server+
+                          "DoNotReply <noreply@kindista.org>"
+                          email
+                          (s+ "New Kindista offer matching your request"
+                              (awhen title
+                                (s+ ": " it)))
+                          (matching-offer-notification-email-text
+                            request-id
+                            offer-id
+                            email
+                            unsubscribe-key)
+                          :html-message (matching-offer-notification-email-html
+                                          request-id
+                                          offer-id
+                                          email
+                                          unsubscribe-key)))))
 
 (defun matching-offer-notification-email-text (request-id offer-id email unsubscribe-key)
   (let ((offer (db offer-id))
@@ -88,8 +89,7 @@
 
 
 (defun matching-offer-notification-email-html (request-id offer-id email unsubscribe-key)
-  (let* ((offer (db offer-id))
-         (offer-link (strcat *email-url* "offers/" offer-id))
+  (let* ((offer-link (strcat *email-url* "offers/" offer-id))
          (request-link (url-compose (strcat *email-url* "requests/" request-id)
                                     "selected" "matchmaker"
                                     "email" email
@@ -114,12 +114,10 @@
 
         (:table :cellspacing 0 :cellpadding 0
                 :style *style-quote-box*
-          (awhen (getf offer :title)
-            (htm (:tr (:td :style "padding: 4px 12px;"
-                        (:a :href offer-link (str it))))))
           (:tr (:td :style "padding: 4px 12px;"
                  (str (highlight-relevant-inventory-text offer-id
-                                                         request-id))))
+                                                         request-id
+                                                         :email-p t))))
 
           (:tr (:td :style (s+ "padding: 4px 12px; text-align: right;")
                  (:a :href offer-link "see more details")

@@ -166,6 +166,9 @@
         (when (ppcre:scan +text-scanner+ word)
           (collect word))))
 
+(defun word-count (string)
+  (length (words-from-string string)))
+
 (defun emails-from-string (string)
   (iter (for email in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
         (when (ppcre:scan +email-scanner+ email)
@@ -206,16 +209,43 @@
 (defun remove-private-items (items)
   (remove-if #'item-view-denied items :key #'result-privacy))
 
-(defun activity-rank (item)
-  (let ((contacts (getf *user* :following))
-        (age (- (get-universal-time) (or (result-time item) 0)))
+(defun activity-rank
+  (item
+   &key (userid *userid*)
+        (user *user*)
+        (contact-multiplier 1)
+        (distance-multiplier 1)
+   &aux (age (- (get-universal-time)
+                (or (result-time item) 0)))
+        (contacts (getf user :following))
+        (lat (or (getf user :lat) *latitude*))
+        (long (or (getf user :long) *longitude*))
+        (contact-p (intersection contacts (result-people item)))
+        (self-offset (if (eql (car (result-people item)) userid)
+                       ;; don't use "=" because userid can be nil
+                       -100000
+                       0))
         (distance (if (and (result-latitude item) (result-longitude item))
-                    (air-distance *latitude* *longitude*
-                                  (result-latitude item) (result-longitude item))
-                    5000)))
-    (round (- age
-             (/ 120000 (log (+ (if (intersection contacts (result-people item)) 1 distance) 4)))
-             (* (length (loves (result-id item))) 50000)))))
+                    (max 0.1
+                         (air-distance lat
+                                       long
+                                       (result-latitude item)
+                                       (result-longitude item)))
+                    5000))
+        (distance-component (/ (* 100000 distance-multiplier)
+                               (log (+ 1.5 (* distance 2)))))
+        (contact-component (if contact-p
+                             (* 100000 contact-multiplier)
+                             0)))
+  "Lower scores rank higher."
+
+  (values (round (- age
+                    self-offset
+                    distance-component
+                    contact-component
+                    (* (length (loves (result-id item))) 100000)))
+          distance-component
+          contact-component))
 
 (defun event-rank (item)
   (let ((contacts (getf *user* :following))
@@ -272,6 +302,10 @@
                              #'> :key #'result-time))))
         (geo-index-insert *activity-geo-index* result)))))
 
+(defun url-parts (url)
+  (iter (for part in (split " " (ppcre:regex-replace-all "/" url " ")))
+        (collect part)))
+
 (defun resource-url
   (resource-id
    &optional (resource (db resource-id))
@@ -318,15 +352,25 @@
               param-strings))
       (setf params (cddr params))))
 
-(defun ellipsis (text &key (length 160) see-more)
+(defun ellipsis (text &key (length 160) see-more plain-text email)
   (let ((newtext (subseq text 0 (min (length text) length))))
     (if (> (length text) length)
-      (html
-        (str (html-text newtext))
-        "..."
-        (when see-more
-          (htm (:a :href see-more " see more"))))
-      (html-text newtext))))
+      (if plain-text
+        (s+ newtext "...")
+        (html
+          (str (if email
+                 newtext
+                 (html-text newtext)))
+          "..."
+          (when see-more
+            (htm (:a :href see-more
+                     :style (when email
+                              "color: #5c8a2f; font-weight: bold; text-decoration: none;"
+                              )
+                  " see more")))))
+      (if plain-text
+        newtext
+        (html-text newtext)))))
 
 (defun beginning-html-paragraphs
   (html-text
@@ -551,9 +595,9 @@
           (flash (s+ "<p>"
                      (name-list-all other-opt-outs)
                      (pluralize other-opt-outs " has " :plural-form " have " :hidenum t)
-                     "chosen not to recieve email notifications when other "
+                     "chosen not to receive email notifications when other "
                      " Kindista members send them messages.</p>"
-                     "<p>They will recieve your message next time they log into "
+                     "<p>They will receive your message next time they log into "
                      "Kindista. "
                      "If this is an urgent matter, please use other means to " 
                      "contact them.</p>")
@@ -562,9 +606,9 @@
           (flash (s+ "<p>The admins for "
 
                      (name-list-all other-group-opt-outs)
-                     " have chosen not to recieve email notifications when"
+                     " have chosen not to receive email notifications when"
                      " other Kindista members send them messages.</p>"
-                     "<p>They will recieve your message next time they log into "
+                     "<p>They will receive your message next time they log into "
                      "Kindista. "
                      "If this is an urgent matter, please use other means to "
                      "contact them.</p>")

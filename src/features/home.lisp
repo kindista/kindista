@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -44,7 +44,7 @@
 
     (str (donate-sidebar))
 
-    (str (invite-sidebar))
+    (str (invite-sidebar :mobile t))
 
     (str (suggestion-sidebar))
 
@@ -55,10 +55,11 @@
     "Home"
     (html
       (:div :class "activity"
-        (str (buttons-horiz '("/gratitude/new" "heart-person"  "Express Gratitude")
-                            '("/offers/new" "offer-button" "Post an Offer")
-                            '("/requests/new" "request-button" "Make a Request")
-                             ;(:a :href "/announcements/new" "post announcement")
+        (str (buttons-horiz
+               '("/offers/new" "offer-button" "Post an Offer")
+               '("/requests/new" "request-button" "Make a Request")
+               '("/gratitude/new" "heart-person"  "Express Gratitude")
+               ;(:a :href "/announcements/new" "post announcement")
                           ))
 
       (let ((page (if (scan +number-scanner+ (get-parameter "p"))
@@ -66,39 +67,29 @@
                    0)))
         (when *user*
           (unless (> page 0)
-            ;; get either the user's matching offers or matching requests
-            ;; at random
-            (let* ((offers-or-requests (rand-from-list (matching-inventory-items-by-user)))
-                   (random-item (rand-from-list (second offers-or-requests))))
+            ;; get one of the user's matching offers at random
+            ;; note:  we used to get either matching offers or requests
+            ;;        now we only present matching offers and leave it to the 
+            ;;        potential recipient to contact the potential giver
+            (let ((random-item (rand-from-list
+                                 (second (assoc :offers
+                                                (matching-inventory-items-by-user))))))
               (awhen random-item
-                (case (car offers-or-requests)
-                  (:offers
-                    (htm
-                      (:div :class "suggested-items card"
-                        (str (featured-offer-match-html (getf it :offer)
-                                                        (getf it :request)
-                                                        :featured t))
-                        (str (featured-request-match-html (getf it :request)
-                                                          :featured t)))))
-                  (:requests
-                    (let* ((request (db (getf it :request))))
-                      (htm
-                        (:div :class "suggested-items card"
-                          (str (featured-request-match-html (getf it :request)
-                                                            :offer-id (getf it
-                                                                            :offer)
-                                                            :featured t
-                                                            :request-data request))
-                          (str (featured-offer-match-html (getf it :offer)
-                                                          (getf it :request)
-                                                          :featured t))))))))))
+                (htm
+                  (:div :class "suggested-items card"
+                    (str (featured-offer-match-html (getf it :offer)
+                                                    (getf it :request)
+                                                    :featured t))
+                    (str (featured-request-match-html (getf it :request)
+                                                      :featured t)))))))
+
           (str (distance-selection-html "/home"
                                         :text "show activity within "
                                         :class "item")))
         (with-location
           (str (local-activity-items :page page))))))
     :class "home"
-    :selected "activity"
+    :selected "home"
     :top (cond
            ((not *user*)
             (welcome-bar
@@ -137,6 +128,7 @@
                     (:span :class "menu-button" " (click the button on the header) ")
                     (:span :class "menu-showing" " on the left ")
                     " to explore the site.")))))
+  :selected "home"
   :right (home-rightbar)))
 
 (defun newuser-home ()
@@ -160,7 +152,7 @@
           (:h2 "Where do you call home?")
           (:em "If you are travelling or do not have a permanent address, you may enter the city or location where you will be sleeping tonight. You can change your address at any time on the settings page.")
           (:p :class "small help-text"
-            "Enter a street address and click \"Next\". We'll show you a map to confirm the location.")   
+            "Enter a street address and click \"Next\". We'll show you a map to confirm the location.")
           (:form :method "post" :action "/settings"
             (:input :type "hidden"
                      :name "next"
@@ -174,17 +166,16 @@
     :hide-menu t))
 
 (defun get-home ()
-  (with-user
-    (cond
-      ((or (confirmed-location) (not *user*))
-       (notice :home)
-       (standard-home))
+  (cond
+    ((or (confirmed-location) (not *user*))
+     (notice :home)
+     (standard-home))
 
-      ((and (getf *user* :lat)
-            (getf *user* :long))
-       (notice :home-verify-location)
-       (get-verify-address :next-url "/home"))
+    ((and (getf *user* :lat)
+          (getf *user* :long))
+     (notice :home-verify-location)
+     (get-verify-address :next-url "/home"))
 
-      (t
-       (notice :home-setup)
-       (newuser-home)))))
+    (t
+     (notice :home-setup)
+     (newuser-home))))

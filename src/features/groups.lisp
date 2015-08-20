@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -24,28 +24,28 @@
   (send-group-membership-invitation-notification-email (getf (cddddr *notice*) :id)))
 
 (defun create-group (&key name creator lat long address street city state country zip location-privacy category membership-method)
-  (insert-db `(:type :group
-               :name ,name
-               :creator ,creator
-               :admins ,(list creator)
-               :active t
-               :location t
-               :lat ,lat
-               :long ,long
-               :address ,address
-               :street ,street
-               :city ,city
-               :state ,state
-               :country ,country
-               :zip ,zip
-               :category ,category
-               :membership-method ,membership-method
-               :location-privacy ,location-privacy
-               :notify-message ,(list creator)
-               :notify-gratitude ,(list creator)
-               :notify-reminders ,(list creator)
-               :notify-membership-request ,(list creator)
-               :created ,(get-universal-time))))
+  (insert-db (list :type :group
+                   :name name
+                   :creator creator
+                   :admins (list creator)
+                   :active t
+                   :location t
+                   :lat lat
+                   :long long
+                   :address address
+                   :street street
+                   :city city
+                   :state state
+                   :country country
+                   :zip zip
+                   :category category
+                   :membership-method membership-method
+                   :location-privacy location-privacy
+                   :notify-message (list creator)
+                   :notify-gratitude (list creator)
+                   :notify-reminders (list creator)
+                   :notify-membership-request (list creator)
+                   :created (get-universal-time))))
 
 (defun index-group (id data)
   (let ((result (make-result :id id
@@ -107,7 +107,7 @@
                             collect id)))
 
     (unless result
-      (notice :error :note "no db result on reindex-group-location"))
+      (notice :error :on "no db result on reindex-group-location"))
 
     (geo-index-remove *groups-geo-index* result)
     (geo-index-remove *activity-geo-index* result)
@@ -706,14 +706,16 @@
         (:div :class "item create-group"
           (:form :method "post" :action "/groups/new"
             (:div
-              (:label "Group name")
+              (:label :for "new-group-name" "Group name")
               (:input :type "text"
+                      :id "new-group-name"
                       :name "name"
                       :placeholder (escape-for-html "Enter your group's name")
                       :value (awhen name (escape-for-html it))))
             (:div
-              (:label "Group location")
+              (:label :for "new-group-location" "Group location")
               (:input :type "text"
+                      :id "new-group-location"
                       :name "location"
                       :placeholder (escape-for-html "Enter your group's address")
                       :value (awhen location (escape-for-html it)))
@@ -1130,7 +1132,7 @@
                                                       (getf plist :email))
                                                   duplicate-invites)
                                           :test #'equalp))
-             (text (awhen (post-parameter "text")
+             (text (awhen (post-parameter-string "text")
                      (escape-for-html it))))
 
         (dolist (invite duplicate-invites)
@@ -1220,7 +1222,8 @@
 
 (defun groups-tabs-html (&key (tab :my-groups))
   (html
-    (:menu :class "bar"
+    (:menu :type "toolbar"
+           :class "bar"
            :id "groups-tabs"
       (:h3 :class "label" "Groups Menu")
 

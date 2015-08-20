@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -316,7 +316,7 @@
               ((and (>= i start) items)
                (let* ((item (car items))
                       (item-time (result-time item)))
-                 (multiple-value-bind (time date)
+                 (multiple-value-bind (time date short-date)
                      (humanize-exact-time item-time)
                    (unless (string= date calendar-date)
                      (setf calendar-date date)
@@ -325,6 +325,7 @@
                    (htm (str (event-activity-item item
                                                   :sidebar sidebar
                                                   :time time
+                                                  :date short-date
                                                   :truncate t
                                                   :show-distance location)))))
                (setf items (cdr items)))
@@ -460,30 +461,31 @@
 
     (flet ((day-or-date-selector (&optional reload)
              (html
-               (:label "Repeat by")
-               (:div :class "inline-block"
-                 (:input :type "radio"
-                         :name "by-day-or-date"
-                         :value "day"
-                         :onclick (when reload "this.form.submit()")
-                         :checked (unless by-date ""))
-                 (str
-                   (if frequent
-                     "the day of the week"
-                     ;(s+ local-day-of-week "s")
-                     (strcat "the " nth-week-in-month " " local-day-of-week " of the month" ))))
-               (unless frequent (htm (:br)))
-               (:div :class "inline-block"
-                 (:input :type "radio"
-                         :name "by-day-or-date"
-                         :value "date"
-                         :onclick (when reload "this.form.submit()")
-                         :checked (when by-date ""))
-                 (unless frequent "date (")
-                 "the "
-                 (str (humanize-number day-of-month))
-                 " day of the month"
-                 (unless frequent ")")))))
+               (:fieldset
+                 (:legend "Repeat by")
+                   (:label
+                      (:input :type "radio"
+                              :name "by-day-or-date"
+                              :value "day"
+                              :onclick (when reload "this.form.submit()")
+                              :checked (unless by-date ""))
+                     (str
+                       (if frequent
+                         "the day of the week"
+                         ;(s+ local-day-of-week "s")
+                         (strcat "the " nth-week-in-month " " local-day-of-week " of the month" ))))
+                 (unless frequent (htm (:br)))
+                 (:label
+                    (:input :type "radio"
+                     :name "by-day-or-date"
+                     :value "date"
+                     :onclick (when reload "this.form.submit()")
+                     :checked (when by-date ""))
+                   (unless frequent "date (")
+                   "the "
+                   (str (humanize-number day-of-month))
+                   " day of the month"
+                   (unless frequent ")"))))))
       (html
         (:div
           (cond
@@ -492,11 +494,11 @@
              (str (day-or-date-selector t))
              (unless by-date
                (htm
-                 (:label "Repeat on")
-                 (:div
+                 (:fieldset
+                   (:legend "Repeat on")
                    (dolist (option +positions-of-day-in-month+)
                       (htm
-                        (:div :class "inline-block"
+                        (:label
                           (:input :type "checkbox"
                                   :name "weeks-of-month"
                                   :checked (when (aif weeks-of-month
@@ -513,37 +515,40 @@
                  (>= day-of-month (- days-in-month 7)))
             ;;for last week of 28day february's
             (htm
-              (:label "Repeat on")
-              (:div :class "inline-block"
-                (:input :type "radio"
-                        :name "position-in-month"
-                        :value "date"
-                        :checked (when by-date ""))
-                "the "
-                (str (humanize-number day-of-month))
-                " day of the month")
-              (:div :class "inline-block"
-                (:input :type "radio"
-                        :name "position-in-month"
-                        :value "fourth"
-                        :checked (unless (or by-date
-                                             (equal weeks-of-month '("last")))
-                                   ""))
-                 (str (s+ "the fourth " local-day-of-week " of the month")))
-              (:div :class "inline-block"
-                (:input :type "radio"
-                        :name "position-in-month"
-                        :value "last"
-                        :checked (when (and (not by-date)
-                                            (equal weeks-of-month '("last")))
-                                   ""))
-                 (str (s+ "the last " local-day-of-week " of the month")))))
+              (:fieldset
+                (:legend "Repeat on")
+                (:label
+                  (:input :type "radio"
+                          :name "position-in-month"
+                          :value "date"
+                          :checked (when by-date ""))
+                  "the "
+                  (str (humanize-number day-of-month))
+                  " day of the month")
+                (:label
+                  (:input :type "radio"
+                          :name "position-in-month"
+                          :value "fourth"
+                          :checked (unless (or by-date
+                                               (equal weeks-of-month '("last")))
+                                     ""))
+                   (str (s+ "the fourth " local-day-of-week " of the month")))
+                (:label
+                  (:input :type "radio"
+                          :name "position-in-month"
+                          :value "last"
+                          :checked (when (and (not by-date)
+                                              (equal weeks-of-month '("last")))
+                                     ""))
+                   (str (s+ "the last " local-day-of-week " of the month"))))))
 
            (t ; potential-long-month not-frequent
             (htm
              (str (day-or-date-selector)) ))))))))
 
-(defun enter-event-details (&key error date time location title restrictedp (identity-selection *userid*) groups-selected details existing-url recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date local-day-of-week editing-schedule)
+(defun enter-event-details
+  (&key error date time location title restrictedp (identity-selection *userid*) groups-selected details existing-url recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date local-day-of-week editing-schedule
+   &aux (groups-with-user-as-admin (groups-with-user-as-admin)))
   (standard-page
     (if existing-url "Edit your event details" "Create a new event")
     (html
@@ -559,25 +564,29 @@
              (htm (:input :type "hidden" :name "groups-selected" :value group))))
          (:input :type "hidden" :name "prior-identity" :value identity-selection)
 
-         (:div (:label "When (date & time)")
+         (:fieldset :id "date-and-time"
+           (:legend "When (date & time)")
+             (if editing-schedule
+               (htm (:strong (str (s+ date " at " time)))
+                    (:button :class "green simple-link"
+                             :type "submit"
+                             :name "edit-datetime"
+                             "edit")
+                    (:input :type "hidden" :name "date" :value date)
+                    (:input :type "hidden" :name "time" :value time))
 
-               (if editing-schedule
-                 (htm (:strong (str (s+ date " at " time)))
-                      (:button :class "green simple-link"
-                               :type "submit"
-                               :name "edit-datetime"
-                               "edit")
-                      (:input :type "hidden" :name "date" :value date)
-                      (:input :type "hidden" :name "time" :value time))
-
-                 (htm (:input :type "text"
-                              :name "date" :placeholder "mm/dd/yyyy"
-                              :value date)
-                      (:br)
-                      (:input :type "text"
-                              :name "time"
-                              :placeholder "Add a time? (ex. 2:30 PM)"
-                              :value time))))
+               (htm
+                 (:label :for "date" "Date")
+                 (:input :type "text"
+                         :id "date"
+                         :name "date" :placeholder "mm/dd/yyyy"
+                         :value date)
+                 (:label :for "time" "Time")
+                 (:input :type "text"
+                         :name "time"
+                         :id "time"
+                         :placeholder "Add a time? (ex. 2:30 PM)"
+                         :value time))))
 
          (if editing-schedule
            (htm (:input :type :hidden :name "recurring" :value recurring))
@@ -614,46 +623,48 @@
                              "edit"))
 
                (htm
-                  (:div :class "recurring-event-details"
-                    (:div
-                      (:label "Repeat "
+                 (:div :class "recurring-event-details"
+                  (:fieldset :id "repeat-every"
+                    (:legend "Repeat "
                               (when (and local-day-of-week
                                          (nor monthly frequent))
                                 (htm " on " (str local-day-of-week)))
                               " every")
-                      (str (number-selection-html "interval" 12
-                                                  :selected (or interval 1)
-                                                  :auto-submit t)))
+                    (:label :for "interval" "Interval")
+                    (str (number-selection-html "interval" 12
+                                                 :id "interval"
+                                                 :selected (or interval 1)
+                                                 :auto-submit t))
 
-                    (:div
-                      (:select :onchange "this.form.submit()"
-                               :name "frequency"
-                        (:option :value "weekly"
-                                 :selected (unless monthly "")
-                                 "Week"
-                                 (unless frequent (htm "s")))
-                        (:option :value "monthly"
-                                 :selected (when monthly "")
-                                 "Month"
-                                 (unless frequent (htm "s")))))
+                   (:label :for "frequency" "Frequency")
+                   (:select :onchange "this.form.submit()"
+                            :id "frequency"
+                            :name "frequency"
+                     (:option :value "weekly"
+                              :selected (unless monthly "")
+                              "Week" (unless frequent (htm "s")))
+                     (:option :value "monthly"
+                              :selected (when monthly "")
+                              "Month" (unless frequent (htm "s")))))
 
                     (when (and (or (not frequency) (not monthly))
                                frequent)
                       (htm
-                        (:div
-                          (:label "Repeat on")
+                        (:fieldset
+                          (:legend "Repeat on")
                             (dolist (day +day-names+)
                               (htm
-                                (:input :type "checkbox"
-                                        :name "days-of-week"
-                                        :checked (when (or (find day
-                                                                 days-of-week
-                                                                 :test #'equalp)
-                                                           (equalp local-day-of-week
-                                                                   day))
-                                                   "checked")
-                                        :value (string-downcase day)
-                                        (str (elt day 0))))))))
+                                (:label
+                                  (:input :type "checkbox"
+                                          :name "days-of-week"
+                                          :checked (when (or (find day
+                                                                   days-of-week
+                                                                   :test #'equalp)
+                                                             (equalp local-day-of-week
+                                                                     day))
+                                                     "checked")
+                                          :value (string-downcase day))
+                                  (str (elt day 0))))))))
 
                     (when (and date monthly)
                       (str (enter-monthly-recurring-details date
@@ -663,29 +674,28 @@
                                                             weeks-of-month)))
 
                     (:div
-                      (:label "End Date (optional)")
+                      (:label :for "end-date"
+                       "End Date (optional)")
                       (:input :type "text"
+                              :id "end-date"
                               :name "end-date"
                               :placeholder "mm/dd/yyyy"
                               :value end-date)))))))
 
          (:div :class "long"
-           (:label "Event title")
+           (:label :for "title" "Event title")
            (:input :type "text"
+                   :id "title"
                    :name "title"
                    :placeholder "ex: Community Garden Work Party"
                    :value (awhen title (escape-for-html it))))
 
-         (awhen (groups-with-user-as-admin)
-           (htm
-             (:div
-               (:label "Posted by")
-               (if existing-url
-                 (htm (:h2 (str (db identity-selection :name))))
-                 (str (identity-selection-html identity-selection
-                                             it
-                                             :class "identity event-host"
-                                             :onchange "this.form.submit()"))))))
+         (when (and (not existing-url) groups-with-user-as-admin)
+           (htm (:label :for "identity-selection" "Posted by")
+                (str (identity-selection-html identity-selection
+                                              groups-with-user-as-admin
+                                              :class "identity event-host"
+                                              :onchange "this.form.submit()"))))
          (when (or (getf *user-group-privileges* :member)
                    (getf *user-group-privileges* :admin))
            (str (privacy-selection-html
@@ -698,16 +708,17 @@
                             (groups-with-user-as-admin)))
                   groups-selected
                   :onchange "this.form.submit()")))
-         (:div
-           (:label "Details")
-           (:textarea :rows "8"
-                       :name "details"
-                       :placeholder "Add some more info..."
-                       (awhen details (str (escape-for-html it)))))
+         (:label :for "details" "Details")
+         (:textarea :rows "8"
+                    :id "details"
+                    :name "details"
+                    :placeholder "Add some more info..."
+                    (awhen details (str (escape-for-html it))))
 
          (:div :class "long"
-           (:label "Where")
+           (:label :for "location" "Where")
            (:input :type "text"
+                   :id "location"
                    :name "location"
                    :placeholder "Street address for the event"
                    :value location))

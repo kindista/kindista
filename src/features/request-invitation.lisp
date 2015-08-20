@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -21,18 +21,18 @@
   (send-invite-request-notification-email (getf (cddddr *notice*) :id)))
 
 (defun create-invite-request (&key name email address offering into events resources invite gratitude other (time (get-universal-time)))
-  (let ((invite-request (insert-db `(:type :invite-request
-                                     :name ,name
-                                     :email ,email
-                                     :address ,address
-                                     :offering ,offering
-                                     :bio-into ,into
-                                     :help-events ,events
-                                     :commit-resources ,resources
-                                     :commit-invite ,invite
-                                     :commit-gratitude ,gratitude
-                                     :sharing-ideas ,other
-                                     :requested ,time))))
+  (let ((invite-request (insert-db (list :type :invite-request
+                                         :name name
+                                         :email email
+                                         :address address
+                                         :offering offering
+                                         :bio-into into
+                                         :help-events events
+                                         :commit-resources resources
+                                         :commit-invite invite
+                                         :commit-gratitude gratitude
+                                         :sharing-ideas other
+                                         :requested time))))
   (notice :new-invite-request :time :time :id invite-request)
   invite-request))
 
@@ -100,7 +100,7 @@
           (:div
             (:label :for "into" "What else are you into? (minimum 150 characters)")
             (:textarea :cols "150" :rows "5" :name "into" :placeholder "Interests, activites, etc." (str into)))
-          
+
           (:p "Are you willing to help promote Kindista in your local community?")
           (:ul
             (:li (:input :type "checkbox"

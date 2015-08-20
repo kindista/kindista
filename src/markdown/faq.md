@@ -182,7 +182,7 @@ to provide materials that will be used in creating a gift
 
 Most gifts are not taxable in the United States.
 Please refer to the IRS guidelines regarding gift taxes 
-[here](http://www.irs.gov/Businesses/Small-Businesses-&-Self-Employed/Frequently-Asked-Questions-on-Gift-Taxes)
+[here](http://www.irs.gov/Businesses/Small-Businesses-&amp;-Self-Employed/Frequently-Asked-Questions-on-Gift-Taxes)
 and
 [here](http://www.irs.gov/uac/Eight-Tips-to-Determine-if-Your-Gift-is-Taxable).
 If you are still unsure about whether your gift is taxable

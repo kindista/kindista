@@ -1,4 +1,4 @@
-/* Copyright 2013 CommonGoods Network, Inc.
+/* Copyright 2012-2015 CommonGoods Network, Inc.
  
    This file is part of Kindista.
 
@@ -140,6 +140,16 @@ h4 {
 
 select {
  max-width: 20em;
+}
+
+fieldset {
+ margin: 0;
+ padding: 0;
+ border: none;
+}
+
+legend {
+ font-weight: bold;
 }
 
 div.title-bar {
@@ -340,12 +350,12 @@ input[type=radio].first-option {
  margin: 1.5em 0 .8em 0em;
 }
 
-#signup button, #login button {
+#signup button, .login button {
  padding-left: 0;
  padding-right: 0;
 }
 
-#signup button, #broadcast button, #login button {
+#signup button, #broadcast button, .login button.yes {
  min-width: 5em;
  margin-right: 1.2em;
  vertical-align: middle;
@@ -608,12 +618,12 @@ body.splash #symbol {
   background: none;
  }
  body.splash #header-container {
-  height: 15em;
+  height: 17em;
   background: url('hands.jpg') no-repeat;
   background-size: cover;
  }
  body.splash #header {
-  height: 15em;
+  height: 17em;
   background-color: rgba(255, 255, 255, 0.7);
  }
  body.splash #symbol {
@@ -774,6 +784,7 @@ button.red  {
 button.red.simple-link {
  background: none;
  color: #900;
+ text-shadow: none;
 }
 
 button.green.simple-link {
@@ -1375,7 +1386,7 @@ img.small {
 }
 
 #menu > table {
- margin:0.75em 0.75em 0;
+ margin:0.7em 0.7em 0;
 }
 
 #menu table img {
@@ -1393,7 +1404,7 @@ img.small {
 }
 
 #menu table tr:last-child a {
- padding: 2px;
+ padding: 2px 0;
 }
 
 
@@ -1405,7 +1416,7 @@ img.small {
 
 #menu li {
  padding:0.5em 1em;
- font-size: 1em;
+ font-size: 1.15em;
  font-weight: bold;
 }
 
@@ -1438,6 +1449,7 @@ menu .newcount {
 #fine-print-links {
  color: #999;
  width: 100%;
+ font-size: 0.95em;
  margin: 1em auto;
  text-align: center;
 }
@@ -1505,6 +1517,23 @@ menu#fine-print-links a {
  margin-top: 0.5em;
 }
 
+
+.item.create-event fieldset,
+.item.create-event label {
+ margin-top: 0.8em;
+}
+
+.item.create-event fieldset#repeat-every label,
+.item.create-event fieldset#date-and-time label {
+ display: none;
+}
+
+.item.create-event fieldset label {
+ display: inline-block;
+ font-weight: normal;
+ margin: 0.3em 0.3em 0 0;
+}
+
 .item.create-group label {
  font-size: 1.1em;
 }
@@ -1550,6 +1579,10 @@ menu#fine-print-links a {
  max-width: 100%;
 }
 
+.item div#privacy-selection {
+ height: auto;
+}
+
 table.inventory-title {
  width: 100%;
  border-collapse: collapse;
@@ -1566,6 +1599,10 @@ table.inventory-title {
 .simple-inventory-entry.item > p {
  margin-top: 0;
  font-size: 0.85em;
+}
+
+.simple-inventory-entry.item label.title {
+ font-weight: bold;
 }
 
 .inventory-details label {
@@ -1639,17 +1676,18 @@ div.error-border,
 textarea.error-border {
  border-radius: .25em;
  border-style: solid;
- border-width: 1px;
+ border-width: 2px;
  border-color: #900;
 }
 
 div.gratitude-selectors h3 {
  margin-top: 0;
  margin-left: 0.3em;
+
 }
 
 div.gratitude-selectors {
- margin-top: 1em;
+ margin: 1em 0;
 }
 
 tr.select-linked-inventory div.option-text {
@@ -1986,7 +2024,7 @@ div.gratitude-on-item {
 
 div.reciprocity.matches {
  clear: both;
- margin-top: 0.4em;
+ margin-top: 0.6em;
  font-size: 0.8em;
 }
 
@@ -2072,7 +2110,7 @@ button.card > img {
  padding: 0.3em;
 }
 
-.login.item #login button {
+.login.item button {
  min-width: 4.5em;
  height: 2em;
  font-size: 0.9em;
@@ -2080,15 +2118,16 @@ button.card > img {
  padding: 0;
 }
 
-#login a {
+.login a.reset {
+ font-size: 0.9em;
 }
 
-#login input[type=submit] {
+.login input[type=submit] {
  display: inline;
  margin-top: 0.6em;
 }
 
-#login label, #login input {
+.login label, .login input {
  width: 100%;
  display: block;
  max-width: 30em;
@@ -2418,16 +2457,11 @@ div.membership-request button:last-child {
 
 .card .actions {
  clear: left;
- margin-top: 0.65em;
  /*position:relative;
  border-top:1px solid #dfdfdf;
  padding-top:5px;*/
  color:#aaa;
-}
-
-.card .actions form {
- display: inline-block;
- margin-bottom: 0.2em;
+ margin: 0.3em 0;
 }
 
 .card a {
@@ -2441,9 +2475,7 @@ input::-moz-focus-inner {
 }
 
 .card a.icons {
- position:absolute;
- right: 0;
- bottom: 1.45em;
+ float: right;
  /*color:#375497;*/
  color:#5c8a2f;
  font-size:0.9em;
@@ -2525,7 +2557,7 @@ div.profile-buttons div.float-right {
 
 .card .actions a {
  color: #3c6dc8;
- font-size: 0.8em;
+ font-size: 0.9em;
  font-weight: normal;
 }
 
@@ -2562,12 +2594,21 @@ button.text.large {
  margin-top: 0;
 }
 
+form.primary-action {
+ display: block;
+ clear: both;
+}
+
+.card button.primary-action {
+ margin: 0.9em 0.5em 0 0;
+}
+
 /*stupid firefox bug */
-.card .actions button.primary-action > div {
+.card button.primary-action > div {
  display: inline;
 }
 
-.card .actions button.primary-action img {
+.card button.primary-action img {
  vertical-align: middle;
 }
 
@@ -2694,6 +2735,7 @@ div.activity-image {
  margin: 0 0.25em 0.15em 0;
 }
 
+.new-gratitude button.cancel,
 .new-gratitude button.yes {
  margin-left: 0.7em;
  padding-top: 0;
@@ -2715,6 +2757,22 @@ div.activity-image {
 
 .profile .section {
  clear:both;
+}
+
+#nearby-profiles .selector {
+ margin-right: 1em;
+ display: inline-block;
+ margin-bottom: 1em;
+}
+
+#nearby-profiles .selector label {
+ font-weight: bold;
+ width: 3.4em;
+ display: inline-block;
+}
+
+#nearby-profiles .selector select {
+ width: 8em;
 }
 
 .people ul {
@@ -2975,9 +3033,16 @@ div.settings-avatar {
  margin: .5em 0 .5em 0;
 }
 
+#edit-tags p.small {
+ margin: 0 0 0.2em;
+}
+
 div.tag,
 div.item-group-privacy {
  margin: 0.5em 0;
+}
+
+div.tag {
  display: inline-block;
 }
 
@@ -2995,6 +3060,12 @@ form.matchmaker h3 {
 
 form.matchmaker label {
  display: block;
+ margin-bottom: 0.8em;
+}
+
+form.matchmaker select.distance-selection {
+ display: block;
+ background: #fff;
 }
 
 ul.keywords {
@@ -3033,12 +3104,17 @@ form.post-next h2 {
  margin: 0.75em 0;
 }
 
+form.recipients {
+ width: 100%;
+ max-width: 50em;
+}
+
 form.recipients, div.recipients {
  overflow: hidden;
 }
 
 form.recipients input[type=text] {
- margin-right: 0.4em;
+ width: 27em;
 }
 
 form.recipients button.simple-link {
@@ -3046,33 +3122,96 @@ form.recipients button.simple-link {
  margin-bottom: 0.8em;
 }
 
-form.recipients label {
- display: block;
- float: left;
- width: 4em;
+form.conversation.recipients button.yes.input-height {
+ margin-left: 0.5em;
+}
+
+form.recipients div.identity-selection label {
+ font-weight: normal;
+ display: inline-block;
+ width: 4.5em;
  height: 100%;
 }
 
-form.recipients label.from {
- position: relative;
- top: 0.95em;
+form.recipients div.identity-selection {
+ margin: 0.8em 0 0;
 }
 
-form.recipients, menu.recipients {
- display: block;
+form.recipients textarea#message {
+ margin-top: 0.4em;
+}
+
+form.recipients legend {
+ float: left;
+ font-weight: normal;
+ width: 4.5em;
+ padding: 0 0 0 0;
+}
+
+form.recipients, ul.recipients {
+ display: inline-block;
+ padding-left: 0;
  margin: 0;
 }
 
-menu.recipients {
- float: left;
+div.new-gratitude menu.gratitude.recipients {
+ margin-top: 0;
+ vertical-align: top;
+}
+
+div.new-gratitude.recipient form.new-gratitude {
+ margin-bottom: 1.5em;
+}
+
+div.new-gratitude div#gratitude-by-email h3 {
+ line-height: 1.2em;
+ margin-bottom: 0.2em;
+}
+
+div.new-gratitude div#gratitude-by-email p.small {
+ max-width: 50em;
+ margin-top: 0;
+}
+
+div#gratitude-by-email label {
+ margin-top: 0.5em;
+ display: block;
+}
+
+div.new-gratitude label.recipients,
+menu.gratitude.recipients {
+ display:inline-block;
 }
 
 li.recipients:last-child {
  margin-top: -0.5em;
 }
 
+.gratitude-invitation form.recipients div#gratitude-recipient {
+ margin-top: 1em;
+}
+
+.gratitude-invitation form.recipients div#gratitude-recipient span:first-child {
+ display: inline-block;
+ width: 4.5em;
+}
+
+.new-gratitude.item form.recipients button.cancel,
+.gratitude-invitation form.recipients button.cancel {
+ margin: 0;
+}
+
 form.recipients menu.recipients li {
  vertical-align: top;
+}
+
+div.new-gratitude.item form label.message,
+div.new-conversation.item form label.message {
+ display: none;
+}
+
+div.new-gratitude li.recipients button.text {
+ margin-top: 0.5em;
 }
 
 form.recipients menu.recipients li:first-of-type {
@@ -3201,18 +3340,52 @@ div.settings menu.bar {
  width: 8em;
 }
 
-.settings-item .details {
- display: table-row;
-}
-
-.settings-item .details .title-container,
-.settings-item .details .content-container > div {
+.settings-item .title-container,
+.settings-item .details,
+.settings-item .details .buttons,
+.settings-item .details .current-value,
+.settings-item .details .form-elements {
  display: table-cell;
  vertical-align: top;
 }
 
-.settings-item .details .content-container {
- display: table;
+.settings-item ul#names li {
+ display: table-row;
+}
+
+.settings-item ul#names li span {
+ padding: 0 0.4em 0.4em 0;
+ display: table-cell;
+}
+
+.settings-item ul#names input[type=text]:first-child {
+ margin-top: 0;
+}
+
+.settings-item .details .current-value,
+.settings-item .details ul.padding-top {
+ padding-top: 0.4em;
+}
+
+.settings-item .details form {
+ width: 100%;
+}
+
+.settings-item form.digest-dist strong {
+ font-weight: normal;
+ font-size: 1em;
+ padding-left: 1.6em;
+}
+
+.settings-item form.digest-dist select {
+ font-size: 0.8em;
+}
+
+.settings-item .details.notifications li:last-of-type {
+ margin-bottom: 0;
+}
+
+.settings-item .details {
  width: 100%;
 }
 
@@ -3221,9 +3394,14 @@ div.settings menu.bar {
  text-align: left;
 }
 
+.settings-item .content-container {
+ display: table;
+ width: 100%;
+}
+
 .settings-item .details .buttons {
- text-align: right;
  vertical-align: top;
+ text-align: right;
 }
 
 .settings-item .details .buttons button {
@@ -3263,22 +3441,65 @@ div.settings menu.bar {
  margin-left: .8em;
 }
 
-.settings-item li > button.simple-link {
- margin-left:0;
- font-weight: 500;
- font-size: .9em;
- padding:0.2em;
+.settings-item .emails li {
+ display: table-row;
 }
 
-.settings-item span {
- margin: 0 1.1em 0 0;
- padding: 0;
+.settings-item .emails span.email-item {
+ margin-bottom: 0.5em;
 }
 
-.settings-item li > button {
- margin-left: 1em;
+.settings-item .emails ul {
+ margin-bottom: 0;
+}
+
+.settings-item .emails li > span,
+.settings-item .emails li div.controls {
+ display: table-cell;
+}
+
+@media (max-width:40em) {
+.settings-item .emails li > span,
+.settings-item .emails li span.help-text,
+.settings-item .emails li div.controls {
+ display: block;
+}
+.settings-item .emails li .email-item {
+ margin-bottom: 0;
+ height: inherit;
+}
+
+.settings-item div.emails li > span.help-text,
+.settings-item .emails li div.controls {
+ margin-bottom: 2em;
+}
+}
+
+ div.transaction-option a,
+.settings-item .emails li div.input-wrapper {
+ margin-right: 0.4em;
+ display: inline-block;
+}
+
+.settings-item .emails li span.help-text,
+.settings-item .emails li a,
+.settings-item .emails li button.simple-link.green {
+ font-size: 0.9em;
+ padding: 0 0.4em 0 0;
+ margin: 0;
+}
+
+.settings-item .emails li span {
+ padding-right: 0.4em;
+ height: 2em;
+}
+
+.settings-item .emails li button {
  font-size: .9em;
- padding: .3em .5em;
+ padding: 0.3em 0.4em;;
+ margin: 0 0.4em 0 0;
+ height: inherit;
+ font-weight: normal;
 }
 
 .settings-item blockquote#donate {
@@ -3775,21 +3996,27 @@ div.transaction-option a,
 div.transaction-option button {
  color: #3c6dc8;
  font-weight: bold;
- display: inline-block;
+ display: table;
+ text-align: left;
  margin: 0;
  padding: 0;
 }
 
-@media (max-width:40em) {
- div.transaction-option a,
- div.transaction-option button {
-   line-height: 2.5em;
- }
+div.transaction-option div {
+ display: table-cell;
+ vertical-align: middle;
+ padding-right: 0.5em;
 }
 
 div.transaction-option {
  margin-bottom: 1em;
  margin-left: 0;
+}
+
+@media (max-width:40em) {
+ div.transaction-option {
+  margin-bottom: 1.5em;
+ }
 }
 
 div.transaction-option button > img,

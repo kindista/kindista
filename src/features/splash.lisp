@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -32,12 +32,10 @@
               (:label :for "username" "Email")
               (:input :id "username"
                       :type "text"
-                      :autocomplete "off"
                       :name "username" )
               (:label :for "password" "Password")
               (:input :id "password"
                       :type "password"
-                      :autocomplete "off"
                       :name "password" )
               (:br)
               (:a :href "/reset" "Forgot your password?")   

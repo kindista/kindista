@@ -24,14 +24,13 @@
                           (getf notice :user-id))))
 
 (defun create-broadcast (&key path title author tags blog-p amazon-smile-p)
-  (insert-db `(:type ,(if blog-p :blog :broadcast)
-               :created ,(get-universal-time)
-               :title ,title
-               :author ,author
-               :tags ,tags
-               :amazon-smile-p ,amazon-smile-p
-               :path ,path
-               )))
+  (insert-db (list :type (if blog-p :blog :broadcast)
+                   :created (get-universal-time)
+                   :title title
+                   :author author
+                   :tags tags
+                   :amazon-smile-p amazon-smile-p
+                   :path path)))
 
 (defun new-broadcast-html (title action-url &key blog-p)
   (html
@@ -44,11 +43,11 @@
         (when blog-p
           (htm (:input :type "hidden" :name "blog-p" :value "t")))
         (:p
-          (:label (str (if blog-p "Author:" "From:")))
-          (:input :type "text" :name "from" :value "\"Benjamin Crandall\" <ben@kindista.org>"))
+          (:label (str (if blog-p "Author:" "From:"))
+           (:input :type "text" :name "from" :value "\"Benjamin Crandall\" <ben@kindista.org>")))
         (:p
-          (:label (str (if blog-p "Title:" "Subject:")))
-          (:input :type "text" :name "subject"))
+          (:label (str (if blog-p "Title:" "Subject:"))
+           (:input :type "text" :name "subject")))
         (:textarea :name "markdown"
                    :placeholder (if blog-p
                                   "Email teaser text..."
@@ -57,8 +56,8 @@
         (when blog-p
           (htm
             (:p
-              (:label "Tags: (optional)")
-              (:input :type "text" :name "tags"))))
+              (:label "Tags: (optional)"
+               (:input :type "text" :name "tags")))))
         (:div
           (:span "Add a markdown file:")
           (:br)
@@ -169,8 +168,7 @@
                                       :if-exists :supersede)
     (with-standard-io-syntax
       (let ((*print-pretty* t))
-        (princ text file))
-      (terpri)))
+        (princ text file))))
  ;(copy-file file new-file-path)
   (s+ local-dir hyphenated-title))
 
@@ -202,7 +200,7 @@
           ((post-parameter "test")
            (cl-smtp:send-email
              +mail-server+
-             "info@kindista.org"
+             "Kindista <info@kindista.org>"
              from
              subject
              (s+ text-broadcast

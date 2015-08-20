@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -27,9 +27,9 @@
     (standard-page
       "About"
       (html
-        (str (help-tabs-html :tab :about)) 
-        (str *about-html*)) 
-      :selected "help"
+        (str (help-tabs-html :tab :about))
+        (str *about-html*))
+      :selected "faq"
       :right (html
                (str (donate-sidebar))
                (str (invite-sidebar))))))

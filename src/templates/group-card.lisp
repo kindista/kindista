@@ -36,7 +36,7 @@
                      (getf group place)))))
      (html
       (:div :class "card"
-        (:div :class "image" (:a :href link (:img :src (get-avatar-thumbnail id 300 300))))
+        (:div :class "image" (:a :href link (:img :alt id :src (get-avatar-thumbnail id 300 300))))
         (:div :class "card-details"
           (:h3 (:a :href link
                  (str name)))

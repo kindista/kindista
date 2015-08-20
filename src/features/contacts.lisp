@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -46,18 +46,22 @@
     (push result (gethash (getf data :object) *person-notification-index*))))
 
 (defun add-contact (new-contact-id userid)
-  (amodify-db userid :following (cons new-contact-id it))
-  (with-locked-hash-table (*followers-index*)
-    (push userid (gethash new-contact-id *followers-index*)))
-  (remove-suggestion new-contact-id userid)
-  (remove-suggestion new-contact-id userid :hidden t)
-  (unless (string= (strcat +base-url+ "people/"
-                           (username-or-id new-contact-id))
-                   (referer))
-    (flash (html (:a :href (strcat +base-url+ "people/"
+  (unless (find new-contact-id (db userid :following))
+    (amodify-db userid :following (cons new-contact-id it))
+    (with-locked-hash-table (*followers-index*)
+      (push userid (gethash new-contact-id *followers-index*)))
+    (remove-suggestion new-contact-id userid)
+    (remove-suggestion new-contact-id userid :hidden t)
+    (unless (or (not *userid*) ;if done from the REPL
+                (string= (strcat +base-url+
+                                   "people/"
                                    (username-or-id new-contact-id))
-                     (str (db new-contact-id :name)))
-                 " has been added to your contacts.")))
+                       (referer))
+                ;; if adding userid to host's contacts when RSVP'ing to
+                ;; an invitation
+                (= *userid* new-contact-id))
+      (flash (html (str (person-link new-contact-id))
+                   " has been added to your contacts."))))
 
   ;;is this really how we want to implement contact notifications?
   ;(create-contact-notification :follower userid :contact new-contact-id)

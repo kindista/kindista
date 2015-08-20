@@ -17,14 +17,16 @@
 
 (in-package :kindista)
 
-(defun send-error-notification-email (&key on userid url)
+(defun send-error-notification-email (&key on userid url data)
   (cl-smtp:send-email +mail-server+
                       "Kindista <noreply@kindista.org>"
-                      "errors@kindista.org"
+                      (if *productionp*
+                        "errors@kindista.org"
+                        *error-message-email*)
                       "Notifying humans, an error has occured!"
-                      (error-notification-email-text on userid url)))
+                      (error-notification-email-text on userid url data)))
 
-(defun error-notification-email-text (on userid url)
+(defun error-notification-email-text (on userid url data)
 (strcat
 "An error has occured..."
 #\linefeed #\linefeed
@@ -32,6 +34,11 @@
 #\linefeed #\linefeed
 "What was happening: " on
 #\linefeed #\linefeed
-"Affected user: " userid))
+"Affected user: " userid
+#\linefeed #\linefeed
+"Affected data: "
+#\linefeed
+data
+))
 
 

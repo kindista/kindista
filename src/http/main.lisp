@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -49,6 +49,7 @@
   (let ((data (cddddr *notice*)))
    (send-error-notification-email :on (getf data :on)
                                   :url (getf data :url)
+                                  :data (getf data :data)
                                   :userid (getf data :userid))))
 
 (defun not-found ()
@@ -259,12 +260,12 @@
         (set-cookie "token" :value token
                             :http-only t
                             :path "/"
-                            :expires (+ (get-universal-time) 2592000)
+                            :expires (+ (get-universal-time) (* 12 +week-in-seconds+))
                             :secure nil))))))
 
 (defun check-token (cookie-value)
   (let ((token (gethash cookie-value *tokens*)))
-    (if (and token (< (get-universal-time) (+ (token-created token) 2592000)))
+    (if (and token (< (get-universal-time) (+ (token-created token) (* 12 +week-in-seconds+))))
       token
       (progn (remhash cookie-value *tokens*) nil))))
 
@@ -333,8 +334,9 @@
                                  timer
                                  (cond
                                    ((and (string= (header-in* :x-real-ip) *local-ip-address*)
-                                         (string= (script-name*) "/send-all-reminders"))
-                                    30)
+                                         (or (string= (script-name*) "/send-all-reminders")
+                                             (string= (script-name*) "/send-inventory-digest")))
+                                    60)
                                    ((and (getf *user* :admin)
                                          (string= (script-name*) "/admin/sendmail")) 600)
                                    (t 5)))
@@ -359,8 +361,10 @@
       (html
         (str (page-header))
         (:div :id "site-error"
-          (:h1 "Something terrible happened")
-          (:p "Humans have been notified!"))))))
+          (:h1 "Something unexpected has happened")
+          (:p "If this problem persists, please "
+           (:a :href "mailto:errors@kindista.org" "email our development team")
+           "."))))))
 
 (defmethod acceptor-log-message ((acceptor k-acceptor) (log-level (eql :error)) format-string &rest format-arguments)
   "Print extra information when logging an error. Sends a formatted
@@ -370,7 +374,7 @@
   (hunchentoot::with-log-stream (stream (acceptor-message-log-destination acceptor) hunchentoot::*message-log-lock*)
     (handler-case
       (flet ((error-message (destination)
-               (format destination "~A [~A~@[ [~A]~]] ~A ~A ~:S ~:S ~?~%"
+               (format destination "~A [~A~@[ [~A]~]] USERID: ~A ~A ~:S ~:S ~?~%"
                        (get-universal-time)
                        (hunchentoot::iso-time)
                        log-level
@@ -380,13 +384,14 @@
                        (post-parameters*)
                        format-string
                        format-arguments)))
-        (send-error-notification-email (error-message nil))
+        (send-hunchentoot-error-notification-email (error-message nil))
         (error-message stream))
       (error (e)
         (ignore-errors
          (format *trace-output* "error ~A while writing to error log, error not logged~%" e))))))
 
-(defun send-error-notification-email (message)
+(defun send-hunchentoot-error-notification-email (message)
+  "Another function exists for sending specific errors within the codebase. See send-error-notification-email in email/error-notifications.lisp"
   (cl-smtp:send-email +mail-server+
                       "Kindista <noreply@kindista.org>"
                       *error-message-email*
@@ -486,23 +491,20 @@
 (defun login-box (&optional (mobile t))
   (html
     (:div :class (s+ (when mobile "mobile ") "login item")
-      (:form :method "POST" :action "/login" :id "login"
-        (:label :for "username" "Email")
-        (:input :type "hidden" :name "next" :value (request-uri*))
-        (:input :type "text"
-                :id "username"
-                :name "username"
-                :autocomplete "off"
-                :value (get-parameter "retry"))
-        (:label :for "password" "Password")
-        (:input :type "password"
-                :id "password"
-                :autocomplete "off"
-                :name "password")
-        (awhen (get-parameter-string "next")
+      (:form :method "POST" :action "/login"
+        (:label "Email"
+          (:input :type "text"
+                  :class "username"
+                  :name "username"
+                  :value (get-parameter "retry")))
+        (:label "Password"
+          (:input :type "password"
+                  :class "password"
+                  :name "password"))
+         (awhen (get-parameter-string "next")
           (htm (:input :type "hidden" :name "next" :value it)))
         (:button :type "submit" :class "yes" "Log in")
-        (:a :href "/reset" "Forgot your password?")))))
+        (:a :href "/reset" :class "reset" "Forgot your password?")))))
 
 (defun header-page (title header-extra body &key class hide-menu extra-head)
   (base-page title
@@ -596,9 +598,9 @@
                    (str (menu (list '("Community" "home")
                                     '("Offers" "offers")
                                     '("Requests" "requests")
-                                    '("People" "people") 
-                                    '("Groups" "groups") 
-                                    '("Events" "events") 
+                                    '("People" "people")
+                                    '("Groups" "groups")
+                                    '("Events" "events")
                                     '("Help & Feedback" "faq")
                                     (when (getf *user* :admin)
                                       '("Admin" "admin")))
@@ -626,7 +628,7 @@
       (:h2
         (str
           (or confirmation-question
-              (s+ "Are you sure you want to delete this " (str type) "?"))))
+              (s+ "Are you sure you want to delete this " type "?"))))
       (when text
         (htm (:p
                (:blockquote :class "review-text " (cl-who:esc text)))))

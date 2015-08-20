@@ -33,6 +33,7 @@
             (:li (:a :href "/admin/metrics" "user metrics"))
             (:li (:a :href "/admin/pending-accounts" "pending accounts to review"))
             (:li (:a :href "/admin/matchmaker" "matchmaker"))
+            (:li (:a :href "/admin/mail-system" "mail system administration"))
             (:li (:a :href "/admin/recent" "recently added"))
             (:li (:a :href "/admin/sendmail" "send email to everyone")))))
       :selected "admin")))
@@ -264,6 +265,27 @@
                                  :page page)))))
       :selected "admin")))
 
+(defun get-admin-mail-system ()
+  (require-admin
+    (let ((mailbox-count (sb-concurrency:mailbox-count *notice-mailbox*)))
+      (standard-page
+        "Mail System Status"
+        (html
+          (:h2 (str (strcat "Mail System Queue: " mailbox-count)))
+          (when (> mailbox-count 0)
+            (htm
+              (:form :method "post" :action "/admin/mail-system"
+                (:button :type "submit"
+                         :class "yes"
+                         :name "reboot-notice-thread"
+                         "Reboot Mail System")))))
+        :selected "admin"))))
+
+(defun post-admin-mail-system ()
+  (require-admin
+    (when (post-parameter "reboot-notice-thread")
+      (reboot-notice-thread)
+      (see-other "/admin/mail-system"))))
 
 (defun get-admin-sendmail ()
   (require-admin
@@ -275,3 +297,6 @@
 (defun post-admin-sendmail ()
   (require-admin (post-broadcast-new)
                  (see-other "/admin/sendmail")))
+
+
+

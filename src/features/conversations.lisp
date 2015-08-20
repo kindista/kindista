@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -44,23 +44,29 @@
     (standard-page
      "New conversation"
      (html
-       (:div :class "item"
+       (:div :class "item new-conversation"
         (:h2 "New Conversation")
        (:div :class "item"
         (:form :method "post"
                :action "/conversations/new"
                :class "recipients"
-          (:div :class "recipients"
-            (:label "With:")
-            (:menu :type "toolbar" :class "recipients"
+          (:fieldset :class "recipients"
+            (:legend "With:")
+            (:ul :id "recipients"
+                 :class "recipients"
               (unless people
                 (htm (:li (:em "nobody yet"))))
               (dolist (person people)
                 (htm
                   (:li
-                    (str (getf (db person) :name))
+                    (:label :for person (str (getf (db person) :name)))
                     (unless single-recipient
-                      (htm (:button :class "text large x-remove" :type "submit" :name "remove" :value person " ⨯ "))))))
+                      (htm (:button :class "text large x-remove"
+                                    :id person
+                                    :type "submit"
+                                    :name "remove"
+                                    :value person
+                                    " ⨯ "))))))
               (unless single-recipient
                 (htm (:li (:button :type "submit" :class "text" :name "add" :value "new" "+ Add someone"))))))
 
@@ -68,8 +74,13 @@
             (htm (:input :type "hidden" :name "people" :value (format nil "~{~A~^,~}" people))))
           (when next
               (htm (:input :type "hidden" :name "next" :value next)))
-          (:p (:label "Subject: ") (:input :type "text" :name "subject" :value subject))
-          (:textarea :rows "8" :name "text" (str text))
+          (:p (:label :for "subject" "Subject: ")
+           (:input :type "text" :id "subject" :name "subject" :value subject))
+          (:label :for "message" :class "message" "Message")
+          (:textarea :rows "8"
+                     :id "message"
+                     :name "text"
+                     (str text))
           (:p
             (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
             (:button :class "yes" :type "submit"
@@ -84,7 +95,7 @@
     (html
       (:div :class "item"
        (:form :method "post"
-              :class "recipients"
+              :class "conversation recipients"
               :action "/conversations/new"
          (:button :type "submit" :class "simple-link green" :name "cancel-add" "↩ go back")
          (:h2 "Who would you like to add to the conversation?")

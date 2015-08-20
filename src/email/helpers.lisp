@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -18,11 +18,13 @@
 (in-package :kindista)
 
 (defparameter *style-a* "color:#5c8a2f;
+                         font-weight:bold;
                          text-decoration:none;")
 
 (defparameter *style-p* "max-width:70em;
                          margin-top:.9em;
                          margin-bottom:.9em;")
+
 
 (defparameter *style-quote-box* "border-collapse: collapse;
                                  background: #ebf2e4;
@@ -43,25 +45,32 @@
                         (username-or-id id))
           (str (getf it :name))))))
 
+(defun email-text (string)
+  (if string
+    (regex-replace-all "\\n" string "<br>")
+    ""))
+
 (defun person-name (id)
   (db id :name))
 
 (defun no-reply-notice
   (&optional (instructions "do so from their profile on Kindista.org"))
-  (strcat "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER. If you want to contact the sender, please " instructions "."))
+  (s+ "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER. If you want to contact the sender, please " instructions ". "))
 
 (defun amazon-smile-reminder (&optional html)
   (if html
     (html
       (:div :class *style-p*
-         "-----------------------"
+         "------------------------------------"
          (:br)
          "Do you shop at Amazon.com? If so, please "
-         (:a :href *amazon-smile-link* "click here")
+         (:a :href *amazon-smile-link*
+             :style *style-a*
+          "click here")
          " and Amazon will donate a portion of your purchases to Kindista through our parent organization, CommonGoods Network."))
     (strcat
       #\linefeed #\linefeed
-      "-----------------------"
+      "------------------------------------"
       #\linefeed
       "Do you shop at Amazon.com? If so, please click here and Amazon will donate a portion of your purchases to Kindista through our parent organization, CommonGoods Network:"
       #\linefeed
@@ -76,7 +85,7 @@
 
 (strcat*
 #\linefeed #\linefeed
-"-------------------------------------"
+"------------------------------------"
 #\linefeed
 "Why am I receiving this? "
 "In your Kindista communications settings, you are subscribed to receive "
@@ -104,6 +113,7 @@ notification-description
     (str (or detailed-notification-description notification-description))
     ", you may "
     (:a :href (unsubscribe-url email-address unsubscribe-code groupid)
+        :style *style-a*
         "unsubscribe")
     ".")))
 

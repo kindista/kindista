@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -131,6 +131,7 @@
             (case (message-type message)
               (:gratitude
                  (add-to-folder :deleted)
+                 (setf (cdr (assoc-assoc *userid* (message-people message))) :read)
                  (remove-from-folders (list :inbox :compost :unread)))
               (t
                (remove-from-folders (list :inbox :unread))
@@ -154,8 +155,13 @@
                  (:conversation
                   (db (getf data :latest-comment) :created))
                  (:transaction
-                   (or (getf (car (last (getf data :log))) :time)
-                       (db (getf data :latest-comment) :created)))
+                   (apply #'max
+                          (remove nil
+                                 (list (getf (car (last (getf data :log)))
+                                             :time)
+                                       (getf data :created)
+                                       (db (getf data :latest-comment)
+                                           :created)))))
                  ((or :group-membership-invitation
                       :group-membership-request)
                   (or (getf data :resent)
@@ -452,7 +458,9 @@
                             mailboxes)))
     (html
       (str (h3-timestamp (message-time message)))
-      (:a :href (url-compose (strcat "/gratitude/" id) "menu" "messages")
+      (:a :href (url-compose (strcat "/gratitude/" id)
+                             "menu""messages"
+                             "read" "t")
         (:p :class "people"
          (str (group-message-indicator message groups))
          (:span :class "dark-gray-text"
@@ -646,6 +654,15 @@
                                     0))))
         :selected "messages"))))
 
+(defun mark-messages-read (messages)
+  (dolist (id messages)
+    (let ((message (gethash id *db-messages*)))
+      (when (or (not (eql (message-latest-comment message)
+                       (cdr (assoc-assoc *userid* (message-people message)))))
+                (member *userid* (getf (message-folders message) :unread)))
+        (update-folder-data
+          message :read :last-read-comment (message-latest-comment message))))))
+
 (defun post-messages ()
   (require-user
     (let ((messages (loop for pair in (post-parameters*)
@@ -668,12 +685,7 @@
          (see-other next))
 
         ((post-parameter "mark-read")
-         (dolist (id messages)
-           (let ((message (gethash id *db-messages*)))
-             (when (or (not (eql (message-latest-comment message)
-                              (cdr (assoc-assoc *userid* (message-people message)))))
-                       (member *userid* (getf (message-folders message) :unread)))
-               (update-folder-data message :read :last-read-comment (message-latest-comment message)))))
+         (mark-messages-read messages)
          (see-other next))
 
         ((post-parameter "mark-unread")

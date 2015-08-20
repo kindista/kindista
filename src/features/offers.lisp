@@ -72,6 +72,9 @@
           "Offers"
           (html
             (:div :class  "inventory-item-page"
+              (unless (getf offer :active)
+                (htm
+                  (:h2 :class "red" "This offer is no longer active.")))
               (str (inventory-activity-item result :show-distance t :show-tags t)))
             (str (item-images-html id))
             (when (and (or mine (group-admin-p by))

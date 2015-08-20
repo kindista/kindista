@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -16,17 +16,6 @@
 ;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :kindista)
-
-(defun mark-recent-inventory-active ()
-"To fix a bug introduced in commit f24b715bd4bb893f8bc6fc037910ee677b3e59dd in which new inventory items were not being marked as active"
-  (dolist (id (hash-table-keys *db*))
-    (let* ((item (db id))
-           (type (getf item :type)))
-      (when (and (or (eql type :event)
-                     (eql type :request)
-                     (eql type :offer))
-                 (> (getf item :created) 3610734290))
-         (modify-db id :active t)))))
 
 (defun new-pending-offer-notice-handler ()
   (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
@@ -378,55 +367,74 @@
                (not groups-selected))
           (inventory-tags :error (s+ "Please allow at least one group to see this " type)))
 
-         ((and (post-parameter "create")
-               title)
-          (if (intersection tags *top-tags* :test #'string=)
-            (let ((new-id (create-inventory-item
-                            :type (if (string= type "request") :request
-                                                               :offer)
-                            :by (if adminp
-                                  (or groupid identity-selection)
-                                  *userid*)
-                            :privacy groups-selected
-                            :title title
-                            :details details
-                            :tags tags)))
-              (if (getf *user* :pending)
-                (progn
-                  new-id
-                  (contact-opt-out-flash (list *userid*) :item-type type)
-                  (when (string= type "offer")
-                    (notice :new-pending-offer :id new-id))
-                  (if (string= type "request")
-                    (flash "Your item has been recorded. It will be posted after you post an offer and we have a chance to review it. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
-                    (flash "Your item has been recorded. It will be posted after we have a chance to review it. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience."))
-                  (see-other "/home"))
-                (progn
-                  (contact-opt-out-flash (list *userid*) :item-type type)
-                  (flash
-                    (s+ "Congratulations, your "
-                        type
-                        " has been posted! "
-                        " You will "
-                        (if (getf *user* :notify-message)
-                          " will be notified by email "
-                          " will recieve a notification on Kindista ")
-                        (s+ "when someone wants to "
-                            (if (string= type "offer")
-                              "receive this from you. "
-                              "wants to share this with you. "))
-                        " As a reminder, you are under no obligation to "
-                        (if (string= type "offer")
-                          "share with anyone"
-                          "accept gifts from anyone")
-                        "; you decide who you want to share with on Kindista."))
-                  (when (string= type "offer")
-                    (update-matchmaker-offer-data new-id))
-                  (see-other (format nil (strcat "/" type "s/" new-id))))))
+         ((not (intersection tags *top-tags* :test #'string=))
+           (inventory-tags :error "You must select at least one category"))
 
-            (inventory-tags :error "You must select at least one keyword")))
+         ((> (length (intersection tags *top-tags* :test #'string=))
+             5)
+           (inventory-tags :error "You entered too many categories. Please choose only the most relevant ones."))
+
+         ((> (length (set-difference tags *top-tags* :test #'string=))
+             10)
+           (inventory-tags :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
+
+         ((and (post-parameter "create") title)
+          (let ((new-id (create-inventory-item
+                          :type (if (string= type "request") :request
+                                                             :offer)
+                          :by (if adminp
+                                (or groupid identity-selection)
+                                *userid*)
+                          :privacy groups-selected
+                          :title title
+                          :details details
+                          :tags tags)))
+
+            (send-metric* (if (string= type "request")
+                            :new-request
+                            :new-offer)
+                          new-id)
+
+            (if (getf *user* :pending)
+              (progn
+                new-id
+                (contact-opt-out-flash (list *userid*) :item-type type)
+                (when (string= type "offer")
+                  (notice :new-pending-offer :id new-id))
+                (if (string= type "request")
+                  (flash "Your item has been recorded. It will be posted after you post an offer and we have a chance to review it. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
+                  (flash "Your item has been recorded. It will be posted after we have a chance to review it. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience."))
+                (see-other "/home"))
+              (progn
+                (contact-opt-out-flash (list *userid*) :item-type type)
+                (flash
+                  (s+ "Congratulations, your "
+                      type
+                      " has been posted! "
+                      " You will "
+                      (if (getf *user* :notify-message)
+                        " will be notified by email "
+                        " will receive a notification on Kindista ")
+                      (s+ "when someone wants to "
+                          (if (string= type "offer")
+                            "receive this from you. "
+                            "wants to share this with you. "))
+                      " As a reminder, you are under no obligation to "
+                      (if (string= type "offer")
+                        "share with anyone"
+                        "accept gifts from anyone")
+                      "; you decide who you want to share with on Kindista."))
+                (when (string= type "offer")
+                  (update-matchmaker-offer-data new-id))
+                (see-other (format nil (strcat "/" type "s/" new-id)))))))
 
          (t (inventory-tags)))))))
+
+(defun deactivated-item-error
+  (type
+   &optional (next (or (post-parameter "next") "/home")))
+  (flash (s+ "Sorry, this " type " has been deactivated.") :error t)
+  (see-other next))
 
 (defun post-existing-inventory-item (type &key id url)
   (require-user
@@ -439,6 +447,11 @@
            (next (post-parameter "next")))
 
       (cond
+        ((nor (getf item :active)
+              (eql by *userid*)
+              (getf *user* :admin))
+         (deactivated-item-error (string-downcase (getf item :type))))
+
         ((and (not (eql by *userid*))
               (item-view-denied (result-privacy (gethash id *db-results*))))
          (permission-denied))
@@ -615,17 +628,24 @@
                  (flash (s+ "Please shorten your description. Offers and Requests must be no longer than 1000 characters including line breaks."))
                  (inventory-tags))
 
-                ((post-parameter "create")
-                 (if (intersection tags *top-tags* :test #'string=)
-                   (progn
-                     (modify-inventory-item id :title (post-parameter "title")
-                                               :details (post-parameter "details")
-                                               :tags tags
-                                               :privacy (when restrictedp
-                                                          groups-selected))
-                     (see-other (or (post-parameter "next") (strcat "/" type "s/" id))))
+                ((not (intersection tags *top-tags* :test #'string=))
+                  (inventory-tags :error "You must select at least one category"))
 
-                   (inventory-tags :error "You must select at least one keyword")))
+                ((> (length (intersection tags *top-tags* :test #'string=))
+                    5)
+                  (inventory-tags :error "You entered too many categories. Please choose only the most relevant ones."))
+
+                ((> (length (set-difference tags *top-tags* :test #'string=))
+                    10)
+                  (inventory-tags :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
+
+                ((post-parameter "create")
+                 (modify-inventory-item id :title (post-parameter "title")
+                                           :details (post-parameter "details")
+                                           :tags tags
+                                           :privacy (when restrictedp
+                                                      groups-selected))
+                 (see-other (strcat "/" type "s/" id)))
 
                 (t
                   (inventory-tags)))))))))))
@@ -640,12 +660,12 @@
         (awhen groupid
           (htm (:input :type "hidden" :name "groupid" :value it)))
 
-        (:label :for "title"
-         (:strong "Post " (str preposition) " " (str type) " ")
-         (:span :class "inline-block"
-           " ("
-          (:span :id "title-count" "64")
-          " characters available)"))
+        (:label :for "title" :class "title"
+          "Post " (str preposition) " " (str type) " ")
+          (:span :class "inline-block"
+            " ("
+           (:span :id "title-count" "64")
+           " characters available)")
         (:table :class "inventory-title"
           (:tr
             (:td :class "inventory-details"
@@ -661,111 +681,117 @@
         ". You can add details after you click \"post.\""))))
 
 
-(defun enter-inventory-tags (&key page-title action item-title details existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next)
-  (let ((suggested (or tags (get-tag-suggestions item-title))))
-    (standard-page page-title
-     (html
-       (:div :class "item inventory-details" :id "edit-tags"
-        (str (pending-disclaimer))
-        (when error
-          (htm
-            (:p :class "error" (str error))))
-        (:h2 (str page-title) )
-        (:form :class "post-next"
-               :method "post"
-               :action action
-          (awhen next
-            (htm (:input :type "hidden" :name "next" :value it)))
-          (awhen groupid
-            (htm (:input :type "hidden" :name "groupid" :value it)))
-          (:input :type "hidden"
-                  :name "prior-identity"
-                  :value (or identity-selection groupid *userid*))
+(defun enter-inventory-tags
+  (&key page-title action item-title details existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next
+   &aux (typestring (if (string= selected "offers") "offer" "request"))
+        (suggested (or tags (get-tag-suggestions item-title))))
+
+  (standard-page page-title
+    (html
+      (:div :class "item inventory-details" :id "edit-tags"
+       (str (pending-disclaimer))
+       (when error
+         (htm
+           (:p :class "error" (str error))))
+       (:h2 (str page-title) )
+       (:form :class "post-next"
+              :method "post"
+              :action action
+         (awhen next
+           (htm (:input :type "hidden" :name "next" :value it)))
+         (awhen groupid
+           (htm (:input :type "hidden" :name "groupid" :value it)))
+         (:input :type "hidden"
+                 :name "prior-identity"
+                 :value (or identity-selection groupid *userid*))
 
 
-          (:div :class "help-text"
-            (:strong (:span :id "title-count"
-                      (str (aif item-title
-                             (strcat (- 64 (length it)))
-                             "64"))))
-            " characters available")
-          (:h3  "Enter a title ")
-          (:input :type "text"
-                  :name "title"
-                  :onkeyup (ps-inline
-                             (limit-characters this 64 "title-count"))
-                  :value (awhen item-title
-                           (str (escape-for-html it))))
+         (:div :class "help-text"
+           (:strong (:span :id "title-count"
+                     (str (aif item-title
+                            (strcat (- 64 (length it)))
+                            "64"))))
+           " characters available")
+         (:h3  "Enter a title ")
+         (:input :type "text"
+                 :name "title"
+                 :onkeyup (ps-inline
+                            (limit-characters this 64 "title-count"))
+                 :value (awhen item-title
+                          (str (escape-for-html it))))
 
-          (:div :class "help-text"
-            (:strong
-              (:span :id "details-count" (str (aif details
-                                                (strcat (- 1000 (length it)))
-                                                "1000"))))
-              " characters available")
-          (:h3 "Include a description (optional)")
-          (:textarea :class "review-text"
-                     :name "details"
-                     :rows "5"
-                     :onkeyup (ps-inline
-                                (limit-characters this 1000 "details-count"))
-                     (awhen details
-                       (str (escape-for-html it))))
+         (:div :class "help-text"
+           (:strong
+             (:span :id "details-count" (str (aif details
+                                               (strcat (- 1000 (length it)))
+                                               "1000"))))
+             " characters available")
+         (:h3 "Include a description (optional)")
+         (:textarea :class "review-text"
+                    :name "details"
+                    :rows "5"
+                    :onkeyup (ps-inline
+                               (limit-characters this 1000 "details-count"))
+                    (awhen details
+                      (str (escape-for-html it))))
 
-          (unless (or groupid existingp)
-            (awhen (groups-with-user-as-admin)
-              (htm
-                (:label (str (s+ (if (string= selected "offers")
-                                   "Offered" "Requested")
-                                 " by")))
-                (str (identity-selection-html identity-selection it :onchange "this.form.submit()")))))
+         (unless (or groupid existingp)
+           (awhen (groups-with-user-as-admin)
+             (htm
+               (:label :for "identity-selection"
+                 (str (s+ (string-capitalize typestring) "ed by")))
+               (str (identity-selection-html identity-selection it :onchange "this.form.submit()")))))
 
-          (when (or (getf *user-group-privileges* :member)
-                    (getf *user-group-privileges* :admin)
-                    groups-selected)
-            (str (privacy-selection-html
-                   (if (string= selected "offers") "offer" "request")
-                   restrictedp
-                   (if (or (and identity-selection
-                                (not (= identity-selection *userid*)))
-                           groupid)
-                     (list (aif identity-selection
-                             (cons it (db it :name))
-                             (cons groupid (db groupid :name))))
-                     (append (groups-with-user-as-member)
-                             (groups-with-user-as-admin)))
-                   groups-selected
-                   :onchange "this.form.submit()")))
+         (when (or (getf *user-group-privileges* :member)
+                   (getf *user-group-privileges* :admin)
+                   groups-selected)
+           (str (privacy-selection-html
+                  typestring
+                  restrictedp
+                  (if (or (and identity-selection
+                               (not (= identity-selection *userid*)))
+                          groupid)
+                    (list (aif identity-selection
+                            (cons it (db it :name))
+                            (cons groupid (db groupid :name))))
+                    (append (groups-with-user-as-member)
+                            (groups-with-user-as-admin)))
+                  groups-selected
+                  :onchange "this.form.submit()")))
 
-          (:h3 "Select at least one keyword")
-          (dolist (tag *top-tags*)
-            (htm 
-              (:div :class "tag"
-                (:input :type "checkbox"
-                        :name "tag"
-                        :value tag
-                        :checked (when (member tag suggested :test #'string=)
-                                   (setf suggested (remove tag suggested :test #'string=))
-                                   ""))
-                   (:span (str tag)))))
-          (:h3 "Additional keywords (optional)")
-          (:input :type "text" :name "tags" :size 40
-                  :placeholder "e.g. produce, bicycle, tai-chi"
-                  :value (format nil "~{~a~^,~^ ~}" suggested))
+         (:h3 "Select 1-5 categories ")
+         (:p :class "small"
+          "Please note: selecting irrelevant categories is considered spam.")
+         (dolist (tag *top-tags*)
+           (htm 
+             (:div :class "tag"
+               (:input :type "checkbox"
+                       :name "tag"
+                       :value tag
+                       :checked (when (member tag suggested :test #'string=)
+                                  (setf suggested (remove tag suggested :test #'string=))
+                                  ""))
+                  (:span (str tag)))))
+         (:h3 "Additional keywords (optional)")
+         (:p :class "small"
+          "Please note: adding irrelevant keywords is considered spam.")
+         (:input :type "text" :name "tags" :size 40
+                 :placeholder "e.g. produce, bicycle, tai-chi"
+                 :value (format nil "~{~a~^,~^ ~}" suggested))
 
-          (:p
-            (:strong :class "red" "Important: ")
-            "You must read the "
-            (:a :href "/faq#sharing-guidelines" 
-                :target "_blank"
-                "Guidelines for Sharing on Kindista")
-            " before posting any offers or requests. "
-            "Failure to adhere to these guidelines may result in account suspension.")
+         (:p
+           (:strong :class "red" "Important: ")
+           "You must read the "
+           (:a :href "/faq#sharing-guidelines" 
+               :target "_blank"
+               "Guidelines for Sharing on Kindista")
+           " before posting any offers or requests. "
+           "Failure to adhere to these guidelines may result in account suspension.")
 
-          (:p (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
-              (:button :class "yes" :type "submit" :class "submit" :name "create" (str (or button-text "Post")))))))
-     :right (sharing-guide-sidebar)
-     :selected selected)))
+         (:p (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
+             (:button :class "yes" :type "submit" :class "submit" :name "create" (str (or button-text "Post")))))))
+   :right (sharing-guide-sidebar)
+   :selected selected))
 
 ; author
 ; creation date

@@ -126,9 +126,12 @@
                                            datetime))))
 
 (defun days-in-month (datetime)
-  (let ((timestamp (universal-to-timestamp
-                     (typecase datetime (integer datetime)
-                                        (string (parse-datetime datetime))))))
+  (let ((timestamp (typecase datetime
+                     (local-time:timestamp datetime)
+                     (integer (universal-to-timestamp
+                                datetime))
+                     (string (universal-to-timestamp
+                               (parse-datetime datetime))))))
    (local-time:days-in-month (timestamp-month timestamp)
                              (timestamp-year timestamp))))
 
@@ -158,3 +161,12 @@
         (if url
           (htm (:a :href url (str inner)))
           (str inner))))))
+
+(defun format-month-for-activity-charts (universal-time)
+  (let* ((timestamp (universal-to-timestamp universal-time))
+         (month (timestamp-month timestamp)))
+    (strcat (timestamp-year timestamp)
+            "/"
+            (if (< (/ month 10) 1)
+              (strcat "0" month)
+              (strcat month)))))

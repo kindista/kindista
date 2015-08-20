@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -158,46 +158,52 @@
         (:h3 "Billing address")
         (:ul
           (:li :class "full"
-            (:label :class (when (and show-error
+            (:label :for "name"
+                    :class (when (and show-error
                                       (empty-string-p (donate-info-name*)))
-                             "error")
-                    :for "name" "*Name on card")
+                                   "error")
+                    "*Name on card")
             (:input :name "name" :type "text" :value (donate-info-name*)))
           (:li :class "full"
-            (:label :class (when (and show-error
+            (:label :for "address"
+                    :class (when (and show-error
                                       (empty-string-p (donate-info-address*)))
                              "error")
-                    :for "address" "*Address")
+                    "*Address")
             (:input :name "address" :type "text" :value (donate-info-address*)))
           (:li :class "half"
-            (:label :class (when (and show-error
+            (:label :for "city" "*City" 
+                    :class (when (and show-error
                                       (empty-string-p (donate-info-city*)))
-                             "error")
-                    :for "city" "*City")
+                             "error"))
             (:input :name "city" :type "text" :value (donate-info-city*)))
           (:li :class "quarter"
-            (:label :class (when (and show-error
+            (:label :for "state"
+                    :class (when (and show-error
                                       (empty-string-p (donate-info-state*)))
                              "error")
-                    :for "state" "*State")
+                    "*State")
             (:select :name "state" (str (state-options (donate-info-state*)))))
           (:li :class "quarter"
-            (:label :class (when (and show-error
+            (:label :for "zip"
+                    :class (when (and show-error
                                       (empty-string-p (donate-info-zip*)))
                              "error")
-                    :for "zip" "*Zip")
+                    "*Zip")
             (:input :name "zip" :type "text" :value (donate-info-zip*)))
           (:li :class "half"
-            (:label :class (when (and show-error
+            (:label :for "email"
+                    :class (when (and show-error
                                       (empty-string-p (donate-info-email*)))
                              "error")
-                    :for "email" "*Email")
+                    "*Email")
             (:input :name "email" :type "text" :value (donate-info-email*)))
           (:li :class "half"
-            (:label :class (when (and show-error
+            (:label :for "phone"
+                    :class (when (and show-error
                                       (empty-string-p (donate-info-phone*)))
                              "error")
-                    :for "phone" "*Phone")
+                    "*Phone")
             (:input :name "phone" :type "text" :value (donate-info-phone*))))
         (:button :class "nav" :type "submit" "Next >")
 
@@ -263,7 +269,8 @@
 (defun credit-card-details-form (&key show-error card)
   (html
     (:li :class "full"
-      (:label :class (when (and show-error
+      (:label :for "ccn"
+              :class (when (and show-error
                                 (not card)
                                 (empty-string-p (donate-info-token*)))
                        "error")
@@ -271,7 +278,8 @@
               "*Card number")
       (:input :id "ccn" :type "text"))
     (:li :class "quarter"
-      (:label :class (when (and show-error
+      (:label :for "cvc"
+              :class (when (and show-error
                                 (not card)
                                 (empty-string-p (donate-info-token*)))
                        "error")
@@ -279,7 +287,8 @@
               "*CVC " (:a :href "http://en.wikipedia.org/wiki/Card_security_code" :target "_blank" "(?)"))
       (:input :id "cvc" :type "text"))
     (:li :class "half"
-      (:label :class (when (and show-error
+      (:label :for "ccm"
+              :class (when (and show-error
                                 (not card)
                                 (empty-string-p (donate-info-token*)))
                        "error")
@@ -299,7 +308,8 @@
         (:option :value "11" "11")
         (:option :value "12" "12")))
     (:li :class "quarter"
-      (:label :class (when (and show-error
+      (:label :for "ccy"
+              :class (when (and show-error
                                 (not card)
                                 (empty-string-p (donate-info-token*)))
                        "error")
@@ -327,10 +337,11 @@
           (when (or (not (donate-info-amount*)) show-amount)
             (htm
               (:li :class "full"
-                (:label :class (when (and show-error
+                (:label :for "amount"
+                        :class (when (and show-error
                                           (not (donate-info-amount*)))
                                  "error")
-                        :for "amount" "*Donation amount")
+                        "*Donation amount")
                 (:input :name "amount" :type "text" :value (donate-info-amount*))))) 
           (str (credit-card-details-form :show-error show-error))
           )

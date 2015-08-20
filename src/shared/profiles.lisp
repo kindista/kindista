@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -29,31 +29,48 @@
 
 (defun nearby-profiles
   (index
-    &optional (userid *userid*)
-              (user (if (eq *userid* userid)
-                      *user*
-                      (db userid)))
-    &aux (u-distance (getf *user* :distance)))
+    &key (userid *userid*)
+         (user (if (eq *userid* userid)
+                 *user*
+                 (db userid)))
+         (u-distance (getf user :distance))
+         (sort-by :distance)
+         (results (remove userid
+                          (with-location
+                            (geo-index-query index
+                                             *latitude*
+                                             *longitude*
+                                             u-distance))
+                          :key #'result-id)))
+
   (with-location
     (labels ((distance (result)
-               (air-distance *latitude* *longitude* (result-latitude result) (result-longitude result))))
+               (air-distance *latitude*
+                             *longitude*
+                             (result-latitude result)
+                             (result-longitude result)))
+             (entity-name (result)
+               (db (result-id result) :name)))
       (mapcar #'result-id
-              (sort (remove *userid*
-                            (if (or (not u-distance) (= u-distance 0))
-                              (all-groups)
-                              (geo-index-query index
-                                               *latitude*
-                                               *longitude*
-                                                u-distance))
-                            :key #'result-id)
-                    #'< :key #'distance)))))
+              (case sort-by
+                (:distance
+                  (sort results #'< :key #'distance))
+                (:alpha
+                  (sort results
+                        #'string-lessp
+                        :key #'entity-name)))))))
 
 (defun nearby-profiles-html (type tabs)
   (let* ((sort-by (get-parameter-string "sort"))
          (page (if (scan +number-scanner+ (get-parameter "p"))
                 (parse-integer (get-parameter "p"))
                 0))
-         (url (url-compose "/groups/nearby" "sort" sort-by))
+         (user-distance (user-distance))
+         (distance (or (get-parameter-integer "distance")
+                       (if (or (eql user-distance 0)
+                               (not user-distance))
+                         100
+                         user-distance)))
          (start (* page 20)))
     (standard-page
       (s+ "Nearby " type)
@@ -64,30 +81,37 @@
 
         (str tabs)
 
-        (str (distance-selection-html url :text "within "))
 
         (:form :method "get"
-               :action "/groups/nearby"
-         (:strong "sort ")
-         (:select :class "sort"
+               :action (s+ "/" type "/nearby")
+               :id "nearby-profiles"
+               (:div :class "selector"
+                 (:label :for "sort-selection" "sort")
+                 (:select :class "sort"
                   :name "sort"
+                  :id "sort-selection"
                   :onchange "this.form.submit()"
-           (:option :value "alpha"
-                    :selected (when (string= sort-by "alpha") "")
-                    "alphabetically")
-           (:option :value "dist"
-                    :selected (unless (string= sort-by "alpha") "")
-                    "by distance"))
+                  (:option :value "alpha"
+                   :selected (when (string= sort-by "alpha") "")
+                   "alphabetically")
+                  (:option :value "dist"
+                   :selected (unless (string= sort-by "alpha") "")
+                   "by distance")))
+               (:div :class "selector"
+                 (:label :for "distance-selection" "within")
+                 (str (distance-selection-dropdown distance
+                                                   :auto-submit t
+                                                   :everywhere-option nil)))
          (:input :type "submit" :class "no-js" :value "apply"))
 
         (multiple-value-bind (ids more)
-          (sublist (if (and (string= sort-by "alpha")
-                            (string= type "groups"))
-                     (safe-sort (mapcar #'result-id (all-groups))
-                       #'string-lessp :key #'person-name)
-                     (nearby-profiles (if (string= "sort" "people")
+          (sublist (nearby-profiles (if (string= type "people")
                                       *people-geo-index*
-                                      *groups-geo-index*)) )
+                                      *groups-geo-index*)
+                                    :u-distance distance
+                                    :sort-by (if (string= sort-by "alpha")
+                                               :alpha
+                                               :distance))
                    start 20)
           (when (> page 0)
             (str (paginate-links page more)))
@@ -95,7 +119,10 @@
             (str (if (string= type "people")
                    (person-card id)
                    (group-card id))))
-          (str (paginate-links page more))))
+          (str (paginate-links page more))
+          (when (not ids)
+            (htm (:p
+                   (:strong "Sorry, there are no " (str type) " within the distance specified. " ))))))
       :selected type
       :right (html
                (str (donate-sidebar))
@@ -291,7 +318,10 @@
 
             (case (result-type item)
               (:gratitude
-                (str (gratitude-activity-item item)))
+                (awhen (gratitude-activity-item item)
+                  ;;don't display pending items that were posted when a
+                  ;;person deactivates the account.
+                  (str it)))
               (:person
                 (str (joined-activity-item item)))
               (:gift
@@ -360,11 +390,11 @@
                     (:input :type "hidden" :name "next" :value (script-name*))
                     (:button :class "yes small" :type "submit" :name "add" :value id "Send a message"))))
 
-                (:form :method "GET"
-                       :action (case entity-type
-                                 (:person (strcat "/people/" (username-or-id id) "/reputation"))
-                                 (:group (strcat "/groups/" (username-or-id id) "/reputation")))
-                  (:button :class "yes small" :type "submit" "Express gratitude")) 
+              (:form :method "GET"
+                     :action (case entity-type
+                               (:person (strcat "/people/" (username-or-id id) "/reputation"))
+                               (:group (strcat "/groups/" (username-or-id id) "/reputation")))
+                (:button :class "yes small" :type "submit" "Express gratitude")) 
 
               (when (eql entity-type :group)
                 (cond

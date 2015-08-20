@@ -52,6 +52,7 @@
         editable
         edit-text
         buttons
+        extra-form
         class
         (form-markup t)
         (method "post")
@@ -62,35 +63,33 @@
                   (str (or title (string-capitalize item))))))))
   (html
     (:a :id item)
-    (:div :class "item"
-     (:div :class "settings-item"
-      (if editable
-        (if form-markup
-          (htm (:form :method method
-                :action action
-                :class (s+ "details " class)
-                (str title-div)
-                (:div :class "content-container"
-                 (if buttons
-                   (htm
-                     (:div :class "form-elements" (str body))
-                     (:div :class "buttons" (str buttons)))
-                   (str body)))))
-          (htm (:div :class "details"
-                (str title-div)
-                (:div :class "content-container"
-                 (str body)
-                 (when buttons
-                   (htm (:div :class "buttons" (str buttons))))))))
-        (htm (:div :class (s+ "details " class)
-              (str title-div)
-              (:div :class "content-container"
-               (:div :class "current-value" (str body))
-               (:div :class "buttons"
-                (:a :class "yes small"
-                 :href (url-compose *base-url* "edit" item)
-                 (or (str edit-text)
-                     (htm "Edit")))))))))
+    (:div :class "item settings-item"
+      (:div :class "settings-item-table"
+        (str title-div)
+        (:div :class (s+ "details " class)
+          (htm
+            (if editable
+              (if form-markup
+                (htm (:form :method method
+                            :action action
+                            (:div :class "content-container"
+                              (if buttons
+                                (htm
+                                  (:div :class "form-elements" (str body))
+                                  (:div :class "buttons" (str buttons)))
+                                (str body))))
+                     (awhen extra-form (str it)))
+                (htm (:div :class "content-container"
+                       (str body)
+                       (when buttons
+                         (htm (:div :class "buttons" (str buttons)))))))
+             (htm (:div :class "content-container"
+                    (:div :class "current-value" (str body))
+                    (:div :class "buttons"
+                      (:a :class "yes small"
+                          :href (url-compose *base-url* "edit" item)
+                          (or (str edit-text)
+                              (htm "Edit"))))))))))
      (:p :class "help-text" (:em (str help-text))))))
 
 (defun settings-group-category (editable groupid group)
@@ -152,7 +151,7 @@
           (when groupid
             (htm (:input :type "hidden" :name "groupid" :value groupid)))
           (:input :type "hidden" :name "next" :value *base-url*)
-            (:ul
+            (:ul :id "names"
               (:li (:span (:input :type "text"
                                   :name "name"
                                   :value (or group-name
@@ -160,7 +159,7 @@
                    (unless groupid
                      (htm (:span (:strong "display name")))))
               (unless groupid
-                (loop for i to 3
+                (loop for i to (max 3 (length aliases))
                       do (htm (:li
                                 (:span (:input :type "text"
                                                :name "aliases"
@@ -168,7 +167,7 @@
                                                         it)))
                                 (:span "nickname")))))))
         (html
-          (:ul
+          (:ul :id "names"
             (:li (:span (:strong (str (or group-name (getf *user* :name)))))
                  (when aliases (htm (:span (str "(displayed)")))))
             (dolist (alias aliases)
@@ -310,20 +309,24 @@
          (:button :class "yes small" :type "submit" "Change password"))
        (:div :class "content"
          (:div
-           (:label "Current password:")
+           (:label :for "current-password" "Current password:")
            (:input :type "password"
-            :name "password"
+                   :id "current-password"
+                   :name "password"
             :placeholder "verify your current password"))
          (:div
-           (:label "New password:")
+           (:label :for "new-password" "New password:")
            (:input :type "password"
-            :name "new-password-1"
-            :placeholder "new password: at least 8 characters"))   
+                   :id "new-password"
+                   :name "new-password-1"
+                   :placeholder "new password: at least 8 characters"))   
          (:div
-           (:label "Confirm your new password:")
+           (:label :for "confirm-new-password"
+             "Confirm your new password:")
            (:input :type "password"
-            :name "new-password-2"
-            :placeholder "please retype your new password")))))   
+                   :id "confirm-new-password"
+                   :name "new-password-2"
+                   :placeholder "please retype your new password")))))   
 
   :form-markup nil
   :editable t
@@ -344,8 +347,9 @@
       (html
         (:input :type "hidden" :name "next" :value *base-url*)
         (:div
-          (:label "Current monthly donation: " (:strong "$" (str plan)))
-          (:select :name "plan"
+          (:label :for "donation-plan"
+            "Current monthly donation: " (:strong "$" (str plan)))
+          (:select :id "donation-plan" :name "plan"
            (:option :disabled "disabled" "Select a new plan")
            (:option :value "5" "$5/month")
            (:option :value "10" "$10/month")
@@ -456,7 +460,7 @@
       action
       nil
       :buttons (html
-                 (:button :class "link no-padding green"
+                 (:button :class "simple-link red link no-padding"
                           :name action
                           :type "submit"
                           (str (s+ (string-capitalize action) " account"))))
@@ -503,82 +507,103 @@
       "email"
       (html
         (:input :type "hidden" :name "next" :value "/settings/communication")
-        (:ul
+        (:ul :class "padding-top"
           (:li (:span :class "email-item" (:strong (str (car emails))))
                (:span :class "help-text" (:em "primary email")))
           (dolist (email alternates)
             (htm (:li (:span :class "email-item" (str email))
-                      (:button :class "simple-link green"
-                               :name "make-email-primary"
-                               :type "submit"
-                               :value email
-                               "Make primary")
-                      " | "
-                      (:button :class "simple-link gray"
-                               :name "remove-email"
-                               :type "submit"
-                               :value email
-                               "Remove"))))
-
+                      (:div :class "controls"
+                         (:button :class "simple-link green"
+                          :name "make-email-primary"
+                          :type "submit"
+                          :value email
+                          "Make primary")
+                         (:span "|")
+                         (:button :class "simple-link gray"
+                          :name "remove-email"
+                          :type "submit"
+                          :value email
+                          "Remove")))))
           (dolist (invite-id pending)
             (let ((email (getf (db invite-id) :recipient-email)))
               (when email ; there may be a bug that allows the pending invite item to be deleted without removing its id from the user's :pending-alt-emails
                 (htm
                   (:li
-                    (:span :class "email-item" (str email))
-                    (:input :type "hidden"
-                            :name "invitation-id" :value invite-id)
+                    (:span :class "email-item" (str email)
+                           (:span :class "red" " (pending)"))
                     (cond
                       ((string= email activate)
                        (htm
-                         (:span
-                           (:input :type "text"
-                                   :name "token"
-                                   :placeholder "please enter your activation code"))
-                         (:button :class "yes"
-                                  :type "submit"
-                                  "Activate")
-                         (:a :class "red" :href "/settings/communication" "Cancel")))
+                         (:div :class "controls"
+                           (:input :type "hidden"
+                            :name "invitation-id" :value invite-id)
+                            (:div :class "input-wrapper"
+                             (:input :type "text"
+                              :name "token"
+                              :placeholder "enter activation code"))
+                            (:span "|")
+                            (:button :class "yes"
+                             :type "submit"
+                             "Activate")
+                            (:span "|")
+                            (:a :class "red" :href "/settings/communication" "Cancel"))))
                       (t
                        (htm
-                         (:span :class "red" "(pending)")
-                         (:a :href (url-compose "/settings/communication"
-                                                "edit" "email"
-                                                "activate" email)
-                             "Enter code")
-                         (when (not editable)
-                           (htm
-                             " | "
-                             (:button :type "submit"
-                                      :class "simple-link "
-                                      :name "resend-code"
-                                      :value email
-                                      "Resend code")))
-                         " | "
-                         (:button :class "simple-link gray"
-                                  :name "remove-pending-email"
-                                  :value invite-id
-                                  "Remove"))))))))))
-
-        (cond
+                         (:div :class "controls"
+                          (when (not editable)
+                            (htm
+                              (:span :class "red" "(pending)")
+                              (:a :href (url-compose "/settings/communication"
+                                                     "edit" "email"
+                                                     "activate" email)
+                                  "Enter code")
+                              (:span "|")
+                              (:button :type "submit"
+                               :class "simple-link "
+                               :name "resend-code"
+                               :value email
+                               "Resend code")
+                              (:span "|")
+                              (:button :class "simple-link gray"
+                               :name "remove-pending-email"
+                               :type "submit"
+                               :value email
+                               "Remove"))))))))))))
+         (cond
           ((not editable)
-           (htm (:p (:a :href "/settings/communication?edit=email" "add another email address"))))
+           (htm (:li
+                  (:a :href "/settings/communication?edit=email#email" "add another email address"))))
           ((not activate)
             (htm
               (:li
-                (:input :type "text"
-                        :name "new-email"
-                        :placeholder "new alternate email")
-                (:button :class "yes" :type "submit" :name "submit" "Confirm new email")
-                (:a :class "red" :href "/settings/communication" "Cancel"))) )))
+                (:div :class "input-wrapper"
+                  (:input :type "text"
+                          :name "new-email"
+                          :placeholder "new alternate email"))
+                (:div :class "controls"
+                  (:button :class "yes" :type "submit" :name "submit" "Confirm new email")
+                  (:span "|")
+                  (:a :class "red" :href "/settings/communication" "Cancel"))))))))
 
       :editable T
+      :class "emails"
       :help-text (s+ "Adding additional email address helps people find you "
                      "and keeps you from getting invites to Kindista at "
                      "your other addresses. "
                      "Kindista will never show your email addresses to anyone. "
                      "Only your primary email address will receive "
                      "notifications." ))))
+
+(defun remove-pending-email-address
+  (email
+   &optional (userid *userid*)
+   &aux invitation-id)
+  (dolist (invite-code-cons (gethash email *invitation-index*))
+    (when (eql userid (db (car invite-code-cons) :host))
+      (setf invitation-id (car invite-code-cons))))
+  (if invitation-id
+    (delete-invitation invitation-id)
+    (permission-denied)))
 
 (defun activate-email-address (invitation-id test-token)
   (let* ((invitation (db invitation-id))
@@ -631,7 +656,7 @@
             (htm (:input :type "hidden" :name "email" :value it)))
           (when groupid
             (htm (:input :type "hidden" :name "groupid" :value groupid)))
-          (:ul
+          (:ul :class "padding-top"
             (:li (:input :type "checkbox"
                   :name "gratitude"
                   :checked (checkbox-value :notify-gratitude))
@@ -680,8 +705,11 @@
                 (:li (:input :type "checkbox"
                        :name "kindista"
                        :checked (checkbox-value :notify-kindista))
-                      "with updates and information about Kindista")))
-            ))
+                      "with updates and information about Kindista")
+                (:li (:input :type "checkbox"
+                      :name "inventory-digest"
+                      :checked (checkbox-value :notify-inventory-digest))
+                     "with a weekly email featuring new offers and requests in my area")))))
 
      :buttons (html (:button :class (s+ "yes " (when *user* "small"))
                              :type "submit"
@@ -691,7 +719,14 @@
                       (htm (:div (:a :class "blue" :href "/login"
                                    "Log into Kindista")))))
      :action "/settings/notifications"
+     :class "notifications"
      :title "Notify me"
+     :extra-form (unless group
+                   (html
+                     (:a :id "digest-distance")
+                     (str (rdist-selection-html "/settings/communication"
+                                                :class "digest-dist"
+                                                :text "- email me offers/requests from within: "))))
      :editable t))))
 
 (defun settings-identity-selection-html (selected groups &key userid (url "/settings"))
@@ -1142,7 +1177,7 @@
                 (if groupid
                   (find userid (getf group :notify-message))
                   (getf user :notify-message)))
-        (flash "Warning: You will not recieve any email notifications when people reply to your Offers and Requests unless you choose to be notified \"when someone sends me a message\"!" :error t))
+        (flash "Warning: You will not receive any email notifications when people reply to your Offers and Requests unless you choose to be notified \"when someone sends me a message\"!" :error t))
 
       (cond
         ((and unverified-email (not userid))
@@ -1175,6 +1210,7 @@
                     :notify-message (when (post-parameter "message") t)
                     :notify-new-contact (when (post-parameter "new-contact") t)
                     :notify-reminders (when (post-parameter "reminders") t)
+                    :notify-inventory-digest (when (post-parameter "inventory-digest") t)
                     :notify-blog (when (post-parameter "reminders") t)
                     :notify-expired-invites (when (post-parameter "expired-invites") t)
                     :notify-group-membership-invites (when (post-parameter "group-membership-invites") t)
@@ -1305,19 +1341,7 @@
               (modify-db id :location-privacy (if (post-parameter "public-location") :public :private))
               (see-other (or (post-parameter "next") "/home")))
              (t
-              (multiple-value-bind (lat long address city state country street zip)
-                (geocode-address it)
-                (setf (getf (token-session-data *token*) :unverified-location)
-                      (list :lat lat
-                            :long long
-                            :address address
-                            :city city
-                            :state state
-                            :street street
-                            :zip zip
-                            :country country
-                            :location-privacy (if (post-parameter "public-location") :public :private))))
-
+              (log-unverified-token-location it)
               (see-other (if groupid
                            (url-compose "/settings/verify-address"
                                         "groupid" id
@@ -1361,8 +1385,7 @@
           ((post-parameter "confirm-deactivation")
            (deactivate-person *userid*)
            (flash "You have deactivated you account. If you change your mind you can reactivate your account on the settings page.")
-
-           (see-other "/settings/personal"))
+           (see-other "/"))
 
           ((post-parameter "cancel-plan")
 
@@ -1412,6 +1435,20 @@
            (reactivate-person *userid*)
            (flash "You have reactivated your Kindista account.")
            (see-other "/settings/personal"))
+
+          ((post-parameter "remove-email")
+           (let ((email (post-parameter "remove-email")))
+             (amodify-db *userid* :emails (remove email it :test #'string=))
+             (with-locked-hash-table (*email-index*)
+               (remhash email *email-index*))
+             (flash (s+ email " has been removed from your kindista account."))
+             (see-other "/settings/communication")))
+
+          ((post-parameter "remove-pending-email")
+           (let ((email (post-parameter "remove-pending-email")))
+             (remove-pending-email-address email)
+             (flash (s+ email " has been removed from your kindista account."))
+             (see-other "/settings/communication")))
 
           ((post-parameter "new-email")
            (let* ((new-email (post-parameter "new-email"))
@@ -1472,26 +1509,6 @@
                                         (remove new-primary it :test #'string=)))
              (flash (s+ new-primary " is now your primary email address."))
              (see-other "/settings/communication")))
-
-          ((post-parameter "remove-email")
-           (let ((email (post-parameter "remove-email")))
-             (amodify-db *userid* :emails (remove email it :test #'string=))
-             (with-locked-hash-table (*email-index*)
-               (remhash email *email-index*))
-             (flash (s+ email " has been removed from your Kindista account."))
-             (see-other "/settings/communication")))
-
-          ((post-parameter "remove-pending-email")
-           (let* ((invitation-id (find (post-parameter-integer "remove-pending-email")
-                                      (getf *user* :pending-alt-emails)
-                                      :test #'eql))
-                  (invitation (db invitation-id))
-                  (email (getf invitation :recipient-email)))
-             (when invitation-id
-               (amodify-db *userid* :pending-alt-emails (remove invitation-id it :test #'eql))
-               (delete-invitation invitation-id)
-               (flash (s+ email " has been removed from your list of pending alternate emails.")))
-             (see-other "/settings-communication")))
 
           ((post-parameter "bio-doing")
            (unless (getf entity :bio)

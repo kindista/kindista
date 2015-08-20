@@ -1,4 +1,4 @@
-;;; Copyright 2012-2014 CommonGoods Network, Inc.
+;;; Copyright 2014-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -67,8 +67,7 @@
                                        :if-exists :supersede)
          (with-standard-io-syntax
            (let ((*print-pretty* t))
-             (prin1 (list id markdown) file))
-           (terpri))))))
+             (prin1 (list id markdown) file)))))))
 
 
 (defun blog-post-html
@@ -117,7 +116,7 @@
             (dolist (tag it)
               (str tag)
               (unless (eql tag (car (last it)))
-                (htm " &middot ")))))))
+                (htm " &middot; ")))))))
 
      (:div :class "comments"
       (when comments

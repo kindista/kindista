@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -51,7 +51,13 @@
           ;(:span :class "unicon" " ✎ ")
           (:span (str comments)))))))
 
-(defun activity-item (&key id url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t) share-url)
+(defun activity-item
+  (&key id url share-url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
+   &aux (here (request-uri*))
+        (next (if (find (strcat id) (url-parts here) :test #'string=)
+                here
+                (strcat here "#" id))))
+
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
@@ -65,21 +71,25 @@
         (str related-items))
       (when (and *user* show-actions)
         (htm
-          (:div :class "actions"
-            (str (activity-icons :hearts hearts :comments comments :url url))
-            (:form :method "post" :action url
-              (:input :type "hidden" :name "next" :value (request-uri*))
-              (awhen primary-action
-                (htm (:button :type "submit"
-                              :class "small blue primary-action"
-                              :name (getf it :name)
-                              :value (getf it :value)
+          (awhen primary-action
+            (htm
+              (:form :class "primary-action" :method "post" :action url
+                (:input :type "hidden"
+                        :name "next"
+                        :value next)
+                (:button :type "submit"
+                         :class "small blue primary-action"
+                         :name (getf it :name)
+                         :value (getf it :value)
                        (when (getf it :image)
                          (str (getf it :image)))
                        ;; following needs div instead of span because of a
                        ;; firefox hover/underline bug
-                       (:div (str (getf it :text))))))
-              (:br)
+                       (:div (str (getf it :text)))))))
+          (:div :class "actions"
+            (str (activity-icons :hearts hearts :comments comments :url url))
+            (:form :method "post" :action url
+              (:input :type "hidden" :name "next" :value next)
               (if (member *userid* (gethash id *love-index*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
                 (htm (:input :type "submit" :name "love" :value "Love")))
@@ -136,18 +146,18 @@
         ;    " &middot; "
         ;    (str (flag-button url))))))))
 
-(defun event-activity-item (result &key sidebar truncate (show-distance nil) time)
+(defun event-activity-item (result &key sidebar truncate (show-distance nil) time date)
   (let* ((host (first (result-people result)))
          (item-id (result-id result))
          (data (db item-id))
          (group-adminp (group-admin-p host))
-         (event-time (or time (humanize-exact-time (getf data :local-time)
-                                                   :detailed t)))
+         (local-time (getf data :local-time))
+         (event-time (or time (humanize-exact-time local-time :detailed t)))
          (recurring (getf data :recurring))
          (item-url (strcat "/events/" item-id)))
 
     (activity-item
-      :id item-id
+      :id (strcat item-id ":" date)
       :url item-url
       :class "event"
       :edit (or (eql host *userid*)
@@ -213,11 +223,17 @@
                                  :see-more item-url)
                        (html-text (getf data :details)))))))))
 
-(defun gratitude-activity-item (result &key truncate reciprocity (show-on-item t) (show-when t) (show-actions t))
+(defun gratitude-activity-item
+  (result
+    &key truncate
+         reciprocity
+         (show-on-item t)
+         (show-when t)
+         (show-actions t)
          ; result-people is a list
          ; car of list is person showing gratitude
          ; cdr of list is subjects
-  (let* ((user-id (first (result-people result)))
+    &aux (user-id (first (result-people result)))
          ; tests to see if the user is the author of this item
          (self (eql user-id *userid*))
          ;item-id is derived from "result" which is passed in.
@@ -229,43 +245,50 @@
          (adminp (group-admin-p author))
          (images (getf data :images))
          (item-url (strcat "/gratitude/" item-id)))
+
+  (unless (getf data :pending)
     (html
-    (str (activity-item :id item-id
-                   :url item-url
-                   :class "gratitude"
-                   :time (when show-when (result-time result))
-                   :show-actions show-actions
-                   :edit (when (or self adminp (getf *user* :admin)) t)
-                   :image-text (when (or self adminp)
-                                 (if images
-                                   "Add/remove photos"
-                                   "Add photos"))
-                   :hearts (length (loves item-id))
-                   ;:comments (length (comments item-id))
-                   :content (html
-                              (:p (str (person-link user-id))
-                                  (str (if (getf data :edited) " edited " " expressed "))
-                                  (:a :href item-url "gratitude")
-                                  " for "
-                                  (str (name-list (getf data :subjects) :maximum-links 100)))
-                              (:p
-                                (str
-                                  (if truncate
-                                    (ellipsis (getf data :text)
-                                              :length 500
-                                              :see-more item-url)
-                                    (html-text (getf data :text)))))
-                              (unless (string= item-url (script-name*))
-                                (str (activity-item-images images item-url "gift"))))
-                   :related-items (html
-                                    (:div
-                                      (when (and (getf data :on) show-on-item)
-                                        (str (gratitude-on-item-html
-                                               item-id
-                                               :gratitude-data data)))
-                                      (when reciprocity
-                                        (str (display-gratitude-reciprocities
-                                               result))))))))))
+      (str
+        (activity-item
+          :id item-id
+          :url item-url
+          :class "gratitude"
+          :time (when show-when (result-time result))
+          :show-actions show-actions
+          :edit (when (or self adminp (getf *user* :admin)) t)
+          :image-text (when (or self adminp)
+                        (if images
+                          "Add/remove photos"
+                          "Add photos"))
+          :hearts (length (loves item-id))
+          ;:comments (length (comments item-id))
+          :content (html
+                     (:p (str (person-link user-id))
+                         (str (if (getf data :edited)
+                                " edited "
+                                " expressed "))
+                         (:a :href item-url "gratitude")
+                         " for "
+                         (str (name-list (getf data :subjects)
+                                         :maximum-links 100)))
+                     (:p
+                       (str
+                         (if truncate
+                           (ellipsis (getf data :text)
+                                     :length 500
+                                     :see-more item-url)
+                           (html-text (getf data :text)))))
+                     (unless (string= item-url (script-name*))
+                       (str (activity-item-images images item-url "gift"))))
+          :related-items (html
+                           (:div
+                             (when (and (getf data :on) show-on-item)
+                               (str (gratitude-on-item-html
+                                      item-id
+                                      :gratitude-data data)))
+                             (when reciprocity
+                               (str (display-gratitude-reciprocities
+                                      result))))))))))
 
 
 (defun gift-activity-item (result)
@@ -314,7 +337,7 @@
                    :admin-delete (and (getf *user* :admin)
                                       (not self)
                                       (not group-adminp))
-                   :image-text (when (and (string= type "offer") self)
+                   :image-text (when self
                                  (if images
                                    "Add/remove photos"
                                    "Add photos"))
@@ -329,7 +352,6 @@
                                              :text "Request This"
                                              :image (icon "white-request"))))
                    :class (s+ type " inventory-item")
-                   :reply (unless self t)
                    :share-url (when self
                                 (url-compose "https://www.facebook.com/dialog/share_open_graph"
                                              "app_id" *facebook-app-id*
@@ -343,6 +365,9 @@
                                                                          (s+ "https://kindista.org" item-url)))))
                                              "redirect_uri" (s+ +base-url+ (request-uri*)))
                                 )
+                   :reply (unless (or self
+                                      (not (getf data :active)))
+                            t)
                    :hearts (length (loves item-id))
                    :type (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")
@@ -393,12 +418,12 @@
         (htm (:div :class "inventory-title"
                (when (and title show-what)
                  (htm (str (icon (if requestp "requests" "offers")))))
-             (awhen title
-               (htm (:h3 :class "inventory-title"
-                      (:a :href item-url
-                        (str (if q
-                               (highlight-stems-in-text q it)
-                               it)))))))))
+               (awhen title
+                 (htm (:h3 :class "inventory-title"
+                        (:a :href item-url
+                          (str (if q
+                                 (highlight-stems-in-text q it)
+                                 it)))))))))
       (:div
         (str (if requestp
                "requested by "
@@ -440,7 +465,7 @@
         (:a :href (url-compose (strcat "/" type "s") "kw" tag) (str tag))
         (unless (eql tag (car (last tags)))
           (htm
-            " &middot "))))))
+            " &middot; "))))))
 
 (defun activity-item-images (images url alt)
   (html
@@ -465,9 +490,10 @@
                  (let* ((item (car items)))
                    (case (result-type item)
                      (:gratitude
-                       (str (gratitude-activity-item item :truncate t
-                                                          :reciprocity
-                                                          reciprocity))) 
+                       (awhen (gratitude-activity-item item :truncate t
+                                                            :reciprocity
+                                                            reciprocity)
+                         (str it)))
                      (:gift
                        (str (gift-activity-item item)))
                      (:person

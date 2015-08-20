@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -17,9 +17,10 @@
 
 (in-package :kindista)
 
-(defun number-selection-html (name end &key selected auto-submit)
+(defun number-selection-html (name end &key id selected auto-submit)
   (html
     (:select :name name
+             :id id
              :onchange (when auto-submit "this.form.submit()")
       (loop for num from 1 to end
             do (htm
@@ -27,17 +28,22 @@
                           :selected (when (eql selected num) "")
                           (str (strcat num))))))))
 
-(defun distance-selection-dropdown (distance &key auto-submit)
+(defun distance-selection-dropdown
+  (distance
+   &key auto-submit
+        (everywhere-option t))
   (html
     (:select :class "distance-selection"
              :name "distance"
+             :id "distance-selection"
              :onchange (when auto-submit "this.form.submit()")
       (:option :value "2" :selected (when (eql distance 2) "") "2 miles")
       (:option :value "5" :selected (when (eql distance 5) "") "5 miles")
       (:option :value "10" :selected (when (eql distance 10) "") "10 miles")
       (:option :value "25" :selected (when (eql distance 25) "") "25 miles")
       (:option :value "100" :selected (when (eql distance 100) "") "100 miles")
-      (:option :value "0" :selected (when (eql distance 0) "") "everywhere"))))
+      (when everywhere-option
+        (htm (:option :value "0" :selected (when (eql distance 0) "") "everywhere"))))))
 
 (defun group-category-selection (&key next selected (class "identity"))
   (let* ((default-options '("business"
@@ -100,12 +106,15 @@
             :value "invite-only"
             :onclick (when auto-submit "this.form.submit()")
             :checked (when (string= current "invite-only") "checked"))
-    "By invitaion only. Members must be invited by group admins and cannot request membership."))
+    "By invitation only. Members must be invited by group admins and cannot request membership."))
 
 (defun identity-selection-html (selected groups &key (class "identity") onchange (userid *userid*))
 "Groups should be an a-list of (groupid . group-name)"
   (html
-    (:select :name "identity-selection" :class class :onchange onchange
+    (:select :id "identity-selection"
+             :name "identity-selection"
+             :class class
+             :onchange onchange
       (:option :value userid
                :selected (when (eql selected userid) "")
                (str (or (getf *user* :name)
@@ -124,12 +133,16 @@
          (groups-user-has-left (mapcar #'(lambda (id) (cons id (db id :name)))
                                        group-ids-user-has-left)))
     (html
-      (:label  "Who can see this " (str item-type) "?")
-      (:div :class (s+ class (when (and restrictedp
+      (:div :id "privacy-selection"
+            :class (s+ class (when (and restrictedp
                                         (or groups-user-has-left
                                             (> (length my-groups) 1)))
                                " privacy-selection-details"))
-        (:select :name "privacy-selection" :class class :onchange onchange
+        (:label :for "basic-privacy" "Who can see this " (str item-type) "?")
+        (:select :name "privacy-selection"
+                 :id "basic-privacy"
+                 :class class
+                 :onchange onchange
           (:option :value "public"
                    :selected (unless restrictedp "")
                    "Anyone")
@@ -151,7 +164,6 @@
             (progn
               (dolist (group (safe-sort my-groups #'string-lessp :key #'cdr))
                 (htm
-                  (:br)
                   (:div :class "item-group-privacy"
                     (:input :type "checkbox"
                             :name "groups-selected"

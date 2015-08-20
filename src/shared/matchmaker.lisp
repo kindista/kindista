@@ -41,10 +41,13 @@
                               (getf item :match-any-terms)))
         (by (getf item :by))
         (user (or verified-user *user*))
-        (all-terms (post-parameter-words "match-all-terms"))
+        (all-terms (remove-duplicates (post-parameter-words "match-all-terms")
+                                      :test #'string=))
 
-        (any-terms (post-parameter-words "match-any-terms"))
-        (without-terms (post-parameter-words "match-no-terms"))
+        (any-terms (remove-duplicates (post-parameter-words "match-any-terms")
+                                      :test #'string=))
+        (without-terms (remove-duplicates (post-parameter-words "match-no-terms")
+                                          :test #'string=))
         (notify (when (post-parameter-string "notify-matches") t))
         (raw-distance (post-parameter-integer "distance"))
         (distance (unless (equal raw-distance 0)
@@ -526,29 +529,24 @@
               (:h3 "Show me offers related to the above request that...")
               (:label
                 "...contain " (:strong "ANY") " of these words:"
-                (:br)
                 (:input :type "text"
                         :name "match-any-terms"
                         :value (awhen any-terms
                                  (separate-with-spaces it))))
-              (:br)
               (:label
                 "...contain  " (:strong "ALL") " of these words:"
-                (:br)
                 (:input :type "text"
                         :name "match-all-terms"
                         :value (awhen all-terms
                                  (separate-with-spaces it))))
-              (:br)
               (:label
                 "...contain  " (:strong "NONE") " of these words:"
-                (:br)
                 (:input :type "text"
                         :name "match-no-terms"
                         :value (awhen without-terms
                                  (separate-with-spaces it))))
-              (:br)
-              (:label "...have any of these tags:"
+              (:div
+                "...have any of these tags:"
                 (:br)
                 (:div :class ""
                  (str (display-tags "request" (getf data :tags)))
@@ -564,7 +562,6 @@
                  "...are located within "
                  (str (distance-selection-dropdown (or distance
                                                        25))))
-               (:br)
                (when self
                  (htm
                    (:input :type "checkbox"
@@ -603,10 +600,12 @@
             (list (when (caadr matching-offers) matching-offers)
                   (when (caadr matching-requests) matching-requests)))))
 
-(defun highlight-relevant-inventory-text (offer-id request-id)
+(defun highlight-relevant-inventory-text (offer-id request-id &key email-p)
   (let* ((matchmaker (gethash request-id *matchmaker-requests*))
          (offer (db offer-id))
-         (offer-url (strcat "/offers/" offer-id))
+         (offer-url (strcat (if email-p *email-url* "/")
+                            "offers/"
+                            offer-id))
          (stems (append (match-any-terms matchmaker)
                         (match-all-terms matchmaker))))
    (html
@@ -689,7 +688,7 @@
           (dolist (term terms)
             (htm (str term))
             (unless (eql term (car (last terms)))
-              (htm " &middot ")))))
+              (htm " &middot; ")))))
 
         (unless mine
           (htm (:p :class "other-party-details"

@@ -37,14 +37,14 @@
          (groupid (when (eq (getf entity :type) :group) id)))
     (html
       (:button :class "card" :value id :name button-name
-        (:img :src (get-avatar-thumbnail id 300 300))
+        (:img :alt id :src (get-avatar-thumbnail id 300 300))
         (:div :class "details"
           (:h3 (str name))
             (unless groupid
               (unless (string= name alias)
-                (htm (:p "nickname: " (str alias))))) 
+                (htm (:p "nickname: " (str alias)))))
             (awhen (getf entity :city)
-              (htm (:p (str (s+ (if groupid "Located" "Lives") " in ")) (str it)))) 
+              (htm (:p (str (s+ (if groupid "Located" "Lives") " in ")) (str it))))
             (when mutuals
               (htm (:p (str (length mutuals))
                        (unless groupid

@@ -348,6 +348,10 @@
   ("/admin"
     :get get-admin)
 
+  ("/admin/mail-system"
+    :get get-admin-mail-system
+    :post post-admin-mail-system)
+
   ("/admin/invite-requests"
     :get get-admin-invite-requests)
 
@@ -381,13 +385,16 @@
   ("/home/"
     :get go-home)
 
-  ;chron-jobs
+  ;cron-jobs
 
   ("/schedule-metric-system-timer"
    :get get-schedule-metric-system-timer)
 
   ("/send-all-reminders"
    :get get-send-all-reminders)
+
+  ("/send-inventory-digest"
+   :get get-daily-inventory-digest-mailer)
 
   ("/automatic-invitation-reminders"
    :get get-automatic-invitation-reminders)

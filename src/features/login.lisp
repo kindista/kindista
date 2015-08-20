@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -28,7 +28,7 @@
           (dolist (flash (flashes))
             (str flash))
           (:div :id "body"
-            (:form :method "POST" :action "/login" :id "login"
+            (:form :method "POST" :action "/login" :class "login"
              (awhen (get-parameter "retry")
                (htm (:p :class "error" "The email/username or password was incorrect.")
                     (unless (string= it "")
@@ -36,19 +36,17 @@
                                      "Would you like to create an account?"))))))
              (awhen (get-parameter "next")
                (htm (:input :type "hidden" :name "next" :value it)))
-             (:label :for "username" "Username or email")
-             (:input :type "text"
-                     :id "username"
-                     :name "username"
-                     :autocomplete "off"
-                     :value (get-parameter "retry"))
-             (:label :for "password" "Password")
-             (:input :type "password"
-                     :id "password"
-                     :autocomplete "off"
-                     :name "password")
+             (:label "Username or email"
+               (:input :type "text"
+                :class "username"
+                :name "username"
+                :value (get-parameter "retry")))
+             (:label "Password"
+               (:input :type "password"
+                :class "password"
+                :name "password"))
              (:button :type "submit" :class "yes" "Log in")
-             (:span (:a :href "/reset" "Forgot your password?")))))
+             (:span (:a :href "/reset" :class "reset"  "Forgot your password?")))))
         :hide-menu t))))
 
 (defun post-login ()
@@ -74,7 +72,9 @@
         ((password-match-p user (post-parameter "password"))
          (setf (token-userid *token*) user)
          (notice :login)
-         (see-other (or next "/home")))
+         (see-other (if (not (db user :active))
+                      "/settings#reactivate"
+                      (or next "/home"))))
         (t
          (see-other (if next (url-compose "/login" "next" next) "/login"))
          (flash "The email or password you entered was not recognized.  Please try again." :error t)

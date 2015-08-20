@@ -113,6 +113,7 @@
                                       :components ((:file "helpers")
                                                    (:file "email-verification")
                                                    (:file "error-notifications")
+                                                   (:file "inventory-digest")
                                                    (:file "feedback-notification")
                                                    (:file "gratitude-notification")
                                                    (:file "message-notification")

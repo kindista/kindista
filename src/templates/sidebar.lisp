@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -23,11 +23,11 @@
       (:p (:a :class "blue" :href "/donate" "Donate to Kindista"))
       (:p :class "small" "Your tax-deductable donations support the operation and improvement of Kindista. Help make this website possible!"))))
 
-(defun invite-sidebar ()
+(defun invite-sidebar (&key mobile)
   (with-user
     (when *user*
       (html
-        (:div :class "item right"
+        (:div :class (s+ "invite item right" (unless mobile " only"))
           (:a :class "blue" :href "/invite" "Invite People")
           (:p :class "small" "Want to express gratitude for your friends? It's easy to invite them to join Kindista. "
               (:a :href "/faq#how-do-invitations-work" "Learn how invitations work") "."))))))
