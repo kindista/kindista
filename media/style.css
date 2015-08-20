@@ -3458,6 +3458,12 @@ div.settings menu.bar {
  display: table-cell;
 }
 
+.settings-item .emails li > span.help-text,
+.settings-item .emails li div.controls {
+ text-align: right;
+ width: 20em;
+}
+
 @media (max-width:40em) {
 .settings-item .emails li > span,
 .settings-item .emails li span.help-text,
@@ -3494,9 +3500,13 @@ div.settings menu.bar {
  height: 2em;
 }
 
+.settings-item .emails li .controls input {
+ width: 11.6em;
+}
+
 .settings-item .emails li button {
  font-size: .9em;
- padding: 0.3em 0.4em;;
+ padding: 0 0 0 0;
  margin: 0 0.4em 0 0;
  height: inherit;
  font-weight: normal;
