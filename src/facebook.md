@@ -18,3 +18,5 @@ https://developers.facebook.com/docs/sharing/opengraph/custom
 [ ] take screen shots
 https://developers.facebook.com/docs/apps/review
 [ ] submit to facebook for review
+
+- Remove admin restriction for :share-url in inventory-activity-item

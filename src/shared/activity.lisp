@@ -352,7 +352,7 @@
                                              :text "Request This"
                                              :image (icon "white-request"))))
                    :class (s+ type " inventory-item")
-                   :share-url (when self
+                   :share-url (when (and self (getf *user* :admin))
                                 (url-compose "https://www.facebook.com/dialog/share_open_graph"
                                              "app_id" *facebook-app-id*
                                              "display" "popup"

@@ -81,9 +81,9 @@
                        matching-requests)
               (str (item-matches-html id :data offer
                                          :current-matches matching-requests))))
-          :extra-head (html
-                        (:meta :property "og:type" :content "kindistadotorg:offer")
-                        (:meta :property "og:title" :content (or (getf offer :title) "Kindista Offer")))
+          :extra-head (facebook-item-meta-content "offer"
+                                                  (getf offer :title)
+                                                  (getf offer :description))
           :selected "offers"))))))
 
 (defun get-offer-reply (id)

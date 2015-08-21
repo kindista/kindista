@@ -111,9 +111,9 @@
                                            :without-terms without-terms
                                            :distance distance
                                            :notify-matches notify-matches)))))
-          :extra-head (html
-                        (:meta :property "og:type" :content "kindistadotorg:request")
-                        (:meta :property "og:title" :content (or (getf request :title) "Kindista Request")))
+          :extra-head (facebook-item-meta-content "request"
+                                                  (getf request :title)
+                                                  (getf request :details))
           :selected "requests"))))))
 
 (defun get-request-reply (id)
