@@ -18,10 +18,20 @@
 
 (in-package :kindista)
 
-(defun facebook-item-meta-content (typestring title description)
+(defun facebook-item-meta-content (id typestring title description)
   (html
     (:meta :property "og:type"
            :content (s+ "kindistadotorg:" typestring))
+    (:meta :property "fb:app_id"
+           :content *facebook-app-id*)
+    (:meta :property "og:url"
+           :content (strcat* +base-url+
+                             typestring
+                             (when (or (string= typestring "offer")
+                                       (string= typestring "request"))
+                               "s")
+                             "/"
+                             id))
     (:meta :property "og:title"
            :content (or title (s+ "Kindista " (string-capitalize typestring))))
     (:meta :property "og:description"
@@ -31,3 +41,30 @@
                              (string-case typestring
                                ("offer" "Kindista is for sharing resources freely.  Please do not use Kindista for buying, selling, or renting.")
                                ("request" "Kindista is for sharing resources freely.  Please do not use Kindista for buying, selling, or renting."))))))
+
+(defun get-facebook-object (facebook-id)
+  (with-facebook-token
+    (http-request
+      (url-compose "https://graph.facebook.com/"
+                   "id" facebook-id
+                   "access_token" (regex-replace-all
+                                    "\\|"
+                                    *facebook-app-token*
+                                    "\%7C"
+                                    )))))
+
+(defun get-facebook-app-token ()
+  (string-left-trim "access_token="
+    (http-request
+      (url-compose "https://graph.facebook.com/oauth/access_token"
+                   "client_id" *facebook-app-id*
+                   "client_secret" *facebook-secret*
+                   "grant_type" "client_credentials"))))
+
+(defvar *facebook-app-token* nil)
+
+(defmacro with-facebook-token (&body body)
+  `(let ((*facebook-app-token* (or *facebook-app-token*
+                                   (setf *facebook-app-token*
+                                         (get-facebook-app-token)))))
+     ,@body))
