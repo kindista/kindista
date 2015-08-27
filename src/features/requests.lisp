@@ -65,8 +65,16 @@
          (userid (or (when verified-user unverified-userid)
                      *userid*))
          (self (eql userid by))
+         (facebook-item-id (when (string= (referer)
+                                          "https://www.facebook.com")
+                             (get-parameter-integer "post_id")))
          (matchmaker-admin (matchmaker-admin-p))
          (result (gethash id *db-results*)))
+
+    (when (and facebook-item-id
+               (not (eql (getf request :facebook-id) facebook-item-id)))
+      (modify-db id :facebook-id facebook-item-id))
+
     (cond
      ((or (not request)
           (not (eql (getf request :type) :request)))
@@ -111,7 +119,8 @@
                                            :without-terms without-terms
                                            :distance distance
                                            :notify-matches notify-matches)))))
-          :extra-head (facebook-item-meta-content "request"
+          :extra-head (facebook-item-meta-content id
+                                                  "request"
                                                   (getf request :title)
                                                   (getf request :details))
           :selected "requests"))))))
