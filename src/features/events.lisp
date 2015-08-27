@@ -303,9 +303,8 @@
             (s+ " until "
                 (caddr (multiple-value-list (humanize-exact-time end-date)))))))))
 
-(defun upcoming-events-html (event-list &key (page 0) (count 20) paginate url (location t) (sidebar nil))
-  (let ((items (populate-calendar event-list))
-        (start (* page count))
+(defun upcoming-events (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
+  (let ((start (* page count))
         (calendar-date nil))
     (html
       (iter (for i from 0 to (- (+ start count) 1))
@@ -356,38 +355,44 @@
                      (htm
                        (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >")))))))))))
 
-(defun populate-calendar (items &aux (event-list))
-  (flet ((add-event-occurance (result)
-           (asetf event-list
-                  (safe-sort (push result it) #'< :key #'result-time))))
-   (dolist (item items)
-     (let* ((id (result-id item))
-            (event (db id)))
-       (if (getf event :recurring)
-         (let ((event-repetition-count 1)
-               (next-occurance (next-recurring-event-time id :data event)) )
-           (labels ((future-events ()
-                      (when next-occurance
-                        (add-event-occurance
-                          (make-result :latitude (result-latitude item)
-                                       :longitude (result-longitude item)
-                                       :time next-occurance
-                                       :tags (result-tags item)
-                                       :people (result-people item)
-                                       :id id
-                                       :type 'event
-                                       :privacy (result-privacy item))))
-                      (incf event-repetition-count)
-                      (asetf next-occurance
-                             (next-recurring-event-time id :data event
-                                                           :prior-time it))
-                      (when (and (< event-repetition-count 7) next-occurance)
-                        (future-events))))
-             (add-event-occurance item)
-             (future-events)))
+(defun populate-calendar (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
+  (let (event-list)
+    (flet ((add-event-occurance (result)
+             (asetf event-list (stable-sort (copy-list (push result it)) #'< :key #'result-time))))
+     (dolist (item items)
+       (let* ((id (result-id item))
+              (event (db id)))
+         (if (getf event :recurring)
+           (let ((event-repetition-count 1)
+                 (next-occurance (next-recurring-event-time id :data event)) )
+             (labels ((future-events ()
+                        (when next-occurance
+                          (add-event-occurance
+                            (make-result :latitude (result-latitude item)
+                                         :longitude (result-longitude item)
+                                         :time next-occurance
+                                         :tags (result-tags item)
+                                         :people (result-people item)
+                                         :id id
+                                         :type 'event
+                                         :privacy (result-privacy item))))
+                        (incf event-repetition-count)
+                        (asetf next-occurance
+                               (next-recurring-event-time id :data event
+                                                             :prior-time it))
+                        (when (and (< event-repetition-count 7) next-occurance)
+                          (future-events))))
+               (add-event-occurance item)
+               (future-events)))
 
-         (add-event-occurance item)))))
-    event-list)
+           (add-event-occurance item)))))
+
+    (upcoming-events event-list :page page
+                                :count count
+                                :url url
+                                :sidebar sidebar
+                                :paginate paginate
+                                :location location)))
 
 (defun local-upcoming-events (&key (page 0) (count 20) (url "/events") (paginate t) (sidebar nil))
   (with-location
@@ -428,16 +433,16 @@
                         (with-mutex (*event-mutex*)
                           (asetf *event-index* (remove event it)))))))))
 
-        (upcoming-events-html (remove-private-items
-                                (trim-and-update
-                                  (if global-search
-                                    *event-index*
-                                    local-events)))
-                              :page page
-                              :count count
-                              :url url
-                              :sidebar sidebar
-                              :paginate paginate)))))
+        (populate-calendar (remove-private-items
+                             (trim-and-update
+                               (if global-search
+                                 *event-index*
+                                 local-events)))
+                           :page page
+                           :count count
+                           :url url
+                           :sidebar sidebar
+                           :paginate paginate)))))
 
 (defun events-rightbar ()
   (html

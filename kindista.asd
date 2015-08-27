@@ -73,8 +73,8 @@
                                            (:file "matchmaker")
                                            (:file "verify-location")
                                            (:file "time")
-                                           (:file "suggested-connections")
-                                           (:file "facebook")))
+                                           (:file "facebook")
+                                           (:file "suggested-connections")))
                              (:module features
                               :serial t
                               :components ((:file "about")

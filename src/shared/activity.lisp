@@ -352,18 +352,20 @@
                                              :text "Request This"
                                              :image (icon "white-request"))))
                    :class (s+ type " inventory-item")
-                   :share-url (when (and self (getf *user* :admin))
-                                (url-compose "https://www.facebook.com/dialog/share_open_graph"
-                                             "app_id" *facebook-app-id*
-                                             "display" "popup"
-                                             "action_type" "kindistadotorg:post"
-                                             "action_properties" (url-encode
-                                                                   (json:encode-json-to-string
-                                                                     (list
-                                                                       (cons
-                                                                         type
-                                                                         (s+ "https://kindista.org" item-url)))))
-                                             "redirect_uri" (s+ +base-url+ (request-uri*)))
+                   :share-url (when (and self (not *productionp*))
+                                (url-compose
+                                  "https://www.facebook.com/dialog/share_open_graph"
+                                  "app_id" *facebook-app-id*
+                                  "display" "popup"
+                                  "action_type" "kindistadotorg:post"
+                                  "action_properties" (url-encode
+                                                        (json:encode-json-to-string
+                                                          (list
+                                                            (cons
+                                                              type
+                                                              (s+ "https://kindista.org" item-url)))))
+                                  "redirect_uri" (s+ +base-url+
+                                                     (string-left-trim "/" (request-uri*))))
                                 )
                    :reply (unless (or self
                                       (not (getf data :active)))
