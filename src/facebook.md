@@ -8,6 +8,7 @@ https://developers.facebook.com/docs/facebook-login/permissions/v2.3
 https://developers.facebook.com/docs/sharing/reference/share-dialog
 https://developers.facebook.com/docs/graph-api/using-graph-api/v2.3
 https://developers.facebook.com/docs/sharing/opengraph/custom
+https://developers.facebook.com/docs/sharing/opengraph/using-actions
 [ ] create facebook story w/ new inventory items
     - get caption to display correctly
 [ ] in the inventory item, indicate whether the item has been posted to FB

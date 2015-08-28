@@ -856,8 +856,9 @@
           ((>= (second reply) 400)
            (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
              (format s "~S~%"
-                     (cdr (assoc :message (cdr (assoc :error (json:decode-json-from-string
-                       (octets-to-string (first reply) :external-format :utf-8)))))))))
+                     (cdr (assoc :message
+                                 (cdr (assoc :error
+                                             (decode-json-octets (first reply)))))))))
           (t
            (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
              (format s ":-("))

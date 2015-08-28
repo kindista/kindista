@@ -131,6 +131,7 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
+         (facebook-id (getf data :facebook-id))
          (by (getf data :by))
          (now (get-universal-time)))
 
@@ -178,7 +179,8 @@
     (let ((data (list :title title
                       :details details
                       :tags tags
-                      :privacy privacy)))
+                      :privacy privacy))
+          (typestring (string-downcase (symbol-name type))))
 
       (unless (and (getf *user* :admin)
                    (not (group-admin-p by))
@@ -186,7 +188,15 @@
         (refresh-item-time-in-indexes id :time now)
         (append data (list :edited now)))
 
-      (apply #'modify-db id data))
+      (apply #'modify-db id data)
+
+      (when facebook-id
+        (update-facebook-object facebook-id
+                                typestring
+                                (url-compose (strcat +base-url+
+                                                     typestring
+                                                     "s/"
+                                                     id)))))
 
     (case (result-type result)
       (:offer (update-matchmaker-offer-data id))

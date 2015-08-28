@@ -18,7 +18,7 @@
 
 (in-package :kindista)
 
-(defun facebook-item-meta-content (id typestring title description)
+(defun facebook-item-meta-content (id typestring title &optional description)
   (html
     (:meta :property "og:type"
            :content (s+ "kindistadotorg:" typestring))
@@ -34,32 +34,69 @@
                              id))
     (:meta :property "og:title"
            :content (or title (s+ "Kindista " (string-capitalize typestring))))
-    (:meta :property "og:description"
-           :content (strcat* (when description
-                               (strcat (ellipsis description)
-                                       #\linefeed #\linefeed))
-                             (string-case typestring
-                               ("offer" "Kindista is for sharing resources freely.  Please do not use Kindista for buying, selling, or renting.")
-                               ("request" "Kindista is for sharing resources freely.  Please do not use Kindista for buying, selling, or renting."))))))
+    (awhen description
+      (htm (:meta :property "og:description"
+                  :content it)))))
 
-(defun get-facebook-object (facebook-id)
-  (with-facebook-token
-    (http-request
-      (url-compose "https://graph.facebook.com/"
-                   "id" facebook-id
-                   "access_token" (regex-replace-all
-                                    "\\|"
-                                    *facebook-app-token*
-                                    "\%7C"
-                                    )))))
+(defun decode-json-octets (octets)
+  (json:decode-json-from-string (octets-to-string octets
+                                                  :external-format :utf-8)))
+
+(defun update-facebook-object
+  (facebook-id
+   typestring
+   k-url
+   &aux (reply (with-facebook-token
+                 (multiple-value-list
+                   (http-request
+                     (url-compose (strcat "https://graph.facebook.com/"
+                                          facebook-id)
+                                  "access_token" *facebook-app-token*
+                                  "method" "POST"
+                                  typestring k-url))))))
+  reply
+  )
+
+(defun scrape-facebook-item
+  (url-or-fb-id
+   &aux (reply  (multiple-value-list
+                  (http-request
+                    "https://graph.facebook.com/"
+                    :parameters (list (cons "id"
+                                            (if (integerp url-or-fb-id)
+                                              (write-to-string url-or-fb-id)
+                                              url-or-fb-id))
+                                      '("scrape" . "true"))
+                    :method :post))))
+  (when (= (second reply) 200)
+    (decode-json-octets (first reply))))
+
+(defun delete-facebook-action 
+  (url-or-fb-id
+   &aux (reply  (multiple-value-list
+                  (http-request
+                    "https://graph.facebook.com/"
+                    :parameters (list (cons "id"
+                                            (if (integerp url-or-fb-id)
+                                              (write-to-string url-or-fb-id)
+                                              url-or-fb-id))
+                                      '("scrape" . "true"))
+                    :method :post))))
+  (when (= (second reply) 200)
+    (decode-json-octets (first reply))))
 
 (defun get-facebook-app-token ()
-  (string-left-trim "access_token="
-    (http-request
-      (url-compose "https://graph.facebook.com/oauth/access_token"
-                   "client_id" *facebook-app-id*
-                   "client_secret" *facebook-secret*
-                   "grant_type" "client_credentials"))))
+ (string-left-trim (s+ *facebook-app-id* "|")
+    (string-left-trim "access_token="
+      (http-request
+        (url-compose "https://graph.facebook.com/oauth/access_token"
+                     "client_id" *facebook-app-id*
+                     "client_secret" *facebook-secret*
+                     "grant_type" "client_credentials")))
+    
+    )
+  
+  )
 
 (defvar *facebook-app-token* nil)
 
