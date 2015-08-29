@@ -365,8 +365,7 @@
                                                               type
                                                               (s+ "https://kindista.org" item-url)))))
                                   "redirect_uri" (s+ +base-url+
-                                                     (string-left-trim "/" (request-uri*))))
-                                )
+                                                     (string-left-trim "/" (request-uri*)))))
                    :reply (unless (or self
                                       (not (getf data :active)))
                             t)

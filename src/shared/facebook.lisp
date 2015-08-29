@@ -71,32 +71,36 @@
   (when (= (second reply) 200)
     (decode-json-octets (first reply))))
 
-(defun delete-facebook-action 
-  (url-or-fb-id
+(defun delete-facebook-action
+  (fb-id
    &aux (reply  (multiple-value-list
                   (http-request
-                    "https://graph.facebook.com/"
-                    :parameters (list (cons "id"
-                                            (if (integerp url-or-fb-id)
-                                              (write-to-string url-or-fb-id)
-                                              url-or-fb-id))
-                                      '("scrape" . "true"))
-                    :method :post))))
-  (when (= (second reply) 200)
-    (decode-json-octets (first reply))))
+                    (strcat "https://graph.facebook.com/" fb-id)
+                    :parameters (list (cons "access-token"
+                                            *facebook-app-token*)
+                                      '("method" . "DELETE")
+                                      )))))
+ ;(when (= (second reply) 200)
+ ;  (decode-json-octets (first reply)))
+  
+
+ (values
+   reply
+   (decode-json-octets (first reply)))
+  )
 
 (defun get-facebook-app-token ()
- (string-left-trim (s+ *facebook-app-id* "|")
+;(string-left-trim (s+ *facebook-app-id* "|")
     (string-left-trim "access_token="
       (http-request
         (url-compose "https://graph.facebook.com/oauth/access_token"
                      "client_id" *facebook-app-id*
                      "client_secret" *facebook-secret*
                      "grant_type" "client_credentials")))
-    
-    )
-  
+   ; )
   )
+(defun trim-fb-token ()
+  (string-left-trim (s+ *facebook-app-id* "|") *facebook-app-token*))
 
 (defvar *facebook-app-token* nil)
 
