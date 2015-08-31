@@ -279,6 +279,7 @@
         (with-open-file (s (merge-pathnames dir "monthly-summary")
                            :direction :output
                            :if-does-not-exist :create)
-          (prin1 output s)))))
+          (prin1 output s)
+          (finish-output s)))))
 
   output)

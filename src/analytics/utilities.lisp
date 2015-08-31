@@ -308,19 +308,25 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
                                                :messages-sent
                                                :completed-transactions)))))))
 
-  (with-chart (:line 1200 600)
-    (doplist (key val chart-data)
-      (add-series (string-capitalize
-                    (string-downcase
-                      (ppcre:regex-replace-all "-" (symbol-name key) " ")))
-                  val))
-    (set-axis :y "" :data-interval 10)
-    (set-axis :x "Month"
-              :label-formatter #'format-month-for-activity-charts
-              )
-   ;(add-title "Kindista Usage over time")
-   ;(add-feature :label)
-    (save-file (pathname (strcat *metrics-path* "/kindista-metrics-chart.png")))))
+  (with-open-file (s (strcat *metrics-path* "/kindista-metrics-chart.png")
+                     :direction :output
+                     :if-does-not-exist :create
+                     :if-exists :supersede
+                     :element-type '(unsigned-byte 8))
+    (with-chart (:line 1200 600)
+      (doplist (key val chart-data)
+        (add-series (string-capitalize
+                      (string-downcase
+                        (ppcre:regex-replace-all "-" (symbol-name key) " ")))
+                    val))
+      (set-axis :y "" :data-interval 10)
+      (set-axis :x "Month"
+                :label-formatter #'format-month-for-activity-charts
+                )
+      ;(add-title "Kindista Usage over time")
+      ;(add-feature :label)
+      (save-stream s))
+    (finish-output s)))
 
 
 (defun create-past-monthly-activity-reports (years)
