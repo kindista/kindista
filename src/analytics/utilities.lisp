@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -25,7 +25,7 @@
 ; number of users who have commented on a conversation (&key period-start period-end)
 ; number of users who have used kindista (&key period-start period-end)
 
-(defun get-admin-metrics-png ()
+(defun get-admin-active-accounts-png ()
   (setf (content-type*) "image/png")
   (with-chart (:line 600 600)
    (add-series "Active Kindista Accounts"
@@ -35,6 +35,10 @@
                :label-formatter #'chart-date-labels
                :angle 90)
      (save-stream (send-headers))))
+
+(defun get-admin-metrics-chart-png ()
+  (handle-static-file (merge-pathnames *metrics-path* "kindista-metrics-chart.png")
+                      "image/png"))
 
 (defun chart-date-labels (timecode)
   (multiple-value-bind (time date-name formatted-date)

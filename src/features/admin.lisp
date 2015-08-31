@@ -44,7 +44,8 @@
       "Admin"
        (html
          (:p (:a :href "/admin" "back to admin"))
-         (:img :src "/admin/metrics/metrics.png")))))
+         (:div (:img :src "/admin/metrics/metrics-chart.png"))
+         (:div (:img :src "/admin/metrics/active-accounts.png"))))))
 
 (defun get-admin-pending-accounts
   (&aux (pending-accounts (sort (hash-table-alist *pending-person-items-index*)
