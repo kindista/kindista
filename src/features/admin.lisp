@@ -46,18 +46,22 @@
          (:p (:a :href "/admin" "back to admin"))
          (:img :src "/admin/metrics/metrics.png")))))
 
-(defun get-admin-pending-accounts ()
+(defun get-admin-pending-accounts
+  (&aux (pending-accounts (sort (hash-table-alist *pending-person-items-index*)
+                                #'>
+                                :key #'cadr)))
   (require-admin
     (standard-page
       "Pending Accounts"
       (html
         (:p (:a :href "/admin" "back to admin"))
         (:h2 "Kindista Accounts Pending Admin Approval")
-        (dolist (id (hash-table-keys *pending-person-items-index*))
-          (let* ((person (db id))
+        (dolist (account pending-accounts)
+          (let* ((id (car account))
+                 (person (db id))
                  (email (first (getf person :emails)))
                  (link (person-link id))
-                 (items (gethash id *pending-person-items-index*)))
+                 (items (cdr account)))
             (labels ((inventory-item (id data preposition type)
                        (html
                          (str (timestamp (getf data :created)))

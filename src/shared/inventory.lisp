@@ -63,8 +63,18 @@
 
     (cond
       (pending
+        (pprint (cons by-id (gethash by-id *pending-person-items-index*)))
        (with-locked-hash-table (*pending-person-items-index*)
-         (push id (gethash by-id *pending-person-items-index*))))
+         (let ((results (gethash by-id *pending-person-items-index*)))
+           (if (and (eq type :offer)
+                    (or (not results)
+                        (> (result-time result)
+                           (result-time (car results)))))
+             (push result (gethash by-id *pending-person-items-index*))
+             (push result (cdr (last (gethash by-id *pending-person-items-index*)))))))
+        (pprint (cons by-id (gethash by-id *pending-person-items-index*)))
+        (terpri)
+       )
 
       ((getf data :active)
        (with-locked-hash-table (*profile-activity-index*)
