@@ -63,18 +63,14 @@
 
     (cond
       (pending
-        (pprint (cons by-id (gethash by-id *pending-person-items-index*)))
        (with-locked-hash-table (*pending-person-items-index*)
          (let ((results (gethash by-id *pending-person-items-index*)))
-           (if (and (eq type :offer)
-                    (or (not results)
+           (if (or (not results)
+                   (and (eq type :offer)
                         (> (result-time result)
                            (result-time (car results)))))
              (push result (gethash by-id *pending-person-items-index*))
-             (push result (cdr (last (gethash by-id *pending-person-items-index*)))))))
-        (pprint (cons by-id (gethash by-id *pending-person-items-index*)))
-        (terpri)
-       )
+             (push result (cdr (last (gethash by-id *pending-person-items-index*))))))))
 
       ((getf data :active)
        (with-locked-hash-table (*profile-activity-index*)
@@ -276,10 +272,11 @@
     (modify-db id :active nil :violates-terms violates-terms)))
 
 (defun delete-pending-inventory-item (id)
-  (let ((data (db id)))
+  (let ((data (db id))
+        (result (gethash id *db-results*)))
     (with-locked-hash-table (*pending-person-items-index*)
       (asetf (gethash (getf data :by) *pending-person-items-index*)
-             (remove id it)))
+             (remove result it)))
     (remove-from-db id)))
 
 (defun deleted-invalid-item-reply-text (to-name from-name type &optional explanation)

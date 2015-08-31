@@ -49,7 +49,7 @@
 (defun get-admin-pending-accounts
   (&aux (pending-accounts (sort (hash-table-alist *pending-person-items-index*)
                                 #'>
-                                :key #'cadr)))
+                                :key #'(lambda (account) (result-time (cadr account))))))
   (require-admin
     (standard-page
       "Pending Accounts"
@@ -98,7 +98,8 @@
                        (:a :href (s+ "mailto:" email) (str email)))
                       (:p (:strong "Location: ") (str (awhen (getf person :address) it)))
                       (dolist (item items)
-                        (let ((data (db item)))
+                        (let* ((id (result-id item))
+                               (data (db id)))
                           (htm
                             (:div :class "item pending-account"
                               (case (getf data :type)
@@ -111,9 +112,9 @@
                                     (:blockquote :class "review-text"
                                       (str (getf data :text)))))
                                 (:offer
-                                  (str (inventory-item item data "an" "offer")))
+                                  (str (inventory-item id data "an" "offer")))
                                 (:request
-                                  (str (inventory-item item data "a" "request"))))))))
+                                  (str (inventory-item id data "a" "request"))))))))
                       (:div :class "confirm-invite"
                         (:form :method "post"
                                :action (strcat "/admin/pending-accounts/" id)
@@ -143,9 +144,10 @@
          (see-other "/admin/pending-accounts"))
         ((post-parameter "approve")
          (modify-db userid :pending nil)
-         (let ((item-ids (gethash userid *pending-person-items-index*)))
-            (dolist (item-id item-ids)
-              (let ((item (db item-id)))
+         (let ((results (gethash userid *pending-person-items-index*)))
+            (dolist (result results)
+              (let* ((item-id (result-id result))
+                     (item (db item-id)))
                 (index-item item-id item)
                 (case (getf item :type)
                   (:gratitude
