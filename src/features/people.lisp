@@ -244,7 +244,9 @@
    &aux (data-to-keep (copy-list (db most-active-id)))
         (id-to-keep most-active-id)
         (ids-to-deactivate (remove id-to-keep duplicate-account-id-list))
-        (oldest-data (db id-to-keep)))
+        (oldest-data (db (apply #'min
+                                (cons most-active-id
+                                      duplicate-account-id-list)))))
 
   "ALWAYS TEST THE MERGE ON A DEVELOPMENT SYSTEM WITH CURRENT DATA"
   ;; keep earliest id
@@ -255,7 +257,7 @@
   ;; merge events
   ;; merge contact lists (following and followers)
   ;; merge groups (admin and members)
-  ;;** merge group-membership-requests
+  ;; merge group-membership-requests
   ;; merge group-membership-invitations
   ;; merge transactions
   ;; merge conversations (individual and as group admin)
@@ -276,6 +278,10 @@
 
   (declare (optimize (speed 0) (debug 3) (safety 2)))
 
+  (unless (find most-active-id duplicate-account-id-list)
+    (asetf duplicate-account-id-list
+           (cons most-active-id it)))
+
   (dolist (id ids-to-deactivate)
     (dolist (token (gethash id *user-tokens-index*))
       (delete-token-cookie :userid id
@@ -288,7 +294,7 @@
   (setf data-to-keep
         (merge-user-data id-to-keep
                          data-to-keep
-                         (remove most-active-id duplicate-account-id-list)
+                         duplicate-account-id-list
                          ids-to-deactivate))
 
   (merge-user-primary-indexes id-to-keep ids-to-deactivate data-to-keep)
@@ -300,7 +306,12 @@
       (setf (result-people result) (list id-to-keep))
       (modify-db (result-id result) :by id-to-keep)))
 
-  (index-person id-to-keep (apply #'modify-db (cons id-to-keep data-to-keep))))
+  (index-person id-to-keep (apply #'modify-db (cons id-to-keep data-to-keep)))
+
+  (with-locked-hash-table (*profile-activity-index*)
+    (asetf (gethash id-to-keep *profile-activity-index*)
+           (remove-duplicates it :key #'result-id)))
+  nil)
 
 (defun merge-user-data (id-to-keep data-to-keep duplicate-account-id-list ids-to-deactivate)
   ;; merge data/indexes from user's data
@@ -367,6 +378,7 @@
   (dolist (duplicate-id ids-to-deactivate)
 
     (dolist (offer-id (copy-list (gethash duplicate-id *offer-index*)))
+      (pprint offer-id)
       (modify-db offer-id :by id-to-keep)
       (let ((result (gethash offer-id *db-results*)))
         (with-locked-hash-table (*profile-activity-index*)
@@ -377,7 +389,8 @@
         (with-locked-hash-table (*offer-index*)
           (asetf (gethash duplicate-id *offer-index*)
                  (remove offer-id it))
-          (push offer-id (gethash id-to-keep *offer-index*)))))
+          (push offer-id (gethash id-to-keep *offer-index*)))
+        (setf (result-people result) (list id-to-keep))))
 
     (dolist (request-id (copy-list (gethash duplicate-id *request-index*)))
       (modify-db request-id :by id-to-keep)
@@ -390,7 +403,8 @@
         (with-locked-hash-table (*request-index*)
           (asetf (gethash duplicate-id *request-index*)
                  (remove request-id it))
-          (push request-id (gethash id-to-keep *request-index*)))))
+          (push request-id (gethash id-to-keep *request-index*)))
+        (setf (result-people result) (list id-to-keep))))
 
     (with-locked-hash-table (*account-inventory-matches-index*)
       (let ((duplicate-account-matches
@@ -410,9 +424,12 @@
 
     (when (and (db duplicate-id :pending)
                (not (getf data-to-keep :pending)))
-      (dolist (item-id (copy-list (gethash duplicate-id
-                                           *pending-person-items-index*)))
-        (let ((pending-item (modify-db item-id :by id-to-keep)))
+      (dolist (result (gethash duplicate-id *pending-person-items-index*))
+        (asetf (result-people result)
+               (remove-duplicates
+                 (subst id-to-keep duplicate-id it)))
+        (let* ((item-id (result-id result))
+               (pending-item (modify-db item-id :by id-to-keep)))
           (index-item item-id pending-item)
           (when (eq (getf pending-item :type) :offer)
             (update-matchmaker-offer-data item-id))))
