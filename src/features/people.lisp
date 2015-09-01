@@ -672,8 +672,8 @@
     (deactivate-person id)
 
     (with-locked-hash-table (*pending-person-items-index*)
-      (dolist (item-id (gethash id *pending-person-items-index*))
-        (remove-from-db item-id))
+      (dolist (result (gethash id *pending-person-items-index*))
+        (remove-from-db (result-id result)))
       (remhash id *pending-person-items-index*))
 
     (awhen (getf data :emails)

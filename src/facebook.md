@@ -5,9 +5,11 @@ https://developers.facebook.com/docs/facebook-login/permissions/v2.3
 [ ] let users completely opt out of facebook integration (don't show them buttons for posting facebook stories)
 
 #Offers and Requests
+https://developers.facebook.com/docs/sharing/reference/share-dialog
 https://developers.facebook.com/docs/graph-api/using-graph-api/v2.3
 https://developers.facebook.com/docs/sharing/opengraph/custom
 [ ] create facebook story w/ new inventory items
+    - get caption to display correctly
 [ ] in the inventory item, indicate whether the item has been posted to FB
 [ ] edit facebook story when editing inventory item
 [ ] delete facebook story when deleting inventory item
@@ -17,3 +19,5 @@ https://developers.facebook.com/docs/sharing/opengraph/custom
 [ ] take screen shots
 https://developers.facebook.com/docs/apps/review
 [ ] submit to facebook for review
+
+- Remove admin restriction for :share-url in inventory-activity-item

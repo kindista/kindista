@@ -1134,7 +1134,7 @@
                                                       (getf plist :email))
                                                   duplicate-invites)
                                           :test #'equalp))
-             (text (awhen (post-parameter "text")
+             (text (awhen (post-parameter-string "text")
                      (escape-for-html it))))
 
         (dolist (invite duplicate-invites)

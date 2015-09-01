@@ -231,8 +231,8 @@
                   (blog-link (s+ +base-url+ "blog/" saved-file))
                   (text-email (if blog-p
                                 (strcat text-broadcast
-                                        #\newline
-                                        #\newline
+                                        #\linefeed
+                                        #\linefeed
                                         "Read the full essay here: "
                                         blog-link)
                                 text-broadcast))

@@ -30,4 +30,3 @@
 [ ] reply by email (maybe)
 [ ] t-shirts
 [ ] promote at unity, friends, unitarians, etc
-

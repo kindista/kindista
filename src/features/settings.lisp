@@ -519,7 +519,7 @@
                           :value email
                           "Make primary")
                          (:span "|")
-                         (:button :class "simple-link gray"
+                         (:button :class "simple-link red"
                           :name "remove-email"
                           :type "submit"
                           :value email
@@ -542,7 +542,7 @@
                               :name "token"
                               :placeholder "enter activation code"))
                             (:span "|")
-                            (:button :class "yes"
+                            (:button :class "simple-link green"
                              :type "submit"
                              "Activate")
                             (:span "|")
@@ -558,12 +558,12 @@
                                   "Enter code")
                               (:span "|")
                               (:button :type "submit"
-                               :class "simple-link "
+                               :class "simple-link no-padding"
                                :name "resend-code"
                                :value email
                                "Resend code")
                               (:span "|")
-                              (:button :class "simple-link gray"
+                              (:button :class "simple-link red"
                                :name "remove-pending-email"
                                :type "submit"
                                :value email
@@ -837,8 +837,8 @@
                      (http-request
                        (url-compose
                          "https://graph.facebook.com/oauth/access_token"
-                         "client_id" "779034685520810"
-                         "redirect_uri" (s+ +base-url+ "settings/social") 
+                         "client_id" *facebook-app-id*
+                         "redirect_uri" (s+ +base-url+ "settings/social")
                          "client_secret" *facebook-secret*
                          "code" (get-parameter "code"))
                        :force-binary t))))
@@ -884,7 +884,8 @@
           (when (get-parameter "error")
             (htm (:p :class "error" "Connecting with Facebook had an error: " (str (get-parameter "error_description")))))
           (:p (:a :class "blue" :href (url-compose "https://www.facebook.com/dialog/oauth"
-                                 "client_id" "779034685520810"
+                                 "client_id" *facebook-app-id*
+                                 "scope" "public_profile,publish_actions"
                                  "redirect_uri" (s+ +base-url+ "settings/social"))
            "Log in to Facebook"))
           (:p "Post to Facebook:")

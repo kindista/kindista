@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -51,7 +51,15 @@
          (by (getf offer :by))
          (mine (eql *userid* by))
          (result (gethash id *db-results*))
+         (facebook-item-id (when (string= (referer)
+                                          "https://www.facebook.com")
+                             (get-parameter-integer "post_id")))
          (matching-requests (gethash id *offers-with-matching-requests-index*)))
+
+    (when (and facebook-item-id
+               (not (eql (getf offer :facebook-id) facebook-item-id)))
+      (modify-db id :facebook-id facebook-item-id))
+
     (cond
       ((or (not offer)
            (not (eql (getf offer :type) :offer)))
@@ -81,9 +89,10 @@
                        matching-requests)
               (str (item-matches-html id :data offer
                                          :current-matches matching-requests))))
-          :extra-head (html
-                        (:meta :property "og:type" :content "kindistadotorg:offer")
-                        (:meta :property "og:title" :content (or (getf offer :title) "Kindista Offer")))
+          :extra-head (facebook-item-meta-content id
+                                                  "offer"
+                                                  (getf offer :title)
+                                                  (getf offer :details))
           :selected "offers"))))))
 
 (defun get-offer-reply (id)

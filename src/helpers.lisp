@@ -50,6 +50,11 @@
 (defun find-string (string list)
   (find string list :test #'string=))
 
+(defmacro string-case (string &rest items)
+  `(dolist (item ',items)
+     (when (string= ,string (car item))
+       (return (cadr item)))))
+
 (defun progress-bar (percent)
   (html
     (:div :class "progress-bar"

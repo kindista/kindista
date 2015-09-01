@@ -50,7 +50,7 @@
           (:span (str comments)))))))
 
 (defun activity-item
-  (&key id url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
+  (&key id url share-url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
    &aux (here (request-uri*))
         (next (if (find (strcat id) (url-parts here) :test #'string=)
                 here
@@ -91,6 +91,10 @@
               (if (member *userid* (gethash id *love-index*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
                 (htm (:input :type "submit" :name "love" :value "Love")))
+              (awhen share-url
+                (htm
+                  " &middot; "
+                  (:a :href it "Share on Facebook")))
               (when reply
                 (htm
                  " &middot; "
@@ -346,6 +350,21 @@
                                              :text "Request This"
                                              :image (icon "white-request"))))
                    :class (s+ type " inventory-item")
+                   :share-url (when (and self (not *productionp*))
+                                (url-compose
+                                  "https://www.facebook.com/dialog/share_open_graph"
+                                  "app_id" *facebook-app-id*
+                                  "display" "popup"
+                                  "action_type" "kindistadotorg:post"
+                                  "action_properties" (url-encode
+                                                        (json:encode-json-to-string
+                                                          (list
+                                                            (cons
+                                                              type
+                                                              (s+ "https://kindista.org" item-url)))))
+                                  "redirect_uri" (s+ +base-url+
+                                                     (string-left-trim "/" (request-uri*))))
+                                )
                    :reply (unless (or self
                                       (not (getf data :active)))
                             t)
