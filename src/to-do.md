@@ -6,8 +6,6 @@
         reactivate? (if this is so, then email should remind of this detail)
 [ ] check functionality of (token-last-seen token)
 [ ] expiration/renewals for inventory items
-[ ] merge duplicate accounts
-    - on server (load-tokens) to populate *user-tokens-index*
 [ ] make people go to the site to read their messages/gratitudes
     - track number of unread messages/per user
     - make sure that number is going down

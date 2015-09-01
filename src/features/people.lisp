@@ -378,7 +378,6 @@
   (dolist (duplicate-id ids-to-deactivate)
 
     (dolist (offer-id (copy-list (gethash duplicate-id *offer-index*)))
-      (pprint offer-id)
       (modify-db offer-id :by id-to-keep)
       (let ((result (gethash offer-id *db-results*)))
         (with-locked-hash-table (*profile-activity-index*)
