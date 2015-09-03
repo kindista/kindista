@@ -52,7 +52,7 @@
 (defun post-login ()
   (with-token
     (let ((username (post-parameter "username"))
-          (next (post-parameter-string "next"))
+          (next (url-decode (post-parameter-string "next")))
           (user nil))
       (if (find #\@ username :test #'equal)
         (setf user (gethash username *email-index*))
@@ -71,12 +71,17 @@
          (see-other "/home"))
         ((password-match-p user (post-parameter "password"))
          (setf (token-userid *token*) user)
+         (with-locked-hash-table (*user-tokens-index*)
+           (asetf (gethash user *user-tokens-index*)
+                  (push (cons (cookie-in "token") *token*) it)))
          (notice :login)
          (see-other (if (not (db user :active))
                       "/settings#reactivate"
                       (or next "/home"))))
         (t
-         (see-other (if next (url-compose "/login" "next" next) "/login"))
+         (see-other (if next
+                      (url-compose "/login" "next" (url-encode next))
+                      "/login"))
          (flash "The email or password you entered was not recognized.  Please try again." :error t)
          (notice :auth-failure :username user)
          "")))))

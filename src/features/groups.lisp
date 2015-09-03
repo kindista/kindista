@@ -894,8 +894,10 @@
 
 (defun approve-group-membership-request (id)
   (let* ((request (db id))
+         (requested-by (getf request :requested-by))
          (group (getf request :group-id)))
-    (add-group-member (getf request :requested-by) group)
+    (unless (eql (db requested-by :type) :deleted-person-account)
+      (add-group-member (getf request :requested-by) group))
     (delete-group-membership-request id)))
 
 (defun create-group-membership-invitation (groupid invitee &key (host *userid*))

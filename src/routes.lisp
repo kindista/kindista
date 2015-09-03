@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -367,8 +367,11 @@
   ("/admin/metrics"
     :get get-admin-metrics)
 
-  ("/admin/metrics/metrics.png"
-    :get get-admin-metrics-png)
+  ("/admin/metrics/active-accounts.png"
+    :get get-admin-active-accounts-png)
+
+  ("/admin/metrics/metrics-chart.png"
+    :get get-admin-metrics-chart-png)
 
   ("/admin/recent"
     :get get-admin-recent)

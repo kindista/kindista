@@ -17,8 +17,6 @@
 
 (in-package :kindista)
 
-(declaim (optimize (speed 0) (safety 3) (debug 3)))
-
 (defun timestamp (time &key type)
   (html
     (:h3 :class "timestamp" :data-time time :data-type type

@@ -72,7 +72,7 @@
 
 (defun login-required ()
   (flash "The page you requested is only available when you are logged in to Kindista." :error t)
-  (see-other (url-compose "/login" "next" (request-uri*))))
+  (see-other (url-compose "/login" "next" (url-encode (request-uri*)))))
 
 (defun active-status-required ()
   (flash "Sorry, you must reactivate your account to perform that action." :error t)
@@ -252,12 +252,12 @@
 
 (defun start-token ()
   (with-locked-hash-table (*tokens*)
-    (do (token)
-      ((not (gethash (setf token (random-password 30)) *tokens*))
+    (do (cookie-value)
+      ((not (gethash (setf cookie-value (random-password 30)) *tokens*))
       (prog1
-        (setf (gethash token *tokens*)
+        (setf (gethash cookie-value *tokens*)
               (make-token :created (get-universal-time)))
-        (set-cookie "token" :value token
+        (set-cookie "token" :value cookie-value
                             :http-only t
                             :path "/"
                             :expires (+ (get-universal-time) (* 12 +week-in-seconds+))
@@ -269,16 +269,23 @@
       token
       (progn (remhash cookie-value *tokens*) nil))))
 
-(defun delete-token-cookie ()
-  (awhen (cookie-in "token")
+(defun delete-token-cookie
+  (&key (userid *userid*)
+        (cookie (when *token* (cookie-in "token")))
+   &aux (token (or *token* (gethash cookie *tokens*))))
 
-    (awhen (gethash it *tokens*)
-      (remhash it *tokens*))
-    (set-cookie "token" :value ""
-                :http-only t
-                :expires 0
-                :path "/"
-                :secure nil)))
+  (when cookie
+    (when (gethash cookie *tokens*)
+      (with-locked-hash-table (*user-tokens-index*)
+        (asetf (gethash userid *user-tokens-index*)
+               (remove token it :key #'cdr)))
+      (remhash cookie *tokens*))
+    (when *token*
+      (set-cookie "token" :value ""
+                          :http-only t
+                          :expires 0
+                          :path "/"
+                          :secure nil))))
 
 (defun reset-token-cookie ()
   (awhen (cookie-in "token")

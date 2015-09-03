@@ -2356,10 +2356,6 @@ div.membership-request button:last-child {
  max-width: 50em;
 }
 
-.mail.card div.membership-request div.member-approval-ui {
- width: 13.4em;
-}
-
 .mail.card div.membership-request p.member-request-details {
  margin-top: 0;
 }

@@ -17,8 +17,6 @@
 
 (in-package :kindista)
 
-(declaim (optimize (speed 0) (safety 3) (debug 3)))
-
 (defparameter *tag-scanner* (ppcre:create-scanner "^[-a-z]{3,}$"))
 
 (defparameter *top-tags* '(

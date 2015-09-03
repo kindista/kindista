@@ -473,19 +473,26 @@
 (defmacro ensuring-userid ((user-id base-url) &body body)
   (let ((is-number (gensym))
         (user-name (gensym))
-        (user-data (gensym)))
+        (user-data (gensym))
+        (merged-into (gensym)))
     `(let ((,is-number (scan +number-scanner+ ,user-id)))
        (if ,is-number
          (let* ((,user-id (parse-integer ,user-id))
                 (,user-data (db ,user-id))
-                (,user-name (getf ,user-data :username)))
-           (if ,user-data
-             (if ,user-name
-               (see-other (apply #'url-compose
-                                 (format nil ,base-url ,user-name)
-                                 (flatten (get-parameters*))))
-               (progn ,@body))
-             (not-found)))
+                (,user-name (getf ,user-data :username))
+                (,merged-into (getf ,user-data :merged-into)))
+           (cond
+            ((not ,user-data)
+             (not-found))
+
+            (,user-name
+             (see-other (apply #'url-compose
+                               (format nil ,base-url ,user-name)
+                               (flatten (get-parameters*)))))
+            (,merged-into (apply #'url-compose
+                               (format nil ,base-url ,merged-into)
+                               (flatten (get-parameters*))))
+            (t (progn ,@body))))
          (let ((,user-id (gethash ,user-id *username-index*)))
            (if ,user-id
              (progn ,@body)
@@ -517,7 +524,8 @@
 (defun person-link (id &key possessive)
   (let ((entity (db id)))
     (html
-      (:a :href (s+ (if (eql (getf entity :type) :person)
+      (:a :href (s+ (if (or (eql (getf entity :type) :person)
+                            (eql (getf entity :type) :deleted-person-account))
                       "/people/"
                       "/groups/")
                     (username-or-id id))

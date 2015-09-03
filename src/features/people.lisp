@@ -238,6 +238,408 @@
                       (getf data :aliases))))
     (metaphone-index-insert names result)))
 
+(defun merge-duplicate-accounts
+  (most-active-id
+   duplicate-account-id-list
+   &aux (data-to-keep (copy-list (db most-active-id)))
+        (id-to-keep most-active-id)
+        (ids-to-deactivate (remove id-to-keep duplicate-account-id-list))
+        (oldest-data (db (apply #'min
+                                (cons most-active-id
+                                      duplicate-account-id-list)))))
+
+  "ALWAYS TEST THE MERGE ON A DEVELOPMENT SYSTEM WITH CURRENT DATA"
+  ;; keep earliest id
+  ;; mark pending as appropriate
+  ;; determine host
+  ;; merge offers/requests
+  ;; merge invitations
+  ;; merge events
+  ;; merge contact lists (following and followers)
+  ;; merge groups (admin and members)
+  ;; merge group-membership-requests
+  ;; merge group-membership-invitations
+  ;; merge transactions
+  ;; merge conversations (individual and as group admin)
+  ;; merge names/aliases
+  ;; merge loves ?
+  ;; merge feedback
+  ;; merge comments
+  ;; merge gifts
+  ;; merge statements of gratitude (given and recieved)
+  ;; avatar
+  ;; add emails
+  ;; modify-db for duplicates :type :deleted-group-account, w/ reason and redirect id
+  ;; create redirects from old ids to new profile
+  ;; index person
+  ;; yikes!
+  ;; test searching for deleted accounts
+  ;; test requesting an invitation from account to be deleted
+
+  (declare (optimize (speed 0) (debug 3) (safety 2)))
+
+  (unless (find most-active-id duplicate-account-id-list)
+    (asetf duplicate-account-id-list
+           (cons most-active-id it)))
+
+  (dolist (id ids-to-deactivate)
+    (dolist (token (gethash id *user-tokens-index*))
+      (delete-token-cookie :userid id
+                           :cookie (car token)))
+    (remhash id *user-tokens-index*))
+
+  (setf (getf data-to-keep :created)
+        (getf oldest-data :created))
+
+  (setf data-to-keep
+        (merge-user-data id-to-keep
+                         data-to-keep
+                         duplicate-account-id-list
+                         ids-to-deactivate))
+
+  (merge-user-primary-indexes id-to-keep ids-to-deactivate data-to-keep)
+
+  (merge-user-secondary-indexes id-to-keep ids-to-deactivate)
+
+  (dolist (result *feedback-index*)
+    (when (find (car (result-people result)) ids-to-deactivate)
+      (setf (result-people result) (list id-to-keep))
+      (modify-db (result-id result) :by id-to-keep)))
+
+  (index-person id-to-keep (apply #'modify-db (cons id-to-keep data-to-keep)))
+
+  (with-locked-hash-table (*profile-activity-index*)
+    (asetf (gethash id-to-keep *profile-activity-index*)
+           (remove-duplicates it :key #'result-id)))
+  nil)
+
+(defun merge-user-data (id-to-keep data-to-keep duplicate-account-id-list ids-to-deactivate)
+  ;; merge data/indexes from user's data
+  (dolist (duplicate-id duplicate-account-id-list)
+    (let ((data (db duplicate-id)))
+
+      (when (and (and (getf data :host)
+                      (not (find (getf data :host) ids-to-deactivate)))
+                 (or (not (getf data-to-keep :host))
+                     (find (getf data-to-keep :host)
+                           (cons +kindista-id+ ids-to-deactivate))))
+        (setf (getf data-to-keep :host) (getf data :host)))
+
+      (dolist (prop '(:bio :bio-summary :bio-doing :bio-contact :bio-skills :bio-into))
+        (when (or (not (getf data-to-keep prop))
+                  (string= (getf data-to-keep prop) ""))
+          (setf (getf data-to-keep prop)
+                (getf data prop))))
+
+      (asetf (getf data-to-keep :aliases)
+             (remove-duplicates
+               (remove
+                 (getf data-to-keep :name)
+                 (append (cons (getf data :name)
+                               (getf data :aliases))
+                         it)
+                 :test #'equalp)
+               :test #'equalp))
+
+      (asetf (getf data-to-keep :emails)
+             (remove-duplicates
+               (append it (getf data :emails))
+               :test #'equalp))
+
+      (awhen (getf data :following)
+        (with-locked-hash-table (*followers-index*)
+          (dolist (person it)
+            (remove duplicate-id (gethash person *followers-index*))
+            (pushnew id-to-keep (gethash person *followers-index*))))
+        (setf (getf data-to-keep :following)
+              (set-difference (union (getf data-to-keep :following) it)
+                              duplicate-account-id-list)))
+
+      (when (getf data-to-keep :pending)
+        (setf (getf data-to-keep :pending)
+              (getf data :pending)))
+
+      (aif (getf data-to-keep :username)
+        (with-locked-hash-table (*username-index*)
+          (remhash (getf data :username) *username-index*))
+        (setf it (getf data :username)))
+
+      ;; keep old avatars
+      (if (getf data-to-keep :avatar)
+        (awhen (getf data :avatar)
+          (push it (getf data-to-keep :merged-account-avatars)))
+        (setf (getf data-to-keep :avatar)
+              (getf data :avatar)))))
+
+  data-to-keep)
+
+(defun merge-user-primary-indexes (id-to-keep ids-to-deactivate data-to-keep)
+  ;; update indexes based on other data
+  (dolist (duplicate-id ids-to-deactivate)
+
+    (dolist (offer-id (copy-list (gethash duplicate-id *offer-index*)))
+      (modify-db offer-id :by id-to-keep)
+      (let ((result (gethash offer-id *db-results*)))
+        (with-locked-hash-table (*profile-activity-index*)
+          (asetf (gethash duplicate-id *profile-activity-index*)
+                 (remove result it))
+          (asetf (gethash id-to-keep *profile-activity-index*)
+                 (safe-sort (push result it) #'> :key #'result-time)))
+        (with-locked-hash-table (*offer-index*)
+          (asetf (gethash duplicate-id *offer-index*)
+                 (remove offer-id it))
+          (push offer-id (gethash id-to-keep *offer-index*)))
+        (setf (result-people result) (list id-to-keep))))
+
+    (dolist (request-id (copy-list (gethash duplicate-id *request-index*)))
+      (modify-db request-id :by id-to-keep)
+      (let ((result (gethash request-id *db-results*)))
+        (with-locked-hash-table (*profile-activity-index*)
+          (asetf (gethash duplicate-id *profile-activity-index*)
+                 (remove result it))
+          (asetf (gethash id-to-keep *profile-activity-index*)
+                 (safe-sort (push result it) #'> :key #'result-time)))
+        (with-locked-hash-table (*request-index*)
+          (asetf (gethash duplicate-id *request-index*)
+                 (remove request-id it))
+          (push request-id (gethash id-to-keep *request-index*)))
+        (setf (result-people result) (list id-to-keep))))
+
+    (with-locked-hash-table (*account-inventory-matches-index*)
+      (let ((duplicate-account-matches
+              (gethash duplicate-id *account-inventory-matches-index*)))
+        (asetf (getf (gethash id-to-keep *account-inventory-matches-index*)
+                     :offers)
+               (remove-duplicates (append (getf duplicate-account-matches
+                                                :offers)
+                                          it)
+                                  :test #'equal))
+        (asetf (getf (gethash id-to-keep *account-inventory-matches-index*)
+                     :requests)
+               (remove-duplicates (append (getf duplicate-account-matches
+                                                :requests)
+                                          it)
+                                  :test #'equal))))
+
+    (when (and (db duplicate-id :pending)
+               (not (getf data-to-keep :pending)))
+      (dolist (result (gethash duplicate-id *pending-person-items-index*))
+        (asetf (result-people result)
+               (remove-duplicates
+                 (subst id-to-keep duplicate-id it)))
+        (let* ((item-id (result-id result))
+               (pending-item (modify-db item-id :by id-to-keep)))
+          (index-item item-id pending-item)
+          (when (eq (getf pending-item :type) :offer)
+            (update-matchmaker-offer-data item-id))))
+
+      (with-locked-hash-table (*pending-person-items-index*)
+        (remhash duplicate-id *pending-person-items-index*)))
+
+    (dolist (invite-id (copy-list
+                         (gethash duplicate-id *person-invitation-index*)))
+      (let* ((invitation (db invite-id))
+             (invite-gratitudes (getf invitation :gratitudes)))
+        (when invite-gratitudes
+          (dolist (gratitude-id invite-gratitudes)
+            (modify-db gratitude-id :author id-to-keep)))
+        (index-invitation invite-id (modify-db invite-id :host id-to-keep))))
+
+    (with-locked-hash-table (*person-invitation-index*)
+      (remhash duplicate-id *person-invitation-index*))
+
+    (with-locked-hash-table (*invited-index*)
+      (dolist (guest-id (copy-list
+                          (gethash duplicate-id *invited-index*)))
+        (modify-db guest-id :host id-to-keep)
+        (pushnew guest-id (gethash id-to-keep *invited-index*))))
+
+    (with-locked-hash-table (*invited-index*)
+      (remhash duplicate-id *invited-index*))
+
+    (merge-user-group-membership id-to-keep duplicate-id)))
+
+(defun merge-user-group-membership (id-to-keep duplicate-id)
+    (dolist (group (copy-list (getf (gethash duplicate-id
+                                             *group-privileges-index*)
+                                    :admin)))
+      (with-locked-hash-table (*group-members-index*)
+        (asetf (gethash group *group-members-index*)
+          (remove duplicate-id it))
+        (pushnew id-to-keep (gethash group *group-members-index*)))
+      (with-locked-hash-table (*group-privileges-index*)
+        (pushnew group (getf (gethash id-to-keep *group-privileges-index*)
+                             :admin))
+        (asetf (getf (gethash id-to-keep *group-privileges-index*) :member)
+               (remove group it)))
+      (amodify-db group :admins (remove-duplicates
+                                  (substitute id-to-keep duplicate-id it))
+                        :members (remove id-to-keep it)
+                        :creator (subst id-to-keep duplicate-id it)
+                        :notify-message (subst id-to-keep duplicate-id it)
+                        :notify-gratitude (subst id-to-keep duplicate-id it)
+                        :notify-reminders (subst id-to-keep duplicate-id it)
+                        :notify-membership-request (subst id-to-keep
+                                                          duplicate-id
+                                                          it)))
+
+    (dolist (group (getf (copy-list (gethash duplicate-id
+                                             *group-privileges-index*))
+                         :member))
+      (let ((already-group-admin-p (find id-to-keep (db group :admins))))
+        (with-locked-hash-table (*group-members-index*)
+          (asetf (gethash group *group-members-index*)
+                 (remove duplicate-id it))
+          (pushnew id-to-keep (gethash group *group-members-index*)))
+        (unless already-group-admin-p
+         (with-locked-hash-table (*group-privileges-index*)
+            (pushnew group (getf (gethash id-to-keep *group-privileges-index*)
+                                 :member))))
+        (if already-group-admin-p
+          (amodify-db group :members (remove duplicate-id it))
+          (amodify-db group :members (remove-duplicates
+                                       (substitute id-to-keep
+                                                   duplicate-id
+                                                   it))))))
+
+    (with-locked-hash-table (*group-privileges-index*)
+      (remhash duplicate-id *group-privileges-index*)))
+
+(defun merge-user-secondary-indexes (id-to-keep ids-to-deactivate)
+  ;; must be run after group re-assignment
+  (dolist (duplicate-id ids-to-deactivate)
+    (let ((users-groups (get-users-groups id-to-keep)))
+      (dolist (message (apply #'append
+                              (remove nil
+                                      (remove-if-not
+                                        #'listp
+                                        (gethash duplicate-id
+                                                 *person-mailbox-index*)))))
+        (case (message-type message)
+
+          ((or :transaction :conversation)
+           (dolist (comment-id (gethash (message-id message)
+                                        *comment-index*))
+             (when (eql duplicate-id (car (db comment-id :by)))
+               (amodify-db comment-id
+                           :by (subst id-to-keep duplicate-id it))))
+
+           (let* ((old-data (db (message-id message)))
+                  (new-message-data
+                    (list :participants (remove-duplicates
+                                          (substitute id-to-keep
+                                                      duplicate-id
+                                                      (getf old-data
+                                                            :participants)))
+                          :message-folders (subst id-to-keep
+                                                  duplicate-id
+                                                  (getf old-data
+                                                        :message-folders))
+                          :people (subst id-to-keep
+                                         duplicate-id
+                                         (getf old-data :people)))))
+             (when (eq (message-type message) :transaction)
+               (asetf new-message-data
+                      (append (list :log (subst id-to-keep
+                                                duplicate-id
+                                                (getf old-data :log)))
+                              it)))
+
+           (index-message (message-id message)
+                          (apply #'modify-db (cons (message-id message)
+                                                   new-message-data)))))
+
+          (:group-membership-request ; when user is an admin
+            (index-message (message-id message)
+                           (amodify-db (message-id message)
+                                       :people (remove-duplicates
+                                                 (subst id-to-keep
+                                                        duplicate-id
+                                                        it))
+                                       :message-folders (subst id-to-keep
+                                                               duplicate-id
+                                                               it))))
+
+          (:group-membership-invitation ;when user is not yet in group
+            (let ((group-id (db (message-id message) :group-id)))
+              (if (or (find group-id users-groups)
+                      (assoc id-to-keep
+                             (gethash group-id
+                                      *group-membership-invitations-index*)))
+                (delete-group-membership-invitation (message-id message))
+                (progn
+                  (with-locked-hash-table
+                    (*group-membership-invitations-index*)
+                    (asetf (gethash group-id
+                                    *group-membership-invitations-index*)
+                           (subst id-to-keep duplicate-id it)))
+                  (index-message (message-id message)
+                                 (amodify-db (message-id message)
+                                             :people (remove-duplicates
+                                                       (subst id-to-keep
+                                                              duplicate-id
+                                                              it))
+                                             :message-folders (subst id-to-keep
+                                                                     duplicate-id
+                                                                     it)))))))))
+
+      ;; for group invitations the user has SENT
+      (dolist (group-id users-groups)
+        (dolist (invite-id (mapcar #'cdr
+                                   (gethash group-id
+                                            *group-membership-invitations-index*)))
+          (when (eql (db invite-id :invited-by) duplicate-id)
+            (index-message invite-id
+                           (modify-db invite-id :invited-by id-to-keep))))))
+
+    ;; transactions might need to be done before gratitudes
+    (dolist (result (copy-list (gethash duplicate-id *profile-activity-index*)))
+      (case (result-type result)
+        (:event
+          (let ((event-id (result-id result)))
+            (index-event event-id
+                         (amodify-db event-id
+                                     :people (remove-duplicates
+                                               (substitute id-to-keep
+                                                           duplicate-id
+                                                           it))))))
+
+        (:gift
+          (let ((gift-id (result-id result)))
+            (amodify-db gift-id :recipients (remove-duplicates
+                                              (substitute id-to-keep
+                                                          duplicate-id
+                                                          it))
+                        :giver (if (= it duplicate-id)
+                                 id-to-keep
+                                 it))
+            (index-gift gift-id (db gift-id))))
+
+        (:gratitude
+          (let* ((gratitude-id (result-id result))
+                 (gratitude (db gratitude-id))
+                 (author-id (getf gratitude :author)))
+            (amodify-db gratitude-id :author (if (= author-id duplicate-id)
+                                               id-to-keep
+                                               author-id)
+                        :subjects (substitute id-to-keep
+                                              duplicate-id
+                                              it)
+                        :people (subst id-to-keep
+                                       duplicate-id
+                                       it)
+                        :message-folders (subst id-to-keep
+                                                duplicate-id
+                                                it))
+            (index-gratitude gratitude-id (db gratitude-id))))))
+
+    (delete-active-account duplicate-id
+                           :reason (strcat "Duplicate account. "
+                                           "Merged into account #"
+                                           id-to-keep
+                                           ".")
+                           :merged-into id-to-keep)))
+
 (defun deactivate-person (id)
   (let ((result (gethash id *db-results*)))
     (metaphone-index-insert (list nil) result)
@@ -286,8 +688,8 @@
     (deactivate-person id)
 
     (with-locked-hash-table (*pending-person-items-index*)
-      (dolist (item-id (gethash id *pending-person-items-index*))
-        (remove-from-db item-id))
+      (dolist (result (gethash id *pending-person-items-index*))
+        (remove-from-db (result-id result)))
       (remhash id *pending-person-items-index*))
 
     (awhen (getf data :emails)
@@ -307,19 +709,26 @@
                   :username nil
                   :notify-kindista nil)))
 
-(defun delete-active-account (id &optional reason)
-  (let ((data (db id)))
-    (deactivate-person id)
+(defun delete-active-account
+  (id
+   &key reason
+        merged-into
+   &aux (data (db id)))
 
-    (awhen (getf data :emails)
-      (with-locked-hash-table (*email-index*)
-        (dolist (email it)
-          (remhash email *email-index*))))
+  (deactivate-person id)
 
-    (modify-db id :emails (list nil)
-                  :type :deleted-person-account
-                  :deleted t
-                  :reason-for-account-deletion reason)))
+  (awhen (getf data :emails)
+    (with-locked-hash-table (*email-index*)
+      (dolist (email it)
+        (remhash email *email-index*))))
+
+  (modify-db id :emails (list nil)
+                :type :deleted-person-account
+                :merged-into merged-into
+                :merge-date (when merged-into (get-universal-time))
+                :username nil
+                :deleted t
+                :reason-for-account-deletion reason))
 
 (defun find-people-with-incorrect-communication-settings ()
   (sort (iter (for id in *active-people-index*)

@@ -376,10 +376,15 @@
       (with-standard-io-syntax
         (with-locked-hash-table (*tokens*)
           ;(clrhash *tokens*)
+          (clrhash *user-tokens-index*)
           (loop
             (handler-case
               (let ((item (read in)))
-                (setf (gethash (car item) *tokens*) (cdr item)))
+                (setf (gethash (car item) *tokens*)
+                      (cdr item))
+                (with-locked-hash-table (*user-tokens-index*)
+                  (asetf (gethash (token-userid (cdr item)) *user-tokens-index*)
+                         (push (cons (car item) (cdr item)) it))))
               (end-of-file (e) (declare (ignore e)) (return)))))))))
 
 
@@ -545,9 +550,8 @@
     (:group-membership-request (index-group-membership-request id data))
     (:group-membership-invitation (index-group-membership-invitation id data))
    ;(:contact-n (index-contact-notification id data))
-    ;; :reply can be removed once transactions have been fully implemented
     (:transaction (index-transaction id data))
-    ((or :reply :conversation) (index-message id data))))
+    (:conversation (index-message id data))))
 
 (defun contacts-alphabetically (&optional (user *user*))
   (sort (iter (for contact in (getf user :following))

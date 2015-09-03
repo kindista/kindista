@@ -28,7 +28,8 @@
 (defun clear-indexes ()
   (clrhash *db-results*)
   (clrhash *db-messages*)
-  (dolist (index *indexes*)
+  (dolist (index (remove (quote *user-tokens-index*)
+                         *indexes*))
     (clrhash (symbol-value index)))
   (setf *active-people-index* ()
         *blog-index* ()
@@ -93,6 +94,7 @@
 (defindex *offer-stem-index* :test 'equalp) ;k=stem v=(:title :details :tags)
 (defindex *offers-with-matching-requests-index*)
 (defindex *username-index* :test 'equalp)
+(defindex *user-tokens-index*)
 
 (defvar *active-people-mutex* (make-mutex))
 (defvar *active-people-index* ())
