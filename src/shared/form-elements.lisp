@@ -170,11 +170,12 @@
                             :checked (when (or (not groups-selected)
                                                (find (car group) groups-selected))
                                        "checked")
-                            :value (car group)
-                            (str (cdr group))
-                            (str (when (= (car group) +kindista-id+)
-                                 " group account "))
-                            " members"))))
+                            :value (car group))
+                    (:span (str (cdr group))
+                           (str (when (= (car group) +kindista-id+)
+                                  " group account "))
+                           " members"))))
+
               ;; for groups the user has left but are still being shown 
               ;; this item
               (dolist (group groups-user-has-left)

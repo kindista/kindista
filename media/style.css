@@ -3042,12 +3042,22 @@ div.settings-avatar {
  margin-right: 0.3em;
 }
 
-div.tag,
 div.item-group-privacy {
- margin: 0.5em 0;
+ display: table-row;
+ overflow: hidden;
+ white-space: normal;
+}
+
+div.item-group-privacy input,
+div.item-group-privacy span {
+ vertical-align: baseline;
+ margin-top: 0.5em;
+ padding-top: 0.5em;
+ display: table-cell;
 }
 
 div.tag {
+ margin: 0.5em 0;
  display: inline-block;
 }
 
