@@ -3033,6 +3033,15 @@ div.settings-avatar {
  margin: 0 0 0.2em;
 }
 
+#edit-tags #publish-facebook {
+ margin-top: 0.7em;
+}
+
+#edit-tags #publish-facebook img {
+ vertical-align: sub;
+ margin-right: 0.3em;
+}
+
 div.tag,
 div.item-group-privacy {
  margin: 0.5em 0;

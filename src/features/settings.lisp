@@ -884,10 +884,11 @@
         (html
           (when (get-parameter "error")
             (htm (:p :class "error" "Connecting with Facebook had an error: " (str (get-parameter "error_description")))))
-          (:p (:a :class "blue" :href (url-compose "https://www.facebook.com/dialog/oauth"
-                                 "client_id" *facebook-app-id*
-                                 "scope" "public_profile,publish_actions"
-                                 "redirect_uri" (s+ +base-url+ "settings/social"))
+          (:p (:a :class "blue"
+                  :href (url-compose "https://www.facebook.com/dialog/oauth"
+                                     "client_id" *facebook-app-id*
+                                     "scope" "public_profile,publish_actions"
+                                     "redirect_uri" (s+ +base-url+ "settings/social"))
            "Log in to Facebook"))
           (:p "Post to Facebook:")
           (:ul
