@@ -18,6 +18,8 @@
 
 (in-package :kindista)
 
+(defparameter *fb-graph-url* "https://graph.facebook.com/")
+
 (defun facebook-item-meta-content (id typestring title &optional description)
   (html
     (:meta :property "og:type"
@@ -42,11 +44,54 @@
   (json:decode-json-from-string (octets-to-string octets
                                                   :external-format :utf-8)))
 
+(defun get-facebook-user-id
+  (&optional (userid *userid*)
+   &aux (*user* (or *user* (db userid)))
+        (reply (multiple-value-list
+                 (with-facebook-credentials
+                   (http-request (s+ *fb-graph-url* "debug_token")
+                                 :parameters (list (cons "input_token"
+                                                         *facebook-user-token*)
+                                                   (cons "access_token"
+                                                         *facebook-app-token*)))))))
+  (when (= (second reply) 200)
+      (parse-integer
+        (cdr (assoc :user--id
+                    (cdr (find :data
+                               (decode-json-octets (first reply))
+                               :key #'car)))))))
+
+(defun publish-facebook-action
+  (id
+   &key (userid *userid*)
+   &aux (item (db id))
+        (object-type (string-downcase (symbol-name (getf item :type))))
+        (user (db userid))
+        (reply
+          (multiple-value-list
+            (with-facebook-credentials
+              (http-request
+                (strcat *fb-graph-url*
+                        "me"
+                       ;(or *fb-id* (getf user :fb-id))
+                        "/kindistadotorg:post")
+                :parameters (list (cons "access_token" (getf user :fbtoken))
+                                  (cons "method" "post")
+                                  (cons object-type
+                                        (s+ "https://kindista.org" (resource-url id item)))
+                                  (cons "fb:explicitly_shared" "true")
+                                  (cons "privacy"
+                                         (json:encode-json-to-string
+                                           (list (cons "value" "SELF"))))))))))
+
+  (when (= (second reply) 200)
+    (parse-integer (cdr (assoc :id (decode-json-octets (first reply)))))))
+
 (defun update-facebook-object
   (facebook-id
    typestring
    k-url
-   &aux (reply (with-facebook-token
+   &aux (reply (with-facebook-credentials
                  (multiple-value-list
                    (http-request
                      (url-compose (strcat "https://graph.facebook.com/"
@@ -103,9 +148,16 @@
   (string-left-trim (s+ *facebook-app-id* "|") *facebook-app-token*))
 
 (defvar *facebook-app-token* nil)
+(defvar *facebook-user-token* nil)
+(defvar *facebook-user-token-expiration* nil)
+(defvar *fb-id* nil)
 
-(defmacro with-facebook-token (&body body)
+(defmacro with-facebook-credentials (&body body)
   `(let ((*facebook-app-token* (or *facebook-app-token*
                                    (setf *facebook-app-token*
-                                         (get-facebook-app-token)))))
+                                         (get-facebook-app-token))))
+         (*fb-id* (getf *user* :fb-id))
+         (*facebook-user-token* (getf *user* :fbtoken))
+         (*facebook-user-token-expiration* (getf *user* :fbexpires)))
      ,@body))
+

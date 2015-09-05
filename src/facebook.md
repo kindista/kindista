@@ -14,6 +14,9 @@ https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
                this permission helps us ensure that your kindista account
                is associated with the correct facebook account."
 
+#Privacy setting
+https://developers.facebook.com/docs/graph-api/reference/v2.4/post
+
 #List of friends using Kindista app
 https://graph.facebook.com/{user-id}/friends?fields=installed
 

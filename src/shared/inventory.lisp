@@ -137,7 +137,7 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
-         (facebook-id (getf data :facebook-id))
+         (fb-id (getf data :facebook-id))
          (by (getf data :by))
          (now (get-universal-time)))
 
@@ -185,8 +185,25 @@
     (let ((data (list :title title
                       :details details
                       :tags tags
+                      :fb-id fb-id
                       :privacy privacy))
           (typestring (string-downcase (symbol-name type))))
+
+      (cond
+        ((and publish-facebook-p (not fb-id))
+         (setf (getf data :fb-id)
+               (publish-facebook-action id)))
+        ((and (not fb-id) publish-facebook-p)
+         (setf (getf data :fb-id)
+               (update-facebook-object fb-id
+                                       typestring
+                                       (url-compose (strcat +base-url+
+                                                            typestring
+                                                            "s/"
+                                                            id)))))
+        ((and (not publish-facebook-p) fb-id)
+         "delete from facebook"
+         ))
 
       (unless (and (getf *user* :admin)
                    (not (group-admin-p by))
@@ -196,13 +213,7 @@
 
       (apply #'modify-db id data)
 
-      (when facebook-id
-        (update-facebook-object facebook-id
-                                typestring
-                                (url-compose (strcat +base-url+
-                                                     typestring
-                                                     "s/"
-                                                     id)))))
+      )
 
     (case (result-type result)
       (:offer (update-matchmaker-offer-data id))
