@@ -167,7 +167,7 @@
                            "-"))
 
 (defun words-from-string (string)
-  (iter (for word in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
+  (iter (for word in (split " " (ppcre:regex-replace-all "[\\r\\n,<|>]" (string-downcase string) " ")))
         (when (ppcre:scan +text-scanner+ word)
           (collect word))))
 
@@ -175,7 +175,7 @@
   (length (words-from-string string)))
 
 (defun emails-from-string (string)
-  (iter (for email in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
+  (iter (for email in (split " " (ppcre:regex-replace-all "[\\r\\n,|>|<]" (string-downcase string) " ")))
         (when (ppcre:scan +email-scanner+ email)
           (collect email))))
 
