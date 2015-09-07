@@ -111,7 +111,10 @@
                   (:h2 :class "red" "This request is no longer active.")))
               (str (inventory-activity-item result :show-distance t :show-tags t))
               (str (item-images-html id))
-              (when (or self (group-admin-p by) matchmaker-admin)
+              (when (and (getf request :active)
+                         (or self
+                             (group-admin-p by)
+                             matchmaker-admin))
                 (str (item-matches-html id :data request
                                            :self self
                                            :all-terms all-terms
