@@ -167,7 +167,7 @@
                            "-"))
 
 (defun words-from-string (string)
-  (iter (for word in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
+  (iter (for word in (split " " (ppcre:regex-replace-all "[\\r\\n,<|>]" (string-downcase string) " ")))
         (when (ppcre:scan +text-scanner+ word)
           (collect word))))
 
@@ -175,9 +175,13 @@
   (length (words-from-string string)))
 
 (defun emails-from-string (string)
-  (iter (for email in (split " " (ppcre:regex-replace-all ",|>|<" (string-downcase string) " ")))
+  (iter (for email in (split " " (ppcre:regex-replace-all "[\\r\\n,<|>]" (string-downcase string) " ")))
         (when (ppcre:scan +email-scanner+ email)
           (collect email))))
+
+(defun decode-json-octets (octets)
+  (json:decode-json-from-string (octets-to-string octets
+                                                  :external-format :utf-8)))
 
 (defun mailinate-user-emails (&key (accounts-to-omit (list 1)) groups-to-omit)
   "For use in development environment only. Gives all users a mailinator email address for testing functionality and to prevent emails from being sent to users by mistake."

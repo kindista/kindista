@@ -40,11 +40,7 @@
       (htm (:meta :property "og:description"
                   :content it)))))
 
-(defun decode-json-octets (octets)
-  (json:decode-json-from-string (octets-to-string octets
-                                                  :external-format :utf-8)))
-
-(defun get-facebook-user-id
+(defun get-facebook-user-data
   (&optional (userid *userid*)
    &aux (*user* (or *user* (db userid)))
         (reply (multiple-value-list
@@ -55,11 +51,14 @@
                                                    (cons "access_token"
                                                          *facebook-app-token*)))))))
   (when (= (second reply) 200)
-      (parse-integer
-        (cdr (assoc :user--id
-                    (cdr (find :data
-                               (decode-json-octets (first reply))
-                               :key #'car)))))))
+    (cdr (find :data
+                (decode-json-octets (first reply))
+               :key #'car))))
+
+(defun get-facebook-user-id
+  (&optional (userid *userid*))
+  (parse-integer
+     (cdr (assoc :user--id (get-facebook-user-data userid)))))
 
 (defun publish-facebook-action
   (id
@@ -87,6 +86,54 @@
   (when (= (second reply) 200)
     (parse-integer (cdr (assoc :id (decode-json-octets (first reply)))))))
 
+(defun get-all-facebook-objects-of-type
+  (typestring
+   &optional (userid *userid*)
+   &aux (user (db userid))
+        (reply
+          (multiple-value-list
+            (with-facebook-credentials
+              (http-request
+                (strcat *fb-graph-url*
+                        "me"
+                       ;(or *fb-id* (getf user :fb-id))
+                        "/kindistadotorg:post/"
+                        typestring)
+                :parameters (list (cons "access_token" (getf user :fbtoken))
+                                  (cons "method" "get")))))))
+
+  (when (= (second reply) 200)
+    (decode-json-octets (first reply))))
+
+(defun get-facebook-object-id
+  (k-id
+   &key (userid *userid*)
+   &aux (item (db k-id))
+        (object-type (string-downcase (symbol-name (getf item :type))))
+        (user (db userid))
+        (reply
+          (multiple-value-list
+            (with-facebook-credentials
+              (http-request
+                (strcat *fb-graph-url*)
+                :parameters (list (cons "access_token" *facebook-app-token*)
+                                  (cons "id" (s+ "https://kindista.org" (resource-url k-id item)))
+                                  ))))))
+
+ ;(when (= (second reply) 200)
+ ;  (parse-integer (cdr (assoc :id (decode-json-octets (first reply))))))
+
+  (when (= (second reply) 200)
+    (parse-integer
+      (cdr
+        (assoc :id
+               (cdr
+                 (find :og--object
+                          (decode-json-octets (first reply))
+                          :key #'car) ) )) )
+  
+  ))
+
 (defun update-facebook-object
   (facebook-id
    typestring
@@ -111,8 +158,11 @@
                                             (if (integerp url-or-fb-id)
                                               (write-to-string url-or-fb-id)
                                               url-or-fb-id))
+                                       (cons "access_token"
+                                             *facebook-app-token*)
                                       '("scrape" . "true"))
                     :method :post))))
+
   (when (= (second reply) 200)
     (decode-json-octets (first reply))))
 
