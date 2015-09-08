@@ -186,21 +186,14 @@
                       :details details
                       :tags tags
                       :fb-id fb-id
-                      :privacy privacy))
-          (typestring (string-downcase (symbol-name type))))
+                      :privacy privacy)))
 
       (cond
         ((and publish-facebook-p (not fb-id))
          (setf (getf data :fb-id)
                (publish-facebook-action id)))
-        ((and (not fb-id) publish-facebook-p)
-         (setf (getf data :fb-id)
-               (update-facebook-object fb-id
-                                       typestring
-                                       (url-compose (strcat +base-url+
-                                                            typestring
-                                                            "s/"
-                                                            id)))))
+        ((and fb-id publish-facebook-p)
+         (update-facebook-object id))
         ((and (not publish-facebook-p) fb-id)
          "delete from facebook"
          ))

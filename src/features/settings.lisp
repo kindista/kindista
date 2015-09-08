@@ -849,8 +849,6 @@
                   (token (cdr (assoc "access_token" alist :test #'string=)))
                   (expires (+ now (parse-integer (cdr (assoc "expires" alist :test #'string=))))))
 
-             (pprint alist)
-             (terpri)
              (modify-db *userid* :fbtoken token :fbexpires expires)
              (unless (getf *user* :fb-id)
                (modify-db *userid* :fb-id (get-facebook-user-id)))

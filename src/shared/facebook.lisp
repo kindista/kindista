@@ -84,7 +84,8 @@
                                            (list (cons "value" "SELF"))))))))))
 
   (when (= (second reply) 200)
-    (parse-integer (cdr (assoc :id (decode-json-octets (first reply)))))))
+    (parse-integer (cdr (assoc :id
+                               (decode-json-octets (first reply)))))))
 
 (defun get-all-facebook-objects-of-type
   (typestring
@@ -130,24 +131,32 @@
                (cdr
                  (find :og--object
                           (decode-json-octets (first reply))
-                          :key #'car) ) )) )
+                          :key #'car)))))
   
   ))
 
 (defun update-facebook-object
-  (facebook-id
-   typestring
-   k-url
-   &aux (reply (with-facebook-credentials
-                 (multiple-value-list
-                   (http-request
-                     (url-compose (strcat "https://graph.facebook.com/"
-                                          facebook-id)
-                                  "access_token" *facebook-app-token*
-                                  "method" "POST"
-                                  typestring k-url))))))
-  reply
-  )
+  (k-id
+   &aux (item (db k-id))
+        (facebook-id (getf item :fb-id))
+        (typestring (string-downcase (symbol-name (getf item :type))))
+        (reply (with-facebook-credentials
+                (multiple-value-list
+                  (http-request
+                    (strcat "https://graph.facebook.com/" facebook-id)
+                    :parameters (list (cons "access_token"
+                                            *facebook-app-token*)
+                                      '("method" . "POST")
+                                      (cons typestring
+                                            (url-compose
+                                              (strcat "https://kindista.org/"
+                                                      typestring
+                                                      "s/"
+                                                      k-id)))))))))
+  "Works the same as (scrape-facebook-item)"
+  (when (= (second reply) 200)
+    (decode-json-octets (first reply))
+   ))
 
 (defun scrape-facebook-item
   (url-or-fb-id
@@ -163,6 +172,7 @@
                                       '("scrape" . "true"))
                     :method :post))))
 
+  "Works the same as (update-facebook-object)"
   (when (= (second reply) 200)
     (decode-json-octets (first reply))))
 
@@ -185,17 +195,12 @@
   )
 
 (defun get-facebook-app-token ()
-;(string-left-trim (s+ *facebook-app-id* "|")
     (string-left-trim "access_token="
       (http-request
         (url-compose "https://graph.facebook.com/oauth/access_token"
                      "client_id" *facebook-app-id*
                      "client_secret" *facebook-secret*
-                     "grant_type" "client_credentials")))
-   ; )
-  )
-(defun trim-fb-token ()
-  (string-left-trim (s+ *facebook-app-id* "|") *facebook-app-token*))
+                     "grant_type" "client_credentials"))))
 
 (defvar *facebook-app-token* nil)
 (defvar *facebook-user-token* nil)
