@@ -133,10 +133,11 @@
          (with-locked-hash-table (*account-inactive-request-index*)
            (push id (gethash by-id *account-inactive-request-index*))))))))
 
-(defun modify-inventory-item (id &key title details tags privacy)
+(defun modify-inventory-item (id &key publish-facebook-p title details tags privacy)
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
+         (fb-id (getf data :facebook-id))
          (by (getf data :by))
          (now (get-universal-time)))
 
@@ -184,7 +185,25 @@
     (let ((data (list :title title
                       :details details
                       :tags tags
-                      :privacy privacy)))
+                      :fb-id fb-id
+                      :privacy privacy))
+          (typestring (string-downcase (symbol-name type))))
+
+      (cond
+        ((and publish-facebook-p (not fb-id))
+         (setf (getf data :fb-id)
+               (publish-facebook-action id)))
+        ((and (not fb-id) publish-facebook-p)
+         (setf (getf data :fb-id)
+               (update-facebook-object fb-id
+                                       typestring
+                                       (url-compose (strcat +base-url+
+                                                            typestring
+                                                            "s/"
+                                                            id)))))
+        ((and (not publish-facebook-p) fb-id)
+         "delete from facebook"
+         ))
 
       (unless (and (getf *user* :admin)
                    (not (group-admin-p by))
@@ -192,7 +211,9 @@
         (refresh-item-time-in-indexes id :time now)
         (append data (list :edited now)))
 
-      (apply #'modify-db id data))
+      (apply #'modify-db id data)
+
+      )
 
     (case (result-type result)
       (:offer (update-matchmaker-offer-data id))
@@ -318,6 +339,7 @@
                               (or (not identity-selection)
                                   (eql identity-selection
                                        (post-parameter-integer "prior-identity")))))
+           (publish-facebook (post-parameter "publish-facebook"))
            (adminp (group-admin-p (or groupid identity-selection)))
            (title (post-parameter-string "title"))
            (details (when (scan +text-scanner+ (post-parameter "details"))
@@ -332,6 +354,7 @@
                                      :details details
                                      :next (post-parameter "next")
                                      :action url
+                                     :publish-facebook publish-facebook
                                      :restrictedp restrictedp
                                      :identity-selection identity-selection
                                      :groupid groupid
@@ -541,31 +564,36 @@
                                   t))
                   (new-title (post-parameter-string "title"))
                   (title (or new-title (getf item :title)))
-                  (new-details (post-parameter-string "details")) 
+                  (new-details (post-parameter-string "details"))
                   (details (or new-details (getf item :details))))
 
              (iter (for tag in (tags-from-string (post-parameter "tags")))
                    (setf tags (cons tag tags)))
 
-             (flet ((inventory-tags (&key error)
-                      (enter-inventory-tags :page-title (s+ "Edit your " type)
-                                            :action url
-                                            :item-title title
-                                            :details details
-                                            :tags (or tags (getf item :tags))
-                                            :groups-selected groups-selected
-                                            :restrictedp restrictedp
-                                            :next (or (post-parameter "next") (referer))
-                                            :existingp t
-                                            :groupid (when adminp by)
-                                            :error error
-                                            :button-text (s+ "Save " type)
-                                            :selected (s+ type "s"))))
+             (flet ((inventory-tags
+                      (&key error
+                            (publish-facebook (post-parameter "publish-facebook")))
+                      (enter-inventory-tags
+                        :page-title (s+ "Edit your " type)
+                        :action url
+                        :item-title title
+                        :details details
+                        :tags (or tags (getf item :tags))
+                        :groups-selected groups-selected
+                        :publish-facebook publish-facebook
+                        :restrictedp restrictedp
+                        :next (or (post-parameter "next") (referer))
+                        :existingp t
+                        :groupid (when adminp by)
+                        :error error
+                        :button-text (s+ "Save " type)
+                        :selected (s+ type "s"))))
 
                (cond
 
                 ((post-parameter "edit")
-                 (inventory-tags))
+                 (inventory-tags
+                   :publish-facebook (when (getf item :facebook-id) t)))
 
                 ((post-parameter "deactivate")
                  (confirm-delete :url url
@@ -650,6 +678,7 @@
                  (modify-inventory-item id :title (post-parameter "title")
                                            :details (post-parameter "details")
                                            :tags tags
+                                           :publish-facebook-p (post-parameter "publish-facebook")
                                            :privacy (when restrictedp
                                                       groups-selected))
                  (see-other (strcat "/" type "s/" id)))
@@ -689,7 +718,7 @@
 
 
 (defun enter-inventory-tags
-  (&key page-title action item-title details existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next
+  (&key page-title action item-title details existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next publish-facebook
    &aux (typestring (if (string= selected "offers") "offer" "request"))
         (suggested (or tags (get-tag-suggestions item-title))))
 
@@ -766,11 +795,26 @@
                   groups-selected
                   :onchange "this.form.submit()")))
 
+         (when (and (getf *user* :fbtoken)
+                    (not restrictedp))
+           (htm
+             (:div :id "publish-facebook"
+               (:input :type "checkbox"
+                :name "publish-facebook"
+                :checked (when (or (not existingp)
+                                   publish-facebook)
+                    ""))
+               (str (icon "facebook" "facebook-icon"))
+               (:span (str (s+ "Publish this "
+                        typestring
+                        " on my Facebook timeline."))))))
+
+
          (:h3 "Select 1-5 categories ")
          (:p :class "small"
           "Please note: selecting irrelevant categories is considered spam.")
          (dolist (tag *top-tags*)
-           (htm 
+           (htm
              (:div :class "tag"
                (:input :type "checkbox"
                        :name "tag"

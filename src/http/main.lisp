@@ -438,9 +438,11 @@
      (when extra
        (str extra)))))
 
-(defun icon (type)
+(defun icon (type &optional alt)
   (html
-    (:img :class "icon" :src (s+ "/media/icons/" type ".png") :alt " ")))
+    (:img :class "icon"
+          :src (s+ "/media/icons/" type ".png")
+          :alt (or alt " "))))
 
 (defun menu-item (title slug &optional selected count)
   (html

@@ -52,7 +52,7 @@
          (mine (eql *userid* by))
          (result (gethash id *db-results*))
          (facebook-item-id (when (string= (referer)
-                                          "https://www.facebook.com")
+                                          "https://www.facebook.com/")
                              (get-parameter-integer "post_id")))
          (matching-requests (gethash id *offers-with-matching-requests-index*)))
 
