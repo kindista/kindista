@@ -586,8 +586,8 @@
 
       :editable T
       :class "emails"
-      :help-text (html "Adding additional email address helps people find you "
-                       "and keeps you from getting invites to Kindista at "
+      :help-text (html "Adding additional email addresses helps people find "
+                       "you and keeps you from getting invites to Kindista at "
                        "your other addresses. "
                        "Kindista will never show your email addresses to anyone. "
                        "Only your primary email address will receive "
