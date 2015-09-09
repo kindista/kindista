@@ -586,12 +586,19 @@
 
       :editable T
       :class "emails"
-      :help-text (s+ "Adding additional email address helps people find you "
-                     "and keeps you from getting invites to Kindista at "
-                     "your other addresses. "
-                     "Kindista will never show your email addresses to anyone. "
-                     "Only your primary email address will receive "
-                     "notifications." ))))
+      :help-text (html "Adding additional email address helps people find you "
+                       "and keeps you from getting invites to Kindista at "
+                       "your other addresses. "
+                       "Kindista will never show your email addresses to anyone. "
+                       "Only your primary email address will receive "
+                       "notifications. "
+                       (:strong "If you want to change your primary email "
+                                "address, you must first add a secondary "
+                                "email. "
+                                "Then you will be able to make the new "
+                                "email address primary (and delete the old "
+                                "email if you so choose)."
+                        )))))
 
 (defun remove-pending-email-address
   (email
