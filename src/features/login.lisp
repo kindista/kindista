@@ -52,7 +52,7 @@
 (defun post-login ()
   (with-token
     (let ((username (post-parameter "username"))
-          (next (url-decode (post-parameter-string "next")))
+          (next (awhen (post-parameter-string "next") (url-decode it)))
           (user nil))
       (if (find #\@ username :test #'equal)
         (setf user (gethash username *email-index*))
