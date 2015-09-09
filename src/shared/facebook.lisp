@@ -87,7 +87,7 @@
     (parse-integer (cdr (assoc :id
                                (decode-json-octets (first reply)))))))
 
-(defun get-all-facebook-objects-of-type
+(defun get-user-facebook-objects-of-type
   (typestring
    &optional (userid *userid*)
    &aux (user (db userid))
