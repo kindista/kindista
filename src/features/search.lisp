@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -893,6 +893,9 @@
           (:h1 (str (s+ "Search results for \"" q "\"")))
 
           (cond
+            ((scan +number-scanner+ q)
+             (get-item-by-id q))
+
             ((scan +email-scanner+ q)
              (aif (gethash q *email-index*)
                (return-from get-search (see-other (strcat "/people/" (username-or-id it))))

@@ -34,6 +34,9 @@
   ("/home"
     :get get-home)
 
+  ("/<int:id>"
+    :get get-item-by-id)
+
   ("/blog"
     :get get-blog)
 

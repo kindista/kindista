@@ -586,12 +586,19 @@
 
       :editable T
       :class "emails"
-      :help-text (s+ "Adding additional email address helps people find you "
-                     "and keeps you from getting invites to Kindista at "
-                     "your other addresses. "
-                     "Kindista will never show your email addresses to anyone. "
-                     "Only your primary email address will receive "
-                     "notifications." ))))
+      :help-text (html "Adding additional email addresses helps people find "
+                       "you and keeps you from getting invites to Kindista at "
+                       "your other addresses. "
+                       "Kindista will never show your email addresses to anyone. "
+                       "Only your primary email address will receive "
+                       "notifications. "
+                       (:strong "If you want to change your primary email "
+                                "address, you must first add a secondary "
+                                "email. "
+                                "Then you will be able to make the new "
+                                "email address primary (and remove the old "
+                                "email if you so choose)."
+                        )))))
 
 (defun remove-pending-email-address
   (email
@@ -830,83 +837,84 @@
             (str (settings-deactivate)))))))
 
 (defun get-settings-social ()
-  (require-user
-    (when (get-parameter "code")
-      (let ((now (get-universal-time))
-            (reply (multiple-value-list
-                     (http-request
-                       (url-compose
-                         "https://graph.facebook.com/oauth/access_token"
-                         "client_id" *facebook-app-id*
-                         "redirect_uri" (s+ +base-url+ "settings/social")
-                         "client_secret" *facebook-secret*
-                         "code" (get-parameter "code"))
-                       :force-binary t))))
-        (cond
-          ((<= (second reply) 200)
-           (let* ((alist (quri.decode:url-decode-params
-                           (octets-to-string (first reply))))
-                  (token (cdr (assoc "access_token" alist :test #'string=)))
-                  (expires (+ now (parse-integer (cdr (assoc "expires" alist :test #'string=))))))
+  (unless *productionp*
+    (require-user
+      (when (get-parameter "code")
+        (let ((now (get-universal-time))
+              (reply (multiple-value-list
+                       (http-request
+                         (url-compose
+                           "https://graph.facebook.com/oauth/access_token"
+                           "client_id" *facebook-app-id*
+                           "redirect_uri" (s+ +base-url+ "settings/social")
+                           "client_secret" *facebook-secret*
+                           "code" (get-parameter "code"))
+                         :force-binary t))))
+          (cond
+            ((<= (second reply) 200)
+             (let* ((alist (quri.decode:url-decode-params
+                             (octets-to-string (first reply))))
+                    (token (cdr (assoc "access_token" alist :test #'string=)))
+                    (expires (+ now (parse-integer (cdr (assoc "expires" alist :test #'string=))))))
 
-             (modify-db *userid* :fbtoken token :fbexpires expires)
-             (unless (getf *user* :fb-id)
-               (modify-db *userid* :fb-id (get-facebook-user-id)))
-             
-           (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
-             (format s "~A ~A ~A~%" alist token expires))))
-          ((>= (second reply) 400)
-           (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
-             (format s "~S~%"
-                     (cdr (assoc :message
-                                 (cdr (assoc :error
-                                             (decode-json-octets (first reply)))))))))
-          (t
-           (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
-             (format s ":-(")))))
-      ; take this code + facebook private to make a token
-      )
+               (modify-db *userid* :fbtoken token :fbexpires expires)
+               (unless (getf *user* :fb-id)
+                 (modify-db *userid* :fb-id (get-facebook-user-id)))
+               
+             (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
+               (format s "~A ~A ~A~%" alist token expires))))
+            ((>= (second reply) 400)
+             (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
+               (format s "~S~%"
+                       (cdr (assoc :message
+                                   (cdr (assoc :error
+                                               (decode-json-octets (first reply)))))))))
+            (t
+             (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
+               (format s ":-(")))))
+        ; take this code + facebook private to make a token
+        )
 
-   (settings-template-html
-     (aif (get-parameter "groupid")
-       (url-compose "/settings/settings"
-                    "groupid" it)
-       "/settings/communication")
-     (html
-      (str (settings-tabs-html "social" (awhen groupid it)))
-      (:p "You can connect your Kindista account with Facebook to have Kindista automatically post your offers and requests to your Facebook timeline.")
-      (str (settings-item-html
-         "notifications"
-         (html
-           (when (get-parameter "error")
-             (htm (:p :class "error" "Connecting with Facebook had an error: " (str (get-parameter "error_description")))))
-           (:p (:a :class "blue"
-                   :href (url-compose "https://www.facebook.com/dialog/oauth"
-                                      "client_id" *facebook-app-id*
-                                      "scope" "public_profile,publish_actions"
-                                      "redirect_uri" (s+ +base-url+ "settings/social"))
-            "Log in to Facebook"))
-           (:p "Post to Facebook:")
-           (:ul
-             (:li (:input :type "checkbox"
-                   :name "offers"
-                   )
-                  "when you post an offer")
-             (:li (:input :type "checkbox"
-                   :name "requests"
-                   )
-                  "when you post a request")))
+     (settings-template-html
+       (aif (get-parameter "groupid")
+         (url-compose "/settings/settings"
+                      "groupid" it)
+         "/settings/communication")
+       (html
+        (str (settings-tabs-html "social" (awhen groupid it)))
+        (:p "You can connect your Kindista account with Facebook to have Kindista automatically post your offers and requests to your Facebook timeline.")
+        (str (settings-item-html
+           "notifications"
+           (html
+             (when (get-parameter "error")
+               (htm (:p :class "error" "Connecting with Facebook had an error: " (str (get-parameter "error_description")))))
+             (:p (:a :class "blue"
+                     :href (url-compose "https://www.facebook.com/dialog/oauth"
+                                        "client_id" *facebook-app-id*
+                                        "scope" "public_profile,publish_actions"
+                                        "redirect_uri" (s+ +base-url+ "settings/social"))
+              "Log in to Facebook"))
+             (:p "Post to Facebook:")
+             (:ul
+               (:li (:input :type "checkbox"
+                     :name "offers"
+                     )
+                    "when you post an offer")
+               (:li (:input :type "checkbox"
+                     :name "requests"
+                     )
+                    "when you post a request")))
 
-      :buttons (html (:button :class (s+ "yes " (when *user* "small"))
-                              :type "submit"
-                              :name "save-notifications"
-                        "Save preferences")
-                     (unless *user*
-                       (htm (:div (:a :class "blue" :href "/login"
-                                    "Log into Kindista")))))
-      :action "/settings/social"
-      :title "Facebook"
-      :editable t))))))
+        :buttons (html (:button :class (s+ "yes " (when *user* "small"))
+                                :type "submit"
+                                :name "save-notifications"
+                          "Save preferences")
+                       (unless *user*
+                         (htm (:div (:a :class "blue" :href "/login"
+                                      "Log into Kindista")))))
+        :action "/settings/social"
+        :title "Facebook"
+        :editable t)))))))
 
 (defun get-settings-communication ()
   (if *user*
