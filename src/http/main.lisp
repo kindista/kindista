@@ -430,6 +430,23 @@
                                   :access-log-destination (s+ +db-path+ "access")
                                   :message-log-destination (s+ +db-path+ "errors")))
 
+(defun get-item-by-id
+  (item-id
+   &aux (id (parse-integer item-id))
+        (item (db id)))
+  (flet ((redirect (typestring)
+           (see-other (strcat "/" typestring "/" id))))
+    (case (getf item :type)
+      (:person (redirect "people"))
+      (:offer (redirect "offers"))
+      (:request (redirect "requests"))
+      (:event (redirect "events"))
+      (:group (redirect "groups"))
+      (:conversation (redirect "conversations"))
+      (:transaction (redirect "transactions"))
+      (:gratitude (redirect "gratitude"))
+      (t (not-found)))))
+
 (defun page-header (&optional extra)
   (html
     (:div :id "header"
