@@ -65,15 +65,15 @@
          (userid (or (when verified-user unverified-userid)
                      *userid*))
          (self (eql userid by))
-         (facebook-item-id (when (string= (referer)
+         (fb-action-id (when (string= (referer)
                                           "https://www.facebook.com")
                              (get-parameter-integer "post_id")))
          (matchmaker-admin (matchmaker-admin-p))
          (result (gethash id *db-results*)))
 
-    (when (and facebook-item-id
-               (not (eql (getf request :facebook-id) facebook-item-id)))
-      (modify-db id :facebook-id facebook-item-id))
+    (when (and fb-action-id
+               (not (eql (getf request :fb-action-id) fb-action-id)))
+      (modify-db id :fb-action-id fb-action-id))
 
     (cond
      ((or (not request)

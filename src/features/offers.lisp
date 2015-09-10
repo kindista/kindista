@@ -51,14 +51,14 @@
          (by (getf offer :by))
          (mine (eql *userid* by))
          (result (gethash id *db-results*))
-         (facebook-item-id (when (string= (referer)
+         (fb-action-id (when (string= (referer)
                                           "https://www.facebook.com/")
                              (get-parameter-integer "post_id")))
          (matching-requests (gethash id *offers-with-matching-requests-index*)))
 
-    (when (and facebook-item-id
-               (not (eql (getf offer :facebook-id) facebook-item-id)))
-      (modify-db id :facebook-id facebook-item-id))
+    (when (and fb-action-id
+               (not (eql (getf offer :fb-action-id) fb-action-id)))
+      (modify-db id :fb-action-id fb-action-id))
 
     (cond
       ((or (not offer)

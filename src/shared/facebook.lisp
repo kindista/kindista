@@ -161,37 +161,35 @@
 (defun scrape-facebook-item
   (url-or-fb-id
    &aux (reply  (multiple-value-list
-                  (http-request
-                    "https://graph.facebook.com/"
-                    :parameters (list (cons "id"
-                                            (if (integerp url-or-fb-id)
-                                              (write-to-string url-or-fb-id)
-                                              url-or-fb-id))
-                                       (cons "access_token"
-                                             *facebook-app-token*)
-                                      '("scrape" . "true"))
-                    :method :post))))
+                  (with-facebook-credentials
+                    (http-request
+                      "https://graph.facebook.com/"
+                      :parameters (list (cons "id"
+                                              (if (integerp url-or-fb-id)
+                                                (write-to-string url-or-fb-id)
+                                                url-or-fb-id))
+                                         (cons "access_token"
+                                               *facebook-app-token*)
+                                        '("scrape" . "true"))
+                      :method :post)))))
 
   "Works the same as (update-facebook-object)"
   (when (= (second reply) 200)
     (decode-json-octets (first reply))))
 
 (defun delete-facebook-action
-  (fb-id
-   &aux (reply  (multiple-value-list
-                  (http-request
-                    (strcat "https://graph.facebook.com/" fb-id)
-                    :parameters (list (cons "access-token"
-                                            *facebook-app-token*)
-                                      '("method" . "DELETE")
-                                      )))))
- ;(when (= (second reply) 200)
- ;  (decode-json-octets (first reply)))
-  
-
+  (facebook-action-id
+   &aux (reply (multiple-value-list
+                 (with-facebook-credentials
+                   (http-request
+                     (strcat "https://graph.facebook.com/" facebook-action-id)
+                     :parameters (list (cons "access_token"
+                                             *facebook-app-token*)
+                                       '("method" . "DELETE")))))))
  (values
-   reply
-   (decode-json-octets (first reply)))
+   (decode-json-octets (first reply))
+   (second reply)
+   )
   )
 
 (defun get-facebook-app-token ()

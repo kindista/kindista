@@ -6,6 +6,7 @@ https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
 [ ] let users completely opt out of facebook integration (don't show them buttons for posting facebook stories)
 
 #Settings Page
+ - don't allow link to facebook when pending?
  - List of permissions possible to select:
    - publish_actions
     - user_managed_groups, manage_pages, publish_pages (under-development)

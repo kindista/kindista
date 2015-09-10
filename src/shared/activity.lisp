@@ -350,7 +350,10 @@
                                              :text "Request This"
                                              :image (icon "white-request"))))
                    :class (s+ type " inventory-item")
-                   :share-url (when (and self (not *productionp*))
+                   :share-url (when (and self
+                                         (getf *user* :fb-id)
+                                         (not (getf data :fb-action-id))
+                                         (not *productionp*))
                                 (url-compose
                                   "https://www.facebook.com/dialog/share_open_graph"
                                   "app_id" *facebook-app-id*

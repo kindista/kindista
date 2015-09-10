@@ -137,7 +137,9 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
-         (fb-id (getf data :facebook-id))
+         (fb-object-id (getf data :fb-object-id))
+         (fb-action-id (getf data :fb-action-id))
+         (fb-id (or fb-object-id fb-action-id))
          (by (getf data :by))
          (now (get-universal-time)))
 
@@ -190,13 +192,15 @@
 
       (cond
         ((and publish-facebook-p (not fb-id))
-         (setf (getf data :fb-id)
-               (publish-facebook-action id)))
+         (setf (getf data :fb-action-id)
+               (publish-facebook-action id))
+         (modify-db id :fb-object-id (get-facebook-object-id id)))
+
         ((and fb-id publish-facebook-p)
          (update-facebook-object id))
-        ((and (not publish-facebook-p) fb-id)
-         "delete from facebook"
-         ))
+
+        ((and (not publish-facebook-p) fb-action-id)
+         (delete-facebook-action fb-action-id)))
 
       (unless (and (getf *user* :admin)
                    (not (group-admin-p by))
@@ -204,9 +208,7 @@
         (refresh-item-time-in-indexes id :time now)
         (append data (list :edited now)))
 
-      (apply #'modify-db id data)
-
-      )
+      (apply #'modify-db id data))
 
     (case (result-type result)
       (:offer (update-matchmaker-offer-data id))
@@ -219,6 +221,7 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
+         (fb-action-id (getf data :fb-action-id))
          (by (getf data :by))
          (type-index (case type
                        (:offer *offer-index*)
@@ -283,7 +286,13 @@
         (with-mutex (*recent-activity-mutex*)
           (asetf *recent-activity-index* (remove id it :key #'result-id)))))
 
-    (modify-db id :active nil :violates-terms violates-terms)))
+    (when fb-action-id
+      (delete-facebook-action fb-action-id))
+
+    (modify-db id :active nil
+                  :deleted-fb-action-id fb-action-id
+                  :fb-action-id nil
+                  :violates-terms violates-terms)))
 
 (defun delete-pending-inventory-item (id)
   (let ((data (db id))
@@ -430,6 +439,10 @@
                 (see-other "/home"))
               (progn
                 (contact-opt-out-flash (list *userid*) :item-type type)
+
+                (when (post-parameter "publish-facebook")
+                  (publish-facebook-action new-id))
+
                 (flash
                   (s+ "Congratulations, your "
                       type
