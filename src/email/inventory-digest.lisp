@@ -221,6 +221,10 @@
                       *email-url*
                       "requests"
                        #\linefeed))
+
+           #\linefeed #\linefeed
+           *integrity-reminder*
+           #\linefeed #\linefeed
            (amazon-smile-reminder)
            (unsubscribe-notice-ps-text (getf user :unsubscribe-key)
                                        (car (getf user :emails))
@@ -279,6 +283,8 @@
                              more-requests
                              " more recent request"
                              (when (> more-requests 1) "s"))))))
+
+      (:p :style *style-p* (str *integrity-reminder*))
 
       (str (amazon-smile-reminder t))
 

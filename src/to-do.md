@@ -11,6 +11,10 @@
     - make sure that number is going down
 [ ] post offers/requests to facebook
 [ ] notify of contact adds
+[ ] accountability with user flaky-ness
+    - possible survey in transaction items to provide feedback re: experience
+      with the other party
+      - timeliness, enjoyment of interaction, etc.
 [ ] enable gratitude recipients to hide gratitudes
 [ ] better matching of search results
 [ ] add gratitude option for standard invitations

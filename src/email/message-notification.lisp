@@ -175,7 +175,10 @@ from (awhen group-name (s+ " from " it )) " says:"
 #\linefeed #\linefeed
 "Thank you for sharing your gifts with us!
 -The Kindista Team"
-#\linefeed #\linefeed #\linefeed
+#\linefeed #\linefeed
+(when (eql on-type :transaction)
+  (strcat "P.S. " *integrity-reminder* #\linefeed))
+#\linefeed
 (unsubscribe-notice-ps-text
   unsubscribe-key
   email
@@ -241,6 +244,10 @@ from (awhen group-name (s+ " from " it )) " says:"
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
 
       (:p "-The Kindista Team")
+
+      (when (eq on-type :transaction)
+        (htm (:p :style *style-p*
+                 "P.S. " (str *integrity-reminder*))))
 
       (str (unsubscribe-notice-ps-html
              unsubscribe-key
