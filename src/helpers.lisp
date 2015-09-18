@@ -653,7 +653,7 @@
       (:br))))
 
 (defparameter *integrity-reminder*
-  "Please don't be flaky. Clarity and integrity are essential for the wellbeing of our community. Be respectful of others and their time. Honor your word whenever possible. If plans change, notify the othe party as soon as possible.")
+  "Please don't be flaky. Clarity and integrity are essential for the wellbeing of our community. Be respectful of others and their time. Honor your word whenever possible. If plans change, notify the other party as soon as possible.")
 
 (defmacro v-align-middle (content)
   `(html
