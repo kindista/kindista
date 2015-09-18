@@ -198,7 +198,7 @@
     &aux (blog-id (parse-integer id))
          (data (db blog-id)))
 
-   (require-user
+   (require-user ()
      (acond
        ((not data)
         (not-found))

@@ -135,7 +135,7 @@
                                "Delete")))))))))))
 
 (defun post-new-image ()
-  (require-active-user
+  (require-user (:require-active-user t :allow-test-user t)
     (let* ((item-id (parse-integer (post-parameter "on")))
            (item (db item-id))
            (image (post-parameter "image"))
@@ -172,7 +172,7 @@
             (see-other url)))))))
 
 (defun post-existing-image (id)
-  (require-active-user
+  (require-user (:require-active-user t :allow-test-user t)
     (let* ((item-id (parse-integer (post-parameter "item-id")))
            (item (db item-id))
            (image-id (parse-integer id))

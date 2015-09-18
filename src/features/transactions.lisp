@@ -751,7 +751,7 @@
 
 (defun get-transaction (id)
 "when called, (modify-db conversation-id :people '((userid . this-comment-id) (other-user-id . whatever)))"
-  (require-user
+  (require-user ()
     (setf id (parse-integer id))
     (let* ((message (gethash id *db-messages*))
            (people (message-people message))

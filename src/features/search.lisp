@@ -882,7 +882,7 @@
                                        (s+ type extra-s))))))))))
 
 (defun get-search ()
-  (require-user
+  (require-user (:allow-test-user t)
     (send-metric* :used-search *userid*)
     (let ((scope (or (get-parameter "scope") "all"))
           (q (get-parameter "q")))

@@ -679,7 +679,7 @@
                        :gratitude-id gratitude-id)))
 
 (defun get-gratitudes-new ()
-  (require-user
+  (require-user ()
     (gratitude-compose :subjects (parse-subject-list (get-parameter "subject"))
                        :next (referer))))
 
@@ -952,7 +952,7 @@
 (defun get-gratitude (id)
   (setf id (parse-integer id))
   (aif (db id)
-    (require-user
+    (require-user (:allow-test-user t)
       (let* ((message (gethash id *db-messages*))
              (mailboxes (when message
                           (loop for person in (message-people message)
@@ -1008,7 +1008,7 @@
       (not-found))))
 
 (defun get-gratitude-edit (id)
-  (require-user
+  (require-user ()
     (let* ((gratitude (db (parse-integer id)))
            (author (getf gratitude :author))
            (adminp (group-admin-p author)))
@@ -1033,7 +1033,7 @@
                              :existing-url (s+ "/gratitude/" id "/edit")))))))
 
 (defun post-gratitude-edit (id)
-  (require-user
+  (require-user ()
     (let* ((gratitude (db (parse-integer id)))
            (author (getf gratitude :author)))
       (require-test ((or (eql *userid* author)

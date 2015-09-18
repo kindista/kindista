@@ -83,49 +83,50 @@
          (with-locked-hash-table (*request-index*)
            (push id (gethash by-id *request-index*))))
 
-       (when locationp
-         (let ((title-stems (stem-text (getf data :title)))
-               (details-stems (stem-text (getf data :details)))
-               (tag-stems (stem-text (separate-with-spaces
-                                       (getf data :tags)))))
+       (unless (getf by :test-user)
+         (when locationp
+           (let ((title-stems (stem-text (getf data :title)))
+                 (details-stems (stem-text (getf data :details)))
+                 (tag-stems (stem-text (separate-with-spaces
+                                         (getf data :tags)))))
+             (if (eq type :offer)
+               (with-locked-hash-table (*offer-stem-index*)
+                 (dolist (stem title-stems)
+                   (push result (getf (gethash stem *offer-stem-index*) :title)))
+                 (dolist (stem details-stems)
+                   (push result (getf (gethash stem *offer-stem-index*) :details)))
+                 (dolist (stem tag-stems)
+                   (push result (getf (gethash stem *offer-stem-index*) :tags))))
+
+               (with-locked-hash-table (*request-stem-index*)
+                 (dolist (stem title-stems)
+                   (push result (getf (gethash stem *request-stem-index*) :title)))
+                 (dolist (stem details-stems)
+                   (push result (getf (gethash stem *request-stem-index*) :details)))
+                 (dolist (stem tag-stems)
+                   (push result (getf (gethash stem *request-stem-index*) :tags))))))
+
            (if (eq type :offer)
-             (with-locked-hash-table (*offer-stem-index*)
-               (dolist (stem title-stems)
-                 (push result (getf (gethash stem *offer-stem-index*) :title)))
-               (dolist (stem details-stems)
-                 (push result (getf (gethash stem *offer-stem-index*) :details)))
-               (dolist (stem tag-stems)
-                 (push result (getf (gethash stem *offer-stem-index*) :tags))))
+             (geo-index-insert *offer-geo-index* result)
+             (geo-index-insert *request-geo-index* result))
 
-             (with-locked-hash-table (*request-stem-index*)
-               (dolist (stem title-stems)
-                 (push result (getf (gethash stem *request-stem-index*) :title)))
-               (dolist (stem details-stems)
-                 (push result (getf (gethash stem *request-stem-index*) :details)))
-               (dolist (stem tag-stems)
-                 (push result (getf (gethash stem *request-stem-index*) :tags))))))
+           ;; unless item is older than 180 days
+           (unless (< (result-time result) (- (get-universal-time) 15552000))
+             ;; unless item is older than 30 days
+             (unless (< (result-time result) (- (get-universal-time) 2592000))
+               (with-mutex (*recent-activity-mutex*)
+                 (push result *recent-activity-index*)))
+             (geo-index-insert *activity-geo-index* result)))
 
-         (if (eq type :offer)
-           (geo-index-insert *offer-geo-index* result)
-           (geo-index-insert *request-geo-index* result))
-
-         ;; unless item is older than 180 days
-         (unless (< (result-time result) (- (get-universal-time) 15552000))
-           ;; unless item is older than 30 days
-           (unless (< (result-time result) (- (get-universal-time) 2592000))
-             (with-mutex (*recent-activity-mutex*)
-               (push result *recent-activity-index*)))
-           (geo-index-insert *activity-geo-index* result)))
-
-       (when (eq type :request)
-         (if (or (getf data :match-all-terms)
-                 (getf data :match-any-terms))
-           (index-matchmaker id data)
-           (with-mutex (*requests-without-matchmakers-mutex*)
-             (safe-sort (push result
-                              *requests-without-matchmakers-index*)
-                        #'>
-                        :key #'result-time)))))
+         (when (eq type :request)
+           (if (or (getf data :match-all-terms)
+                   (getf data :match-any-terms))
+             (index-matchmaker id data)
+             (with-mutex (*requests-without-matchmakers-mutex*)
+               (safe-sort (push result
+                                *requests-without-matchmakers-index*)
+                          #'>
+                          :key #'result-time))))))
       (t
        (if (eq type :offer)
          (with-locked-hash-table (*account-inactive-offer-index*)
@@ -328,7 +329,7 @@
         from-name ", Kindista"))
 
 (defun post-new-inventory-item (type &key url)
-  (require-active-user
+  (require-user (:allow-test-user t :require-active-user t)
     (let* ((tags (post-parameter-string-list "tag"
                                              #'(lambda (tag)
                                                  (scan *tag-scanner* tag))))
@@ -473,7 +474,7 @@
   (see-other next))
 
 (defun post-existing-inventory-item (type &key id url)
-  (require-user
+  (require-user (:allow-test-user t)
     (let* ((id (parse-integer id))
            (item (db id))
            (by (getf item :by))
@@ -487,6 +488,14 @@
               (eql by *userid*)
               (getf *user* :admin))
          (deactivated-item-error (string-downcase (getf item :type))))
+
+        ((and (not (eql by *userid*))
+              (getf *user* :test-user))
+         (test-users-prohibited))
+
+        ((and (not (getf *user* :test-user))
+              (db by :test-user))
+         (disregard-test-data))
 
         ((and (not (eql by *userid*))
               (item-view-denied (result-privacy (gethash id *db-results*))))

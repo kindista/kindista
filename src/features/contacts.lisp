@@ -74,7 +74,7 @@
   (amodify-db *userid* :hidden-suggested-contacts (push  (cons contact-id (quick-rank contact-id)) it)))
 
 (defun post-contacts ()
-  (require-user
+  (require-user ()
     (let ((contacts (getf *user* :following)))
       (cond
         ((scan +number-scanner+ (post-parameter "add"))

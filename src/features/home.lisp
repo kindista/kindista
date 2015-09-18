@@ -153,7 +153,7 @@
           (:em "If you are travelling or do not have a permanent address, you may enter the city or location where you will be sleeping tonight. You can change your address at any time on the settings page.")
           (:p :class "small help-text"
             "Enter a street address and click \"Next\". We'll show you a map to confirm the location.")
-          (:form :method "post" :action "/settings"
+          (:form :method "post" :action "/settings/location"
             (:input :type "hidden"
                      :name "next"
                      :value "/home")

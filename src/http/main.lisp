@@ -74,6 +74,16 @@
   (flash "The page you requested is only available when you are logged in to Kindista." :error t)
   (see-other (url-compose "/login" "next" (url-encode (request-uri*)))))
 
+(defun test-users-prohibited ()
+  (flash "Sorry, this functionality is not available for test users."
+         :error t)
+  (see-other "/home"))
+
+(defun disregard-test-data ()
+  (flash "Sorry, the data requested is for testing purposes only."
+         :error t)
+  (see-other "/home"))
+
 (defun active-status-required ()
   (flash "Sorry, you must reactivate your account to perform that action." :error t)
   (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
@@ -215,23 +225,32 @@
                                                       :name (getf *user* :name))))))
        ,@body)))
 
-(defmacro require-user (&body body)
+(defmacro require-user
+  ((&key require-active-user
+         allow-test-user)
+   &body body)
   `(with-user
      (if *userid*
-       (if (getf *user* :banned)
-         (progn
-           (flash "This account has been suspended for posting inappropriate content or otherwise violating Kindista's Terms of Use.  If you believe this to be an error please email us so we can resolve this issue." :error t)
-           (get-logout))
-         (progn ,@body))
+       (cond
+         ((getf *user* :banned)
+          (progn
+            (flash "This account has been suspended for posting inappropriate content or otherwise violating Kindista's Terms of Use.  If you believe this to be an error please email us so we can resolve this issue." :error t)
+            (get-logout)))
+         ((and (getf *user* :test-user)
+               (not ,allow-test-user))
+          (test-users-prohibited))
+
+         ((and ,require-active-user
+               (not (getf *user* :active)))
+          (active-status-required))
+
+         (t (progn ,@body)))
+
        (login-required))))
 
 (defmacro require-active-user (&body body)
-  `(with-user
-     (if *userid*
-       (if (eq (getf *user* :active) t) 
-         (progn ,@body)
-         (active-status-required))
-       (login-required))))
+  `(require-user (:require-active-user t)
+     (progn ,@body)))
 
 (defmacro require-admin (&body body)
   `(with-user

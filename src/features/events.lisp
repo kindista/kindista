@@ -763,7 +763,7 @@
 (defun get-event (id)
   (setf id (parse-integer id))
   (aif (db id)
-    (require-user
+    (require-user (:allow-test-user t)
       (if (and (not (find *userid* (getf it :hosts)))
                (item-view-denied (result-privacy (gethash id *db-results*))))
         (permission-denied)

@@ -302,7 +302,7 @@
 
 (defun get-conversation (id)
 "when called, (modify-db conversation-id :people '((userid . this-comment-id) (other-user-id . whatever)))"
-  (require-user
+  (require-user ()
     (setf id (parse-integer id))
     (let* ((message (gethash id *db-messages*))
            (people (message-people message))
@@ -345,7 +345,7 @@
       (t (not-found))))))
 
 (defun get-conversation-leave (id)
-  (require-user
+  (require-user ()
     (setf id (parse-integer id))
     (let ((it (db id)))
       (if (and it (eql (getf it :type) :conversation))

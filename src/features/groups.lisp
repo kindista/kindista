@@ -1015,17 +1015,17 @@
     (group-activity-html id :type :gratitude)))
 
 (defun get-group-offers (id)
-  (require-user
+  (require-user (:allow-test-user t)
     (ensuring-userid (id "/groups/~a/offers")
       (group-activity-html id :type :offer))))
 
 (defun get-group-requests (id)
-  (require-user
+  (require-user (:allow-test-user t)
     (ensuring-userid (id "/groups/~a/requests")
       (group-activity-html id :type :request))))
 
 (defun get-group-members (id)
-  (require-user
+  (require-user (:allow-test-user t)
     (ensuring-userid (id "/groups/~a/members")
       (profile-group-members-html id))))
 
@@ -1251,7 +1251,7 @@
       )))
 
 (defun post-existing-group (id)
-  (require-user
+  (require-active-user
     (let* ((id (parse-integer id))
            (group (db id))
            (url (strcat "/groups/" (username-or-id id))))

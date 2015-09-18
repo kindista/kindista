@@ -635,7 +635,7 @@
             "Express Gratitude"))))))
 
 (defun get-messages ()
-  (require-user
+  (require-user ()
     (let ((mailbox (or (awhen (get-parameter "mailbox")
                          (parse-cons it))
                        (list *userid*))))
@@ -664,7 +664,7 @@
           message :read :last-read-comment (message-latest-comment message))))))
 
 (defun post-messages ()
-  (require-user
+  (require-active-user
     (let ((messages (loop for pair in (post-parameters*)
                           when (and (string= (car pair) "message-id")
                                     (scan +number-scanner+ (cdr pair)))

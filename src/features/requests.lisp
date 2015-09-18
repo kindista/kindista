@@ -32,7 +32,7 @@
           " at the top of the screen.")))))
 
 (defun get-requests-new ()
-  (require-user
+  (require-user (:allow-test-user t)
     (enter-inventory-tags :page-title "Post a request"
                           :action "/requests/new"
                           :button-text "Post request"
@@ -129,7 +129,7 @@
           :selected "requests"))))))
 
 (defun get-request-reply (id)
-  (require-user
+  (require-user ()
     (let* ((id (parse-integer id))
            (data (db id)))
       (if (eql (getf data :type) :request)

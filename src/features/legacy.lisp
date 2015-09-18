@@ -82,7 +82,7 @@
   (setf id (parse-integer id))
   (let ((it (db id)))
     (if (eq (getf it :type) :gift)
-      (require-user
+      (require-user ()
         (standard-page
           "Gifts"
           (html
@@ -118,15 +118,15 @@
       (not-found))))
 
 (defun post-gift (id)
-  (require-active-user
-    (setf id (parse-integer id)) 
+  (require-user (:require-active-user t)
+    (setf id (parse-integer id))
     (aif (db id)
       (cond
         ((post-parameter "text")
          (create-comment :on id :text (post-parameter "text"))
          (see-other (script-name*)))
         ((and (post-parameter "delete")
-              (eql *userid* (getf data :giver)))
+              (eql *userid* (getf it :giver)))
          (delete-gift id)
          (flash "This gift has been deleted.")
          (see-other (or (post-parameter "next") (referer))))

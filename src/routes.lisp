@@ -257,6 +257,9 @@
   ("/settings/verify-address"
     :get get-verify-address)
 
+  ("/settings/location"
+    :post post-settings-location)
+
   ("/settings/ccard"
     :post post-settings-ccard)
 

@@ -82,7 +82,7 @@
   (gethash id *comment-index*))
 
 (defun get-comment-delete (id)
-  (require-user
+  (require-user ()
     (setf id (parse-integer id))
     (let ((it (db id)))
       (if (eq (getf it :type) :comment)
@@ -90,7 +90,7 @@
         (not-found)))))
 
 (defun post-comment (id)
-  (require-user
+  (require-user ()
     (setf id (parse-integer id))
     (let ((it (db id)))
       (if (eq (getf it :type) :comment)

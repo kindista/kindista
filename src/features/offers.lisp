@@ -35,7 +35,7 @@
           " at the top of the screen.")))))
 
 (defun get-offers-new ()
-  (require-user
+  (require-user (:allow-test-user t)
     (enter-inventory-tags :page-title "Post an offer"
                           :action "/offers/new"
                           :button-text "Post offer"
@@ -96,7 +96,7 @@
           :selected "offers"))))))
 
 (defun get-offer-reply (id)
-  (require-user
+  (require-user ()
     (let* ((id (parse-integer id))
            (data (db id)))
       (if (eql (getf data :type) :offer)
