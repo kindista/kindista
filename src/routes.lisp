@@ -142,7 +142,7 @@
    :get get-events-new
    :post post-event)
 
-  ("/events/<int:id>"
+  ("/events/<id>"
     :get get-event
     :post post-event)
 

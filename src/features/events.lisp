@@ -36,7 +36,7 @@
         (push id events))))
   (sort events #'>))
 
-(defun create-event (&key (host *userid*) lat long title details privacy local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date)
+(defun create-event (&key (host *userid*) lat long title details privacy local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date custom-url)
   (insert-db (remove-nil-plist-pairs (list :type :event
                                            :hosts (list host)
                                            :lat lat
@@ -53,8 +53,36 @@
                                            :by-day-or-date by-day-or-date
                                            :weeks-of-month weeks-of-month
                                            :local-end-date local-end-date
+                                           :custom-url custom-url
                                            :active t
                                            :created (get-universal-time)))))
+
+(defmacro ensuring-eventid ((event-id base-url) &body body)
+  (let ((is-number (gensym))
+        (custom-url (gensym))
+        (event-data (gensym)))
+    `(let ((,is-number (scan +number-scanner+ ,event-id)))
+       (if ,is-number
+         (let* ((,event-id (parse-integer ,event-id))
+                (,event-data (db ,event-id))
+                (,custom-url (getf ,event-data :custom-url)))
+           (cond
+            ((not ,event-data)
+             (not-found))
+
+            (,custom-url
+             (see-other (apply #'url-compose
+                               (format nil ,base-url ,custom-url)
+                               (flatten (get-parameters*)))))
+            (t (progn ,@body))))
+         (let ((,event-id (gethash ,event-id *eventname-index*)))
+           (if ,event-id
+             (progn ,@body)
+             (not-found)))))))
+
+(defun eventname-or-id (id &aux (event (db id)))
+  (or (getf event :custom-url)
+      (write-to-string id)))
 
 (defun stale-eventp (item &optional time)
   (let ((staleness (- (or (result-time item) 0)
@@ -96,6 +124,8 @@
        (event-index-insert result)
        (geo-index-insert *event-geo-index* result)))
 
+    (awhen (getf data :custom-url)
+      (setf (gethash it *eventname-index*) id))
 
     (when (getf data :active)
       (let ((stems (stem-text (s+ (getf data :title) " " (getf data :details)))))
@@ -557,7 +587,7 @@
              (str (day-or-date-selector)) ))))))))
 
 (defun enter-event-details
-  (&key error date time location title restrictedp (identity-selection *userid*) groups-selected details existing-url recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date local-day-of-week editing-schedule
+  (&key error date time location title restrictedp (identity-selection *userid*) groups-selected details existing-url custom-url recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date local-day-of-week editing-schedule
    &aux (groups-with-user-as-admin (groups-with-user-as-admin)))
   (standard-page
     (if existing-url "Edit your event details" "Create a new event")
@@ -700,6 +730,16 @@
                    :placeholder "ex: Community Garden Work Party"
                    :value (awhen title (escape-for-html it))))
 
+         (when (getf *user* :admin)
+           (htm
+             (:div :class "long"
+               (:label :for "custom-url" "Custom Url")
+               (:input :type "text"
+                       :id "custom-url"
+                       :name "custom-url"
+                       :placeholder "ex: 2015-Eugene-Holiday-Free-Market"
+                       :value (awhen custom-url (escape-for-html it))))))
+
          (when (and (not existing-url) groups-with-user-as-admin)
            (htm (:label :for "identity-selection" "Posted by")
                 (str (identity-selection-html identity-selection
@@ -761,18 +801,16 @@
                          "Create"))))))))
 
 (defun get-event (id)
-  (setf id (parse-integer id))
-  (aif (db id)
-    (require-user
-      (if (and (not (find *userid* (getf it :hosts)))
-               (item-view-denied (result-privacy (gethash id *db-results*))))
-        (permission-denied)
-        (standard-page
-          "Event"
-          (html
-            (str (event-activity-item (gethash id *db-results*))))
-          :selected "events")))
-      (not-found)))
+  (ensuring-eventid (id "/events/~a")
+    (if (and (not (find *userid* (remove nil ;just in case
+                                         (db id :hosts))))
+             (item-view-denied (result-privacy (gethash id *db-results*))))
+      (permission-denied)
+      (standard-page
+        "Event"
+        (html
+          (str (event-activity-item (gethash id *db-results*))))
+        :selected "events"))))
 
 (defun post-event (&optional id)
   (require-active-user
@@ -829,6 +867,10 @@
                                       (getf item :local-end-date)))
                   (title (or (post-parameter-string "title")
                              (getf item :title)))
+                  (custom-url (or (when (getf *user* :admin)
+                                    (hyphenate
+                                      (post-parameter-string "custom-url")))
+                                  (getf item :custom-url)))
                   (details (or (post-parameter-string "details")
                                (getf item :details)))
                   (location (or (post-parameter-string "location")
@@ -905,6 +947,7 @@
              (labels ((submit-event (fn &key host id)
                         (let ((arguments (list :lat lat
                                                :long long
+                                               :custom-url custom-url
                                                :local-time local-time
                                                :privacy groups-selected
                                                :title title
@@ -934,6 +977,7 @@
               ;; submit-data's parameter precedence
                         (enter-event-details :title title
                                              :existing-url url
+                                             :custom-url custom-url
                                              :details details
                                              :location location
                                              :recurring (unless not-recurring
