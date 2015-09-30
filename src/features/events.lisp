@@ -733,7 +733,7 @@
          (when (getf *user* :admin)
            (htm
              (:div :class "long"
-               (:label :for "custom-url" "Custom Url")
+               (:label :for "custom-url" "Custom Url (Optional. For major events only.)")
                (:input :type "text"
                        :id "custom-url"
                        :name "custom-url"
@@ -868,8 +868,8 @@
                   (title (or (post-parameter-string "title")
                              (getf item :title)))
                   (custom-url (or (when (getf *user* :admin)
-                                    (hyphenate
-                                      (post-parameter-string "custom-url")))
+                                    (awhen (post-parameter-string "custom-url")
+                                      (hyphenate it)))
                                   (getf item :custom-url)))
                   (details (or (post-parameter-string "details")
                                (getf item :details)))
@@ -1103,6 +1103,7 @@
                                        longitude
                                        "location" address
                                        "title" title
+                                       "custom-url" custom-url
                                        "details" details
                                        "date" date
                                        "time" time
