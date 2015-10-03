@@ -125,7 +125,8 @@
        (geo-index-insert *event-geo-index* result)))
 
     (awhen (getf data :custom-url)
-      (setf (gethash it *eventname-index*) id))
+      (with-locked-hash-table (*eventname-index*)
+        (setf (gethash it *eventname-index*) id)))
 
     (when (getf data :active)
       (let ((stems (stem-text (s+ (getf data :title) " " (getf data :details)))))
@@ -133,20 +134,20 @@
           (dolist (stem stems)
             (push result (gethash stem *event-stem-index*))))))))
 
-(defun modify-event (id &key lat long title details privacy local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date)
+(defun modify-event (id &key lat long title custom-url details privacy local-time address recurring frequency interval days-of-week by-day-or-date weeks-of-month local-end-date)
   (bind-db-parameters
     (event id
-     (address title details privacy lat long recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date auto-updated-time local-time)
+     (address title details custom-url privacy lat long recurring frequency interval days-of-week by-day-or-date weeks-of-month end-date auto-updated-time local-time)
      old
      result)
     (let ((auto-updated-time)
           (now (get-universal-time))
-          (new-data (or (eq recurring old-recurring)
-                        (equal frequency old-frequency)
-                        (equal interval old-interval)
-                        (equal days-of-week old-days-of-week)
-                        (equal by-day-or-date old-by-day-or-date)
-                        (equal weeks-of-month old-weeks-of-month))))
+          (new-data (or (not (eq recurring old-recurring))
+                        (not (equal frequency old-frequency))
+                        (not (equal interval old-interval))
+                        (not (equal days-of-week old-days-of-week))
+                        (not (equal by-day-or-date old-by-day-or-date))
+                        (not (equal weeks-of-month old-weeks-of-month)))))
 
       (when (or (and lat (not (eql lat old-lat)))
                 (and long (not (eql long old-long))))
@@ -180,6 +181,11 @@
         (event-index-update result)
         (setf new-data t))
 
+      (when (not (equalp custom-url old-custom-url))
+        (with-locked-hash-table (*eventname-index*)
+          (remhash old-custom-url *eventname-index*)
+          (setf (gethash custom-url *eventname-index*) id)))
+
       (unless (eql old-privacy privacy)
         (setf (result-privacy result) privacy)
         (setf new-data t))
@@ -187,6 +193,7 @@
       (when new-data
         (modify-db id :title (or title old-title)
                       :details (or details old-details)
+                      :custom-url (or custom-url old-custom-url)
                       :lat (or lat old-lat)
                       :long (or long old-long)
                       :address (or address old-address)
@@ -1016,6 +1023,11 @@
                (cond
                 ((post-parameter "cancel")
                  (see-other (or (script-name*) "/home")))
+
+                ((and custom-url
+                      (gethash custom-url *eventname-index*))
+                 (try-again "This custom-url is already in use. Please use a different one."))
+
 
                 ((and (string= (post-parameter "frequency") "weekly")
                       (post-parameter "interval")
