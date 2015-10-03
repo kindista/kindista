@@ -1025,7 +1025,9 @@
                  (see-other (or (script-name*) "/home")))
 
                 ((and custom-url
-                      (gethash custom-url *eventname-index*))
+                      (gethash custom-url *eventname-index*)
+                      (not (eql (gethash custom-url *eventname-index*)
+                                id)))
                  (try-again "This custom-url is already in use. Please use a different one."))
 
 
