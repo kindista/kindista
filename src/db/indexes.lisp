@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -38,6 +38,7 @@
         *feedback-index* ()
         *global-matchmaker-requests-index* ()
         *invitation-reminder-timer-index* ()
+        *inventory-expiration-timer-index* ()
         *invite-request-index* ()
         *recent-activity-index* ()
         *requests-without-matchmakers-index* ()
@@ -111,6 +112,8 @@
 (defvar *global-matchmaker-requests-index* ())
 (defvar *invitation-reminder-timer-mutex* (make-mutex))
 (defvar *invitation-reminder-timer-index* ())
+(defvar *inventory-expiration-timer-mutex* (make-mutex))
+(defvar *inventory-expiration-timer-index* ())
 (defvar *invite-request-mutex* (make-mutex))
 (defvar *invite-request-index* ())
 (defvar *recent-activity-mutex* (make-mutex))
