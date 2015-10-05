@@ -278,6 +278,9 @@ textarea {
 #about p, #about p a {
  font-family: georgia,serif;
 }
+body.about h3 {
+ margin-top: 1.6em;
+}
 
 .landing form {
  width:90%;
@@ -1662,14 +1665,21 @@ form.matchmaker,
 div.privacy-selection-details,
 div.recurring-event-details,
 tr.select-linked-inventory div.option-text,
+div.cancel-transaction div.details,
 blockquote {
  margin: 0;
  background: #f8f8f8;
  padding: .5em;
+ max-width: 50em;
  border-radius: .25em;
  border-style: solid;
  border-width: 1px;
  border-color: #bbb;
+}
+
+div.cancel-transaction div.details {
+ margin-top: 1em;
+ font-weight: bold;
 }
 
 div.error-border,

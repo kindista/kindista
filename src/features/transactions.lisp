@@ -512,7 +512,10 @@
          (htm (:div :class "transaction-option"
                  (:a :href (url-compose url "add-comment" "t")
                    (:div (str (icon "comment")))
-                   (:div "I have a question or comment"))))))))
+                   (:div (str (s+ "Reply to "
+                                  other-party-name
+                                  " about this "
+                                  (string-downcase (symbol-name on-type))))))))))))
 
 (defun transaction-html
   (transaction-id
@@ -960,12 +963,13 @@
 
                 ((eq action :withheld)
                  (confirm-action
-                   "Withhold Gift"
-                   (strcat "Please confirm that you no longer wish to give this gift to "
+                   "Cancel Transaction"
+                   (strcat "Please confirm that you no longer intend to give this gift to "
                            (case (getf inventory-item :type)
                              (:request (db (getf inventory-item :by) :name))
                              (:offer (db (getf transaction :by) :name)))
                            ":")
+                   :class "cancel-transaction"
                    :url url
                    :next-url url
                    :details (or (getf inventory-item :title)

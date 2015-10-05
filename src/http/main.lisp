@@ -690,7 +690,7 @@
       (:div :class class
         (:h2 (str text))
         (when details
-          (htm (:div (str details))))
+          (htm (:div :class "details" (str details))))
         (when fine-print
           (htm (:div :class "fine-print" (str fine-print))))
         (:form :method "post" :action url :class "item confirm-delete"

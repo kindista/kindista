@@ -30,6 +30,7 @@
         (str (help-tabs-html :tab :about))
         (str *about-html*))
       :selected "faq"
+      :class "about"
       :right (html
                (str (donate-sidebar))
                (str (invite-sidebar))))))
