@@ -16,6 +16,7 @@
       with the other party
       - timeliness, enjoyment of interaction, etc.
 [ ] enable gratitude recipients to hide gratitudes
+[ ] allow people to offer or request items anonymously
 [ ] better matching of search results
 [ ] add gratitude option for standard invitations
 [ ] email preferences for deactivated accounts
