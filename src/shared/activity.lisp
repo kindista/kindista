@@ -144,7 +144,7 @@
         ;    " &middot; "
         ;    (str (flag-button url))))))))
 
-(defun event-activity-item (result &key sidebar truncate (show-distance nil) time date)
+(defun event-activity-item (result &key featuredp sidebar truncate (show-distance nil) time date)
   (let* ((host (first (result-people result)))
          (item-id (result-id result))
          (data (db item-id))
@@ -155,9 +155,9 @@
          (item-url (strcat "/events/" item-id)))
 
     (activity-item
-      :id (strcat item-id ":" date)
+      :id (strcat item-id ":" (or date local-time))
       :url item-url
-      :class "event"
+      :class (strcat* (when featuredp "featured ") "event")
       :edit (or (eql host *userid*)
                 group-adminp
                 (getf *user* :admin))
@@ -195,10 +195,10 @@
                          (:td (:strong "Schedule: "))
                          (:td
                            (str
-                             (recurring-event-schedule item-id
-                                                       data
-                                                       (string= (script-name*)
-                                                                item-url)))))))
+                             (recurring-event-schedule
+                               item-id
+                               data
+                               (string= (script-name*) item-url)))))))
                    (:tr
                      (:td (:strong "Place: "))
                      (:td (str (getf data :address))

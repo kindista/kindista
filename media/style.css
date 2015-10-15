@@ -1779,7 +1779,7 @@ h3.event-date, h3.my-invites {
 
 .event.item.right a.add {
  display: block;
- margin: 0.5em 0 0.8em 0;
+ margin: 0.4em 0 0.6em 0;
  font-weight: bold;
 }
 
@@ -1942,11 +1942,21 @@ table.messages {
  border-bottom: none;
 }
 
+.featured.events.item,
 div.suggested-items.card {
  background: #fbf4d7;
  border-radius: 0.5em;
  padding-bottom: 0;
  margin-bottom: 1em;
+}
+
+.featured.event.card,
+.featured.header h3 {
+ padding: 0 0.3em;
+}
+
+div.right .featured.header h3 {
+ line-height: 1.5em;
 }
 
 div.suggested-items > div:last-child {
@@ -1967,7 +1977,7 @@ div.match-details p.match-reason {
 }
 
 div.suggested-items div.match-details,
-div.suggested-items div.match-header {
+div.suggested-items div.featured.header {
  padding: 0 0.7em;
 }
 
@@ -1980,13 +1990,22 @@ div.suggested-items .actions {
  margin: 0 0 0.4em;
 }
 
-div.featured.match-header {
+div.featured.header {
  background: #D6C994;
 }
 
-div.featured.match-header h3 {
+div.featured.events div.header {
+ border-top-left-radius:0.5em;
+ border-top-right-radius:0.5em;
+}
+
+div.featured.header h2 {
  font-size: 1.2em;
  display: inline;
+}
+
+div.featured.header h3,
+div.featured.header h2 {
  color: #fff;
 }
 
@@ -1994,10 +2013,10 @@ div.inventory-match {
  position: relative;
 }
 
-div.match-header button.simple-link {
+div.featured.header button.simple-link {
  text-shadow: none;
  padding: 0;
- margin: 0 0 0 0.4em;
+ margin: 0.3em 0 0 0.4em;
  font-size: 0.83em;
  font-weight: bold;
 }

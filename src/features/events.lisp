@@ -75,7 +75,7 @@
                                (format nil ,base-url ,custom-url)
                                (flatten (get-parameters*)))))
             (t (progn ,@body))))
-         (let ((,event-id (gethash ,event-id *eventname-index*)))
+         (let ((,event-id (result-id (gethash ,event-id *eventname-index*))))
            (if ,event-id
              (progn ,@body)
              (not-found)))))))
@@ -126,7 +126,7 @@
 
     (awhen (getf data :custom-url)
       (with-locked-hash-table (*eventname-index*)
-        (setf (gethash it *eventname-index*) id)))
+        (setf (gethash it *eventname-index*) result)))
 
     (when (getf data :active)
       (let ((stems (stem-text (s+ (getf data :title) " " (getf data :details)))))
@@ -184,7 +184,7 @@
       (when (not (equalp custom-url old-custom-url))
         (with-locked-hash-table (*eventname-index*)
           (remhash old-custom-url *eventname-index*)
-          (setf (gethash custom-url *eventname-index*) id)))
+          (setf (gethash custom-url *eventname-index*) result)))
 
       (unless (eql old-privacy privacy)
         (setf (result-privacy result) privacy)
@@ -345,7 +345,8 @@
             (s+ " until "
                 (caddr (multiple-value-list (humanize-exact-time end-date)))))))))
 
-(defun upcoming-events (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
+(defun upcoming-events-html
+  (items &key (page 0) (count 20) paginate (url "/events") (location t) (sidebar nil))
   (let ((start (* page count))
         (calendar-date nil))
     (html
@@ -397,7 +398,7 @@
                      (htm
                        (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >")))))))))))
 
-(defun populate-calendar (items &key (page 0) (count 20) paginate url (location t) (sidebar nil))
+(defun populate-calendar (items)
   (let (event-list)
     (flet ((add-event-occurance (result)
              (asetf event-list (stable-sort (copy-list (push result it)) #'< :key #'result-time))))
@@ -429,14 +430,9 @@
 
            (add-event-occurance item)))))
 
-    (upcoming-events event-list :page page
-                                :count count
-                                :url url
-                                :sidebar sidebar
-                                :paginate paginate
-                                :location location)))
+    event-list))
 
-(defun local-upcoming-events (&key (page 0) (count 20) (url "/events") (paginate t) (sidebar nil))
+(defun local-upcoming-events ()
   (with-location
     (let* ((distance (user-distance))
            (now (get-universal-time))
@@ -446,7 +442,9 @@
                                                 *latitude*
                                                 *longitude*
                                                 distance)
-                                #'< :key #'result-time)))
+                                #'< :key #'result-time))
+           (featured-events)
+           (featured-local-events))
 
       (flet ((trim-and-update (results)
                ;; loop through results starting at oldest
@@ -475,16 +473,19 @@
                         (with-mutex (*event-mutex*)
                           (asetf *event-index* (remove event it)))))))))
 
-        (populate-calendar (remove-private-items
-                             (trim-and-update
-                               (if global-search
-                                 *event-index*
-                                 local-events)))
-                           :page page
-                           :count count
-                           :url url
-                           :sidebar sidebar
-                           :paginate paginate)))))
+        (setf local-events (populate-calendar (remove-private-items
+                                                (trim-and-update
+                                                  (if global-search
+                                                    *event-index*
+                                                    local-events)))))
+        (setf featured-events (remove-if (lambda (time)
+                                           (< time now))
+                                         (hash-table-values *eventname-index*)
+                                         :key #'result-time))
+        (setf featured-local-events
+              (intersection local-events featured-events))
+
+        (values local-events featured-local-events)))))
 
 (defun events-rightbar ()
   (html
@@ -846,7 +847,8 @@
                             (getf *user* :admin))
                        (s+ "You can only edit your own events."))
 
-           (let* ((old-datetime (when item
+           (let* ((result (gethash id *db-results*))
+                  (old-datetime (when item
                                   (multiple-value-list
                                     (humanize-exact-time
                                       (or (getf item :auto-updated-time)
@@ -1026,8 +1028,8 @@
 
                 ((and custom-url
                       (gethash custom-url *eventname-index*)
-                      (not (eql (gethash custom-url *eventname-index*)
-                                id)))
+                      (not (eq (gethash custom-url *eventname-index*)
+                               result)))
                  (try-again "This custom-url is already in use. Please use a different one."))
 
 
@@ -1140,7 +1142,10 @@
 
                 (t (try-again)))))))))))
 
-(defun get-events-all ()
+(defun get-events-all
+  (&aux (page (if (scan +number-scanner+ (get-parameter "p"))
+                (parse-integer (get-parameter "p"))
+                0)) )
   (standard-page
     "Events"
       (html
@@ -1150,12 +1155,28 @@
           (str (distance-selection-html "/events"
                                         :text "show events within "
                                         :class "item"))
-          (let* ((page (if (scan +number-scanner+ (get-parameter "p"))
-                         (parse-integer (get-parameter "p"))
-                         0))
-                 (events (local-upcoming-events :page page)))
-            (str events)
-            (if (string= events "")
+          (multiple-value-bind (events featured-events)
+            (local-upcoming-events)
+            (when (and (= page 0)
+                       featured-events)
+              (htm
+                (:div :class "featured events item"
+                  (:div :class "featured header"
+                    (:h3 (str (pluralize featured-events
+                                        "Featured Event"
+                                        :hidenum t))))
+                 (dolist (fevent featured-events)
+                   (str (event-activity-item fevent
+                                             :featuredp t
+                                             :truncate t))))))
+            (str (upcoming-events-html
+                   (if (> page 0)
+                     events
+                     (remove-if (lambda (result) (find result featured-events))
+                                events))
+                   :paginate t
+                   :page page))
+            (unless events
               (htm
                 (:p :class "small"
                  "There are not any events posted in your area at this time. "

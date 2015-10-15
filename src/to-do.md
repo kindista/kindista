@@ -1,3 +1,11 @@
+[ ] make people go to the site to read their messages/gratitudes
+    - track number of unread messages/per user
+    - make sure that number is going down
+[ ] expiration/renewals for inventory items
+[ ] accountability with user flaky-ness
+    - possible survey in transaction items to provide feedback re: experience
+      with the other party
+      - timeliness, enjoyment of interaction, etc.
 [ ] group invite notification for new accounts
 [ ] fix group notifications for new group admins
 [ ] make sure blog/kindista/etc mailings don't go out to (db id :active nil) users
@@ -5,16 +13,8 @@
         let them know that they won't be shown on their profile until they
         reactivate? (if this is so, then email should remind of this detail)
 [ ] check functionality of (token-last-seen token)
-[ ] expiration/renewals for inventory items
-[ ] make people go to the site to read their messages/gratitudes
-    - track number of unread messages/per user
-    - make sure that number is going down
 [ ] post offers/requests to facebook
 [ ] notify of contact adds
-[ ] accountability with user flaky-ness
-    - possible survey in transaction items to provide feedback re: experience
-      with the other party
-      - timeliness, enjoyment of interaction, etc.
 [ ] enable gratitude recipients to hide gratitudes
 [ ] allow people to offer or request items anonymously
 [ ] better matching of search results

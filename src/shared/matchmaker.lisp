@@ -642,7 +642,7 @@
   (html
     (:div
       (:div :class (s+ (when (and featured (not mine)) "featured ")
-                       "match-header")
+                       "header")
        (if mine
          (htm
            (:p "...matches a "
@@ -652,7 +652,7 @@
          (when (or offer-id featured)
            (htm
              (when featured
-               (htm (:h3 "Will you respond to this request?...")))
+               (htm (:h2 "Will you respond to this request?...")))
 
              (when offer-id
                (htm
@@ -740,7 +740,7 @@
   (html
     (:div
       (:div :class (s+ (when (and featured (not mine)) "featured ")
-                       "match-header")
+                       "header")
        (if mine
          (htm
            (:p "...matches an "
@@ -748,7 +748,7 @@
             " by "
             (str (person-link by))))
          (htm
-           (when featured (htm (:h3 "Featured offer")))
+           (when featured (htm (:h2 "Featured offer")))
 
            (:form :method "post"
             :action (strcat "/requests/" request-id "/matchmaker")
