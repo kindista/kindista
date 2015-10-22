@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -22,7 +22,7 @@
          (on-id (getf comment :on))
          (on-item (db on-id))  ; get the conversation
          (on-type (getf on-item :type)) ; :converation or :transaction
-         (participants (getf on-item :participants))
+        ;(participants (getf on-item :participants))
          (inventory-item (db (getf on-item :on))) ; when transaction, get inventory item
          (inventory-type (if (eq (getf inventory-item :type) :request)
                            "request" "offer"))
@@ -80,49 +80,46 @@
                      :key #'car)))
          (all-recipients (append valid-recipient-people
                                  valid-recipient-group-admins))
-         (deleted-item-type (getf on-item :deleted-item-type))
-         (text (if (and deleted-item-type
-                        (eql comment-id (apply #'min (gethash on-id *comment-index*))))
-                 (deleted-invalid-item-reply-text
-                   (db (car (remove sender-id participants)) :name)
-                   sender-name
-                   deleted-item-type
-                   (getf comment :text))
-                 (getf comment :text))))
+        ;(deleted-item-type (getf on-item :deleted-item-type))
+        ;(text (if (and deleted-item-type
+        ;               (eql comment-id (apply #'min (gethash on-id *comment-index*))))
+        ;        (deleted-invalid-item-reply-text
+        ;          (db (car (remove sender-id participants)) :name)
+        ;          sender-name
+        ;          deleted-item-type
+        ;          (getf comment :text))
+        ;        (getf comment :text)))
+         )
 
     (flet ((subject-text (groupid)
              (if (eq on-type :transaction)
-               (if (eql sender-id inventory-poster)
-                 (s+ sender-name " has replied to your question about their " inventory-type ":")
-                 (s+ sender-name " has replied to "
-                     (aif groupid
-                       (s+ (db it :name) "'s ")
-                       "your ")
-                     inventory-type ":"))
-               (or (getf on-item :subject)
-                   (s+ "New message from " sender-name)))))
+               (s+ sender-name
+                   " has replied to "
+                 (if (eql sender-id inventory-poster)
+                   " your message about their "
+                   (aif groupid (s+ (db it :name) "'s ") "your "))
+                   inventory-type ":")
+               (s+ "New message from " sender-name " on Kindista"))))
 
       (dolist (recipient all-recipients)
         (let* ((groupid (cdar recipient))
                (person (cdr recipient))
                (email (car (getf person :emails)))
                (unsub-key (getf person :unsubscribe-key))
-               (people (name-list (remove (caar recipient)
-                                          participants)
-                                  :func #'person-name
-                                  :maximum-links 5))
+              ;(people (name-list (remove (caar recipient)
+              ;                           participants)
+              ;                   :func #'person-name
+              ;                   :maximum-links 5))
                (subject (subject-text groupid)))
 
           (cl-smtp:send-email
             +mail-server+
-            "PleaseDoNotReply <noreply@kindista.org>"
+            "Kindista <noreply@kindista.org>"
             email
             subject
             (comment-notification-email-text on-id
                                              sender-name
                                              subject
-                                             people
-                                             text
                                              :email email
                                              :unsubscribe-key unsub-key
                                              :group-name (getf sender-group
@@ -132,10 +129,7 @@
                                              :inventory-text inventory-text)
             :html-message (comment-notification-email-html
                             on-id
-                            sender-name
                             subject
-                            people
-                            text
                             :email email
                             :unsubscribe-key unsub-key
                             :group-name (getf sender-group :name)
@@ -147,8 +141,6 @@
   (on-id
    from
    subject
-   people
-   text
    &key inventory-text
         email
         unsubscribe-key
@@ -156,44 +148,38 @@
         groupid
         on-type)
   (strcat*
-(no-reply-notice)
-"You can also reply to this message by clicking on the link below."
-#\linefeed #\linefeed
-"A conversation with " people
-#\linefeed #\linefeed
-"Subject: " subject
-(awhen inventory-text
-  (strcat #\linefeed it #\linefeed))
-#\linefeed #\linefeed
-from (awhen group-name (s+ " from " it )) " says:"
-#\linefeed #\linefeed
-"\"" text "\""
-#\linefeed #\linefeed
-"You can see the conversation on Kindista here:"
-#\linefeed
-(strcat *email-url* (if (eq on-type :transaction) "transactions/" "conversations/") on-id)
-#\linefeed #\linefeed
-"Thank you for sharing your gifts with us!
--The Kindista Team"
-#\linefeed #\linefeed
-(when (eql on-type :transaction)
-  (strcat "P.S. " *integrity-reminder* #\linefeed))
-#\linefeed
-(unsubscribe-notice-ps-text
-  unsubscribe-key
-  email
-  (s+ "notifications when people send "
-      (or group-name "you")
-      " messages through Kindista")
-  :groupid groupid)))
+    subject
+    (awhen inventory-text
+      (strcat #\linefeed it #\linefeed))
+   ;#\linefeed #\linefeed
+   ;from (awhen group-name (s+ " from " it )) " says:"
+   ;#\linefeed #\linefeed
+   ;"\"" text "\""
+    #\linefeed #\linefeed
+    "You can read "
+    from
+    "'s message here :"
+    #\linefeed
+    (strcat *email-url* (if (eq on-type :transaction) "transactions/" "conversations/") on-id)
+    #\linefeed #\linefeed
+    "Thank you for sharing your gifts with us!
+    -The Kindista Team"
+    #\linefeed #\linefeed
+    (when (eql on-type :transaction)
+      (strcat "P.S. " *integrity-reminder* #\linefeed))
+    #\linefeed
+    (unsubscribe-notice-ps-text
+      unsubscribe-key
+      email
+      (s+ "notifications when people send "
+          (or group-name "you")
+          " messages through Kindista")
+      :groupid groupid)))
 
 
 (defun comment-notification-email-html
   (on-id
-   from
    subject
-   people
-   text
    &key inventory-text
         email
         unsubscribe-key
@@ -208,14 +194,8 @@ from (awhen group-name (s+ " from " it )) " says:"
 
   (html-email-base
     (html
-      (:p :style *style-p* (:strong (str (no-reply-notice))))
-      (:p :style *style-p* "You can also reply to this message by clicking on the link below." )
-
       (:p :style *style-p*
-        "A conversation with " (:strong (str people)))
-
-      (:p :style *style-p*
-        (:strong "Subject: " (str subject)))
+        (:strong (str subject)))
 
       (awhen inventory-text
         (htm (:table :cellspacing 0
@@ -225,21 +205,20 @@ from (awhen group-name (s+ " from " it )) " says:"
                         "\"" (str (email-text it)) "\"")))
              (:br)))
 
-      (:p :style *style-p*
-        (:strong (str from))
-        (when group-name
-          (htm " from " (:strong (str group-name))))
-        " says:")
+     ;(:p :style *style-p*
+     ;  (:strong (str from))
+     ;  (when group-name
+     ;    (htm " from " (:strong (str group-name))))
+     ;  " says:")
 
-      (:table :cellspacing 0
-              :cellpadding 0
-              :style *style-quote-box*
-        (:tr (:td :style "padding: 4px 12px;"
-                 "\"" (str (email-text text)) "\"")))
+     ;(:table :cellspacing 0
+     ;        :cellpadding 0
+     ;        :style *style-quote-box*
+     ;  (:tr (:td :style "padding: 4px 12px;"
+     ;           "\"" (str (email-text text)) "\"")))
 
-      (:p :style *style-p*
-       "You can see the conversation on Kindista here: "
-       (:a :href url (str url)))
+      (:form :method "get" :action url
+        (:button :style *style-button* "See Message"))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
 

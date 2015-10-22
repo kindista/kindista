@@ -243,6 +243,7 @@
                   (getf event :text)
                   (when (>= (or latest-seen 0)
                             (getf event :id)))
+                  :id (getf event :id)
                   :transaction-p t))))))))
 
 (defun transaction-other-party
@@ -388,7 +389,7 @@
       (gratitude-activity-item (gethash (getf log-event :comment) *db-results*)
                                :show-on-item nil))
     (t
-      (card
+      (card nil
         (html
           (str (h3-timestamp (getf log-event :time)))
           (:p

@@ -89,7 +89,7 @@
 
               (when items
                 (str
-                  (card
+                  (card nil
                     (html
                       (:p (str link)
                         " joined "
@@ -209,14 +209,14 @@
         (:p (:a :href "/admin" "back to admin"))
         (:h1 "Kindista Invitation Requests")
         (dolist (result *invite-request-index*)
-          (let* ((id (result-id result)) 
+          (let* ((id (result-id result))
                  (data (db id))
                  (events (getf data :events))
                  (resources (getf data :resources))
                  (invite (getf data :invite))
                  (gratitude (getf data :gratitude)))
             (str
-              (card
+              (card id
                 (html
                   (str (h3-timestamp (getf data :requested)))
                   (:p (:strong "Invitation Request ID: ")(str id))
