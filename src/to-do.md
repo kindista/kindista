@@ -28,6 +28,7 @@
    - post to /love
    - show list of people who love an item
 [ ] invite facebook friends
+[ ] split up database
 [ ] invite gmail/hotmail/yahoo contacts
 [ ] flag items
 [ ] reply by email (maybe)
