@@ -300,11 +300,7 @@
       (see-other "/admin/mail-system"))))
 
 (defun get-admin-sendmail ()
-  (require-admin
-    (standard-page
-      "Send Broadcast"
-      (new-broadcast-html "Send broadcast email" "/admin/sendmail")
-      :selected "admin")))
+  (require-admin (new-broadcast-html "/admin/sendmail")))
 
 (defun post-admin-sendmail ()
   (require-admin (post-broadcast-new)

@@ -327,10 +327,14 @@ body.about h3 {
  margin-bottom:.5em;
 }
 
-#signup label, #broadcast label {
- width: 6em;
+#broadcast label {
+ display: block;
+}
+
+#signup label {
  display: inline-block;
  vertical-align: middle;
+ width: 6em;
 }
 
 input[type=radio] {
@@ -3911,6 +3915,11 @@ form#donate button {
 
 .blog.item {
  margin: 0.4em 0 3em;
+}
+
+.blog.item li {
+ list-style-type: disc;
+ margin-bottom: 0.2em;
 }
 
 .blog-title {

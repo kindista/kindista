@@ -55,6 +55,11 @@
      (when (string= ,string (car item))
        (return (cadr item)))))
 
+(defun safe-parse-integer (int?)
+  (when (and (typep int? 'string)
+             (scan +number-scanner+ int?))
+    (parse-integer int?)))
+
 (defun progress-bar (percent)
   (html
     (:div :class "progress-bar"
