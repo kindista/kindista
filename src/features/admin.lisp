@@ -62,7 +62,7 @@
                  (person (db id))
                  (email (first (getf person :emails)))
                  (link (person-link id))
-                 (items (cdr account)))
+                 (items (remove nil (cdr account))))
             (labels ((inventory-item (id data preposition type)
                        (html
                          (str (timestamp (getf data :created)))
