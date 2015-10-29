@@ -665,7 +665,7 @@
                    :name "hide-match"
                    :class "red simple-link"
                    :value offer-id
-                   "hide this request"))))))))
+                   "No thanks!"))))))))
 
       (:div :class "match-details"
         (awhen (getf request :title)
@@ -757,7 +757,7 @@
              :name "hide-match"
              :class "red simple-link"
              :value offer-id
-             "hide this offer")))))
+             "No thanks!")))))
 
       (:div :class "match-details"
         (str (highlight-relevant-inventory-text offer-id request-id))
