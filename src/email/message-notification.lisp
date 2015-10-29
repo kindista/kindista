@@ -113,7 +113,9 @@
                                   :maximum-links 5))
                (subject (subject-text groupid)))
 
-          (cl-smtp:send-email
+          (when (or *productionp*
+                    (getf person :test-user))
+            (cl-smtp:send-email
             +mail-server+
             "PleaseDoNotReply <noreply@kindista.org>"
             email
@@ -141,7 +143,7 @@
                             :group-name (getf sender-group :name)
                             :groupid groupid
                             :on-type on-type
-                            :inventory-text inventory-text)))))))
+                            :inventory-text inventory-text))))))))
 
 (defun comment-notification-email-text
   (on-id
