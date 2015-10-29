@@ -74,7 +74,9 @@
               (:form :class "primary-action" :method "post" :action url
                 (:input :type "hidden"
                         :name "next"
-                        :value next)
+                        ;; don't use anchor link. otherwise user can't see
+                        ;; the success flash after they post a reply
+                        :value (request-uri*))
                 (:button :type "submit"
                          :class "small blue primary-action"
                          :name (getf it :name)
@@ -90,7 +92,13 @@
               (:input :type "hidden" :name "next" :value next)
               (if (member *userid* (gethash id *love-index*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
-                (htm (:input :type "submit" :name "love" :value "Love")))
+                (htm (:input :type "submit" :name "love" :value "Love"))))
+            (:form :method "post" :action url
+              (:input :type "hidden"
+                      :name "next"
+                      ;; don't use anchor link. otherwise user can't see
+                      ;; the success flash after they post a reply
+                      :value (request-uri*))
               (awhen share-url
                 (htm
                   " &middot; "

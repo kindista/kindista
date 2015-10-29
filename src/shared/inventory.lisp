@@ -495,6 +495,7 @@
          (pending-flash "contact other Kindista members")
          (see-other (or (referer) "/home")))
 
+        ;; reply with an intent to share
         ((or (post-parameter-string "reply-text")
              (and (post-parameter "reply-text")
                   (or (string= action-type "offer")
@@ -513,6 +514,7 @@
          (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
          (see-other (or next (script-name*))))
 
+        ;; reply with no intention of sharing
         ((or (post-parameter "reply")
              action-type
              ;; if ther's no action type
@@ -1134,7 +1136,8 @@
               (str (s+ (if action-type "Respond" "Reply")
                        " to "
                        (person-link (getf data :by) :possessive t)
-                       type))))
+                       type
+                       ":"))))
           (:blockquote
             (:p
               (awhen (getf data :title)
@@ -1153,13 +1156,14 @@
 
               (:textarea :cols "1000" :rows "4" :name "reply-text" (str text))
 
-              (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
-              (:button :class "yes"
-                       :type "submit"
-                       :class "submit"
-                (str (aif action-type
-                       (s+ (string-capitalize it) " This")
-                       "Reply"))))))
+              (:div
+                (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
+                (:button :class "yes"
+                 :type "submit"
+                 :class "submit"
+                 (str (aif action-type
+                        (s+ (string-capitalize it) " This")
+                        "Reply")))))))
 
         :selected (s+ type "s")
         :class "inventory-reply"))))
