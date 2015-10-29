@@ -50,7 +50,13 @@
 (defun get-admin-pending-accounts
   (&aux (pending-accounts (sort (hash-table-alist *pending-person-items-index*)
                                 #'>
-                                :key #'(lambda (account) (result-time (cadr account))))))
+                                :key #'(lambda (account)
+                                         ;; there may be no results if they
+                                         ;; are inappropriate and we delete
+                                         ;; them
+                                         (aif (cadr account)
+                                           (result-time it)
+                                           0)))))
   (require-admin
     (standard-page
       "Pending Accounts"
