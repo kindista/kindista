@@ -495,7 +495,6 @@
          (pending-flash "contact other Kindista members")
          (see-other (or (referer) "/home")))
 
-        ;; reply with an intent to share
         ((or (post-parameter-string "reply-text")
              (and (post-parameter "reply-text")
                   (or (string= action-type "offer")
@@ -514,7 +513,6 @@
          (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
          (see-other (or next (script-name*))))
 
-        ;; reply with no intention of sharing
         ((or (post-parameter "reply")
              action-type
              ;; if ther's no action type
