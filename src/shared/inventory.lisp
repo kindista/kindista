@@ -1134,7 +1134,8 @@
               (str (s+ (if action-type "Respond" "Reply")
                        " to "
                        (person-link (getf data :by) :possessive t)
-                       type))))
+                       type
+                       ":"))))
           (:blockquote
             (:p
               (awhen (getf data :title)
@@ -1153,13 +1154,14 @@
 
               (:textarea :cols "1000" :rows "4" :name "reply-text" (str text))
 
-              (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
-              (:button :class "yes"
-                       :type "submit"
-                       :class "submit"
-                (str (aif action-type
-                       (s+ (string-capitalize it) " This")
-                       "Reply"))))))
+              (:div
+                (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
+                (:button :class "yes"
+                 :type "submit"
+                 :class "submit"
+                 (str (aif action-type
+                        (s+ (string-capitalize it) " This")
+                        "Reply")))))))
 
         :selected (s+ type "s")
         :class "inventory-reply"))))

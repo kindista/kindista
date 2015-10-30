@@ -89,37 +89,39 @@
         (let* ((recipient (db recipient-id))
                (email (car (getf recipient :emails)))
                (unsub-key (getf recipient :unsubscribe-key)))
-          (cl-smtp:send-email
-            +mail-server+
-            "PleaseDoNotReply <noreply@kindista.org>"
-            email
-            (notification-text recipient-id :title-p t)
-            (transaction-action-notification-email-text
-              (getf other-party :name)
-              event-actor-name
-              transaction-url
-              :email email
-              :unsubscribe-key unsub-key
-              :group-name group-name
-              :groupid groupid
-              :on-title on-title
-              :on-details on-details
-              :on-type-string on-type-string
-              :text (notification-text recipient-id)
-              :message message)
-            :html-message (transaction-action-notification-email-html
-                            (getf other-party :name)
-                            event-actor-name
-                            transaction-url
-                            :email email
-                            :unsubscribe-key unsub-key
-                            :group-name group-name
-                            :groupid groupid
-                            :on-title on-title
-                            :on-details on-details
-                            :on-type-string on-type-string
-                            :text (notification-text recipient-id :html-p t)
-                            :message message)))))))
+          (when (or *productionp*
+                    (getf recipient :test-user))
+            (cl-smtp:send-email
+              +mail-server+
+              "PleaseDoNotReply <noreply@kindista.org>"
+              email
+              (notification-text recipient-id :title-p t)
+              (transaction-action-notification-email-text
+                (getf other-party :name)
+                event-actor-name
+                transaction-url
+                :email email
+                :unsubscribe-key unsub-key
+                :group-name group-name
+                :groupid groupid
+                :on-title on-title
+                :on-details on-details
+                :on-type-string on-type-string
+                :text (notification-text recipient-id)
+                :message message)
+              :html-message (transaction-action-notification-email-html
+                              (getf other-party :name)
+                              event-actor-name
+                              transaction-url
+                              :email email
+                              :unsubscribe-key unsub-key
+                              :group-name group-name
+                              :groupid groupid
+                              :on-title on-title
+                              :on-details on-details
+                              :on-type-string on-type-string
+                              :text (notification-text recipient-id :html-p t)
+                              :message message))))))))
 
 (defun gift-given-notification-text
   (giver-name

@@ -327,10 +327,14 @@ body.about h3 {
  margin-bottom:.5em;
 }
 
-#signup label, #broadcast label {
- width: 6em;
+#broadcast label {
+ display: block;
+}
+
+#signup label {
  display: inline-block;
  vertical-align: middle;
+ width: 6em;
 }
 
 input[type=radio] {
@@ -352,6 +356,15 @@ input[type=radio].first-option {
 #decline p {
  margin: 1.5em 0 .8em 0em;
 }
+
+form.recipients,
+.mail.card div.membership-request,
+div.new-gratitude div#gratitude-by-email p.small,
+.blog.item textarea,
+.inventory-reply textarea {
+ max-width: 50em;
+}
+
 
 #signup button, .login button {
  padding-left: 0;
@@ -2381,10 +2394,6 @@ div.membership-request button:last-child {
  margin-right: 0;
 }
 
-.mail.card div.membership-request {
- max-width: 50em;
-}
-
 .mail.card div.membership-request p.member-request-details {
  margin-top: 0;
 }
@@ -3150,7 +3159,6 @@ form.post-next h2 {
 
 form.recipients {
  width: 100%;
- max-width: 50em;
 }
 
 form.recipients, div.recipients {
@@ -3213,7 +3221,6 @@ div.new-gratitude div#gratitude-by-email h3 {
 }
 
 div.new-gratitude div#gratitude-by-email p.small {
- max-width: 50em;
  margin-top: 0;
 }
 
@@ -3913,6 +3920,11 @@ form#donate button {
  margin: 0.4em 0 3em;
 }
 
+.blog.item li {
+ list-style-type: disc;
+ margin-bottom: 0.2em;
+}
+
 .blog-title {
  margin-bottom: 1em;
 }
@@ -3929,7 +3941,6 @@ form#donate button {
 
 .blog.item textarea {
  height: 7em;
- max-width: 50em;
 }
 
 .blog.item button.yes {
@@ -3979,7 +3990,7 @@ span.highlight {
 .comments form label {
  padding-top: 0.5em;
 }
- 
+
 .inventory-reply blockquote {
  margin-bottom: 1em;
  padding: 0.5em 0.4em;
