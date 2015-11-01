@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -160,8 +160,6 @@
         group-name
         groupid)
   (strcat*
-(no-reply-notice " use the link below to reply to this transaction on Kindista.org")
-#\linefeed #\linefeed
 "Hi " name ","
 #\linefeed #\linefeed
 text
@@ -224,21 +222,25 @@ url
        (:tr (:td :style "padding: 4px 12px;"
               (str (ellipsis (or on-title on-details) :email t)))))
 
-      (when message
-        (htm
-          (:p :style *style-p*  (str other-party-name) " says:")
-          (:table :cellspacing 0 :cellpadding 0
-                  :style *style-quote-box*
-            (:tr (:td :style "padding: 4px 12px;"
-                   (str (email-text message)))))))
+      (:form :method "get" :action url
+        (:button :style *style-button* (str (if message
+                                              "See Message"
+                                              (s+ "Respond to " other-party-name)))))
+     ;(when message
+     ;  (htm
+     ;    (:p :style *style-p*  (str other-party-name) " says:")
+     ;    (:table :cellspacing 0 :cellpadding 0
+     ;            :style *style-quote-box*
+     ;      (:tr (:td :style "padding: 4px 12px;"
+     ;             (str (email-text message)))))))
 
-      (:p :style *style-p*
-        "To reply to "
-        (str other-party-name)
-        ", please go to:"
-        (:br)
-        (:a :href url
-         (str url)))
+     ;(:p :style *style-p*
+     ;  "To reply to "
+     ;  (str other-party-name)
+     ;  ", please go to:"
+     ;  (:br)
+     ;  (:a :href url
+     ;   (str url)))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
 
