@@ -434,10 +434,10 @@
   (item-id
    &aux (id (parse-integer item-id))
         (item (db id)))
-  (flet ((redirect (typestring)
-           (see-other (strcat "/" typestring "/" id))))
+  (flet ((redirect (typestring &optional subpage)
+           (see-other (strcat* "/" typestring "/" id subpage))))
     (case (getf item :type)
-      (:person (redirect "people"))
+      (:person (redirect "people" "/reputation"))
       (:offer (redirect "offers"))
       (:request (redirect "requests"))
       (:event (redirect "events"))
