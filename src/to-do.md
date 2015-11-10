@@ -6,6 +6,7 @@
     - possible survey in transaction items to provide feedback re: experience
       with the other party
       - timeliness, enjoyment of interaction, etc.
+    - ability to see constructive feedback if others can see yours
 [ ] don't create new transaction when replying to same inventory item twice
     - post to the existing transaction conversation
 [ ] group invite notification for new accounts

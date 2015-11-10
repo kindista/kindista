@@ -1,0 +1,8 @@
+- test replying to an offer
+  - html
+  - text
+- test replying to a request
+  - html
+  - text
+- fix email notification for transaction messages (email/message-notification)
+- other emails with (no-reply notice
