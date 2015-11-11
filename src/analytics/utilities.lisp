@@ -345,7 +345,9 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
   (cl-smtp:send-email
     +mail-server+
     "Kindista <info@kindista.org>"
-    "Progress Reports <progress-reports@kindista.org>"
+    (if *productionp*
+      "Progress Reports <progress-reports@kindista.org>"
+      *error-message-email*)
     title
     (strcat
       "Please see the attached file for a chart of various metrics we are collecting for Kindista usage. "

@@ -243,6 +243,7 @@
                   (getf event :text)
                   (when (>= (or latest-seen 0)
                             (getf event :id)))
+                  :id (getf event :id)
                   :transaction-p t))))))))
 
 (defun transaction-other-party
@@ -265,7 +266,10 @@
         (inventory-by-name (db inventory-by-id :name))
         (transaction-by-id (getf transaction :by))
         (transaction-by-name (db transaction-by-id :name))
+        ;; basic-action means to show the group as the actor
+        ;; and not include a link for the actor
         basic-action
+        (punctuation ".")
         (userid *userid*)
         name-links-p
    &aux (on-type (getf inventory-item :type))
@@ -352,7 +356,7 @@
             (strcat* " declined to receive a gift from "
                      (indirect-object :transaction)))
           (:withheld
-            (strcat* " indicated that"
+            (strcat* " indicated that "
 
                      (if self "you" "they")
                      " can no longer share "
@@ -373,8 +377,7 @@
                     (indirect-object :transaction)
                     " for "
                     inventory-descriptor)))))
-    "."
-    )))
+    punctuation)))
 
 (defun transaction-action-html
   (log-event
@@ -388,7 +391,7 @@
       (gratitude-activity-item (gethash (getf log-event :comment) *db-results*)
                                :show-on-item nil))
     (t
-      (card
+      (card nil
         (html
           (str (h3-timestamp (getf log-event :time)))
           (:p

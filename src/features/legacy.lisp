@@ -96,7 +96,7 @@
                      (by (getf data :by))
                      (bydata (db by)))
                 (str
-                  (card
+                  (card comment-id
                     (html
                       (str (h3-timestamp (getf data :created)))
                       (when (or (eql (getf data :by) *userid*)

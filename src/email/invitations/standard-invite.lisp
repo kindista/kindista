@@ -39,7 +39,10 @@
                              (> (length (getf invitation :times-sent)) 1)
                              (not new-group)
                              (not new-gratitude)))
-         (to (getf invitation :recipient-email)))
+         (to (getf invitation :recipient-email)) 
+         (rsvp-url (url-compose (s+ *email-url* "signup")
+                                "email" to
+                                "token" token)))
 
   (cl-smtp:send-email
     +mail-server+
@@ -61,34 +64,31 @@
             (getf group :name)
             " sharing network!"))
       (t (s+ host-name " wants you to join their sharing network!")))
-    (invitation-email-text token
-                           to
-                           host
+    (invitation-email-text to
+                           host-name
+                           :rsvp-url rsvp-url
                            :invitee-name invitee-name
                            :text text
                            :host-reminder host-reminder
                            :group-name (when new-group (getf group :name))
                            :gratitude (when new-gratitude gratitude)
                            :auto-reminder auto-reminder)
-    :html-message (invitation-email-html token
-                                         to
-                                         host
+    :html-message (invitation-email-html to
+                                         host-name
+                                         :rsvp-url rsvp-url
                                          :invitee-name invitee-name
                                          :text text
                                          :host-reminder host-reminder
-                                         :group-id (when new-group group-id)
+                                         :group-name (when new-group
+                                                       (getf group :name))
                                          :gratitude (when new-gratitude
                                                       gratitude)
                                          :auto-reminder auto-reminder)))
 
-(defun invitation-email-text (token to from &key invitee-name group-name gratitude text auto-reminder host-reminder)
-  (let ((sender (getf (db from) :name)))
-    (strcat*
-(no-reply-notice)
-#\linefeed #\linefeed
+(defun invitation-email-text (to sender &key invitee-name rsvp-url group-name gratitude text auto-reminder host-reminder)
+  (strcat*
 (when invitee-name
-  (s+ "Hi " invitee-name ","))
-#\linefeed #\linefeed
+  (strcat "Hi " invitee-name "," #\linefeed #\linefeed))
 (when auto-reminder
 "We are writing to let you know that your Kindista invitation will be expiring soon.")
 #\linefeed #\linefeed
@@ -123,7 +123,7 @@ sender
 "Please click on this link or copy and paste it into your browser"
 " to RSVP:"
 #\linefeed
-(url-compose (s+ *email-url* "signup") "email" to "token" token)
+rsvp-url
 #\linefeed #\linefeed
 "-The Kindista Team"
 #\linefeed #\linefeed
@@ -131,81 +131,70 @@ sender
 "Please click on this link or copy and paste it into your browser"
 " to add this email address (" to
 ") to your Kindista account:"
-(s+ *email-url* "settings/communication?edit=email#email"))))
+(s+ *email-url* "settings/communication?edit=email#email")))
 
 
-(defun invitation-email-html (token to from &key invitee-name group-id text gratitude auto-reminder host-reminder)
-  (let ((sender (getf (db from) :name)))
-    (html-email-base
-      (html
-        (:p :style *style-p* (str (no-reply-notice)))
+(defun invitation-email-html (to from &key invitee-name rsvp-url group-name text gratitude auto-reminder host-reminder)
+  (html-email-base
+    (html
+      (when invitee-name
+        (htm (:p :style *style-p*
+              "Hi " (str invitee-name) "," )) )
 
-        (when invitee-name
-          (htm (:p :style *style-p*
-                "Hi " (str invitee-name) "," )) )
+      (when auto-reminder
+        (htm
+          (:p :style *style-p*
+              "We are writing to let you know that your Kindista invitation will be expiring "
+              "soon.")))
 
-        (when auto-reminder
-          (htm
-            (:p :style *style-p*
-                "We are writing to let you know that your Kindista invitation will be expiring "
-                "soon.")))
+      (:p :style *style-p*
+        (str from)
+        " has invited you to join "
 
-        (:p :style *style-p*
-          (str (person-email-link from))
-          " has invited you to join "
+        (awhen group-name
+          (htm "the " (:strong (str it)) " group on "))
+        "Kindista, the social network for building "
+        "community and sharing skills, tools and other local resources. ")
 
-          (awhen group-id
-            (htm "the " (str (person-email-link it)) " group on "))
-          "Kindista, the social network for building "
-          "community and sharing skills, tools and other local resources. ")
+      (acond
+        ((getf gratitude :text)
+         (htm (:table :cellspacing 0
+                      :cellpadding 0
+                      :style *style-quote-box*
+                (:tr (:td :style "padding: 4px 12px;"
 
-        (acond
-          ((getf gratitude :text)
-           (htm (:table :cellspacing 0
-                        :cellpadding 0
-                        :style *style-quote-box*
-                  (:tr (:td :style "padding: 4px 12px;"
+                      (str from) " shared a statement of gratitude about you:"
+                      (:br)
+                      (:strong "\"" (str (email-text it)) "\""))))
+              (:p :style *style-p*
+                "On Kindista, gratitude lets people know how you are contributing to your community.  When you sign up, this statement of gratitude will appear on your profile. It is a form of currency that encourages others in the network to share resources with you. ")))
+        (text
+          (htm (:table :cellspacing 0
+                       :cellpadding 0
+                       :style *style-quote-box*
+                 (:tr (:td :style "padding: 4px 12px;"
 
-                        (str sender) " shared a statement of gratitude about you:"
-                        (:br)
-                        (:strong "\"" (str (email-text it)) "\""))))
-                (:p :style *style-p*
-                  "On Kindista, gratitude lets people know how you are contributing to your community.  When you sign up, this statement of gratitude will appear on your profile. It is a form of currency that encourages others in the network to share resources with you. ")))
-          (text
-            (htm (:table :cellspacing 0
-                         :cellpadding 0
-                         :style *style-quote-box*
-                   (:tr (:td :style "padding: 4px 12px;"
+                       (str from) " says:"
+                       (:br)
+                       "\"" (str (email-text it)) "\""))))))
 
-                         (str sender) " says:"
-                         (:br)
-                         "\"" (str (email-text it)) "\""))))))
+      (:p :style *style-p*
+        (str from)
+        (str (if host-reminder
+               " is reminding you to join"
+               " sent you an invitation"))
+        " because they think you would make a valuable addition to the"
+        " Kindista community.  ")
 
-        (:p :style *style-p*
-          (str sender)
-          (str (if host-reminder
-                 " is reminding you to join"
-                 " sent you an invitation"))
-          " because they think you would make a valuable addition to the"
-          " Kindista community.  ")
+      (str (email-action-button rsvp-url "Join Kindista!"))
 
-        (:p :style *style-p*
-         (:strong "Please click on this link or copy and paste it into your browser to RSVP: ")
-         (:br)
-         (:strong (:a :href (url-compose (s+ *email-url* "signup")
-                                 "email" to
-                                 "token" token)
-                    (str (url-compose (s+ *email-url* "signup")
-                                      "email" to
-                                      "token" token)))))
+      (:p "-The Kindista Team")
 
-        (:p "-The Kindista Team")
-
-        (:p :style *style-p*
-          "Already on Kindista?"
-          "Please click on this link or copy and paste it into your browser"
-          " to add this email address (" (str to)
-          ") to your Kindista account:"
-          (:a :href (s+ *email-url* "settings/communication?edit=email#email")
-              (str (s+ *email-url* "settings/communication?edit=email#email"))))))))
+      (:p :style *style-p*
+        "Already on Kindista? "
+        "Please click on this link or copy and paste it into your browser"
+        " to add this email address (" (str to)
+        ") to your Kindista account:"
+        (:a :href (s+ *email-url* "settings/communication?edit=email#email")
+            (str (s+ *email-url* "settings/communication?edit=email#email")))))))
 

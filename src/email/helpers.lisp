@@ -25,10 +25,29 @@
                          margin-top:.9em;
                          margin-bottom:.9em;")
 
+(defparameter *style-button*
+  "margin: 0.35em 0.5em 0.35em 0;
+   cursor: pointer;
+   font-size: 1.2em;
+   font-weight: bold;
+   color: #fff;
+   background: #3c6dc8;
+   background: -moz-linear-gradient( top, #3c6dc8 0%, #29519c);
+   background: -ms-linear-gradient( top, #3c6dc8 0%, #29519c);
+   background: -o-linear-gradient( top, #3c6dc8 0%, #29519c);
+   background: -webkit-linear-gradient( top, #3c6dc8 0%, #29519c);
+   background: -webkit-gradient( linear, left top, left bottom, from(#3c6dc8), to(#29519c));
+   border: 1px solid #474747;
+   text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+   padding: 0.5em 0.7em;
+   vertical-align: middle;
+   border-radius: 0.25em;
+   text-decoration: none;")
+
 
 (defparameter *style-quote-box* "border-collapse: collapse;
                                  background: #ebf2e4;
-                                 margin: 8px;
+                                 margin: 8px 8px 8px 0;
                                  border: thin solid #bac2b2;")
 
 (defparameter *email-url* (or (awhen *test-email-ip*
@@ -52,6 +71,11 @@
 
 (defun person-name (id)
   (db id :name))
+
+(defun email-action-button (url message)
+  (html
+    (:form :method "get" :action url
+      (:button :style *style-button* message))))
 
 (defun no-reply-notice
   (&optional (instructions "do so from their profile on Kindista.org"))
