@@ -27,10 +27,7 @@
 
 (defparameter *style-button*
   "margin: 0.35em 0.5em 0.35em 0;
-   cursor: pointer;
    font-size: 1.2em;
-   font-weight: bold;
-   color: #fff;
    background: #3c6dc8;
    background: -moz-linear-gradient( top, #3c6dc8 0%, #29519c);
    background: -ms-linear-gradient( top, #3c6dc8 0%, #29519c);
@@ -44,6 +41,15 @@
    border-radius: 0.25em;
    text-decoration: none;")
 
+(defparameter *style-button-link*
+  "{color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+    text-decoration: none;}
+    :hover {text-decoration: underline;}
+    :visited {color: #fff;} "
+  )
 
 (defparameter *style-quote-box* "border-collapse: collapse;
                                  background: #ebf2e4;
@@ -74,7 +80,9 @@
 
 (defun email-action-button (url message)
   (html
-    (:a :class *style-a* :href url (str message))))
+    (:table :cellspacing "0" :cellpadding "0"
+     (:td :style *style-button*
+       (:a :style *style-button-link* :href url (str message))))))
 
 (defun no-reply-notice
   (&optional (instructions "do so from their profile on Kindista.org"))
@@ -151,8 +159,10 @@ notification-description
     (:html
       (:head
         (:style :type "text/css"
-                      "a:hover {text-decoration:underline;}
-a {color: #5C8A2F;}")
+                      "
+                       a:hover {text-decoration:underline;}
+                       a {color: #5C8A2F;}
+                       td > a {color: #fff; text-decoration: none;}")
         (:title "Kindista"))
 
       (:body :style "font-family: Ubuntu, Roboto, \"Segoe UI\", \"Helvetica Neue\", Tahoma, sans-serif;"
