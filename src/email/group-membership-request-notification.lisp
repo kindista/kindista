@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -22,6 +22,10 @@
          (from (getf request :requested-by))
          (requestor-name (db from :name))
          (group-id (getf request :group-id))
+         (reply-url (strcat *email-url*
+                            "groups/"
+                            (username-or-id group-id)
+                            "/members"))
          (group (db group-id))
          (group-name (getf group :name))
          (admin-list (getf group :notify-membership-request)))
@@ -39,22 +43,22 @@
                               ", on Kindista")
                           (group-membership-request-notification-email-text
                             requestor-name
+                            reply-url
                             group-id
                             group-name
                             email
                             unsubscribe-key)
                           :html-message (group-membership-request-notification-email-html
                                           requestor-name
+                                          reply-url
                                           group-id
                                           group-name
                                           email
                                           unsubscribe-key))))))
 
 (defun group-membership-request-notification-email-text
-  (requestor-name group-id group-name email unsubscribe-key)
+  (requestor-name reply-url group-id group-name email unsubscribe-key)
   (strcat
-(no-reply-notice)
-#\linefeed #\linefeed
 requestor-name
 " is requesting to join your group, "
 group-name
@@ -63,7 +67,7 @@ group-name
 #\linefeed #\linefeed
 "You can accept the invitation here:"
 #\linefeed
-*email-url* "groups/" (username-or-id group-id) "/members"
+reply-url
 #\linefeed #\linefeed
 "Thank you for sharing your gifts with us!
 -The Kindista Team"
@@ -76,11 +80,9 @@ group-name
 
 
 (defun group-membership-request-notification-email-html
-  (requestor-name group-id group-name email unsubscribe-key)
+  (requestor-name reply-url group-id group-name email unsubscribe-key)
   (html-email-base
     (html
-      (:p :style *style-p* (:strong (str (no-reply-notice))))
-
       (:p :style *style-p*
           (str requestor-name)
           " is requesting to join your group, "
@@ -90,8 +92,7 @@ group-name
       (:p :style *style-p*
         "You can approve or deny this request here:"
         (:br)
-        (:a :href (s+ *email-url* (username-or-id group-id) "/members")
-            (str (s+ *email-url* (username-or-id group-id) "/members"))))
+        (:a :href reply-url (str reply-url)))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
 

@@ -66,7 +66,7 @@
            (notification-text (userid &key title-p (html-p nil))
              (cond
                ((and (eq (getf log-event :action) :gave) title-p)
-                "Please confirm the gift you received through Kindista:")
+                "Please confirm the gift you received through Kindista")
                ((eq (getf log-event :action) :gave)
                 (gift-text :html-p html-p))
                ((not log-event)

@@ -98,7 +98,7 @@
                  (if (eql sender-id inventory-poster)
                    " your message about their "
                    (aif groupid (s+ (db it :name) "'s ") "your "))
-                   inventory-type ":")
+                   inventory-type)
                (s+ "New message from " sender-name " on Kindista"))))
 
       (dolist (recipient all-recipients)
@@ -152,7 +152,7 @@
   (strcat*
     subject
     (awhen inventory-text
-      (strcat #\linefeed it #\linefeed))
+      (strcat #\linefeed it ":" #\linefeed))
    ;#\linefeed #\linefeed
    ;from (awhen group-name (s+ " from " it )) " says:"
    ;#\linefeed #\linefeed
@@ -197,7 +197,7 @@
   (html-email-base
     (html
       (:p :style *style-p*
-        (:strong (str subject)))
+        (:strong (str (s+ subject ":"))))
 
       (awhen inventory-text
         (htm (:table :cellspacing 0

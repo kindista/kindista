@@ -21,6 +21,7 @@
   (let* ((gratitude (db gratitude-id))
          (from (getf gratitude :author))
          (author-name (db from :name))
+         (url (strcat *email-url* "gratitude/" gratitude-id))
          (recipients))
 
     (dolist (subject (getf gratitude :subjects))
@@ -43,7 +44,7 @@
 
     (dolist (recipient recipients)
       (cl-smtp:send-email +mail-server+
-                          "DoNotReply <noreply@kindista.org>"
+                          "Kindista <noreply@kindista.org>"
                           (car (db (getf recipient :id) :emails))
                           (s+ author-name
                               " has posted a statement of gratitude about "
@@ -51,34 +52,28 @@
                                 it
                                 "you"))
                           (gratitude-notification-email-text
+                            url
                             author-name
-                            gratitude-id
-                            gratitude
                             recipient)
                           :html-message (gratitude-notification-email-html
-                                          gratitude-id
-                                          gratitude
-                                          from
+                                          url
+                                          author-name
                                           recipient)))))
 
 (defun gratitude-notification-email-text
-  (author-name
-   gratitude-id
-   gratitude
+  (gratitude-url
+   author-name
    recipient)
   (strcat
-(no-reply-notice)
 #\linefeed #\linefeed
 author-name
 " has shared a statement of gratitude about "
 (or (getf recipient :group-name) "you")
 " on Kindista."
 #\linefeed #\linefeed
-(getf gratitude :text)
-#\linefeed #\linefeed
 "You can see the statement on Kindista here:"
 #\linefeed
-*email-url* "gratitude/" gratitude-id
+gratitude-url
 #\linefeed #\linefeed
 "Thank you for sharing your gifts with us!"
 #\linefeed
@@ -92,28 +87,20 @@ author-name
    :groupid (getf recipient :groupid))))
 
 (defun gratitude-notification-email-html
-  (gratitude-id gratitude from recipient)
+  (gratitude-url author-name recipient)
   (html-email-base
     (html
-      (:p :style *style-p* (:strong (str (no-reply-notice))))
       (:p :style *style-p*
-        "If you want to reply to the message, please click on the link below.")
-
-      (:p :style *style-p* 
-          (str (person-email-link from))
-            " has shared a "
-            (:a :href (strcat *email-url* "gratitude/" gratitude-id)
-                          "statement of gratitude")
-                " about "
+          (str author-name)
+            " has shared a statement of gratitude about "
                 (str (or (getf recipient :group-name) "you"))
                 " on Kindista.")
 
-      (:table :cellspacing 0 :cellpadding 0
-              :style *style-quote-box*
-        (:tr (:td :style "padding: 4px 12px;"
-               (str (email-text (getf gratitude :text))))))
+      (:form :method "get" :action gratitude-url
+        (:button :style *style-button*
+          "View on Kindista"))
 
-      (:p :style *style-p* "Thank you for sharing your gifts with us!")
+      (:p :style *style-p* "Thank you for sharing your gifts!")
 
       (:p "-The Kindista Team")
 

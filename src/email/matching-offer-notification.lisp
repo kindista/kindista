@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -22,11 +22,12 @@
          (requested-by (db (getf request :by)))
          (email (car (getf requested-by :emails)))
          (unsubscribe-key (getf requested-by :unsubscribe-key))
+         (offer-url (strcat *email-url* "offers/" offer-id))
          (title (getf request :title)))
 
      (when (or *productionp* (getf requested-by :admin))
        (cl-smtp:send-email +mail-server+
-                          "DoNotReply <noreply@kindista.org>"
+                          "Kindista <noreply@kindista.org>"
                           email
                           (s+ "New Kindista offer matching your request"
                               (awhen title
@@ -34,15 +35,17 @@
                           (matching-offer-notification-email-text
                             request-id
                             offer-id
+                            offer-url
                             email
                             unsubscribe-key)
                           :html-message (matching-offer-notification-email-html
                                           request-id
                                           offer-id
+                                          offer-url
                                           email
                                           unsubscribe-key)))))
 
-(defun matching-offer-notification-email-text (request-id offer-id email unsubscribe-key)
+(defun matching-offer-notification-email-text (request-id offer-id offer-url email unsubscribe-key)
   (let ((offer (db offer-id))
         (request (db request-id)))
     (strcat*
@@ -65,7 +68,7 @@
       "Here's a link to the offer if you want to check it out or ask to receive it:"
 
       #\linefeed
-      (strcat *email-url* "offers/" offer-id)
+      offer-url
       #\linefeed #\linefeed
       "This offer matches your request:"
       (awhen (getf request :title)
@@ -88,9 +91,8 @@
                    "k" unsubscribe-key))))
 
 
-(defun matching-offer-notification-email-html (request-id offer-id email unsubscribe-key)
-  (let* ((offer-link (strcat *email-url* "offers/" offer-id))
-         (request-link (url-compose (strcat *email-url* "requests/" request-id)
+(defun matching-offer-notification-email-html (request-id offer-id offer-link email unsubscribe-key)
+  (let* ((request-link (url-compose (strcat *email-url* "requests/" request-id)
                                     "selected" "matchmaker"
                                     "email" email
                                     "k" unsubscribe-key))
@@ -99,8 +101,6 @@
                              (getf request :match-any-terms))))
     (html-email-base
       (html
-        (:p :style *style-p* (:strong (str (no-reply-notice))))
-
         (:p :style *style-p*
           "Hi " (str (db (getf request :by) :name)) ",")
 
