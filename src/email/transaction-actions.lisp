@@ -225,14 +225,14 @@
                  (htm (:p (str (ellipsis it :email t)))))
                )))
 
-      (:form :method "get" :action url
-        (:button :style *style-button*
-         (str (if message
-                "See Message"
-                (s+ (if (eq transaction-action :gave)
-                      "Post gratitude for "
-                      "Respond to ")
-                    other-party-name)))))
+      (str (email-action-button
+             url
+             (if message
+               "See Message"
+               (s+ (if (eq transaction-action :gave)
+                     "Post gratitude for "
+                     "Respond to ")
+                   other-party-name))))
      ;(when message
      ;  (htm
      ;    (:p :style *style-p*  (str other-party-name) " says:")

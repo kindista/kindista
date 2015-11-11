@@ -85,9 +85,7 @@
             (str group-name)
             ", on Kindista.")
 
-      (:form :method "get" :action group-url
-        (:button :style *style-button*
-          (s+ "Join " group-name)))
+      (str (email-action-button group-url (s+ "Join " group-name)))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
 

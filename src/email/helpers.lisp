@@ -72,6 +72,11 @@
 (defun person-name (id)
   (db id :name))
 
+(defun email-action-button (url message)
+  (html
+    (:form :method "get" :action url
+      (:button :style *style-button* message))))
+
 (defun no-reply-notice
   (&optional (instructions "do so from their profile on Kindista.org"))
   (s+ "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER. If you want to contact the sender, please " instructions ". "))

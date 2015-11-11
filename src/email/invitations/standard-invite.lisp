@@ -186,9 +186,7 @@ rsvp-url
         " because they think you would make a valuable addition to the"
         " Kindista community.  ")
 
-      (:form :method "get" :action rsvp-url
-        (:button :style *style-button*
-          "Join Kindista!"))
+      (str (email-action-button rsvp-url "Join Kindista!"))
 
       (:p "-The Kindista Team")
 

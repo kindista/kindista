@@ -96,9 +96,7 @@ gratitude-url
                 (str (or (getf recipient :group-name) "you"))
                 " on Kindista.")
 
-      (:form :method "get" :action gratitude-url
-        (:button :style *style-button*
-          "View on Kindista"))
+      (str (email-action-button gratitude-url "View on Kindista"))
 
       (:p :style *style-p* "Thank you for sharing your gifts!")
 

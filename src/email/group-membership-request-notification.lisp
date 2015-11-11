@@ -35,7 +35,7 @@
              (email (car (getf admin :emails)))
              (unsubscribe-key (getf admin :unsubscribe-key)))
         (cl-smtp:send-email +mail-server+
-                          "DoNotReply <noreply@kindista.org>"
+                          "Kindista <noreply@kindista.org>"
                           email
                           (s+ requestor-name
                               " is requesting to join your group, "

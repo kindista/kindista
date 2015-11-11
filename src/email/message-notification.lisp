@@ -219,8 +219,7 @@
      ;  (:tr (:td :style "padding: 4px 12px;"
      ;           "\"" (str (email-text text)) "\"")))
 
-      (:form :method "get" :action url
-        (:button :style *style-button* "See Message"))
+      (str (email-action-button url "See Message"))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
 
