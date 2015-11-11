@@ -74,8 +74,7 @@
 
 (defun email-action-button (url message)
   (html
-    (:form :method "get" :action url
-      (:button :style *style-button* message))))
+    (:a :class *style-a* :href url (str message))))
 
 (defun no-reply-notice
   (&optional (instructions "do so from their profile on Kindista.org"))
