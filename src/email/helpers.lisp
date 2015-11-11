@@ -161,8 +161,8 @@ notification-description
         (:style :type "text/css"
                       "
                        a:hover {text-decoration:underline;}
-                       a {color: #5C8A2F;}
-                       td > a {color: #fff; text-decoration: none;}")
+                       a {color: #5C8A2F !important;}
+                       td > a {color: #fff !important; text-decoration: none;}")
         (:title "Kindista"))
 
       (:body :style "font-family: Ubuntu, Roboto, \"Segoe UI\", \"Helvetica Neue\", Tahoma, sans-serif;"
