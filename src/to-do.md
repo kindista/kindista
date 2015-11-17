@@ -32,6 +32,7 @@
    - show list of people who love an item
 [ ] invite facebook friends
 [ ] split up database
+   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
 [ ] invite gmail/hotmail/yahoo contacts
 [ ] flag items
 [ ] reply by email (maybe)
