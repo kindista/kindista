@@ -807,7 +807,7 @@
                    groupid
                    group)))
 
-          (str (settings-avatar (string= edit "avatar") groupid))
+          (str (settings-avatar groupid))
           (str (settings-address (string= edit "address") groupid group))
           (when groupid
             (str (settings-item-html
