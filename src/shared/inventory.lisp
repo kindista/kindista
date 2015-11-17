@@ -301,7 +301,7 @@
     (remove-from-db id)))
 
 (defun deleted-invalid-item-reply-text (to-name from-name type &optional explanation)
-  (strcat "Greetings " to-name ","
+  (strcat* "Greetings " to-name ","
         #\linefeed
         #\linefeed
         "Your " type
@@ -309,9 +309,7 @@
         "Please list multiple offers and requests separately (not in the same item). "
         "Kindista is for giving and receiving freely; please avoid any language which implies that you are expecting barter or money in exchange for your offer or request. "
         #\linefeed
-        (aif explanation
-          (strcat #\linefeed it #\linefeed)
-          "")
+        (awhen explanation (strcat #\linefeed it #\linefeed))
         #\linefeed
         "To ensure that this doesn't happen again, please review Kindista's Sharing Guidelines before posting any additional offers or requests:"
         #\linefeed
@@ -637,9 +635,7 @@
                    (create-transaction :on id
                                        :pending-deletion t
                                        :text (post-parameter "explanation"))
-                   (if (db by :pending)
-                     (delete-pending-inventory-item id)
-                     (deactivate-inventory-item id :violates-terms t))
+                   (deactivate-inventory-item id :violates-terms t)
                    (flash (strcat (string-capitalize type) " " id " has been deactivated."))
                    (see-other (if (string= (post-parameter "next")
                                            (strcat "/" type "s/" id))

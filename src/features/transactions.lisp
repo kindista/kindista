@@ -199,12 +199,13 @@
            (text (if (and (equal comment-id (first comments))
                           (getf transaction :deleted-item-type))
                    (deleted-invalid-item-reply-text
-                     (db (car (remove by participants)) :name)
+                     (db (car (remove +kindista-id+ participants)) :name)
                      (getf bydata :name)
                      (case (getf transaction :deleted-item-type)
                        (:offer "offer")
                        (:request "request"))
-                     (getf data :text))
+                     (when (scan +text-scanner+ (getf data :text))
+                       (getf data :text)))
                    (getf data :text))))
 
       (sort (push (list :time (getf data :created)
@@ -518,7 +519,9 @@
                    (:div (str (s+ "Reply to "
                                   other-party-name
                                   " about this "
-                                  (string-downcase (symbol-name on-type))))))))))))
+                                  (string-downcase (aif on-type
+                                                     (symbol-name it)
+                                                     "item"))))))))))))
 
 (defun transaction-html
   (transaction-id
