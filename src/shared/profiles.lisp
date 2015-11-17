@@ -358,7 +358,7 @@
                    "group settings")))
         (:div :class "profile-pic"
           (:img :class "bigavatar" :src (get-avatar-thumbnail id 300 300))
-          (unless (getf *user* :avatar)
+          (when (and *user* (getf *user* :avatar))
             (str (add-profile-picture-prompt))))
         (:div :class "basics"
           (:h1 (str (getf entity :name))
