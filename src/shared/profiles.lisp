@@ -356,7 +356,10 @@
                    :class "small blue float-right"
                    (:img :src "/media/icons/settings.png" :class "small")
                    "group settings")))
-        (:img :class "bigavatar" :src (get-avatar-thumbnail id 300 300)) 
+        (:div :class "profile-pic"
+          (:img :class "bigavatar" :src (get-avatar-thumbnail id 300 300))
+          (unless (getf *user* :avatar)
+            (str (add-profile-picture-prompt))))
         (:div :class "basics"
           (:h1 (str (getf entity :name))
                (cond

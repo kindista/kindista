@@ -689,6 +689,7 @@ body.splash #symbol {
  padding: 0 .5em;
 }
 
+.settings-item .submit-image label,
 .splactions a.yes {
  margin: 0.5em;
  line-height: 4em;
@@ -737,6 +738,7 @@ div.horiz a.button.blue img {
  }
 }
 
+.settings-item .submit-image label,
 button.yes, a.yes {
  font-weight: bold;
  color: #fff;
@@ -987,6 +989,7 @@ a.cancel {
  padding: 0.55em;
 }
 
+.settings-item .submit-image label,
 button.small, a.small {
  font-size: 0.8em;
  line-height: normal;
@@ -1406,8 +1409,8 @@ img.small {
 }
 
 #menu table img {
- max-width:50px;
- max-height:50px;
+ max-width: 4em;
+ max-height: 4em;
  display: block;
 }
 
@@ -2573,7 +2576,10 @@ div.profile-buttons div.float-right {
  margin-right: 0;
 }
 
-.actions > form input, button.text, menu.horiz form input {
+.actions > form label,
+.actions > form input,
+button.text,
+menu.horiz form input {
  cursor:pointer;
  margin:0;
  padding:0;
@@ -2589,6 +2595,7 @@ div.profile-buttons div.float-right {
  font-size:0.9em;
 }
 
+.actions > form label,
 .card .actions a {
  color: #3c6dc8;
  font-size: 0.9em;
@@ -2692,6 +2699,32 @@ img.bigavatar {
  position: relative;
 }
 
+div.profile-pic {
+ position: relative;
+}
+
+div.profile-pic span.text-shadow {
+ position: absolute;
+ left: 1em;
+ top: 1.2em;
+ width:4.4em;
+ font-weight: bold;
+ font-size: 1.3em;
+ white-space: normal;
+ background: rgb(100%, 100%, 100%); /*fallback*/
+ background: rgba(100%, 100%, 100%, 0.7);
+ padding: 0.2em;
+}
+
+div.profile-pic.small span.text-shadow {
+ font-size: 1em;
+ padding: 0.2em;
+ left: 0;
+ top: 0;
+ width: 4em;
+ font-weight: bold;
+}
+
 .small-activity-image div.border {
  float: left;
  border:5px solid #fff;
@@ -2717,7 +2750,22 @@ div.submit-image {
 }
 
 .submit-image input[type=file] {
- display:inline-block;
+ width: 0.1px;
+ height: 0.1px;
+ opacity: 0;
+ overflow: hidden;
+ position: absolute;
+ z-index: -1;
+ /*display:inline-block;*/
+}
+
+.settings-item .submit-image label {
+ border-radius: 0.25em;
+ cursor: pointer;
+}
+
+.submit-image label {
+ cursor: pointer;
 }
 
 form.submit-image:after {
@@ -3366,7 +3414,7 @@ div.settings menu.bar {
 }
 
 .settings-item .title {
- width: 7em;
+ width: 8.1em;
  background: #f2f2f2;
  font-weight: 500;
  font-size: 1em;

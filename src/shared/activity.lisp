@@ -134,11 +134,13 @@
                      (htm (:input :type "submit"
                                   :name "delete"
                                   :value "Delete")))))))
-            (when (and image-text
-                       (not (string= url (script-name*))))
+            (when image-text
               (htm
                 " &middot; "
-                (:a :href url (str image-text))))
+                (str (new-image-form "/image/new"
+                                     url
+                                     :on id
+                                     :button image-text))))
             (when comments
               (htm
                 " &middot; "
@@ -262,10 +264,9 @@
           :time (when show-when (result-time result))
           :show-actions show-actions
           :edit (when (or self adminp (getf *user* :admin)) t)
-          :image-text (when (or self adminp)
-                        (if images
-                          "Add/remove photos"
-                          "Add photos"))
+          :image-text (when (and (or self adminp)
+                                 (< (length images) 5))
+                        "Add photos")
           :hearts (length (loves item-id))
           ;:comments (length (comments item-id))
           :content (html
@@ -343,10 +344,9 @@
                    :admin-delete (and (getf *user* :admin)
                                       (not self)
                                       (not group-adminp))
-                   :image-text (when self
-                                 (if images
-                                   "Add/remove photos"
-                                   "Add photos"))
+                   :image-text (when (and (or self group-adminp)
+                                          (< (length images) 5))
+                                 "Add photos")
                    :primary-action (unless self
                                      (if (string= type "request")
                                        (list :name "action-type"

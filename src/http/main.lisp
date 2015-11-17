@@ -606,8 +606,14 @@
                          (:table
                            (:tr
                              (:td :rowspan "2"
-                               (:a :href link (:img :src (get-avatar-thumbnail *userid* 100 100 :filetype "png")
-                                                    :alt "")))
+                               (if (getf *user* :avatar)
+                                 (htm
+                                   (:a :href link
+                                     (:img :src (get-avatar-thumbnail *userid* 100 100 :filetype "png") :alt "")))
+                                 (htm
+                                   (:div :class "profile-pic small"
+                                     (:img :src (get-avatar-thumbnail *userid* 100 100 :filetype "png") :alt "")
+                                     (str (add-profile-picture-prompt))))))
                              (:td (:a :href link (str (getf *user* :name)))))
                            (:tr
                              (:td
