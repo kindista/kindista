@@ -1,4 +1,4 @@
-;;; Copyright 2012-2014 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -47,21 +47,6 @@
       (:label :for "image-file" (str button))
       (:input :type "file"
               :id "image-file"
-              :name "image"
-              :onchange (ps-inline (submit-image-form)))
-      (:div :id "spinner" :class "spinner"))))
-
-(defun old-image-form (action next &key class on)
-  (html
-    (:form :method "post"
-           :name "imageform"
-           :class (or class "submit-image item")
-           :action action
-           :enctype "multipart/form-data"
-      (:input :type "hidden" :name "next" :value next)
-      (when on (htm (:input :type "hidden" :name "on" :value on)))
-      (:span "Add a photo:")
-      (:input :type "file"
               :name "image"
               :onchange (ps-inline (submit-image-form)))
       (:div :id "spinner" :class "spinner"))))
