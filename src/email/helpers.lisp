@@ -38,18 +38,18 @@
    text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
    padding: 0.5em 0.7em;
    vertical-align: middle;
-   color: #fff !important;
+   color: #ffffff !important;
    border-radius: 0.25em;
    text-decoration: none;")
 
 (defparameter *style-button-link*
-  "{color: #fff !important;
+  "{color: #ffffff !important;
     font-weight: bold;
     cursor: pointer;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
     text-decoration: none;}
     :hover {text-decoration: underline;}
-    :visited {color: #fff !important;} "
+    :visited {color: #ffffff !important;} "
   )
 
 (defparameter *style-quote-box* "border-collapse: collapse;
@@ -162,7 +162,7 @@ notification-description
         (:style :type "text/css"
                       "a:hover {text-decoration:underline;}
                        a {color: #5C8A2F !important;}
-                       td > a {color: #fff !important; text-decoration: none;}")
+                       td > a {color: #ffffff !important; text-decoration: none;}")
         (:title "Kindista"))
 
       (:body :style "font-family: Ubuntu, Roboto, \"Segoe UI\", \"Helvetica Neue\", Tahoma, sans-serif;"
