@@ -83,7 +83,8 @@
   (html
     (:table :cellspacing "0" :cellpadding "0"
      (:td :style *style-button*
-       (:a :style *style-button-link* :href url (str message))))))
+       (:a :style *style-button-link* :href url
+        (:span :style "color:#ffffff!important;" (str message)))))))
 
 (defun no-reply-notice
   (&optional (instructions "do so from their profile on Kindista.org"))
