@@ -475,6 +475,17 @@
            (next (post-parameter "next")))
 
       (cond
+        ((and (or (and (eq type :offer)
+                       (eq action-type :offered))
+                  (and (eq type :request)
+                       (eq action-type :requested)))
+              (nor (eql *userid* by)
+                   adminp))
+         ;; in case of wrong action-type post request. yes it has happened.
+         (notice :error :on "User is trying to 'request' a :request or 'offer' an :offer"
+                        :data (cons id item))
+         (flash "The system encountered a problem. Please go to the item's page and try offering/requesting it again.  If the problem persists, please report it in Kindista's Help/Feedback section." :error t))
+
         ((nor (getf item :active)
               (eql by *userid*)
               (getf *user* :admin))

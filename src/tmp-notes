@@ -1,0 +1,11 @@
+- find link that is creating incorrect action type
+- make sure not to allow incorrect action type in post function
+- find all inventory items where the (first or last, not sure) action type matches the inventory type and change it
+
+invtentory-by 2
+inventory-by-name kindista team
+transaction-by-id 26305
+transaction-by-name julie rossberg
+on-type request
+action-party-id 26305
+
