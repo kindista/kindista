@@ -45,7 +45,7 @@
               ((and (eq inventory-type :request)
                     (eq first-action :requested))
                (setf new-first-log-entry
-                     (substitute :requested :offered first-log-entry)))))
+                     (substitute :offered :requested first-log-entry)))))
           (when new-first-log-entry
             (push id transactions-to-fix)
             (amodify-db id :log (cons new-first-log-entry
