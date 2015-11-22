@@ -20,6 +20,38 @@
 (defun new-pending-offer-notice-handler ()
   (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
 
+
+(defun fix-transactions-with-incorrect-action-type (&aux transactions-to-fix)
+  "To clean the DB because of a bug in which some transactions were initiated with wrong action-type. e.g. user 'offered' an :offer"
+  (dolist (id (hash-table-keys *db*))
+    (let* ((data (db id))
+           (type (getf data :type))
+           (first-log-entry (car (getf data :log)))
+           (first-log-entry-party (car (getf first-log-entry :party)))
+           (first-action (getf first-log-entry :action)))
+      (when (eq type :transaction)
+        (let* ((inventory-id (getf data :on))
+               (inventory-item (db inventory-id))
+               (inventory-by (getf inventory-item :by))
+               (inventory-type (getf inventory-item :type))
+               (new-first-log-entry))
+          (unless (or (eql first-log-entry-party inventory-by)
+                      (group-admin-p inventory-by first-log-entry-party))
+            (cond
+              ((and (eq inventory-type :offer)
+                    (eq first-action :offered))
+               (setf new-first-log-entry
+                     (substitute :requested :offered first-log-entry)))
+              ((and (eq inventory-type :request)
+                    (eq first-action :requested))
+               (setf new-first-log-entry
+                     (substitute :requested :offered first-log-entry)))))
+          (when new-first-log-entry
+            (push id transactions-to-fix)
+            (amodify-db id :log (cons new-first-log-entry
+                                      (cdr it))))))))
+  transactions-to-fix)
+
 (defun create-inventory-item (&key type (by *userid*) title details tags privacy)
   (insert-db (list :type type
                    :active t
