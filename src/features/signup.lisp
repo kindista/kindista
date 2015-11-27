@@ -308,7 +308,9 @@
               it))
           (create-person :name (post-parameter "name")
                          :aliases aliases
-                         :pending (when (eq host +kindista-id+) t)
+                        ;:pending (when (eq host +kindista-id+) t)
+                        ;; changed temporarily for Kindista launch party
+                         :pending nil
                          :host host
                          :email (post-parameter "email")
                          :password (post-parameter "password"))))
