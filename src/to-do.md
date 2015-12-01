@@ -1,4 +1,3 @@
-[ ] show country for profiles in other countries
 [ ] don't create new transaction when replying to same inventory item twice
     - post to the existing transaction conversation
 [ ] group invite notification for new accounts

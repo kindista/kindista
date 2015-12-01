@@ -381,7 +381,13 @@
                     (htm (str it) (:br)))
                   (str (getf entity :city)) ", " (str (getf entity :state)))))
            ((getf entity :city)
-            (htm (:p :class "city" (str (getf entity :city)) ", " (str (getf entity :state))))))))
+            (htm (:p :class "city"
+                  (str (getf entity :city))
+                  ", "
+                  (str (getf entity :state))
+                  (unless (equalp (getf entity :country)
+                                  (getf *user* :country))
+                    (htm ", " (str (getf entity :country))))))))))
 
       (unless (or (eql id *userid*) (not *userid*))
         (htm
