@@ -250,23 +250,29 @@
 
 ;; tokens
 
-(defun start-token ()
+(defun start-token (&aux (now (get-universal-time)))
   (with-locked-hash-table (*tokens*)
     (do (cookie-value)
       ((not (gethash (setf cookie-value (random-password 30)) *tokens*))
       (prog1
         (setf (gethash cookie-value *tokens*)
-              (make-token :created (get-universal-time)))
+              (make-token :created now
+                          :last-seen now))
         (set-cookie "token" :value cookie-value
                             :http-only t
                             :path "/"
-                            :expires (+ (get-universal-time) (* 12 +week-in-seconds+))
+                            :expires (+ now (* 12 +week-in-seconds+))
                             :secure nil))))))
 
-(defun check-token (cookie-value)
+(defun check-token (cookie-value &aux (now (get-universal-time)))
   (let ((token (gethash cookie-value *tokens*)))
-    (if (and token (< (get-universal-time) (+ (token-created token) (* 12 +week-in-seconds+))))
-      token
+    (if (and token (< now
+                      (+ (or (token-last-seen token)
+                             (token-created token))
+                         (* 26 +week-in-seconds+))))
+      (progn
+        (setf (token-last-seen token) now)
+        token)
       (progn (remhash cookie-value *tokens*) nil))))
 
 (defun delete-token-cookie

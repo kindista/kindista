@@ -5,7 +5,6 @@
     [ ] if they want to be notified when gratitudes are posted to their account
         let them know that they won't be shown on their profile until they
         reactivate? (if this is so, then email should remind of this detail)
-[ ] check functionality of (token-last-seen token)
 [ ] top color borders for activity items
 [ ] expiration/renewals for inventory items
 [ ] loves
