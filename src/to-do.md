@@ -16,8 +16,6 @@
    - show list of people who love an item
 [ ] split up database
    - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
-[ ] make sure number of messages/user is going down
-    - track number of unread messages per user
 [ ] accountability with user flaky-ness
     - possible survey in transaction items to provide feedback re: experience
       with the other party

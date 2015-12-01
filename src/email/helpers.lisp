@@ -28,7 +28,7 @@
 (defparameter *style-button*
   "margin: 0.35em 0.5em 0.35em 0;
    font-size: 1.2em;
-   background: #3c6dc8;
+   background: #3c6dc8 !important;
    background: -moz-linear-gradient( top, #3c6dc8 0%, #29519c);
    background: -ms-linear-gradient( top, #3c6dc8 0%, #29519c);
    background: -o-linear-gradient( top, #3c6dc8 0%, #29519c);
