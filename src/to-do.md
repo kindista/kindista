@@ -1,12 +1,4 @@
-[ ] make people go to the site to read their messages/gratitudes
-    - track number of unread messages/per user
-    - make sure that number is going down
-[ ] expiration/renewals for inventory items
-[ ] accountability with user flaky-ness
-    - possible survey in transaction items to provide feedback re: experience
-      with the other party
-      - timeliness, enjoyment of interaction, etc.
-    - ability to see constructive feedback if others can see yours
+[ ] show country for profiles in other countries
 [ ] don't create new transaction when replying to same inventory item twice
     - post to the existing transaction conversation
 [ ] group invite notification for new accounts
@@ -16,6 +8,21 @@
         let them know that they won't be shown on their profile until they
         reactivate? (if this is so, then email should remind of this detail)
 [ ] check functionality of (token-last-seen token)
+[ ] top color borders for activity items
+[ ] expiration/renewals for inventory items
+[ ] loves
+   - #links
+   - post to /love
+   - show list of people who love an item
+[ ] split up database
+   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
+[ ] make sure number of messages/user is going down
+    - track number of unread messages per user
+[ ] accountability with user flaky-ness
+    - possible survey in transaction items to provide feedback re: experience
+      with the other party
+      - timeliness, enjoyment of interaction, etc.
+    - ability to see constructive feedback if others can see yours
 [ ] post offers/requests to facebook
 [ ] notify of contact adds
 [ ] enable gratitude recipients to hide gratitudes
@@ -23,18 +30,9 @@
 [ ] better matching of search results
 [ ] add gratitude option for standard invitations
 [ ] email preferences for deactivated accounts
-[ ] top color borders for activity items
 [ ] allow kindista offers tagged with "proposed-feature" to get a tab in the feedback section
     [ ] create an email that requests feedback on proposed feedback from current users with (eq (getf *user* :notify-kindista) t)
-[ ] loves
-   - #links
-   - post to /love
-   - show list of people who love an item
 [ ] invite facebook friends
-[ ] split up database
-   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
 [ ] invite gmail/hotmail/yahoo contacts
 [ ] flag items
 [ ] reply by email (maybe)
-[ ] t-shirts
-[ ] promote at unity, friends, unitarians, etc
