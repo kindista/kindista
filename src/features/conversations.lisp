@@ -382,9 +382,6 @@
         (if party
          (cond
            ((post-parameter "leave")
-            (with-locked-hash-table (*person-conversation-index*)
-              (asetf (gethash *userid* *person-conversation-index*)
-                     (remove id it :key #'result-id)))
             (amodify-db id :people (remove *userid* it :key #'caar))
             (see-other "/messages"))
 
