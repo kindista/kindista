@@ -29,28 +29,24 @@
   "margin: 0.35em 0.5em 0.35em 0;
    font-size: 1.2em;
    background: #3c6dc8 !important;
-   background: -moz-linear-gradient( top, #3c6dc8 0%, #29519c);
-   background: -ms-linear-gradient( top, #3c6dc8 0%, #29519c);
-   background: -o-linear-gradient( top, #3c6dc8 0%, #29519c);
-   background: -webkit-linear-gradient( top, #3c6dc8 0%, #29519c);
-   background: -webkit-gradient( linear, left top, left bottom, from(#3c6dc8), to(#29519c));
    border: 1px solid #474747;
-   text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
    padding: 0.5em 0.7em;
    vertical-align: middle;
    color: #ffffff !important;
    border-radius: 0.25em;
-   text-decoration: none;")
+   text-decoration: none;"
+  ;background: -moz-linear-gradient( top, #3c6dc8 0%, #29519c);
+  ;background: -ms-linear-gradient( top, #3c6dc8 0%, #29519c);
+  ;background: -o-linear-gradient( top, #3c6dc8 0%, #29519c);
+  ;background: -webkit-linear-gradient( top, #3c6dc8 0%, #29519c);
+  ;background: -webkit-gradient( linear, left top, left bottom, from(#3c6dc8), to(#29519c));
+  )
 
 (defparameter *style-button-link*
-  "{color: #ffffff !important;
-    font-weight: bold;
-    cursor: pointer;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
-    text-decoration: none;}
-    :hover {text-decoration: underline;}
-    :visited {color: #ffffff !important;} "
-  )
+  "cursor: pointer;
+   color: #ffffff !important;
+   text-decoration: none;
+   display: block; ")
 
 (defparameter *style-quote-box* "border-collapse: collapse;
                                  background: #ebf2e4;
@@ -84,7 +80,11 @@
     (:table :cellspacing "0" :cellpadding "0"
      (:td :style *style-button*
        (:a :style *style-button-link* :href url
-        (:span :style "color:#ffffff!important;" (str message)))))))
+        (:span :style "color:#ffffff!important;
+                       font-weight: bold;
+                       cursor: pointer;
+                       text-shadow: 1px 1px 2px rgba(0,0,0,0.4); "
+         (str message)))))))
 
 (defun no-reply-notice
   (&optional (instructions "do so from their profile on Kindista.org"))
