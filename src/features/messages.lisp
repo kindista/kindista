@@ -51,6 +51,23 @@
                   (gethash userid *person-mailbox-index*))
                 :unread)))
 
+(defun find-existing-transaction
+  (inventory-id
+   &optional (userid *userid*)
+   &aux (mailbox (gethash userid *person-mailbox-index*)))
+  "Finds an existing transaction for a give userid/inventory-id pair.
+   IMPORTANT: should only be used when userid is the one replying to the
+   inventory item, NOT when userid is the one who originally posted it."
+  (dolist (message (append (getf mailbox :inbox)
+                           (getf mailbox :read)
+                           (getf mailbox :unread)
+                           (getf mailbox :compost)
+                           (getf mailbox :deleted)))
+    (when (eq (message-type message) :transaction)
+      (let ((transaction (db (message-id message))))
+        (when (eql (getf transaction :on) inventory-id)
+          (return (message-id message)))))))
+
 (defun new-inbox-messages
   (&optional (userid *userid*)
              (mailbox (gethash userid *person-mailbox-index*))

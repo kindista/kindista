@@ -1,5 +1,4 @@
-[ ] don't create new transaction when replying to same inventory item twice
-    - post to the existing transaction conversation
+[ ] actually delete deleted gratitude messages when all parties have deleted it
 [ ] group invite notification for new accounts
 [ ] fix group notifications for new group admins
 [ ] make sure blog/kindista/etc mailings don't go out to (db id :active nil) users

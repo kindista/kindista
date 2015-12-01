@@ -538,21 +538,27 @@
 
         ((or (post-parameter-string "reply-text")
              (and (post-parameter "reply-text")
-                  (or (string= action-type "offer")
-                      (string= action-type "request"))))
-         (create-transaction :on id
-                             :text (post-parameter-string "reply-text")
-                             :action (cond
-                                       ((string= action-type "offer")
-                                        :offered)
-                                       ((string= action-type "request")
-                                        :requested))
-                             :match-id (post-parameter-integer "match"))
-         (flash (s+ "Your "
-                    (or action-type "reply")
-                    " has been sent."))
-         (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
-         (see-other (or next (script-name*))))
+                  (or (and (eql type :request)
+                           (string= action-type "offer"))
+                      (and (eql type :offer)
+                           (string= action-type "request")))))
+         (aif (find-existing-transaction id)
+           (post-transaction it)
+           (progn
+             (flash (s+ "Your "
+                        (or action-type "reply")
+                        " has been sent."))
+             (contact-opt-out-flash (list by (unless (eql *userid* by)
+                                               *userid*)))
+             (create-transaction :on id
+                                 :text (post-parameter-string "reply-text")
+                                 :action (cond
+                                           ((string= action-type "offer")
+                                            :offered)
+                                           ((string= action-type "request")
+                                            :requested))
+                                 :match-id (post-parameter-integer "match"))
+             (see-other (or next (script-name*))))))
 
         ((or (post-parameter "reply")
              action-type

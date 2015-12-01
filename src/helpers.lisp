@@ -56,9 +56,11 @@
        (return (cadr item)))))
 
 (defun safe-parse-integer (int?)
-  (when (and (typep int? 'string)
-             (scan +number-scanner+ int?))
-    (parse-integer int?)))
+  (cond
+    ((typep int? 'integer) int?)
+    ((and (typep int? 'string)
+          (scan +number-scanner+ int?))
+     (parse-integer int?))))
 
 (defun progress-bar (percent)
   (html

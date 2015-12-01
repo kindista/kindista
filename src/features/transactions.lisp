@@ -879,11 +879,13 @@
 
 (defun post-transaction (id)
   (require-active-user
-    (setf id (parse-integer id))
+    (setf id (safe-parse-integer id))
     (let ((transaction (db id)))
       (if (eq (getf transaction :type) :transaction)
         (let* ((people (getf transaction :people))
                (message (gethash id *db-messages*))
+               (message-text (or (post-parameter-string "reply-text")
+                                 (post-parameter-string "text")))
                (mailbox (assoc-assoc *userid* people))
                (party (car mailbox))
                (people-list (all-message-people message))
@@ -897,7 +899,11 @@
                 (cond
                   ((string= action-string "want")
                    :requested)
+                  ((string= action-string "request")
+                   :requested)
                   ((string= action-string "will-give")
+                   :offered)
+                  ((string= action-string "offer")
                    :offered)
                   ((string= action-string "decline")
                    :declined)
@@ -923,14 +929,16 @@
                        (index-message
                          id
                          (amodify-db id :message-folders folders
-                                        :log (append it (list log-event))))
-                       (unless (eq action :received)
+                                     :log (append it (list log-event))))
+                       (unless (or (eq action :received) message-text)
                          (flash "Your action has been recorded and the other party will be notified.")
                          (contact-opt-out-flash participants
-                                                :item-type "transaction")
+                                                :item-type "transaction"))
+
+                       (unless (eql action :received)
                          (notice :new-transaction-action :time time
-                                                         :transaction-id id
-                                                         :log-event log-event))
+                                 :transaction-id id
+                                 :log-event log-event))
                        (see-other url))))
 
               (setf other-party-name (db (transaction-other-party id) :name))
@@ -939,15 +947,16 @@
                 ((post-parameter "cancel")
                  (see-other url))
 
-                ((post-parameter "text")
-                 (flash "Your message has been sent.")
-                 (contact-opt-out-flash participants)
+                (message-text
                  (let* ((time (get-universal-time))
                         (new-comment-id (create-comment :on id
-                                                        :text (post-parameter "text")
+                                                        :text message-text
                                                         :time time
                                                         :by party)))
                    (send-metric* :message-sent new-comment-id))
+                 (awhen action (modify-log it))
+                 (flash "Your message has been sent.")
+                 (contact-opt-out-flash participants)
                  (see-other url))
 
                 ((eq action :declined)
