@@ -1971,7 +1971,7 @@ table.messages {
 div.suggested-items.card {
  background: #fbf4d7;
  border-radius: 0.5em;
- padding-bottom: 0;
+ padding: 0 0 0 0;
  margin-bottom: 1em;
 }
 

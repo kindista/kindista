@@ -1,8 +1,4 @@
 [ ] make sure blog/kindista/etc mailings don't go out to (db id :active nil) users
-    [ ] check gratitude emails sent to people with (db id :active nil)
-    [ ] if they want to be notified when gratitudes are posted to their account
-        let them know that they won't be shown on their profile until they
-        reactivate? (if this is so, then email should remind of this detail)
 [ ] fix javascript bug for posting item images when more than one form is present on a page
 [ ] expiration/renewals for inventory items
 [ ] loves
@@ -23,11 +19,15 @@
 [ ] web apps
   - iphone - https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
   - android
+[ ] email preferences for deactivated accounts
+    [ ] check gratitude emails sent to people with (db id :active nil)
+    [ ] if they want to be notified when gratitudes are posted to their account
+        let them know that they won't be shown on their profile until they
+        reactivate? (if this is so, then email should remind of this detail)
 [ ] enable gratitude recipients to hide gratitudes
 [ ] allow people to offer or request items anonymously
 [ ] better matching of search results
 [ ] add gratitude option for standard invitations
-[ ] email preferences for deactivated accounts
 [ ] allow kindista offers tagged with "proposed-feature" to get a tab in the feedback section
     [ ] create an email that requests feedback on proposed feedback from current users with (eq (getf *user* :notify-kindista) t)
 [ ] invite facebook friends
