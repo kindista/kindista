@@ -149,6 +149,7 @@
          (created (getf data :created))
          (subjects (getf data :subjects))
          (people (cons (getf data :author) subjects))
+         (message-folders (getf data :message-folders))
          (result (make-result :latitude (getf author :lat)
                               :longitude (getf author :long)
                               :people people
@@ -172,7 +173,9 @@
      (awhen (getf data :on)
        (index-gratitude-link id it created))
 
-     (unless (getf data :transaction-id)
+     (when (and (not (getf data :transaction-id))
+                (or (getf message-folders :inbox)
+                    (getf message-folders :unread)))
        (index-message id data))
 
      ;; unless gratitude is older than 180 days

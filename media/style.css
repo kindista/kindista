@@ -1043,28 +1043,37 @@ img.small {
 }
 
 #preview-cards .card {
- margin: 0 0 1em;
  padding: 0em 1.2em 1.2em 1.2em;
- border-radius: 0.6em;
  background: #fff;
  position: static; /* safari bug */
  display: inline-block;
 }
 
-#preview-cards .card.offer {
- border-top: 0.5em solid #D8CF98;
+
+#preview-cards .card,
+.card.joined,
+.card.offer,
+.card.request,
+.card.gratitude {
+ margin: 0 0 1em;
+ border-radius: 0.6em;
 }
 
-#preview-cards .card.request {
- border-top: 0.5em solid #C29393;
+/* based on chakras, hue/value 66 */
+.card.offer {
+ border-top: 0.3em solid #85a83a;
 }
 
-#preview-cards .card.gratitude {
- border-top: 0.5em solid #76997F;
+.card.request {
+ border-top: 0.3em solid #a87a3a;
 }
 
-#preview-cards .card.joined {
- border-top: 0.5em solid #505791;
+.card.gratitude {
+ border-top: 0.3em solid #3a9aa8;
+}
+
+.card.joined {
+ border-top: 0.3em solid #a83a78;
 }
 
 #screenshots {
@@ -1947,7 +1956,7 @@ table.messages {
  border-right: 1px solid #ECE3CB;*/
  border-bottom: 1px solid #eee;
  clear: both;
- padding: 0 0 1.25em 0;
+ padding: 0 0.2em 0.6em;
  margin: 0.5em 0;
  overflow: hidden;
  height:100%; /* DJB changed this 2/3/14 - make sure it doesn't mess with anything else */
@@ -1962,7 +1971,7 @@ table.messages {
 div.suggested-items.card {
  background: #fbf4d7;
  border-radius: 0.5em;
- padding-bottom: 0;
+ padding: 0 0 0 0;
  margin-bottom: 1em;
 }
 

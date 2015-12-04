@@ -52,6 +52,7 @@
                    :notify-expired-invites t
                    :notify-blog t
                    :notify-inventory-digest t
+                   :notify-group-membership-invites t
                    :notify-kindista t))
 
 (defun create-person (&key name email password host aliases pending)
@@ -71,6 +72,7 @@
                                      :notify-reminders t
                                      :notify-expired-invites t
                                      :notify-blog t
+                                     :notify-group-membership-invites t
                                      :notify-inventory-digest t
                                      :notify-kindista t)))
          (person (db person-id)))
