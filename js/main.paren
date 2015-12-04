@@ -3,9 +3,24 @@
 (defun set-display (element value)
   (setf (@ element #:style #:display) value))
 
-(defun submit-image-form ()
-  (set-display ((@ #:document #:get-element-by-id) "spinner") "inline-block")
-  ((@ #:document #:forms #:imageform #:submit)))
+(defvar submit-image-form
+  (lambda (param)
+    ((@ #:console #:log) param)
+    ((@ #:console #:log) (@ param #:form))
+    (set-display ((@ param #:form #:get-elements-by-class-name) "spinner") "inline-block")
+    ((@ param #:form #:submit))))
+
+(defun submit-image-form-2 (param)
+  ((@ #:console #:log) param)
+  ((@ #:console #:log) (@ param #:form))
+  (set-display ((@ param #:form #:get-elements-by-class-name) "spinner") "inline-block")
+  ((@ param #:form #:submit)))
+
+(defun submit-image-form-old (imageform spinner)
+  ((@ #:console #:log) spinner)
+  ((@ #:console #:log) ((@ #:document #:get-element-by-id) spinner))
+  (set-display ((@ #:document #:get-element-by-id) spinner) "inline-block")
+  ((@ #:document #:forms imageform #:submit)))
 
 (defun submit-markdown-form ()
   (set-display ((@ #:document #:get-element-by-id) "spinner") "inline-block")

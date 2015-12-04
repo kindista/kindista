@@ -35,10 +35,18 @@
    (modify-db image :filename filename)
    (values image)))
 
-(defun new-image-form (action next &key class on (button "Add a photo"))
+(defun new-image-form
+  (action
+   next
+   &key class
+        on
+        (button "Add a photo")
+   &aux (spinner-id (strcat* "spinner" on))
+        (image-form-name (strcat* "imageform" on))
+        )
   (html
     (:form :method "post"
-           :name "imageform"
+           :name image-form-name
            :class (or class "submit-image")
            :action action
            :enctype "multipart/form-data"
@@ -48,8 +56,14 @@
       (:input :type "file"
               :id "image-file"
               :name "image"
-              :onchange (ps-inline (submit-image-form)))
-      (:div :id "spinner" :class "spinner"))))
+              :onchange (ps-inline (submit-image-form this))
+                       ;(s+ "javascript:KsubmitImageForm("
+                       ;    image-form-name
+                       ;    ", \""
+                       ;    spinner-id
+                       ;    "\")")
+                       )
+      (:div :id spinner-id :class "spinner"))))
 
 (defun rotate-image (id)
   (let* ((image (db id))
@@ -156,6 +170,8 @@
            (flash "You have already posted the maximum of 5 images to this item.  Please delete one to add another." :error t)
            (see-other url))
           (t
+           (pprint item-id)
+           (terpri)
             (flet ((modify-item-images (item-id &key edited)
                      (handler-case
                        ;; hunchentoot returns a list containing
