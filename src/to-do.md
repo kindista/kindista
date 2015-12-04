@@ -1,5 +1,3 @@
-[ ] actually delete deleted gratitude messages when all parties have deleted it
-[ ] fix group notifications for new group admins
 [ ] make sure blog/kindista/etc mailings don't go out to (db id :active nil) users
     [ ] if they want to be notified when gratitudes are posted to their account
         let them know that they won't be shown on their profile until they
