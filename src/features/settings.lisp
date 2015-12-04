@@ -1376,6 +1376,7 @@
               (see-other (post-parameter "next")))
              (t
               (modify-db *userid* :pass (new-password (post-parameter "new-password-1")))
+              (delete-all-but-current-token-cookie)
               (flash "You have successfully changed your password.")
               (see-other (or (post-parameter "next") "/home")))))
 

@@ -1,5 +1,4 @@
 [ ] actually delete deleted gratitude messages when all parties have deleted it
-[ ] group invite notification for new accounts
 [ ] fix group notifications for new group admins
 [ ] make sure blog/kindista/etc mailings don't go out to (db id :active nil) users
     [ ] if they want to be notified when gratitudes are posted to their account
@@ -13,6 +12,7 @@
    - show list of people who love an item
 [ ] split up database
    - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
+[ ] split up access log into daily files
 [ ] accountability with user flaky-ness
     - possible survey in transaction items to provide feedback re: experience
       with the other party
@@ -20,6 +20,10 @@
     - ability to see constructive feedback if others can see yours
 [ ] post offers/requests to facebook
 [ ] notify of contact adds
+[ ] group discussions
+[ ] web apps
+  - iphone - https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
+  - android
 [ ] enable gratitude recipients to hide gratitudes
 [ ] allow people to offer or request items anonymously
 [ ] better matching of search results
