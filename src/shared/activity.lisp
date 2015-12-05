@@ -138,7 +138,7 @@
               (htm
                 " &middot; "
                 (str (new-image-form "/image/new"
-                                     url
+                                     (script-name*)
                                      :on id
                                      :button image-text))))
             (when comments

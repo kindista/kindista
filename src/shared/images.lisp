@@ -43,26 +43,28 @@
         (button "Add a photo")
    &aux (spinner-id (strcat* "spinner" on))
         (image-form-name (strcat* "imageform" on))
-        )
+        (input-id (strcat* "image-input" on)))
   (html
     (:form :method "post"
            :name image-form-name
+           :id image-form-name
            :class (or class "submit-image")
            :action action
            :enctype "multipart/form-data"
       (:input :type "hidden" :name "next" :value next)
       (when on (htm (:input :type "hidden" :name "on" :value on)))
-      (:label :for "image-file" (str button))
+      (:label :for input-id (str button))
       (:input :type "file"
-              :id "image-file"
+              :id input-id
               :name "image"
-              :onchange (ps-inline (submit-image-form this))
-                       ;(s+ "javascript:KsubmitImageForm("
-                       ;    image-form-name
-                       ;    ", \""
-                       ;    spinner-id
-                       ;    "\")")
-                       )
+              :onchange;(ps-inline (submit-image-form this))
+                        (escape-for-html
+                          (s+ "javascript:KsubmitImageForm("
+                              "\'"
+                              image-form-name
+                              "\', \'"
+                              spinner-id
+                              "\')")))
       (:div :id spinner-id :class "spinner"))))
 
 (defun rotate-image (id)

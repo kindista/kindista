@@ -1,25 +1,14 @@
 function KsetDisplay(Kelement, Kvalue) {
     return Kelement.style.display = Kvalue;
 };
-var KsubmitImageForm = function (Kparam) {
-    console.log(Kparam);
-    console.log(Kparam.form);
-    KsetDisplay(Kparam.form.getElementsByClassName('spinner'), 'inline-block');
-    return Kparam.form.submit();
-};
-function KsubmitImageForm2(Kparam) {
-    console.log(Kparam);
-    console.log(Kparam.form);
-    KsetDisplay(Kparam.form.getElementsByClassName('spinner'), 'inline-block');
-    return Kparam.form.submit();
-};
-function KsubmitImageFormOld(Kimageform, Kspinner) {
+function KsubmitImageForm(Kimageform, Kspinner) {
+    console.log(Kimageform);
     console.log(Kspinner);
     console.log(document.getElementById(Kspinner));
     KsetDisplay(document.getElementById(Kspinner), 'inline-block');
-    return document.forms.Kimageform.submit();
+    return document.getElementById(Kimageform).submit();
 };
-function KsubmitMarkdownForm() {
+function KsubmitMarkdownForm1() {
     KsetDisplay(document.getElementById('spinner'), 'inline-block');
     return document.forms.markdownFile.submit();
 };
