@@ -1,9 +1,11 @@
-[ ] fix javascript bug for posting item images when more than one form is present on a page
 [ ] expiration/renewals for inventory items
 [ ] loves
    - #links
    - post to /love
    - show list of people who love an item
+[ ] web apps
+  - iphone - https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
+  - android
 [ ] split up database
    - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
 [ ] split up access log into daily files
@@ -14,9 +16,6 @@
     - ability to see constructive feedback if others can see yours
 [ ] post offers/requests to facebook
 [ ] notify of contact adds
-[ ] web apps
-  - iphone - https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
-  - android
 [ ] better matching of search results
 [ ] group discussions
 [ ] email preferences for deactivated accounts

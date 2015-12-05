@@ -8,7 +8,7 @@ function KsubmitImageForm(Kimageform, Kspinner) {
     KsetDisplay(document.getElementById(Kspinner), 'inline-block');
     return document.getElementById(Kimageform).submit();
 };
-function KsubmitMarkdownForm1() {
+function KsubmitMarkdownForm() {
     KsetDisplay(document.getElementById('spinner'), 'inline-block');
     return document.forms.markdownFile.submit();
 };

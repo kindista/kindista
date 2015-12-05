@@ -10,7 +10,7 @@
   (set-display ((@ #:document #:get-element-by-id) spinner) "inline-block")
   ((@ ((@ #:document #:get-element-by-id) imageform) #:submit)))
 
-(defun submit-markdown-form1 ()
+(defun submit-markdown-form ()
   (set-display ((@ #:document #:get-element-by-id) "spinner") "inline-block")
   ((@ #:document #:forms #:markdown-file #:submit)))
 
