@@ -98,7 +98,7 @@
   (let* ((data (db comment-id))
          (by (car (getf data :by)))
          (bydata (db by)))
-    (card
+    (card comment-id
       (html
         (str (h3-timestamp (getf data :created)))
         (:p (:a :href (s+ "/people/" (username-or-id by))
