@@ -1,9 +1,16 @@
 function KsetDisplay(Kelement, Kvalue) {
     return Kelement.style.display = Kvalue;
 };
-function KsubmitImageForm() {
+function KsubmitImageForm(Kimageform, Kspinner) {
+    console.log(Kimageform);
+    console.log(Kspinner);
+    console.log(document.getElementById(Kspinner));
+    KsetDisplay(document.getElementById(Kspinner), 'inline-block');
+    return document.getElementById(Kimageform).submit();
+};
+function KsubmitMarkdownForm() {
     KsetDisplay(document.getElementById('spinner'), 'inline-block');
-    return document.forms.imageform.submit();
+    return document.forms.markdownFile.submit();
 };
 function KlimitCharacters(Kmessage, KcharCount, Kindicator) {
     Kchars = Kmessage.value.length;

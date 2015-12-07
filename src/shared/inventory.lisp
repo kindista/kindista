@@ -20,6 +20,38 @@
 (defun new-pending-offer-notice-handler ()
   (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
 
+
+(defun fix-transactions-with-incorrect-action-type (&aux transactions-to-fix)
+  "To clean the DB because of a bug in which some transactions were initiated with wrong action-type. e.g. user 'offered' an :offer"
+  (dolist (id (hash-table-keys *db*))
+    (let* ((data (db id))
+           (type (getf data :type))
+           (first-log-entry (car (getf data :log)))
+           (first-log-entry-party (car (getf first-log-entry :party)))
+           (first-action (getf first-log-entry :action)))
+      (when (eq type :transaction)
+        (let* ((inventory-id (getf data :on))
+               (inventory-item (db inventory-id))
+               (inventory-by (getf inventory-item :by))
+               (inventory-type (getf inventory-item :type))
+               (new-first-log-entry))
+          (unless (or (eql first-log-entry-party inventory-by)
+                      (group-admin-p inventory-by first-log-entry-party))
+            (cond
+              ((and (eq inventory-type :offer)
+                    (eq first-action :offered))
+               (setf new-first-log-entry
+                     (substitute :requested :offered first-log-entry)))
+              ((and (eq inventory-type :request)
+                    (eq first-action :requested))
+               (setf new-first-log-entry
+                     (substitute :offered :requested first-log-entry)))))
+          (when new-first-log-entry
+            (push id transactions-to-fix)
+            (amodify-db id :log (cons new-first-log-entry
+                                      (cdr it))))))))
+  transactions-to-fix)
+
 (defun create-inventory-item (&key type (by *userid*) title details tags privacy)
   (insert-db (list :type type
                    :active t
@@ -334,7 +366,7 @@
     (remove-from-db id)))
 
 (defun deleted-invalid-item-reply-text (to-name from-name type &optional explanation)
-  (strcat "Greetings " to-name ","
+  (strcat* "Greetings " to-name ","
         #\linefeed
         #\linefeed
         "Your " type
@@ -342,9 +374,7 @@
         "Please list multiple offers and requests separately (not in the same item). "
         "Kindista is for giving and receiving freely; please avoid any language which implies that you are expecting barter or money in exchange for your offer or request. "
         #\linefeed
-        (aif explanation
-          (strcat #\linefeed it #\linefeed)
-          "")
+        (awhen explanation (strcat #\linefeed it #\linefeed))
         #\linefeed
         "To ensure that this doesn't happen again, please review Kindista's Sharing Guidelines before posting any additional offers or requests:"
         #\linefeed
@@ -510,6 +540,17 @@
            (next (post-parameter "next")))
 
       (cond
+        ((and (or (and (eq type :offer)
+                       (eq action-type :offered))
+                  (and (eq type :request)
+                       (eq action-type :requested)))
+              (nor (eql *userid* by)
+                   adminp))
+         ;; in case of wrong action-type post request. yes it has happened.
+         (notice :error :on "User is trying to 'request' a :request or 'offer' an :offer"
+                        :data (cons id item))
+         (flash "The system encountered a problem. Please go to the item's page and try offering/requesting it again.  If the problem persists, please report it in Kindista's Help/Feedback section." :error t))
+
         ((nor (getf item :active)
               (eql by *userid*)
               (getf *user* :admin))
@@ -530,21 +571,27 @@
 
         ((or (post-parameter-string "reply-text")
              (and (post-parameter "reply-text")
-                  (or (string= action-type "offer")
-                      (string= action-type "request"))))
-         (create-transaction :on id
-                             :text (post-parameter-string "reply-text")
-                             :action (cond
-                                       ((string= action-type "offer")
-                                        :offered)
-                                       ((string= action-type "request")
-                                        :requested))
-                             :match-id (post-parameter-integer "match"))
-         (flash (s+ "Your "
-                    (or action-type "reply")
-                    " has been sent."))
-         (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
-         (see-other (or next (script-name*))))
+                  (or (and (eql type :request)
+                           (string= action-type "offer"))
+                      (and (eql type :offer)
+                           (string= action-type "request")))))
+         (aif (find-existing-transaction id)
+           (post-transaction it)
+           (progn
+             (flash (s+ "Your "
+                        (or action-type "reply")
+                        " has been sent."))
+             (contact-opt-out-flash (list by (unless (eql *userid* by)
+                                               *userid*)))
+             (create-transaction :on id
+                                 :text (post-parameter-string "reply-text")
+                                 :action (cond
+                                           ((string= action-type "offer")
+                                            :offered)
+                                           ((string= action-type "request")
+                                            :requested))
+                                 :match-id (post-parameter-integer "match"))
+             (see-other (or next (script-name*))))))
 
         ((or (post-parameter "reply")
              action-type
@@ -670,9 +717,7 @@
                    (create-transaction :on id
                                        :pending-deletion t
                                        :text (post-parameter "explanation"))
-                   (if (db by :pending)
-                     (delete-pending-inventory-item id)
-                     (deactivate-inventory-item id :violates-terms t))
+                   (deactivate-inventory-item id :violates-terms t)
                    (flash (strcat (string-capitalize type) " " id " has been deactivated."))
                    (see-other (if (string= (post-parameter "next")
                                            (strcat "/" type "s/" id))
@@ -1167,7 +1212,8 @@
               (str (s+ (if action-type "Respond" "Reply")
                        " to "
                        (person-link (getf data :by) :possessive t)
-                       type))))
+                       type
+                       ":"))))
           (:blockquote
             (:p
               (awhen (getf data :title)
@@ -1186,13 +1232,14 @@
 
               (:textarea :cols "1000" :rows "4" :name "reply-text" (str text))
 
-              (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
-              (:button :class "yes"
-                       :type "submit"
-                       :class "submit"
-                (str (aif action-type
-                       (s+ (string-capitalize it) " This")
-                       "Reply"))))))
+              (:div
+                (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
+                (:button :class "yes"
+                 :type "submit"
+                 :class "submit"
+                 (str (aif action-type
+                        (s+ (string-capitalize it) " This")
+                        "Reply")))))))
 
         :selected (s+ type "s")
         :class "inventory-reply"))))

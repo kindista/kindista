@@ -27,7 +27,7 @@
                   :kindista-js
                   :adw-charting
                   :iterate)
-            (:import-from :parenscript :ps :ps-inline :@ :create :f)
+            (:import-from :parenscript :ps :ps-inline :ps-inline* :@ :create :f)
             (:import-from :cl-fad :file-exists-p)
             (:import-from :ps-dom1-symbols :document :get-element-by-id :submit :set-attribute
                                            :remove-attribute)

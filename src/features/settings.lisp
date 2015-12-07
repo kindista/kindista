@@ -62,7 +62,7 @@
                  (:div :class "title"
                   (str (or title (string-capitalize item))))))))
   (html
-    (:a :id item)
+    (:a :id (hyphenate item))
     (:div :class "item settings-item"
       (:div :class "settings-item-table"
         (str title-div)
@@ -108,40 +108,34 @@
    :action (strcat "/groups/" groupid)
    :editable editable ))
 
-(defun settings-avatar (editable &optional groupid)
+(defun settings-avatar (&optional groupid)
   (let ((id (or groupid *userid*))
         (entity (aif groupid
                   (db it)
                   *user*)))
    (settings-item-html
-     "avatar"
-      (if editable
-        (new-image-form "/settings" *base-url* :on groupid)
-        (html
-          (:div :class "settings-avatar"
-            (:img :class "bigavatar"
-                  :src (get-avatar-thumbnail id 300 300)
-                  :alt (getf entity :name))
-            (when (getf entity :avatar)
-              (htm (:form :method "post"
-                          :action "/settings"
-                          :class "activity-image"
-                     (:button :class "simple-link green"
-                              :type "submit"
-                              :name "rotate-avatar"
-                              "Rotate")))))))
-  :buttons (html (:form :action "/settings"
-                        :method "post"
-                   (:input :type "hidden"
-                           :name "next"
-                           :value (url-compose "/settings"
-                                               "groupid" groupid))
-                   (:button :type "input"
-                            :class "cancel small"
-                            :name "cancel"
-                            "Cancel")))
+     "profile picture"
+     (html
+       (:div :class "settings-avatar"
+         (:img :class "bigavatar"
+               :src (get-avatar-thumbnail id 300 300)
+               :alt (getf entity :name))
+         (when (getf entity :avatar)
+           (htm (:form :method "post"
+                       :action "/settings"
+                       :class "activity-image"
+                  (:button :class "simple-link green"
+                           :type "submit"
+                           :name "rotate-avatar"
+                           "Rotate"))))))
+  :buttons (new-image-form "/settings"
+                           *base-url*
+                           :on groupid
+                           :button (if (getf entity :avatar)
+                                     "Edit photo"
+                                     "Add a photo"))
   :form-markup nil
-  :editable editable)))
+  :editable t)))
 
 (defun settings-name (editable &optional groupid group-name)
   (let ((aliases (unless groupid (getf *user* :aliases))))
@@ -813,7 +807,7 @@
                    groupid
                    group)))
 
-          (str (settings-avatar (string= edit "avatar") groupid))
+          (str (settings-avatar groupid))
           (str (settings-address (string= edit "address") groupid group))
           (when groupid
             (str (settings-item-html
@@ -1382,6 +1376,7 @@
               (see-other (post-parameter "next")))
              (t
               (modify-db *userid* :pass (new-password (post-parameter "new-password-1")))
+              (delete-all-but-current-token-cookie)
               (flash "You have successfully changed your password.")
               (see-other (or (post-parameter "next") "/home")))))
 

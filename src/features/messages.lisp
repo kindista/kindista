@@ -26,11 +26,60 @@
           (when (> new-items 0)
             (collect id)))))
 
+(defun unread-mail-report
+  (&aux (users 0.0)
+        (unread-messages 0.0)
+        (all-messages (length (hash-table-keys *db-messages*))))
+  (iter (for id in *active-people-index*)
+        (let* ((mailbox (gethash id *person-mailbox-index*))
+               (new-items (new-inbox-messages id mailbox)))
+          (when (and (getf mailbox :inbox)
+                     (< 0 (length (getf mailbox :inbox))))
+            (incf users))
+          (when (> new-items 0)
+            (asetf unread-messages (+ it new-items)))))
+  (list :users (rationalize users)
+        :unread-messages (rationalize unread-messages)
+        :percent-of-messages-unread (/ unread-messages all-messages)
+        :unread-per-user-with-mail (/ unread-messages users)
+        :unread-per-active-user (/ unread-messages
+                                   (length *active-people-index*))))
+
 (defun new-inbox-items (&optional (userid *userid*))
   (length (getf (if *userid*
                   *user-mailbox*
                   (gethash userid *person-mailbox-index*))
                 :unread)))
+
+(defun find-existing-transaction
+  (inventory-id
+   &optional (userid *userid*)
+   &aux (mailbox (gethash userid *person-mailbox-index*)))
+  "Finds an existing transaction for a give userid/inventory-id pair.
+   IMPORTANT: should only be used when userid is the one replying to the
+   inventory item, NOT when userid is the one who originally posted it."
+  (dolist (message (append (getf mailbox :inbox)
+                           (getf mailbox :read)
+                           (getf mailbox :unread)
+                           (getf mailbox :compost)
+                           (getf mailbox :deleted)))
+    (when (eq (message-type message) :transaction)
+      (let ((transaction (db (message-id message))))
+        (when (eql (getf transaction :on) inventory-id)
+          (return (message-id message)))))))
+
+(defun new-inbox-messages
+  (&optional (userid *userid*)
+             (mailbox (gethash userid *person-mailbox-index*))
+   &aux (unread-messages 0)
+        (unread-mail (getf (if *userid*
+                             *user-mailbox*
+                             mailbox)
+                           :unread)))
+  (dolist (item unread-mail)
+    (when (find (message-type item) (list :transaction :conversation))
+      (incf unread-messages)))
+  unread-messages)
 
 ;(defun migrate-to-new-inboxes ()
 ;  (dolist (id (hash-table-keys *db*))
@@ -130,8 +179,6 @@
           (:compost
             (case (message-type message)
               (:gratitude
-                 (add-to-folder :deleted)
-                 (setf (cdr (assoc-assoc *userid* (message-people message))) :read)
                  (remove-from-folders (list :inbox :compost :unread)))
               (t
                (remove-from-folders (list :inbox :unread))

@@ -74,7 +74,9 @@
               (:form :class "primary-action" :method "post" :action url
                 (:input :type "hidden"
                         :name "next"
-                        :value next)
+                        ;; don't use anchor link. otherwise user can't see
+                        ;; the success flash after they post a reply
+                        :value (request-uri*))
                 (:button :type "submit"
                          :class "small blue primary-action"
                          :name (getf it :name)
@@ -90,7 +92,13 @@
               (:input :type "hidden" :name "next" :value next)
               (if (member *userid* (gethash id *love-index*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
-                (htm (:input :type "submit" :name "love" :value "Love")))
+                (htm (:input :type "submit" :name "love" :value "Love"))))
+            (:form :method "post" :action url
+              (:input :type "hidden"
+                      :name "next"
+                      ;; don't use anchor link. otherwise user can't see
+                      ;; the success flash after they post a reply
+                      :value (request-uri*))
               (awhen share-url
                 (htm
                   " &middot; "
@@ -126,11 +134,13 @@
                      (htm (:input :type "submit"
                                   :name "delete"
                                   :value "Delete")))))))
-            (when (and image-text
-                       (not (string= url (script-name*))))
+            (when image-text
               (htm
                 " &middot; "
-                (:a :href url (str image-text))))
+                (str (new-image-form "/image/new"
+                                     (script-name*)
+                                     :on id
+                                     :button image-text))))
             (when comments
               (htm
                 " &middot; "
@@ -144,7 +154,7 @@
         ;    " &middot; "
         ;    (str (flag-button url))))))))
 
-(defun event-activity-item (result &key sidebar truncate (show-distance nil) time date)
+(defun event-activity-item (result &key featuredp sidebar truncate (show-distance nil) time date)
   (let* ((host (first (result-people result)))
          (item-id (result-id result))
          (data (db item-id))
@@ -155,9 +165,9 @@
          (item-url (strcat "/events/" item-id)))
 
     (activity-item
-      :id (strcat item-id ":" date)
+      :id (strcat item-id ":" (or date local-time))
       :url item-url
-      :class "event"
+      :class (strcat* (when featuredp "featured ") "event")
       :edit (or (eql host *userid*)
                 group-adminp
                 (getf *user* :admin))
@@ -195,10 +205,10 @@
                          (:td (:strong "Schedule: "))
                          (:td
                            (str
-                             (recurring-event-schedule item-id
-                                                       data
-                                                       (string= (script-name*)
-                                                                item-url)))))))
+                             (recurring-event-schedule
+                               item-id
+                               data
+                               (string= (script-name*) item-url)))))))
                    (:tr
                      (:td (:strong "Place: "))
                      (:td (str (getf data :address))
@@ -254,10 +264,9 @@
           :time (when show-when (result-time result))
           :show-actions show-actions
           :edit (when (or self adminp (getf *user* :admin)) t)
-          :image-text (when (or self adminp)
-                        (if images
-                          "Add/remove photos"
-                          "Add photos"))
+          :image-text (when (and (or self adminp)
+                                 (< (length images) 5))
+                        "Add photos")
           :hearts (length (loves item-id))
           ;:comments (length (comments item-id))
           :content (html
@@ -335,10 +344,9 @@
                    :admin-delete (and (getf *user* :admin)
                                       (not self)
                                       (not group-adminp))
-                   :image-text (when self
-                                 (if images
-                                   "Add/remove photos"
-                                   "Add photos"))
+                   :image-text (when (and (or self group-adminp)
+                                          (< (length images) 5))
+                                 "Add photos")
                    :primary-action (unless self
                                      (if (string= type "request")
                                        (list :name "action-type"

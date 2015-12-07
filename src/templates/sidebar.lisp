@@ -32,19 +32,36 @@
           (:p :class "small" "Want to express gratitude for your friends? It's easy to invite them to join Kindista. "
               (:a :href "/faq#how-do-invitations-work" "Learn how invitations work") "."))))))
 
-(defun events-sidebar ()
-  (let ((events (local-upcoming-events :count 6 :paginate nil :sidebar t)))
+(defun events-sidebar (&aux (count 6))
+  (multiple-value-bind (events featured-events)
+    (local-upcoming-events)
     (html
       (:div :class "item right only event"
        (:h2 "Upcoming Events")
-       (if (string= events "")
+       (unless events
          (htm
            (:p :class "small"
             "There are not any events posted in your area at this time. "
             (unless (= (user-distance) 0) "To see more events, increase the \"show activity within\" distance."))))
        (:a :class "add" :href "/events/new" "+add an event")
-       (str events)
-       ))))
+       (when featured-events
+         (htm
+           (:div :class "featured events item"
+             (:div :class "featured header"
+               (:h3 (str (pluralize featured-events
+                                   "Featured Event"
+                                   :hidenum t))))
+            (dolist (fevent featured-events)
+              (str (event-activity-item fevent
+                                        :sidebar t
+                                        :featuredp t
+                                        :truncate t))))))
+       (str (upcoming-events-html
+              (remove-if (lambda (result) (find result featured-events))
+                         events)
+                         :count count
+                         :paginate nil
+                         :sidebar t))))))
 
 (defparameter *sharing-guide-sidebar-html*
   (markdown-file (s+ +markdown-path+ "sharing-guide-sidebar.md")))

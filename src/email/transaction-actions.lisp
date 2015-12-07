@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -24,6 +24,7 @@
    &aux (transaction (db transaction-id))
         (inventory-id (getf transaction :on))
         (on-item (db inventory-id))
+        (inventory-by (getf on-item :by))
         (on-type (getf on-item :type))
         (on-type-string (case on-type
                           (:offer "offer")
@@ -33,6 +34,7 @@
         (event-party (if (getf transaction :log)
                        (getf log-event :party)
                        (list (getf transaction :by))))
+        (transaction-action (getf log-event :action))
         (event-actor-id (car event-party))
         (event-actor (db event-actor-id))
         (event-actor-name (getf event-actor :name))
@@ -60,7 +62,7 @@
                                              group-name
                                              "you")
                                            transaction-url
-                                           :html-p html-p))
+                                          :html-p html-p))
            (notification-text (userid &key title-p (html-p nil))
              (cond
                ((and (eq (getf log-event :action) :gave) title-p)
@@ -74,7 +76,7 @@
                       (s+ group-name "'s ")
                       "your ")
                     on-type-string
-                    (unless title-p ".")))
+                    (unless title-p ":")))
                (t (transaction-action-text
                     log-event
                     transaction
@@ -87,39 +89,45 @@
     (when (and recipients (> (length recipients) 0))
       (dolist (recipient-id recipients)
         (let* ((recipient (db recipient-id))
+               (inventory-author-and-type
+                 (s+ (if (eql inventory-by recipient-id)
+                       "Your "
+                       (s+ (db inventory-by :name) "'s "))
+                     on-type-string))
                (email (car (getf recipient :emails)))
                (unsub-key (getf recipient :unsubscribe-key)))
-          (cl-smtp:send-email
-            +mail-server+
-            "PleaseDoNotReply <noreply@kindista.org>"
-            email
-            (notification-text recipient-id :title-p t)
-            (transaction-action-notification-email-text
-              (getf other-party :name)
-              event-actor-name
-              transaction-url
-              :email email
-              :unsubscribe-key unsub-key
-              :group-name group-name
-              :groupid groupid
-              :on-title on-title
-              :on-details on-details
-              :on-type-string on-type-string
-              :text (notification-text recipient-id)
-              :message message)
-            :html-message (transaction-action-notification-email-html
-                            (getf other-party :name)
-                            event-actor-name
-                            transaction-url
-                            :email email
-                            :unsubscribe-key unsub-key
-                            :group-name group-name
-                            :groupid groupid
-                            :on-title on-title
-                            :on-details on-details
-                            :on-type-string on-type-string
-                            :text (notification-text recipient-id :html-p t)
-                            :message message)))))))
+          (when (or *productionp*
+                    (getf recipient :test-user))
+            (cl-smtp:send-email
+              +mail-server+
+              "Kindista <noreply@kindista.org>"
+              email
+              (notification-text recipient-id :title-p t)
+              (transaction-action-notification-email-text
+                event-actor-name
+                transaction-url
+                inventory-author-and-type
+                :transaction-action transaction-action
+                :email email
+                :unsubscribe-key unsub-key
+                :group-name group-name
+                :groupid groupid
+                :on-title on-title
+                :on-details on-details
+                :text (notification-text recipient-id))
+              :html-message (transaction-action-notification-email-html
+                              event-actor-name
+                              transaction-url
+                              inventory-author-and-type
+                              :transaction-action transaction-action
+                              :email email
+                              :unsubscribe-key unsub-key
+                              :group-name group-name
+                              :groupid groupid
+                              :on-title on-title
+                              :on-details on-details
+                              :text (notification-text recipient-id :html-p t)
+                              :message message))))))))
 
 (defun gift-given-notification-text
   (giver-name
@@ -145,62 +153,57 @@
      text))
 
 (defun transaction-action-notification-email-text
-  (name
-   other-party-name
+  (other-party-name
    url
+   inventory-author-and-type
    &key on-title
         on-details
-        on-type-string
+        transaction-action
         text
-        message
         unsubscribe-key
         email
         group-name
         groupid)
   (strcat*
-(no-reply-notice " use the link below to reply to this transaction on Kindista.org")
-#\linefeed #\linefeed
-"Hi " name ","
-#\linefeed #\linefeed
-text
-#\linefeed #\linefeed
-(string-capitalize on-type-string) " details:"
-#\linefeed
-(ellipsis (or on-title on-details))
-(when message
-  (strcat* #\linefeed #\linefeed
-           other-party-name
-           " says:"
-           #\linefeed #\linefeed
-           message))
-#\linefeed #\linefeed
-"To reply to "
-other-party-name
-", please go to:"
-#\linefeed
-url
-#\linefeed #\linefeed
-"Thank you for sharing your gifts with us!"
-#\linefeed
-"-The Kindista Team"  
-#\linefeed #\linefeed
-(unsubscribe-notice-ps-text
-  unsubscribe-key
-  email
-  (s+ "notifications when people send "
-      (or group-name "you")
-      " messages and reply to "
-      (if groupid "its" "your")
-      " offers and requests")
-  :groupid groupid)))
+    text
+    #\linefeed #\linefeed
+    inventory-author-and-type
+    ":"
+    #\linefeed
+    (awhen on-title (strcat it #\linefeed))
+    (awhen on-details (strcat it #\linefeed))
+    ;(when message
+    ;  (strcat* #\linefeed #\linefeed
+    ;           other-party-name
+    ;           " says:"
+    ;           #\linefeed #\linefeed
+    ;           message))
+    #\linefeed
+    (if (eq transaction-action :gave)
+      "To post gratitude for "
+      "To reply to ")
+    other-party-name
+    ", please go to:"
+    #\linefeed
+    url
+    #\linefeed #\linefeed
+    (unsubscribe-notice-ps-text
+      unsubscribe-key
+      email
+      (s+ "notifications when people send "
+          (or group-name "you")
+          " messages and reply to "
+          (if groupid "its" "your")
+          " offers and requests")
+      :groupid groupid)))
 
 (defun transaction-action-notification-email-html
-  (name
-   other-party-name
+  (other-party-name
    url
+   inventory-author-and-type
    &key on-title
         on-details
-        on-type-string
+        transaction-action
         text
         message
         unsubscribe-key
@@ -209,38 +212,42 @@ url
         groupid)
   (html-email-base
     (html
-      (:p :style *style-p* (:strong (str (no-reply-notice " use the link below to reply to this transaction on Kindista.org"))))
-
-      (:p :style *style-p* "Hi " (str name) ",")
-
       (:p :style *style-p* (str (email-text text)))
 
-     (:p :style *style-p*
-      (str (string-capitalize on-type-string)) " details:")
-     (:table :cellspacing 0 :cellpadding 0
-             :style *style-quote-box*
-       (:tr (:td :style "padding: 4px 12px;"
-              (str (ellipsis (or on-title on-details) :email t)))))
+      (:p :style *style-p* (str inventory-author-and-type) ":")
 
-      (when message
-        (htm
-          (:p :style *style-p*  (str other-party-name) " says:")
-          (:table :cellspacing 0 :cellpadding 0
-                  :style *style-quote-box*
-            (:tr (:td :style "padding: 4px 12px;"
-                   (str (email-text message)))))))
+      (:table :cellspacing 0 :cellpadding 0
+              :style *style-quote-box*
+        (:tr (:td :style "padding: 4px 12px;"
+               (awhen on-title
+                 (htm (:p (:strong (str (ellipsis it :email t))))))
+               (awhen on-details
+                 (htm (:p (str (ellipsis it :email t)))))
+               )))
 
-      (:p :style *style-p*
-        "To reply to "
-        (str other-party-name)
-        ", please go to:"
-        (:br)
-        (:a :href url
-         (str url)))
+      (str (email-action-button
+             url
+             (if message
+               "See Message"
+               (s+ (if (eq transaction-action :gave)
+                     "Post gratitude for "
+                     "Respond to ")
+                   other-party-name))))
+     ;(when message
+     ;  (htm
+     ;    (:p :style *style-p*  (str other-party-name) " says:")
+     ;    (:table :cellspacing 0 :cellpadding 0
+     ;            :style *style-quote-box*
+     ;      (:tr (:td :style "padding: 4px 12px;"
+     ;             (str (email-text message)))))))
 
-      (:p :style *style-p* "Thank you for sharing your gifts with us!")
-
-      (:p "-The Kindista Team")
+     ;(:p :style *style-p*
+     ;  "To reply to "
+     ;  (str other-party-name)
+     ;  ", please go to:"
+     ;  (:br)
+     ;  (:a :href url
+     ;   (str url)))
 
       (str
         (unsubscribe-notice-ps-html

@@ -278,6 +278,9 @@ textarea {
 #about p, #about p a {
  font-family: georgia,serif;
 }
+body.about h3 {
+ margin-top: 1.6em;
+}
 
 .landing form {
  width:90%;
@@ -324,10 +327,14 @@ textarea {
  margin-bottom:.5em;
 }
 
-#signup label, #broadcast label {
- width: 6em;
+#broadcast label {
+ display: block;
+}
+
+#signup label {
  display: inline-block;
  vertical-align: middle;
+ width: 6em;
 }
 
 input[type=radio] {
@@ -349,6 +356,15 @@ input[type=radio].first-option {
 #decline p {
  margin: 1.5em 0 .8em 0em;
 }
+
+form.recipients,
+.mail.card div.membership-request,
+div.new-gratitude div#gratitude-by-email p.small,
+.blog.item textarea,
+.inventory-reply textarea {
+ max-width: 50em;
+}
+
 
 #signup button, .login button {
  padding-left: 0;
@@ -673,6 +689,7 @@ body.splash #symbol {
  padding: 0 .5em;
 }
 
+.settings-item .submit-image label,
 .splactions a.yes {
  margin: 0.5em;
  line-height: 4em;
@@ -721,6 +738,7 @@ div.horiz a.button.blue img {
  }
 }
 
+.settings-item .submit-image label,
 button.yes, a.yes {
  font-weight: bold;
  color: #fff;
@@ -971,6 +989,7 @@ a.cancel {
  padding: 0.55em;
 }
 
+.settings-item .submit-image label,
 button.small, a.small {
  font-size: 0.8em;
  line-height: normal;
@@ -1024,28 +1043,37 @@ img.small {
 }
 
 #preview-cards .card {
- margin: 0 0 1em;
  padding: 0em 1.2em 1.2em 1.2em;
- border-radius: 0.6em;
  background: #fff;
  position: static; /* safari bug */
  display: inline-block;
 }
 
-#preview-cards .card.offer {
- border-top: 0.5em solid #D8CF98;
+
+#preview-cards .card,
+.card.joined,
+.card.offer,
+.card.request,
+.card.gratitude {
+ margin: 0 0 1em;
+ border-radius: 0.6em;
 }
 
-#preview-cards .card.request {
- border-top: 0.5em solid #C29393;
+/* based on chakras, hue/value 66 */
+.card.offer {
+ border-top: 0.3em solid #85a83a;
 }
 
-#preview-cards .card.gratitude {
- border-top: 0.5em solid #76997F;
+.card.request {
+ border-top: 0.3em solid #a87a3a;
 }
 
-#preview-cards .card.joined {
- border-top: 0.5em solid #505791;
+.card.gratitude {
+ border-top: 0.3em solid #3a9aa8;
+}
+
+.card.joined {
+ border-top: 0.3em solid #a83a78;
 }
 
 #screenshots {
@@ -1390,8 +1418,8 @@ img.small {
 }
 
 #menu table img {
- max-width:50px;
- max-height:50px;
+ max-width: 4em;
+ max-height: 4em;
  display: block;
 }
 
@@ -1662,14 +1690,21 @@ form.matchmaker,
 div.privacy-selection-details,
 div.recurring-event-details,
 tr.select-linked-inventory div.option-text,
+div.cancel-transaction div.details,
 blockquote {
  margin: 0;
  background: #f8f8f8;
  padding: .5em;
+ max-width: 50em;
  border-radius: .25em;
  border-style: solid;
  border-width: 1px;
  border-color: #bbb;
+}
+
+div.cancel-transaction div.details {
+ margin-top: 1em;
+ font-weight: bold;
 }
 
 div.error-border,
@@ -1769,7 +1804,7 @@ h3.event-date, h3.my-invites {
 
 .event.item.right a.add {
  display: block;
- margin: 0.5em 0 0.8em 0;
+ margin: 0.4em 0 0.6em 0;
  font-weight: bold;
 }
 
@@ -1921,7 +1956,7 @@ table.messages {
  border-right: 1px solid #ECE3CB;*/
  border-bottom: 1px solid #eee;
  clear: both;
- padding: 0 0 1.25em 0;
+ padding: 0 0.2em 0.6em;
  margin: 0.5em 0;
  overflow: hidden;
  height:100%; /* DJB changed this 2/3/14 - make sure it doesn't mess with anything else */
@@ -1932,11 +1967,21 @@ table.messages {
  border-bottom: none;
 }
 
+.featured.events.item,
 div.suggested-items.card {
  background: #fbf4d7;
  border-radius: 0.5em;
- padding-bottom: 0;
+ padding: 0 0 0 0;
  margin-bottom: 1em;
+}
+
+.featured.event.card,
+.featured.header h3 {
+ padding: 0 0.3em;
+}
+
+div.right .featured.header h3 {
+ line-height: 1.5em;
 }
 
 div.suggested-items > div:last-child {
@@ -1957,7 +2002,7 @@ div.match-details p.match-reason {
 }
 
 div.suggested-items div.match-details,
-div.suggested-items div.match-header {
+div.suggested-items div.featured.header {
  padding: 0 0.7em;
 }
 
@@ -1970,13 +2015,22 @@ div.suggested-items .actions {
  margin: 0 0 0.4em;
 }
 
-div.featured.match-header {
+div.featured.header {
  background: #D6C994;
 }
 
-div.featured.match-header h3 {
+div.featured.events div.header {
+ border-top-left-radius:0.5em;
+ border-top-right-radius:0.5em;
+}
+
+div.featured.header h2 {
  font-size: 1.2em;
  display: inline;
+}
+
+div.featured.header h3,
+div.featured.header h2 {
  color: #fff;
 }
 
@@ -1984,10 +2038,10 @@ div.inventory-match {
  position: relative;
 }
 
-div.match-header button.simple-link {
+div.featured.header button.simple-link {
  text-shadow: none;
  padding: 0;
- margin: 0 0 0 0.4em;
+ margin: 0.3em 0 0 0.4em;
  font-size: 0.83em;
  font-weight: bold;
 }
@@ -2352,10 +2406,6 @@ div.membership-request button:last-child {
  margin-right: 0;
 }
 
-.mail.card div.membership-request {
- max-width: 50em;
-}
-
 .mail.card div.membership-request p.member-request-details {
  margin-top: 0;
 }
@@ -2535,7 +2585,10 @@ div.profile-buttons div.float-right {
  margin-right: 0;
 }
 
-.actions > form input, button.text, menu.horiz form input {
+.actions > form label,
+.actions > form input,
+button.text,
+menu.horiz form input {
  cursor:pointer;
  margin:0;
  padding:0;
@@ -2551,6 +2604,7 @@ div.profile-buttons div.float-right {
  font-size:0.9em;
 }
 
+.actions > form label,
 .card .actions a {
  color: #3c6dc8;
  font-size: 0.9em;
@@ -2654,6 +2708,32 @@ img.bigavatar {
  position: relative;
 }
 
+div.profile-pic {
+ position: relative;
+}
+
+div.profile-pic span.text-shadow {
+ position: absolute;
+ left: 1em;
+ top: 1.2em;
+ width:4.4em;
+ font-weight: bold;
+ font-size: 1.3em;
+ white-space: normal;
+ background: rgb(100%, 100%, 100%); /*fallback*/
+ background: rgba(100%, 100%, 100%, 0.7);
+ padding: 0.2em;
+}
+
+div.profile-pic.small span.text-shadow {
+ font-size: 1em;
+ padding: 0.2em;
+ left: 0;
+ top: 0;
+ width: 4em;
+ font-weight: bold;
+}
+
 .small-activity-image div.border {
  float: left;
  border:5px solid #fff;
@@ -2679,7 +2759,22 @@ div.submit-image {
 }
 
 .submit-image input[type=file] {
- display:inline-block;
+ width: 0.1px;
+ height: 0.1px;
+ opacity: 0;
+ overflow: hidden;
+ position: absolute;
+ z-index: -1;
+ /*display:inline-block;*/
+}
+
+.settings-item .submit-image label {
+ border-radius: 0.25em;
+ cursor: pointer;
+}
+
+.submit-image label {
+ cursor: pointer;
 }
 
 form.submit-image:after {
@@ -3121,7 +3216,6 @@ form.post-next h2 {
 
 form.recipients {
  width: 100%;
- max-width: 50em;
 }
 
 form.recipients, div.recipients {
@@ -3184,7 +3278,6 @@ div.new-gratitude div#gratitude-by-email h3 {
 }
 
 div.new-gratitude div#gratitude-by-email p.small {
- max-width: 50em;
  margin-top: 0;
 }
 
@@ -3330,7 +3423,7 @@ div.settings menu.bar {
 }
 
 .settings-item .title {
- width: 7em;
+ width: 8.1em;
  background: #f2f2f2;
  font-weight: 500;
  font-size: 1em;
@@ -3884,6 +3977,11 @@ form#donate button {
  margin: 0.4em 0 3em;
 }
 
+.blog.item li {
+ list-style-type: disc;
+ margin-bottom: 0.2em;
+}
+
 .blog-title {
  margin-bottom: 1em;
 }
@@ -3900,7 +3998,6 @@ form#donate button {
 
 .blog.item textarea {
  height: 7em;
- max-width: 50em;
 }
 
 .blog.item button.yes {
@@ -3950,7 +4047,7 @@ span.highlight {
 .comments form label {
  padding-top: 0.5em;
 }
- 
+
 .inventory-reply blockquote {
  margin-bottom: 1em;
  padding: 0.5em 0.4em;

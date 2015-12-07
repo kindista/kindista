@@ -25,10 +25,32 @@
                          margin-top:.9em;
                          margin-bottom:.9em;")
 
+(defparameter *style-button*
+  "margin: 0.35em 0.5em 0.35em 0;
+   font-size: 1.2em;
+   background: #3c6dc8 !important;
+   border: 1px solid #474747;
+   padding: 0.5em 0.7em;
+   vertical-align: middle;
+   color: #ffffff !important;
+   border-radius: 0.25em;
+   text-decoration: none;"
+  ;background: -moz-linear-gradient( top, #3c6dc8 0%, #29519c);
+  ;background: -ms-linear-gradient( top, #3c6dc8 0%, #29519c);
+  ;background: -o-linear-gradient( top, #3c6dc8 0%, #29519c);
+  ;background: -webkit-linear-gradient( top, #3c6dc8 0%, #29519c);
+  ;background: -webkit-gradient( linear, left top, left bottom, from(#3c6dc8), to(#29519c));
+  )
+
+(defparameter *style-button-link*
+  "cursor: pointer;
+   color: #ffffff !important;
+   text-decoration: none;
+   display: block; ")
 
 (defparameter *style-quote-box* "border-collapse: collapse;
                                  background: #ebf2e4;
-                                 margin: 8px;
+                                 margin: 8px 8px 8px 0;
                                  border: thin solid #bac2b2;")
 
 (defparameter *email-url* (or (awhen *test-email-ip*
@@ -52,6 +74,17 @@
 
 (defun person-name (id)
   (db id :name))
+
+(defun email-action-button (url message)
+  (html
+    (:table :cellspacing "0" :cellpadding "0"
+     (:td :style *style-button*
+       (:a :style *style-button-link* :href url
+        (:span :style "color:#ffffff!important;
+                       font-weight: bold;
+                       cursor: pointer;
+                       text-shadow: 1px 1px 2px rgba(0,0,0,0.4); "
+         (str message)))))))
 
 (defun no-reply-notice
   (&optional (instructions "do so from their profile on Kindista.org"))
@@ -129,7 +162,8 @@ notification-description
       (:head
         (:style :type "text/css"
                       "a:hover {text-decoration:underline;}
-a {color: #5C8A2F;}")
+                       a {color: #5C8A2F !important;}
+                       td > a {color: #ffffff !important; text-decoration: none;}")
         (:title "Kindista"))
 
       (:body :style "font-family: Ubuntu, Roboto, \"Segoe UI\", \"Helvetica Neue\", Tahoma, sans-serif;"

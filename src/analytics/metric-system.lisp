@@ -120,6 +120,8 @@
                            :got-offers got-offers
                            :got-requests got-requests
                            :messages-sent messages-sent
+                           :percent-of-messages-unread (getf (unread-mail-report)
+                                                             :percent-of-messages-unread)
                            :total-active-users (active-people)
                            :total-eugene-users (multiple-value-bind (people people-count)
                                                  (local-members)

@@ -174,6 +174,39 @@
       (password= password crypted-password)
       nil)))
 
+;; tokens
+
+(defmacro with-token (&body body)
+;;If the token was created less then 30 days ago, get the token, otherwise remove the token and start a new one.
+;;But what happens to the cookie?
+  `(let ((*token* (or *token* (check-token-cookie) (start-token))))
+     ,@body))
+
+(defun start-token (&aux (now (get-universal-time)))
+  (with-locked-hash-table (*tokens*)
+    (do (cookie-value)
+      ((not (gethash (setf cookie-value (random-password 30)) *tokens*))
+      (prog1
+        (setf (gethash cookie-value *tokens*)
+              (make-token :created now
+                          :last-seen now))
+        (set-cookie "token" :value cookie-value
+                            :http-only t
+                            :path "/"
+                            :expires (+ now (* 12 +week-in-seconds+))
+                            :secure nil))))))
+
+(defun check-token (cookie-value &aux (now (get-universal-time)))
+  (let ((token (gethash cookie-value *tokens*)))
+    (if (and token (< now
+                      (+ (or (token-last-seen token)
+                             (token-created token))
+                         (* 26 +week-in-seconds+))))
+      (progn
+        (setf (token-last-seen token) now)
+        token)
+      (progn (remhash cookie-value *tokens*) nil))))
+
 (defun check-token-cookie ()
   (first (remove nil
                  (mapcar #'check-token
@@ -182,11 +215,42 @@
                                           :key #'car
                                           :test #'string-not-equal))))))
 
-(defmacro with-token (&body body)
-;;If the token was created less then 30 days ago, get the token, otherwise remove the token and start a new one.
-;;But what happens to the cookie?
-  `(let ((*token* (or *token* (check-token-cookie) (start-token))))
-     ,@body))
+(defun delete-token-cookie
+  (&key (userid *userid*)
+        (cookie (when *token* (cookie-in "token")))
+        (token (or *token* (gethash cookie *tokens*))))
+
+  (when cookie
+    (when (gethash cookie *tokens*)
+      (with-locked-hash-table (*user-tokens-index*)
+        (asetf (gethash userid *user-tokens-index*)
+               (remove token it :key #'cdr)))
+      (remhash cookie *tokens*))
+    (when (eql *token* token)
+      (set-cookie "token" :value ""
+                          :http-only t
+                          :expires 0
+                          :path "/"
+                          :secure nil))))
+
+(defun delete-all-but-current-token-cookie
+  (&optional (userid *userid*)
+             (token *token*))
+  (dolist (pair (gethash userid *user-tokens-index*))
+    (unless (eql (cdr pair) token)
+      (delete-token-cookie :userid userid
+                           :cookie (car pair)
+                           :token (cdr pair)))))
+
+(defun reset-token-cookie ()
+  (awhen (cookie-in "token")
+    (awhen (gethash it *tokens*)
+      (remhash it *tokens*))
+    (start-token)))
+
+(defun too-many-cookies-p ()
+  (let ((cookies (cookies-in*)))
+    (> (length (remove "token" cookies :key #'car :test #'string-not-equal)) 1)))
 
 (defmacro with-user (&body body)
   `(with-token
@@ -248,51 +312,6 @@
            (see-other "/")) 
         `(see-other "/"))))
 
-;; tokens
-
-(defun start-token ()
-  (with-locked-hash-table (*tokens*)
-    (do (cookie-value)
-      ((not (gethash (setf cookie-value (random-password 30)) *tokens*))
-      (prog1
-        (setf (gethash cookie-value *tokens*)
-              (make-token :created (get-universal-time)))
-        (set-cookie "token" :value cookie-value
-                            :http-only t
-                            :path "/"
-                            :expires (+ (get-universal-time) (* 12 +week-in-seconds+))
-                            :secure nil))))))
-
-(defun check-token (cookie-value)
-  (let ((token (gethash cookie-value *tokens*)))
-    (if (and token (< (get-universal-time) (+ (token-created token) (* 12 +week-in-seconds+))))
-      token
-      (progn (remhash cookie-value *tokens*) nil))))
-
-(defun delete-token-cookie
-  (&key (userid *userid*)
-        (cookie (when *token* (cookie-in "token")))
-   &aux (token (or *token* (gethash cookie *tokens*))))
-
-  (when cookie
-    (when (gethash cookie *tokens*)
-      (with-locked-hash-table (*user-tokens-index*)
-        (asetf (gethash userid *user-tokens-index*)
-               (remove token it :key #'cdr)))
-      (remhash cookie *tokens*))
-    (when *token*
-      (set-cookie "token" :value ""
-                          :http-only t
-                          :expires 0
-                          :path "/"
-                          :secure nil))))
-
-(defun reset-token-cookie ()
-  (awhen (cookie-in "token")
-    (awhen (gethash it *tokens*)
-      (remhash it *tokens*))
-    (start-token)))
-
 (defun markdown-file (path)
   (nth-value 1 (markdown (pathname path) :stream nil)))
 
@@ -312,10 +331,6 @@
 (defclass k-acceptor (acceptor)
   ((metric-system :initform (make-instance 'metric-system)
                   :reader acceptor-metric-system)))
-
-(defun too-many-cookies-p ()
-  (let ((cookies (cookies-in*)))
-    (> (length (remove "token" cookies :key #'car :test #'string-not-equal)) 1)))
 
 (defmethod acceptor-dispatch-request ((acceptor k-acceptor) request)
   (with-token
@@ -434,10 +449,10 @@
   (item-id
    &aux (id (parse-integer item-id))
         (item (db id)))
-  (flet ((redirect (typestring)
-           (see-other (strcat "/" typestring "/" id))))
+  (flet ((redirect (typestring &optional subpage)
+           (see-other (strcat* "/" typestring "/" id subpage))))
     (case (getf item :type)
-      (:person (redirect "people"))
+      (:person (redirect "people" "/reputation"))
       (:offer (redirect "offers"))
       (:request (redirect "requests"))
       (:event (redirect "events"))
@@ -606,8 +621,14 @@
                          (:table
                            (:tr
                              (:td :rowspan "2"
-                               (:a :href link (:img :src (get-avatar-thumbnail *userid* 100 100 :filetype "png")
-                                                    :alt "")))
+                               (if (getf *user* :avatar)
+                                 (htm
+                                   (:a :href link
+                                     (:img :src (get-avatar-thumbnail *userid* 100 100 :filetype "png") :alt "")))
+                                 (htm
+                                   (:div :class "profile-pic small"
+                                     (:img :src (get-avatar-thumbnail *userid* 100 100 :filetype "png") :alt "")
+                                     (str (add-profile-picture-prompt))))))
                              (:td (:a :href link (str (getf *user* :name)))))
                            (:tr
                              (:td
@@ -690,7 +711,7 @@
       (:div :class class
         (:h2 (str text))
         (when details
-          (htm (:div (str details))))
+          (htm (:div :class "details" (str details))))
         (when fine-print
           (htm (:div :class "fine-print" (str fine-print))))
         (:form :method "post" :action url :class "item confirm-delete"

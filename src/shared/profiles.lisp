@@ -356,7 +356,12 @@
                    :class "small blue float-right"
                    (:img :src "/media/icons/settings.png" :class "small")
                    "group settings")))
-        (:img :class "bigavatar" :src (get-avatar-thumbnail id 300 300)) 
+        (:div :class "profile-pic"
+          (:img :class "bigavatar" :src (get-avatar-thumbnail id 300 300))
+          (when (and *user*
+                     (= id *userid*)
+                     (not (getf *user* :avatar)))
+            (str (add-profile-picture-prompt))))
         (:div :class "basics"
           (:h1 (str (getf entity :name))
                (cond
@@ -376,7 +381,13 @@
                     (htm (str it) (:br)))
                   (str (getf entity :city)) ", " (str (getf entity :state)))))
            ((getf entity :city)
-            (htm (:p :class "city" (str (getf entity :city)) ", " (str (getf entity :state))))))))
+            (htm (:p :class "city"
+                  (str (getf entity :city))
+                  ", "
+                  (str (getf entity :state))
+                  (unless (equalp (getf entity :country)
+                                  (getf *user* :country))
+                    (htm ", " (str (getf entity :country))))))))))
 
       (unless (or (eql id *userid*) (not *userid*))
         (htm

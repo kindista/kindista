@@ -17,9 +17,9 @@
 
 (in-package :kindista)
 
-(defun card (&rest contents)
+(defun card (id &rest contents)
   (html
-    (:div :class "card"
+    (:div :id id :class "card"
       (dolist (item contents)
         (str item)))))
 
@@ -58,7 +58,7 @@
          (url (strcat "/feedback/" id))
          (by (getf data :by))
          (bydata (db by)))
-    (card
+    (card id
       (html
         (str (h3-timestamp (getf data :created)))
         (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
@@ -98,7 +98,7 @@
   (let* ((data (db comment-id))
          (by (car (getf data :by)))
          (bydata (db by)))
-    (card
+    (card comment-id
       (html
         (str (h3-timestamp (getf data :created)))
         (:p (:a :href (s+ "/people/" (username-or-id by))

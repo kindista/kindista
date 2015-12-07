@@ -375,7 +375,7 @@
                                 color: #fff;
                                 box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);"
                         :name "action-type"
-                        :value typestring
+                        :value response-type
                         (:img :src (s+ "http://media.kindista.org/white-"
                                        response-type
                                        ".png")
