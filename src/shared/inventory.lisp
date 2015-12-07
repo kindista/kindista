@@ -62,8 +62,6 @@
                    :tags tags
                    :created (get-universal-time))))
 
-(defvar *inventory-expiration-timer-thread* nil)
-
 (defun inventory-expiration-thread-loop ()
   (loop
     (let ((item (car *inventory-expiration-timer-index*)))
@@ -83,13 +81,6 @@
          (with-mutex (*inventory-expiration-timer-mutex*)
            (asetf *inventory-expiration-timer-index*
                   (cdr it))))))))
-
-(defun start-inventory-expiration-timer-thread ()
-  (when (or (not *inventory-expiration-timer-thread*)
-            (and *inventory-expiration-timer-thread*
-                 (not (thread-alive-p *inventory-expiration-timer-thread*))))
-    (setf *inventory-expiration-timer-thread*
-          (make-thread #'inventory-expiration-thread-loop))))
 
 (defun stop-inventory-expiration-timer-thread ()
   (with-mutex (*inventory-expiration-timer-mutex*)

@@ -1,25 +1,26 @@
 ## New UI selector for new/edit inventory item
-   -  default expiration and options
+  - default expiration and options
+  - when editing, include current expiration as an option (sorted by date)
+  - expriation options: 1 week, 1 month, 3 months, 1 year, 3 years
+
+## Refresh in indexes every month
+  -  UI date should say how long since refresh, edit, created
 
 ## Index to store expiration dates
-   - maybe share with invitation expirations?
+  - maybe share with invitation expirations?
+  - or use results?
 
 ## Keep track of when items expire
-   Options:
-   - a new thread with an infinite loop checking the index
-     - start tread when starting kindista
-   - another cronjob sending an http request to trigger checking which should expire
+  - another cronjob sending an http request to trigger checking which should expire
+  - deactivate expired ones, send reminders for any expiring in the next 5 days
+  - modify-db with expiration-reminder-sent time
 
 ## Send email notification about inventory expiration
-   - *production-p* only!
+  - *production-p* only!
 
 ## Deactivate the inventory item
 
-## Reactivate the inventory item with new time
+## Encourage users to deactivate old inventory
+  - deactivate button on first transaction emails (if no title is needed)
 
-## Testing
-   - quickload master
-   - run
-   - quickload inventory-renewal
-   - load-db
-   - start inventory-expiration-loop
+## Reactivate the inventory item with new time
