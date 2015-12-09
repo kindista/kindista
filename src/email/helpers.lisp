@@ -78,7 +78,7 @@
 (defun email-action-button (url message)
   (html
     (:table :cellspacing "0" :cellpadding "0"
-     (:td :style *style-button*
+     (:td :class "button" :style *style-button*
        (:a :style *style-button-link* :href url
         (:span :style "color:#ffffff!important;
                        font-weight: bold;
@@ -163,7 +163,7 @@ notification-description
         (:style :type "text/css"
                       "a:hover {text-decoration:underline;}
                        a {color: #5C8A2F !important;}
-                       td > a {color: #ffffff !important; text-decoration: none;}")
+                       td.button > a {color: #ffffff !important; text-decoration: none;}")
         (:title "Kindista"))
 
       (:body :style "font-family: Ubuntu, Roboto, \"Segoe UI\", \"Helvetica Neue\", Tahoma, sans-serif;"
