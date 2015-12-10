@@ -89,17 +89,18 @@
             (try-again "You need to enter your location on your <a href=\"/settings\">settings page</a> before you can create or edit matchmaker notifications."))
 
           ((post-parameter "edit-original")
-           (enter-inventory-tags :page-title "Edit your request"
-                                 :action base-url
-                                 :item-title (getf item :title)
-                                 :details (getf item :details)
-                                 :tags (getf item :tags)
-                                 :groups-selected (getf item :privacy)
-                                 :restrictedp (getf item :privacy)
-                                 :next match-url
-                                 :existingp t
-                                 :button-text "Save request"
-                                 :selected "requests"))
+           (enter-inventory-item-details
+             :page-title "Edit your request"
+             :action base-url
+             :item-title (getf item :title)
+             :details (getf item :details)
+             :tags (getf item :tags)
+             :groups-selected (getf item :privacy)
+             :restrictedp (getf item :privacy)
+             :next match-url
+             :existingp t
+             :button-text "Save request"
+             :selected "requests"))
 
           ((nor any-terms all-terms)
            ;; very important that all matchmakers have at least one of these.

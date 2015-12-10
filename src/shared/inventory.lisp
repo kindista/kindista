@@ -52,7 +52,7 @@
                                       (cdr it))))))))
   transactions-to-fix)
 
-(defun create-inventory-item (&key type (by *userid*) title details tags privacy)
+(defun create-inventory-item (&key type (by *userid*) title details tags privacy expires)
   (insert-db (list :type type
                    :active t
                    :by by
@@ -60,6 +60,7 @@
                    :title title
                    :details details
                    :tags tags
+                   :expires expires
                    :created (get-universal-time))))
 
 (defun inventory-expiration-thread-loop ()
@@ -189,7 +190,7 @@
          (with-locked-hash-table (*account-inactive-request-index*)
            (push id (gethash by-id *account-inactive-request-index*))))))))
 
-(defun modify-inventory-item (id &key publish-facebook-p title details tags privacy)
+(defun modify-inventory-item (id &key publish-facebook-p title details tags privacy expires)
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
@@ -242,6 +243,7 @@
                       :details details
                       :tags tags
                       :fb-id fb-id
+                      :expires expires
                       :privacy privacy))
           (typestring (string-downcase (symbol-name type))))
 
@@ -267,9 +269,7 @@
         (refresh-item-time-in-indexes id :time now)
         (append data (list :edited now)))
 
-      (apply #'modify-db id data)
-
-      )
+      (apply #'modify-db id data) )
 
     (case (result-type result)
       (:offer (update-matchmaker-offer-data id))
@@ -393,6 +393,13 @@
                               (or (not identity-selection)
                                   (eql identity-selection
                                        (post-parameter-integer "prior-identity")))))
+           (expiration-options (first (multiple-value-list
+                                        (expiration-options))))
+           (expiration-descriptor (or (post-parameter-string "expiration")
+                                      "3-months"))
+           (expiration-time (cdr (assoc expiration-descriptor
+                                        expiration-options
+                                        :test #'string=)))
            (publish-facebook (post-parameter "publish-facebook"))
            (adminp (group-admin-p (or groupid identity-selection)))
            (title (post-parameter-string "title"))
@@ -402,21 +409,23 @@
       (iter (for tag in (tags-from-string (post-parameter "tags")))
             (setf tags (cons tag tags)))
 
-      (flet ((inventory-tags (&key error)
-               (enter-inventory-tags :page-title (s+ "Post a new " type)
-                                     :item-title title
-                                     :details details
-                                     :next (post-parameter "next")
-                                     :action url
-                                     :publish-facebook publish-facebook
-                                     :restrictedp restrictedp
-                                     :identity-selection identity-selection
-                                     :groupid groupid
-                                     :groups-selected groups-selected
-                                     :tags tags
-                                     :error error
-                                     :button-text (s+ "Post " type)
-                                     :selected (s+ type "s"))))
+      (flet ((inventory-details (&key error)
+               (enter-inventory-item-details
+                 :page-title (s+ "Post a new " type)
+                 :item-title title
+                 :details details
+                 :next (post-parameter "next")
+                 :action url
+                 :publish-facebook publish-facebook
+                 :restrictedp restrictedp
+                 :identity-selection identity-selection
+                 :groupid groupid
+                 :groups-selected groups-selected
+                 :tags tags
+                 :expiration expiration-descriptor
+                 :error error
+                 :button-text (s+ "Post " type)
+                 :selected (s+ type "s"))))
 
         (cond
          ((post-parameter "cancel")
@@ -432,35 +441,35 @@
          ((not title)
           (flash (s+ "Please enter a better title for your " type ".")
                  :error t)
-          (inventory-tags))
+          (inventory-details))
 
          ((> (length title) 140)
           (flash (s+ "Please shorten your title to 140 characters or less."))
-          (inventory-tags))
+          (inventory-details))
 
          ((> (length details) 1000)
           (flash (s+ "Please shorten your description. Offers and Requests must be no longer than 1000 characters including line breaks."))
-          (inventory-tags))
+          (inventory-details))
 
          ((and (not (post-parameter "create"))
                title)
-           (inventory-tags))
+           (inventory-details))
 
          ((and restrictedp
                (post-parameter "create")
                (not groups-selected))
-          (inventory-tags :error (s+ "Please allow at least one group to see this " type)))
+          (inventory-details :error (s+ "Please allow at least one group to see this " type)))
 
          ((not (intersection tags *top-tags* :test #'string=))
-           (inventory-tags :error "You must select at least one category"))
+           (inventory-details :error "You must select at least one category"))
 
          ((> (length (intersection tags *top-tags* :test #'string=))
              5)
-           (inventory-tags :error "You entered too many categories. Please choose only the most relevant ones."))
+           (inventory-details :error "You entered too many categories. Please choose only the most relevant ones."))
 
          ((> (length (set-difference tags *top-tags* :test #'string=))
              10)
-           (inventory-tags :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
+           (inventory-details :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
 
          ((and (post-parameter "create") title)
           (let ((new-id (create-inventory-item
@@ -470,6 +479,7 @@
                                 (or groupid identity-selection)
                                 *userid*)
                           :privacy groups-selected
+                          :expires expiration-time
                           :title title
                           :details details
                           :tags tags)))
@@ -512,7 +522,7 @@
                   (update-matchmaker-offer-data new-id))
                 (see-other (format nil (strcat "/" type "s/" new-id)))))))
 
-         (t (inventory-tags)))))))
+         (t (inventory-details)))))))
 
 (defun deactivated-item-error
   (type
@@ -633,6 +643,15 @@
                                    (string= "restricted" it)
                                    (getf item :privacy))
                                   t))
+                  (expiration-options (multiple-value-list
+                                        (expiration-options (getf item :expires))))
+                  (expiration-descriptor
+                    (or (post-parameter-string "expiration")
+                        (car (last expiration-options))
+                        "3-months"))
+                  (expiration-time (cdr (assoc expiration-descriptor
+                                               (first expiration-options)
+                                               :test #'string=)))
                   (new-title (post-parameter-string "title"))
                   (title (or new-title (getf item :title)))
                   (new-details (post-parameter-string "details"))
@@ -641,10 +660,10 @@
              (iter (for tag in (tags-from-string (post-parameter "tags")))
                    (setf tags (cons tag tags)))
 
-             (flet ((inventory-tags
+             (flet ((inventory-details
                       (&key error
                             (publish-facebook (post-parameter "publish-facebook")))
-                      (enter-inventory-tags
+                      (enter-inventory-item-details
                         :page-title (s+ "Edit your " type)
                         :action url
                         :item-title title
@@ -656,14 +675,14 @@
                         :next (or (post-parameter "next") (referer))
                         :existingp t
                         :groupid (when adminp by)
+                        :expiration expiration-descriptor
                         :error error
                         :button-text (s+ "Save " type)
                         :selected (s+ type "s"))))
 
                (cond
-
                 ((post-parameter "edit")
-                 (inventory-tags
+                 (inventory-details
                    :publish-facebook (when (getf item :facebook-id) t)))
 
                 ((post-parameter "deactivate")
@@ -717,43 +736,44 @@
 
                 ((not title)
                  (flash (s+ "Please enter a title for your " type "."))
-                 (inventory-tags))
+                 (inventory-details))
 
                 ((and (post-parameter "title") (not new-title))
                  (flash (s+ "Please enter a better title for your " type ".")
                         :error t)
-                 (inventory-tags))
+                 (inventory-details))
 
                 ((> (length title) 140)
                  (flash (s+ "Please shorten your title to 140 characters or less."))
-                 (inventory-tags))
+                 (inventory-details))
 
                 ((> (length details) 1000)
                  (flash (s+ "Please shorten your description. Offers and Requests must be no longer than 1000 characters including line breaks."))
-                 (inventory-tags))
+                 (inventory-details))
 
                 ((not (intersection tags *top-tags* :test #'string=))
-                  (inventory-tags :error "You must select at least one category"))
+                  (inventory-details :error "You must select at least one category"))
 
                 ((> (length (intersection tags *top-tags* :test #'string=))
                     5)
-                  (inventory-tags :error "You entered too many categories. Please choose only the most relevant ones."))
+                  (inventory-details :error "You entered too many categories. Please choose only the most relevant ones."))
 
                 ((> (length (set-difference tags *top-tags* :test #'string=))
                     10)
-                  (inventory-tags :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
+                  (inventory-details :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
 
                 ((post-parameter "create")
                  (modify-inventory-item id :title (post-parameter "title")
                                            :details (post-parameter "details")
                                            :tags tags
+                                           :expires expiration-time
                                            :publish-facebook-p (post-parameter "publish-facebook")
                                            :privacy (when restrictedp
                                                       groups-selected))
                  (see-other (strcat "/" type "s/" id)))
 
                 (t
-                  (inventory-tags)))))))))))
+                  (inventory-details)))))))))))
 
 (defun simple-inventory-entry-html (preposition type &key groupid)
   (html
@@ -786,8 +806,8 @@
         ". You can add details after you click \"post.\""))))
 
 
-(defun enter-inventory-tags
-  (&key page-title action item-title details existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next publish-facebook
+(defun enter-inventory-item-details
+  (&key page-title action item-title details existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next publish-facebook expiration
    &aux (typestring (if (string= selected "offers") "offer" "request"))
         (suggested (or tags (get-tag-suggestions item-title))))
 
@@ -898,6 +918,9 @@
          (:input :type "text" :name "tags" :size 40
                  :placeholder "e.g. produce, bicycle, tai-chi"
                  :value (format nil "~{~a~^,~^ ~}" suggested))
+
+         (:label :for "expiration-selection" "Expires in")
+         (str (expiration-selection-html expiration))
 
          (:p
            (:strong :class "red" "Important: ")

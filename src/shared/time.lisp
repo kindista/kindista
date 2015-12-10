@@ -17,6 +17,7 @@
 
 (in-package :kindista)
 
+(define-constant +year-in-seconds+ 31557600)
 (define-constant +week-in-seconds+ 604800)
 (define-constant +day-in-seconds+ 86400)
 (define-constant +day-names+

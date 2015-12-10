@@ -1,8 +1,3 @@
-## New UI selector for new/edit inventory item
-  - default expiration and options
-  - when editing, include current expiration as an option (sorted by date)
-  - expriation options: 1 week, 1 month, 3 months, 1 year, 3 years
-
 ## Refresh in indexes every month
   -  UI date should say how long since refresh, edit, created
 
@@ -24,3 +19,6 @@
   - deactivate button on first transaction emails (if no title is needed)
 
 ## Reactivate the inventory item with new time
+
+## Allow users to view deactivated inventory items
+

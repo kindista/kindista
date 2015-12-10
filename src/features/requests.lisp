@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -33,10 +33,10 @@
 
 (defun get-requests-new ()
   (require-user
-    (enter-inventory-tags :page-title "Post a request"
-                          :action "/requests/new"
-                          :button-text "Post request"
-                          :selected "requests")))
+    (enter-inventory-item-details :page-title "Post a request"
+                                  :action "/requests/new"
+                                  :button-text "Post request"
+                                  :selected "requests")))
 
 (defun post-requests-new ()
   (post-new-inventory-item "request" :url "/requests/new"))
