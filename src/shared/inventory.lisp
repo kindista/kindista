@@ -20,7 +20,6 @@
 (defun new-pending-offer-notice-handler ()
   (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
 
-
 (defun fix-transactions-with-incorrect-action-type (&aux transactions-to-fix)
   "To clean the DB because of a bug in which some transactions were initiated with wrong action-type. e.g. user 'offered' an :offer"
   (dolist (id (hash-table-keys *db*))
@@ -102,6 +101,59 @@
                        :time (or (getf item :edited) (getf item :created))
                        :tags (getf item :tags))))))
 
+
+(defun add-expiration-dates-to-existing-inventory-items
+  (&aux (now (get-universal-time))
+        (month-in-seconds (* 30 +day-in-seconds+))
+        (3-months (* 13 +week-in-seconds+))
+        (3-months-ago (- now 3-months)))
+  "Should only be run once on the live server to add expiration dates to inventory items that don't already have them"
+  (dolist (id (hash-table-keys *db*))
+    (let* ((item (db id))
+           (type (getf item :type))
+           (created (getf item :created)))
+      (when (and (or (eq type :offer)
+                     (eq type :request))
+                 (getf item :active))
+        (let ((rand (random month-in-seconds)))
+          (if (< created 3-months-ago)
+            (modify-db id :expires (+ now +week-in-seconds+ rand))
+            (modify-db id :expires (+ now 3-months rand))))))))
+
+(defun get-inventory-expiration-reminders (&aux expiring-soon expired)
+  (loop for (time . id) in *inventory-expiration-timer-index*
+        with now = (get-universal-time)
+        with 6days = (+ now (* 6 +day-in-seconds+))
+        with 4days = (+ now (* 4 +day-in-seconds+))
+        with 2+days = (+ now (* 2.5 +day-in-seconds+))
+        while (< time 4days)
+        do (cond
+            ((< time now)
+             (if *productionp*
+               (progn
+                 (send-inventory-expiration-notice id)
+                 (deactivate-inventory-item id)
+                 (with-mutex (*inventory-expiration-timer-mutex*)
+                   (asetf *inventory-expiration-timer-index*
+                          (remove (rassoc id it)
+                                  it
+                                  :test #'equal))))
+               (push (cons id (humanize-universal-time time)) expired)))
+            ;; send reminders for items expiring soon
+            ((> time 2+days)
+             (if *productionp*
+               (let* ((item (db id))
+                      (recent-reminder (car (getf item :expiration-notice-sent))))
+                  (when (or (not recent-reminder)
+                            (< recent-reminder 6days))
+                    (send-inventory-expiration-notice id)))
+               (push (cons id (humanize-future-time time)) expiring-soon)))))
+  (values expired expiring-soon))
+
+(defun send-inventory-expiration-notice (id)
+  id
+  )
+
 (defun index-inventory-item (id data)
   (let* ((by-id (getf data :by))
          (by (db by-id))
@@ -133,6 +185,13 @@
        (with-locked-hash-table (*profile-activity-index*)
          (asetf (gethash by-id *profile-activity-index*)
                 (safe-sort (push result it) #'> :key #'result-time)))
+
+       (awhen (getf data :expires)
+         (with-mutex (*inventory-expiration-timer-mutex*)
+           (setf *inventory-expiration-timer-index*
+                 (safe-sort (push (cons it id) *inventory-expiration-timer-index*)
+                            #'<
+                            :key #'car))))
 
        (if (eq type :offer)
          (with-locked-hash-table (*offer-index*)
