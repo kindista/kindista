@@ -113,6 +113,7 @@
                (subject (subject-text groupid)))
 
           (when (or *productionp*
+                    (getf person :admin)
                     (getf person :test-user))
             (cl-smtp:send-email
             +mail-server+

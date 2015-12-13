@@ -196,7 +196,7 @@
            (by (car (getf data :by)))
            (for (cdr (getf data :by)))
            (bydata (db by))
-           (text (if (and (equal comment-id (first comments))
+           (text (if (and (equal comment-id (car (last comments)))
                           (getf transaction :deleted-item-type))
                    (deleted-invalid-item-reply-text
                      (db (car (remove +kindista-id+ participants)) :name)

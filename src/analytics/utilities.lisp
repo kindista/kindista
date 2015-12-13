@@ -54,6 +54,18 @@
           do (setf day (* i +day-in-seconds+))
           collect (list day (active-people day)))))
 
+(defun most-active-users (&optional (count 20) &aux users active-users)
+  (dolist (userid *active-people-index*)
+    (push (cons userid
+                (length (remove-if-not (lambda (type) (eq type :gratitude))
+                                       (gethash userid *profile-activity-index*)
+                                       :key #'result-type)))
+          users))
+  (setf users (sort (copy-list users) #'> :key #'cdr))
+  (setf active-users (mapcar (lambda (user) (list (db (car user) :name) :userid (car user) :total-gratitudes (cdr user)))
+                             (subseq users 0 (- count 1))))
+  active-users)
+
 (defun basic-chart ()
   (with-open-file (file (s+ *metrics-path* "active-accounts")
                         :direction :output
@@ -328,6 +340,30 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
       (save-stream s))
     (finish-output s)))
 
+(defun monthly-statistic (year month statistic &aux dir summary-file)
+  (setf month (if (< (/ month 10) 1)
+                (strcat "0" month)
+                (strcat month)))
+  (setf dir (strcat *metrics-path* year "/" month "/"))
+  (setf summary-file (merge-pathnames dir "/monthly-summary"))
+
+  (when (file-exists-p summary-file)
+    (with-standard-io-syntax
+        (with-open-file (s summary-file)
+          (let* ((data (read s))
+                 (stat (getf data statistic)))
+            (if (listp stat)
+              (length stat)
+              stat))))))
+
+(defun transactions-completed-in-year (year &aux (transactions 0))
+  (loop for month from 1 to 12
+        do (asetf transactions
+                  (+ it
+                     (or (monthly-statistic year
+                                            month
+                                            :completed-transactions) 0))))
+  transactions)
 
 (defun create-past-monthly-activity-reports (years)
   (dolist (year years)
