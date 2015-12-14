@@ -132,12 +132,7 @@
              (if *productionp*
                (progn
                  (send-inventory-expiration-notice id)
-                 (deactivate-inventory-item id)
-                 (with-mutex (*inventory-expiration-timer-mutex*)
-                   (asetf *inventory-expiration-timer-index*
-                          (remove (rassoc id it)
-                                  it
-                                  :test #'equal))))
+                 (deactivate-inventory-item id))
                (push (cons id (humanize-universal-time time)) expired)))
             ;; send reminders for items expiring soon
             ((> time 2+days)
@@ -396,6 +391,12 @@
         (:offer
           (with-locked-hash-table (*account-inactive-offer-index*)
             (push id (gethash by *account-inactive-offer-index*)))))
+
+      (with-mutex (*inventory-expiration-timer-mutex*)
+        (asetf *inventory-expiration-timer-index*
+               (remove (rassoc id it)
+                       it
+                       :test #'equal)))
 
       (unless (eq type :event)
         (with-locked-hash-table (*profile-activity-index*)

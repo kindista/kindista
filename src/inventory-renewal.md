@@ -22,3 +22,5 @@
 
 ## Allow users to view deactivated inventory items
 
+## Add inventory expiration to list of notification-preferences
+  - add to all new users
