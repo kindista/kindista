@@ -54,7 +54,7 @@
           do (setf day (* i +day-in-seconds+))
           collect (list day (active-people day)))))
 
-(defun most-active-users (&optional (count 20) &aux users active-users)
+(defun most-active-users (&key (count 20) time-period &aux users active-users)
   (dolist (userid *active-people-index*)
     (push (cons userid
                 (length (remove-if-not (lambda (type) (eq type :gratitude))
