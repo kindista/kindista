@@ -6,6 +6,8 @@
   - cron job to check what needs renewal
   - refresh in indexes every month
   - date should say how long since refresh, edit, created
+## Recent offers/request digest should not be a form
+## don's say "edited" in the title for gratitudes!
 ## loves
   - #links
   - post to /love
