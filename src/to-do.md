@@ -6,7 +6,6 @@
   - cron job to check what needs renewal
   - refresh in indexes every month
   - date should say how long since refresh, edit, created
-## don's say "edited" in the title for gratitudes!
 ## provide a link in admin emails for new account approval
   - make sure other team members are getting these emails to help w/ approvals
 ## loves

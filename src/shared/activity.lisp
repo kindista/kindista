@@ -50,7 +50,7 @@
           (:span (str comments)))))))
 
 (defun activity-item
-  (&key id url share-url content time primary-action hearts comments type distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
+  (&key id url share-url content time primary-action hearts comments verb distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
    &aux (here (request-uri*))
         (next (if (find (strcat id) (url-parts here) :test #'string=)
                 here
@@ -59,7 +59,7 @@
   (html
     (:div :class (if class (s+ "card " class) "card") :id id
       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
-      (when time (str (timestamp time :type type)))
+      (when time (str (timestamp time :type verb)))
       (when distance
         (htm
           (:p :class "distance"
@@ -266,6 +266,7 @@
           :url item-url
           :class "gratitude"
           :time (when show-when (result-time result))
+          :verb (awhen (getf data :edited) "edited")
           :show-actions show-actions
           :edit (when (or self adminp (getf *user* :admin)) t)
           :image-text (when (and (or self adminp)
@@ -275,9 +276,7 @@
           ;:comments (length (comments item-id))
           :content (html
                      (:p (str (person-link user-id))
-                         (str (if (getf data :edited)
-                                " edited "
-                                " expressed "))
+                         " expressed "
                          (:a :href item-url "gratitude")
                          " for "
                          (str (name-list (getf data :subjects)
@@ -382,7 +381,7 @@
                                       (not (getf data :active)))
                             t)
                    :hearts (length (loves item-id))
-                   :type (unless show-what (cond ((getf data :edited) "edited")
+                   :verb (unless show-what (cond ((getf data :edited) "edited")
                                                  ((string= type "request") "requested")
                                                  ((string= type "offer") "offered")))
                    :matchmaker (or (getf *user* :matchmaker)
