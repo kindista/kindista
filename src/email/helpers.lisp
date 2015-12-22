@@ -26,8 +26,7 @@
                          margin-bottom:.9em;")
 
 (defparameter *style-button*
-  "margin: 0.35em 0.5em 0.35em 0;
-   font-size: 1.2em;
+  "font-size: 1.2em;
    background: #3c6dc8 !important;
    border: 1px solid #474747;
    padding: 0.5em 0.7em;
@@ -40,6 +39,17 @@
   ;background: -o-linear-gradient( top, #3c6dc8 0%, #29519c);
   ;background: -webkit-linear-gradient( top, #3c6dc8 0%, #29519c);
   ;background: -webkit-gradient( linear, left top, left bottom, from(#3c6dc8), to(#29519c));
+  )
+
+(defparameter *small-style-button*
+  "font-size: 1em;
+   background: #3c6dc8 !important;
+   border: 1px solid #474747;
+   padding: 0.3em 0.4em;
+   vertical-align: middle;
+   color: #ffffff !important;
+   border-radius: 0.25em;
+   text-decoration: none;"
   )
 
 (defparameter *style-button-link*
@@ -75,15 +85,17 @@
 (defun person-name (id)
   (db id :name))
 
-(defun email-action-button (url message)
+(defun email-action-button (url message &key image (style *style-button*))
   (html
     (:table :cellspacing "0" :cellpadding "0"
-     (:td :class "button" :style *style-button*
-       (:a :style *style-button-link* :href url
+     (:td :class "button" :style style
+       (:a :href url
+           :style *style-button-link*
         (:span :style "color:#ffffff!important;
                        font-weight: bold;
                        cursor: pointer;
                        text-shadow: 1px 1px 2px rgba(0,0,0,0.4); "
+         (awhen image (str it))
          (str message)))))))
 
 (defun no-reply-notice

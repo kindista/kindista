@@ -77,6 +77,10 @@
                         ;; don't use anchor link. otherwise user can't see
                         ;; the success flash after they post a reply
                         :value (request-uri*))
+                (dolist (item (getf it :hidden))
+                  (htm (:input :type "hidden"
+                               :name (car item)
+                               :value (cdr item))))
                 (:button :type "submit"
                          :class "small blue primary-action"
                          :name (getf it :name)
@@ -351,10 +355,12 @@
                                      (if (string= type "request")
                                        (list :name "action-type"
                                              :value "offer"
+                                             :hidden (list (cons "reply" "t"))
                                              :text "Offer This"
                                              :image (icon "white-offer"))
                                        (list :name "action-type"
                                              :value "request"
+                                             :hidden (list (cons "reply" "t"))
                                              :text "Request This"
                                              :image (icon "white-request"))))
                    :class (s+ type " inventory-item")

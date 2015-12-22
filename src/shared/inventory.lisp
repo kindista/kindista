@@ -496,27 +496,98 @@
   (flash (s+ "Sorry, this " type " has been deactivated.") :error t)
   (see-other next))
 
+(defun register-inventory-item-action
+  (id
+   action-type
+   &key (item (db id))
+        next
+        (url (resource-url id item))
+        reply-text
+        reply
+   &aux (type (getf item :type))
+        (by (getf item :by))
+        (adminp (group-admin-p by)))
+
+  (require-user
+    (cond
+      ((and (or (and (eq type :offer)
+                     (eq action-type :offered))
+                (and (eq type :request)
+                     (eq action-type :requested)))
+            (nor (eql *userid* by)
+                 adminp))
+       ;; in case of wrong action-type post request. yes it has happened.
+       (notice :error :on "User is trying to 'request' a :request or 'offer' an :offer"
+                      :data (cons id item))
+       (flash "The system encountered a problem. Please go to the item's page and try offering/requesting it again.  If the problem persists, please report it in Kindista's Help/Feedback section." :error t)
+       (see-other (or next url)))
+
+      (reply
+       (flet ((reply-html (type)
+                (inventory-item-reply
+                  type
+                  id
+                  item
+                  :text reply-text
+                  :action-type action-type
+                  :next next
+                  :match (post-parameter-integer "match")
+                  :error (when (and (not (post-parameter "reply"))
+                                    (not reply-text)
+                                    (not action-type))
+                           :no-message))))
+         (case (getf item :type)
+           (:offer (reply-html "offer"))
+           (:request (reply-html "request"))
+           (t (not-found)))))
+
+      ((or reply-text
+           (and (eql type :request)
+                (string= action-type "offer"))
+           (and (eql type :offer)
+                (string= action-type "request")))
+         (aif (find-existing-transaction id)
+           (post-transaction it)
+           (progn
+             (flash (s+ "Your "
+                        (or action-type "reply")
+                        " has been sent."))
+             (contact-opt-out-flash (list by (unless (eql *userid* by)
+                                               *userid*)))
+             (create-transaction :on id
+                                 :text reply-text
+                                 :action (cond
+                                           ((string= action-type "offer")
+                                            :offered)
+                                           ((string= action-type "request")
+                                            :requested))
+                                 :match-id (post-parameter-integer "match"))
+             (see-other (or next (strcat "/transactions/" id)))))))))
+
 (defun post-existing-inventory-item (type &key id url)
   (require-user
     (let* ((id (parse-integer id))
            (item (db id))
            (by (getf item :by))
            (action-type (post-parameter-string "action-type"))
-           (reply-text (post-parameter-string "reply-text"))
            (adminp (group-admin-p by))
            (next (post-parameter "next")))
 
       (cond
-        ((and (or (and (eq type :offer)
-                       (eq action-type :offered))
-                  (and (eq type :request)
-                       (eq action-type :requested)))
-              (nor (eql *userid* by)
-                   adminp))
-         ;; in case of wrong action-type post request. yes it has happened.
-         (notice :error :on "User is trying to 'request' a :request or 'offer' an :offer"
-                        :data (cons id item))
-         (flash "The system encountered a problem. Please go to the item's page and try offering/requesting it again.  If the problem persists, please report it in Kindista's Help/Feedback section." :error t))
+        ((and (or (post-parameter "reply-text")
+                  (post-parameter "reply"))
+              (getf *user* :pending))
+         (pending-flash "contact other Kindista members")
+         (see-other (or (referer) "/home")))
+
+        ((or action-type (post-parameter-string "reply-text"))
+         (register-inventory-item-action id
+                                         action-type
+                                         :item item
+                                         :next next
+                                         :reply (post-parameter "reply")
+                                         :reply-text (post-parameter-string
+                                                       "reply-text")))
 
         ((nor (getf item :active)
               (eql by *userid*)
@@ -529,61 +600,6 @@
 
         ((post-parameter "cancel")
          (see-other (or next "/home")))
-
-        ((and (or (post-parameter "reply-text")
-                  (post-parameter "reply"))
-              (getf *user* :pending))
-         (pending-flash "contact other Kindista members")
-         (see-other (or (referer) "/home")))
-
-        ((or (post-parameter-string "reply-text")
-             (and (post-parameter "reply-text")
-                  (or (and (eql type :request)
-                           (string= action-type "offer"))
-                      (and (eql type :offer)
-                           (string= action-type "request")))))
-         (aif (find-existing-transaction id)
-           (post-transaction it)
-           (progn
-             (flash (s+ "Your "
-                        (or action-type "reply")
-                        " has been sent."))
-             (contact-opt-out-flash (list by (unless (eql *userid* by)
-                                               *userid*)))
-             (create-transaction :on id
-                                 :text (post-parameter-string "reply-text")
-                                 :action (cond
-                                           ((string= action-type "offer")
-                                            :offered)
-                                           ((string= action-type "request")
-                                            :requested))
-                                 :match-id (post-parameter-integer "match"))
-             (see-other (or next (script-name*))))))
-
-        ((or (post-parameter "reply")
-             action-type
-             ;; if ther's no action type
-             (and (post-parameter "reply-text")
-                  (not reply-text)
-                  (not action-type)))
-
-         (flet ((reply-html (type)
-                  (inventory-item-reply
-                    type
-                    id
-                    item
-                    :text reply-text
-                    :action-type action-type
-                    :next next
-                    :match (post-parameter-integer "match")
-                    :error (when (and (not (post-parameter "reply"))
-                                      (not reply-text)
-                                      (not action-type))
-                             :no-message))))
-           (case (getf item :type)
-             (:offer (reply-html "offer"))
-             (:request (reply-html "request"))
-             (t (not-found)))))
 
         ((post-parameter "love")
          (love id)

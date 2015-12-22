@@ -62,6 +62,7 @@
                                              :unsubscribe-key)
                                        k)
                             unverified-user))
+         (action-type (get-parameter-string "action-type"))
          (userid (or (when verified-user unverified-userid)
                      *userid*))
          (self (eql userid by))
@@ -89,6 +90,13 @@
            (item-view-denied (result-privacy result)))
        (permission-denied))
 
+     (action-type
+      ;; email buttons need a get-request
+      ;; see inventory-digest-email
+      (register-inventory-item-action id
+                                      action-type
+                                      :item request
+                                      :reply t))
      (t
       (with-location
         (standard-page
