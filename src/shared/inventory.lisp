@@ -580,7 +580,9 @@
          (pending-flash "contact other Kindista members")
          (see-other (or (referer) "/home")))
 
-        ((or action-type (post-parameter-string "reply-text"))
+        ((or action-type
+             (post-parameter "reply")
+             (post-parameter-string "reply-text"))
          (register-inventory-item-action id
                                          action-type
                                          :item item
