@@ -335,57 +335,21 @@
             (htm
               (:span :style "font-size: 0.8em;"
                 (str (strcat " (within " it ")")))))))
-      (:div
+      (:div :style "margin-bottom: 1em;"
         (str (ellipsis (getf item :details) :see-more url :email t)))
 
-      (:div
-        (:form :method "post" :action url
-               (:button :type "submit"
-                        :style "text-shadow: 1px 1px rgba(0,0,0,0.4);
-                                margin: 0.9em 0.5em 0 0;
-                                font-size: 0.8em;
-                                padding: 0.3em 0.4em;
-                                background: #3c6dc8;
-                                vertical-align: middle;
-                                cursor: pointer;
-                                background: -moz-linear-gradient(
-                                 top,
-                                 #3c6dc8 0%,
-                                 #29519c);
-                                background: -ms-linear-gradient(
-                                 top,
-                                 #3c6dc8 0%,
-                                 #29519c);
-                                background: -o-linear-gradient(
-                                 top,
-                                 #3c6dc8 0%,
-                                 #29519c);
-                                background: -webkit-linear-gradient(
-                                 top,
-                                 #3c6dc8 0%,
-                                 #29519c);
-                                background: -webkit-gradient(
-                                 linear, left top, left bottom,
-                                 from(#3c6dc8),
-                                 to(#29519c));
-                                border: 1px solid #474747;
-                                text-shadow:
-                                 1px 1px 2px rgba(0,0,0,0.4);
-                                border-radius: 0.35em;
-                                color: #fff;
-                                box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);"
-                        :name "action-type"
-                        :value response-type
-                        (:img :src (s+ "http://media.kindista.org/white-"
-                                       response-type
-                                       ".png")
-                              :alt response-type
-                              :style "vertical-align: middle; width: 1.47em; height: 1.47em; margin-right: 0.3em;" 
-                         ) 
-                        ;; following needs div instead of span because of a
-                        ;; firefox hover/underline bug
-                        (:div :style "display: inline; font-weight: bold;"
-                          (str (s+ (string-capitalize response-type) " This")))))))))
+      (str (email-action-button
+             (s+ url "?action-type=" response-type)
+             (s+ (string-capitalize response-type) " This")
+             :style *small-style-button* 
+             :image (html (:img :src (s+ "http://media.kindista.org/white-"
+                                    response-type
+                                    ".png")
+                                :alt response-type
+                                :style "vertical-align: middle;
+                                        width: 1.2em;
+                                        height: 1.2em;
+                                        margin-right: 0.3em;")))))))
 
 (defun email-inventory-item-plain-text
   (id

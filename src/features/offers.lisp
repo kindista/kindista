@@ -51,6 +51,7 @@
          (by (getf offer :by))
          (mine (eql *userid* by))
          (result (gethash id *db-results*))
+         (action-type (get-parameter-string "action-type"))
          (facebook-item-id (when (string= (referer)
                                           "https://www.facebook.com/")
                              (get-parameter-integer "post_id")))
@@ -73,6 +74,12 @@
      ((and (not mine)
            (item-view-denied (result-privacy result)))
        (permission-denied))
+
+     (action-type
+      (register-inventory-item-action id
+                                      action-type
+                                      :item offer
+                                      :reply t))
 
      (t
       (with-location
