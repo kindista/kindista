@@ -2,12 +2,12 @@
   - deactivate button on first transaction emails
   - expriation options: 1 week, 1 month, 3 months, 1 year, 3 years
   - reminder email 1 week before expiration
-    - renew from reminder email (if no title is needed)
+    - maybe renew from reminder email (if no title is needed)
   - cron job to check what needs renewal
   - refresh in indexes every month
   - date should say how long since refresh, edit, created
-## provide a link in admin emails for new account approval
-  - make sure other team members are getting these emails to help w/ approvals
+    - when it's self, date should say when it expires
+  - maybe the ability to see one's expired/deactivated items
 ## loves
   - #links
   - post to /love

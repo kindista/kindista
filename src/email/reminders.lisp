@@ -17,8 +17,6 @@
 
 (in-package :kindista)
 
-(define-constant +week-in-seconds+ 604800)
-
 (defun send-reminder-email (userid title message)
   (let* ((data (db userid))
          (name (getf data :name))
@@ -54,8 +52,7 @@
 
 (defun get-send-all-reminders ()
   (when (or (getf *user* :admin)
-            (string= (header-in* :x-real-ip) *local-ip-address*)
-            (string= (header-in* :x-real-ip) "127.0.0.1"))
+            (server-side-request-p))
     (send-all-reminders)
     (see-other "/home")))
 

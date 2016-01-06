@@ -201,12 +201,7 @@
         (:strong (str (s+ subject ":"))))
 
       (awhen inventory-text
-        (htm (:table :cellspacing 0
-                     :cellpadding 0
-                     :style *style-quote-box*
-               (:tr (:td :style "padding: 4px 12px;"
-                        "\"" (str (email-text it)) "\"")))
-             (:br)))
+        (str (email-blockquote it)))
 
      ;(:p :style *style-p*
      ;  (:strong (str from))

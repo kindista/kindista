@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -31,6 +31,7 @@
   (load-db)
   (load-tokens)
   (setf *acceptor-thread* (make-thread #'(lambda () (start *acceptor*))))
+  (setf *scheduler-thread* (make-thread #'(lambda () (scheduler-loop))))
   (start (acceptor-metric-system *acceptor*))
   (start-notice-thread))
 
@@ -59,6 +60,7 @@
   (stop (acceptor-metric-system *acceptor*))
   ;;there is currently no way to stop the metric system after the *acceptor* stops
   (stop *acceptor*)
+  (stop-scheduler-thread)
   (save-db)
   (save-tokens)
   (stop-notice-thread))

@@ -303,6 +303,10 @@
        (progn ,@body)
        (not-found))))
 
+(defun server-side-request-p ()
+  (or (string= (header-in* :x-real-ip) *local-ip-address*)
+      (string= (header-in* :x-real-ip) "127.0.0.1")) )
+
 (defmacro require-test ((test &optional message) &body body)
   `(if ,test
      (progn ,@body)

@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -21,13 +21,15 @@
   (item-id
    &aux (item (db item-id))
         (type (getf item :type))
+        (item-description (or (getf item :title)
+                              (getf item :details)))
         (typestring (case type (:offer "offer") (:request "request")))
         (by-id (getf item :by))
         (by (db by-id))
         (group-p (eql (getf by :type) :group))
         (group-name (when group-p (getf by :name)))
         (recipients)
-        (status (s+ typstring
+        (status (s+ typestring
                     (if (< (getf item :expires)
                         (get-universal-time))
                       " has expired"
@@ -41,22 +43,21 @@
                      status))
         (url (strcat *email-url* typestring "s/" item-id)))
 
-  (if (eql by-type :person)
+  (if (eql (getf by :type) :person)
     (when (getf by :notify-inventory-expiration)
-      (push (list :id subject
-                  :name (getf by :name)
+      (push (list :name (getf by :name)
                   :email (car (getf by :emails))
                   :unsubscribe-key (getf by :unsubscribe-key))
           recipients))
     (dolist (admin-id (getf by :admins))
       (let ((person (db admin-id)))
         (when (getf person :notify-inventory-expiration)
-          (push (list :group-name name
+          (push (list :group-name group-name
                       :name (getf person :name)
                       :groupid by
                       :email (car (getf person :emails))
                       :unsubscribe-key (getf person :unsubscribe-key)
-                      :id admin-iy)
+                      :id admin-id)
               recipients)))))
 
     (dolist (recipient recipients)
@@ -65,50 +66,52 @@
                           (getf recipient :email)
                           title
                           (inventory-expiration-email-text
+                            message
+                            item-description
+                            typestring
                             url
                             recipient)
                           :html-message (inventory-expiration-email-html
+                                          message
+                                          item-description
+                                          typestring
                                           url
-                                          author-name
                                           recipient))))
 
-(defun gratitude-notification-email-text
-  (gratitude-url
-   author-name
-   recipient)
+(defun inventory-expiration-email-text
+  (message item-description typestring url recipient)
   (strcat
-#\linefeed #\linefeed
-author-name
-" has shared a statement of gratitude about "
-(or (getf recipient :group-name) "you")
-" on Kindista."
-#\linefeed #\linefeed
-"You can see the statement on Kindista here:"
-#\linefeed
-gratitude-url
-#\linefeed #\linefeed
-"Thank you for sharing your gifts with us!"
-#\linefeed
-";-The Kindista Team"
-#\linefeed #\linefeed
-(unsubscribe-notice-ps-text
-  (getf recipient :unsubscribe-key)
-   (getf recipient :email)
-   (s+ "notifications when people post statements of gratitude about "
-       (or (getf recipient :group-name) "you"))
-   :groupid (getf recipient :groupid))))
+    message
+    #\linefeed #\linefeed
+    item-description
+    #\linefeed #\linefeed
+    "You can renew this "
+    typestring
+    " here:"
+    #\linefeed #\linefeed
+    url
+    #\linefeed #\linefeed
+    "Thank you for sharing your gifts with us!"
+    #\linefeed
+    ";-The Kindista Team"
+    #\linefeed #\linefeed
+    (unsubscribe-notice-ps-text
+      (getf recipient :unsubscribe-key)
+      (getf recipient :email)
+      (s+ "notifications when people post statements of gratitude about "
+          (or (getf recipient :group-name) "you"))
+      :groupid (getf recipient :groupid))))
 
-(defun gratitude-notification-email-html
-  (gratitude-url author-name recipient)
+(defun inventory-expiration-email-html
+  (message item-description typestring url recipient)
   (html-email-base
     (html
-      (:p :style *style-p*
-          (str author-name)
-            " has shared a statement of gratitude about "
-                (str (or (getf recipient :group-name) "you"))
-                " on Kindista.")
+      (:p :style *style-p* (str message))
 
-      (str (email-action-button gratitude-url "View on Kindista"))
+      (str (email-blockquote item-description))
+
+      (str (email-action-button url (s+ "Renew this "
+                                        (string-capitalize typestring))))
 
       (:p :style *style-p* "Thank you for sharing your gifts!")
 

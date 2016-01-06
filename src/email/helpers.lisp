@@ -121,6 +121,14 @@
       #\linefeed
       *amazon-smile-link*)))
 
+(defun email-blockquote (text)
+ (html (:table :cellspacing 0
+               :cellpadding 0
+               :style *style-quote-box*
+         (:tr (:td :style "padding: 4px 12px;"
+                  "\"" (str (email-text text)) "\"")))
+       (:br)))
+
 (defun unsubscribe-notice-ps-text
   (unsubscribe-code
    email-address

@@ -393,6 +393,12 @@
 
   ;cron-jobs
 
+  ("/inventory-expiration-reminders"
+   :get get-inventory-expiration-reminders)
+
+  ("/inventory-refresh"
+   :get get-inventory-refresh)
+
   ("/schedule-metric-system-timer"
    :get get-schedule-metric-system-timer)
 

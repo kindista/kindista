@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -62,30 +62,6 @@
                    :expires expires
                    :created (get-universal-time))))
 
-(defun inventory-expiration-thread-loop ()
-  (loop
-    (let ((item (car *inventory-expiration-timer-index*)))
-      (cond
-        ((eq item :stop)
-         (terminate-thread *inventory-expiration-timer-thread*)
-         (setf *inventory-expiration-timer-thread* nil)
-         (pprint "inventory-expiration-loop stopped")
-         (terpri)
-         (return-from inventory-expiration-thread-loop))
-        ((< (car item) (get-universal-time))
-         ;; notice expired-inventory-item-notification
-         (pprint "deactivating ")
-         (pprint item)
-         (terpri)
-         (deactivate-inventory-item (cdr item))
-         (with-mutex (*inventory-expiration-timer-mutex*)
-           (asetf *inventory-expiration-timer-index*
-                  (cdr it))))))))
-
-(defun stop-inventory-expiration-timer-thread ()
-  (with-mutex (*inventory-expiration-timer-mutex*)
-    (push :stop *inventory-expiration-timer-index*)))
-
 (defun inventory-item-result (id &key data by-id by)
   (or (gethash id *db-results*)
       (let* ((item (or data (db id)))
@@ -98,7 +74,7 @@
                        :type (getf item :type)
                        :people (list by-id)
                        :privacy (getf item :privacy)
-                       :time (or (getf item :edited) (getf item :created))
+                       :time (or (getf item :refreshed) (getf item :edited) (getf item :created))
                        :tags (getf item :tags))))))
 
 
@@ -120,129 +96,155 @@
             (modify-db id :expires (+ now +week-in-seconds+ rand))
             (modify-db id :expires (+ now 3-months rand))))))))
 
-(defun get-inventory-expiration-reminders (&aux expiring-soon expired)
-  (loop for (time . id) in *inventory-expiration-timer-index*
-        with now = (get-universal-time)
-        with 6days = (+ now (* 6 +day-in-seconds+))
-        with 4days = (+ now (* 4 +day-in-seconds+))
-        with 2+days = (+ now (* 2.5 +day-in-seconds+))
-        while (< time 4days)
-        do (cond
-            ((< time now)
-             (if *productionp*
-               (progn
-                 (send-inventory-expiration-notice id)
-                 (deactivate-inventory-item id))
-               (push (cons id (humanize-universal-time time)) expired)))
-            ;; send reminders for items expiring soon
-            ((> time 2+days)
-             (if *productionp*
-               (let* ((item (db id))
-                      (recent-reminder (car (getf item :expiration-notice-sent))))
-                  (when (or (not recent-reminder)
-                            (< recent-reminder 6days))
-                    (send-inventory-expiration-notice id)))
-               (push (cons id (humanize-future-time time)) expiring-soon)))))
-  (values expired expiring-soon))
+(defun get-inventory-expiration-reminders
+  (&aux expiring-soon
+        expired
+        (now (get-universal-time)))
+  (when (or (getf *user* :admin)
+            (server-side-request-p))
+    (flet ((remind-user (id)
+             (send-inventory-expiration-notice id)
+             (modify-db id :expiration-notice now)))
+      (loop for (time . id) in *inventory-expiration-timer-index*
+            with 6days = (+ now (* 6 +day-in-seconds+))
+            with 4days = (+ now (* 4 +day-in-seconds+))
+            with 2+days = (+ now (* 2.5 +day-in-seconds+))
+            while (< time 4days)
+            do (cond
+                 ((< time now)
+                  (if *productionp*
+                    (remind-user id)
+                    (push (cons id (humanize-universal-time time)) expired))
+                  (deactivate-inventory-item id))
+                 ;; send reminders for items expiring soon
+                 ((> time 2+days)
+                  (if *productionp*
+                    (let* ((item (db id))
+                           (recent-reminder (getf item :expiration-notice)))
+                      (when (or (not recent-reminder)
+                                (< recent-reminder 6days))
+                        (remind-user id)))
+                    (push (cons id (humanize-future-time time)) expiring-soon))))))
+    (if *productionp*
+      (see-other "/home")
+      (values expired expiring-soon))))
 
-(defun send-inventory-expiration-notice (id)
-  id
-  )
+(defun get-inventory-refresh (&aux refreshed-items (now (get-universal-time)))
+  (when (or (getf *user* :admin)
+            (server-side-request-p))
+    (dolist (result *inventory-refresh-timer-index*)
+      (if (< (result-time result)
+             (- now (* 4 +week-in-seconds+)))
+        (let ((id (result-id result)))
+          (refresh-item-time-in-indexes id :time now)
+          (modify-db id :refreshed now) )
+        (return))
+    (if *productionp*
+      (see-other "/home")
+      refreshed-items))))
 
-(defun index-inventory-item (id data)
-  (let* ((by-id (getf data :by))
-         (by (db by-id))
-         (type (getf data :type))
-         (pending (getf by :pending))
-         (result (inventory-item-result id
-                                        :data data
-                                        :by-id by-id
-                                        :by by))
-         (locationp (and (result-latitude result)
-                        (result-longitude result))))
+(defun index-inventory-item
+  (id
+   data
+   &aux (by-id (getf data :by))
+        (by (db by-id))
+        (type (getf data :type))
+        (pending (getf by :pending))
+        (result (inventory-item-result id
+                                       :data data
+                                       :by-id by-id
+                                       :by by))
+        (locationp (and (result-latitude result)
+                       (result-longitude result))))
 
-    ;; other code (e.g. index transaction) requires results for inactive items
-    (with-locked-hash-table (*db-results*)
-      (setf (gethash id *db-results*) result))
+  ;; other code (e.g. index transaction) requires results for inactive items
+  (with-locked-hash-table (*db-results*)
+    (setf (gethash id *db-results*) result))
 
-    (cond
-      (pending
-       (with-locked-hash-table (*pending-person-items-index*)
-         (let ((results (gethash by-id *pending-person-items-index*)))
-           (if (or (not results)
-                   (and (eq type :offer)
-                        (> (result-time result)
-                           (result-time (car results)))))
-             (push result (gethash by-id *pending-person-items-index*))
-             (push result (cdr (last (gethash by-id *pending-person-items-index*))))))))
+  (cond
+    (pending
+     (with-locked-hash-table (*pending-person-items-index*)
+       (let ((results (gethash by-id *pending-person-items-index*)))
+         (if (or (not results)
+                 (and (eq type :offer)
+                      (> (result-time result)
+                         (result-time (car results)))))
+           (push result (gethash by-id *pending-person-items-index*))
+           (push result (cdr (last (gethash by-id *pending-person-items-index*))))))))
 
-      ((getf data :active)
-       (with-locked-hash-table (*profile-activity-index*)
-         (asetf (gethash by-id *profile-activity-index*)
-                (safe-sort (push result it) #'> :key #'result-time)))
+    ((getf data :active)
+     (with-locked-hash-table (*profile-activity-index*)
+       (asetf (gethash by-id *profile-activity-index*)
+              (safe-sort (push result it) #'> :key #'result-time)))
 
-       (awhen (getf data :expires)
-         (with-mutex (*inventory-expiration-timer-mutex*)
-           (setf *inventory-expiration-timer-index*
-                 (safe-sort (push (cons it id) *inventory-expiration-timer-index*)
-                            #'<
-                            :key #'car))))
+     (awhen (getf data :expires)
+       (with-mutex (*inventory-expiration-timer-mutex*)
+         (setf *inventory-expiration-timer-index*
+               (safe-sort (push (cons it id) *inventory-expiration-timer-index*)
+                          #'<
+                          :key #'car))))
 
-       (if (eq type :offer)
-         (with-locked-hash-table (*offer-index*)
-           (push id (gethash by-id *offer-index*)))
-         (with-locked-hash-table (*request-index*)
-           (push id (gethash by-id *request-index*))))
+     (with-mutex (*inventory-refresh-timer-mutex*)
+       (setf *inventory-refresh-timer-index*
+             (safe-sort (push result *inventory-refresh-timer-index*)
+                        #'<
+                        :key #'result-time)))
 
-       (when locationp
-         (let ((title-stems (stem-text (getf data :title)))
-               (details-stems (stem-text (getf data :details)))
-               (tag-stems (stem-text (separate-with-spaces
-                                       (getf data :tags)))))
-           (if (eq type :offer)
-             (with-locked-hash-table (*offer-stem-index*)
-               (dolist (stem title-stems)
-                 (push result (getf (gethash stem *offer-stem-index*) :title)))
-               (dolist (stem details-stems)
-                 (push result (getf (gethash stem *offer-stem-index*) :details)))
-               (dolist (stem tag-stems)
-                 (push result (getf (gethash stem *offer-stem-index*) :tags))))
+     (if (eq type :offer)
+       (with-locked-hash-table (*offer-index*)
+         (push id (gethash by-id *offer-index*)))
+       (with-locked-hash-table (*request-index*)
+         (push id (gethash by-id *request-index*))))
 
-             (with-locked-hash-table (*request-stem-index*)
-               (dolist (stem title-stems)
-                 (push result (getf (gethash stem *request-stem-index*) :title)))
-               (dolist (stem details-stems)
-                 (push result (getf (gethash stem *request-stem-index*) :details)))
-               (dolist (stem tag-stems)
-                 (push result (getf (gethash stem *request-stem-index*) :tags))))))
-
+     (when locationp
+       (let ((title-stems (stem-text (getf data :title)))
+             (details-stems (stem-text (getf data :details)))
+             (tag-stems (stem-text (separate-with-spaces
+                                     (getf data :tags)))))
          (if (eq type :offer)
-           (geo-index-insert *offer-geo-index* result)
-           (geo-index-insert *request-geo-index* result))
+           (with-locked-hash-table (*offer-stem-index*)
+             (dolist (stem title-stems)
+               (push result (getf (gethash stem *offer-stem-index*) :title)))
+             (dolist (stem details-stems)
+               (push result (getf (gethash stem *offer-stem-index*) :details)))
+             (dolist (stem tag-stems)
+               (push result (getf (gethash stem *offer-stem-index*) :tags))))
 
-         ;; unless item is older than 180 days
-         (unless (< (result-time result) (- (get-universal-time) 15552000))
-           ;; unless item is older than 30 days
-           (unless (< (result-time result) (- (get-universal-time) 2592000))
-             (with-mutex (*recent-activity-mutex*)
-               (push result *recent-activity-index*)))
-           (geo-index-insert *activity-geo-index* result)))
+           (with-locked-hash-table (*request-stem-index*)
+             (dolist (stem title-stems)
+               (push result (getf (gethash stem *request-stem-index*) :title)))
+             (dolist (stem details-stems)
+               (push result (getf (gethash stem *request-stem-index*) :details)))
+             (dolist (stem tag-stems)
+               (push result (getf (gethash stem *request-stem-index*) :tags))))))
 
-       (when (eq type :request)
-         (if (or (getf data :match-all-terms)
-                 (getf data :match-any-terms))
-           (index-matchmaker id data)
-           (with-mutex (*requests-without-matchmakers-mutex*)
-             (safe-sort (push result
-                              *requests-without-matchmakers-index*)
-                        #'>
-                        :key #'result-time)))))
-      (t
        (if (eq type :offer)
-         (with-locked-hash-table (*account-inactive-offer-index*)
-           (push id (gethash by-id *account-inactive-offer-index*)))
-         (with-locked-hash-table (*account-inactive-request-index*)
-           (push id (gethash by-id *account-inactive-request-index*))))))))
+         (geo-index-insert *offer-geo-index* result)
+         (geo-index-insert *request-geo-index* result))
+
+       ;; unless item is older than 180 days
+       (unless (< (result-time result) (- (get-universal-time) 15552000))
+         ;; unless item is older than 30 days
+         (unless (< (result-time result) (- (get-universal-time) 2592000))
+           (with-mutex (*recent-activity-mutex*)
+             (push result *recent-activity-index*)))
+         (geo-index-insert *activity-geo-index* result)))
+
+     (when (eq type :request)
+       (if (or (getf data :match-all-terms)
+               (getf data :match-any-terms))
+         (index-matchmaker id data)
+         (with-mutex (*requests-without-matchmakers-mutex*)
+           (safe-sort (push result
+                            *requests-without-matchmakers-index*)
+                      #'>
+                      :key #'result-time)))))
+    (t
+     (if (eq type :offer)
+       (with-locked-hash-table (*account-inactive-offer-index*)
+         (push id (gethash by-id *account-inactive-offer-index*)))
+       (with-locked-hash-table (*account-inactive-request-index*)
+         (push id (gethash by-id *account-inactive-request-index*)))))))
 
 (defun modify-inventory-item (id &key publish-facebook-p title details tags privacy expires)
   (let* ((result (gethash id *db-results*))
