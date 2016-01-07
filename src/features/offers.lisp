@@ -81,6 +81,12 @@
                                       :item offer
                                       :reply t))
 
+     ((and mine (get-parameter "edit"))
+      (post-existing-inventory-item "offer"
+                                    :id id
+                                    :edit t
+                                    :url (script-name*)))
+
      (t
       (with-location
         (standard-page

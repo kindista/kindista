@@ -290,7 +290,12 @@
 
     (mapcar #'car (sort alist #'> :key #'inventory-item-rank))))
 
-(defun refresh-item-time-in-indexes (id &key (time (get-universal-time)))
+(defun refresh-item-time-in-indexes
+  (id
+   &key (time (get-universal-time))
+        ;; get-inventory-refresh is called by server not client
+        server-side-trigger-p)
+
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (item (db id))
@@ -300,12 +305,19 @@
                (:gratitude (getf item :author))))
          (group-adminp (member *userid* (db by :admins))))
 
-    (when (and (or (eql *userid* by) group-adminp)
+    (when (and (or (eql *userid* by) group-adminp server-side-trigger-p)
                (or (eq type :gratitude)
                    (eq type :offer)
                    (eq type :request)))
 
       (setf (result-time result) time)
+
+      (with-mutex (*inventory-refresh-timer-mutex*)
+        (setf *inventory-refresh-timer-index*
+              (safe-sort (push result *inventory-refresh-timer-index*)
+                         #'<
+                         :key #'result-time)))
+
       (with-locked-hash-table (*profile-activity-index*)
         (asetf (gethash by *profile-activity-index*)
                (safe-sort it #'> :key #'result-time)))

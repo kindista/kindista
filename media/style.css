@@ -2640,6 +2640,10 @@ button.text.large {
  /*margin-left: 10.7em;*/
 }
 
+.timestamp.red {
+ color:#900;
+}
+
 .card.inventory-item .timestamp {
  margin-top: 0;
 }

@@ -29,18 +29,22 @@
         (group-p (eql (getf by :type) :group))
         (group-name (when group-p (getf by :name)))
         (recipients)
-        (status (s+ typestring
-                    (if (< (getf item :expires)
-                        (get-universal-time))
-                      " has expired"
-                      " will expire soon")))
-        (title (strcat* "Your "
-                         (when group-p "group's ")
-                         status))
-        (message (s+ (when group-name
+        (status (if (< (getf item :expires)
+                    (get-universal-time))
+                  " has expired"
+                  " will expire soon"))
+        (title (strcat* (case type (:offer "An ") (:request "A "))
+                        typestring
+                        " "
+                        (or group-name "you")
+                        " posted on Kindista "
+                        status))
+        (message (s+ (if group-name
                        (s+ group-name "'s ")
                        "Your ")
-                     status))
+                     typestring
+                     status
+                     "."))
         (url (strcat *email-url* typestring "s/" item-id)))
 
   (if (eql (getf by :type) :person)
@@ -98,8 +102,7 @@
     (unsubscribe-notice-ps-text
       (getf recipient :unsubscribe-key)
       (getf recipient :email)
-      (s+ "notifications when people post statements of gratitude about "
-          (or (getf recipient :group-name) "you"))
+      "notifications when your offers and requests are about to expire"
       :groupid (getf recipient :groupid))))
 
 (defun inventory-expiration-email-html
@@ -120,8 +123,7 @@
       (str (unsubscribe-notice-ps-html
              (getf recipient :unsubscribe-key)
              (getf recipient :email)
-             (s+ "notifications when people post statements of gratitude about "
-                 (or (getf recipient :group-name) "you"))
+             "notifications when your offers and requests are about to expire"
              :groupid (getf recipient :groupid)))
       )))
 

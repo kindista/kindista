@@ -670,6 +670,11 @@
                           " a message or responds to "
                           (if group "our" "my")
                           " offers/requests")))
+            (:li (:input :type "checkbox"
+                  :name "inventory-expiration"
+                  :checked (checkbox-value :notify-inventory-expiration))
+                 "when my offers and requests are about to expire ")
+
             (when group
               (htm
                 (:li (:input :type "checkbox"
@@ -1209,6 +1214,7 @@
          (modify-db userid
                     :notify-gratitude (when (post-parameter "gratitude") t)
                     :notify-message (when (post-parameter "message") t)
+                    :notify-inventory-expiration (when (post-parameter "inventory-expiration") t)
                     :notify-new-contact (when (post-parameter "new-contact") t)
                     :notify-reminders (when (post-parameter "reminders") t)
                     :notify-inventory-digest (when (post-parameter "inventory-digest") t)

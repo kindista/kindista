@@ -97,6 +97,12 @@
                                       action-type
                                       :item request
                                       :reply t))
+     ((and self (get-parameter "edit"))
+      (post-existing-inventory-item "request"
+                                    :id id
+                                    :edit t
+                                    :url (script-name*)))
+
      (t
       (with-location
         (standard-page

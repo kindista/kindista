@@ -94,13 +94,18 @@
         (let ((rand (random month-in-seconds)))
           (if (< created 3-months-ago)
             (modify-db id :expires (+ now +week-in-seconds+ rand))
-            (modify-db id :expires (+ now 3-months rand))))))))
+            (modify-db id :expires (+ now 3-months rand)))))
+
+      (when (and (eq (getf item :type) :person)
+                 (getf item :active))
+        (modify-db id :notify-inventory-expiration t)))))
 
 (defun get-inventory-expiration-reminders
   (&aux expiring-soon
         expired
         (now (get-universal-time)))
-  (when (or (getf *user* :admin)
+  (when (or (not *productionp*)
+            (getf *user* :admin)
             (server-side-request-p))
     (flet ((remind-user (id)
              (send-inventory-expiration-notice id)
@@ -129,15 +134,21 @@
       (see-other "/home")
       (values expired expiring-soon))))
 
-(defun get-inventory-refresh (&aux refreshed-items (now (get-universal-time)))
-  (when (or (getf *user* :admin)
+(defun get-inventory-refresh
+  (&aux refreshed-items
+        (now (get-universal-time))
+        (-1hour (- now 3600)))
+  (when (or (not *productionp*)
+            (getf *user* :admin)
             (server-side-request-p))
     (dolist (result *inventory-refresh-timer-index*)
       (if (< (result-time result)
              (- now (* 4 +week-in-seconds+)))
         (let ((id (result-id result)))
-          (refresh-item-time-in-indexes id :time now)
-          (modify-db id :refreshed now) )
+          (refresh-item-time-in-indexes id
+                                        :time -1hour
+                                        :server-side-trigger-p t)
+          (modify-db id :refreshed -1hour))
         (return))
     (if *productionp*
       (see-other "/home")
@@ -660,9 +671,9 @@
                                  :match-id (post-parameter-integer "match"))
              (see-other (or next (strcat "/transactions/" id)))))))))
 
-(defun post-existing-inventory-item (type &key id url)
+(defun post-existing-inventory-item (type &key id url edit)
   (require-user
-    (let* ((id (parse-integer id))
+    (let* ((id (safe-parse-integer id))
            (item (db id))
            (by (getf item :by))
            (action-type (post-parameter-string "action-type"))
@@ -761,7 +772,7 @@
                         :selected (s+ type "s"))))
 
                (cond
-                ((post-parameter "edit")
+                ((or (post-parameter "edit") edit)
                  (inventory-details
                    :publish-facebook (when (getf item :facebook-id) t)))
 
