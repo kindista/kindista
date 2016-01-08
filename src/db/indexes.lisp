@@ -112,7 +112,7 @@
 (defvar *invitation-reminder-timer-mutex* (make-mutex))
 (defvar *invitation-reminder-timer-index* ())
 (defvar *inventory-expiration-timer-mutex* (make-mutex))
-(defvar *inventory-expiration-timer-index* ())
+(defvar *inventory-expiration-timer-index* ()) ; (:expire-time :id :expiratoin-notice)
 (defvar *inventory-refresh-timer-mutex* (make-mutex))
 (defvar *inventory-refresh-timer-index* ())
 (defvar *invite-request-mutex* (make-mutex))

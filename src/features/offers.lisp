@@ -49,7 +49,7 @@
     (setf id (parse-integer id)))
   (let* ((offer (db id))
          (by (getf offer :by))
-         (mine (eql *userid* by))
+         (self (eql *userid* by))
          (result (gethash id *db-results*))
          (action-type (get-parameter-string "action-type"))
          (facebook-item-id (when (string= (referer)
@@ -67,11 +67,11 @@
        (not-found))
 
      ((and (getf offer :violates-terms)
-           (not mine)
+           (not self)
            (not (getf *user* :admin)))
         (item-violates-terms))
 
-     ((and (not mine)
+     ((and (not self)
            (item-view-denied (result-privacy result)))
        (permission-denied))
 
@@ -81,7 +81,13 @@
                                       :item offer
                                       :reply t))
 
-     ((and mine (get-parameter "edit"))
+     ((and self (get-parameter "deactivate"))
+      (post-existing-inventory-item "offer"
+                                    :id id
+                                    :deactivate t
+                                    :url (script-name*)))
+
+     ((and self (get-parameter "edit"))
       (post-existing-inventory-item "offer"
                                     :id id
                                     :edit t
@@ -98,7 +104,7 @@
                   (:h2 :class "red" "This offer is no longer active.")))
               (str (inventory-activity-item result :show-distance t :show-tags t)))
             (str (item-images-html id))
-            (when (and (or mine (group-admin-p by))
+            (when (and (or self (group-admin-p by))
                        matching-requests)
               (str (item-matches-html id :data offer
                                          :current-matches matching-requests))))

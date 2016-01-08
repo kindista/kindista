@@ -362,7 +362,10 @@
                                  ((string= type "offer") "offered")))))))
 
   (when self
-    (asetf timestamp (html (:a :href (url-compose item-url "edit" "t")
+    (asetf timestamp (html (:a :href (s+ (url-compose item-url
+                                                      "edit" "t"
+                                                      "focus" "expiration")
+                                         "#expiration")
                              (str it)))))
 
   (activity-item :id item-id

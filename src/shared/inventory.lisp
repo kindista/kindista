@@ -78,82 +78,6 @@
                        :tags (getf item :tags))))))
 
 
-(defun add-expiration-dates-to-existing-inventory-items
-  (&aux (now (get-universal-time))
-        (month-in-seconds (* 30 +day-in-seconds+))
-        (3-months (* 13 +week-in-seconds+))
-        (3-months-ago (- now 3-months)))
-  "Should only be run once on the live server to add expiration dates to inventory items that don't already have them"
-  (dolist (id (hash-table-keys *db*))
-    (let* ((item (db id))
-           (type (getf item :type))
-           (created (getf item :created)))
-      (when (and (or (eq type :offer)
-                     (eq type :request))
-                 (getf item :active))
-        (let ((rand (random month-in-seconds)))
-          (if (< created 3-months-ago)
-            (modify-db id :expires (+ now +week-in-seconds+ rand))
-            (modify-db id :expires (+ now 3-months rand)))))
-
-      (when (and (eq (getf item :type) :person)
-                 (getf item :active))
-        (modify-db id :notify-inventory-expiration t)))))
-
-(defun get-inventory-expiration-reminders
-  (&aux expiring-soon
-        expired
-        (now (get-universal-time)))
-  (when (or (not *productionp*)
-            (getf *user* :admin)
-            (server-side-request-p))
-    (flet ((remind-user (id)
-             (send-inventory-expiration-notice id)
-             (modify-db id :expiration-notice now)))
-      (loop for (time . id) in *inventory-expiration-timer-index*
-            with 6days = (+ now (* 6 +day-in-seconds+))
-            with 4days = (+ now (* 4 +day-in-seconds+))
-            with 2+days = (+ now (* 2.5 +day-in-seconds+))
-            while (< time 4days)
-            do (cond
-                 ((< time now)
-                  (if *productionp*
-                    (remind-user id)
-                    (push (cons id (humanize-universal-time time)) expired))
-                  (deactivate-inventory-item id))
-                 ;; send reminders for items expiring soon
-                 ((> time 2+days)
-                  (if *productionp*
-                    (let* ((item (db id))
-                           (recent-reminder (getf item :expiration-notice)))
-                      (when (or (not recent-reminder)
-                                (< recent-reminder 6days))
-                        (remind-user id)))
-                    (push (cons id (humanize-future-time time)) expiring-soon))))))
-    (if *productionp*
-      (see-other "/home")
-      (values expired expiring-soon))))
-
-(defun get-inventory-refresh
-  (&aux refreshed-items
-        (now (get-universal-time))
-        (-1hour (- now 3600)))
-  (when (or (not *productionp*)
-            (getf *user* :admin)
-            (server-side-request-p))
-    (dolist (result *inventory-refresh-timer-index*)
-      (if (< (result-time result)
-             (- now (* 4 +week-in-seconds+)))
-        (let ((id (result-id result)))
-          (refresh-item-time-in-indexes id
-                                        :time -1hour
-                                        :server-side-trigger-p t)
-          (modify-db id :refreshed -1hour))
-        (return))
-    (if *productionp*
-      (see-other "/home")
-      refreshed-items))))
-
 (defun index-inventory-item
   (id
    data
@@ -188,18 +112,8 @@
        (asetf (gethash by-id *profile-activity-index*)
               (safe-sort (push result it) #'> :key #'result-time)))
 
-     (awhen (getf data :expires)
-       (with-mutex (*inventory-expiration-timer-mutex*)
-         (setf *inventory-expiration-timer-index*
-               (safe-sort (push (cons it id) *inventory-expiration-timer-index*)
-                          #'<
-                          :key #'car))))
-
-     (with-mutex (*inventory-refresh-timer-mutex*)
-       (setf *inventory-refresh-timer-index*
-             (safe-sort (push result *inventory-refresh-timer-index*)
-                        #'<
-                        :key #'result-time)))
+     (index-inventory-expiration id data)
+     (index-inventory-refresh-time result)
 
      (if (eq type :offer)
        (with-locked-hash-table (*offer-index*)
@@ -330,6 +244,9 @@
          "delete from facebook"
          ))
 
+      (deindex-inventory-expiration id data)
+      (index-inventory-expiration id data)
+
       (unless (and (getf *user* :admin)
                    (not (group-admin-p by))
                    (not (eql *userid* by)))
@@ -404,6 +321,9 @@
         (:offer
           (with-locked-hash-table (*account-inactive-offer-index*)
             (push id (gethash by *account-inactive-offer-index*)))))
+
+      (deindex-inventory-expiration id data)
+      (deindex-inventory-refresh-time result)
 
       (with-mutex (*inventory-expiration-timer-mutex*)
         (asetf *inventory-expiration-timer-index*
@@ -671,7 +591,7 @@
                                  :match-id (post-parameter-integer "match"))
              (see-other (or next (strcat "/transactions/" id)))))))))
 
-(defun post-existing-inventory-item (type &key id url edit)
+(defun post-existing-inventory-item (type &key id url edit deactivate)
   (require-user
     (let* ((id (safe-parse-integer id))
            (item (db id))
@@ -776,7 +696,7 @@
                  (inventory-details
                    :publish-facebook (when (getf item :facebook-id) t)))
 
-                ((post-parameter "deactivate")
+                ((or deactivate (post-parameter "deactivate"))
                  (confirm-delete :url url
                                  :type type
                                  :confirmation-question
@@ -928,8 +848,9 @@
                             (strcat (- 64 (length it)))
                             "64"))))
            " characters available")
-         (:h3  "Enter a title ")
+         (:label :for "title"  "Enter a title ")
          (:input :type "text"
+                 :id "title"
                  :name "title"
                  :onkeyup (ps-inline
                             (limit-characters this 64 "title-count"))
@@ -942,9 +863,10 @@
                                                (strcat (- 1000 (length it)))
                                                "1000"))))
              " characters available")
-         (:h3 "Include a description (optional)")
+         (:label :for "details" "Include a description (optional)")
          (:textarea :class "review-text"
                     :name "details"
+                    :id "details"
                     :rows "5"
                     :onkeyup (ps-inline
                                (limit-characters this 1000 "details-count"))
@@ -990,27 +912,32 @@
                         " on my Facebook timeline."))))))
 
 
-         (:h3 "Select 1-5 categories ")
-         (:p :class "small"
-          "Please note: selecting irrelevant categories is considered spam.")
-         (dolist (tag *top-tags*)
-           (htm
-             (:div :class "tag"
-               (:input :type "checkbox"
-                       :name "tag"
-                       :value tag
-                       :checked (when (member tag suggested :test #'string=)
-                                  (setf suggested (remove tag suggested :test #'string=))
-                                  ""))
-                  (:span (str tag)))))
-         (:h3 "Additional keywords (optional)")
+         (:fieldset
+           (:legend "Select 1-5 categories")
+           (:p :class "small"
+             "Please note: selecting irrelevant categories is considered spam.")
+           (dolist (tag *top-tags*)
+             (htm
+               (:div :class "tag"
+                (:input :type "checkbox"
+                 :name "tag"
+                 :value tag
+                 :checked (when (member tag suggested :test #'string=)
+                            (setf suggested (remove tag suggested :test #'string=))
+                            ""))
+                (:span (str tag))))))
+         (:label :for "tags" "Additional keywords (optional)")
          (:p :class "small"
           "Please note: adding irrelevant keywords is considered spam.")
-         (:input :type "text" :name "tags" :size 40
+         (:input :type "text" :id "tags" :name "tags" :size 40
                  :placeholder "e.g. produce, bicycle, tai-chi"
                  :value (format nil "~{~a~^,~^ ~}" suggested))
 
-         (:label :for "expiration-selection" "Expires in")
+         (:label :for "expiration-selection"
+                 :class (when (string= (get-parameter-string "focus")
+                                       "expiration")
+                          "red")
+          "Expires in")
          (str (expiration-selection-html expiration))
 
          (:p

@@ -45,14 +45,22 @@
         (other-party-is-group-p (eq (getf other-party :type) :group))
         (groupid (when other-party-is-group-p other-party-id))
         (group-name (when groupid (getf other-party :name)))
+        (transaction-url (strcat *email-url*
+                                 "transactions/"
+                                 transaction-id)) 
+        (deactivation-text (s+ "No longer "
+                               on-type-string
+                               "ing this item? "))
+        (deactivation-link (url-compose (strcat *email-url*
+                                                on-type-string
+                                                "s/"
+                                                inventory-id)
+                                        "deactivate" "t"))
         (recipients (remove nil
                             (if other-party-is-group-p
                               (getf other-party :notify-message)
                               (when (getf other-party :notify-message)
-                                (list other-party-id)))))
-        (transaction-url (strcat *email-url*
-                                 "transactions/"
-                                 transaction-id)))
+                                (list other-party-id))))))
 
   (labels ((gift-text (&key html-p)
              (gift-given-notification-text (aif group-actor
@@ -107,6 +115,8 @@
                 event-actor-name
                 transaction-url
                 inventory-author-and-type
+                :deactivation-link deactivation-link
+                :deactivation-text deactivation-text
                 :transaction-action transaction-action
                 :email email
                 :unsubscribe-key unsub-key
@@ -120,6 +130,8 @@
                               transaction-url
                               inventory-author-and-type
                               :transaction-action transaction-action
+                              :deactivation-link deactivation-link
+                              :deactivation-text deactivation-text
                               :email email
                               :unsubscribe-key unsub-key
                               :group-name group-name
@@ -159,6 +171,8 @@
    &key on-title
         on-details
         transaction-action
+        deactivation-link
+        deactivation-text
         text
         unsubscribe-key
         email
@@ -187,6 +201,10 @@
     #\linefeed
     url
     #\linefeed #\linefeed
+    deactivation-text
+    #\linefeed
+    deactivation-link
+    #\linefeed #\linefeed
     (unsubscribe-notice-ps-text
       unsubscribe-key
       email
@@ -204,6 +222,8 @@
    &key on-title
         on-details
         transaction-action
+        deactivation-link
+        deactivation-text
         text
         message
         unsubscribe-key
@@ -222,8 +242,7 @@
                (awhen on-title
                  (htm (:p (:strong (str (ellipsis it :email t))))))
                (awhen on-details
-                 (htm (:p (str (ellipsis it :email t)))))
-               )))
+                 (htm (:p (str (ellipsis it :email t))))))))
 
       (str (email-action-button
              url
@@ -248,6 +267,10 @@
      ;  (:br)
      ;  (:a :href url
      ;   (str url)))
+
+      (:p :style *style-p*
+       (str deactivation-text)
+       (:strong (:a :href deactivation-link "Deactivate it.")))
 
       (str
         (unsubscribe-notice-ps-html

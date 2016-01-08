@@ -45,7 +45,10 @@
                      typestring
                      status
                      "."))
-        (url (strcat *email-url* typestring "s/" item-id)))
+        (url (s+ (url-compose (strcat *email-url* typestring "s/" item-id)
+                              "edit" "t"
+                              "focus" "expiration")
+                 "#expiration")))
 
   (if (eql (getf by :type) :person)
     (when (getf by :notify-inventory-expiration)

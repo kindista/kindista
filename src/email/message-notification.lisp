@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -16,6 +16,9 @@
 ;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :kindista)
+
+;; triggered for conversations (non-transactions) and for all but the
+;; first message sent in a transaction
 
 (defun send-comment-notification-email (comment-id)
   (let* ((comment (db comment-id)) ; get the comment
