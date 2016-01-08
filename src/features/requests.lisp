@@ -97,6 +97,13 @@
                                       action-type
                                       :item request
                                       :reply t))
+
+     ((and mine (get-parameter "deactivate"))
+      (post-existing-inventory-item "request"
+                                    :id id
+                                    :deactivate t
+                                    :url (script-name*)))
+
      ((and self (get-parameter "edit"))
       (post-existing-inventory-item "request"
                                     :id id

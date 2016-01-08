@@ -130,6 +130,9 @@
   (html
     (:select :id "expiration"
              :name "expiration"
+             :class (when (string= (get-parameter-string "focus")
+                                       "expiration")
+                          "focus")
       (dolist (option '("1-week" "1-month" "3-months" "1-year" "3-years"))
         (htm (:option :value option
                       :selected (when (equalp selected option) "")

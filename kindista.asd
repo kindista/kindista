@@ -85,6 +85,7 @@
                                            (:file "invitations")
                                            (:file "donate")
                                            (:file "events")
+                                           (:file "expirations")
                                            (:file "gratitude")
                                            (:file "groups")
                                            (:file "help")

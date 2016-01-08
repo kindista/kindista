@@ -1545,6 +1545,10 @@ menu#fine-print-links a {
  margin-top: 0.5em;
 }
 
+.item.inventory-details label,
+.item.inventory-details fieldset {
+ margin-top: 1em;
+}
 
 .item.create-event fieldset,
 .item.create-event label {
@@ -1590,7 +1594,9 @@ menu#fine-print-links a {
 
 }
 
-
+select.focus {
+ border: 0.2em solid;
+}
 
 .inventory-details select.identity,
 .inventory-details input[type=text],
@@ -1636,13 +1642,14 @@ table.inventory-title {
 .inventory-details label {
  width: 16em;
  white-space: nowrap;
+ clear: both;
 }
 
 .inventory-details div.help-text {
  float: right;
  font-size: 0.85em;
  position: relative;
- top: 1.1em;
+ top: 1.2em;
 }
 
 div.card div.inventory-title {
@@ -1743,8 +1750,7 @@ form.matchmaker label.distance-selection {
  padding-top: 0.6em;
 }
 
-div.recurring-event-details,
-div.privacy-selection {
+div.recurring-event-details {
  padding-top: 0;
  width: 30em;
  display:inline-block;
