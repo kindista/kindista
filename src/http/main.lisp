@@ -426,8 +426,22 @@
                       "Kindista Error - Notifying Humans"
                       message))
 
-(defmethod acceptor-log-access ((acceptor k-acceptor) &key return-code)
+(defmethod acceptor-log-access
+  ((acceptor k-acceptor)
+   &key return-code
+   &aux (now (local-time:now))
+        (today (local-time:timestamp-day now))
+        (local-dir (with-output-to-string (str)
+                     (format-timestring
+                       str
+                       now
+                       :format '((:year 4) #\/ (:month 2) #\/))))
+        (log-directory (ensure-directories-exist
+                           (strcat +db-path+ "access-log/" local-dir)))
+        (log-file (strcat log-directory today)))
   (unless (scan +bot-scanner+ (user-agent))
+    (unless (string= (acceptor-access-log-destination acceptor) log-file)
+      (setf (acceptor-access-log-destination acceptor) log-file))
     (hunchentoot::with-log-stream (stream (acceptor-access-log-destination acceptor) hunchentoot::*access-log-lock*)
       (format stream "~:[-~@[ (~A)~]~;~:*~A~@[ (~A)~]~] ~:[-~;~:*~A~] [~A] \"~A ~A~@[?~A~] ~
                       ~A\" ~D ~:[-~;~:*~D~] \"~:[-~;~:*~A~]\" \"~:[-~;~:*~A~]\"~%"
