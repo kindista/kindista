@@ -117,7 +117,7 @@
               (safe-sort (push result it) #'> :key #'result-time)))
 
      (index-inventory-expiration id data)
- 
+
      ;; when clause can be removed after Feb 11, 2016
      ;; this is in place to prevent a tital wave of automatic refreshes when
      ;; we launch the refresh functionality
@@ -335,6 +335,9 @@
           (with-locked-hash-table (*account-inactive-offer-index*)
              (asetf (gethash by-id *account-inactive-offer-index*)
                     (safe-sort (push result it) #'> :key #'result-time)))))
+
+      (deindex-inventory-expiration id data)
+      (deindex-inventory-refresh-time result)
 
       (deindex-inventory-expiration id data)
       (deindex-inventory-refresh-time result)
