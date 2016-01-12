@@ -708,24 +708,25 @@
                          (sort
                            (remove-private-items
                              (set-difference
-                               (mapcar #'(lambda (id)
-                                           (gethash id *db-results*))
-                                       all-account-items-of-type)
+                               all-account-items-of-type
                                relevant-items))
                            #'>
-                           :key #'result-time))))))
+                           :key #'result-time)))))
+           (results-from-ids (id-list)
+             (mapcar #'(lambda (id) (gethash id *db-results*))
+                     id-list)))
 
       (list :offers (calculate-relevant-items
                       pending-offers
                       (when thankee-id
                         (append
                           (gethash thankee-id *account-inactive-offer-index*)
-                          (gethash thankee-id *offer-index*))))
+                          (results-from-ids (gethash thankee-id *offer-index*)))))
             :requests (calculate-relevant-items
                         pending-requests
                         (append
                           (gethash thanker-id *account-inactive-request-index*)
-                          (gethash thanker-id *request-index*))))))
+                          (results-from-ids (gethash thanker-id *request-index*)))))))
 
 (defun post-gratitudes-new ()
   (require-active-user

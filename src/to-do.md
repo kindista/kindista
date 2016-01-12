@@ -1,6 +1,4 @@
 ## expiration/renewals for inventory items
-  - cron job to check what needs renewal
-  - maybe the ability to see one's expired/deactivated items
 ## loves
   - #links
   - post to /love

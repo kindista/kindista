@@ -49,7 +49,7 @@
           (:span (str comments)))))))
 
 (defun activity-item
-  (&key id url share-url content time primary-action hearts comments distance delete deactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
+  (&key id url share-url content time primary-action hearts comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
    &aux (here (request-uri*))
         (next (if (find (strcat id) (url-parts here) :test #'string=)
                 here
@@ -137,6 +137,10 @@
                      (htm (:input :type "submit"
                                   :name "delete"
                                   :value "Delete")))))))
+            (awhen reactivate
+              (htm
+                " &middot; "
+                (:a :href it "Reactivate")))
             (when image-text
               (htm
                 " &middot; "
@@ -344,8 +348,14 @@
         (admin-matchmaker (matchmaker-admin-p))
         (images (getf data :images))
         (item-url (strcat "/" type "s/" item-id))
-        (time (if self (getf data :expires) (result-time result)))
-        (timestamp (when show-when
+        (active-p (getf data :active))
+        (renew-link (s+ (url-compose item-url
+                                     "edit" "t"
+                                     "focus" "expiration")
+                        "#expiration"))
+        (time (when active-p
+                (if self (getf data :expires) (result-time result))))
+        (timestamp (when (and active-p show-when)
                      (timestamp
                        time
                        :class (when (and self
@@ -362,17 +372,23 @@
                                  ((string= type "offer") "offered")))))))
 
   (when self
-    (asetf timestamp (html (:a :href (s+ (url-compose item-url
-                                                      "edit" "t"
-                                                      "focus" "expiration")
-                                         "#expiration")
-                             (str it)))))
+    (asetf timestamp (html (:a :href renew-link
+                             (if it
+                               (str it)
+                               (htm (:h3 :class "timestamp red" "inactive")))))))
 
   (activity-item :id item-id
                  :url item-url
                  :time timestamp
-                 :edit (or self group-adminp (getf *user* :admin))
-                 :deactivate (or self group-adminp (getf *user* :admin))
+                 :edit (and active-p
+                            (or self group-adminp (getf *user* :admin)))
+                 :deactivate (and active-p
+                                  (or self group-adminp (getf *user* :admin)))
+                 :reactivate (when (and (not active-p)
+                                        (or self
+                                            group-adminp
+                                            (getf *user* :admin)))
+                               renew-link)
                  :admin-delete (and (getf *user* :admin)
                                     (not self)
                                     (not group-adminp))

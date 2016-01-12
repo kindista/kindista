@@ -159,6 +159,7 @@ div.title-bar {
  color:#627A2F;
 }
 
+select#filter,
 select.identity,
 select.privacy-selection,
 select.distance-selection,
@@ -175,8 +176,21 @@ select.message-filter {
   box-shadow: 1px 1px 1px #ddd inset;
 }
 
+#inventory-filter {
+ margin-bottom: 0.7em; }
+
+#inventory-filter label {
+ font-weight: bold;
+ font-size: 0.9em;
+ margin-right: 0.5em;
+}
+
+#inventory-filter select {
+ padding: 0.2em;
+}
+
 form.group-activity-selection div {
- margin-top: 0.4em;
+ margin: 0.2em 0 0.5em;
  display: inline-block;
 }
 

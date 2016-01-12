@@ -130,7 +130,8 @@
                                            (- now timeframe))
                                         (item-view-denied
                                           (result-privacy result)
-                                          userid)))
+                                          userid)
+                                        (db (result-id result) :refreshed)))
                                 (geo-index-query index lat long distance))
                      #'<
                      :key #'rank)))
@@ -162,8 +163,7 @@
                              (- offer-count featured-offers-count))
               :requests request-ids
               :more-requests (when (> request-count featured-requests-count)
-                               (- request-count featured-requests-count))
-            )))))
+                               (- request-count featured-requests-count)))))))
 
 (defun inventory-digest-email-text
   (userid

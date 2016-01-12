@@ -25,23 +25,26 @@
 
 (defvar *scheduler-timer* nil)
 
+(defun start-scheduler-thread ()
+  (stop-scheduler-thread)
+  (setf *scheduler-thread* (make-thread #'(lambda () (scheduler-loop)))))
+
 (defun stop-scheduler-thread ()
   (when (and *scheduler-thread* (thread-alive-p *scheduler-thread*))
     (terminate-thread *scheduler-thread*))
   (setf *scheduler-thread* nil))
 
-(defun scheduler-loop (&aux (now (get-universal-time)))
+(defun scheduler-loop ()
   (flet ((call (route)
           (http-request (s+ +base-url+ route))
-          (sleep 180)))
+          (sleep 300)))
     (loop
-      (ignore-errors
         (when (< (or *scheduler-timer*
                      ;; schedule for 5 min after system start up
-                     (setf *scheduler-timer* (+ now 300)))
-                 now)
-          (setf *scheduler-timer* (+ now 3600))
+                     (setf *scheduler-timer* (+ (get-universal-time) 30)))
+                 (get-universal-time))
+          (setf *scheduler-timer* (+ (get-universal-time) 3600))
           ;; (get-inventory-expriation-reminders)
           (call "inventory-expiration-reminders")
-          (call "inventory-refresh"))))))
+          (call "inventory-refresh")))))
 

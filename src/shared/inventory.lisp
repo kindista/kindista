@@ -74,7 +74,11 @@
                        :type (getf item :type)
                        :people (list by-id)
                        :privacy (getf item :privacy)
-                       :time (or (getf item :refreshed) (getf item :edited) (getf item :created))
+                       :time (apply #'max
+                                    (remove nil
+                                            (list (getf item :refreshed)
+                                                  (getf item :edited)
+                                                  (getf item :created))))
                        :tags (getf item :tags))))))
 
 
@@ -113,7 +117,13 @@
               (safe-sort (push result it) #'> :key #'result-time)))
 
      (index-inventory-expiration id data)
-     (index-inventory-refresh-time result)
+ 
+     ;; when clause can be removed after Feb 11, 2016
+     ;; this is in place to prevent a tital wave of automatic refreshes when
+     ;; we launch the refresh functionality
+     (when (> (result-time result)
+              (- 3661546841 (* 30 +day-in-seconds+)))
+       (index-inventory-refresh-time result))
 
      (if (eq type :offer)
        (with-locked-hash-table (*offer-index*)
@@ -167,9 +177,11 @@
     (t
      (if (eq type :offer)
        (with-locked-hash-table (*account-inactive-offer-index*)
-         (push id (gethash by-id *account-inactive-offer-index*)))
+          (asetf (gethash by-id *account-inactive-offer-index*)
+                 (safe-sort (push result it) #'> :key #'result-time)))
        (with-locked-hash-table (*account-inactive-request-index*)
-         (push id (gethash by-id *account-inactive-request-index*)))))))
+          (asetf (gethash by-id *account-inactive-request-index*)
+                 (safe-sort (push result it) #'> :key #'result-time)))))))
 
 (defun modify-inventory-item (id &key publish-facebook-p title details tags privacy expires)
   (let* ((result (gethash id *db-results*))
@@ -266,7 +278,7 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
-         (by (getf data :by))
+         (by-id (getf data :by-id))
          (type-index (case type
                        (:offer *offer-index*)
                        (:request *request-index*)))
@@ -290,7 +302,7 @@
       (case type
         (:offer
           (unmatch-offer-matches id
-                                 by
+                                 by-id
                                  (copy-list
                                    (gethash id
                                            *offers-with-matching-requests-index*)))
@@ -301,7 +313,7 @@
           (when (or (getf data :match-all-terms)
                     (getf data :match-any-terms))
             (unmatch-request-matches id
-                                   by
+                                   by-id
                                    (append (getf data :matching-offers)
                                            (getf data :hidden-matching-offers)))
             (remove-matchmaker-from-indexes id))))
@@ -312,15 +324,17 @@
         (with-mutex (*event-mutex*)
           (asetf *event-index* (remove result it)))
         (with-locked-hash-table (type-index)
-          (asetf (gethash by type-index)
+          (asetf (gethash by-id type-index)
                  (remove id it))))
       (case type
         (:request
           (with-locked-hash-table (*account-inactive-request-index*)
-            (push id (gethash by *account-inactive-request-index*))))
+            (asetf (gethash by-id *account-inactive-request-index*)
+                   (safe-sort (push result it) #'> :key #'result-time)) ))
         (:offer
           (with-locked-hash-table (*account-inactive-offer-index*)
-            (push id (gethash by *account-inactive-offer-index*)))))
+             (asetf (gethash by-id *account-inactive-offer-index*)
+                    (safe-sort (push result it) #'> :key #'result-time)))))
 
       (deindex-inventory-expiration id data)
       (deindex-inventory-refresh-time result)
@@ -333,7 +347,7 @@
 
       (unless (eq type :event)
         (with-locked-hash-table (*profile-activity-index*)
-          (asetf (gethash by *profile-activity-index*)
+          (asetf (gethash by-id *profile-activity-index*)
                  (remove result it)))
         (geo-index-remove *activity-geo-index* result)
         (with-mutex (*recent-activity-mutex*)

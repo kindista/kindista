@@ -65,7 +65,7 @@
         (let ((rand (random month-in-seconds)))
           (if (< created 3-months-ago)
             (modify-db id :expires (+ now +week-in-seconds+ rand))
-            (modify-db id :expires (+ now 3-months rand)))))
+            (modify-db id :expires (+ created 3-months rand)))))
 
       (when (and (eq (getf item :type) :person)
                  (getf item :active))

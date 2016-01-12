@@ -312,11 +312,13 @@
 
       (setf (result-time result) time)
 
-      (with-mutex (*inventory-refresh-timer-mutex*)
-        (setf *inventory-refresh-timer-index*
-              (safe-sort (push result *inventory-refresh-timer-index*)
-                         #'<
-                         :key #'result-time)))
+      (when (or (eql type :offer)
+                (eql type :request))
+        (with-mutex (*inventory-refresh-timer-mutex*)
+          (setf *inventory-refresh-timer-index*
+                (safe-sort (push result *inventory-refresh-timer-index*)
+                           #'<
+                           :key #'result-time))))
 
       (with-locked-hash-table (*profile-activity-index*)
         (asetf (gethash by *profile-activity-index*)
