@@ -118,11 +118,11 @@
 
      (index-inventory-expiration id data)
 
-     ;; when clause can be removed after Feb 11, 2016
+     ;; when clause can be removed after May 12, 2016
      ;; this is in place to prevent a tital wave of automatic refreshes when
      ;; we launch the refresh functionality
      (when (> (result-time result)
-              (- 3661622234 (* 30 +day-in-seconds+)))
+              (- 3661624237 (* 30 +day-in-seconds+)))
        (index-inventory-refresh-time result))
 
      (if (eq type :offer)
@@ -174,7 +174,8 @@
                             *requests-without-matchmakers-index*)
                       #'>
                       :key #'result-time)))))
-    (t
+
+    ((not (getf data :violates-terms))
      (if (eq type :offer)
        (with-locked-hash-table (*account-inactive-offer-index*)
           (asetf (gethash by-id *account-inactive-offer-index*)

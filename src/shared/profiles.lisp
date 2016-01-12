@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -555,7 +555,10 @@
 
         (:div :class "activity"
           (when (and (or self adminp)
-                     (or (eq type :offer) (eq type :request)))
+                     (or (and (eq type :offer)
+                              (gethash id *account-inactive-offer-index*))
+                         (and (eq type :request)
+                              (gethash id *account-inactive-request-index*))))
             (str (inventory-filter-html
                    (s+ *base-url* (if (eql type :offer) "/offers" "/requests")))))
           (when (and groupid (not show-inactive-inventory-p))
