@@ -1,4 +1,10 @@
 ## expiration/renewals for inventory items
+  - don't allow reactivation when (db id :violates-terms)
+  - change date for index-inventory-item
+  - launch on live server
+    - ,d on (add-expiration-dates...
+    - quickload
+    - start loop
 ## loves
   - #links
   - post to /love

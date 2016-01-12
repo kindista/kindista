@@ -122,7 +122,7 @@
      ;; this is in place to prevent a tital wave of automatic refreshes when
      ;; we launch the refresh functionality
      (when (> (result-time result)
-              (- 3661546841 (* 30 +day-in-seconds+)))
+              (- 3661622234 (* 30 +day-in-seconds+)))
        (index-inventory-refresh-time result))
 
      (if (eq type :offer)

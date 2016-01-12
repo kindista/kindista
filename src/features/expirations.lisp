@@ -69,7 +69,9 @@
 
       (when (and (eq (getf item :type) :person)
                  (getf item :active))
-        (modify-db id :notify-inventory-expiration t)))))
+        (modify-db id :notify-inventory-expiration t))))
+  (ql:quickload :kindista)
+  (load-db))
 
 (defun get-inventory-expiration-reminders
   (&aux expiring-soon
