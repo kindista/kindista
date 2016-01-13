@@ -325,6 +325,9 @@
 
       (geo-index-remove geo-index result)
 
+      (dolist (userid (getf data :loved-by))
+        (deindex-love id userid))
+
       (if (eq type :event)
         (with-mutex (*event-mutex*)
           (asetf *event-index* (remove result it)))
