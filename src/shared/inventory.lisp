@@ -239,6 +239,7 @@
 
     (let ((data (list :title title
                       :details details
+                      :active t
                       :tags tags
                       :fb-id fb-id
                       :expires expires
@@ -343,9 +344,6 @@
           (with-locked-hash-table (*account-inactive-offer-index*)
              (asetf (gethash by-id *account-inactive-offer-index*)
                     (safe-sort (push result it) #'> :key #'result-time)))))
-
-      (deindex-inventory-expiration id data)
-      (deindex-inventory-refresh-time result)
 
       (deindex-inventory-expiration id data)
       (deindex-inventory-refresh-time result)
@@ -791,13 +789,15 @@
                   (inventory-details :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
 
                 ((post-parameter "create")
-                 (modify-inventory-item id :title (post-parameter "title")
+                 (require-test ((not (getf item :violates-terms))
+                                "This item violated Kindista's Terms of Use. It has been deactivated and cannot be modified.")
+                   (modify-inventory-item id :title (post-parameter "title")
                                            :details (post-parameter "details")
                                            :tags tags
                                            :expires expiration-time
                                            :publish-facebook-p (post-parameter "publish-facebook")
                                            :privacy (when restrictedp
-                                                      groups-selected))
+                                                      groups-selected)))
                  (see-other (strcat "/" type "s/" id)))
 
                 (t

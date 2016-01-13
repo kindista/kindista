@@ -304,7 +304,8 @@
        (not-found))))
 
 (defun server-side-request-p ()
-  (or (string= (header-in* :x-real-ip) *local-ip-address*)
+  (or (string= (header-in* :x-real-ip) *local-ipv4-address*)
+      (string= (header-in* :x-real-ip) *local-ipv6-address*)
       (string= (header-in* :x-real-ip) "127.0.0.1")))
 
 (defmacro require-test ((test &optional message) &body body)
@@ -359,7 +360,7 @@
                                (schedule-timer
                                  timer
                                  (cond
-                                   ((and (or (string= (header-in* :x-real-ip) *local-ip-address*)
+                                   ((and (or (server-side-request-p)
                                              (not *productionp*))
                                          (or (string= (script-name*) "/send-all-reminders")
                                              (string= (script-name*) "/inventory-refresh")

@@ -36,8 +36,7 @@
 (defun get-daily-inventory-digest-mailer
   (&aux (day (local-time:timestamp-day-of-week (local-time:now))) )
   (when (and (or (getf *user* :admin)
-               (string= (header-in* :x-real-ip) *local-ip-address*)
-               (string= (header-in* :x-real-ip) "127.0.0.1"))
+                 (server-side-request-p))
              ;; wait if last called less than 22 hours ago
              ;;(in case of daylight savings time)
              (< *last-inventory-digst-mailer-time*
