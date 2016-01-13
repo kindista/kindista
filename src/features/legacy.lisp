@@ -44,6 +44,9 @@
         (asetf (gethash person *profile-activity-index*)
                (safe-sort (push result it) #'> :key #'result-time))))
 
+    (awhen (getf data :loved-by)
+      (dolist (userid it)
+        (index-love id userid)))
 
     (unless (< created (- (get-universal-time) 15552000))
       (geo-index-insert *activity-geo-index* result) 
@@ -126,17 +129,9 @@
          (create-comment :on id :text (post-parameter "text"))
          (see-other (script-name*)))
         ((and (post-parameter "delete")
-              (eql *userid* (getf data :giver)))
+              (eql *userid* (getf it :giver)))
          (delete-gift id)
          (flash "This gift has been deleted.")
-         (see-other (or (post-parameter "next") (referer))))
-        ((and (post-parameter "love")
-              (eq (getf it :type) :gift))
-         (love id)
-         (see-other (or (post-parameter "next") (referer))))
-        ((and (post-parameter "unlove")
-              (eq (getf it :type) :gift))
-         (unlove id)
          (see-other (or (post-parameter "next") (referer)))))
       (not-found))))
 

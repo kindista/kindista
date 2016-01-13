@@ -130,12 +130,6 @@
         (dolist (person it)
           (push id (gethash person *followers-index*)))))
 
-    (when (getf data :loves)
-      (with-locked-hash-table (*love-index*)
-        (dolist (item (getf data :loves))
-          (unless (member id (gethash item *love-index*))
-            (push id (gethash item *love-index*))))))
-
     (awhen (getf data :host)
       (with-locked-hash-table (*invited-index*)
         (pushnew id (gethash it *invited-index*))))
@@ -432,6 +426,10 @@
                                                 :requests)
                                           it)
                                   :test #'equal))))
+
+    (dolist (item-id (copy-list (loves duplicate-id)))
+      (unlove item-id duplicate-id)
+      (love item-id id-to-keep))
 
     (when (and (db duplicate-id :pending)
                (not (getf data-to-keep :pending)))

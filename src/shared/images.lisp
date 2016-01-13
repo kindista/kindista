@@ -172,8 +172,6 @@
            (flash "You have already posted the maximum of 5 images to this item.  Please delete one to add another." :error t)
            (see-other url))
           (t
-           (pprint item-id)
-           (terpri)
             (flet ((modify-item-images (item-id &key edited)
                      (handler-case
                        ;; hunchentoot returns a list containing

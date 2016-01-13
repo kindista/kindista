@@ -125,6 +125,10 @@
               (- 3661624237 (* 30 +day-in-seconds+)))
        (index-inventory-refresh-time result))
 
+     (awhen (getf data :loved-by)
+       (dolist (userid it)
+         (index-love id userid)))
+
      (if (eq type :offer)
        (with-locked-hash-table (*offer-index*)
          (push id (gethash by-id *offer-index*)))
@@ -647,14 +651,6 @@
 
         ((post-parameter "cancel")
          (see-other (or next "/home")))
-
-        ((post-parameter "love")
-         (love id)
-         (see-other (or (post-parameter "next") (referer))))
-
-        ((post-parameter "unlove")
-         (unlove id)
-         (see-other (or (post-parameter "next") (referer))))
 
         (t
          (require-test ((or (eql *userid* (getf item :by))

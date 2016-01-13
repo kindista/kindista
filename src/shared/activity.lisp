@@ -91,9 +91,9 @@
                        (:div (str (getf it :text)))))))
           (:div :class "actions"
             (str (activity-icons :hearts hearts :comments comments :url url))
-            (:form :method "post" :action url
+            (:form :method "post" :action (strcat "/love/" id)
               (:input :type "hidden" :name "next" :value next)
-              (if (member *userid* (gethash id *love-index*))
+              (if (find id (loves *userid*))
                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
                 (htm (:input :type "submit" :name "love" :value "Love"))))
             (:form :method "post" :action url
@@ -181,7 +181,7 @@
       :deactivate (or (eql host *userid*)
                       group-adminp
                       (getf *user* :admin))
-      :hearts (length (loves item-id))
+      :hearts (length (getf data :loved-by))
       ;:comments (length (comments item-id))
       :content (html
                  (:h3 (:a :href item-url
@@ -276,7 +276,7 @@
           :image-text (when (and (or self adminp)
                                  (< (length images) 5))
                         "Add photos")
-          :hearts (length (loves item-id))
+          :hearts (length (getf data :loved-by))
           ;:comments (length (comments item-id))
           :content (html
                      (:p (str (person-link user-id))
@@ -313,7 +313,7 @@
                    :url (strcat "/gifts/" item-id)
                    :class "gratitude"
                    :time (timestamp (result-time result) :type "gift")
-                   :hearts (length (loves item-id))
+                   :hearts (length (getf data :loved-by))
                    :delete (when (or (eql user-id *userid*) (getf *user* :admin)) t)
                    :comments (length (comments item-id))
                    :content (html
@@ -425,7 +425,7 @@
                  :reply (unless (or self
                                     (not (getf data :active)))
                           t)
-                 :hearts (length (loves item-id))
+                 :hearts (length (getf data :loved-by))
                  :matchmaker (or (getf *user* :matchmaker)
                                  (and (or group-adminp self)
                                     (string= type "request")))
@@ -578,26 +578,34 @@
                        (htm
                          (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >"))))))))))))
 
-(defun local-activity-items (&key (page 0) (count 40) (url "/home") show-tags)
-  (let ((distance (user-distance)))
-    (if (= distance 0)
-      (activity-items (sort (remove-private-items
-                              (copy-list *recent-activity-index*))
-                            #'>
-                            :key #'result-time)
-                      :page page
-                      :count count
-                      :reciprocity t
-                      :url url
-                      :show-tags show-tags)
-      (let ((items (sort (geo-index-query *activity-geo-index*
-                                          *latitude*
-                                          *longitude*
-                                          distance)
-                       #'< :key #'activity-rank)))
-        (activity-items items :page page
-                              :count count
-                              :reciprocity t
-                              :url url
-                              :show-tags show-tags)))))
+(defun local-activity-items
+  (&key (page 0)
+        (count 40)
+        (url "/home")
+        show-tags
+   &aux (distance (user-distance)))
+
+  (if (= distance 0)
+    (activity-items (sort (remove-private-items
+                            (copy-list *recent-activity-index*))
+                          #'>
+                          :key #'result-time)
+                    :page page
+                    :count count
+                    :reciprocity t
+                    :url url
+                    :show-tags show-tags)
+    (let* ((local-items (geo-index-query *activity-geo-index*
+                                         *latitude*
+                                         *longitude*
+                                         distance))
+           (ranked-items (mapcar #'(lambda (result)
+                                     (cons result (activity-rank result)))
+                                 local-items))
+           (items (mapcar #'car (sort ranked-items #'< :key #'cdr))))
+      (activity-items items :page page
+                            :count count
+                            :reciprocity t
+                            :url url
+                            :show-tags show-tags))))
 

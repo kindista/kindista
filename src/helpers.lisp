@@ -226,63 +226,74 @@
   (remove-if #'item-view-denied items :key #'result-privacy))
 
 (defun activity-rank
-  (item
+  (result
    &key (userid *userid*)
         (user *user*)
         (contact-multiplier 1)
         (distance-multiplier 1)
-   &aux (age (- (get-universal-time)
-                (or (result-time item) 0)))
+   &aux (data (db (result-id result)))
+        (age (- (get-universal-time)
+                (or (result-time result) 0)))
         (contacts (getf user :following))
         (lat (or (getf user :lat) *latitude*))
         (long (or (getf user :long) *longitude*))
-        (contact-p (intersection contacts (result-people item)))
-        (self-offset (if (eql (car (result-people item)) userid)
+        (contact-p (intersection contacts (result-people result)))
+        (self-offset (if (eql (car (result-people result)) userid)
                        ;; don't use "=" because userid can be nil
                        -100000
                        0))
-        (distance (if (and (result-latitude item) (result-longitude item))
+        (distance (if (and (result-latitude result) (result-longitude result))
                     (max 0.1
                          (air-distance lat
                                        long
-                                       (result-latitude item)
-                                       (result-longitude item)))
+                                       (result-latitude result)
+                                       (result-longitude result)))
                     5000))
         (distance-component (/ (* 100000 distance-multiplier)
                                (log (+ 1.5 (* distance 2)))))
         (contact-component (if contact-p
                              (* 100000 contact-multiplier)
-                             0)))
+                             0))
+        (love-component (* (length (getf data :loved-by)) 100000)))
   "Lower scores rank higher."
+  (declare (optimize (speed 3) (safety 0) (debug 0)))
 
   (values (round (- age
                     self-offset
                     distance-component
                     contact-component
-                    (* (length (loves (result-id item))) 100000)))
-          distance-component
-          contact-component))
+                    love-component))
+          (list :distance-component distance-component
+                :contact-component contact-component
+                :love-component love-component)))
 
-(defun event-rank (item)
-  (let ((contacts (getf *user* :following))
-        (currentness (abs (- (or (result-time item) 0) (get-universal-time))))
-        (distance (air-distance *latitude* *longitude*
-                                (result-latitude item) (result-longitude item))))
-    (round (- currentness
-              (/ 120000
-                 (log (+ (if (intersection contacts (result-people item))
-                             1
-                             distance)
-                         4)))
-              (* (length (loves (result-id item))) 50000)))))
+(defun event-rank
+  (result
+   &aux (data (db (result-id result)))
+        (contacts (getf *user* :following))
+        (currentness (abs (- (or (result-time result) 0)
+                             (get-universal-time))))
+        (distance (air-distance *latitude*
+                                *longitude*
+                                (result-latitude result)
+                                (result-longitude result))))
+  (round (- currentness
+            (/ 120000
+               (log (+ (if (intersection contacts (result-people result))
+                           1
+                           distance)
+                       4)))
+            (* (length (getf data :loved-by)) 50000))))
 
-(defun inventory-rank (alist)
+(defun inventory-rank
+  (alist)
 "Takes an a-list of ((request . (whether the request had matching terms in the :title, :details, and/or :tags))...)  and returns a ranked list of results"
 
   (flet ((inventory-item-rank (item)
            (let* ((result (car item))
+                  (data (db (result-id result)))
                   (age (- (get-universal-time) (or (result-time result) 0)))
-                  (loves (max 1 (length (loves (result-id result))))))
+                  (loves (max 1 (length (getf data :loved-by)))))
              (+ (* (/ 50 (log (+ (/ age 86400) 6)))
                    (expt loves 0.3))
                 (if (find :title (cdr item)) 25 0)
