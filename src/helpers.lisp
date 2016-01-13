@@ -231,6 +231,7 @@
         (user *user*)
         (contact-multiplier 1)
         (distance-multiplier 1)
+        (sitewide)
    &aux (data (db (result-id result)))
         (age (- (get-universal-time)
                 (or (result-time result) 0)))
@@ -242,15 +243,18 @@
                        ;; don't use "=" because userid can be nil
                        -100000
                        0))
-        (distance (if (and (result-latitude result) (result-longitude result))
-                    (max 0.1
-                         (air-distance lat
-                                       long
-                                       (result-latitude result)
-                                       (result-longitude result)))
-                    5000))
-        (distance-component (/ (* 100000 distance-multiplier)
-                               (log (+ 1.5 (* distance 2)))))
+        (distance (unless sitewide
+                    (if (and (result-latitude result)
+                             (result-longitude result))
+                           (max 0.1
+                                (air-distance lat
+                                              long
+                                              (result-latitude result)
+                                              (result-longitude result)))
+                         5000)))
+        (distance-component (unless sitewide
+                              (/ (* 100000 distance-multiplier)
+                                 (log (+ 1.5 (* distance 2))))))
         (contact-component (if contact-p
                              (* 100000 contact-multiplier)
                              0))
@@ -258,11 +262,12 @@
   "Lower scores rank higher."
   (declare (optimize (speed 3) (safety 0) (debug 0)))
 
-  (values (round (- age
-                    self-offset
-                    distance-component
-                    contact-component
-                    love-component))
+  (values (round (apply #'- (remove nil
+                                    (list age
+                                          self-offset
+                                          distance-component
+                                          contact-component
+                                          love-component))))
 
           (list :distance-component distance-component
                 :contact-component contact-component

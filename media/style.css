@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 CommonGoods Network, Inc.
+/* Copyright 2012-2016 CommonGoods Network, Inc.
  
    This file is part of Kindista.
 
@@ -1982,6 +1982,15 @@ table.messages {
  height:100%; /* DJB changed this 2/3/14 - make sure it doesn't mess with anything else */
 }
 
+.activity.card {
+ padding: 0 0 0 0;
+}
+
+div.activity.item {
+ margin-bottom: 0;
+ padding: 0 0.4em;
+}
+
 .inventory-item-page .card,
 .card:last-child {
  border-bottom: none;
@@ -2091,9 +2100,12 @@ div.item-matches.card em {
  max-width: 60em;
 }
 
-div.gratitude-on-item {
- margin-top: 0.4em;
- 
+div.related.activity.items {
+ border-radius: 0.2em;
+ background-color:#F5F5F5;
+ font-weight:normal;
+ overflow:hidden;
+ padding: 0.4em;
 }
 
 div.reciprocity.matches {
@@ -4292,29 +4304,35 @@ background-color: #f8f8f8;
 .gratitude-on-item,
 .reciprocity {
   font-size:0.9em;
+  margin-bottom: 0.3em;
 }
 
 .reciprocity h3 {
- margin-top: 0;
- line-height:2em;
+ margin-top: 0.8em;
+ line-height:1.5em;
  color:#333333;
+}
+
+div.related.activity.items hr {
+ display: block;
+ color: #fafafa;
+ background: #fafafa;
+ height: 0.1em;
+ border: none;
 }
 
 .tags a, .side-sug a {
  font-weight:normal;
 }
 
-.recip-container div,
-.gratitude-on-item div {
+.recip-container div {
  margin-top: 0.4em;
 }
 
-.gratitude-on-item,
 .recip-container {
  border-radius: 0.2em;
  font-weight:normal;
- background-color:#F0F0F0;
- padding:0.6em;
+ padding: 0 0.3em;
  overflow:hidden;
  margin-bottom:0.4em;
 }

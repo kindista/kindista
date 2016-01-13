@@ -1,9 +1,7 @@
 ## loves
   - #links
   - show list of people who love an item
-  - give more weighting to loves in the activity feed algorithm
-  - profile/optimize activity-rank
-  - check how deactivating/reactivating accounts works
+  - rm bulk-love function
 ## web apps
   - iphone - https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
   - android

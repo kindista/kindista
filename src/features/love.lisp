@@ -61,3 +61,11 @@
           (amodify-db loved-id :loved-by (cons id it)))
         (modify-db id :loves nil))))
   (load-db))
+
+(defun bulk-love-item
+  (item-id
+   &optional (count 20)
+   &aux (test-data '(0 1 3 19885 6 20 25 98 101 105 110 115 117 124 129 135 147 162 171 180))
+        (subset (subseq test-data 0 count)))
+  (dolist (userid subset)
+    (love item-id userid)))

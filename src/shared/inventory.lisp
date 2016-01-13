@@ -104,17 +104,19 @@
     (pending
      (with-locked-hash-table (*pending-person-items-index*)
        (let ((results (gethash by-id *pending-person-items-index*)))
-         (if (or (not results)
-                 (and (eq type :offer)
-                      (> (result-time result)
-                         (result-time (car results)))))
-           (push result (gethash by-id *pending-person-items-index*))
-           (push result (cdr (last (gethash by-id *pending-person-items-index*))))))))
+         (cond
+           ((or (not results)
+                (and (eq type :offer)
+                     (> (result-time result)
+                        (result-time (car results)))))
+            (pushnew result (gethash by-id *pending-person-items-index*)))
+           ((not (find result (gethash by-id *pending-person-items-index*)))
+            (push result (cdr (last (gethash by-id *pending-person-items-index*)))))))))
 
     ((getf data :active)
      (with-locked-hash-table (*profile-activity-index*)
        (asetf (gethash by-id *profile-activity-index*)
-              (safe-sort (push result it) #'> :key #'result-time)))
+              (safe-sort (pushnew result it) #'> :key #'result-time)))
 
      (index-inventory-expiration id data)
 
@@ -131,9 +133,9 @@
 
      (if (eq type :offer)
        (with-locked-hash-table (*offer-index*)
-         (push id (gethash by-id *offer-index*)))
+         (pushnew id (gethash by-id *offer-index*)))
        (with-locked-hash-table (*request-index*)
-         (push id (gethash by-id *request-index*))))
+         (pushnew id (gethash by-id *request-index*))))
 
      (when locationp
        (let ((title-stems (stem-text (getf data :title)))
@@ -143,19 +145,21 @@
          (if (eq type :offer)
            (with-locked-hash-table (*offer-stem-index*)
              (dolist (stem title-stems)
-               (push result (getf (gethash stem *offer-stem-index*) :title)))
+               (pushnew result
+                        (getf (gethash stem *offer-stem-index*) :title)))
              (dolist (stem details-stems)
-               (push result (getf (gethash stem *offer-stem-index*) :details)))
+               (pushnew result
+                        (getf (gethash stem *offer-stem-index*) :details)))
              (dolist (stem tag-stems)
-               (push result (getf (gethash stem *offer-stem-index*) :tags))))
+               (pushnew result (getf (gethash stem *offer-stem-index*) :tags))))
 
            (with-locked-hash-table (*request-stem-index*)
              (dolist (stem title-stems)
-               (push result (getf (gethash stem *request-stem-index*) :title)))
+               (pushnew result (getf (gethash stem *request-stem-index*) :title)))
              (dolist (stem details-stems)
-               (push result (getf (gethash stem *request-stem-index*) :details)))
+               (pushnew result (getf (gethash stem *request-stem-index*) :details)))
              (dolist (stem tag-stems)
-               (push result (getf (gethash stem *request-stem-index*) :tags))))))
+               (pushnew result (getf (gethash stem *request-stem-index*) :tags))))))
 
        (if (eq type :offer)
          (geo-index-insert *offer-geo-index* result)
@@ -166,7 +170,7 @@
          ;; unless item is older than 30 days
          (unless (< (result-time result) (- (get-universal-time) 2592000))
            (with-mutex (*recent-activity-mutex*)
-             (push result *recent-activity-index*)))
+             (pushnew result *recent-activity-index*)))
          (geo-index-insert *activity-geo-index* result)))
 
      (when (eq type :request)
@@ -174,8 +178,7 @@
                (getf data :match-any-terms))
          (index-matchmaker id data)
          (with-mutex (*requests-without-matchmakers-mutex*)
-           (safe-sort (push result
-                            *requests-without-matchmakers-index*)
+           (safe-sort (pushnew result *requests-without-matchmakers-index*)
                       #'>
                       :key #'result-time)))))
 
@@ -183,10 +186,10 @@
      (if (eq type :offer)
        (with-locked-hash-table (*account-inactive-offer-index*)
           (asetf (gethash by-id *account-inactive-offer-index*)
-                 (safe-sort (push result it) #'> :key #'result-time)))
+                 (safe-sort (pushnew result it) #'> :key #'result-time)))
        (with-locked-hash-table (*account-inactive-request-index*)
           (asetf (gethash by-id *account-inactive-request-index*)
-                 (safe-sort (push result it) #'> :key #'result-time)))))))
+                 (safe-sort (pushnew result it) #'> :key #'result-time)))))))
 
 (defun modify-inventory-item (id &key publish-facebook-p title details tags privacy expires)
   (let* ((result (gethash id *db-results*))
@@ -791,12 +794,14 @@
                 ((post-parameter "create")
                  (require-test ((not (getf item :violates-terms))
                                 "This item violated Kindista's Terms of Use. It has been deactivated and cannot be modified.")
+                   (when (not (getf item :active))
+                     (index-inventory-item id (modify-db id :active t)))
                    (modify-inventory-item id :title (post-parameter "title")
-                                           :details (post-parameter "details")
-                                           :tags tags
-                                           :expires expiration-time
-                                           :publish-facebook-p (post-parameter "publish-facebook")
-                                           :privacy (when restrictedp
+                                             :details (post-parameter "details")
+                                             :tags tags
+                                             :expires expiration-time
+                                             :publish-facebook-p (post-parameter "publish-facebook")
+                                             :privacy (when restrictedp
                                                       groups-selected)))
                  (see-other (strcat "/" type "s/" id)))
 
