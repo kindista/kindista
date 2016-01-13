@@ -128,7 +128,7 @@
                (str (donate-sidebar))
                (str (invite-sidebar))))))
 
-(defun sorted-contacts ( &key (userid *userid*) (contact-type :person))
+(defun sorted-contacts (&key (userid *userid*) (contact-type :person))
   (sort
     (remove-if-not #'(lambda (id) (eql (result-type (gethash id *db-results*))
                                        contact-type))

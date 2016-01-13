@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -16,6 +16,30 @@
 ;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :kindista)
+
+(defun remove-duplicate-account-ids-from-people-following
+  (&aux affected-active-accounts affected-duplicate-accounts)
+  (dolist (id (hash-table-keys *db*))
+    (let ((data (db id)))
+      (when (and (or (eq (getf data :type) :person)
+                     (eq (getf data :type) :deleted-person-account))
+                 (or (getf data :deleted)
+                     (getf data :merged-into)))
+        (modify-db id :active nil
+                      :type :person
+                      :deleted t)
+        (push id affected-duplicate-accounts))))
+  (dolist (id (hash-table-keys *db*))
+    (let ((data (db id)))
+      (when (and (eq (getf data :type) :person)
+                 (intersection (getf data :following)
+                               affected-duplicate-accounts))
+        (push id affected-active-accounts)
+        (amodify-db id :following (set-difference it
+                                                  affected-duplicate-accounts)))))
+  (load-db)
+  (list :affected-active-accounts affected-active-accounts
+        :affected-duplicate-accounts affected-duplicate-accounts))
 
 (defun inactive-people ()
   "diagnostic tool for admins only. inefficient; should not be used in code."
@@ -356,6 +380,12 @@
         (setf (getf data-to-keep :following)
               (set-difference (union (getf data-to-keep :following) it)
                               duplicate-account-id-list)))
+
+      (dolist (userid (gethash duplicate-id *followers-index*))
+        (amodify-db userid :following (remove-duplicates
+                                        (cons id-to-keep
+                                              (remove duplicate-id it))
+                                        :test #'eql)))
 
       (when (getf data-to-keep :pending)
         (setf (getf data-to-keep :pending)
