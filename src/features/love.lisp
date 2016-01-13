@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -17,34 +17,47 @@
 
 (in-package :kindista)
 
-(defun love (id &key (userid *userid*))
+(defun index-love (item-id userid)
+  (with-locked-hash-table (*love-index*)
+    (pushnew item-id (gethash userid *love-index*))))
+
+(defun deindex-love (item-id userid)
+  (with-locked-hash-table (*love-index*)
+    (asetf (gethash userid *love-index*)
+           (remove item-id it))))
+
+(defun love (id &optional (userid *userid*))
   (when id
-    (with-locked-hash-table (*db*)
-      (let* ((user (db userid))
-             (loves (getf user :loves)))
-        (unless (member id loves)
-          (setf (getf user :loves) (cons id loves))
-          (update-db userid user))))
+    (amodify-db id :loved-by (pushnew userid it))
+    (index-love id userid)))
 
-    (with-locked-hash-table (*love-index*)
-      (let* ((loves (gethash id *love-index*)))
-        (unless (member userid loves)
-          (setf (gethash id *love-index*) (cons userid loves)))))))
-
-(defun unlove (id &key (userid *userid*))
+(defun unlove (id &optional (userid *userid*))
   (when id
-    (with-locked-hash-table (*db*)
-      (let* ((user (db userid))
-             (loves (getf user :loves)))
-        (when (member id loves)
-          (setf (getf user :loves) (remove id loves))
-          (update-db userid user))))
+    (amodify-db id :loved-by (remove userid it))
+    (deindex-love id userid)))
 
-    (with-locked-hash-table (*love-index*)
-      (let* ((loves (gethash id *love-index*)))
-        (when (member userid loves)
-          (setf (gethash id *love-index*) (remove userid loves)))))))
+(defun post-love (id)
+  (require-active-user
+    (let* ((id (safe-parse-integer id))
+           (item (db id))
+           (type (getf item :type)))
+      (cond
+        ((not (find type '(:offer :request :gratitude :event)))
+         (setf (return-code*) +http-bad-request+))
+        ((post-parameter "love")
+         (love id))
+        ((post-parameter "unlove")
+         (unlove id))))
+    (see-other (referer))))
 
-(defun loves (id)
-  (gethash id *love-index*))
+(defun loves (userid)
+  (gethash userid *love-index*))
 
+(defun move-loves-to-objects ()
+  (dolist (id (hash-table-keys *db-results*))
+    (let ((data (db id)))
+      (when (getf data :loves)
+        (dolist (loved-id (getf data :loves))
+          (amodify-db loved-id :loved-by (cons id it)))
+        (modify-db id :loves nil))))
+  (load-db))

@@ -65,11 +65,11 @@
         (:p (str (regex-replace-all "\\n" (getf data :text) "<br>")))
         (:div :class "actions"
           (str (activity-icons :hearts (length (loves id)) :url url))
-          (:form :method "post" :action url
+          (:form :method "post" :action (strcat "/love/" id)
             (:input :type "hidden" :name "next" :value (script-name*))
-            (if (member *userid* (gethash id *love-index*))
+            (if (member id (loves *userid*))
               (htm (:input :type "submit" :name "unlove" :value "Loved"))
-              (htm (:input :type "submit" :name "love" :value "Love")))   
+              (htm (:input :type "submit" :name "love" :value "Love")))
             (when (getf *user* :admin)
                (htm
                 " &middot; "  
