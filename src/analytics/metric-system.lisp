@@ -54,8 +54,7 @@
   (start system))
 
 (defun get-schedule-metric-system-timer ()
-  (when (or (string= (header-in* :x-real-ip) "127.0.0.1")
-            (string= (header-in* :x-real-ip) *local-ip-address*))
+  (when (server-side-request-p)
     (send-message (metric-system-mailbox (acceptor-metric-system *acceptor*)) '(:daily))))
 
 (defgeneric send-metric (system &rest message))
