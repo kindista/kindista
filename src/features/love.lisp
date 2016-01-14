@@ -42,7 +42,7 @@
            (item (db id))
            (type (getf item :type)))
       (cond
-        ((not (find type '(:offer :request :gratitude :event)))
+        ((not (find type '(:offer :request :gratitude :event :feedback)))
          (setf (return-code*) +http-bad-request+))
         ((post-parameter "love")
          (love id))

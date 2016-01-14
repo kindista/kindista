@@ -57,112 +57,113 @@
 
   (html
     (:div :class (if class (s+ "activity card " class) "card") :id id
-     (:div :class "activity item"
-      ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
-      (awhen time (str it))
-      (when distance
-        (htm
-          (:p :class "distance"
-           "within " (str (distance-string distance)))))
-      (:div :class "item-text"(str content))
-      (when (and matchmaker related-items)
-        (str related-items))
-      (when (and *user* show-actions)
-        (htm
-          (awhen primary-action
-            (htm
-              (:form :class "primary-action" :method "post" :action url
+      (:div :class "activity item"
+       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
+       (awhen time (str it))
+       (when distance
+         (htm
+           (:p :class "distance"
+            "within " (str (distance-string distance)))))
+       (:div :class "item-text"(str content))
+       (when (and matchmaker related-items)
+         (str related-items))
+       (when (and *user* show-actions)
+         (htm
+           (awhen primary-action
+             (htm
+               (:form :class "primary-action" :method "post" :action url
+                (:input :type "hidden"
+                 :name "next"
+                 ;; don't use anchor link. otherwise user can't see
+                 ;; the success flash after they post a reply
+                 :value (request-uri*))
+                (dolist (item (getf it :hidden))
+                  (htm (:input :type "hidden"
+                        :name (car item)
+                        :value (cdr item))))
+                (:button :type "submit"
+                 :class "small blue primary-action"
+                 :name (getf it :name)
+                 :value (getf it :value)
+                 (when (getf it :image)
+                   (str (getf it :image)))
+                 ;; following needs div instead of span because of a
+                 ;; firefox hover/underline bug
+                 (:div (str (getf it :text)))))))
+           (:div :class "actions"
+             (str (activity-icons :hearts hearts :comments comments :url url))
+             (:form :method "post" :action (strcat "/love/" id)
+               (:input :type "hidden" :name "next" :value next)
+               (if (find id (loves *userid*))
+                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
+                 (htm (:input :type "submit" :name "love" :value "Love"))))
+             (:form :method "post" :action url
                (:input :type "hidden"
-                :name "next"
-                ;; don't use anchor link. otherwise user can't see
-                ;; the success flash after they post a reply
-                :value (request-uri*))
-               (dolist (item (getf it :hidden))
-                 (htm (:input :type "hidden"
-                       :name (car item)
-                       :value (cdr item))))
-               (:button :type "submit"
-                :class "small blue primary-action"
-                :name (getf it :name)
-                :value (getf it :value)
-                (when (getf it :image)
-                  (str (getf it :image)))
-                ;; following needs div instead of span because of a
-                ;; firefox hover/underline bug
-                (:div (str (getf it :text)))))))
-          (:div :class "actions"
-           (str (activity-icons :hearts hearts :comments comments :url url))
-           (:form :method "post" :action (strcat "/love/" id)
-            (:input :type "hidden" :name "next" :value next)
-            (if (find id (loves *userid*))
-              (htm (:input :type "submit" :name "unlove" :value "Loved"))
-              (htm (:input :type "submit" :name "love" :value "Love"))))
-           (:form :method "post" :action url
-            (:input :type "hidden"
-             :name "next"
-             ;; don't use anchor link. otherwise user can't see
-             ;; the success flash after they post a reply
-             :value (request-uri*))
-            (awhen share-url
-              (htm
-                " &middot; "
-                (:a :href it "Share on Facebook")))
-            (when reply
-              (htm
-                " &middot; "
-                (:input :type "submit" :name "reply" :value "Reply")))
-            (when matchmaker
-              (htm
-                " &middot; "
-                (:a :href (url-compose url "selected" "matchmaker")
-                 "Matchmaker")))
-            (when delete ;for gift-activity-items
-              (htm
-                " &middot; "
-                (:input :type "submit" :name "delete" :value "Delete")))
-            (when edit
-              (htm
-                " &middot; "
-                (:input :type "submit" :name "edit" :value "Edit")
-                " &middot; "
-                (cond
-                  (admin-delete
-                    (htm (:input :type "submit"
-                          :name "inappropriate-item"
-                          :value "Inappropriate")))
-                  (deactivate
-                    (htm (:input :type "submit"
-                          :name "deactivate"
-                          :value "Deactivate")))
-                  (t
-                   (htm (:input :type "submit"
-                         :name "delete"
-                         :value "Delete")))))))
-           (awhen reactivate
-             (htm
-               " &middot; "
-               (:a :href it "Reactivate")))
-           (when image-text
-             (htm
-               " &middot; "
-               (str (new-image-form "/image/new"
-                                    (script-name*)
-                                    :on id
-                                    :button image-text))))
-           (when comments
-             (htm
-               " &middot; "
-               (str (comment-button url))))))))
+                       :name "next"
+                       ;; don't use anchor link. otherwise user can't see
+                       ;; the success flash after they post a reply
+                       :value (request-uri*))
+               (awhen share-url
+                 (htm
+                   " &middot; "
+                   (:a :href it "Share on Facebook")))
+               (when reply
+                 (htm
+                  " &middot; "
+                  (:input :type "submit" :name "reply" :value "Reply")))
+               (when matchmaker
+                 (htm
+                  " &middot; "
+                  (:a :href (url-compose url "selected" "matchmaker")
+                   "Matchmaker")))
+               (when delete ;for gift-activity-items
+                 (htm
+                   " &middot; "
+                   (:input :type "submit" :name "delete" :value "Delete")))
+               (when edit
+                 (htm
+                   " &middot; "
+                   (:input :type "submit" :name "edit" :value "Edit")
+                   " &middot; "
+                   (cond
+                     (admin-delete
+                      (htm (:input :type "submit"
+                                   :name "inappropriate-item"
+                                   :value "Inappropriate")))
+                     (deactivate
+                      (htm (:input :type "submit"
+                                   :name "deactivate"
+                                   :value "Deactivate")))
+                     (t
+                      (htm (:input :type "submit"
+                                   :name "delete"
+                                   :value "Delete")))))))
+               (awhen reactivate
+                 (htm
+                   " &middot; "
+                   (:a :href it "Reactivate")))
 
-        (when (and related-items (not matchmaker))
-          (htm
-            (:div :class "related activity items"
-              (str related-items)))))))
+               (when image-text
+                 (htm
+                   " &middot; "
+                   (str (new-image-form "/image/new"
+                                        (script-name*)
+                                        :on id
+                                        :button image-text))))
+               (when comments
+                 (htm
+                   " &middot; "
+                   (str (comment-button url))))))))
 
-        ;(unless (eql user-id *userid*)
-        ;  (htm
-        ;    " &middot; "
-        ;    (str (flag-button url))))))))
+      (when (and related-items (not matchmaker))
+        (htm
+          (:div :class "related activity items"
+            (str related-items)))))))
+
+      ;(unless (eql user-id *userid*)
+      ;  (htm
+      ;    " &middot; "
+      ;    (str (flag-button url))))))))
 
 (defun event-activity-item (result &key featuredp sidebar truncate (show-distance nil) time date)
   (let* ((host (first (result-people result)))
