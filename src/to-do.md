@@ -1,6 +1,7 @@
 ## loves
   - #links
   - show list of people who love an item
+  - figure out why own offers and requests are showing as inactive
   - rm bulk-love function
 ## web apps
   - iphone - https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html

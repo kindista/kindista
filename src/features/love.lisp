@@ -69,3 +69,31 @@
         (subset (subseq test-data 0 count)))
   (dolist (userid subset)
     (love item-id userid)))
+
+(defun list-loved-by-html
+  (userids
+   &key (userid *userid*)
+        (contact-count 5)
+        (links t)
+        (func #'person-link)
+   &aux (self (find userid userids))
+        (user (or *user* (db userid)))
+        (others (remove self userids))
+        (my-contacts (intersection others (getf user :following)))
+        (named-contacts (subseq my-contacts 0 (min (length my-contacts) contact-count)))
+        (unnamed-lovers (set-difference others named-contacts))
+        (unnamed-lovers-count (awhen unnamed-lovers (strcat (length it) " others"))))
+  "lists users who love an item.
+   includes self as 'you', then the named-links of up to 5 of the user's contacts
+   then the number of remaining users with a link to all"
+  (flet ((format-function (id)
+            (if links (apply func (list id))
+                      (db id :name))))
+  (html
+    (:div :class "love-list"
+      (str (format nil
+                   *english-list*
+                   (remove nil
+                           (append (list (when self "You"))
+                                   (mapcar #'format-function named-contacts)
+                                   (list unnamed-lovers-count)))))))))

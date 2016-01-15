@@ -49,7 +49,7 @@
           (:span (str comments)))))))
 
 (defun activity-item
-  (&key id url share-url content time primary-action hearts comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
+  (&key id url share-url content time primary-action loves comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
    &aux (here (request-uri*))
         (next (if (find (strcat id) (url-parts here) :test #'string=)
                 here
@@ -91,7 +91,7 @@
                  ;; firefox hover/underline bug
                  (:div (str (getf it :text)))))))
            (:div :class "actions"
-             (str (activity-icons :hearts hearts :comments comments :url url))
+             (str (activity-icons :hearts (length loves) :comments comments :url url))
              (:form :method "post" :action (strcat "/love/" id)
                (:input :type "hidden" :name "next" :value next)
                (if (find id (loves *userid*))
@@ -155,10 +155,13 @@
                    " &middot; "
                    (str (comment-button url))))))))
 
-      (when (and related-items (not matchmaker))
+      (when (or loves
+                (and related-items (not matchmaker)))
         (htm
           (:div :class "related activity items"
-            (str related-items)))))))
+            (str (list-loved-by-html loves))
+            (unless matchmaker
+              (str related-items))))))))
 
       ;(unless (eql user-id *userid*)
       ;  (htm
@@ -185,7 +188,7 @@
       :deactivate (or (eql host *userid*)
                       group-adminp
                       (getf *user* :admin))
-      :hearts (length (getf data :loved-by))
+      :loves (getf data :loved-by)
       ;:comments (length (comments item-id))
       :content (html
                  (:h3 (:a :href item-url
@@ -267,58 +270,50 @@
          (images (getf data :images))
          (item-url (strcat "/gratitude/" item-id)))
 
-  (when (eql (result-id result) 31044)
-    (pprint reciprocity)
-    (pprint (getf data :on))
-    (pprint show-on-item)
-    (terpri))
-
   (unless (getf data :pending)
-    (html
-      (str
-        (activity-item
-          :id item-id
-          :url item-url
-          :class "gratitude"
-          :time (when show-when
-                  (timestamp (result-time result)
-                             :type "gratitude"))
-          :show-actions show-actions
-          :edit (when (or self adminp (getf *user* :admin)) t)
-          :image-text (when (and (or self adminp)
-                                 (< (length images) 5))
-                        "Add photos")
-          :hearts (length (getf data :loved-by))
-          ;:comments (length (comments item-id))
-          :content (html
-                     (:p (str (person-link user-id))
-                         " expressed "
-                         (:a :href item-url "gratitude")
-                         " for "
-                         (str (name-list (getf data :subjects)
-                                         :maximum-links 100)))
-                     (:p
-                       (str
-                         (if truncate
-                           (ellipsis (getf data :text)
-                                     :length 500
-                                     :see-more item-url)
-                           (html-text (getf data :text)))))
-                     (unless (string= item-url (script-name*))
-                       (str (activity-item-images images item-url "gift"))))
-          :related-items (when (and reciprocity (getf data :on) show-on-item)
-                           (html
-                             (when (and (getf data :on) show-on-item)
-                               (str (gratitude-on-item-html
-                                      item-id
-                                      :gratitude-data data)))
-                             (when (and reciprocity
-                                        (getf data :on)
-                                        reciprocity-to-show
-                                        show-on-item)
-                               (htm (:hr)))
-                             (awhen reciprocity-to-show
-                               (str it)))))))))
+    (activity-item
+      :id item-id
+      :url item-url
+      :class "gratitude"
+      :time (when show-when
+              (timestamp (result-time result)
+                         :type "gratitude"))
+      :show-actions show-actions
+      :edit (when (or self adminp (getf *user* :admin)) t)
+      :image-text (when (and (or self adminp)
+                             (< (length images) 5))
+                    "Add photos")
+      :loves (getf data :loved-by)
+      ;:comments (length (comments item-id))
+      :content (html
+                 (:p (str (person-link user-id))
+                     " expressed "
+                     (:a :href item-url "gratitude")
+                     " for "
+                     (str (name-list (getf data :subjects)
+                                     :maximum-links 100)))
+                 (:p
+                   (str
+                     (if truncate
+                       (ellipsis (getf data :text)
+                                 :length 500
+                                 :see-more item-url)
+                       (html-text (getf data :text)))))
+                 (unless (string= item-url (script-name*))
+                   (str (activity-item-images images item-url "gift"))))
+      :related-items (when (and reciprocity (getf data :on) show-on-item)
+                       (html
+                         (when (and (getf data :on) show-on-item)
+                           (str (gratitude-on-item-html
+                                  item-id
+                                  :gratitude-data data)))
+                         (when (and reciprocity
+                                    (getf data :on)
+                                    reciprocity-to-show
+                                    show-on-item)
+                           (htm (:hr)))
+                         (awhen reciprocity-to-show
+                           (str it)))))))
 
 
 (defun gift-activity-item (result)
@@ -330,6 +325,7 @@
                    :class "gratitude"
                    :time (timestamp (result-time result) :type "gift")
                    :hearts (length (getf data :loved-by))
+                   :loves (getf data :loved-by)
                    :delete (when (or (eql user-id *userid*) (getf *user* :admin)) t)
                    :comments (length (comments item-id))
                    :content (html
