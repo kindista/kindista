@@ -49,7 +49,7 @@
           (:span (str comments)))))))
 
 (defun activity-item
-  (&key id url share-url content time primary-action hearts comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
+  (&key id url share-url content time primary-action loves comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
    &aux (here (request-uri*))
         (next (if (find (strcat id) (url-parts here) :test #'string=)
                 here
@@ -91,7 +91,7 @@
                  ;; firefox hover/underline bug
                  (:div (str (getf it :text)))))))
            (:div :class "actions"
-             (str (activity-icons :hearts hearts :comments comments :url url))
+             (str (activity-icons :hearts (length loves) :comments comments :url url))
              (:form :method "post" :action (strcat "/love/" id)
                (:input :type "hidden" :name "next" :value next)
                (if (find id (loves *userid*))
@@ -155,10 +155,13 @@
                    " &middot; "
                    (str (comment-button url))))))))
 
-      (when (and related-items (not matchmaker))
+      (when (or loves
+                (and related-items (not matchmaker)))
         (htm
           (:div :class "related activity items"
-            (str related-items)))))))
+            (str (users-who-love-item-html loves id url))
+            (unless matchmaker
+              (str related-items))))))))
 
       ;(unless (eql user-id *userid*)
       ;  (htm
@@ -185,7 +188,7 @@
       :deactivate (or (eql host *userid*)
                       group-adminp
                       (getf *user* :admin))
-      :hearts (length (getf data :loved-by))
+      :loves (getf data :loved-by)
       ;:comments (length (comments item-id))
       :content (html
                  (:h3 (:a :href item-url
@@ -280,7 +283,7 @@
       :image-text (when (and (or self adminp)
                              (< (length images) 5))
                     "Add photos")
-      :hearts (length (getf data :loved-by))
+      :loves (getf data :loved-by)
       ;:comments (length (comments item-id))
       :content (html
                  (:p (str (person-link user-id))
@@ -321,7 +324,7 @@
                    :url (strcat "/gifts/" item-id)
                    :class "gratitude"
                    :time (timestamp (result-time result) :type "gift")
-                   :hearts (length (getf data :loved-by))
+                   :loves (getf data :loved-by)
                    :delete (when (or (eql user-id *userid*) (getf *user* :admin)) t)
                    :comments (length (comments item-id))
                    :content (html
@@ -433,7 +436,7 @@
                  :reply (unless (or self
                                     (not (getf data :active)))
                           t)
-                 :hearts (length (getf data :loved-by))
+                 :loves (getf data :loved-by)
                  :matchmaker (or (getf *user* :matchmaker)
                                  (and (or group-adminp self)
                                     (string= type "request")))
