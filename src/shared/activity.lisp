@@ -159,7 +159,7 @@
                 (and related-items (not matchmaker)))
         (htm
           (:div :class "related activity items"
-            (str (list-loved-by-html loves))
+            (str (users-who-love-item-html loves id url))
             (unless matchmaker
               (str related-items))))))))
 
@@ -324,7 +324,6 @@
                    :url (strcat "/gifts/" item-id)
                    :class "gratitude"
                    :time (timestamp (result-time result) :type "gift")
-                   :hearts (length (getf data :loved-by))
                    :loves (getf data :loved-by)
                    :delete (when (or (eql user-id *userid*) (getf *user* :admin)) t)
                    :comments (length (comments item-id))
@@ -437,7 +436,7 @@
                  :reply (unless (or self
                                     (not (getf data :active)))
                           t)
-                 :hearts (length (getf data :loved-by))
+                 :loves (getf data :loved-by)
                  :matchmaker (or (getf *user* :matchmaker)
                                  (and (or group-adminp self)
                                     (string= type "request")))

@@ -70,8 +70,10 @@
   (dolist (userid subset)
     (love item-id userid)))
 
-(defun list-loved-by-html
+(defun users-who-love-item-html
   (userids
+   item-id
+   item-url
    &key (userid *userid*)
         (contact-count 5)
         (links t)
@@ -81,8 +83,19 @@
         (others (remove self userids))
         (my-contacts (intersection others (getf user :following)))
         (named-contacts (subseq my-contacts 0 (min (length my-contacts) contact-count)))
-        (unnamed-lovers (set-difference others named-contacts))
-        (unnamed-lovers-count (awhen unnamed-lovers (strcat (length it) " others"))))
+        (other-lovers (set-difference others named-contacts))
+        (unnamed-lovers-count (length other-lovers))
+        (show-all-names (= (get-parameter-integer "show-loves") item-id))
+        (other (when (and other-lovers
+                          (> (length userids) unnamed-lovers-count))
+                 " other"))
+        (unnamed-lovers-text (when (> unnamed-lovers-count 0)
+                              (if (> unnamed-lovers-count 1)
+                                (strcat* unnamed-lovers-count other " people")
+                                (strcat* "1" other  " person"))))
+        (unnamed-lovers-link (html
+                               (:a :href (url-compose item-url "show-loves" item-id)
+                                 (str unnamed-lovers-text)))))
   "lists users who love an item.
    includes self as 'you', then the named-links of up to 5 of the user's contacts
    then the number of remaining users with a link to all"
@@ -96,4 +109,9 @@
                    (remove nil
                            (append (list (when self "You"))
                                    (mapcar #'format-function named-contacts)
-                                   (list unnamed-lovers-count)))))))))
+                                   (if show-all-names
+                                     (mapcar #'format-function other-lovers)
+                                     (list unnamed-lovers-link))))))
+      (str (if (and (= (length userids) 1) (not self))
+             " loves this"
+             " love this"))))))
