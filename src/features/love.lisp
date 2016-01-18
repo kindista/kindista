@@ -85,7 +85,7 @@
         (named-contacts (subseq my-contacts 0 (min (length my-contacts) contact-count)))
         (other-lovers (set-difference others named-contacts))
         (unnamed-lovers-count (length other-lovers))
-        (show-all-names (= (get-parameter-integer "show-loves") item-id))
+        (show-all-names (eql (get-parameter-integer "show-loves") item-id))
         (other (when (and other-lovers
                           (> (length userids) unnamed-lovers-count))
                  " other"))
@@ -93,9 +93,10 @@
                               (if (> unnamed-lovers-count 1)
                                 (strcat* unnamed-lovers-count other " people")
                                 (strcat* "1" other  " person"))))
-        (unnamed-lovers-link (html
-                               (:a :href (url-compose item-url "show-loves" item-id)
-                                 (str unnamed-lovers-text)))))
+        (unnamed-lovers-link (awhen unnamed-lovers-text
+                               (html
+                                 (:a :href (url-compose item-url "show-loves" item-id)
+                                   (str it))))))
   "lists users who love an item.
    includes self as 'you', then the named-links of up to 5 of the user's contacts
    then the number of remaining users with a link to all"

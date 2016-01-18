@@ -49,14 +49,15 @@
           (:span (str comments)))))))
 
 (defun activity-item
-  (&key id url share-url content time primary-action loves comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
+  (&key id url share-url content time primary-action loves comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t) event-time
    &aux (here (request-uri*))
         (next (if (find (strcat id) (url-parts here) :test #'string=)
                 here
                 (strcat here "#" id))))
 
   (html
-    (:div :class (if class (s+ "activity card " class) "card") :id id
+    (:div :class (if class (s+ "activity card " class) "card")
+          :id (strcat* id (awhen event-time (strcat ":" it)))
       (:div :class "activity item"
        ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
        (awhen time (str it))
@@ -179,7 +180,8 @@
          (item-url (strcat "/events/" item-id)))
 
     (activity-item
-      :id (strcat item-id ":" (or date local-time))
+      :id item-id
+      :event-time (or date local-time)
       :url item-url
       :class (strcat* (when featuredp "featured ") "event")
       :edit (or (eql host *userid*)
