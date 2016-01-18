@@ -368,27 +368,29 @@
                         "#expiration"))
         (time (when active-p
                 (if self (getf data :expires) (result-time result))))
-        (timestamp (when (and active-p show-when)
+        (timestamp (if active-p
                      (timestamp
                        time
-                       :class (when (and self
-                                         (< time (+ (get-universal-time)
-                                                    (* 5 +day-in-seconds+))))
+                       :class (when
+                                (or (not active-p)
+                                    (and self
+                                        (< time (+ (get-universal-time)
+                                                   (* 5 +day-in-seconds+)))))
                                 "red")
                        :type type
-                       :verb (unless (and show-what (not self))
-                               (cond
-                                 (self "expires")
-                                 ((getf data :refreshed) "refreshed")
-                                 ((getf data :edited) "edited")
-                                 ((string= type "request") "requested")
-                                 ((string= type "offer") "offered")))))))
+                       :verb (if self
+                               "expires"
+                               (when (and show-what
+                                          (not show-when))
+                                 (cond
+                                   ((getf data :refreshed) "refreshed")
+                                   ((getf data :edited) "edited")
+                                   ((string= type "request") "requested")
+                                   ((string= type "offer") "offered")))))
+                     (html (:h3 :class "timestamp red" "inactive")))))
 
   (when self
-    (asetf timestamp (html (:a :href renew-link
-                             (if it
-                               (str it)
-                               (htm (:h3 :class "timestamp red" "inactive")))))))
+    (asetf timestamp (html (:a :href renew-link (str it)))))
 
   (activity-item :id item-id
                  :url item-url
