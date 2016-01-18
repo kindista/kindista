@@ -111,10 +111,6 @@
         (setf (gethash it *eventname-index*) result)))
 
     (when (getf data :active)
-      (awhen (getf data :loved-by)
-        (dolist (userid it)
-          (index-love id userid)))
-
       (let ((stems (stem-text (s+ (getf data :title) " " (getf data :details)))))
         (with-locked-hash-table (*event-stem-index*)
           (dolist (stem stems)

@@ -2106,12 +2106,12 @@ div.related.activity.items {
  font-weight:normal;
  overflow:hidden;
  padding: 0.4em;
+ font-size: 0.9em;
 }
 
 div.reciprocity.matches {
  clear: both;
- margin-top: 0.6em;
- font-size: 0.8em;
+ margin: 0.2em 0;
 }
 
 div.gratitude-on-item img,
@@ -2184,7 +2184,7 @@ button.card > img {
 }
 
 .card.event {
- margin: 0;
+ margin: 0 0 0.5em;
 }
 
 .card.gratitude div.subject-requests {
@@ -2686,7 +2686,14 @@ form.primary-action {
 }
 
 .card button.primary-action {
- margin: 0.9em 0.5em 0 0;
+ margin: 0 0.5em 0.4em 0;
+ padding: 0.4em 0.5em;
+ font-size: 0.9em;
+}
+
+button.primary-action img {
+ width: 1.3em;
+ height: 1.3em;
 }
 
 /*stupid firefox bug */
@@ -4301,9 +4308,7 @@ background-color: #f8f8f8;
    border-radius:100%;
 }
 
-.gratitude-on-item,
-.reciprocity {
-  font-size:0.9em;
+.gratitude-on-item {
   margin-bottom: 0.3em;
 }
 

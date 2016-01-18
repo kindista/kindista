@@ -59,8 +59,7 @@
         (url (strcat "/feedback/" id))
         (by (getf data :by))
         (bydata (db by))
-        (loves (loves id))
-    )
+        (loves (loves id)))
   (html
     (:div :id id :class "feedback card"
       (str (h3-timestamp (getf data :created)))
@@ -75,15 +74,15 @@
             (htm (:input :type "submit" :name "love" :value "Love")))
           (when (getf *user* :admin)
              (htm
-              " &middot; "  
+              " &middot; "
               (:input :type "submit" :name "reply" :value "Reply")))
           (when (eql *userid* by)
             (htm
-              " &middot; "  
+              " &middot; "
               (:input :type "submit" :name "delete" :value "Delete")))))
-        (:div :class "related activity items"
-          (str (users-who-love-item-html loves id url))
-         )
+        (when loves
+          (htm (:div :class "related activity items"
+                 (str (users-who-love-item-html loves id url)))))
 
         (:div :class "comments"
           (dolist (comment-id (gethash id *comment-index*))
@@ -92,7 +91,7 @@
           (when (getf *user* :admin)
             (htm
               (:div :class "item reply"
-                (:h4 "post a comment") 
+                (:h4 "post a comment")
                 (:form :method "post" :action (strcat "/feedback/" id)
                   (:table :class "post"
                     (:tr

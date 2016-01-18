@@ -19,21 +19,21 @@
 
 (defun index-love (item-id userid)
   (with-locked-hash-table (*love-index*)
-    (pushnew item-id (gethash userid *love-index*))))
+    (pushnew userid (gethash item-id *love-index*))))
 
 (defun deindex-love (item-id userid)
   (with-locked-hash-table (*love-index*)
-    (asetf (gethash userid *love-index*)
-           (remove item-id it))))
+    (asetf (gethash item-id *love-index*)
+           (remove userid it))))
 
 (defun love (id &optional (userid *userid*))
   (when id
-    (amodify-db id :loved-by (pushnew userid it))
+    (amodify-db userid :loves (pushnew id it))
     (index-love id userid)))
 
 (defun unlove (id &optional (userid *userid*))
   (when id
-    (amodify-db id :loved-by (remove userid it))
+    (amodify-db userid :loves (remove id it))
     (deindex-love id userid)))
 
 (defun post-love (id)
@@ -50,25 +50,8 @@
          (unlove id))))
     (see-other (referer))))
 
-(defun loves (userid)
-  (gethash userid *love-index*))
-
-(defun move-loves-to-objects ()
-  (dolist (id (hash-table-keys *db-results*))
-    (let ((data (db id)))
-      (when (getf data :loves)
-        (dolist (loved-id (getf data :loves))
-          (amodify-db loved-id :loved-by (cons id it)))
-        (modify-db id :loves nil))))
-  (load-db))
-
-(defun bulk-love-item
-  (item-id
-   &optional (count 20)
-   &aux (test-data '(0 1 3 19885 6 20 25 98 101 105 110 115 117 124 129 135 147 162 171 180))
-        (subset (subseq test-data 0 count)))
-  (dolist (userid subset)
-    (love item-id userid)))
+(defun loves (item-id)
+  (gethash item-id *love-index*))
 
 (defun users-who-love-item-html
   (userids

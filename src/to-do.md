@@ -1,9 +1,5 @@
 ## loves
   - #links
-  - fix css and add :hr tag to the lovers list
-  - check lover-list functionality works on feedbacks and events
-  - move loves back to the lover
-  - rm bulk-love function
 ## web apps
   - iphone - https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
   - android

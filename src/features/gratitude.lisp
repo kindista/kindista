@@ -173,10 +173,6 @@
      (awhen (getf data :on)
        (index-gratitude-link id it created))
 
-     (awhen (getf data :loved-by)
-       (dolist (userid it)
-         (index-love id userid)))
-
      (when (and (not (getf data :transaction-id))
                 (or (getf message-folders :inbox)
                     (getf message-folders :unread)))

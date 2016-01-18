@@ -41,10 +41,6 @@
       (setf *feedback-index* (safe-sort (cons result *feedback-index*)
                                         #'> :key #'result-time)))
 
-    (awhen (getf data :loved-by)
-      (dolist (userid it)
-        (index-love id userid)))
-
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))))
 

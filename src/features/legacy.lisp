@@ -44,10 +44,6 @@
         (asetf (gethash person *profile-activity-index*)
                (safe-sort (push result it) #'> :key #'result-time))))
 
-    (awhen (getf data :loved-by)
-      (dolist (userid it)
-        (index-love id userid)))
-
     (unless (< created (- (get-universal-time) 15552000))
       (geo-index-insert *activity-geo-index* result) 
 

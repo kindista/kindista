@@ -66,8 +66,6 @@
            (:p :class "distance"
             "within " (str (distance-string distance)))))
        (:div :class "item-text"(str content))
-       (when (and matchmaker related-items)
-         (str related-items))
        (when (and *user* show-actions)
          (htm
            (awhen primary-action
@@ -156,13 +154,14 @@
                    " &middot; "
                    (str (comment-button url))))))))
 
-      (when (or loves
-                (and related-items (not matchmaker)))
+      (when (or loves related-items)
         (htm
           (:div :class "related activity items"
-            (str (users-who-love-item-html loves id url))
-            (unless matchmaker
-              (str related-items))))))))
+            (when loves
+              (str (users-who-love-item-html loves id url)))
+            (when (and loves related-items)
+              (htm (:hr)))
+            (str related-items)))))))
 
       ;(unless (eql user-id *userid*)
       ;  (htm
@@ -190,7 +189,7 @@
       :deactivate (or (eql host *userid*)
                       group-adminp
                       (getf *user* :admin))
-      :loves (getf data :loved-by)
+      :loves (loves item-id)
       ;:comments (length (comments item-id))
       :content (html
                  (:h3 (:a :href item-url
@@ -285,7 +284,7 @@
       :image-text (when (and (or self adminp)
                              (< (length images) 5))
                     "Add photos")
-      :loves (getf data :loved-by)
+      :loves (loves item-id)
       ;:comments (length (comments item-id))
       :content (html
                  (:p (str (person-link user-id))
@@ -326,7 +325,7 @@
                    :url (strcat "/gifts/" item-id)
                    :class "gratitude"
                    :time (timestamp (result-time result) :type "gift")
-                   :loves (getf data :loved-by)
+                   :loves (loves item-id)
                    :delete (when (or (eql user-id *userid*) (getf *user* :admin)) t)
                    :comments (length (comments item-id))
                    :content (html
@@ -440,7 +439,7 @@
                  :reply (unless (or self
                                     (not (getf data :active)))
                           t)
-                 :loves (getf data :loved-by)
+                 :loves (loves item-id)
                  :matchmaker (or (getf *user* :matchmaker)
                                  (and (or group-adminp self)
                                     (string= type "request")))

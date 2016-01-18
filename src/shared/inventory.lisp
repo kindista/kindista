@@ -127,10 +127,6 @@
               (- 3661624237 (* 30 +day-in-seconds+)))
        (index-inventory-refresh-time result))
 
-     (awhen (getf data :loved-by)
-       (dolist (userid it)
-         (index-love id userid)))
-
      (if (eq type :offer)
        (with-locked-hash-table (*offer-index*)
          (pushnew id (gethash by-id *offer-index*)))
@@ -328,9 +324,6 @@
             (remove-matchmaker-from-indexes id))))
 
       (geo-index-remove geo-index result)
-
-      (dolist (userid (getf data :loved-by))
-        (deindex-love id userid))
 
       (if (eq type :event)
         (with-mutex (*event-mutex*)
