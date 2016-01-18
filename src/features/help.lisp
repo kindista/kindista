@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -154,12 +154,6 @@
            (delete-feedback id)
            (flash "Your feedback has been deleted!")
            (see-other (or (post-parameter "next") "/feedback")))
-          ((post-parameter "love")
-           (love id)
-           (see-other (or (post-parameter "next") (referer))))
-          ((post-parameter "unlove")
-           (unlove id)
-           (see-other (or (post-parameter "next") (referer))))
           ((and (post-parameter "text")
                 (getf *user* :admin))
            (create-comment :on id :text (post-parameter "text"))

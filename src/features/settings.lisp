@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -856,12 +856,10 @@
                     (token (cdr (assoc "access_token" alist :test #'string=)))
                     (expires (+ now (parse-integer (cdr (assoc "expires" alist :test #'string=))))))
 
-               (pprint alist)
-               (terpri)
                (modify-db *userid* :fbtoken token :fbexpires expires)
                (unless (getf *user* :fb-id)
                  (modify-db *userid* :fb-id (get-facebook-user-id)))
-               
+
              (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
                (format s "~A ~A ~A~%" alist token expires))))
             ((>= (second reply) 400)

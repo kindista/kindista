@@ -1,19 +1,10 @@
-## expiration/renewals for inventory items
-  - change date for index-inventory-item
-  - launch on live server
-    - ,d on (add-expiration-dates...
-    - (add-expiration-dates-to-existing-inventory-items)
-    - start loop
 ## loves
   - #links
-  - post to /love
-  - show list of people who love an item
 ## web apps
   - iphone - https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
   - android
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
-## split up access log into daily files
 ## accountability with user flaky-ness
   - possible survey in transaction items to provide feedback re: experience
     with the other party

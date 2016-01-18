@@ -49,117 +49,124 @@
           (:span (str comments)))))))
 
 (defun activity-item
-  (&key id url share-url content time primary-action hearts comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t)
+  (&key id url share-url content time primary-action loves comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t) event-time
    &aux (here (request-uri*))
         (next (if (find (strcat id) (url-parts here) :test #'string=)
                 here
                 (strcat here "#" id))))
 
   (html
-    (:div :class (if class (s+ "card " class) "card") :id id
-      ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
-      (awhen time (str it))
-      (when distance
-        (htm
-          (:p :class "distance"
+    (:div :class (if class (s+ "activity card " class) "card")
+          :id (strcat* id (awhen event-time (strcat ":" it)))
+      (:div :class "activity item"
+       ;(:img :src (strcat "/media/avatar/" user-id ".jpg"))
+       (awhen time (str it))
+       (when distance
+         (htm
+           (:p :class "distance"
             "within " (str (distance-string distance)))))
-      (:div :class "item-text"(str content))
-      (when (and matchmaker related-items)
-        (str related-items))
-      (when (and *user* show-actions)
-        (htm
-          (awhen primary-action
-            (htm
-              (:form :class "primary-action" :method "post" :action url
+       (:div :class "item-text"(str content))
+       (when (and *user* show-actions)
+         (htm
+           (awhen primary-action
+             (htm
+               (:form :class "primary-action" :method "post" :action url
                 (:input :type "hidden"
-                        :name "next"
-                        ;; don't use anchor link. otherwise user can't see
-                        ;; the success flash after they post a reply
-                        :value (request-uri*))
+                 :name "next"
+                 ;; don't use anchor link. otherwise user can't see
+                 ;; the success flash after they post a reply
+                 :value (request-uri*))
                 (dolist (item (getf it :hidden))
                   (htm (:input :type "hidden"
-                               :name (car item)
-                               :value (cdr item))))
+                        :name (car item)
+                        :value (cdr item))))
                 (:button :type "submit"
-                         :class "small blue primary-action"
-                         :name (getf it :name)
-                         :value (getf it :value)
-                       (when (getf it :image)
-                         (str (getf it :image)))
-                       ;; following needs div instead of span because of a
-                       ;; firefox hover/underline bug
-                       (:div (str (getf it :text)))))))
-          (:div :class "actions"
-            (str (activity-icons :hearts hearts :comments comments :url url))
-            (:form :method "post" :action url
-              (:input :type "hidden" :name "next" :value next)
-              (if (member *userid* (gethash id *love-index*))
-                (htm (:input :type "submit" :name "unlove" :value "Loved"))
-                (htm (:input :type "submit" :name "love" :value "Love"))))
-            (:form :method "post" :action url
-              (:input :type "hidden"
-                      :name "next"
-                      ;; don't use anchor link. otherwise user can't see
-                      ;; the success flash after they post a reply
-                      :value (request-uri*))
-              (awhen share-url
-                (htm
+                 :class "small blue primary-action"
+                 :name (getf it :name)
+                 :value (getf it :value)
+                 (when (getf it :image)
+                   (str (getf it :image)))
+                 ;; following needs div instead of span because of a
+                 ;; firefox hover/underline bug
+                 (:div (str (getf it :text)))))))
+           (:div :class "actions"
+             (str (activity-icons :hearts (length loves) :comments comments :url url))
+             (:form :method "post" :action (strcat "/love/" id)
+               (:input :type "hidden" :name "next" :value next)
+               (if (find id (loves *userid*))
+                 (htm (:input :type "submit" :name "unlove" :value "Loved"))
+                 (htm (:input :type "submit" :name "love" :value "Love"))))
+             (:form :method "post" :action url
+               (:input :type "hidden"
+                       :name "next"
+                       ;; don't use anchor link. otherwise user can't see
+                       ;; the success flash after they post a reply
+                       :value (request-uri*))
+               (awhen share-url
+                 (htm
+                   " &middot; "
+                   (:a :href it "Share on Facebook")))
+               (when reply
+                 (htm
                   " &middot; "
-                  (:a :href it "Share on Facebook")))
-              (when reply
-                (htm
-                 " &middot; "
-                 (:input :type "submit" :name "reply" :value "Reply")))
-              (when matchmaker
-                (htm
-                 " &middot; "
-                 (:a :href (url-compose url "selected" "matchmaker")
-                  "Matchmaker")))
-              (when delete ;for gift-activity-items
-                (htm
+                  (:input :type "submit" :name "reply" :value "Reply")))
+               (when matchmaker
+                 (htm
                   " &middot; "
-                  (:input :type "submit" :name "delete" :value "Delete")))
-              (when edit
-                (htm
-                  " &middot; "
-                  (:input :type "submit" :name "edit" :value "Edit")
-                  " &middot; "
-                  (cond
-                    (admin-delete
-                     (htm (:input :type "submit"
-                                  :name "inappropriate-item"
-                                  :value "Inappropriate")))
-                    (deactivate
-                     (htm (:input :type "submit"
-                                  :name "deactivate"
-                                  :value "Deactivate")))
-                    (t
-                     (htm (:input :type "submit"
-                                  :name "delete"
-                                  :value "Delete")))))))
-            (awhen reactivate
-              (htm
-                " &middot; "
-                (:a :href it "Reactivate")))
-            (when image-text
-              (htm
-                " &middot; "
-                (str (new-image-form "/image/new"
-                                     (script-name*)
-                                     :on id
-                                     :button image-text))))
-            (when comments
-              (htm
-                " &middot; "
-                (str (comment-button url)))))))
+                  (:a :href (url-compose url "selected" "matchmaker")
+                   "Matchmaker")))
+               (when delete ;for gift-activity-items
+                 (htm
+                   " &middot; "
+                   (:input :type "submit" :name "delete" :value "Delete")))
+               (when edit
+                 (htm
+                   " &middot; "
+                   (:input :type "submit" :name "edit" :value "Edit")
+                   " &middot; "
+                   (cond
+                     (admin-delete
+                      (htm (:input :type "submit"
+                                   :name "inappropriate-item"
+                                   :value "Inappropriate")))
+                     (deactivate
+                      (htm (:input :type "submit"
+                                   :name "deactivate"
+                                   :value "Deactivate")))
+                     (t
+                      (htm (:input :type "submit"
+                                   :name "delete"
+                                   :value "Delete")))))))
+               (awhen reactivate
+                 (htm
+                   " &middot; "
+                   (:a :href it "Reactivate")))
 
-      (when (and related-items (not matchmaker))
-        (str related-items)))))
+               (when image-text
+                 (htm
+                   " &middot; "
+                   (str (new-image-form "/image/new"
+                                        (script-name*)
+                                        :on id
+                                        :button image-text))))
+               (when comments
+                 (htm
+                   " &middot; "
+                   (str (comment-button url))))))))
 
-        ;(unless (eql user-id *userid*)
-        ;  (htm
-        ;    " &middot; "
-        ;    (str (flag-button url))))))))
+      (when (or loves related-items)
+        (htm
+          (:div :class "related activity items"
+            (when loves
+              (str (users-who-love-item-html loves id url)))
+            (when (and loves related-items)
+              (htm (:hr)))
+            (str related-items)))))))
+
+      ;(unless (eql user-id *userid*)
+      ;  (htm
+      ;    " &middot; "
+      ;    (str (flag-button url))))))))
 
 (defun event-activity-item (result &key featuredp sidebar truncate (show-distance nil) time date)
   (let* ((host (first (result-people result)))
@@ -172,7 +179,8 @@
          (item-url (strcat "/events/" item-id)))
 
     (activity-item
-      :id (strcat item-id ":" (or date local-time))
+      :id item-id
+      :event-time (or date local-time)
       :url item-url
       :class (strcat* (when featuredp "featured ") "event")
       :edit (or (eql host *userid*)
@@ -181,7 +189,7 @@
       :deactivate (or (eql host *userid*)
                       group-adminp
                       (getf *user* :admin))
-      :hearts (length (loves item-id))
+      :loves (loves item-id)
       ;:comments (length (comments item-id))
       :content (html
                  (:h3 (:a :href item-url
@@ -245,6 +253,8 @@
          (show-on-item t)
          (show-when t)
          (show-actions t)
+         (reciprocity-to-show (when reciprocity
+                                (display-gratitude-reciprocities result)))
          ; result-people is a list
          ; car of list is person showing gratitude
          ; cdr of list is subjects
@@ -262,47 +272,49 @@
          (item-url (strcat "/gratitude/" item-id)))
 
   (unless (getf data :pending)
-    (html
-      (str
-        (activity-item
-          :id item-id
-          :url item-url
-          :class "gratitude"
-          :time (when show-when
-                  (timestamp (result-time result)
-                             :type "gratitude"))
-          :show-actions show-actions
-          :edit (when (or self adminp (getf *user* :admin)) t)
-          :image-text (when (and (or self adminp)
-                                 (< (length images) 5))
-                        "Add photos")
-          :hearts (length (loves item-id))
-          ;:comments (length (comments item-id))
-          :content (html
-                     (:p (str (person-link user-id))
-                         " expressed "
-                         (:a :href item-url "gratitude")
-                         " for "
-                         (str (name-list (getf data :subjects)
-                                         :maximum-links 100)))
-                     (:p
-                       (str
-                         (if truncate
-                           (ellipsis (getf data :text)
-                                     :length 500
-                                     :see-more item-url)
-                           (html-text (getf data :text)))))
-                     (unless (string= item-url (script-name*))
-                       (str (activity-item-images images item-url "gift"))))
-          :related-items (html
-                           (:div
-                             (when (and (getf data :on) show-on-item)
-                               (str (gratitude-on-item-html
-                                      item-id
-                                      :gratitude-data data)))
-                             (when reciprocity
-                               (str (display-gratitude-reciprocities
-                                      result))))))))))
+    (activity-item
+      :id item-id
+      :url item-url
+      :class "gratitude"
+      :time (when show-when
+              (timestamp (result-time result)
+                         :type "gratitude"))
+      :show-actions show-actions
+      :edit (when (or self adminp (getf *user* :admin)) t)
+      :image-text (when (and (or self adminp)
+                             (< (length images) 5))
+                    "Add photos")
+      :loves (loves item-id)
+      ;:comments (length (comments item-id))
+      :content (html
+                 (:p (str (person-link user-id))
+                     " expressed "
+                     (:a :href item-url "gratitude")
+                     " for "
+                     (str (name-list (getf data :subjects)
+                                     :maximum-links 100)))
+                 (:p
+                   (str
+                     (if truncate
+                       (ellipsis (getf data :text)
+                                 :length 500
+                                 :see-more item-url)
+                       (html-text (getf data :text)))))
+                 (unless (string= item-url (script-name*))
+                   (str (activity-item-images images item-url "gift"))))
+      :related-items (when (and reciprocity (getf data :on) show-on-item)
+                       (html
+                         (when (and (getf data :on) show-on-item)
+                           (str (gratitude-on-item-html
+                                  item-id
+                                  :gratitude-data data)))
+                         (when (and reciprocity
+                                    (getf data :on)
+                                    reciprocity-to-show
+                                    show-on-item)
+                           (htm (:hr)))
+                         (awhen reciprocity-to-show
+                           (str it)))))))
 
 
 (defun gift-activity-item (result)
@@ -313,7 +325,7 @@
                    :url (strcat "/gifts/" item-id)
                    :class "gratitude"
                    :time (timestamp (result-time result) :type "gift")
-                   :hearts (length (loves item-id))
+                   :loves (loves item-id)
                    :delete (when (or (eql user-id *userid*) (getf *user* :admin)) t)
                    :comments (length (comments item-id))
                    :content (html
@@ -355,27 +367,29 @@
                         "#expiration"))
         (time (when active-p
                 (if self (getf data :expires) (result-time result))))
-        (timestamp (when (and active-p show-when)
+        (timestamp (if active-p
                      (timestamp
                        time
-                       :class (when (and self
-                                         (< time (+ (get-universal-time)
-                                                    (* 5 +day-in-seconds+))))
+                       :class (when
+                                (or (not active-p)
+                                    (and self
+                                        (< time (+ (get-universal-time)
+                                                   (* 5 +day-in-seconds+)))))
                                 "red")
                        :type type
-                       :verb (unless show-what
-                               (cond
-                                 (self "expires")
-                                 ((getf data :refreshed) "refreshed")
-                                 ((getf data :edited) "edited")
-                                 ((string= type "request") "requested")
-                                 ((string= type "offer") "offered")))))))
+                       :verb (if self
+                               "expires"
+                               (when (and show-what
+                                          (not show-when))
+                                 (cond
+                                   ((getf data :refreshed) "refreshed")
+                                   ((getf data :edited) "edited")
+                                   ((string= type "request") "requested")
+                                   ((string= type "offer") "offered")))))
+                     (html (:h3 :class "timestamp red" "inactive")))))
 
   (when self
-    (asetf timestamp (html (:a :href renew-link
-                             (if it
-                               (str it)
-                               (htm (:h3 :class "timestamp red" "inactive")))))))
+    (asetf timestamp (html (:a :href renew-link (str it)))))
 
   (activity-item :id item-id
                  :url item-url
@@ -425,7 +439,7 @@
                  :reply (unless (or self
                                     (not (getf data :active)))
                           t)
-                 :hearts (length (loves item-id))
+                 :loves (loves item-id)
                  :matchmaker (or (getf *user* :matchmaker)
                                  (and (or group-adminp self)
                                     (string= type "request")))
@@ -578,26 +592,32 @@
                        (htm
                          (:a :style "float: right;" :href (strcat url "?p=" (+ page 1)) "next page >"))))))))))))
 
-(defun local-activity-items (&key (page 0) (count 40) (url "/home") show-tags)
-  (let ((distance (user-distance)))
-    (if (= distance 0)
-      (activity-items (sort (remove-private-items
-                              (copy-list *recent-activity-index*))
-                            #'>
-                            :key #'result-time)
-                      :page page
-                      :count count
-                      :reciprocity t
-                      :url url
-                      :show-tags show-tags)
-      (let ((items (sort (geo-index-query *activity-geo-index*
-                                          *latitude*
-                                          *longitude*
-                                          distance)
-                       #'< :key #'activity-rank)))
-        (activity-items items :page page
-                              :count count
-                              :reciprocity t
-                              :url url
-                              :show-tags show-tags)))))
+(defun local-activity-items
+  (&key (page 0)
+        (count 40)
+        (url "/home")
+        show-tags
+   &aux (distance (user-distance))
+        (sitewide (eql distance 0)))
+
+  (let* ((local-items (remove-private-items
+                        (if sitewide
+                          (copy-list *recent-activity-index*)
+                          (geo-index-query *activity-geo-index*
+                                         *latitude*
+                                         *longitude*
+                                         distance))))
+         (ranked-items (mapcar #'(lambda (result)
+                                   (cons result
+                                         (activity-rank
+                                           result
+                                           :sitewide (eql distance 0))))
+                               local-items))
+         (items (mapcar #'car (sort ranked-items #'< :key #'cdr))))
+
+    (activity-items items :page page
+                          :count count
+                          :reciprocity t
+                          :url url
+                          :show-tags show-tags)))
 

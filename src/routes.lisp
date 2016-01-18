@@ -64,6 +64,9 @@
     :get get-login
     :post post-login)
 
+  ("/love/<int:id>"
+    :post post-love)
+
   ("/reset"
     :get get-reset-password
     :post post-reset-password)

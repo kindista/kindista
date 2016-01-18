@@ -784,7 +784,7 @@
               ") "))))
 
        (:div :class "actions"
-        (str (activity-icons :hearts (length (loves offer-id))
+        (str (activity-icons :hearts (length (getf offer :loved-by))
                              :url url))
         (:form :method "post" :action url
          (:input :type "hidden" :name "next" :value (request-uri*))
