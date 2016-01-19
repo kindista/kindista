@@ -232,8 +232,7 @@
         (contact-multiplier 1)
         (distance-multiplier 1)
         (sitewide)
-   &aux (data (db (result-id result)))
-        (age (- (get-universal-time)
+   &aux (age (- (get-universal-time)
                 (or (result-time result) 0)))
         (contacts (getf user :following))
         (lat (or (getf user :lat) *latitude*))
@@ -258,7 +257,7 @@
         (contact-component (if contact-p
                              (* 100000 contact-multiplier)
                              0))
-        (love-component (* (length (getf data :loved-by)) 100000)))
+        (love-component (* (length (loves (result-id result))) 50000)))
   "Lower scores rank higher."
   (declare (optimize (speed 3) (safety 0) (debug 0)))
 
@@ -275,8 +274,7 @@
 
 (defun event-rank
   (result
-   &aux (data (db (result-id result)))
-        (contacts (getf *user* :following))
+   &aux (contacts (getf *user* :following))
         (currentness (abs (- (or (result-time result) 0)
                              (get-universal-time))))
         (distance (air-distance *latitude*
@@ -289,7 +287,7 @@
                            1
                            distance)
                        4)))
-            (* (length (getf data :loved-by)) 50000))))
+            (* (length (loves (result-id result))) 50000))))
 
 (defun inventory-rank
   (alist)
@@ -299,7 +297,7 @@
            (let* ((result (car item))
                   (data (db (result-id result)))
                   (age (- (get-universal-time) (or (result-time result) 0)))
-                  (loves (max 1 (length (getf data :loved-by)))))
+                  (loves (max 1 (length (loves (result-id result))))))
              (+ (* (/ 50 (log (+ (/ age 86400) 6)))
                    (expt loves 0.3))
                 (if (find :title (cdr item)) 25 0)
