@@ -2733,10 +2733,6 @@ div.card.inventory-item {
  font-weight: bold;
 }
 
-.item p a:not(.yes):not(.blue) {
- font-weight: normal;
-}
-
 img.bigavatar {
  -moz-transform:rotate(-2deg);
  -webkit-transform:rotate(-2deg);
