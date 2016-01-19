@@ -48,7 +48,7 @@
          (love id))
         ((post-parameter "unlove")
          (unlove id))))
-    (see-other (referer))))
+    (see-other (or (post-parameter-string "next") (referer)))))
 
 (defun loves (item-id)
   (gethash item-id *love-index*))
