@@ -93,7 +93,7 @@
              (str (activity-icons :hearts (length loves) :comments comments :url url))
              (:form :method "post" :action (strcat "/love/" id)
                (:input :type "hidden" :name "next" :value next)
-               (if (find id (loves *userid*))
+               (if (find id (getf *user* :loves))
                  (htm (:input :type "submit" :name "unlove" :value "Loved"))
                  (htm (:input :type "submit" :name "love" :value "Love"))))
              (:form :method "post" :action url
