@@ -257,7 +257,7 @@
         (contact-component (if contact-p
                              (* 100000 contact-multiplier)
                              0))
-        (love-component (* (length (loves (result-id result))) 50000)))
+        (love-component (* (length (loves (result-id result))) 80000)))
   "Lower scores rank higher."
   (declare (optimize (speed 3) (safety 0) (debug 0)))
 
@@ -287,7 +287,7 @@
                            1
                            distance)
                        4)))
-            (* (length (loves (result-id result))) 50000))))
+            (* (length (loves (result-id result))) 80000))))
 
 (defun inventory-rank
   (alist)
@@ -295,7 +295,6 @@
 
   (flet ((inventory-item-rank (item)
            (let* ((result (car item))
-                  (data (db (result-id result)))
                   (age (- (get-universal-time) (or (result-time result) 0)))
                   (loves (max 1 (length (loves (result-id result))))))
              (+ (* (/ 50 (log (+ (/ age 86400) 6)))
