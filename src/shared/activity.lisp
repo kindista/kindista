@@ -34,7 +34,7 @@
       (:input :type "submit" :value "Flag"))))
 
 
-(defun activity-icons (&key url hearts comments)
+(defun activity-icons (&key url hearts)
   (html
     (:a :class "icons" :href url
       (when (and hearts (> hearts 0))
@@ -42,11 +42,12 @@
           (:img :alt "love:" :src "/media/icons/heart16.png") 
           ;(:span :class "unicon" "♥ ")
           (:span (str hearts)))) 
-      (when (and comments (> comments 0))
-        (htm
-          (:img :alt "comments:" :src "/media/icons/comment16.png") 
-          ;(:span :class "unicon" " ✎ ")
-          (:span (str comments)))))))
+     ;(when (and comments (> comments 0))
+     ;  (htm
+     ;    (:img :alt "comments:" :src "/media/icons/comment16.png") 
+     ;    ;(:span :class "unicon" " ✎ ")
+     ;    (:span (str comments))))
+      )))
 
 (defun activity-item
   (&key id url share-url content time primary-action loves comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t) event-time

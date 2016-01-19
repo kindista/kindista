@@ -88,6 +88,7 @@
                       (db id :name))))
   (html
     (:div :class "love-list"
+      (str (activity-icons :hearts (length userids) :url item-url))
       (str (format nil
                    *english-list*
                    (remove nil
