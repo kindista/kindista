@@ -257,7 +257,7 @@
         (contact-component (if contact-p
                              (* 100000 contact-multiplier)
                              0))
-        (love-component (* (length (loves (result-id result))) 80000)))
+        (love-component (* (length (loves (result-id result))) 60000)))
   "Lower scores rank higher."
   (declare (optimize (speed 3) (safety 0) (debug 0)))
 
@@ -287,7 +287,7 @@
                            1
                            distance)
                        4)))
-            (* (length (loves (result-id result))) 80000))))
+            (* (length (loves (result-id result))) 60000))))
 
 (defun inventory-rank
   (alist)
