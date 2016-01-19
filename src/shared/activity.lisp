@@ -91,7 +91,6 @@
                  ;; firefox hover/underline bug
                  (:div (str (getf it :text)))))))
            (:div :class "actions"
-             (str (activity-icons :hearts (length loves) :comments comments :url url))
              (:form :method "post" :action (strcat "/love/" id)
                (:input :type "hidden" :name "next" :value next)
                (if (find id (getf *user* :loves))
