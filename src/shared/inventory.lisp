@@ -283,7 +283,9 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
-         (by-id (getf data :by-id))
+         (now (get-universal-time))
+         (by-id (getf data :by))
+         (by-group-p (eq (db by-id :type) :group))
          (type-index (case type
                        (:offer *offer-index*)
                        (:request *request-index*)))
@@ -350,6 +352,11 @@
                        it
                        :test #'equal)))
 
+      (dolist (transaction-id (gethash id *inventory-transactions-index*))
+        (modify-transaction-log transaction-id
+                                :deactivated
+                                :party (cons *userid* (when by-group-p by-id))))
+
       (unless (eq type :event)
         (with-locked-hash-table (*profile-activity-index*)
           (asetf (gethash by-id *profile-activity-index*)
@@ -358,7 +365,9 @@
         (with-mutex (*recent-activity-mutex*)
           (asetf *recent-activity-index* (remove id it :key #'result-id)))))
 
-    (modify-db id :active nil :violates-terms violates-terms)))
+    (modify-db id :active nil
+                  :deactivated now
+                  :violates-terms violates-terms)))
 
 (defun delete-pending-inventory-item (id)
   (let ((data (db id))

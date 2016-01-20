@@ -70,6 +70,7 @@
 (defindex *groups-geo-index*)
 (defindex *invited-index*)
 (defindex *invitation-index* :test 'equalp)
+(defindex *inventory-transactions-index*)
 (defindex *love-index*)
 (defindex *metaphone-index* :test 'equalp)
 (defindex *pending-person-items-index*)

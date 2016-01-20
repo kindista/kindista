@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -139,6 +139,8 @@
   (list :completed completed :pending pending))
 
 (defun index-transaction (id data)
+  (with-locked-hash-table (*inventory-transactions-index*)
+    (pushnew id (gethash (getf data :on) *inventory-transactions-index*)))
   (index-message id data) )
 
 (defun index-pending-transactions ()
@@ -334,6 +336,12 @@
           (:disputed
             (strcat " disputed having received a gift from "
                     (indirect-object :inventory)))
+          (:deactivated
+            (if action-party-id
+              (strcat " deactivated " inventory-descriptor)
+              (strcat "This "
+                      (string-downcase (symbol-name on-type))
+                      " has been deactivated")))
           (:gratitude-posted
             (strcat " posted a statement of gratitude about "
                     inventory-by-name
@@ -373,6 +381,12 @@
           (:disputed
             (strcat " disputed having received a gift from "
                 (indirect-object :transaction)))
+          (:deactivated
+            (if action-party-id
+              (strcat " deactivated " inventory-descriptor)
+              (strcat "This "
+                      (string-downcase (symbol-name on-type))
+                      " has been deactivated")))
           (:gratitude-posted
             (strcat " posted a statement of gratitude about "
                     (indirect-object :transaction)
@@ -876,6 +890,29 @@
           (permission-denied))
       (not-found)))))
 
+(defun modify-transaction-log
+  (transaction-id
+   new-action
+   &key (transaction (db transaction-id))
+        party
+        (message (gethash transaction-id *db-messages*))
+   &aux (time (get-universal-time))
+        (people (getf transaction :people))
+        (mailbox (assoc-assoc *userid* people))
+        (party (unless party (car mailbox)))
+        (people-list (all-message-people message))
+        (folders (list :inbox people-list
+                       :unread (remove *userid*
+                                       people-list)
+                       :compost nil
+                       :deleted nil))
+        (log-event (list :time time
+                         :party party
+                         :action new-action)))
+  (index-message
+    transaction-id
+    (amodify-db transaction-id :message-folders folders
+                               :log (cons log-event it))))
 
 (defun post-transaction (id)
   (require-active-user
@@ -888,7 +925,6 @@
                                  (post-parameter-string "text")))
                (mailbox (assoc-assoc *userid* people))
                (party (car mailbox))
-               (people-list (all-message-people message))
                (participants (getf transaction :participants))
                (action-string (post-parameter-string "transaction-action"))
                (action)
@@ -918,18 +954,14 @@
           (if party
             (flet ((modify-log (new-action)
                      (let* ((time (get-universal-time))
-                            (folders (list :inbox people-list
-                                           :unread (remove *userid*
-                                                           people-list)
-                                           :compost nil
-                                           :deleted nil))
-                            (log-event (list :time time
-                                             :party party
-                                             :action new-action)))
-                       (index-message
-                         id
-                         (amodify-db id :message-folders folders
-                                     :log (append it (list log-event))))
+                             (log-event (list :time time
+                                              :party party
+                                              :action new-action)))
+                       (modify-transaction-log id
+                                               new-action
+                                               :transaction transaction
+                                               :message message)
+
                        (unless (or (eq action :received) message-text)
                          (flash "Your action has been recorded and the other party will be notified.")
                          (contact-opt-out-flash participants
