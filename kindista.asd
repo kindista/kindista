@@ -92,6 +92,7 @@
                                            (:file "home")
                                            (:file "legacy")
                                            (:file "login")
+                                           (:file "locations")
                                            (:file "love")
                                            (:file "messages")
                                            (:file "conversations")
