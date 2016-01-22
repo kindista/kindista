@@ -1,0 +1,14 @@
+{
+  "short_name": "Kindista",
+  "name": "Kindista Web Application",
+  "icons": [
+    {
+      "src": "media/icons/kindista_favicon_144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/home",
+  "display": "standalone",
+  "orientation": "any"
+}

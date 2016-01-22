@@ -542,7 +542,9 @@
         (:link :href "//fonts.googleapis.com/css?family=Varela+Round"
                :rel "stylesheet"
                :type "text/css")
+        (:link :rel "manifest" :href "/manifest.json") ;link for phone integration
         (:script :type "text/javascript" :src "/kindista.js")
+        (:script :type "text/javascript" :src "/service-worker-registration.js")
         ;(str "<!--[if lt IE 9]>")
         ;(:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
         ;(str "<![endif]-->")
