@@ -1,7 +1,7 @@
 var CACHE_NAME = 'kindista-cache-v1';
 // the files we want to cache
 var urlsToCache = [ 
-    '/home',
+    '/error.html',
 ];
 
 // set the callback for the install step
