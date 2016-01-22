@@ -1,4 +1,4 @@
-var CACHE_NAME = 'kindista-cache-v1'
+var CACHE_NAME = 'kindista-cache-v1';
 // the files we want to cache
 var urlsToCache = [ 
     '/home',
