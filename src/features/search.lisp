@@ -767,14 +767,6 @@
                             text))
         #'< :key #'event-rank))))
 
-;(defun person-search-rank (id &key (userid *userid*))
-;  (let* ((mutuals (mutual-connections id userid))
-;         (user (db userid))
-;         (contact (member id (getf user :following)))
-;         (distance (person-distance (db id) user)))
-;
-;    (+ mutuals ) ) )
-
 (defun search-people (query &key (userid *userid*))
   (let* ((aliases (remove-if-not #'alias-person-p (metaphone-index-query query)))
          (user (db userid))

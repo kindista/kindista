@@ -138,8 +138,9 @@
                (deg->rad lat2)
                (deg->rad long2))))
 
-(defun person-distance (one &optional (two *user*))
-  (air-distance (getf one :lat) (getf one :long) (getf two :lat) (getf two :long)))
+(defun location-distance (result-one &optional (result-two (gethash *userid* *db-results*)))
+  (air-distance (result-latitude result-one) (result-longitude result-one)
+                (result-latitude result-two) (result-longitude result-two)))
 
 
 (declaim (ftype (function (float float float float)

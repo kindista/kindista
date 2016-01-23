@@ -62,6 +62,11 @@
           (scan +number-scanner+ int?))
      (parse-integer int?))))
 
+(defun round-to (number precision &optional (func #'round))
+  (let ((div (expt 10 precision)))
+    (coerce (/ (funcall func (* number div)) div)
+            'double-float)))
+
 (defun progress-bar (percent)
   (html
     (:div :class "progress-bar"

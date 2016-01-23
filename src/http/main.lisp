@@ -256,6 +256,7 @@
   `(with-token
     (let* ((*userid* (or *userid* (token-userid *token*)))
            (*user* (or *user* (db *userid*)))
+           (*user-result* (gethash *userid* *db-results*))
            (*user-group-privileges* (or *user-group-privileges*
                                          (gethash *userid* *group-privileges-index*)))
            (*user-mailbox* (or *user-mailbox*
@@ -263,8 +264,8 @@
        ,@body)))
 
 (defmacro with-location (&body body)
-  `(let ((*latitude* (or (getf *user* :lat) 44.028297))
-         (*longitude* (or (getf *user* :long) -123.076065)))
+  `(let ((*latitude* (or (result-latitude *user-result*) 44.028297))
+         (*longitude* (or (result-longitude *user-result*) -123.076065)))
      ,@body))
 
 (defmacro with-donate-info (&body body)
