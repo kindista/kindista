@@ -537,12 +537,17 @@
         (:meta :name "HandheldFriendly" :content "True")
         (:meta :property "og:site_name" :content "Kindista Generosity Network")
         (:meta :property "og:locale" :content "en_US")
+        (:meta :name "apple-mobile-web-app-capable" :content "yes") ;hide safari user interface
         ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
         (:link :rel "stylesheet" :href "/media/style.css")
         (:link :href "//fonts.googleapis.com/css?family=Varela+Round"
                :rel "stylesheet"
                :type "text/css")
-        (:link :rel "manifest" :href "/manifest.json") ;link for phone integration
+        (:link :rel "manifest" :href "/manifest.json") ;link for android integration
+        (:link :rel "apple-touch-icon" :sizes "76x76" :href "/media/icons/kindista_favicon_76.png")
+        (:link :rel "apple-touch-icon" :sizes "120x120" :href "/media/icons/kindista_favicon_120.png")
+        (:link :rel "apple-touch-icon" :sizes "152x152" :href "/media/icons/kindista_favicon_152.png")
+        (:link :rel "apple-touch-icon" :sizes "180x180" :href  "/media/icons/kindista_favicon_180.png")
         (:script :type "text/javascript" :src "/kindista.js")
         (:script :type "text/javascript" :src "/service-worker-registration.js")
         ;(str "<!--[if lt IE 9]>")
