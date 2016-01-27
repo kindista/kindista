@@ -1,5 +1,3 @@
-## loves
-  - #links
 ## web apps
   - iphone - https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
   - android

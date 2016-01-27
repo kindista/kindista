@@ -575,13 +575,13 @@
                                                       duplicate-id
                                                       (getf old-data
                                                             :participants)))
-                          :message-folders (subst id-to-keep
-                                                  duplicate-id
-                                                  (getf old-data
-                                                        :message-folders))
-                          :people (subst id-to-keep
-                                         duplicate-id
-                                         (getf old-data :people)))))
+                           :message-folders (subst id-to-keep
+                                                   duplicate-id
+                                                   (getf old-data
+                                                         :message-folders))
+                           :people (subst id-to-keep
+                                          duplicate-id
+                                          (getf old-data :people)))))
              (when (eq (message-type message) :transaction)
                (asetf new-message-data
                       (append (list :log (subst id-to-keep

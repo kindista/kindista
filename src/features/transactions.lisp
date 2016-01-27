@@ -17,13 +17,6 @@
 
 (in-package :kindista)
 
-(defun migrate-to-new-transaction-format ()
-  (dolist (id (hash-table-keys *db*))
-    (let* ((data (db id))
-           (type (getf data :type)))
-      (when (eq type :reply)
-        (modify-db id :type :transaction)))))
-
 (defun new-transaction-action-notice-handler ()
   (let* ((log-event (getf (cddddr *notice*) :log-event))
          (text (getf (cddddr *notice*) :text)))
@@ -113,14 +106,17 @@
                   &aux (pending-gratitude-p))
 
   (loop for event in (getf data :log)
-        when (or (eq (getf event :action) :gave)
-                 (eq (getf event :action) :received))
-        do (setf pending-gratitude-p t)
-        when (or (eq (getf event :action) :withheld)
-                 (eq (getf event :action) :decline))
-        do (setf pending-gratitude-p nil)
         when (eq (getf event :action) :gratitude-posted)
         do (progn (setf pending-gratitude-p nil)
+                  (loop-finish))
+        when (or (eq (getf event :action) :withheld)
+                 (eq (getf event :action) :disputed)
+                 (eq (getf event :action) :decline))
+        do (progn (setf pending-gratitude-p nil)
+                  (loop-finish))
+        when (or (eq (getf event :action) :gave)
+                 (eq (getf event :action) :received))
+        do (progn (setf pending-gratitude-p t)
                   (loop-finish)))
 
   pending-gratitude-p)
@@ -566,7 +562,7 @@
                  (t (html
                       (:span :class "none" "deleted offer or request")))))))
         (offer-p (eql on-type :offer))
-        (most-recent-log-event (car (last (getf data :log))))
+        (most-recent-log-event (first (getf data :log)))
         (status (getf most-recent-log-event :action)))
 
   (standard-page
@@ -668,6 +664,24 @@
     :selected "messages"
     :class "transaction"
     ))
+
+(defun fix-transaction-logs (&aux (count 0) example)
+  (dolist (id (hash-table-keys *db*))
+    (let* ((data (db id))
+           (type (getf data :type))
+           (log (getf data :log)))
+      (when (and (eql type :transaction)
+                 log
+                 (not (apply #'>= (mapcar (lambda (event) (getf event :time))
+                                          log))))
+        (modify-db id :log (sort log
+                                 #'>
+                                 :key (lambda (event) (getf event :time))))
+        (incf count)
+        (setf example id)
+        )))
+  (values count example)
+  )
 
 (defun transaction-options-for-user
   (transaction-id

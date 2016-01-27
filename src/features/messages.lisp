@@ -204,7 +204,7 @@
                  (:transaction
                    (apply #'max
                           (remove nil
-                                 (list (getf (car (last (getf data :log)))
+                                 (list (getf (first (getf data :log))
                                              :time)
                                        (getf data :created)
                                        (db (getf data :latest-comment)
@@ -581,10 +581,9 @@
    &aux (id (message-id message))
         (transaction (db id))
         (latest-comment (message-latest-comment message))
-        (latest-transaction-action (car (last (getf transaction :log))))
+        (latest-transaction-action (first (getf transaction :log)))
         (latest-gratitude-entry (find :gratitude-posted
                                   (getf transaction :log)
-                                  :from-end t
                                   :key #'(lambda (log-entry)
                                            (getf log-entry :action))))
         (comment-data (db latest-comment))

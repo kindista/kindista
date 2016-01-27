@@ -929,14 +929,14 @@
 
                      (when transaction-id
                        (amodify-db transaction-id
-                                   :log (append
-                                          it
-                                          (list (list :time time
-                                                      :party (if adminp
-                                                               (cons *userid* groupid)
-                                                               (list *userid*))
-                                                      :action :gratitude-posted
-                                                      :comment new-id)))))))
+                                   :log (cons (list :time time
+                                                    :party (if adminp
+                                                             (cons *userid*
+                                                                   groupid)
+                                                             (list *userid*))
+                                                    :action :gratitude-posted
+                                                    :comment new-id)
+                                              it)))))
 
                  (flash (if inactive-subject
                           (s+ (getf inactive-subject :name)
