@@ -674,7 +674,12 @@
    &key (userid *userid*)
         (transaction (db transaction-id))
    &aux (transaction-mailboxes (mapcar #'car (getf transaction :people)))
-        (log (getf transaction :log))
+        ;; some transactions in the database ordered logs because of a change
+        ;; introduced in commit: 9f6c08e89768862774b8dc5ba79f8af52189f468
+        ;; until that is fixed, we need to sort the log here
+        (log (sort (getf transaction :log)
+                   #'>
+                   :key #'(lambda (event) (getf event :time))))
         (inventory-item (db (getf transaction :on)))
         (inventory-type (getf inventory-item :type))
         (inventory-by (getf inventory-item :by))
@@ -699,15 +704,13 @@
                              :key #'(lambda (event)
                                        (if (eql representing userid)
                                          (car (getf event :party))
-                                         (cdr (getf event :party))))
-                             :from-end t))
+                                         (cdr (getf event :party))))))
         (other-party-event (find-if-not
                              #'(lambda (event)
-                                 (if representing
-                                   (eql representing (cdr (getf event :party)))
-                                   (eql userid (car (getf event :party)))))
-                             log
-                             :from-end t))
+                                 (if (eql representing userid)
+                                   (eql userid (car (getf event :party)))
+                                   (eql representing (cdr (getf event :party)))))
+                             log))
         (options ()))
 
   "Returns (1) a list of actions the user can take on a given transaction id and (2) the entity the user is representing (i.e. *userid* or a groupid)"
