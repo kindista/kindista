@@ -228,15 +228,16 @@
                      (:td (:strong "Place: "))
                      (:td (str (getf data :address))
                       (when (and show-distance (not sidebar))
-                        (htm (:small
-                          " (within "
-                          (str
-                            (distance-string
-                              (air-distance (result-latitude result)
-                                            (result-longitude result)
-                                            *latitude*
-                                            *longitude*)))
-                        ")"))))))
+                        (with-location
+                          (htm (:small
+                            " (within "
+                            (str
+                              (distance-string
+                                (air-distance (result-latitude result)
+                                              (result-longitude result)
+                                              *latitude*
+                                              *longitude*)))
+                          ")")))))))
 
                  (:p
                    (str
