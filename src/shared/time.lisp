@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -17,6 +17,7 @@
 
 (in-package :kindista)
 
+(define-constant +year-in-seconds+ 31557600)
 (define-constant +week-in-seconds+ 604800)
 (define-constant +day-in-seconds+ 86400)
 (define-constant +day-names+
@@ -43,21 +44,47 @@
 
 (defun humanize-universal-time (then)
   (let ((delta (- (get-universal-time) then)))
-    (cond
-      ((< delta 60)
-       "just now")
-      ((< delta 120)
-       "a minute ago")
-      ((< delta 3300)
-       (format nil "~a minutes ago" (round (/ delta 60))))
-      ((< delta 5400)
-       "about an hour ago")
-      ((< delta 129600)
-       (format nil "~a hours ago" (round (/ delta 3600))))
-      ((< delta 4320000)
-       (format nil "~a days ago" (round (/ delta 86400))))
-      (t
-       (format nil "~a months ago" (round (/ delta 2492000)))))))
+    (if (< delta 0)
+      (progn
+        (asetf delta (abs it))
+        (cond
+          ((< delta 60)
+           "in less than a minute")
+          ((< delta 120)
+           "in about a minute")
+          ((< delta 3600)
+           (strcat "in " (floor (/ delta 60)) " minutes"))
+          ((< delta 7200)
+           "in about an hour")
+          ((< delta 86400)
+           (strcat "in " (floor (/ delta 3600)) " hours"))
+          ((< delta 172800)
+           "tomorrow")
+          ((< delta 2678400)
+           (strcat "in " (floor (/ delta 86400)) " days"))
+          ((< delta 5270400)
+           "next month")
+          ((< delta 31536000)
+           (strcat "in " (floor (/ delta 2628000)) " months"))
+          ((< delta 63072000)
+           "next year")
+          (t
+           (strcat "in " (floor (/ delta 31536000)) " years"))))
+      (cond
+        ((< delta 60)
+         "just now")
+        ((< delta 120)
+         "a minute ago")
+        ((< delta 3300)
+         (format nil "~a minutes ago" (round (/ delta 60))))
+        ((< delta 5400)
+         "about an hour ago")
+        ((< delta 129600)
+         (format nil "~a hours ago" (round (/ delta 3600))))
+        ((< delta 4320000)
+         (format nil "~a days ago" (round (/ delta 86400))))
+        (t
+         (format nil "~a months ago" (round (/ delta 2492000))))))))
 
 (defun humanize-future-time (time)
   (let* ((now (get-universal-time))

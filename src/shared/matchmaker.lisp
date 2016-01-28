@@ -89,17 +89,18 @@
             (try-again "You need to enter your location on your <a href=\"/settings\">settings page</a> before you can create or edit matchmaker notifications."))
 
           ((post-parameter "edit-original")
-           (enter-inventory-tags :page-title "Edit your request"
-                                 :action base-url
-                                 :item-title (getf item :title)
-                                 :details (getf item :details)
-                                 :tags (getf item :tags)
-                                 :groups-selected (getf item :privacy)
-                                 :restrictedp (getf item :privacy)
-                                 :next match-url
-                                 :existingp t
-                                 :button-text "Save request"
-                                 :selected "requests"))
+           (enter-inventory-item-details
+             :page-title "Edit your request"
+             :action base-url
+             :item-title (getf item :title)
+             :details (getf item :details)
+             :tags (getf item :tags)
+             :groups-selected (getf item :privacy)
+             :restrictedp (getf item :privacy)
+             :next match-url
+             :existingp t
+             :button-text "Save request"
+             :selected "requests"))
 
           ((nor any-terms all-terms)
            ;; very important that all matchmakers have at least one of these.
@@ -642,7 +643,7 @@
   (html
     (:div
       (:div :class (s+ (when (and featured (not mine)) "featured ")
-                       "match-header")
+                       "header")
        (if mine
          (htm
            (:p "...matches a "
@@ -652,7 +653,7 @@
          (when (or offer-id featured)
            (htm
              (when featured
-               (htm (:h3 "Will you respond to this request?...")))
+               (htm (:h2 "Will you respond to this request?...")))
 
              (when offer-id
                (htm
@@ -665,7 +666,7 @@
                    :name "hide-match"
                    :class "red simple-link"
                    :value offer-id
-                   "hide this request"))))))))
+                   "No thanks!"))))))))
 
       (:div :class "match-details"
         (awhen (getf request :title)
@@ -740,7 +741,7 @@
   (html
     (:div
       (:div :class (s+ (when (and featured (not mine)) "featured ")
-                       "match-header")
+                       "header")
        (if mine
          (htm
            (:p "...matches an "
@@ -748,7 +749,7 @@
             " by "
             (str (person-link by))))
          (htm
-           (when featured (htm (:h3 "Featured offer")))
+           (when featured (htm (:h2 "Featured offer")))
 
            (:form :method "post"
             :action (strcat "/requests/" request-id "/matchmaker")
@@ -757,7 +758,7 @@
              :name "hide-match"
              :class "red simple-link"
              :value offer-id
-             "hide this offer")))))
+             "No thanks!")))))
 
       (:div :class "match-details"
         (str (highlight-relevant-inventory-text offer-id request-id))
@@ -783,7 +784,7 @@
               ") "))))
 
        (:div :class "actions"
-        (str (activity-icons :hearts (length (loves offer-id))
+        (str (activity-icons :hearts (length (getf offer :loved-by))
                              :url url))
         (:form :method "post" :action url
          (:input :type "hidden" :name "next" :value (request-uri*))

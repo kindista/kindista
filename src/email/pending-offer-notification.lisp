@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -22,7 +22,8 @@
                      "Kindista <noreply@kindista.org>"
                      "feedback@kindista.org"
                      "New Kindista Account to Review" 
-                     (pending-offer-notification-email-text id)))
+                     (pending-offer-notification-email-text id)
+                     :html-message (pending-offer-notification-email-html id)))
 
 (defun pending-offer-notification-email-text (id)
 (let* ((offer (db id))
@@ -41,4 +42,27 @@
 #\linefeed #\linefeed
 "Please review this user's activity as soon as possible and approve their Kindista membership if appropriate.")))
 
+(defun pending-offer-notification-email-html
+  (id
+   &aux (offer (db id))
+        (userid (getf offer :by))
+        (user (db userid)))
+  (html-email-base
+    (html
+      (:p :style *style-p*
+       "New Kindista user, "
+       (str (getf user :name))
+       " (ID:"
+       userid
+       "), posted a new offer." )
 
+      (:h2 (str (getf offer :title)))
+
+      (:p :style *style-p*
+       (str (getf offer :details)))
+
+      (str (email-action-button (strcat *email-url* "admin/pending-accounts")
+                                "Review Account for Approval"))
+
+      (:p :style *style-p*
+ "Please review this user's activity as soon as possible and approve their Kindista membership if appropriate."))))

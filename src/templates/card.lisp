@@ -17,9 +17,9 @@
 
 (in-package :kindista)
 
-(defun card (&rest contents)
+(defun card (id &rest contents)
   (html
-    (:div :class "card"
+    (:div :id id :class "card"
       (dolist (item contents)
         (str item)))))
 
@@ -53,52 +53,57 @@
                        (when (> (length mutuals) 1)
                          (htm "s"))))))))))
 
-(defun feedback-card (id)
-  (let* ((data (db id))
-         (url (strcat "/feedback/" id))
-         (by (getf data :by))
-         (bydata (db by)))
-    (card
-      (html
-        (str (h3-timestamp (getf data :created)))
-        (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
-        (:p (str (regex-replace-all "\\n" (getf data :text) "<br>")))
-        (:div :class "actions"
-          (str (activity-icons :hearts (length (loves id)) :url url))
-          (:form :method "post" :action url
-            (:input :type "hidden" :name "next" :value (script-name*))
-            (if (member *userid* (gethash id *love-index*))
-              (htm (:input :type "submit" :name "unlove" :value "Loved"))
-              (htm (:input :type "submit" :name "love" :value "Love")))   
-            (when (getf *user* :admin)
-               (htm
-                " &middot; "  
-                (:input :type "submit" :name "reply" :value "Reply")))
-            (when (eql *userid* by)
-              (htm
-                " &middot; "  
-                (:input :type "submit" :name "delete" :value "Delete")))))
+(defun feedback-card
+  (id
+   &aux (data (db id))
+        (url (strcat "/feedback/" id))
+        (by (getf data :by))
+        (bydata (db by))
+        (loves (loves id)))
+  (html
+    (:div :id id :class "feedback card"
+      (str (h3-timestamp (getf data :created)))
+      (:p (:a :href (s+ "/people/" (username-or-id by)) (str (getf bydata :name)))) 
+      (:p (str (regex-replace-all "\\n" (getf data :text) "<br>")))
+      (:div :class "actions"
+        (str (activity-icons :hearts (length loves) :url url))
+        (:form :method "post" :action (strcat "/love/" id)
+          (:input :type "hidden" :name "next" :value (script-name*))
+          (if (member id (loves *userid*))
+            (htm (:input :type "submit" :name "unlove" :value "Loved"))
+            (htm (:input :type "submit" :name "love" :value "Love")))
+          (when (getf *user* :admin)
+             (htm
+              " &middot; "
+              (:input :type "submit" :name "reply" :value "Reply")))
+          (when (eql *userid* by)
+            (htm
+              " &middot; "
+              (:input :type "submit" :name "delete" :value "Delete")))))
+        (when loves
+          (htm (:div :class "related activity items"
+                 (str (users-who-love-item-html loves id url)))))
 
-          (:div :class "comments"
-            (dolist (comment-id (gethash id *comment-index*))
-              (str (comment-card comment-id)))
+        (:div :class "comments"
+          (dolist (comment-id (gethash id *comment-index*))
+            (str (comment-card comment-id)))
 
-            (when (getf *user* :admin)
-              (htm
-                (:div :class "item reply"
-                  (:h4 "post a comment") 
-                  (:form :method "post" :action (strcat "/feedback/" id)
-                    (:table :class "post"
-                      (:tr
-                        (:td (:textarea :cols "150" :rows "4" :name "text"))
-                        (:td
-                          (:button :class "yes" :type "submit" :class "submit" "Reply")))))))))))))
+          (when (getf *user* :admin)
+            (htm
+              (:div :class "item reply"
+                (:h4 "post a comment")
+                (:form :method "post" :action (strcat "/feedback/" id)
+                  (:table :class "post"
+                    (:tr
+                      (:td (:textarea :cols "150" :rows "4" :name "text"))
+                      (:td
+                        (:button :class "yes" :type "submit" :class "submit" "Reply"))))))))))))
 
 (defun comment-card (comment-id)
   (let* ((data (db comment-id))
          (by (car (getf data :by)))
          (bydata (db by)))
-    (card
+    (card comment-id
       (html
         (str (h3-timestamp (getf data :created)))
         (:p (:a :href (s+ "/people/" (username-or-id by))

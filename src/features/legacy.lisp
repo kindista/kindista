@@ -44,7 +44,6 @@
         (asetf (gethash person *profile-activity-index*)
                (safe-sort (push result it) #'> :key #'result-time))))
 
-
     (unless (< created (- (get-universal-time) 15552000))
       (geo-index-insert *activity-geo-index* result) 
 
@@ -96,7 +95,7 @@
                      (by (getf data :by))
                      (bydata (db by)))
                 (str
-                  (card
+                  (card comment-id
                     (html
                       (str (h3-timestamp (getf data :created)))
                       (when (or (eql (getf data :by) *userid*)
@@ -129,14 +128,6 @@
               (eql *userid* (getf it :giver)))
          (delete-gift id)
          (flash "This gift has been deleted.")
-         (see-other (or (post-parameter "next") (referer))))
-        ((and (post-parameter "love")
-              (eq (getf it :type) :gift))
-         (love id)
-         (see-other (or (post-parameter "next") (referer))))
-        ((and (post-parameter "unlove")
-              (eq (getf it :type) :gift))
-         (unlove id)
          (see-other (or (post-parameter "next") (referer)))))
       (not-found))))
 

@@ -36,10 +36,10 @@
 
 (defun get-offers-new ()
   (require-user (:allow-test-user t)
-    (enter-inventory-tags :page-title "Post an offer"
-                          :action "/offers/new"
-                          :button-text "Post offer"
-                          :selected "offers")))
+    (enter-inventory-item-details :page-title "Post an offer"
+                                  :action "/offers/new"
+                                  :button-text "Post offer"
+                                  :selected "offers")))
 
 (defun post-offers-new ()
   (post-new-inventory-item "offer" :url "/offers/new"))
@@ -49,11 +49,12 @@
     (setf id (parse-integer id)))
   (let* ((offer (db id))
          (by (getf offer :by))
-         (mine (eql *userid* by))
+         (self (eql *userid* by))
          (result (gethash id *db-results*))
          (fb-action-id (when (string= (referer)
-                                          "https://www.facebook.com/")
-                             (get-parameter-integer "post_id")))
+                                      "https://www.facebook.com/")
+                         (get-parameter-integer "post_id")))
+         (action-type (get-parameter-string "action-type"))
          (matching-requests (gethash id *offers-with-matching-requests-index*)))
 
     (when (and fb-action-id
@@ -66,13 +67,31 @@
        (not-found))
 
      ((and (getf offer :violates-terms)
-           (not mine)
+           (not self)
            (not (getf *user* :admin)))
         (item-violates-terms))
 
-     ((and (not mine)
+     ((and (not self)
            (item-view-denied (result-privacy result)))
        (permission-denied))
+
+     (action-type
+      (register-inventory-item-action id
+                                      action-type
+                                      :item offer
+                                      :reply t))
+
+     ((and self (get-parameter "deactivate"))
+      (post-existing-inventory-item "offer"
+                                    :id id
+                                    :deactivate t
+                                    :url (script-name*)))
+
+     ((and self (get-parameter "edit"))
+      (post-existing-inventory-item "offer"
+                                    :id id
+                                    :edit t
+                                    :url (script-name*)))
 
      (t
       (with-location
@@ -85,7 +104,7 @@
                   (:h2 :class "red" "This offer is no longer active.")))
               (str (inventory-activity-item result :show-distance t :show-tags t)))
             (str (item-images-html id))
-            (when (and (or mine (group-admin-p by))
+            (when (and (or self (group-admin-p by))
                        matching-requests)
               (str (item-matches-html id :data offer
                                          :current-matches matching-requests))))

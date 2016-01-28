@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -38,6 +38,8 @@
         *feedback-index* ()
         *global-matchmaker-requests-index* ()
         *invitation-reminder-timer-index* ()
+        *inventory-expiration-timer-index* ()
+        *inventory-refresh-timer-index* ()
         *invite-request-index* ()
         *recent-activity-index* ()
         *requests-without-matchmakers-index* ()
@@ -51,7 +53,6 @@
 (defindex *banned-emails-index* :test 'equalp)
 (defindex *event-geo-index*)
 (defindex *event-stem-index* :test 'equalp)
-;(defindex *recurring-events-index*)
 (defindex *followers-index*)
 (defindex *geo-index-index* :test 'equal)
 (defindex *gratitude-index*)
@@ -69,6 +70,7 @@
 (defindex *groups-geo-index*)
 (defindex *invited-index*)
 (defindex *invitation-index* :test 'equalp)
+(defindex *inventory-transactions-index*)
 (defindex *love-index*)
 (defindex *metaphone-index* :test 'equalp)
 (defindex *pending-person-items-index*)
@@ -78,7 +80,6 @@
 
 (defindex *people-geo-index*)
 (defindex *person-alias-index*)
-(defindex *person-conversation-index*)
 (defindex *person-mailbox-index*)
 (defindex *person-invitation-index*)
 (defindex *person-notification-index*) ;doesn't appear to be used yet
@@ -94,6 +95,7 @@
 (defindex *offer-stem-index* :test 'equalp) ;k=stem v=(:title :details :tags)
 (defindex *offers-with-matching-requests-index*)
 (defindex *username-index* :test 'equalp)
+(defindex *eventname-index* :test 'equalp)
 (defindex *user-tokens-index*)
 
 (defvar *active-people-mutex* (make-mutex))
@@ -110,6 +112,10 @@
 (defvar *global-matchmaker-requests-index* ())
 (defvar *invitation-reminder-timer-mutex* (make-mutex))
 (defvar *invitation-reminder-timer-index* ())
+(defvar *inventory-expiration-timer-mutex* (make-mutex))
+(defvar *inventory-expiration-timer-index* ()) ; (:expire-time :id :expiratoin-notice)
+(defvar *inventory-refresh-timer-mutex* (make-mutex))
+(defvar *inventory-refresh-timer-index* ())
 (defvar *invite-request-mutex* (make-mutex))
 (defvar *invite-request-index* ())
 (defvar *recent-activity-mutex* (make-mutex))

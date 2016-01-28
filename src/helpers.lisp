@@ -55,6 +55,13 @@
      (when (string= ,string (car item))
        (return (cadr item)))))
 
+(defun safe-parse-integer (int?)
+  (cond
+    ((typep int? 'integer) int?)
+    ((and (typep int? 'string)
+          (scan +number-scanner+ int?))
+     (parse-integer int?))))
+
 (defun progress-bar (percent)
   (html
     (:div :class "progress-bar"
@@ -219,57 +226,71 @@
   (remove-if #'item-view-denied items :key #'result-privacy))
 
 (defun activity-rank
-  (item
+  (result
    &key (userid *userid*)
         (user *user*)
         (contact-multiplier 1)
         (distance-multiplier 1)
+        (sitewide)
    &aux (age (- (get-universal-time)
-                (or (result-time item) 0)))
+                (or (result-time result) 0)))
         (contacts (getf user :following))
         (lat (or (getf user :lat) *latitude*))
         (long (or (getf user :long) *longitude*))
-        (contact-p (intersection contacts (result-people item)))
-        (self-offset (if (eql (car (result-people item)) userid)
+        (contact-p (intersection contacts (result-people result)))
+        (self-offset (if (eql (car (result-people result)) userid)
                        ;; don't use "=" because userid can be nil
                        -100000
                        0))
-        (distance (if (and (result-latitude item) (result-longitude item))
-                    (max 0.1
-                         (air-distance lat
-                                       long
-                                       (result-latitude item)
-                                       (result-longitude item)))
-                    5000))
-        (distance-component (/ (* 100000 distance-multiplier)
-                               (log (+ 1.5 (* distance 2)))))
+        (distance (unless sitewide
+                    (if (and (result-latitude result)
+                             (result-longitude result))
+                           (max 0.1
+                                (air-distance lat
+                                              long
+                                              (result-latitude result)
+                                              (result-longitude result)))
+                         5000)))
+        (distance-component (unless sitewide
+                              (/ (* 100000 distance-multiplier)
+                                 (log (+ 1.5 (* distance 2))))))
         (contact-component (if contact-p
                              (* 100000 contact-multiplier)
-                             0)))
+                             0))
+        (love-component (* (length (loves (result-id result))) 60000)))
   "Lower scores rank higher."
+  (declare (optimize (speed 3) (safety 0) (debug 0)))
 
-  (values (round (- age
-                    self-offset
-                    distance-component
-                    contact-component
-                    (* (length (loves (result-id item))) 100000)))
-          distance-component
-          contact-component))
+  (values (round (apply #'- (remove nil
+                                    (list age
+                                          self-offset
+                                          distance-component
+                                          contact-component
+                                          love-component))))
 
-(defun event-rank (item)
-  (let ((contacts (getf *user* :following))
-        (currentness (abs (- (or (result-time item) 0) (get-universal-time))))
-        (distance (air-distance *latitude* *longitude*
-                                (result-latitude item) (result-longitude item))))
-    (round (- currentness
-              (/ 120000
-                 (log (+ (if (intersection contacts (result-people item))
-                             1
-                             distance)
-                         4)))
-              (* (length (loves (result-id item))) 50000)))))
+          (list :distance-component distance-component
+                :contact-component contact-component
+                :love-component love-component)))
 
-(defun inventory-rank (alist)
+(defun event-rank
+  (result
+   &aux (contacts (getf *user* :following))
+        (currentness (abs (- (or (result-time result) 0)
+                             (get-universal-time))))
+        (distance (air-distance *latitude*
+                                *longitude*
+                                (result-latitude result)
+                                (result-longitude result))))
+  (round (- currentness
+            (/ 120000
+               (log (+ (if (intersection contacts (result-people result))
+                           1
+                           distance)
+                       4)))
+            (* (length (loves (result-id result))) 60000))))
+
+(defun inventory-rank
+  (alist)
 "Takes an a-list of ((request . (whether the request had matching terms in the :title, :details, and/or :tags))...)  and returns a ranked list of results"
 
   (flet ((inventory-item-rank (item)
@@ -283,7 +304,12 @@
 
     (mapcar #'car (sort alist #'> :key #'inventory-item-rank))))
 
-(defun refresh-item-time-in-indexes (id &key (time (get-universal-time)))
+(defun refresh-item-time-in-indexes
+  (id
+   &key (time (get-universal-time))
+        ;; get-inventory-refresh is called by server not client
+        server-side-trigger-p)
+
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (item (db id))
@@ -293,12 +319,21 @@
                (:gratitude (getf item :author))))
          (group-adminp (member *userid* (db by :admins))))
 
-    (when (and (or (eql *userid* by) group-adminp)
+    (when (and (or (eql *userid* by) group-adminp server-side-trigger-p)
                (or (eq type :gratitude)
                    (eq type :offer)
                    (eq type :request)))
 
       (setf (result-time result) time)
+
+      (when (or (eql type :offer)
+                (eql type :request))
+        (with-mutex (*inventory-refresh-timer-mutex*)
+          (setf *inventory-refresh-timer-index*
+                (safe-sort (push result *inventory-refresh-timer-index*)
+                           #'<
+                           :key #'result-time))))
+
       (with-locked-hash-table (*profile-activity-index*)
         (asetf (gethash by *profile-activity-index*)
                (safe-sort it #'> :key #'result-time)))
@@ -651,6 +686,9 @@
           "until you post some offers and we have a chance to review your "
           "initial activity.")))
       (:br))))
+
+(defparameter *integrity-reminder*
+  "Please don't be flaky. Clarity and integrity are essential for the wellbeing of our community. Be respectful of others and their time. Honor your word whenever possible. If plans change, notify the other party as soon as possible.")
 
 (defmacro v-align-middle (content)
   `(html

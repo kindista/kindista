@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -17,16 +17,20 @@
 
 (in-package :kindista)
 
-(defun send-account-approval-email (id &key text)
-  (let* ((user (db id))
-         (name (getf user :name))
-         (email (first (getf user :emails))))
-    (cl-smtp:send-email +mail-server+
-                        "Kindista <noreply@kindista.org>"
-                        email
-                        "Your Kindista account has been approved!"
-                        (account-approval-text name :text text)
-                        :html-message (account-approval-html name :text text))))
+(defun send-account-approval-email
+  (id
+   &key text
+   &aux (user (db id))
+        (name (getf user :name))
+        (email (first (getf user :emails)))
+        (message (unless (string= text "")
+                   text)))
+  (cl-smtp:send-email +mail-server+
+                      "Kindista <noreply@kindista.org>"
+                      email
+                      "Your Kindista account has been approved!"
+                      (account-approval-text name :text message)
+                      :html-message (account-approval-html name :text message)))
 
 (defun account-approval-text (name &key text)
 (s+ "Hi " name ",

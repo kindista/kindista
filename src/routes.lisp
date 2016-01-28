@@ -64,6 +64,9 @@
     :get get-login
     :post post-login)
 
+  ("/love/<int:id>"
+    :post post-love)
+
   ("/reset"
     :get get-reset-password
     :post post-reset-password)
@@ -142,7 +145,7 @@
    :get get-events-new
    :post post-event)
 
-  ("/events/<int:id>"
+  ("/events/<id>"
     :get get-event
     :post post-event)
 
@@ -395,6 +398,12 @@
     :get go-home)
 
   ;cron-jobs
+
+  ("/inventory-expiration-reminders"
+   :get get-inventory-expiration-reminders)
+
+  ("/inventory-refresh"
+   :get get-inventory-refresh)
 
   ("/schedule-metric-system-timer"
    :get get-schedule-metric-system-timer)

@@ -32,14 +32,6 @@
    data
    &aux (author-id (getf data :author))
         (author (db author-id))
-        (created (universal-to-timestamp (getf data :created)))
-        (local-dir (with-output-to-string (str)
-                     (format-timestring
-                       str
-                       created
-                       :format '((:year 4) #\/ (:month 2) #\/ (:day 2) #\/))))
-        (hyphenated-title (hyphenate (getf data :title)))
-        (blog-path (s+ *blog-path* local-dir hyphenated-title))
         (result (make-result :latitude (getf author :lat)
                              :longitude (getf author :long)
                              :id id
@@ -57,18 +49,35 @@
                      #'>
                      :key #'result-time)))
 
-  (unless (file-exists-p blog-path)
+  (ensure-blog-file id :data data))
+
+(defun ensure-blog-file
+  (id
+   &key (data (db id))
+        update
+   &aux (created (universal-to-timestamp (getf data :created)))
+        (local-dir (with-output-to-string (str)
+                     (format-timestring
+                       str
+                       created
+                       :format '((:year 4) #\/ (:month 2) #\/ (:day 2) #\/))))
+        (hyphenated-title (hyphenate (getf data :title)))
+        (blog-path (s+ *blog-path* local-dir hyphenated-title)))
+
+  (unless (and (not update) (file-exists-p blog-path))
     (let* ((data-path (s+ *broadcast-path* (getf data :path)))
            (dirname (s+ *blog-path* local-dir))
            (markdown (markdown-file data-path)))
 
-       (ensure-directories-exist dirname)
-       (with-open-file (file blog-path :direction :output
-                                       :if-exists :supersede)
-         (with-standard-io-syntax
-           (let ((*print-pretty* t))
-             (prin1 (list id markdown) file)))))))
+      (ensure-directories-exist dirname)
+      (with-open-file (file blog-path :direction :output
+                                      :if-exists :supersede)
+        (with-standard-io-syntax
+          (let ((*print-pretty* t))
+            (prin1 (list id markdown) file)))))))
 
+(defun update-blog-file (id)
+  (ensure-blog-file id :update t))
 
 (defun blog-post-html
   (result
@@ -161,16 +170,12 @@
     :right (blog-sidebar)))
 
 (defun get-blog-new ()
- (require-admin
-   (standard-page
-     "New Blog Entry"
-     (new-broadcast-html "Submit new blog entry" "/blog/new" :blog-p t))))
+ (require-admin (new-broadcast-html "/blog/new" :blog-p t)))
 
 (defun post-blog-new ()
   (if (or (getf *user* :admin)
           (getf *user* :blogger))
-    (progn (post-broadcast-new)
-           (see-other "/blog"))
+    (post-broadcast-new)
     (permission-denied)))
 
 (defun get-blog-post

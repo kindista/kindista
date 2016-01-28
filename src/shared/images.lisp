@@ -1,4 +1,4 @@
-;;; Copyright 2012-2014 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -35,20 +35,37 @@
    (modify-db image :filename filename)
    (values image)))
 
-(defun new-image-form (action next &key class on)
+(defun new-image-form
+  (action
+   next
+   &key class
+        on
+        (button "Add a photo")
+   &aux (spinner-id (strcat* "spinner" on))
+        (image-form-name (strcat* "imageform" on))
+        (input-id (strcat* "image-input" on)))
   (html
     (:form :method "post"
-           :name "imageform"
-           :class (or class "submit-image item")
+           :name image-form-name
+           :id image-form-name
+           :class (or class "submit-image")
            :action action
            :enctype "multipart/form-data"
       (:input :type "hidden" :name "next" :value next)
       (when on (htm (:input :type "hidden" :name "on" :value on)))
-      (:span "Add a photo:")
+      (:label :for input-id (str button))
       (:input :type "file"
+              :id input-id
               :name "image"
-              :onchange (ps-inline (submit-image-form)))
-      (:div :id "spinner" :class "spinner"))))
+              :onchange;(ps-inline (submit-image-form this))
+                        (escape-for-html
+                          (s+ "javascript:KsubmitImageForm("
+                              "\'"
+                              image-form-name
+                              "\', \'"
+                              spinner-id
+                              "\')")))
+      (:div :id spinner-id :class "spinner"))))
 
 (defun rotate-image (id)
   (let* ((image (db id))
@@ -65,6 +82,11 @@
   (awhen (first (directory (strcat *original-images* id ".*")))
     (delete-file it))
   (remove-from-db id))
+
+(defun add-profile-picture-prompt ()
+  (html
+    (:span :class "text-shadow"
+      (:a :href "/settings/personal#profile-picture" "Add a Profile Picture"))))
 
 (defun get-image-thumbnail (id maxwidth maxheight &key (filetype "jpg"))
   (let* ((image (db id))
@@ -94,10 +116,9 @@
             (copy-file pathname (merge-pathnames *images-path* (strcat imageid "-300-300.jpg"))) 
             (modify-db id :avatar imageid)))))))
 
-(defun item-images-html (item-id &key url)
+(defun item-images-html (item-id)
   (let* ((item (db item-id))
          (images (getf item :images))
-         (url (or url (script-name*)))
          (by (case (getf item :type)
                ((or :offer :request)
                 (getf item :by))
@@ -106,33 +127,29 @@
          (adminp (group-admin-p by)))
     (html
       (:div :class "activity images"
-        (when (and (or (eql by *userid*) adminp)
-                   (< (length images) 6))
-          (htm (:div :class "post-image"
-                 (str (new-image-form "/image/new" url :on item-id)))))
-          (dolist (image-id images)
-            (htm
-              (:div :class "activity-image"
-                (:img :src (get-image-thumbnail image-id 300 300)
-                      :alt (case (getf item :type)
-                             (:offer "offer")
-                             (:request "request")
-                             (:gratitude "gift")))
-                (when (or (eql *userid* by)
-                          adminp
-                          (getf *user* :admin))
-                  (htm
-                    (:form :method "post" :action (strcat "/image/" image-id)
-                      (:input :type "hidden" :name "item-id" :value item-id)
-                      (:input :type "hidden" :name "next" :value (script-name*))
-                      (:button :class "simple-link green"
-                               :type "submit"
-                               :name "rotate-image"
-                               "Rotate")
-                      (:button :class "simple-link red"
-                               :type "submit"
-                               :name "delete-image"
-                               "Delete")))))))))))
+         (dolist (image-id images)
+           (htm
+             (:div :class "activity-image"
+               (:img :src (get-image-thumbnail image-id 300 300)
+                     :alt (case (getf item :type)
+                            (:offer "offer")
+                            (:request "request")
+                            (:gratitude "gift")))
+               (when (or (eql *userid* by)
+                         adminp
+                         (getf *user* :admin))
+                 (htm
+                   (:form :method "post" :action (strcat "/image/" image-id)
+                     (:input :type "hidden" :name "item-id" :value item-id)
+                     (:input :type "hidden" :name "next" :value (script-name*))
+                     (:button :class "simple-link green"
+                              :type "submit"
+                              :name "rotate-image"
+                              "Rotate")
+                     (:button :class "simple-link red"
+                              :type "submit"
+                              :name "delete-image"
+                              "Delete")))))))))))
 
 (defun post-new-image ()
   (require-user (:require-active-user t :allow-test-user t)

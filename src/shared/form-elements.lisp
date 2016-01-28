@@ -126,6 +126,41 @@
                       :selected (when (eql selected (car group)) "")
                       (str (cdr group))" "))))))
 
+(defun expiration-selection-html (selected)
+  (html
+    (:select :id "expiration"
+             :name "expiration"
+             :class (when (string= (get-parameter-string "focus")
+                                       "expiration")
+                          "focus")
+      (dolist (option '("1-week" "1-month" "3-months" "1-year" "3-years"))
+        (htm (:option :value option
+                      :selected (when (equalp selected option) "")
+                      (str (ppcre:regex-replace-all "-" option " "))))))))
+
+(defun expiration-options (&optional current-expiration
+                           &aux (now (get-universal-time))
+                                options
+                                selected)
+  (setf options (list (cons "1-week" (+ now +week-in-seconds+))
+                (cons "1-month" (+ now (* 30 +day-in-seconds+)))
+                (cons "3-months" (+ now (* 13 +week-in-seconds+)))
+                (cons "1-year" (+ now +year-in-seconds+))
+                (cons "3-years" (+ now (* 3 +year-in-seconds+)))))
+  (when current-expiration
+    (setf selected
+          ;;pick first option after current-expiration
+          (dolist (option
+                    (mapcar #'(lambda (option)
+                                      (cons (car option)
+                                            (- (cdr option)
+                                               current-expiration)))
+                                  options))
+            (when (> (cdr option) 0)
+              (return (car option))))))
+
+  (values options selected))
+
 (defun privacy-selection-html (item-type restrictedp my-groups groups-selected &key (class "privacy-selection") onchange)
 "Groups should be an a-list of (groupid . group-name)"
   (let* ((my-group-ids (mapcar #'car my-groups))

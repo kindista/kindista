@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -62,7 +62,7 @@
                  (:div :class "title"
                   (str (or title (string-capitalize item))))))))
   (html
-    (:a :id item)
+    (:a :id (hyphenate item))
     (:div :class "item settings-item"
       (:div :class "settings-item-table"
         (str title-div)
@@ -108,40 +108,34 @@
    :action (strcat "/groups/" groupid)
    :editable editable ))
 
-(defun settings-avatar (editable &optional groupid)
+(defun settings-avatar (&optional groupid)
   (let ((id (or groupid *userid*))
         (entity (aif groupid
                   (db it)
                   *user*)))
    (settings-item-html
-     "avatar"
-      (if editable
-        (new-image-form "/settings" *base-url* :on groupid)
-        (html
-          (:div :class "settings-avatar"
-            (:img :class "bigavatar"
-                  :src (get-avatar-thumbnail id 300 300)
-                  :alt (getf entity :name))
-            (when (getf entity :avatar)
-              (htm (:form :method "post"
-                          :action "/settings"
-                          :class "activity-image"
-                     (:button :class "simple-link green"
-                              :type "submit"
-                              :name "rotate-avatar"
-                              "Rotate")))))))
-  :buttons (html (:form :action "/settings"
-                        :method "post"
-                   (:input :type "hidden"
-                           :name "next"
-                           :value (url-compose "/settings"
-                                               "groupid" groupid))
-                   (:button :type "input"
-                            :class "cancel small"
-                            :name "cancel"
-                            "Cancel")))
+     "profile picture"
+     (html
+       (:div :class "settings-avatar"
+         (:img :class "bigavatar"
+               :src (get-avatar-thumbnail id 300 300)
+               :alt (getf entity :name))
+         (when (getf entity :avatar)
+           (htm (:form :method "post"
+                       :action "/settings"
+                       :class "activity-image"
+                  (:button :class "simple-link green"
+                           :type "submit"
+                           :name "rotate-avatar"
+                           "Rotate"))))))
+  :buttons (new-image-form "/settings"
+                           *base-url*
+                           :on groupid
+                           :button (if (getf entity :avatar)
+                                     "Edit photo"
+                                     "Add a photo"))
   :form-markup nil
-  :editable editable)))
+  :editable t)))
 
 (defun settings-name (editable &optional groupid group-name)
   (let ((aliases (unless groupid (getf *user* :aliases))))
@@ -677,6 +671,11 @@
                           " a message or responds to "
                           (if group "our" "my")
                           " offers/requests")))
+            (:li (:input :type "checkbox"
+                  :name "inventory-expiration"
+                  :checked (checkbox-value :notify-inventory-expiration))
+                 "when my offers and requests are about to expire ")
+
             (when group
               (htm
                 (:li (:input :type "checkbox"
@@ -814,7 +813,7 @@
                    groupid
                    group)))
 
-          (str (settings-avatar (string= edit "avatar") groupid))
+          (str (settings-avatar groupid))
           (str (settings-address (string= edit "address") groupid group))
           (when groupid
             (str (settings-item-html
@@ -861,7 +860,7 @@
                (modify-db *userid* :fbtoken token :fbexpires expires)
                (unless (getf *user* :fb-id)
                  (modify-db *userid* :fb-id (get-facebook-user-id)))
-               
+
              (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
                (format s "~A ~A ~A~%" alist token expires))))
             ((>= (second reply) 400)
@@ -1214,6 +1213,7 @@
          (modify-db userid
                     :notify-gratitude (when (post-parameter "gratitude") t)
                     :notify-message (when (post-parameter "message") t)
+                    :notify-inventory-expiration (when (post-parameter "inventory-expiration") t)
                     :notify-new-contact (when (post-parameter "new-contact") t)
                     :notify-reminders (when (post-parameter "reminders") t)
                     :notify-inventory-digest (when (post-parameter "inventory-digest") t)
@@ -1398,6 +1398,7 @@
               (see-other (post-parameter "next")))
              (t
               (modify-db *userid* :pass (new-password (post-parameter "new-password-1")))
+              (delete-all-but-current-token-cookie)
               (flash "You have successfully changed your password.")
               (see-other (or (post-parameter "next") "/home")))))
 

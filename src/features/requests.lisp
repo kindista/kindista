@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -33,10 +33,10 @@
 
 (defun get-requests-new ()
   (require-user (:allow-test-user t)
-    (enter-inventory-tags :page-title "Post a request"
-                          :action "/requests/new"
-                          :button-text "Post request"
-                          :selected "requests")))
+    (enter-inventory-item-details :page-title "Post a request"
+                                  :action "/requests/new"
+                                  :button-text "Post request"
+                                  :selected "requests")))
 
 (defun post-requests-new ()
   (post-new-inventory-item "request" :url "/requests/new"))
@@ -62,6 +62,7 @@
                                              :unsubscribe-key)
                                        k)
                             unverified-user))
+         (action-type (get-parameter-string "action-type"))
          (userid (or (when verified-user unverified-userid)
                      *userid*))
          (self (eql userid by))
@@ -88,6 +89,26 @@
      ((and (not self)
            (item-view-denied (result-privacy result)))
        (permission-denied))
+
+     (action-type
+      ;; email buttons need a get-request
+      ;; see inventory-digest-email
+      (register-inventory-item-action id
+                                      action-type
+                                      :item request
+                                      :reply t))
+
+     ((and self (get-parameter "deactivate"))
+      (post-existing-inventory-item "request"
+                                    :id id
+                                    :deactivate t
+                                    :url (script-name*)))
+
+     ((and self (get-parameter "edit"))
+      (post-existing-inventory-item "request"
+                                    :id id
+                                    :edit t
+                                    :url (script-name*)))
 
      (t
       (with-location

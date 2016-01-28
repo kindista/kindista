@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -16,6 +16,30 @@
 ;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :kindista)
+
+(defun remove-duplicate-account-ids-from-people-following
+  (&aux affected-active-accounts affected-duplicate-accounts)
+  (dolist (id (hash-table-keys *db*))
+    (let ((data (db id)))
+      (when (and (or (eq (getf data :type) :person)
+                     (eq (getf data :type) :deleted-person-account))
+                 (or (getf data :deleted)
+                     (getf data :merged-into)))
+        (modify-db id :active nil
+                      :type :person
+                      :deleted t)
+        (push id affected-duplicate-accounts))))
+  (dolist (id (hash-table-keys *db*))
+    (let ((data (db id)))
+      (when (and (eq (getf data :type) :person)
+                 (intersection (getf data :following)
+                               affected-duplicate-accounts))
+        (push id affected-active-accounts)
+        (amodify-db id :following (set-difference it
+                                                  affected-duplicate-accounts)))))
+  (load-db)
+  (list :affected-active-accounts affected-active-accounts
+        :affected-duplicate-accounts affected-duplicate-accounts))
 
 (defun inactive-people ()
   "diagnostic tool for admins only. inefficient; should not be used in code."
@@ -52,6 +76,7 @@
                    :notify-expired-invites t
                    :notify-blog t
                    :notify-inventory-digest t
+                   :notify-group-membership-invites t
                    :notify-kindista t))
 
 (defun create-person (&key name email password host aliases pending test-user-p)
@@ -72,6 +97,7 @@
                                      :notify-reminders t
                                      :notify-expired-invites t
                                      :notify-blog t
+                                     :notify-group-membership-invites t
                                      :notify-inventory-digest t
                                      :notify-kindista t)))
          (person (db person-id)))
@@ -129,7 +155,6 @@
         (with-locked-hash-table (*banned-emails-index*)
           (dolist (email (getf data :emails))
             (setf (gethash email *banned-emails-index*) id))))
-
 
       (awhen (getf data :following)
         (with-locked-hash-table (*followers-index*)
@@ -359,6 +384,16 @@
               (set-difference (union (getf data-to-keep :following) it)
                               duplicate-account-id-list)))
 
+      (dolist (userid (gethash duplicate-id *followers-index*))
+        (amodify-db userid :following (remove-duplicates
+                                        (cons id-to-keep
+                                              (remove duplicate-id it))
+                                        :test #'eql)))
+
+      (dolist (item-id (getf data :loves))
+        (unlove item-id duplicate-id)
+        (love item-id id-to-keep))
+
       (when (getf data-to-keep :pending)
         (setf (getf data-to-keep :pending)
               (getf data :pending)))
@@ -389,6 +424,11 @@
                  (remove result it))
           (asetf (gethash id-to-keep *profile-activity-index*)
                  (safe-sort (push result it) #'> :key #'result-time)))
+        (with-locked-hash-table (*account-inactive-offer-index*)
+          (asetf (gethash duplicate-id *account-inactive-offer-index*)
+                 (remove result it))
+          (asetf (gethash id-to-keep *account-inactive-offer-index*)
+                 (safe-sort (push result it) #'> :key #'result-time)))
         (with-locked-hash-table (*offer-index*)
           (asetf (gethash duplicate-id *offer-index*)
                  (remove offer-id it))
@@ -403,6 +443,11 @@
                  (remove result it))
           (asetf (gethash id-to-keep *profile-activity-index*)
                  (safe-sort (push result it) #'> :key #'result-time)))
+        (with-locked-hash-table (*account-inactive-request-index*)
+          (asetf (gethash duplicate-id *account-inactive-request-index*)
+                 (remove result it))
+          (asetf (gethash id-to-keep *account-inactive-request-index*)
+                 (safe-sort (push result it) #'> :key #'result-time)) )
         (with-locked-hash-table (*request-index*)
           (asetf (gethash duplicate-id *request-index*)
                  (remove request-id it))
@@ -535,13 +580,13 @@
                                                       duplicate-id
                                                       (getf old-data
                                                             :participants)))
-                          :message-folders (subst id-to-keep
-                                                  duplicate-id
-                                                  (getf old-data
-                                                        :message-folders))
-                          :people (subst id-to-keep
-                                         duplicate-id
-                                         (getf old-data :people)))))
+                           :message-folders (subst id-to-keep
+                                                   duplicate-id
+                                                   (getf old-data
+                                                         :message-folders))
+                           :people (subst id-to-keep
+                                          duplicate-id
+                                          (getf old-data :people)))))
              (when (eq (message-type message) :transaction)
                (asetf new-message-data
                       (append (list :log (subst id-to-keep
@@ -644,47 +689,55 @@
                                            ".")
                            :merged-into id-to-keep)))
 
-(defun deactivate-person (id)
-  (let ((result (gethash id *db-results*)))
-    (metaphone-index-insert (list nil) result)
-    (geo-index-remove *people-geo-index* result)
-    (geo-index-remove *activity-geo-index* result)
-    (with-mutex (*active-people-mutex*)
-      (asetf *active-people-index* (remove id it)))
-    (dolist (request-id (gethash id *request-index*))
-      (deactivate-inventory-item request-id))
-    (dolist (offer-id (gethash id *offer-index*))
-      (deactivate-inventory-item offer-id))
-    (modify-db id :active nil
-                  :notify-message nil
-                  :notify-kindista nil
-                  :notify-reminders nil
-                  :notify-expired-invites nil
-                  :notify-gratitude nil)))
+(defun deactivate-person
+  (id
+   &aux (result (gethash id *db-results*))
+        (data (db id)))
+  (metaphone-index-insert (list nil) result)
+  (geo-index-remove *people-geo-index* result)
+  (geo-index-remove *activity-geo-index* result)
+  (with-mutex (*active-people-mutex*)
+    (asetf *active-people-index* (remove id it)))
+  (dolist (item-id (getf data :loves))
+    (deindex-love item-id id))
+  (dolist (request-id (gethash id *request-index*))
+    (deactivate-inventory-item request-id))
+  (dolist (offer-id (gethash id *offer-index*))
+    (deactivate-inventory-item offer-id))
+  (modify-db id :active nil
+                :notify-message nil
+                :notify-kindista nil
+                :notify-reminders nil
+                :notify-expired-invites nil
+                :notify-gratitude nil))
 
-(defun reactivate-person (id)
-  (let* ((result (gethash id *db-results*))
-         (data (db id))
-         (names (cons (getf data :name)
-                      (getf data :aliases))))
-    (metaphone-index-insert names result)
-    (geo-index-insert *people-geo-index* result) 
-    (geo-index-insert *activity-geo-index* result) 
-    (with-mutex (*active-people-mutex*)
-      (push id *active-people-index*))
-    (dolist (result (gethash id *profile-activity-index*))
-      (when (and (eq (result-type result) :gratitude)
-                 (find id (cdr (result-people result))))
-        (let* ((gratitude-id (result-id result))
-               (gratitude (db gratitude-id)))
-          (when (getf gratitude :pending)
-            (modify-db gratitude-id :pending nil)))))
-    (modify-db id :active t
-                  :notify-message t
-                  :notify-kindista t
-                  :notify-reminders t
-                  :notify-expired-invites t
-                  :notify-gratitude t)))
+(defun reactivate-person
+  (id
+   &aux (result (gethash id *db-results*))
+        (data (db id))
+        (names (cons (getf data :name)
+                     (getf data :aliases))))
+
+  (metaphone-index-insert names result)
+  (geo-index-insert *people-geo-index* result) 
+  (geo-index-insert *activity-geo-index* result) 
+  (with-mutex (*active-people-mutex*)
+    (push id *active-people-index*))
+  (dolist (item-id (getf data :loves))
+    (index-love item-id id))
+  (dolist (result (gethash id *profile-activity-index*))
+    (when (and (eq (result-type result) :gratitude)
+               (find id (cdr (result-people result))))
+      (let* ((gratitude-id (result-id result))
+             (gratitude (db gratitude-id)))
+        (when (getf gratitude :pending)
+          (modify-db gratitude-id :pending nil)))))
+  (modify-db id :active t
+                :notify-message t
+                :notify-kindista t
+                :notify-reminders t
+                :notify-expired-invites t
+                :notify-gratitude t))
 
 (defun delete-pending-account (id)
   (let ((data (db id)))

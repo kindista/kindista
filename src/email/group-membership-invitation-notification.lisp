@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2015 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -23,6 +23,7 @@
          (host-name (db from :name))
          (group-id (getf invitation :group-id))
          (group-name (db group-id :name))
+         (group-url (strcat* *email-url* "groups/" (username-or-id group-id)))
          (recipient-id (caaar (getf invitation :people)))
          (recipient (db recipient-id))
          (email (car (getf recipient :emails)))
@@ -30,7 +31,7 @@
 
      (when (getf recipient :notify-group-membership-invites)
        (cl-smtp:send-email +mail-server+
-                           "DoNotReply <noreply@kindista.org>"
+                           "Kindista <noreply@kindista.org>"
                            email
                            (s+ host-name
                                " has invited you to join their group, "
@@ -38,22 +39,20 @@
                                ", on Kindista")
                            (group-membership-invitation-notification-email-text
                              host-name
-                             group-id
+                             group-url
                              group-name
                              email
                              unsubscribe-key)
                            :html-message (group-membership-invitation-notification-email-html
                                            host-name
-                                           group-id
+                                           group-url
                                            group-name
                                            email
                                            unsubscribe-key)))))
 
 (defun group-membership-invitation-notification-email-text
-  (host-name group-id group-name email unsubscribe-key)
+  (host-name group-url group-name email unsubscribe-key)
   (strcat
-    (no-reply-notice)
-    #\linefeed #\linefeed
     host-name
     " invited you to join their group, "
     group-name
@@ -61,7 +60,7 @@
     #\linefeed #\linefeed
     "You can accept the invitation here:"
     #\linefeed
-    *email-url* "groups/" (username-or-id group-id)
+    group-url
     #\linefeed #\linefeed
     "Thank you for sharing your gifts with us!"
     #\linefeed
@@ -76,22 +75,17 @@
 
 
 (defun group-membership-invitation-notification-email-html
-  (host-name group-id group-name email unsubscribe-key)
+  (host-name group-url group-name email unsubscribe-key)
   (html-email-base
     (html
-      (:p :style *style-p* (:strong (str (no-reply-notice))))
 
       (:p :style *style-p*
           (str host-name)
             " has invited you to join their group, "
-            (str (person-email-link group-id))
-                ", on Kindista.")
+            (str group-name)
+            ", on Kindista.")
 
-      (:p :style *style-p*
-        "You can join " (str group-name) " here:"
-        (:br)
-        (:a :href (s+ *email-url* "groups/" (username-or-id group-id))
-            (str (s+ *email-url* "groups/" (username-or-id group-id)))))
+      (str (email-action-button group-url (s+ "Join " group-name)))
 
       (:p :style *style-p* "Thank you for sharing your gifts with us!")
 

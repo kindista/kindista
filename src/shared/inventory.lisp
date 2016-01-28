@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -20,7 +20,7 @@
 (defun new-pending-offer-notice-handler ()
   (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-inventory-item (&key type (by *userid*) title details tags privacy)
+(defun create-inventory-item (&key type (by *userid*) title details tags privacy expires)
   (insert-db (list :type type
                    :active t
                    :by by
@@ -28,6 +28,7 @@
                    :title title
                    :details details
                    :tags tags
+                   :expires expires
                    :created (get-universal-time))))
 
 (defun inventory-item-result (id &key data by-id by)
@@ -42,99 +43,119 @@
                        :type (getf item :type)
                        :people (list by-id)
                        :privacy (getf item :privacy)
-                       :time (or (getf item :edited) (getf item :created))
+                       :time (apply #'max
+                                    (remove nil
+                                            (list (getf item :refreshed)
+                                                  (getf item :edited)
+                                                  (getf item :created))))
                        :tags (getf item :tags))))))
 
-(defun index-inventory-item (id data)
-  (let* ((by-id (getf data :by))
-         (by (db by-id))
-         (type (getf data :type))
-         (pending (getf by :pending))
-         (result (inventory-item-result id
-                                        :data data
-                                        :by-id by-id
-                                        :by by))
-         (locationp (and (result-latitude result)
-                        (result-longitude result))))
+(defun index-inventory-item
+  (id
+   data
+   &aux (by-id (getf data :by))
+        (by (db by-id))
+        (type (getf data :type))
+        (pending (getf by :pending))
+        (result (inventory-item-result id
+                                       :data data
+                                       :by-id by-id
+                                       :by by))
+        (locationp (and (result-latitude result)
+                       (result-longitude result))))
 
-    ;; other code (e.g. index transaction) requires results for inactive items
-    (with-locked-hash-table (*db-results*)
-      (setf (gethash id *db-results*) result))
+  ;; other code (e.g. index transaction) requires results for inactive items
+  (with-locked-hash-table (*db-results*)
+    (setf (gethash id *db-results*) result))
 
-    (cond
-      (pending
-       (with-locked-hash-table (*pending-person-items-index*)
-         (let ((results (gethash by-id *pending-person-items-index*)))
-           (if (or (not results)
-                   (and (eq type :offer)
-                        (> (result-time result)
-                           (result-time (car results)))))
-             (push result (gethash by-id *pending-person-items-index*))
-             (push result (cdr (last (gethash by-id *pending-person-items-index*))))))))
+  (cond
+    (pending
+     (with-locked-hash-table (*pending-person-items-index*)
+       (let ((results (gethash by-id *pending-person-items-index*)))
+         (cond
+           ((or (not results)
+                (and (eq type :offer)
+                     (> (result-time result)
+                        (result-time (car results)))))
+            (pushnew result (gethash by-id *pending-person-items-index*)))
+           ((not (find result (gethash by-id *pending-person-items-index*)))
+            (push result (cdr (last (gethash by-id *pending-person-items-index*)))))))))
 
-      ((getf data :active)
-       (with-locked-hash-table (*profile-activity-index*)
-         (asetf (gethash by-id *profile-activity-index*)
-                (safe-sort (push result it) #'> :key #'result-time)))
+    ((getf data :active)
+     (with-locked-hash-table (*profile-activity-index*)
+       (asetf (gethash by-id *profile-activity-index*)
+              (safe-sort (pushnew result it) #'> :key #'result-time)))
 
-       (if (eq type :offer)
-         (with-locked-hash-table (*offer-index*)
-           (push id (gethash by-id *offer-index*)))
-         (with-locked-hash-table (*request-index*)
-           (push id (gethash by-id *request-index*))))
+     (index-inventory-expiration id data)
 
-       (unless (getf by :test-user)
-         (when locationp
-           (let ((title-stems (stem-text (getf data :title)))
-                 (details-stems (stem-text (getf data :details)))
-                 (tag-stems (stem-text (separate-with-spaces
-                                         (getf data :tags)))))
-             (if (eq type :offer)
-               (with-locked-hash-table (*offer-stem-index*)
-                 (dolist (stem title-stems)
-                   (push result (getf (gethash stem *offer-stem-index*) :title)))
-                 (dolist (stem details-stems)
-                   (push result (getf (gethash stem *offer-stem-index*) :details)))
-                 (dolist (stem tag-stems)
-                   (push result (getf (gethash stem *offer-stem-index*) :tags))))
+     ;; when clause can be removed after May 12, 2016
+     ;; this is in place to prevent a tital wave of automatic refreshes when
+     ;; we launch the refresh functionality
+     (when (> (result-time result)
+              (- 3661624237 (* 30 +day-in-seconds+)))
+       (index-inventory-refresh-time result))
 
-               (with-locked-hash-table (*request-stem-index*)
-                 (dolist (stem title-stems)
-                   (push result (getf (gethash stem *request-stem-index*) :title)))
-                 (dolist (stem details-stems)
-                   (push result (getf (gethash stem *request-stem-index*) :details)))
-                 (dolist (stem tag-stems)
-                   (push result (getf (gethash stem *request-stem-index*) :tags))))))
+     (if (eq type :offer)
+       (with-locked-hash-table (*offer-index*)
+         (pushnew id (gethash by-id *offer-index*)))
+       (with-locked-hash-table (*request-index*)
+         (pushnew id (gethash by-id *request-index*))))
 
+     (unless (getf by :test-user)
+       (when locationp
+         (let ((title-stems (stem-text (getf data :title)))
+               (details-stems (stem-text (getf data :details)))
+               (tag-stems (stem-text (separate-with-spaces
+                                       (getf data :tags)))))
            (if (eq type :offer)
-             (geo-index-insert *offer-geo-index* result)
-             (geo-index-insert *request-geo-index* result))
+             (with-locked-hash-table (*offer-stem-index*)
+               (dolist (stem title-stems)
+                 (pushnew result
+                          (getf (gethash stem *offer-stem-index*) :title)))
+               (dolist (stem details-stems)
+                 (pushnew result
+                          (getf (gethash stem *offer-stem-index*) :details)))
+               (dolist (stem tag-stems)
+                 (pushnew result (getf (gethash stem *offer-stem-index*) :tags))))
 
-           ;; unless item is older than 180 days
-           (unless (< (result-time result) (- (get-universal-time) 15552000))
-             ;; unless item is older than 30 days
-             (unless (< (result-time result) (- (get-universal-time) 2592000))
-               (with-mutex (*recent-activity-mutex*)
-                 (push result *recent-activity-index*)))
-             (geo-index-insert *activity-geo-index* result)))
+             (with-locked-hash-table (*request-stem-index*)
+               (dolist (stem title-stems)
+                 (pushnew result (getf (gethash stem *request-stem-index*) :title)))
+               (dolist (stem details-stems)
+                 (pushnew result (getf (gethash stem *request-stem-index*) :details)))
+               (dolist (stem tag-stems)
+                 (pushnew result (getf (gethash stem *request-stem-index*) :tags))))))
+         (if (eq type :offer)
+           (geo-index-insert *offer-geo-index* result)
+           (geo-index-insert *request-geo-index* result))
 
-         (when (eq type :request)
-           (if (or (getf data :match-all-terms)
-                   (getf data :match-any-terms))
-             (index-matchmaker id data)
-             (with-mutex (*requests-without-matchmakers-mutex*)
-               (safe-sort (push result
-                                *requests-without-matchmakers-index*)
-                          #'>
-                          :key #'result-time))))))
-      (t
-       (if (eq type :offer)
-         (with-locked-hash-table (*account-inactive-offer-index*)
-           (push id (gethash by-id *account-inactive-offer-index*)))
-         (with-locked-hash-table (*account-inactive-request-index*)
-           (push id (gethash by-id *account-inactive-request-index*))))))))
+         ;; unless item is older than 180 days
+         (unless (< (result-time result) (- (get-universal-time) 15552000))
+           ;; unless item is older than 30 days
+           (unless (< (result-time result) (- (get-universal-time) 2592000))
+             (with-mutex (*recent-activity-mutex*)
+               (pushnew result *recent-activity-index*)))
+           (geo-index-insert *activity-geo-index* result))))
 
-(defun modify-inventory-item (id &key publish-facebook-p title details tags privacy)
+     (when (eq type :request)
+       (if (or (getf data :match-all-terms)
+               (getf data :match-any-terms))
+         (index-matchmaker id data)
+         (with-mutex (*requests-without-matchmakers-mutex*)
+           (safe-sort (pushnew result *requests-without-matchmakers-index*)
+                      #'>
+                      :key #'result-time)))))
+
+    ((not (getf data :violates-terms))
+     (if (eq type :offer)
+       (with-locked-hash-table (*account-inactive-offer-index*)
+          (asetf (gethash by-id *account-inactive-offer-index*)
+                 (safe-sort (pushnew result it) #'> :key #'result-time)))
+       (with-locked-hash-table (*account-inactive-request-index*)
+          (asetf (gethash by-id *account-inactive-request-index*)
+                 (safe-sort (pushnew result it) #'> :key #'result-time)))))))
+
+(defun modify-inventory-item (id &key publish-facebook-p title details tags privacy expires)
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
@@ -187,9 +208,14 @@
 
     (let ((data (list :title title
                       :details details
+                      :active t
                       :tags tags
                       :fb-id fb-id
-                      :privacy privacy)))
+                      :expires expires
+                      :privacy privacy))
+
+         ;(typestring (string-downcase (symbol-name type)))
+          )
 
       (cond
         ((and publish-facebook-p (not fb-id))
@@ -202,6 +228,9 @@
 
         ((and (not publish-facebook-p) fb-action-id)
          (delete-facebook-action fb-action-id)))
+
+      (deindex-inventory-expiration id data)
+      (index-inventory-expiration id data)
 
       (unless (and (getf *user* :admin)
                    (not (group-admin-p by))
@@ -223,7 +252,9 @@
          (type (result-type result))
          (data (db id))
          (fb-action-id (getf data :fb-action-id))
-         (by (getf data :by))
+         (now (get-universal-time))
+         (by-id (getf data :by))
+         (by-group-p (eq (db by-id :type) :group))
          (type-index (case type
                        (:offer *offer-index*)
                        (:request *request-index*)))
@@ -247,7 +278,7 @@
       (case type
         (:offer
           (unmatch-offer-matches id
-                                 by
+                                 by-id
                                  (copy-list
                                    (gethash id
                                            *offers-with-matching-requests-index*)))
@@ -258,7 +289,7 @@
           (when (or (getf data :match-all-terms)
                     (getf data :match-any-terms))
             (unmatch-request-matches id
-                                   by
+                                   by-id
                                    (append (getf data :matching-offers)
                                            (getf data :hidden-matching-offers)))
             (remove-matchmaker-from-indexes id))))
@@ -269,19 +300,35 @@
         (with-mutex (*event-mutex*)
           (asetf *event-index* (remove result it)))
         (with-locked-hash-table (type-index)
-          (asetf (gethash by type-index)
+          (asetf (gethash by-id type-index)
                  (remove id it))))
       (case type
         (:request
           (with-locked-hash-table (*account-inactive-request-index*)
-            (push id (gethash by *account-inactive-request-index*))))
+            (asetf (gethash by-id *account-inactive-request-index*)
+                   (safe-sort (push result it) #'> :key #'result-time)) ))
         (:offer
           (with-locked-hash-table (*account-inactive-offer-index*)
-            (push id (gethash by *account-inactive-offer-index*)))))
+             (asetf (gethash by-id *account-inactive-offer-index*)
+                    (safe-sort (push result it) #'> :key #'result-time)))))
+
+      (deindex-inventory-expiration id data)
+      (deindex-inventory-refresh-time result)
+
+      (with-mutex (*inventory-expiration-timer-mutex*)
+        (asetf *inventory-expiration-timer-index*
+               (remove (rassoc id it)
+                       it
+                       :test #'equal)))
+
+      (dolist (transaction-id (gethash id *inventory-transactions-index*))
+        (modify-transaction-log transaction-id
+                                :deactivated
+                                :party (cons *userid* (when by-group-p by-id))))
 
       (unless (eq type :event)
         (with-locked-hash-table (*profile-activity-index*)
-          (asetf (gethash by *profile-activity-index*)
+          (asetf (gethash by-id *profile-activity-index*)
                  (remove result it)))
         (geo-index-remove *activity-geo-index* result)
         (with-mutex (*recent-activity-mutex*)
@@ -293,6 +340,7 @@
     (modify-db id :active nil
                   :deleted-fb-action-id fb-action-id
                   :fb-action-id nil
+                  :deactivated now
                   :violates-terms violates-terms)))
 
 (defun delete-pending-inventory-item (id)
@@ -304,7 +352,7 @@
     (remove-from-db id)))
 
 (defun deleted-invalid-item-reply-text (to-name from-name type &optional explanation)
-  (strcat "Greetings " to-name ","
+  (strcat* "Greetings " to-name ","
         #\linefeed
         #\linefeed
         "Your " type
@@ -312,9 +360,7 @@
         "Please list multiple offers and requests separately (not in the same item). "
         "Kindista is for giving and receiving freely; please avoid any language which implies that you are expecting barter or money in exchange for your offer or request. "
         #\linefeed
-        (aif explanation
-          (strcat #\linefeed it #\linefeed)
-          "")
+        (awhen explanation (strcat #\linefeed it #\linefeed))
         #\linefeed
         "To ensure that this doesn't happen again, please review Kindista's Sharing Guidelines before posting any additional offers or requests:"
         #\linefeed
@@ -342,6 +388,13 @@
                               (or (not identity-selection)
                                   (eql identity-selection
                                        (post-parameter-integer "prior-identity")))))
+           (expiration-options (first (multiple-value-list
+                                        (expiration-options))))
+           (expiration-descriptor (or (post-parameter-string "expiration")
+                                      "3-months"))
+           (expiration-time (cdr (assoc expiration-descriptor
+                                        expiration-options
+                                        :test #'string=)))
            (publish-facebook (post-parameter "publish-facebook"))
            (adminp (group-admin-p (or groupid identity-selection)))
            (title (post-parameter-string "title"))
@@ -351,21 +404,23 @@
       (iter (for tag in (tags-from-string (post-parameter "tags")))
             (setf tags (cons tag tags)))
 
-      (flet ((inventory-tags (&key error)
-               (enter-inventory-tags :page-title (s+ "Post a new " type)
-                                     :item-title title
-                                     :details details
-                                     :next (post-parameter "next")
-                                     :action url
-                                     :publish-facebook publish-facebook
-                                     :restrictedp restrictedp
-                                     :identity-selection identity-selection
-                                     :groupid groupid
-                                     :groups-selected groups-selected
-                                     :tags tags
-                                     :error error
-                                     :button-text (s+ "Post " type)
-                                     :selected (s+ type "s"))))
+      (flet ((inventory-details (&key error)
+               (enter-inventory-item-details
+                 :page-title (s+ "Post a new " type)
+                 :item-title title
+                 :details details
+                 :next (post-parameter "next")
+                 :action url
+                 :publish-facebook publish-facebook
+                 :restrictedp restrictedp
+                 :identity-selection identity-selection
+                 :groupid groupid
+                 :groups-selected groups-selected
+                 :tags tags
+                 :expiration expiration-descriptor
+                 :error error
+                 :button-text (s+ "Post " type)
+                 :selected (s+ type "s"))))
 
         (cond
          ((post-parameter "cancel")
@@ -381,35 +436,35 @@
          ((not title)
           (flash (s+ "Please enter a better title for your " type ".")
                  :error t)
-          (inventory-tags))
+          (inventory-details))
 
          ((> (length title) 140)
           (flash (s+ "Please shorten your title to 140 characters or less."))
-          (inventory-tags))
+          (inventory-details))
 
          ((> (length details) 1000)
           (flash (s+ "Please shorten your description. Offers and Requests must be no longer than 1000 characters including line breaks."))
-          (inventory-tags))
+          (inventory-details))
 
          ((and (not (post-parameter "create"))
                title)
-           (inventory-tags))
+           (inventory-details))
 
          ((and restrictedp
                (post-parameter "create")
                (not groups-selected))
-          (inventory-tags :error (s+ "Please allow at least one group to see this " type)))
+          (inventory-details :error (s+ "Please allow at least one group to see this " type)))
 
          ((not (intersection tags *top-tags* :test #'string=))
-           (inventory-tags :error "You must select at least one category"))
+           (inventory-details :error "You must select at least one category"))
 
          ((> (length (intersection tags *top-tags* :test #'string=))
              5)
-           (inventory-tags :error "You entered too many categories. Please choose only the most relevant ones."))
+           (inventory-details :error "You entered too many categories. Please choose only the most relevant ones."))
 
          ((> (length (set-difference tags *top-tags* :test #'string=))
              10)
-           (inventory-tags :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
+           (inventory-details :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
 
          ((and (post-parameter "create") title)
           (let ((new-id (create-inventory-item
@@ -419,6 +474,7 @@
                                 (or groupid identity-selection)
                                 *userid*)
                           :privacy groups-selected
+                          :expires expiration-time
                           :title title
                           :details details
                           :tags tags)))
@@ -465,7 +521,7 @@
                   (update-matchmaker-offer-data new-id))
                 (see-other (format nil (strcat "/" type "s/" new-id)))))))
 
-         (t (inventory-tags)))))))
+         (t (inventory-details)))))))
 
 (defun deactivated-item-error
   (type
@@ -473,17 +529,101 @@
   (flash (s+ "Sorry, this " type " has been deactivated.") :error t)
   (see-other next))
 
-(defun post-existing-inventory-item (type &key id url)
+(defun register-inventory-item-action
+  (id
+   action-type
+   &key (item (db id))
+        next
+        (url (resource-url id item))
+        reply-text
+        reply
+   &aux (type (getf item :type))
+        (by (getf item :by))
+        (adminp (group-admin-p by)))
+
+  (require-user ()
+    (cond
+      ((and (or (and (eq type :offer)
+                     (eq action-type :offered))
+                (and (eq type :request)
+                     (eq action-type :requested)))
+            (nor (eql *userid* by)
+                 adminp))
+       ;; in case of wrong action-type post request. yes it has happened.
+       (notice :error :on "User is trying to 'request' a :request or 'offer' an :offer"
+                      :data (cons id item))
+       (flash "The system encountered a problem. Please go to the item's page and try offering/requesting it again.  If the problem persists, please report it in Kindista's Help/Feedback section." :error t)
+       (see-other (or next url)))
+
+      (reply
+       (flet ((reply-html (type)
+                (inventory-item-reply
+                  type
+                  id
+                  item
+                  :text reply-text
+                  :action-type action-type
+                  :next next
+                  :match (post-parameter-integer "match")
+                  :error (when (and (not (post-parameter "reply"))
+                                    (not reply-text)
+                                    (not action-type))
+                           :no-message))))
+         (case (getf item :type)
+           (:offer (reply-html "offer"))
+           (:request (reply-html "request"))
+           (t (not-found)))))
+
+      ((or reply-text
+           (and (eql type :request)
+                (string= action-type "offer"))
+           (and (eql type :offer)
+                (string= action-type "request")))
+         (aif (find-existing-transaction id)
+           (post-transaction it)
+           (progn
+             (flash (s+ "Your "
+                        (or action-type "reply")
+                        " has been sent."))
+             (contact-opt-out-flash (list by (unless (eql *userid* by)
+                                               *userid*)))
+             (create-transaction :on id
+                                 :text reply-text
+                                 :action (cond
+                                           ((string= action-type "offer")
+                                            :offered)
+                                           ((string= action-type "request")
+                                            :requested))
+                                 :match-id (post-parameter-integer "match"))
+             (see-other (or next (strcat "/transactions/" id)))))))))
+
+(defun post-existing-inventory-item (type &key id url edit deactivate)
   (require-user (:allow-test-user t)
-    (let* ((id (parse-integer id))
+    (let* ((id (safe-parse-integer id))
            (item (db id))
            (by (getf item :by))
            (action-type (post-parameter-string "action-type"))
-           (reply-text (post-parameter-string "reply-text"))
            (adminp (group-admin-p by))
            (next (post-parameter "next")))
 
       (cond
+        ((and (or (post-parameter "reply-text")
+                  (post-parameter "reply"))
+              (getf *user* :pending))
+         (pending-flash "contact other Kindista members")
+         (see-other (or (referer) "/home")))
+
+        ((or action-type
+             (post-parameter "reply")
+             (post-parameter-string "reply-text"))
+         (register-inventory-item-action id
+                                         action-type
+                                         :item item
+                                         :next next
+                                         :reply (post-parameter "reply")
+                                         :reply-text (post-parameter-string
+                                                       "reply-text")))
+
         ((nor (getf item :active)
               (eql by *userid*)
               (getf *user* :admin))
@@ -504,63 +644,6 @@
         ((post-parameter "cancel")
          (see-other (or next "/home")))
 
-        ((and (or (post-parameter "reply-text")
-                  (post-parameter "reply"))
-              (getf *user* :pending))
-         (pending-flash "contact other Kindista members")
-         (see-other (or (referer) "/home")))
-
-        ((or (post-parameter-string "reply-text")
-             (and (post-parameter "reply-text")
-                  (or (string= action-type "offer")
-                      (string= action-type "request"))))
-         (create-transaction :on id
-                             :text (post-parameter-string "reply-text")
-                             :action (cond
-                                       ((string= action-type "offer")
-                                        :offered)
-                                       ((string= action-type "request")
-                                        :requested))
-                             :match-id (post-parameter-integer "match"))
-         (flash (s+ "Your "
-                    (or action-type "reply")
-                    " has been sent."))
-         (contact-opt-out-flash (list by (unless (eql *userid* by) *userid*)))
-         (see-other (or next (script-name*))))
-
-        ((or (post-parameter "reply")
-             action-type
-             ;; if ther's no action type
-             (and (post-parameter "reply-text")
-                  (not reply-text)
-                  (not action-type)))
-
-         (flet ((reply-html (type)
-                  (inventory-item-reply
-                    type
-                    id
-                    item
-                    :text reply-text
-                    :action-type action-type
-                    :next next
-                    :match (post-parameter-integer "match")
-                    :error (when (and (not (post-parameter "reply"))
-                                      (not reply-text)
-                                      (not action-type))
-                             :no-message))))
-           (case (getf item :type)
-             (:offer (reply-html "offer"))
-             (:request (reply-html "request"))
-             (t (not-found)))))
-
-        ((post-parameter "love")
-         (love id)
-         (see-other (or (post-parameter "next") (referer))))
-
-        ((post-parameter "unlove")
-         (unlove id)
-         (see-other (or (post-parameter "next") (referer))))
-
         (t
          (require-test ((or (eql *userid* (getf item :by))
                             adminp
@@ -577,6 +660,15 @@
                                    (string= "restricted" it)
                                    (getf item :privacy))
                                   t))
+                  (expiration-options (multiple-value-list
+                                        (expiration-options (getf item :expires))))
+                  (expiration-descriptor
+                    (or (post-parameter-string "expiration")
+                        (car (last expiration-options))
+                        "3-months"))
+                  (expiration-time (cdr (assoc expiration-descriptor
+                                               (first expiration-options)
+                                               :test #'string=)))
                   (new-title (post-parameter-string "title"))
                   (title (or new-title (getf item :title)))
                   (new-details (post-parameter-string "details"))
@@ -585,10 +677,10 @@
              (iter (for tag in (tags-from-string (post-parameter "tags")))
                    (setf tags (cons tag tags)))
 
-             (flet ((inventory-tags
+             (flet ((inventory-details
                       (&key error
                             (publish-facebook (post-parameter "publish-facebook")))
-                      (enter-inventory-tags
+                      (enter-inventory-item-details
                         :page-title (s+ "Edit your " type)
                         :action url
                         :item-title title
@@ -600,17 +692,17 @@
                         :next (or (post-parameter "next") (referer))
                         :existingp t
                         :groupid (when adminp by)
+                        :expiration expiration-descriptor
                         :error error
                         :button-text (s+ "Save " type)
                         :selected (s+ type "s"))))
 
                (cond
-
-                ((post-parameter "edit")
-                 (inventory-tags
+                ((or (post-parameter "edit") edit)
+                 (inventory-details
                    :publish-facebook (when (getf item :facebook-id) t)))
 
-                ((post-parameter "deactivate")
+                ((or deactivate (post-parameter "deactivate"))
                  (confirm-delete :url url
                                  :type type
                                  :confirmation-question
@@ -652,9 +744,7 @@
                    (create-transaction :on id
                                        :pending-deletion t
                                        :text (post-parameter "explanation"))
-                   (if (db by :pending)
-                     (delete-pending-inventory-item id)
-                     (deactivate-inventory-item id :violates-terms t))
+                   (deactivate-inventory-item id :violates-terms t)
                    (flash (strcat (string-capitalize type) " " id " has been deactivated."))
                    (see-other (if (string= (post-parameter "next")
                                            (strcat "/" type "s/" id))
@@ -663,43 +753,48 @@
 
                 ((not title)
                  (flash (s+ "Please enter a title for your " type "."))
-                 (inventory-tags))
+                 (inventory-details))
 
                 ((and (post-parameter "title") (not new-title))
                  (flash (s+ "Please enter a better title for your " type ".")
                         :error t)
-                 (inventory-tags))
+                 (inventory-details))
 
                 ((> (length title) 140)
                  (flash (s+ "Please shorten your title to 140 characters or less."))
-                 (inventory-tags))
+                 (inventory-details))
 
                 ((> (length details) 1000)
                  (flash (s+ "Please shorten your description. Offers and Requests must be no longer than 1000 characters including line breaks."))
-                 (inventory-tags))
+                 (inventory-details))
 
                 ((not (intersection tags *top-tags* :test #'string=))
-                  (inventory-tags :error "You must select at least one category"))
+                  (inventory-details :error "You must select at least one category"))
 
                 ((> (length (intersection tags *top-tags* :test #'string=))
                     5)
-                  (inventory-tags :error "You entered too many categories. Please choose only the most relevant ones."))
+                  (inventory-details :error "You entered too many categories. Please choose only the most relevant ones."))
 
                 ((> (length (set-difference tags *top-tags* :test #'string=))
                     10)
-                  (inventory-tags :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
+                  (inventory-details :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
 
                 ((post-parameter "create")
-                 (modify-inventory-item id :title (post-parameter "title")
-                                           :details (post-parameter "details")
-                                           :tags tags
-                                           :publish-facebook-p (post-parameter "publish-facebook")
-                                           :privacy (when restrictedp
-                                                      groups-selected))
+                 (require-test ((not (getf item :violates-terms))
+                                "This item violated Kindista's Terms of Use. It has been deactivated and cannot be modified.")
+                   (when (not (getf item :active))
+                     (index-inventory-item id (modify-db id :active t)))
+                   (modify-inventory-item id :title (post-parameter "title")
+                                             :details (post-parameter "details")
+                                             :tags tags
+                                             :expires expiration-time
+                                             :publish-facebook-p (post-parameter "publish-facebook")
+                                             :privacy (when restrictedp
+                                                      groups-selected)))
                  (see-other (strcat "/" type "s/" id)))
 
                 (t
-                  (inventory-tags)))))))))))
+                  (inventory-details)))))))))))
 
 (defun simple-inventory-entry-html (preposition type &key groupid)
   (html
@@ -732,8 +827,8 @@
         ". You can add details after you click \"post.\""))))
 
 
-(defun enter-inventory-tags
-  (&key page-title action item-title details existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next publish-facebook
+(defun enter-inventory-item-details
+  (&key page-title action item-title details existingp groupid identity-selection restrictedp error tags button-text selected groups-selected next publish-facebook expiration
    &aux (typestring (if (string= selected "offers") "offer" "request"))
         (suggested (or tags (get-tag-suggestions item-title))))
 
@@ -763,8 +858,9 @@
                             (strcat (- 64 (length it)))
                             "64"))))
            " characters available")
-         (:h3  "Enter a title ")
+         (:label :for "title"  "Enter a title ")
          (:input :type "text"
+                 :id "title"
                  :name "title"
                  :onkeyup (ps-inline
                             (limit-characters this 64 "title-count"))
@@ -777,9 +873,10 @@
                                                (strcat (- 1000 (length it)))
                                                "1000"))))
              " characters available")
-         (:h3 "Include a description (optional)")
+         (:label :for "details" "Include a description (optional)")
          (:textarea :class "review-text"
                     :name "details"
+                    :id "details"
                     :rows "5"
                     :onkeyup (ps-inline
                                (limit-characters this 1000 "details-count"))
@@ -825,25 +922,33 @@
                         " on my Facebook timeline."))))))
 
 
-         (:h3 "Select 1-5 categories ")
-         (:p :class "small"
-          "Please note: selecting irrelevant categories is considered spam.")
-         (dolist (tag *top-tags*)
-           (htm
-             (:div :class "tag"
-               (:input :type "checkbox"
-                       :name "tag"
-                       :value tag
-                       :checked (when (member tag suggested :test #'string=)
-                                  (setf suggested (remove tag suggested :test #'string=))
-                                  ""))
-                  (:span (str tag)))))
-         (:h3 "Additional keywords (optional)")
+         (:fieldset
+           (:legend "Select 1-5 categories")
+           (:p :class "small"
+             "Please note: selecting irrelevant categories is considered spam.")
+           (dolist (tag *top-tags*)
+             (htm
+               (:div :class "tag"
+                (:input :type "checkbox"
+                 :name "tag"
+                 :value tag
+                 :checked (when (member tag suggested :test #'string=)
+                            (setf suggested (remove tag suggested :test #'string=))
+                            ""))
+                (:span (str tag))))))
+         (:label :for "tags" "Additional keywords (optional)")
          (:p :class "small"
           "Please note: adding irrelevant keywords is considered spam.")
-         (:input :type "text" :name "tags" :size 40
+         (:input :type "text" :id "tags" :name "tags" :size 40
                  :placeholder "e.g. produce, bicycle, tai-chi"
                  :value (format nil "~{~a~^,~^ ~}" suggested))
+
+         (:label :for "expiration-selection"
+                 :class (when (string= (get-parameter-string "focus")
+                                       "expiration")
+                          "red")
+          "Expires in")
+         (str (expiration-selection-html expiration))
 
          (:p
            (:strong :class "red" "Important: ")
@@ -1149,7 +1254,8 @@
               (str (s+ (if action-type "Respond" "Reply")
                        " to "
                        (person-link (getf data :by) :possessive t)
-                       type))))
+                       type
+                       ":"))))
           (:blockquote
             (:p
               (awhen (getf data :title)
@@ -1168,13 +1274,14 @@
 
               (:textarea :cols "1000" :rows "4" :name "reply-text" (str text))
 
-              (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
-              (:button :class "yes"
-                       :type "submit"
-                       :class "submit"
-                (str (aif action-type
-                       (s+ (string-capitalize it) " This")
-                       "Reply"))))))
+              (:div
+                (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
+                (:button :class "yes"
+                 :type "submit"
+                 :class "submit"
+                 (str (aif action-type
+                        (s+ (string-capitalize it) " This")
+                        "Reply")))))))
 
         :selected (s+ type "s")
         :class "inventory-reply"))))

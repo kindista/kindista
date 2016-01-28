@@ -230,14 +230,15 @@
                                            (db for :name)
                                            text
                                            (when (>= (or latest-seen 0)
-                                                     comment-id)))))))))
+                                                     comment-id))
+                                           :id comment-id)))))))
 
 (defun conversation-comment-html
-  (data by by-name for for-name text newp &key transaction-p)
-  (card
+  (data by by-name for for-name text newp &key transaction-p id)
+  (card id
     (html
       (str (h3-timestamp (getf data :created)))
-      (:p
+      (:p :id id
         (if transaction-p
           (htm (:strong (str by-name)))
           (htm
@@ -255,7 +256,8 @@
         (str (regex-replace-all "\\n" text "<br>"))))))
 
 (defun conversation-html
-  (data
+  (id
+   data
    with
    comments-html
    &key error)
@@ -275,7 +277,7 @@
                       ;  when its members have
                        )
       (str
-        (card
+        (card id
           (html
             (when (getf data :subject)
               (htm
@@ -323,7 +325,8 @@
                    (with (remove *userid* (getf conversation :participants))))
 
               (prog1
-                (conversation-html conversation
+                (conversation-html id
+                                   conversation
                                    with
                                    (conversation-comments id
                                                           latest-seen))
@@ -379,9 +382,6 @@
         (if party
          (cond
            ((post-parameter "leave")
-            (with-locked-hash-table (*person-conversation-index*)
-              (asetf (gethash *userid* *person-conversation-index*)
-                     (remove id it :key #'result-id)))
             (amodify-db id :people (remove *userid* it :key #'caar))
             (see-other "/messages"))
 

@@ -149,6 +149,7 @@
          (created (getf data :created))
          (subjects (getf data :subjects))
          (people (cons (getf data :author) subjects))
+         (message-folders (getf data :message-folders))
          (result (make-result :latitude (getf author :lat)
                               :longitude (getf author :long)
                               :people people
@@ -172,7 +173,9 @@
      (awhen (getf data :on)
        (index-gratitude-link id it created))
 
-     (unless (getf data :transaction-id)
+     (when (and (not (getf data :transaction-id))
+                (or (getf message-folders :inbox)
+                    (getf message-folders :unread)))
        (index-message id data))
 
      ;; unless gratitude is older than 180 days
@@ -705,24 +708,25 @@
                          (sort
                            (remove-private-items
                              (set-difference
-                               (mapcar #'(lambda (id)
-                                           (gethash id *db-results*))
-                                       all-account-items-of-type)
+                               all-account-items-of-type
                                relevant-items))
                            #'>
-                           :key #'result-time))))))
+                           :key #'result-time)))))
+           (results-from-ids (id-list)
+             (mapcar #'(lambda (id) (gethash id *db-results*))
+                     id-list)))
 
       (list :offers (calculate-relevant-items
                       pending-offers
                       (when thankee-id
                         (append
                           (gethash thankee-id *account-inactive-offer-index*)
-                          (gethash thankee-id *offer-index*))))
+                          (results-from-ids (gethash thankee-id *offer-index*)))))
             :requests (calculate-relevant-items
                         pending-requests
                         (append
                           (gethash thanker-id *account-inactive-request-index*)
-                          (gethash thanker-id *request-index*))))))
+                          (results-from-ids (gethash thanker-id *request-index*)))))))
 
 (defun post-gratitudes-new ()
   (require-active-user
@@ -925,14 +929,14 @@
 
                      (when transaction-id
                        (amodify-db transaction-id
-                                   :log (append
-                                          it
-                                          (list (list :time time
-                                                      :party (if adminp
-                                                               (cons *userid* groupid)
-                                                               (list *userid*))
-                                                      :action :gratitude-posted
-                                                      :comment new-id)))))))
+                                   :log (cons (list :time time
+                                                    :party (if adminp
+                                                             (cons *userid*
+                                                                   groupid)
+                                                             (list *userid*))
+                                                    :action :gratitude-posted
+                                                    :comment new-id)
+                                              it)))))
 
                  (flash (if inactive-subject
                           (s+ (getf inactive-subject :name)
@@ -978,33 +982,22 @@
   (require-active-user
     (setf id (parse-integer id))
     (aif (db id)
-      (cond
-        ((and (post-parameter "love")
-              (member (getf it :type) '(:gratitude :offer :request)))
-         (love id)
-         (see-other (or (post-parameter "next") (referer))))
-        ((and (post-parameter "unlove")
-              (member (getf it :type) '(:gratitude :offer :request)))
-         (unlove id)
-         (see-other (or (post-parameter "next") (referer))))
-
-        (t
-         (require-test ((or (eql *userid* (getf it :author))
-                            (group-admin-p (getf it :author))
-                            (getf *user* :admin))
-                       (s+ "You can only edit your own statatements of gratitude."))
-           (cond
-             ((post-parameter "delete")
-              (confirm-delete :url (script-name*)
-                              :type "gratitude"
-                              :text (getf it :text)
-                              :next-url (referer)))
-             ((post-parameter "really-delete")
-              (delete-gratitude id)
-              (flash "Your statement of gratitude has been deleted!")
-              (see-other (or (post-parameter "next") "/home")))
-             ((post-parameter "edit")
-              (see-other (strcat "/gratitude/" id "/edit")))))))
+     (require-test ((or (eql *userid* (getf it :author))
+                        (group-admin-p (getf it :author))
+                        (getf *user* :admin))
+                   (s+ "You can only edit your own statatements of gratitude."))
+       (cond
+         ((post-parameter "delete")
+          (confirm-delete :url (script-name*)
+                          :type "gratitude"
+                          :text (getf it :text)
+                          :next-url (referer)))
+         ((post-parameter "really-delete")
+          (delete-gratitude id)
+          (flash "Your statement of gratitude has been deleted!")
+          (see-other (or (post-parameter "next") "/home")))
+         ((post-parameter "edit")
+          (see-other (strcat "/gratitude/" id "/edit")))))
       (not-found))))
 
 (defun get-gratitude-edit (id)

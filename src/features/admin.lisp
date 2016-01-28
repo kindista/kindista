@@ -50,7 +50,13 @@
 (defun get-admin-pending-accounts
   (&aux (pending-accounts (sort (hash-table-alist *pending-person-items-index*)
                                 #'>
-                                :key #'(lambda (account) (result-time (cadr account))))))
+                                :key #'(lambda (account)
+                                         ;; there may be no results if they
+                                         ;; are inappropriate and we delete
+                                         ;; them
+                                         (aif (cadr account)
+                                           (result-time it)
+                                           0)))))
   (require-admin
     (standard-page
       "Pending Accounts"
@@ -62,7 +68,7 @@
                  (person (db id))
                  (email (first (getf person :emails)))
                  (link (person-link id))
-                 (items (cdr account)))
+                 (items (remove nil (cdr account))))
             (labels ((inventory-item (id data preposition type)
                        (html
                          (str (timestamp (getf data :created)))
@@ -89,7 +95,7 @@
 
               (when items
                 (str
-                  (card
+                  (card nil
                     (html
                       (:p (str link)
                         " joined "
@@ -209,14 +215,14 @@
         (:p (:a :href "/admin" "back to admin"))
         (:h1 "Kindista Invitation Requests")
         (dolist (result *invite-request-index*)
-          (let* ((id (result-id result)) 
+          (let* ((id (result-id result))
                  (data (db id))
                  (events (getf data :events))
                  (resources (getf data :resources))
                  (invite (getf data :invite))
                  (gratitude (getf data :gratitude)))
             (str
-              (card
+              (card id
                 (html
                   (str (h3-timestamp (getf data :requested)))
                   (:p (:strong "Invitation Request ID: ")(str id))
@@ -300,11 +306,7 @@
       (see-other "/admin/mail-system"))))
 
 (defun get-admin-sendmail ()
-  (require-admin
-    (standard-page
-      "Send Broadcast"
-      (new-broadcast-html "Send broadcast email" "/admin/sendmail")
-      :selected "admin")))
+  (require-admin (new-broadcast-html "/admin/sendmail")))
 
 (defun post-admin-sendmail ()
   (require-admin (post-broadcast-new)

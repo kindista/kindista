@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -16,13 +16,6 @@
 ;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :kindista)
-
-(defun migrate-to-new-transaction-format ()
-  (dolist (id (hash-table-keys *db*))
-    (let* ((data (db id))
-           (type (getf data :type)))
-      (when (eq type :reply)
-        (modify-db id :type :transaction)))))
 
 (defun new-transaction-action-notice-handler ()
   (let* ((log-event (getf (cddddr *notice*) :log-event))
@@ -113,14 +106,17 @@
                   &aux (pending-gratitude-p))
 
   (loop for event in (getf data :log)
-        when (or (eq (getf event :action) :gave)
-                 (eq (getf event :action) :received))
-        do (setf pending-gratitude-p t)
-        when (or (eq (getf event :action) :withheld)
-                 (eq (getf event :action) :decline))
-        do (setf pending-gratitude-p nil)
         when (eq (getf event :action) :gratitude-posted)
         do (progn (setf pending-gratitude-p nil)
+                  (loop-finish))
+        when (or (eq (getf event :action) :withheld)
+                 (eq (getf event :action) :disputed)
+                 (eq (getf event :action) :decline))
+        do (progn (setf pending-gratitude-p nil)
+                  (loop-finish))
+        when (or (eq (getf event :action) :gave)
+                 (eq (getf event :action) :received))
+        do (progn (setf pending-gratitude-p t)
                   (loop-finish)))
 
   pending-gratitude-p)
@@ -139,6 +135,8 @@
   (list :completed completed :pending pending))
 
 (defun index-transaction (id data)
+  (with-locked-hash-table (*inventory-transactions-index*)
+    (pushnew id (gethash (getf data :on) *inventory-transactions-index*)))
   (index-message id data) )
 
 (defun index-pending-transactions ()
@@ -196,15 +194,16 @@
            (by (car (getf data :by)))
            (for (cdr (getf data :by)))
            (bydata (db by))
-           (text (if (and (equal comment-id (first comments))
+           (text (if (and (equal comment-id (car (last comments)))
                           (getf transaction :deleted-item-type))
                    (deleted-invalid-item-reply-text
-                     (db (car (remove by participants)) :name)
+                     (db (car (remove +kindista-id+ participants)) :name)
                      (getf bydata :name)
                      (case (getf transaction :deleted-item-type)
                        (:offer "offer")
                        (:request "request"))
-                     (getf data :text))
+                     (when (scan +text-scanner+ (getf data :text))
+                       (getf data :text)))
                    (getf data :text))))
 
       (sort (push (list :time (getf data :created)
@@ -243,6 +242,7 @@
                   (getf event :text)
                   (when (>= (or latest-seen 0)
                             (getf event :id)))
+                  :id (getf event :id)
                   :transaction-p t))))))))
 
 (defun transaction-other-party
@@ -265,7 +265,10 @@
         (inventory-by-name (db inventory-by-id :name))
         (transaction-by-id (getf transaction :by))
         (transaction-by-name (db transaction-by-id :name))
+        ;; basic-action means to show the group as the actor
+        ;; and not include a link for the actor
         basic-action
+        (punctuation ".")
         (userid *userid*)
         name-links-p
    &aux (on-type (getf inventory-item :type))
@@ -329,6 +332,12 @@
           (:disputed
             (strcat " disputed having received a gift from "
                     (indirect-object :inventory)))
+          (:deactivated
+            (if action-party-id
+              (strcat " deactivated " inventory-descriptor)
+              (strcat "This "
+                      (string-downcase (symbol-name on-type))
+                      " has been deactivated")))
           (:gratitude-posted
             (strcat " posted a statement of gratitude about "
                     inventory-by-name
@@ -352,7 +361,7 @@
             (strcat* " declined to receive a gift from "
                      (indirect-object :transaction)))
           (:withheld
-            (strcat* " indicated that"
+            (strcat* " indicated that "
 
                      (if self "you" "they")
                      " can no longer share "
@@ -368,13 +377,18 @@
           (:disputed
             (strcat " disputed having received a gift from "
                 (indirect-object :transaction)))
+          (:deactivated
+            (if action-party-id
+              (strcat " deactivated " inventory-descriptor)
+              (strcat "This "
+                      (string-downcase (symbol-name on-type))
+                      " has been deactivated")))
           (:gratitude-posted
             (strcat " posted a statement of gratitude about "
                     (indirect-object :transaction)
                     " for "
                     inventory-descriptor)))))
-    "."
-    )))
+    punctuation)))
 
 (defun transaction-action-html
   (log-event
@@ -388,7 +402,7 @@
       (gratitude-activity-item (gethash (getf log-event :comment) *db-results*)
                                :show-on-item nil))
     (t
-      (card
+      (card nil
         (html
           (str (h3-timestamp (getf log-event :time)))
           (:p
@@ -512,7 +526,12 @@
          (htm (:div :class "transaction-option"
                  (:a :href (url-compose url "add-comment" "t")
                    (:div (str (icon "comment")))
-                   (:div "I have a question or comment"))))))))
+                   (:div (str (s+ "Reply to "
+                                  other-party-name
+                                  " about this "
+                                  (string-downcase (aif on-type
+                                                     (symbol-name it)
+                                                     "item"))))))))))))
 
 (defun transaction-html
   (transaction-id
@@ -543,7 +562,7 @@
                  (t (html
                       (:span :class "none" "deleted offer or request")))))))
         (offer-p (eql on-type :offer))
-        (most-recent-log-event (car (last (getf data :log))))
+        (most-recent-log-event (first (getf data :log)))
         (status (getf most-recent-log-event :action)))
 
   (standard-page
@@ -646,12 +665,35 @@
     :class "transaction"
     ))
 
+(defun fix-transaction-logs (&aux (count 0) example)
+  (dolist (id (hash-table-keys *db*))
+    (let* ((data (db id))
+           (type (getf data :type))
+           (log (getf data :log)))
+      (when (and (eql type :transaction)
+                 log
+                 (not (apply #'>= (mapcar (lambda (event) (getf event :time))
+                                          log))))
+        (modify-db id :log (sort log
+                                 #'>
+                                 :key (lambda (event) (getf event :time))))
+        (incf count)
+        (setf example id)
+        )))
+  (values count example)
+  )
+
 (defun transaction-options-for-user
   (transaction-id
    &key (userid *userid*)
         (transaction (db transaction-id))
    &aux (transaction-mailboxes (mapcar #'car (getf transaction :people)))
-        (log (getf transaction :log))
+        ;; some transactions in the database ordered logs because of a change
+        ;; introduced in commit: 9f6c08e89768862774b8dc5ba79f8af52189f468
+        ;; until that is fixed, we need to sort the log here
+        (log (sort (getf transaction :log)
+                   #'>
+                   :key #'(lambda (event) (getf event :time))))
         (inventory-item (db (getf transaction :on)))
         (inventory-type (getf inventory-item :type))
         (inventory-by (getf inventory-item :by))
@@ -676,15 +718,13 @@
                              :key #'(lambda (event)
                                        (if (eql representing userid)
                                          (car (getf event :party))
-                                         (cdr (getf event :party))))
-                             :from-end t))
+                                         (cdr (getf event :party))))))
         (other-party-event (find-if-not
                              #'(lambda (event)
-                                 (if representing
-                                   (eql representing (cdr (getf event :party)))
-                                   (eql userid (car (getf event :party)))))
-                             log
-                             :from-end t))
+                                 (if (eql representing userid)
+                                   (eql userid (car (getf event :party)))
+                                   (eql representing (cdr (getf event :party)))))
+                             log))
         (options ()))
 
   "Returns (1) a list of actions the user can take on a given transaction id and (2) the entity the user is representing (i.e. *userid* or a groupid)"
@@ -867,17 +907,41 @@
           (permission-denied))
       (not-found)))))
 
+(defun modify-transaction-log
+  (transaction-id
+   new-action
+   &key (transaction (db transaction-id))
+        party
+        (message (gethash transaction-id *db-messages*))
+   &aux (time (get-universal-time))
+        (people (getf transaction :people))
+        (mailbox (assoc-assoc *userid* people))
+        (party (unless party (car mailbox)))
+        (people-list (all-message-people message))
+        (folders (list :inbox people-list
+                       :unread (remove *userid*
+                                       people-list)
+                       :compost nil
+                       :deleted nil))
+        (log-event (list :time time
+                         :party party
+                         :action new-action)))
+  (index-message
+    transaction-id
+    (amodify-db transaction-id :message-folders folders
+                               :log (cons log-event it))))
 
 (defun post-transaction (id)
   (require-active-user
-    (setf id (parse-integer id))
+    (setf id (safe-parse-integer id))
     (let ((transaction (db id)))
       (if (eq (getf transaction :type) :transaction)
         (let* ((people (getf transaction :people))
                (message (gethash id *db-messages*))
+               (message-text (or (post-parameter-string "reply-text")
+                                 (post-parameter-string "text")))
                (mailbox (assoc-assoc *userid* people))
                (party (car mailbox))
-               (people-list (all-message-people message))
                (participants (getf transaction :participants))
                (action-string (post-parameter-string "transaction-action"))
                (action)
@@ -888,7 +952,11 @@
                 (cond
                   ((string= action-string "want")
                    :requested)
+                  ((string= action-string "request")
+                   :requested)
                   ((string= action-string "will-give")
+                   :offered)
+                  ((string= action-string "offer")
                    :offered)
                   ((string= action-string "decline")
                    :declined)
@@ -903,25 +971,23 @@
           (if party
             (flet ((modify-log (new-action)
                      (let* ((time (get-universal-time))
-                            (folders (list :inbox people-list
-                                           :unread (remove *userid*
-                                                           people-list)
-                                           :compost nil
-                                           :deleted nil))
-                            (log-event (list :time time
-                                             :party party
-                                             :action new-action)))
-                       (index-message
-                         id
-                         (amodify-db id :message-folders folders
-                                        :log (append it (list log-event))))
-                       (unless (eq action :received)
+                             (log-event (list :time time
+                                              :party party
+                                              :action new-action)))
+                       (modify-transaction-log id
+                                               new-action
+                                               :transaction transaction
+                                               :message message)
+
+                       (unless (or (eq action :received) message-text)
                          (flash "Your action has been recorded and the other party will be notified.")
                          (contact-opt-out-flash participants
-                                                :item-type "transaction")
+                                                :item-type "transaction"))
+
+                       (unless (eql action :received)
                          (notice :new-transaction-action :time time
-                                                         :transaction-id id
-                                                         :log-event log-event))
+                                 :transaction-id id
+                                 :log-event log-event))
                        (see-other url))))
 
               (setf other-party-name (db (transaction-other-party id) :name))
@@ -930,15 +996,16 @@
                 ((post-parameter "cancel")
                  (see-other url))
 
-                ((post-parameter "text")
-                 (flash "Your message has been sent.")
-                 (contact-opt-out-flash participants)
+                (message-text
                  (let* ((time (get-universal-time))
                         (new-comment-id (create-comment :on id
-                                                        :text (post-parameter "text")
+                                                        :text message-text
                                                         :time time
                                                         :by party)))
                    (send-metric* :message-sent new-comment-id))
+                 (awhen action (modify-log it))
+                 (flash "Your message has been sent.")
+                 (contact-opt-out-flash participants)
                  (see-other url))
 
                 ((eq action :declined)
@@ -960,12 +1027,13 @@
 
                 ((eq action :withheld)
                  (confirm-action
-                   "Withhold Gift"
-                   (strcat "Please confirm that you no longer wish to give this gift to "
+                   "Cancel Transaction"
+                   (strcat "Please confirm that you no longer intend to give this gift to "
                            (case (getf inventory-item :type)
                              (:request (db (getf inventory-item :by) :name))
                              (:offer (db (getf transaction :by) :name)))
                            ":")
+                   :class "cancel-transaction"
                    :url url
                    :next-url url
                    :details (or (getf inventory-item :title)

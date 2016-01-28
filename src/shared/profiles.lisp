@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -128,7 +128,7 @@
                (str (donate-sidebar))
                (str (invite-sidebar))))))
 
-(defun sorted-contacts ( &key (userid *userid*) (contact-type :person))
+(defun sorted-contacts (&key (userid *userid*) (contact-type :person))
   (sort
     (remove-if-not #'(lambda (id) (eql (result-type (gethash id *db-results*))
                                        contact-type))
@@ -286,8 +286,19 @@
                     "groups"
                     "people")))))
 
-(defun profile-activity-items (&key (id *userid*) (page 0) (count 20) type display members)
-  (let ((items (cond
+(defun profile-activity-items
+  (&key (id *userid*)
+        (page 0)
+        (count 20)
+        (filter "active")
+        type
+        display
+        members
+   &aux (items (cond
+                ((string= filter "inactive")
+                 (case type
+                   (:offer (gethash id *account-inactive-offer-index*))
+                   (:request (gethash id *account-inactive-request-index*))))
                 ((string= display "all")
                  (group-members-activity (cons id members) :type type))
                 ((string= display "members")
@@ -299,44 +310,48 @@
         (start (* page count))
         (i 0))
 
-    (html
-      (iter
-        (let ((item (car items)))
-          (when (or (not item)
-                    (>= i (+ count start)))
-            (finish))
+  (html
+    (iter
+      (let ((item (car items)))
+        (when (or (not item)
+                  (>= i (+ count start)))
+          (finish))
 
-          (when
-            (and (or (not type)
-                     (if (eql type :gratitude)
-                       (or (and (eql :gratitude (result-type item))
-                                (not (eql id (first (result-people item)))))
-                           (and (eql :gift (result-type item))
-                                (not (eql id (car (last (result-people item)))))))
-                       (eql type (result-type item))))
-                 (> (incf i) start))
+        (when
+          (and (or (not type)
+                   (if (eql type :gratitude)
+                     (or (and (eql :gratitude (result-type item))
+                              (not (eql id (first (result-people item)))))
+                         (and (eql :gift (result-type item))
+                              (not (eql id (car (last (result-people item)))))))
+                     (eql type (result-type item))))
+               (> (incf i) start))
 
-            (case (result-type item)
-              (:gratitude
-                (awhen (gratitude-activity-item item)
-                  ;;don't display pending items that were posted when a
-                  ;;person deactivates the account.
-                  (str it)))
-              (:person
-                (str (joined-activity-item item)))
-              (:gift
-                (str (gift-activity-item item)))
-              (:offer
-                (str (inventory-activity-item item
-                                          :show-what (unless (eql type :offer) t))))
-              (:request
-                (str (inventory-activity-item item
-                                            :show-what (unless (eql type :request) t)))))))
+          (case (result-type item)
+            (:gratitude
+              (awhen (gratitude-activity-item item)
+                ;;don't display pending items that were posted when a
+                ;;person deactivates the account.
+                (str it)))
+            (:person
+              (str (joined-activity-item item)))
+            (:gift
+              (str (gift-activity-item item)))
+            (:offer
+              (str (inventory-activity-item item
+                                        :show-what (unless (eql type :offer) t))))
+            (:request
+              (str (inventory-activity-item item
+                                          :show-what (unless (eql type :request) t)))))))
 
-          (setf items (cdr items))
+        (setf items (cdr items))
 
-          (finally
-            (str (paginate-links page (cdr items) (s+ (url-compose (script-name*) "display" display)))))))))
+        (finally
+          (str (paginate-links page
+                               (cdr items)
+                               (url-compose (script-name*)
+                                            "display" display
+                                            "filter" (awhen (string= filter "inactive") "inactive"))))))))
 
 (defun profile-top-html (id)
   (let* ((entity (db id))
@@ -356,7 +371,12 @@
                    :class "small blue float-right"
                    (:img :src "/media/icons/settings.png" :class "small")
                    "group settings")))
-        (:img :class "bigavatar" :src (get-avatar-thumbnail id 300 300)) 
+        (:div :class "profile-pic"
+          (:img :class "bigavatar" :src (get-avatar-thumbnail id 300 300))
+          (when (and *user*
+                     (= id *userid*)
+                     (not (getf *user* :avatar)))
+            (str (add-profile-picture-prompt))))
         (:div :class "basics"
           (:h1 (str (getf entity :name))
                (cond
@@ -376,7 +396,13 @@
                     (htm (str it) (:br)))
                   (str (getf entity :city)) ", " (str (getf entity :state)))))
            ((getf entity :city)
-            (htm (:p :class "city" (str (getf entity :city)) ", " (str (getf entity :state))))))))
+            (htm (:p :class "city"
+                  (str (getf entity :city))
+                  ", "
+                  (str (getf entity :state))
+                  (unless (equalp (getf entity :country)
+                                  (getf *user* :country))
+                    (htm ", " (str (getf entity :country))))))))))
 
       (unless (or (eql id *userid*) (not *userid*))
         (htm
@@ -502,6 +528,10 @@
          (groupid (when (eql entity-type :group) id))
          (members (when groupid (append (getf entity :admins) (getf entity :members))))
          (adminp (when (member *userid* (getf entity :admins)) t))
+         (self (eql id *userid*))
+         (show-inactive-inventory-p (and (string= (get-parameter-string "filter")
+                                                  "inactive")
+                                         (or self adminp)))
          (*base-url* (case entity-type
                        (:person (strcat "/people/" strid))
                        (:group (strcat "/groups/" strid)))))
@@ -509,7 +539,7 @@
       name
       (html
         (str (profile-tabs-html id :tab (or type :activity)))
-        (when (or (eql id *userid*) adminp)
+        (when (or self adminp)
           (when (eql type :request)
             (htm (str (simple-inventory-entry-html "a" "request"
                                                    :groupid (when adminp groupid)))))
@@ -517,14 +547,21 @@
             (htm (str (simple-inventory-entry-html "an" "offer"
                                                    :groupid (when adminp groupid))))))
         (when (and (eql type :gratitude)
-                   (not (eql id *userid*))
+                   (not self)
                    (eql (getf entity :active) t))
           (str (simple-gratitude-compose id
                                          :entity entity
                                          :next (strcat *base-url* "/reputation"))))
 
         (:div :class "activity"
-          (when groupid
+          (when (and (or self adminp)
+                     (or (and (eq type :offer)
+                              (gethash id *account-inactive-offer-index*))
+                         (and (eq type :request)
+                              (gethash id *account-inactive-request-index*))))
+            (str (inventory-filter-html
+                   (s+ *base-url* (if (eql type :offer) "/offers" "/requests")))))
+          (when (and groupid (not show-inactive-inventory-p))
             (str (group-activity-selection-html id name display (case type
                                                                       (:gratitude "reputation")
                                                                       (:offer "offers")
@@ -535,6 +572,8 @@
                                        :members (when (or (string= display "all")
                                                           (string= display "members"))
                                                   members)
+                                       :filter (when show-inactive-inventory-p
+                                                 "inactive")
                                        :display display
                                        :page (aif (get-parameter "p") (parse-integer it) 0)))))
 
@@ -543,3 +582,19 @@
       :selected (case entity-type
                   (:person "people")
                   (:group "groups")))))
+
+(defun inventory-filter-html (url &optional (selected "active"))
+  (when (string= (get-parameter-string "filter") "inactive")
+    (setf selected "inactive"))
+  (html
+    (:form :method "get" :action url :id "inventory-filter"
+      (:label :for "filter" "Show ")
+      (:select :name "filter"
+               :id "filter"
+               :onchange "this.form.submit();"
+        (:option :value "active" :selected (when (string= selected "active")
+                                             "")
+         "active items")
+      (:option :value "inactive" :selected (when (string= selected "inactive")
+                                             "")
+         "inactive items")))))

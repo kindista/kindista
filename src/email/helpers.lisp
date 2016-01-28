@@ -25,10 +25,42 @@
                          margin-top:.9em;
                          margin-bottom:.9em;")
 
+(defparameter *style-button*
+  "font-size: 1.2em;
+   background: #3c6dc8 !important;
+   border: 1px solid #474747;
+   padding: 0.5em 0.7em;
+   vertical-align: middle;
+   color: #ffffff !important;
+   border-radius: 0.25em;
+   text-decoration: none;"
+  ;background: -moz-linear-gradient( top, #3c6dc8 0%, #29519c);
+  ;background: -ms-linear-gradient( top, #3c6dc8 0%, #29519c);
+  ;background: -o-linear-gradient( top, #3c6dc8 0%, #29519c);
+  ;background: -webkit-linear-gradient( top, #3c6dc8 0%, #29519c);
+  ;background: -webkit-gradient( linear, left top, left bottom, from(#3c6dc8), to(#29519c));
+  )
+
+(defparameter *small-style-button*
+  "font-size: 1em;
+   background: #3c6dc8 !important;
+   border: 1px solid #474747;
+   padding: 0.3em 0.4em;
+   vertical-align: middle;
+   color: #ffffff !important;
+   border-radius: 0.25em;
+   text-decoration: none;"
+  )
+
+(defparameter *style-button-link*
+  "cursor: pointer;
+   color: #ffffff !important;
+   text-decoration: none;
+   display: block; ")
 
 (defparameter *style-quote-box* "border-collapse: collapse;
                                  background: #ebf2e4;
-                                 margin: 8px;
+                                 margin: 8px 8px 8px 0;
                                  border: thin solid #bac2b2;")
 
 (defparameter *email-url* (or (awhen *test-email-ip*
@@ -53,6 +85,19 @@
 (defun person-name (id)
   (db id :name))
 
+(defun email-action-button (url message &key image (style *style-button*))
+  (html
+    (:table :cellspacing "0" :cellpadding "0"
+     (:td :class "button" :style style
+       (:a :href url
+           :style *style-button-link*
+        (:span :style "color:#ffffff!important;
+                       font-weight: bold;
+                       cursor: pointer;
+                       text-shadow: 1px 1px 2px rgba(0,0,0,0.4); "
+         (awhen image (str it))
+         (str message)))))))
+
 (defun no-reply-notice
   (&optional (instructions "do so from their profile on Kindista.org"))
   (s+ "PLEASE DO NOT REPLY TO THIS EMAIL, IT WILL NOT BE DELIVERED TO THE SENDER. If you want to contact the sender, please " instructions ". "))
@@ -75,6 +120,14 @@
       "Do you shop at Amazon.com? If so, please click here and Amazon will donate a portion of your purchases to Kindista through our parent organization, CommonGoods Network:"
       #\linefeed
       *amazon-smile-link*)))
+
+(defun email-blockquote (text)
+ (html (:table :cellspacing 0
+               :cellpadding 0
+               :style *style-quote-box*
+         (:tr (:td :style "padding: 4px 12px;"
+                  "\"" (str (email-text text)) "\"")))
+       (:br)))
 
 (defun unsubscribe-notice-ps-text
   (unsubscribe-code
@@ -129,7 +182,8 @@ notification-description
       (:head
         (:style :type "text/css"
                       "a:hover {text-decoration:underline;}
-a {color: #5C8A2F;}")
+                       a {color: #5C8A2F !important;}
+                       td.button > a {color: #ffffff !important; text-decoration: none;}")
         (:title "Kindista"))
 
       (:body :style "font-family: Ubuntu, Roboto, \"Segoe UI\", \"Helvetica Neue\", Tahoma, sans-serif;"
