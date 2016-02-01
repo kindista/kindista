@@ -66,6 +66,7 @@
          (userid (or (when verified-user unverified-userid)
                      *userid*))
          (self (eql userid by))
+         (group-admin-p (group-admin-p by *userid*))
          (facebook-item-id (when (string= (referer)
                                           "https://www.facebook.com")
                              (get-parameter-integer "post_id")))
@@ -104,7 +105,8 @@
                                     :deactivate t
                                     :url (script-name*)))
 
-     ((and self (get-parameter "edit"))
+     ((and (or self group-admin-p)
+           (get-parameter "edit"))
       (post-existing-inventory-item "request"
                                     :id id
                                     :edit t
@@ -134,7 +136,7 @@
               (str (item-images-html id))
               (when (and (getf request :active)
                          (or self
-                             (group-admin-p by)
+                             group-admin-p
                              matchmaker-admin))
                 (str (item-matches-html id :data request
                                            :self self

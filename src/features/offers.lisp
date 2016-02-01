@@ -52,6 +52,7 @@
          (self (eql *userid* by))
          (result (gethash id *db-results*))
          (action-type (get-parameter-string "action-type"))
+         (group-admin-p (group-admin-p by *userid*))
          (facebook-item-id (when (string= (referer)
                                           "https://www.facebook.com/")
                              (get-parameter-integer "post_id")))
@@ -87,7 +88,7 @@
                                     :deactivate t
                                     :url (script-name*)))
 
-     ((and self (get-parameter "edit"))
+     ((and (or self group-admin-p) (get-parameter "edit"))
       (post-existing-inventory-item "offer"
                                     :id id
                                     :edit t
@@ -104,7 +105,7 @@
                   (:h2 :class "red" "This offer is no longer active.")))
               (str (inventory-activity-item result :show-distance t :show-tags t)))
             (str (item-images-html id))
-            (when (and (or self (group-admin-p by))
+            (when (and (or self group-admin-p)
                        matching-requests)
               (str (item-matches-html id :data offer
                                          :current-matches matching-requests))))
