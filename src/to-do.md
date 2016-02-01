@@ -1,8 +1,7 @@
-## loves
-  - #links
 ## web apps
   - iphone - https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
   - android
+  - test sending messages on transactions!
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
 ## accountability with user flaky-ness

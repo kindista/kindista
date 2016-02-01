@@ -34,6 +34,10 @@
   ("/home"
     :get get-home)
 
+  ;test notification *remove*
+  ("/send-test-notification"
+    :post send-test-notification)
+
   ("/<int:id>"
     :get get-item-by-id)
 
