@@ -928,8 +928,10 @@
                          :action new-action)))
   (index-message
     transaction-id
-    (amodify-db transaction-id :message-folders folders
-                               :log (cons log-event it))))
+    (if (eql new-action :deactivated)
+      (amodify-db transaction-id :log (cons log-event it))
+      (amodify-db transaction-id :message-folders folders
+                                 :log (cons log-event it)))))
 
 (defun post-transaction (id)
   (require-active-user

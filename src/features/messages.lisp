@@ -202,13 +202,19 @@
                  (:conversation
                   (db (getf data :latest-comment) :created))
                  (:transaction
-                   (apply #'max
-                          (remove nil
-                                 (list (getf (first (getf data :log))
-                                             :time)
-                                       (getf data :created)
-                                       (db (getf data :latest-comment)
-                                           :created)))))
+                   (apply
+                     #'max
+                     (remove
+                       nil
+                       (list (getf (first (remove-if
+                                            (lambda (event)
+                                              (eq :deactivated
+                                                  (getf event :action)))
+                                            (getf data :log)))
+                                         :time)
+                                   (getf data :created)
+                                   (db (getf data :latest-comment)
+                                       :created)))))
                  ((or :group-membership-invitation
                       :group-membership-request)
                   (or (getf data :resent)
