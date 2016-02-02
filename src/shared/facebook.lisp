@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -35,10 +35,11 @@
                              "/"
                              id))
     (:meta :property "og:title"
-           :content (or title (s+ "Kindista " (string-capitalize typestring))))
+           :content (escape-for-html
+                      (or title (s+ "Kindista " (string-capitalize typestring)))))
     (awhen description
       (htm (:meta :property "og:description"
-                  :content it)))))
+                  :content (escape-for-html it))))))
 
 (defun get-facebook-user-data
   (&optional (userid *userid*)
