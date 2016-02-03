@@ -20,6 +20,20 @@
 
 (defparameter *fb-graph-url* "https://graph.facebook.com/")
 
+(defvar *facebook-app-token* nil)
+(defvar *facebook-user-token* nil)
+(defvar *facebook-user-token-expiration* nil)
+(defvar *fb-id* nil)
+
+(defmacro with-facebook-credentials (&body body)
+  `(let ((*facebook-app-token* (or *facebook-app-token*
+                                   (setf *facebook-app-token*
+                                         (get-facebook-app-token))))
+         (*fb-id* (getf *user* :fb-id))
+         (*facebook-user-token* (getf *user* :fbtoken))
+         (*facebook-user-token-expiration* (getf *user* :fbexpires)))
+     ,@body))
+
 (defun facebook-item-meta-content (id typestring title &optional description)
   (html
     (:meta :property "og:type"
@@ -200,18 +214,4 @@
                      "client_id" *facebook-app-id*
                      "client_secret" *facebook-secret*
                      "grant_type" "client_credentials"))))
-
-(defvar *facebook-app-token* nil)
-(defvar *facebook-user-token* nil)
-(defvar *facebook-user-token-expiration* nil)
-(defvar *fb-id* nil)
-
-(defmacro with-facebook-credentials (&body body)
-  `(let ((*facebook-app-token* (or *facebook-app-token*
-                                   (setf *facebook-app-token*
-                                         (get-facebook-app-token))))
-         (*fb-id* (getf *user* :fb-id))
-         (*facebook-user-token* (getf *user* :fbtoken))
-         (*facebook-user-token-expiration* (getf *user* :fbexpires)))
-     ,@body))
 

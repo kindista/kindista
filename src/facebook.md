@@ -1,9 +1,8 @@
 https://developers.facebook.com/docs/facebook-login/permissions/v2.3
 https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
-[ ] Save FB token and expriation to kindista user object
-[ ] display whether or not there is a valid facebook token on k settings page
-[ ] enable users to unlink kindista w/ facebook
-[ ] let users completely opt out of facebook integration (don't show them buttons for posting facebook stories)
+[x] Save FB token and expriation to kindista user object
+[x] display whether or not there is a valid facebook token on k settings page
+[x] enable users to unlink kindista w/ facebook
 
 #Settings Page
  - don't allow link to facebook when pending?
@@ -14,9 +13,10 @@ https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
     - email - "we will only contact you via your 'primary email address',
                this permission helps us ensure that your kindista account
                is associated with the correct facebook account."
+ [ ] handle when people uninstall app from facebook
+ https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow#logout
 
 #Privacy setting
-https://developers.facebook.com/docs/graph-api/reference/v2.4/post
 
 #List of friends using Kindista app
 https://graph.facebook.com/{user-id}/friends?fields=installed
@@ -32,6 +32,9 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 [ ] edit facebook story when editing inventory item
 [ ] delete facebook story when deleting inventory item
 [ ] if facebook token has expired/deactivatd, invite user to get a new one and let them know that if they don't, changes will not be reflected on FB
+
+#Gratitude
+
 
 #Review
 [ ] take screen shots

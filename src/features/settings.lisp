@@ -836,6 +836,14 @@
                    (str (settings-donate))))
             (str (settings-deactivate)))))))
 
+(defun post-settings-social ()
+  (require-user (:allow-test-user t)
+    (cond
+      ((post-parameter "fb-logout")
+       (modify-db *userid* :fbtoken nil)
+       (flash "Kindista no longer has access to your Facebook account")))
+    (see-other "/settings/social")))
+
 (defun get-settings-social ()
   (unless *productionp*
     (require-user (:allow-test-user t)
@@ -860,6 +868,7 @@
                (modify-db *userid* :fbtoken token :fbexpires expires)
                (unless (getf *user* :fb-id)
                  (modify-db *userid* :fb-id (get-facebook-user-id)))
+               (flash "You have successfully linked Kindista to your Facebook account.")
 
              (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
                (format s "~A ~A ~A~%" alist token expires))))
@@ -875,46 +884,50 @@
         ; take this code + facebook private to make a token
         )
 
-     (settings-template-html
-       (aif (get-parameter "groupid")
-         (url-compose "/settings/settings"
-                      "groupid" it)
-         "/settings/communication")
-       (html
-        (str (settings-tabs-html "social" (awhen groupid it)))
-        (:p "You can connect your Kindista account with Facebook to have Kindista automatically post your offers and requests to your Facebook timeline.")
-        (str (settings-item-html
-           "notifications"
-           (html
-             (when (get-parameter "error")
-               (htm (:p :class "error" "Connecting with Facebook had an error: " (str (get-parameter "error_description")))))
-             (:p (:a :class "blue"
-                     :href (url-compose "https://www.facebook.com/dialog/oauth"
-                                        "client_id" *facebook-app-id*
-                                        "scope" "public_profile,publish_actions"
-                                        "redirect_uri" (s+ +base-url+ "settings/social"))
-              "Log in to Facebook"))
-             (:p "Post to Facebook:")
-             (:ul
-               (:li (:input :type "checkbox"
-                     :name "offers"
-                     )
-                    "when you post an offer")
-               (:li (:input :type "checkbox"
-                     :name "requests"
-                     )
-                    "when you post a request")))
+      (settings-social-html))))
 
-        :buttons (html (:button :class (s+ "yes " (when *user* "small"))
-                                :type "submit"
-                                :name "save-notifications"
-                          "Save preferences")
-                       (unless *user*
-                         (htm (:div (:a :class "blue" :href "/login"
-                                      "Log into Kindista")))))
-        :action "/settings/social"
-        :title "Facebook"
-        :editable t)))))))
+(defun settings-social-html
+  (&aux (fb-token-p (getf *user* :fbtoken))
+        (sign-in-button
+          (html (:a :class "blue"
+                    :href (url-compose "https://www.facebook.com/dialog/oauth"
+                                       "client_id" *facebook-app-id*
+                                       "scope" "public_profile,publish_actions"
+                                       "redirect_uri" (s+ +base-url+
+                                                          "settings/social"))
+                    "Sign in to Facebook")))
+        (sign-out-button
+          (html (:button :class "cancel"
+                         :type "submit"
+                         :name "fb-logout"
+                   "Log out of Facebook"))))
+  (settings-template-html
+    (aif (get-parameter "groupid")
+      (url-compose "/settings/social"
+                   "groupid" it)
+      "/settings/social")
+    (html
+      (str (settings-tabs-html "social" (awhen groupid it)))
+      (str
+        (settings-item-html
+          "facebook"
+          (html
+            (when (get-parameter "error")
+              (htm (:p :class "error"
+                     "Connecting with Facebook had an error: "
+                     (str (get-parameter "error_description")))))
+            (:div
+              (:span
+                (str (if fb-token-p
+                       "Your Kindista account is currently linked to your Facebook account."
+                       "Your Kindista account is not currently linked to Facebook.")))))
+
+       :buttons (if fb-token-p sign-out-button sign-in-button)
+       :help-text "You can connect your Kindista account with Facebook to post your offers, requests, and gratitude to your Facebook timeline."
+       :action "/settings/social"
+       :class "facebook"
+       :title "Facebook"
+       :editable t)))))
 
 (defun get-settings-communication ()
   (if *user*

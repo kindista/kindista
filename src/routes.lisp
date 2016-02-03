@@ -270,7 +270,8 @@
     :get get-settings-communication)
 
   ("/settings/social"
-    :get get-settings-social)
+    :get get-settings-social
+    :post post-settings-social)
 
   ("/settings/notifications"
     :post post-settings-notification)
