@@ -168,7 +168,8 @@
 (defun hyphenate (string)
   (ppcre:regex-replace-all " "
                            (remove-if #'(lambda (char)
-                                          (find char '("," "." "!" "?" "(" ")" "'")
+                                          (find char
+                                                '("," "." "!" "?" "(" ")" "'")
                                                 :test #'string=))
                                       (string-downcase string))
                            "-"))
@@ -186,9 +187,9 @@
         (when (ppcre:scan +email-scanner+ email)
           (collect email))))
 
-(defun decode-json-octets (octets)
-  (json:decode-json-from-string (octets-to-string octets
-                                                  :external-format :utf-8)))
+(defun decode-json-octets (octets &key (external-format :utf-8))
+  (json:decode-json-from-string
+    (octets-to-string octets :external-format external-format)))
 
 (defun mailinate-user-emails (&key (accounts-to-omit (list 1)) groups-to-omit)
   "For use in development environment only. Gives all users a mailinator email address for testing functionality and to prevent emails from being sent to users by mistake."

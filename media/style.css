@@ -3561,6 +3561,12 @@ div.settings menu.bar {
  }
 }
 
+@media (max-width:40em) {
+ .settings-item .details.facebook {
+   display: table-cell;
+ }
+}
+
 .settings-item .address-input.content {
  max-width: 30em;
 }

@@ -1,4 +1,4 @@
-;;; Copyright 2012-2016 CommonGoods Network, Inc.
+;;; Copyright 2015-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -215,3 +215,29 @@
                      "client_secret" *facebook-secret*
                      "grant_type" "client_credentials"))))
 
+(defvar *facebook-uninstall-test* "Zk0EYBDJamQaNKYupfxCJZaAadCP3bILg7TE3_euPEM.eyJhbGdvcml0aG0iOiJITUFDLVNIQTI1NiIsImlzc3VlZF9hdCI6MTQ1NDUzNTkyMiwidXNlciI6eyJjb3VudHJ5IjoidXMiLCJsb2NhbGUiOiJlbl9VUyJ9LCJ1c2VyX2lkIjoiMTAxNTI2NjkyMDkxNTEzMzEifQ")
+
+(defun post-uninstall-facebook
+  (&aux (signed-request (or *facebook-uninstall-test*
+                            (post-parameter "signed_request")))
+        (split-request (split "\\." signed-request))
+        (signature (substitute #\+ #\- (substitute #\/ #\_ (first split-request))))
+        (expected-sig)
+        (raw-data (second split-request))
+        (hmac (ironclad:make-hmac (string-to-octets *facebook-secret*) :sha256))
+        (json))
+
+  (ironclad:update-hmac hmac (string-to-octets raw-data))
+  (setf expected-sig
+        (remove #\= (base64:usb8-array-to-base64-string
+                      (ironclad:hmac-digest hmac))))
+  (when (equalp expected-sig signature)
+    (setf json
+          (json:decode-json-from-string
+             (with-output-to-string (s)
+               (base64:base64-string-to-stream raw-data :uri t :stream s)))))
+  (values signature
+          expected-sig
+          json
+          )
+  )
