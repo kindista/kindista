@@ -398,6 +398,8 @@
   ("/home/"
     :get go-home)
 
+  ("/uninstall-facebook"
+    :post post-uninstall-facebook)
   ;cron-jobs
 
   ("/inventory-expiration-reminders"

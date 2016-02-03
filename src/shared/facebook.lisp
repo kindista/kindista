@@ -215,3 +215,10 @@
                      "client_secret" *facebook-secret*
                      "grant_type" "client_credentials"))))
 
+
+(defun post-uninstall-facebook ()
+  (with-open-file (s (s+ +db-path+ "/tmp/log")
+                     :direction :output
+                     :if-does-not-exist :create
+                     :if-exists :supersede)
+    (format s "~A" (post-parameter "signed_request"))))
