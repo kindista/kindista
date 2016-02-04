@@ -1,7 +1,10 @@
 ## web apps
-  - iphone - https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
-  - android
   - test sending messages on transactions!
+  - test iphone webapp
+  - add push notificaiton subscription button on settings/communication page
+  - create queue for users push messsages
+  - create functions to handle the different kind of messages
+  - update send-push-notification to send the right message
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
 ## accountability with user flaky-ness

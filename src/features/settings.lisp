@@ -221,7 +221,7 @@
                    (html
                      (if public-location
                        (htm "This address is currently "
-                             (:strong "set to be displayed publicly ")
+                              (:strong "set to be displayed publicly ")
                              "to anyone viewing "
                              (str (s+ (getf entity :name) "'s"))
                              " profile. ")
@@ -637,6 +637,17 @@
      (flash (s+ "You have successfully added " email
                 " to your Kindista account."))
      (see-other "/settings/communication")))))
+
+(defun settings-push-notifications
+  (
+  &key (groupid group)
+       (user (userid *usderid*))
+  &aux (entity (or group user *user*))
+       (group-name (when group (getf group :name)))
+       (subject (or group-name "me"))
+   )
+    
+  )
 
 (defun settings-notifications (&key groupid group user (userid *userid*))
   (let* ((entity (or group  user *user*))

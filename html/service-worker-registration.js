@@ -6,9 +6,20 @@ if ('serviceWorker' in navigator) {
          userVisibleOnly: true
     }).then(function(sub) {
         console.log('endpoint:', sub.endpoint);
-    });
+        //send sub.endpoint 
+    })
+    .catch(function(err){
+     //push subscription failed
+      if (Notification.permission == 'denied') {
+       console.warn('Permission for Notifications was denied');
+       //disable push button 
+      } else {
+       console.error('Unable to subscribe to push.' , err); 
+      }
   }).catch(function(err) {
-    // registration failed
-    console.log('ServiceWorker registration failed: ', err);
+    // Service Worker registration failed
+    console.error('ServiceWorker registration failed: ', err);
+   }
+   )
   });
 }

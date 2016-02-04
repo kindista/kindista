@@ -1,17 +1,23 @@
 // set the callback for the install step
 self.addEventListener('install', function(event) {
     //perform install steps
-  self.skipWaiting() // updates service worker, remove for production
+ return self.skipWaiting() // updates service worker, remove for production
   console.log('Installed', event);
 });
 self.addEventListener('activate', function(event) {
   console.log('Activated', event);
 });
 self.addEventListener('push', function(event) {
-  //skeleton for fetching data from db
   event.waitUntil(
-    fetch('/send-test-notification', {
+    self.registration.pushManager.getSubscription().then(function(subscription) {
+     fetch('/send-test-notification', {
      method: 'post',
+     headers: {
+        //authorization ?
+        'Accept': 'application/json', 
+        'Content-Type': 'application/json'
+     },
+     body: JSON.stringify(subscription)
       })
     .then(function(response) {
       if (response.status !== 200) {
@@ -20,7 +26,6 @@ self.addEventListener('push', function(event) {
         throw new Error();
       }
       // examine text
-      console.log(response);
       return response.json().then(function(data) {
         //if (data.error || !data.notification) {
         //  console.error('The API returned an error.', data.error);
@@ -47,6 +52,33 @@ self.addEventListener('push', function(event) {
           icon: icon,
           tag: notificationTag
          });
-      })
+   })
+    })); 
+   
+    
+});
+self.addEventListener('notificationclick', function(event) {
+  console.log('On notification click: ', event.notification.tag); 
+  //close the notification when you click on it
+  event.notification.close();
+
+  // Check if page is open, if so focus on it
+  event.waitUntil(
+    clients.matchAll({
+      type: "window"
+    })
+    .then(function(clientList) {
+      for (var i = 0; i < clientList.length; i++) {
+        var client = clientList[i];
+        if (client.url == '/home' && 'focus' in client){
+            return client.focus();
+            console.log('focus');
+        }
+      }
+      if (clients.openWindow) {
+        console.log('newwindow');
+        return clients.openWindow('/home');
+      } 
+    })
   );
 });
