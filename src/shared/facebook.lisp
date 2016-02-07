@@ -215,11 +215,8 @@
                      "client_secret" *facebook-secret*
                      "grant_type" "client_credentials"))))
 
-(defvar *facebook-uninstall-test* "Zk0EYBDJamQaNKYupfxCJZaAadCP3bILg7TE3_euPEM.eyJhbGdvcml0aG0iOiJITUFDLVNIQTI1NiIsImlzc3VlZF9hdCI6MTQ1NDUzNTkyMiwidXNlciI6eyJjb3VudHJ5IjoidXMiLCJsb2NhbGUiOiJlbl9VUyJ9LCJ1c2VyX2lkIjoiMTAxNTI2NjkyMDkxNTEzMzEifQ")
-
 (defun post-uninstall-facebook
-  (&aux (signed-request (or *facebook-uninstall-test*
-                            (post-parameter "signed_request")))
+  (&aux (signed-request (post-parameter "signed_request"))
         (split-request (split "\\." signed-request))
         (signature (substitute #\+ #\- (substitute #\/ #\_ (first split-request))))
         (expected-sig)
