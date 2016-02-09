@@ -865,7 +865,9 @@
                     (token (cdr (assoc "access_token" alist :test #'string=)))
                     (expires (+ now (parse-integer (cdr (assoc "expires" alist :test #'string=))))))
 
-               (modify-db *userid* :fbtoken token :fbexpires expires)
+               (modify-db *userid* :fbtoken token
+                                   :fbexpires expires
+                                   :fb-link-active t)
                (unless (getf *user* :fb-id)
                  (modify-db *userid* :fb-id (get-facebook-user-id)))
                (flash "You have successfully linked Kindista to your Facebook account.")
@@ -888,14 +890,8 @@
 
 (defun settings-social-html
   (&aux (fb-token-p (getf *user* :fbtoken))
-        (sign-in-button
-          (html (:a :class "blue"
-                    :href (url-compose "https://www.facebook.com/dialog/oauth"
-                                       "client_id" *facebook-app-id*
-                                       "scope" "public_profile,publish_actions"
-                                       "redirect_uri" (s+ +base-url+
-                                                          "settings/social"))
-                    "Sign in to Facebook")))
+        (sign-in-button (facebook-sign-in-button
+                          (s+ +base-url+ "settings/social")))
         (sign-out-button
           (html (:button :class "cancel"
                          :type "submit"

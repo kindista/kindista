@@ -55,6 +55,17 @@
       (htm (:meta :property "og:description"
                   :content (escape-for-html it))))))
 
+(defun facebook-sign-in-button
+  (redirect-uri
+   &key (button-text "Sign in to Facebook"))
+  (html
+    (:a :class "blue"
+        :href (url-compose "https://www.facebook.com/dialog/oauth"
+                           "client_id" *facebook-app-id*
+                           "scope" "public_profile,publish_actions"
+                           "redirect_uri" redirect-uri)
+        (str button-text))))
+
 (defun get-facebook-user-data
   (&optional (userid *userid*)
    &aux (*user* (or *user* (db userid)))
@@ -222,19 +233,24 @@
         (expected-sig)
         (raw-data (second split-request))
         (hmac (ironclad:make-hmac (string-to-octets *facebook-secret*) :sha256))
-        (json))
+        (json)
+        (fb-id)
+        (userid))
 
   (ironclad:update-hmac hmac (string-to-octets raw-data))
   (setf expected-sig
         (remove #\= (base64:usb8-array-to-base64-string
                       (ironclad:hmac-digest hmac))))
-  (when (equalp expected-sig signature)
-    (setf json
-          (json:decode-json-from-string
-             (with-output-to-string (s)
-               (base64:base64-string-to-stream raw-data :uri t :stream s)))))
-  (values signature
-          expected-sig
-          json
-          )
-  )
+  (if (equalp expected-sig signature)
+    (progn
+      (setf json
+            (json:decode-json-from-string
+              (with-output-to-string (s)
+                (base64:base64-string-to-stream raw-data :uri t :stream s))))
+      (setf fb-id (safe-parse-integer (getf json :user-id)))
+      (setf userid (gethash fb-id *facebook-id-index*))
+      (modify-db userid :fb-link-active nil)
+      (with-locked-hash-table (*facebook-id-index*)
+        (remhash fb-id *facebook-id-index*))
+      (setf (return-code*) +http-no-content+))
+    (setf (return-code*) +http-forbidden+)))

@@ -28,25 +28,41 @@
           (dolist (flash (flashes))
             (str flash))
           (:div :id "body"
-            (:form :method "POST" :action "/login" :class "login"
-             (awhen (get-parameter "retry")
-               (htm (:p :class "error" "The email/username or password was incorrect.")
-                    (unless (string= it "")
-                        (htm (:p (:a :href (s+ "/signup?email=" it)
-                                     "Would you like to create an account?"))))))
-             (awhen (get-parameter "next")
-               (htm (:input :type "hidden" :name "next" :value it)))
-             (:label "Username or email"
-               (:input :type "text"
-                :class "username"
-                :name "username"
-                :value (get-parameter "retry")))
-             (:label "Password"
-               (:input :type "password"
-                :class "password"
-                :name "password"))
-             (:button :type "submit" :class "yes" "Log in")
-             (:span (:a :href "/reset" :class "reset"  "Forgot your password?")))))
+            (:div :id "login"
+              (:h1 "Sign in")
+              (:h3 "Welcome back!")
+              (:div :id "login-form"
+                (:form :method "POST" :action "/login" :class "login"
+                  (awhen (get-parameter "retry")
+                    (htm (:p :class "error" "The email/username or password was incorrect.")
+                         (unless (string= it "")
+                             (htm (:p (:a :href (s+ "/signup?email=" it)
+                                          "Would you like to create an account?"))))))
+                  (awhen (get-parameter "next")
+                    (htm (:input :type "hidden" :name "next" :value it)))
+                  (:label "Username or email"
+                    (:input :type "text"
+                     :class "username"
+                     :name "username"
+                     :value (get-parameter "retry")))
+                  (:label "Password"
+                    (:input :type "password"
+                     :class "password"
+                     :name "password"))
+                  (:button :type "submit" :class "yes" "Sign in")
+                  (:span :class "forgot"
+                   (:a :href "/reset" :class "reset"  "Forgot your password?"))))
+              (:div :class "or-divider"
+                (:span "or"))
+              (:hr)
+              (:div :class "social-signin"
+                (str (facebook-sign-in-button
+                       "/home"
+                       :button-text "Sign in with Facebook")))
+              (:div :id "join"
+                (:span "Not on Kindista yet? ")
+                (:a :href "/signup"
+                 "Join the Kindness revolution!")))))
         :hide-menu t))))
 
 (defun post-login ()

@@ -36,6 +36,20 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 #Gratitude
 
 
+#Group-Accounts
+- permissions:
+    manage_pages, publish_pages
+
+#Invite Friends?
+
+#FB login
+https://developers.facebook.com/docs/facebook-login/multiple-providers
+login: "login with facebook", "New to Kindista? Sign up!" 
+
+signup: "sign up with facebook" "already have an account? login!"
+ - keep track of whether location was set by facebook or by user
+   - if by facebook, get a confirmation when they try to do anything that requires location
+
 #Review
 [ ] take screen shots
 https://developers.facebook.com/docs/apps/review
@@ -43,8 +57,13 @@ https://developers.facebook.com/docs/apps/review
 
 - Remove admin restriction for :share-url in inventory-activity-item
 
-#Group-Accounts
-- permissions:
-    manage_pages, publish_pages
 
-#Invite Friends?
+#Merge accounts (fb-id fbtoken)
+
+#Review
+[ ] take screen shots
+https://developers.facebook.com/docs/apps/review
+[ ] submit to facebook for review
+
+- Remove admin restriction for :share-url in inventory-activity-item
+
