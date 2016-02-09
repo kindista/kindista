@@ -55,25 +55,80 @@
       (htm (:meta :property "og:description"
                   :content (escape-for-html it))))))
 
-(defun get-facebook-user-data
-  (&optional (userid *userid*)
+(defun facebook-sign-in-button
+  (&key (redirect-uri "home")
+        (button-text "Sign in with Facebook")
+        scope)
+  (asetf scope
+         (strcat* (if (listp scope)
+                    (format nil "~{~A,~}" scope)
+                    (s+ scope ","))
+                  "public_profile,publish_actions"))
+  (html
+    (:a :class "blue"
+        :href (url-compose "https://www.facebook.com/dialog/oauth"
+                           "client_id" *facebook-app-id*
+                           "scope" scope
+                           "redirect_uri" (s+ +base-url+ redirect-uri))
+        (str button-text))))
+
+(defun register-facebook-user
+  (&optional (redirect-uri "home")
+   &aux reply)
+  (when (and *token* (get-parameter "code"))
+    (setf reply (multiple-value-list
+                  (http-request
+                    (url-compose
+                      "https://graph.facebook.com/oauth/access_token"
+                      "client_id" *facebook-app-id*
+                      "redirect_uri" (s+ +base-url+ redirect-uri)
+                      "client_secret" *facebook-secret*
+                      "code" (get-parameter "code"))
+                    :force-binary t)))
+    (cond
+     ((<= (second reply) 200)
+      (quri.decode:url-decode-params (octets-to-string (first reply))))
+     ((>= (second reply) 400)
+      (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
+        (format s "~S~%"
+                (cdr (assoc :message
+                            (cdr (assoc :error
+                                        (decode-json-octets (first reply))))))))
+      nil)
+     (t
+      (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
+        (format s ":-("))
+      nil))))
+
+(defun check-facebook-user-token
+  (&key (userid *userid*)
+        fb-token
    &aux (*user* (or *user* (db userid)))
-        (reply (multiple-value-list
-                 (with-facebook-credentials
-                   (http-request (s+ *fb-graph-url* "debug_token")
-                                 :parameters (list (cons "input_token"
-                                                         *facebook-user-token*)
-                                                   (cons "access_token"
-                                                         *facebook-app-token*)))))))
+        reply)
+
+  (setf reply
+        (multiple-value-list
+          (with-facebook-credentials
+            (http-request
+              (s+ *fb-graph-url* "debug_token")
+              :parameters (list (cons "input_token"
+                                      (or fb-token *facebook-user-token*))
+                                (cons "access_token" *facebook-app-token*))))))
+
   (when (= (second reply) 200)
     (cdr (find :data
                 (decode-json-octets (first reply))
                :key #'car))))
 
-(defun get-facebook-user-id
-  (&optional (userid *userid*))
-  (parse-integer
-     (cdr (assoc :user--id (get-facebook-user-data userid)))))
+(defun get-facebook-user-data (fb-token)
+  (decode-json-octets
+    (http-request (strcat *fb-graph-url*
+                          "me")
+                  :parameters (list (cons "access_token" fb-token)
+                                    (cons "method" "get")))))
+
+(defun get-facebook-user-id (fb-token)
+  (safe-parse-integer (cdr (assoc :id (get-facebook-user-data fb-token)))))
 
 (defun publish-facebook-action
   (id
@@ -222,19 +277,24 @@
         (expected-sig)
         (raw-data (second split-request))
         (hmac (ironclad:make-hmac (string-to-octets *facebook-secret*) :sha256))
-        (json))
+        (json)
+        (fb-id)
+        (userid))
 
   (ironclad:update-hmac hmac (string-to-octets raw-data))
   (setf expected-sig
         (remove #\= (base64:usb8-array-to-base64-string
                       (ironclad:hmac-digest hmac))))
-  (when (equalp expected-sig signature)
-    (setf json
-          (json:decode-json-from-string
-             (with-output-to-string (s)
-               (base64:base64-string-to-stream raw-data :uri t :stream s)))))
-  (values signature
-          expected-sig
-          json
-          )
-  )
+  (if (equalp expected-sig signature)
+    (progn
+      (setf json
+            (json:decode-json-from-string
+              (with-output-to-string (s)
+                (base64:base64-string-to-stream raw-data :uri t :stream s))))
+      (setf fb-id (safe-parse-integer (getf json :user-id)))
+      (setf userid (gethash fb-id *facebook-id-index*))
+      (modify-db userid :fb-link-active nil)
+      (with-locked-hash-table (*facebook-id-index*)
+        (remhash fb-id *facebook-id-index*))
+      (setf (return-code*) +http-no-content+))
+    (setf (return-code*) +http-forbidden+)))

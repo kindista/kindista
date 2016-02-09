@@ -847,55 +847,31 @@
 (defun get-settings-social ()
   (unless *productionp*
     (require-user (:allow-test-user t)
-      (when (get-parameter "code")
-        (let ((now (get-universal-time))
-              (reply (multiple-value-list
-                       (http-request
-                         (url-compose
-                           "https://graph.facebook.com/oauth/access_token"
-                           "client_id" *facebook-app-id*
-                           "redirect_uri" (s+ +base-url+ "settings/social")
-                           "client_secret" *facebook-secret*
-                           "code" (get-parameter "code"))
-                         :force-binary t))))
-          (cond
-            ((<= (second reply) 200)
-             (let* ((alist (quri.decode:url-decode-params
-                             (octets-to-string (first reply))))
-                    (token (cdr (assoc "access_token" alist :test #'string=)))
-                    (expires (+ now (parse-integer (cdr (assoc "expires" alist :test #'string=))))))
-
-               (modify-db *userid* :fbtoken token :fbexpires expires)
-               (unless (getf *user* :fb-id)
-                 (modify-db *userid* :fb-id (get-facebook-user-id)))
-               (flash "You have successfully linked Kindista to your Facebook account.")
-
-             (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
-               (format s "~A ~A ~A~%" alist token expires))))
-            ((>= (second reply) 400)
-             (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
-               (format s "~S~%"
-                       (cdr (assoc :message
-                                   (cdr (assoc :error
-                                               (decode-json-octets (first reply)))))))))
-            (t
-             (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
-               (format s ":-(")))))
-        ; take this code + facebook private to make a token
-        )
-
+      (let* ((now (get-universal-time))
+             (facebook-token-data (when (get-parameter "code")
+                                    (register-facebook-user
+                                      (s+ +base-url+ "settings/social"))))
+             (token (cdr (assoc "access_token"
+                                facebook-token-data
+                                :test #'string=)))
+             (expires (+ now (safe-parse-integer
+                               (cdr (assoc "expires"
+                                           facebook-token-data
+                                           :test #'string=))))) )
+        (when facebook-token-data
+          (modify-db *userid* :fbtoken token
+                              :fbexpires expires
+                              :fb-link-active t)
+          (unless (getf *user* :fb-id)
+            (modify-db *userid* :fb-id (get-facebook-user-id token)))
+          (flash "You have successfully linked Kindista to your Facebook account.")))
       (settings-social-html))))
 
 (defun settings-social-html
   (&aux (fb-token-p (getf *user* :fbtoken))
-        (sign-in-button
-          (html (:a :class "blue"
-                    :href (url-compose "https://www.facebook.com/dialog/oauth"
-                                       "client_id" *facebook-app-id*
-                                       "scope" "public_profile,publish_actions"
-                                       "redirect_uri" (s+ +base-url+
-                                                          "settings/social"))
-                    "Sign in to Facebook")))
+        (sign-in-button (facebook-sign-in-button
+                          :redirect-uri "settings/social"
+                          :button-text "Sign in to Facebook"))
         (sign-out-button
           (html (:button :class "cancel"
                          :type "submit"

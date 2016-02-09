@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -25,93 +25,96 @@
   (html
     (:div :class "identity-selection"
       (:p (:strong "Important: ") "This form is for creating accounts for individuals only.  After you sign up, you will be able to create an account for your organization or group.")
-      (:h3 "What kind of an account is this?")
-      (:input :type "radio"
-       :class "first-option"
-              :name "account-type"
-              :value "person") 
-      "An individual person"
-      (:input :type "radio"
-              :name "account-type"
-              :value "group") 
-      "A group (business, non-profit, school, community, church, etc.)")))
+      (:fieldset
+        (:legend "What kind of an account is this?")
+        (:label
+          (:input :type "radio"
+                  :class "first-option"
+                  :name "account-type"
+                  :value "person") 
+          "An individual person")
+        (:label
+          (:input :type "radio"
+                  :name "account-type"
+                  :value "group")
+          "A group (business, non-profit, school, community, church, etc.)")))))
+
+(defun signup-base (body &key error)
+  (header-page
+    "Sign up"
+    nil
+    (html
+      (when error (htm (:div :class "signup flash err" (str error))))
+        (:div :id "signup" (str body)))
+    :hide-menu t))
 
 (defun signup-page (&key error name email email2)
-  (header-page
-    "Sign up"
-    nil
+  (signup-base
     (html
-      (when error
-        (htm
-          (:div :class "signup flash err"
-           (str error))))
-      (:div :id "body"
-       (:h2 "Sign up for Kindista ")
-       (:h3 "Step 1 of 3: Verify Your Email Address") 
-       (:form :method "POST" :action "/signup" :id "signup"
-        (:label :for "name" "Full Name")
-        (:input :type "text" :id "name" :name "name" :value name)
-        (:br)
-        (:label :for "email" "Email")
-        (:input :type "text" :id "email" :name "email" :value email)
-        (:br)
-        (:label :for "email-2" "Confirm Email")
-        (:input :type "text" :id "email-2" :name "email-2" :value email2)
-        (:br)
-        (:div
-          (str (signup-identity-selection)))
-        (:p :class "fineprint" "By creating an account, you are agreeing to our "
-         (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
+      (:h1 "Sign up for Kindista ")
+      (str (facebook-sign-in-button
+             :scope "email"
+             :redirect-uri "signup"
+             :button-text "Use Facebook to sign up for Kindista"))
+      (str *or-divider*)
+      (:form :method "POST" :action "/signup" :id "signup-form"
+       (:label :for "name" "Full Name")
+       (:input :type "text" :id "name" :name "name" :value name)
+       (:br)
+       (:label :for "email" "Email")
+       (:input :type "text" :id "email" :name "email" :value email)
+       (:br)
+       (:label :for "email-2" "Confirm Email")
+       (:input :type "text" :id "email-2" :name "email-2" :value email2)
+       (:br)
+       (:div
+         (str (signup-identity-selection)))
+       (:button :class "yes" :type "submit" "Sign up")
+       (:p :class "fineprint" "By creating an account, you are agreeing to our "
+        (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy")))
 
-        (:br)
-        (:button :class "yes" :type "submit" "Sign up") 
 
-        (:span "Already have an account? " (:a :href "/login" "Log in")))))
-    :hide-menu t))
+       (:div :id "login"
+        (:span "Already have an account? " (:a :href "/login" "Log in."))))
+    :error error))
 
 (defun email-verification-page (&key error name email token host)
-  (header-page
-    "Sign up"
-    nil
+  (signup-base
     (html
-      (when error
-        (htm 
-          (:div :class "signup flash err"
-           (str error))))
-      (:div :id "body"
-       (if (eq host +kindista-id+)
-         (htm (:h2 "Create a Kindista account")
-              (:h3 "Step 2 of 3: Set your password"))
-         (htm (:h2 "Please RSVP to your invitation. ")))
-       (:p "Your email address is: " (:strong (str email)))
-       (:p "You will be able to change it or add additional email addresses on the Settings page after you sign up.")
-       (:form :method "POST" :action "/signup" :id "signup"
-        (:input :type "hidden" :name "token" :value token)
-        (:input :type "hidden" :name "email" :value email)
-        (unless (eq host +kindista-id+)
-          (htm (:h2 "Create an account")))
-        (:label :for "name" "Full Name")
-        (:input :type "text" :id "name" :name "name" :value name)
-        (:br)
-        (:label :for "password" "Password")
-        (:input :type "password" :id "password" :name "password" :value "")
-        (:br)
-        (:label :for "password-2" "Confirm Password")
-        (:input :type "password" :id "password" :name "password-2" :value "")
-        (:div
-          (str (signup-identity-selection)))
-        (:p :class "fineprint" "By creating an account, you are agreeing to our "
-         (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
+      (if (eq host +kindista-id+)
+        (htm (:h2 "Create a Kindista account")
+             (:h3 "Step 2 of 3: Set your password"))
+        (htm (:h2 "Please RSVP to your invitation. ")))
+      (:p "Your email address is: " (:strong (str email)))
+      (:p "You will be able to change it or add additional email addresses on the Settings page after you sign up.")
+      (:form :method "POST" :action "/signup" :id "signup"
+       (:input :type "hidden" :name "token" :value token)
+       (:input :type "hidden" :name "email" :value email)
+       (unless (eq host +kindista-id+)
+         (htm (:h2 "Create an account")))
+       (:label :for "name" "Full Name")
+       (:input :type "text" :id "name" :name "name" :value name)
+       (:br)
+       (:label :for "password" "Password")
+       (:input :type "password" :id "password" :name "password" :value "")
+       (:br)
+       (:label :for "password-2" "Confirm Password")
+       (:input :type "password" :id "password" :name "password-2" :value "")
+       (:div
+         (str (signup-identity-selection)))
+       (:p :class "fineprint" "By creating an account, you are agreeing to our "
+        (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
 
-        (:br)
-        (:button :class "yes" :type "submit" "Sign up") 
+       (:br)
+       (:button :class "yes" :type "submit" "Sign up") 
 
-        (:span "Already have an account? " (:a :href "/login" "Log in")))))
-    :hide-menu t))
+       (:span "Already have an account? " (:a :href "/login" "Log in"))))
+    :error error))
 
 (defun get-signup ()
   (let* ((get-email (get-parameter "email"))
          (get-token (get-parameter "token"))
+         (facebook-code (get-parameter "code"))
          (valid-email (gethash get-email *invitation-index*))
          (valid-token (rassoc get-token valid-email :test #'equal))
          (invitation-id (car valid-token))
@@ -119,10 +122,11 @@
          (host (getf invitation :host))
          (name (getf invitation :name)))
     (cond
+      (facebook-code (post-signup))
       (*user*
        (see-other "/home"))
       ((and get-token (not valid-token))
-       (flash "Your invitation code is incorrect or is no longer valid. No worries, you can still sign up for Kindista below.") 
+       (flash "Your invitation code is incorrect or is no longer valid. No worries, you can still sign up for Kindista below.")
        (signup-page))
       ((not valid-token)
        (signup-page))
@@ -163,109 +167,147 @@
                "Resend invitation")))))))
     :hide-menu t))
 
-(defun post-signup ()
-  (with-user
-    (let* ((token (post-parameter "token"))
-           (person-p (string= (post-parameter "account-type") "person"))
-           (group-p (string= (post-parameter "account-type") "group"))
-           (email (post-parameter "email"))
-           (email2 (post-parameter "email-2"))
-           (valid-email-invites (gethash email *invitation-index*))
-           (valid-token (rassoc token valid-email-invites :test #'equal))
-           (name (unless (and group-p (not valid-token))
-                   (post-parameter "name")))
-           (id (or (car valid-token) (post-parameter-integer "invite-id")))
-           (invitation (db id))
-           (host (getf invitation :host))
-           (invite-request-id (getf invitation :invite-request-id)))
-      (when *user* (reset-token-cookie))
-      (if invitation
+(defun post-signup
+  (&aux (token (post-parameter "token"))
+        (person-p (string= (post-parameter "account-type") "person"))
+        (group-p (string= (post-parameter "account-type") "group"))
+        (email (post-parameter "email"))
+        (email2 (post-parameter "email-2"))
+        (valid-email-invites (gethash email *invitation-index*))
+        (valid-token (rassoc token valid-email-invites :test #'equal))
+        (name (unless (and group-p (not valid-token))
+                (post-parameter "name")))
+        (id (or (car valid-token) (post-parameter-integer "invite-id")))
+        (invitation (db id))
+        (host (getf invitation :host))
+        (invite-request-id (getf invitation :invite-request-id))
+        (facebook-token-data (when (get-parameter "code")
+                               (register-facebook-user "signup")))
+        (fb-token (cdr (assoc "access_token"
+                              facebook-token-data
+                              :test #'string=))))
+
+  (when *user* (reset-token-cookie))
+  (cond
+    ;; Facebook signup
+    (facebook-token-data
+      (let* ((fb-data (get-facebook-user-data fb-token))
+             (fb-id (safe-parse-integer (cdr (assoc :id fb-data))))
+             (fb-email (cdr (assoc :email fb-data)))
+             (existing-k-id (gethash fb-id *facebook-id-index*))
+             (existing-k-email (gethash fb-email *email-index*)))
+        (pprint fb-data)
+        (pprint fb-id)
+        (terpri)
+        (cond
+          (existing-k-id
+            ;; log in
+            ;; mofify-db with fb data if necessary
+            )
+
+          (existing-k-email
+            (flash (strcat*
+                     "The email associated with this Facebook account, "
+                     "\"" existing-k-email "\","
+                     " already belongs to a Kindista account. "
+                     "Please login below or reset your password if you "
+                     "don't remember it.") :error t)
+            (see-other "/login"))
+
+          (t
+           (flash fb-data)
+           (see-other "/signup")
+           ))))
+
+    ;; Invitations
+    (invitation
+      (labels ((try-again (e)
+                 (email-verification-page :error e
+                                          :name name
+                                          :email email
+                                          :token token
+                                          :host host)))
+        (cond
+          ((post-parameter "resend-confirmation")
+            (resend-invitation id)
+            (signup-confirmation-sent id email :resent t))
+
+          (group-p
+            (try-again "This form is for creating personal accounts only. Once you create your personal account you can create group accounts from the \"Groups\" section of Kindista. If you ignore this warning you will create mass confusion for our community and will not be able to invite people to join your group. (Also we will probably end up deleting group accounts created with this form.)"))
+          ((not valid-token)
+            (try-again "The invitation code you have entered is not valid. Please sign up using te link provided in a valid Kindista invitation."))
+          ((gethash email *banned-emails-index*)
+            (flash (s+ "The email you have entered, "
+                       email
+                       ", is associated with an account "
+                       "that has been banned for posting inappropriate "
+                       "content or otherwise violating Kindista's "
+                       "Terms of Use. "
+                       "If you believe this to be an error, please email us "
+                       "so we can resolve this issue.")
+                   :error t)
+            (see-other "/home"))
+
+          ((gethash email *email-index*)
+            (try-again "The email address you have entered already belongs to another Kindista member. Please try again, or contact us if this really is your email address."))
+
+          ((< (getf invitation :valid-until) (get-universal-time))
+            (try-again "Your invitation has expired. Please contact the person who invited you to join Kindista and request another invitation."))
+
+          ((not (and (< 0 (length name))
+                     (< 0 (length (post-parameter "password")))
+                     (< 0 (length (post-parameter "password-2")))))
+           (try-again "All fields are required"))
+          ((> 8 (length (post-parameter "password")))
+            (try-again "Please use a strong password of at least 8 characters."))
+          ((not (validate-name name))
+            (try-again "Please use your full name"))
+          ((not (string= (post-parameter "password") (post-parameter "password-2")))
+            (try-again "Your password confirmation did not match the password you entered."))
+
+          ((not person-p)
+            (try-again "Please select an account type"))
+
+          (t
+           (create-new-person-account name
+                                      email
+                                      host
+                                      invitation
+                                      invite-request-id)
+           (see-other "/home")))))
+
+      (t
         (labels ((try-again (e)
-                   (email-verification-page :error e
-                                            :name name
-                                            :email email
-                                            :token token
-                                            :host host)))
+                  (signup-page :error e
+                               :name name
+                               :email email
+                               :email2 (when (equalp email email2) email2))))
           (cond
-            ((post-parameter "resend-confirmation")
-             (resend-invitation id)
-             (signup-confirmation-sent id email :resent t))
-
             (group-p
-             (try-again "This form is for creating personal accounts only. Once you create your personal account you can create group accounts from the \"Groups\" section of Kindista. If you ignore this warning you will create mass confusion for our community and will not be able to invite people to join your group. (Also we will probably end up deleting group accounts created with this form.)"))
-            ((not valid-token)
-             (try-again "The invitation code you have entered is not valid. Please sign up using te link provided in a valid Kindista invitation."))
-            ((gethash email *banned-emails-index*)
-             (flash (s+ "The email you have entered, "
-                        email
-                        ", is associated with an account "
-                        "that has been banned for posting inappropriate "
-                        "content or otherwise violating Kindista's "
-                        "Terms of Use. "
-                        "If you believe this to be an error, please email us "
-                        "so we can resolve this issue.")
-                    :error t)
-             (see-other "/home"))
+              (try-again "This form is for creating personal accounts only. Once you create your personal account you can create group accounts from the \"Groups\" section of Kindista. If you ignore this warning you will create mass confusion for our community and will not be able to invite people to join your group. (Also we will probably end up deleting group accounts created with this form.)"))
 
-            ((gethash email *email-index*)
-             (try-again "The email address you have entered already belongs to another Kindista member. Please try again, or contact us if this really is your email address."))
-
-            ((< (getf invitation :valid-until) (get-universal-time))
-             (try-again "Your invitation has expired. Please contact the person who invited you to join Kindista and request another invitation."))
-
-            ((not (and (< 0 (length name))
-                       (< 0 (length (post-parameter "password")))
-                       (< 0 (length (post-parameter "password-2")))))
-             (try-again "All fields are required"))
-            ((> 8 (length (post-parameter "password")))
-             (try-again "Please use a strong password of at least 8 characters."))
             ((not (validate-name name))
-             (try-again "Please use your full name"))
-            ((not (string= (post-parameter "password") (post-parameter "password-2")))
-             (try-again "Your password confirmation did not match the password you entered."))
+              (try-again "Please use your full name"))
 
+            ((not (scan +email-scanner+ email))
+              (try-again "There was a problem with the email address you entered. Please use a valid email address."))
+
+            ((not (string= email (post-parameter "email-2")))
+              (try-again "Your email confirmation did not match the email you entered"))
             ((not person-p)
               (try-again "Please select an account type"))
 
             (t
-             (create-new-person-account name
-                                        email
-                                        host
-                                        invitation
-                                        invite-request-id)
-             (see-other "/home"))))
+             (let ((id (aif (find email (unconfirmed-invites +kindista-id+)
+                                  :key #'(lambda (item) (getf item :email))
+                                  :test #'string=)
+                         (resend-invitation (getf it :id))
+                         (create-invitation email
+                                            :host +kindista-id+
+                                            :name name
+                                            :expires (* 90 +day-in-seconds+)))))
 
-    (labels ((try-again (e)
-               (signup-page :error e
-                            :name name
-                            :email email
-                            :email2 (when (equalp email email2) email2))))
-      (cond
-        (group-p
-         (try-again "This form is for creating personal accounts only. Once you create your personal account you can create group accounts from the \"Groups\" section of Kindista. If you ignore this warning you will create mass confusion for our community and will not be able to invite people to join your group. (Also we will probably end up deleting group accounts created with this form.)"))
-
-        ((not (validate-name name))
-         (try-again "Please use your full name"))
-
-        ((not (scan +email-scanner+ email))
-         (try-again "There was a problem with the email address you entered. Please use a valid email address."))
-
-        ((not (string= email (post-parameter "email-2")))
-         (try-again "Your email confirmation did not match the email you entered"))
-        ((not person-p)
-         (try-again "Please select an account type"))
-
-        (t
-         (let ((id (aif (find email (unconfirmed-invites +kindista-id+)
-                              :key #'(lambda (item) (getf item :email))
-                              :test #'string=)
-                     (resend-invitation (getf it :id))
-                     (create-invitation email
-                                        :host +kindista-id+
-                                        :name name
-                                        :expires (* 90 +day-in-seconds+)))))
-
-           (signup-confirmation-sent id email)))))))))
+               (signup-confirmation-sent id email))))))))
 
 (defun create-new-person-account
   (name

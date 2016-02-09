@@ -53,6 +53,7 @@
 (defindex *banned-emails-index* :test 'equalp)
 (defindex *event-geo-index*)
 (defindex *event-stem-index* :test 'equalp)
+(defindex *facebook-id-index*)
 (defindex *followers-index*)
 (defindex *geo-index-index* :test 'equal)
 (defindex *gratitude-index*)
