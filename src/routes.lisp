@@ -34,10 +34,6 @@
   ("/home"
     :get get-home)
 
-  ;test notification *remove*
-  ("/send-test-notification"
-    :post send-test-notification)
-
   ("/<int:id>"
     :get get-item-by-id)
 
@@ -397,6 +393,12 @@
 
   ("/home/"
     :get go-home)
+
+  ("/push-notification-subscription"
+    :post post-push-notification-subscription)
+
+  ("/unread-push-notifications"
+    :post send-push-notification)
 
   ;cron-jobs
 

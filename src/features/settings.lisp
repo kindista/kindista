@@ -640,13 +640,16 @@
 
 (defun settings-push-notifications
   (
-  &key (groupid group)
-       (user (userid *usderid*))
-  &aux (entity (or group user *user*))
-       (group-name (when group (getf group :name)))
-       (subject (or group-name "me"))
+  &key ;(groupid group)
+       ;(user (userid *usderid*))
+  &aux ;(entity (or group user *user*))
+       ;(group-name (when group (getf group :name)))
+       ;(subject (or group-name "me"))
    )
-    
+   (settings-item-html
+     "push-notification"
+     (html (:button :class "push-notification-button" :disabled t "enable push-notifications" )
+           ))
   )
 
 (defun settings-notifications (&key groupid group user (userid *userid*))
@@ -953,7 +956,9 @@
                "You can specify which actions you would like to be notified about.")
            (:p "Notifications will be sent to your primary email address: "
                (:strong (str (car (getf *user* :emails)))))
+           (str (settings-push-notifications))
            (str (settings-notifications :groupid groupid :group group))
+           (:script :type "text/javascript" :src "/push-notification-button.js") 
            (unless groupid
              (str (settings-emails (string= (get-parameter "edit") "email")
                                    :activate (get-parameter "activate"))))))))

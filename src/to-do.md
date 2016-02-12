@@ -1,8 +1,9 @@
 ## web apps
   - test sending messages on transactions!
   - test iphone webapp
-  - add push notificaiton subscription button on settings/communication page
+  - clean ui for push notification settings
   - create queue for users push messsages
+    - handle messages for gratitude, messages, group membership requests/invitations, transactions
   - create functions to handle the different kind of messages
   - update send-push-notification to send the right message
 ## split up database

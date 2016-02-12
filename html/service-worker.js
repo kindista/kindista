@@ -10,7 +10,7 @@ self.addEventListener('activate', function(event) {
 self.addEventListener('push', function(event) {
   event.waitUntil(
     self.registration.pushManager.getSubscription().then(function(subscription) {
-     fetch('/send-test-notification', {
+     fetch('/send-push-notification', {
      method: 'post',
      headers: {
         //authorization ?
@@ -43,19 +43,18 @@ self.addEventListener('push', function(event) {
     });
   }).catch(function(err) {
       // console.error('Unable to retrieve data', err);
-       var title = 'Something went wrong';
-       var body = 'We were unable to get the information for this message';
+       var title = 'You have new message';
+       var body = 'A new message is waiting for you in your Kindista inbox.';
        var icon = 'kindista_favicon_180.png';
        var notificationTag = 'notification-error';
+       var url = '/messages';
        return self.registration.showNotification(title, {
           body: body,
           icon: icon,
           tag: notificationTag
          });
-   })
-    })); 
-   
-    
+       })
+   })); 
 });
 self.addEventListener('notificationclick', function(event) {
   console.log('On notification click: ', event.notification.tag); 
@@ -70,14 +69,14 @@ self.addEventListener('notificationclick', function(event) {
     .then(function(clientList) {
       for (var i = 0; i < clientList.length; i++) {
         var client = clientList[i];
-        if (client.url == '/home' && 'focus' in client){
-            return client.focus();
+        if (client.url == event.notification.url && 'focus' in client){
             console.log('focus');
+            return client.focus();
         }
       }
       if (clients.openWindow) {
-        console.log('newwindow');
-        return clients.openWindow('/home');
+        console.log('new window');
+        return clients.openWindow(event.notification.url);
       } 
     })
   );

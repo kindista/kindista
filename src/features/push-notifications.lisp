@@ -1,4 +1,4 @@
-;;; Copyright 2012-2016 CommonGoods Network, Inc.
+;;; Copyright 2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -17,8 +17,31 @@
 
 (in-package :kindista)
 
-(defun send-test-notification
-  (&aux 
+(defun post-push-notification-subscription
+ (&aux
+    (json (alist-plist (json:decode-json-from-string
+                         (raw-post-data :force-text t))))
+    (subscribe-p (string= (getf json :action) "subscribe"))
+    (raw-endpoint (getf json :endpoint))
+    (url-parts (split "\\/" raw-endpoint))
+    (chrome-p (find "android.googleapis.com" url-parts :test #'string=))
+    (registration-id (first (last url-parts))))
+  (require-user
+    (cond
+      ((not chrome-p)
+       (setf (return-code*) +http-not-implemented+)
+       "Push Notifications have not been implemented for your browser.")
+      (t
+       (let ((notifications (db *userid* :chrome-push-notifications)))
+         (setf (getf notifications :subscription)
+               (when subscribe-p registration-id))
+         (modify-db *userid* :chrome-push-notifications notifications))
+       (setf (return-code*) +http-no-content+)
+       nil))))
+
+(defun send-push-notification
+  (
+   &aux 
     (title "New Message")
     (body "new message recieved")
     (icon "kindista_favicon_180.png")
@@ -28,7 +51,7 @@
     (registration-id (first (last (split "\\/" raw-endpoint))))
     ;check users message queue
     ;set title body etc to specific message
-    ;dequeue that message from usere message queue
+    ;dequeue that message from users message queue
     (json-list ( list (cons "title"  title) (cons "body"  body) (cons "icon"  icon) (cons "tag"  tag)))
     )
   (pprint registration-id)

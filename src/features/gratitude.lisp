@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -18,7 +18,7 @@
 (in-package :kindista)
 
 (defun new-gratitude-notice-handler ()
-  (send-gratitude-notification-email (getf (cddddr *notice*) :id)))
+  (send-gratitude-notification (getf (cddddr *notice*) :id)))
 
 (defun create-gratitude (&key author subjects pending text on transaction-id (time (get-universal-time)))
 ;; when gratitude is posted on an invitation
