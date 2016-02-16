@@ -74,7 +74,7 @@
 
 (defun register-facebook-user
   (&optional (redirect-uri "home")
-   &aux reply)
+             &aux reply)
   (when (and *token* (get-parameter "code"))
     (setf reply (multiple-value-list
                   (http-request
@@ -86,24 +86,24 @@
                       "code" (get-parameter "code"))
                     :force-binary t)))
     (cond
-     ((<= (second reply) 200)
-      (quri.decode:url-decode-params (octets-to-string (first reply))))
-     ((>= (second reply) 400)
-      (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
-        (format s "~S~%"
-                (cdr (assoc :message
-                            (cdr (assoc :error
-                                        (decode-json-octets (first reply))))))))
-      nil)
-     (t
-      (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
-        (format s ":-("))
-      nil))))
+      ((<= (second reply) 200)
+       (quri.decode:url-decode-params (octets-to-string (first reply))))
+      ((>= (second reply) 400)
+       (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
+         (format s "~S~%"
+                 (cdr (assoc :message
+                             (cdr (assoc :error
+                                         (decode-json-octets (first reply))))))))
+       nil)
+      (t
+       (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
+         (format s ":-("))
+       nil))))
 
 (defun check-facebook-user-token
   (&key (userid *userid*)
         fb-token
-   &aux (*user* (or *user* (db userid)))
+        &aux (*user* (or *user* (db userid)))
         reply)
 
   (setf reply
@@ -117,7 +117,7 @@
 
   (when (= (second reply) 200)
     (cdr (find :data
-                (decode-json-octets (first reply))
+               (decode-json-octets (first reply))
                :key #'car))))
 
 (defun get-facebook-user-data (fb-token)
@@ -258,9 +258,7 @@
                                        '("method" . "DELETE")))))))
  (values
    (decode-json-octets (first reply))
-   (second reply)
-   )
-  )
+   (second reply)))
 
 (defun get-facebook-app-token ()
     (string-left-trim "access_token="
