@@ -49,6 +49,8 @@ login: "login with facebook", "New to Kindista? Sign up!"
 signup: "sign up with facebook" "already have an account? login!"
  - keep track of whether location was set by facebook or by user
    - if by facebook, get a confirmation when they try to do anything that requires location
+   - if signup via facebook and user has existing Kindista-ID, log in
+
 
 #Review
 [ ] take screen shots
