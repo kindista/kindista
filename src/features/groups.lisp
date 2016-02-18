@@ -60,8 +60,9 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (with-locked-hash-table (*username-index*)
-      (setf (gethash (getf data :username) *username-index*) id))
+    (when (getf data :username)
+      (with-locked-hash-table (*username-index*)
+        (setf (gethash (getf data :username) *username-index*) id)))
 
     (with-locked-hash-table (*group-privileges-index*)
       (dolist (person (getf data :admins))

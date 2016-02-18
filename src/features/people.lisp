@@ -79,7 +79,7 @@
                    :notify-group-membership-invites t
                    :notify-kindista t))
 
-(defun create-person (&key name email password host aliases pending test-user-p)
+(defun create-person (&key name email password host aliases pending test-user-p fb-id fb-token fb-expires)
   (let* ((person-id (insert-db (list :type :person
                                      :name name
                                      :aliases aliases
@@ -88,9 +88,13 @@
                                      :pending pending
                                      :active t
                                      :help t
-                                     :pass (new-password password)
+                                     :pass (awhen password (new-password it))
                                      :created (get-universal-time)
                                      :unsubscribe-key (random-password 18)
+                                     :fb-id fb-id
+                                     :fb-token fb-token
+                                     :fb-expires fb-expires
+                                     :fb-link-active (when fb-id t)
                                      :test-user test-user-p
                                      :notify-gratitude t
                                      :notify-message t
@@ -132,7 +136,9 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (setf (gethash (getf data :username) *username-index*) id)
+    (when (getf data :username)
+      (with-locked-hash-table (*username-index*)
+        (setf (gethash (getf data :username) *username-index*) id)))
 
     (with-locked-hash-table (*profile-activity-index*)
       (asetf (gethash id *profile-activity-index*)

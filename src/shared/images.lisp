@@ -35,6 +35,24 @@
    (modify-db image :filename filename)
    (values image)))
 
+(defun fb-image-test (path content-type)
+  (let* ((suffix (cond
+                  ((string= content-type "image/jpeg")
+                   "jpg")
+                  ((string= content-type "image/png")
+                   "png")
+                  ((string= content-type "image/gif")
+                   "gif")
+                  (t
+                   (error "~S is not a supported content type" content-type))))
+         (image (insert-db (list :type :image
+                                 :content-type content-type
+                                 :modified (get-universal-time))))
+         (filename (strcat image "." suffix)))
+   (copy-file path (merge-pathnames (s+ +db-path+ "tmp/") filename))
+   (modify-db image :filename filename)
+   (values image)))
+
 (defun new-image-form
   (action
    next

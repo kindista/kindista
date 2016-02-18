@@ -30,8 +30,8 @@
                                    (setf *facebook-app-token*
                                          (get-facebook-app-token))))
          (*fb-id* (getf *user* :fb-id))
-         (*facebook-user-token* (getf *user* :fbtoken))
-         (*facebook-user-token-expiration* (getf *user* :fbexpires)))
+         (*facebook-user-token* (getf *user* :fb-token))
+         (*facebook-user-token-expiration* (getf *user* :fb-expires)))
      ,@body))
 
 (defun facebook-item-meta-content (id typestring title &optional description)
@@ -63,7 +63,7 @@
          (strcat* (if (listp scope)
                     (format nil "~{~A,~}" scope)
                     (s+ scope ","))
-                  "public_profile,publish_actions"))
+                  "public_profile,publish_actions,email,user_location"))
   (html
     (:a :class "blue"
         :href (url-compose "https://www.facebook.com/dialog/oauth"
@@ -121,14 +121,51 @@
                :key #'car))))
 
 (defun get-facebook-user-data (fb-token)
-  (decode-json-octets
-    (http-request (strcat *fb-graph-url*
-                          "me")
-                  :parameters (list (cons "access_token" fb-token)
-                                    (cons "method" "get")))))
+  (alist-plist
+    (decode-json-octets
+      (http-request (strcat *fb-graph-url*
+                            "me")
+                    :parameters (list (cons "access_token" fb-token)
+                                      (cons "method" "get"))))))
 
 (defun get-facebook-user-id (fb-token)
-  (safe-parse-integer (cdr (assoc :id (get-facebook-user-data fb-token)))))
+  (safe-parse-integer (getf (get-facebook-user-data fb-token) :id)))
+
+(defun get-facebook-profile-picture
+  (k-user-id
+   &aux (user (db k-user-id))
+        (fb-token (getf user :fb-token))
+        (fb-user-id (getf user :fb-id))
+        (response)
+        (image-id))
+  (when (and fb-token fb-user-id)
+   (setf response
+         (multiple-value-list
+           (http-request (strcat *fb-graph-url* "v2.5/" fb-user-id "/picture")
+                         :parameters (list (cons "access_token" fb-token)
+                                           (cons "type" "large")
+                                           (cons "method" "get")))))
+   (when (eql (second response) 200)
+     (ensure-directories-exist (strcat +db-path+ "tmp/"))
+     (setf (logical-pathname-translations "temporary-files")
+           (list (list "*.*.*" (strcat +db-path+ "tmp/"))))
+     (cl-fad:with-open-temporary-file (file)
+       (print (fifth response) file)
+       (setf image-id
+             (fb-image-test file (cdr (assoc :content-type (third response))))))))
+  image-id)
+
+(defun get-facebook-location-data (fb-location-id fb-token)
+  (alist-plist
+    (cdr
+      (assoc :location
+             (decode-json-octets
+               (http-request (strcat *fb-graph-url*
+                                     "v2.5/"
+                                     fb-location-id)
+                             :parameters (list (cons "access_token" fb-token)
+                                               (cons "fields" "location")
+                                               (cons "method" "get"))))))))
 
 (defun publish-facebook-action
   (id
@@ -144,7 +181,7 @@
                         "me"
                        ;(or *fb-id* (getf user :fb-id))
                         "/kindistadotorg:post")
-                :parameters (list (cons "access_token" (getf user :fbtoken))
+                :parameters (list (cons "access_token" (getf user :fb-token))
                                   (cons "method" "post")
                                   (cons object-type
                                         (s+ "https://kindista.org" (resource-url id item)))
@@ -170,7 +207,7 @@
                        ;(or *fb-id* (getf user :fb-id))
                         "/kindistadotorg:post/"
                         typestring)
-                :parameters (list (cons "access_token" (getf user :fbtoken))
+                :parameters (list (cons "access_token" (getf user :fb-token))
                                   (cons "method" "get")))))))
 
   (when (= (second reply) 200)

@@ -53,7 +53,6 @@
     (html
       (:h1 "Sign up for Kindista ")
       (str (facebook-sign-in-button
-             :scope "email"
              :redirect-uri "signup"
              :button-text "Use Facebook to sign up for Kindista"))
       (str *or-divider*)
@@ -111,30 +110,30 @@
        (:span "Already have an account? " (:a :href "/login" "Log in"))))
     :error error))
 
-(defun get-signup ()
-  (let* ((get-email (get-parameter "email"))
-         (get-token (get-parameter "token"))
-         (facebook-code (get-parameter "code"))
-         (valid-email (gethash get-email *invitation-index*))
-         (valid-token (rassoc get-token valid-email :test #'equal))
-         (invitation-id (car valid-token))
-         (invitation (db invitation-id))
-         (host (getf invitation :host))
-         (name (getf invitation :name)))
-    (cond
-      (facebook-code (post-signup))
-      (*user*
-       (see-other "/home"))
-      ((and get-token (not valid-token))
-       (flash "Your invitation code is incorrect or is no longer valid. No worries, you can still sign up for Kindista below.")
-       (signup-page))
-      ((not valid-token)
-       (signup-page))
-      (t
-       (email-verification-page :email get-email
-                                :token get-token
-                                :host host
-                                :name name)))))
+(defun get-signup
+  (&aux (get-email (get-parameter "email"))
+        (get-token (get-parameter "token"))
+        (facebook-code (get-parameter "code"))
+        (valid-email (gethash get-email *invitation-index*))
+        (valid-token (rassoc get-token valid-email :test #'equal))
+        (invitation-id (car valid-token))
+        (invitation (db invitation-id))
+        (host (getf invitation :host))
+        (name (getf invitation :name)))
+  (cond
+    (facebook-code (post-signup))
+    (*user*
+     (see-other "/home"))
+    ((and get-token (not valid-token))
+     (flash "Your invitation code is incorrect or is no longer valid. No worries, you can still sign up for Kindista below.")
+     (signup-page))
+    ((not valid-token)
+     (signup-page))
+    (t
+     (email-verification-page :email get-email
+                              :token get-token
+                              :host host
+                              :name name))))
 
 (defun signup-confirmation-sent (invite-id email &key resent)
   (header-page
@@ -185,18 +184,31 @@
                                (register-facebook-user "signup")))
         (fb-token (cdr (assoc "access_token"
                               facebook-token-data
-                              :test #'string=))))
+                              :test #'string=)))
+        (fb-expires (cdr (assoc "expires"
+                                facebook-token-data
+                                :test #'string=))))
 
   (when *user* (reset-token-cookie))
   (cond
     ;; Facebook signup
     (facebook-token-data
-      (let* ((fb-data (get-facebook-user-data fb-token))
-             (fb-id (safe-parse-integer (cdr (assoc :id fb-data))))
-             (fb-email (cdr (assoc :email fb-data)))
+      (let* (
+             (fb-data (get-facebook-user-data fb-token))
+             (fb-id (safe-parse-integer (getf fb-data :id)))
+             (unvalidated-fb-email (getf fb-data :email))
+             (fb-email (when (scan +email-scanner+ unvalidated-fb-email)
+                         unvalidated-fb-email))
+             (fb-name (getf fb-data :name))
              (existing-k-id (gethash fb-id *facebook-id-index*))
-             (existing-k-email (gethash fb-email *email-index*)))
+             (existing-k-email (gethash fb-email *email-index*))
+             (fb-location-node (getf fb-data :location))
+             (fb-location-id (safe-parse-integer
+                               (cdr (assoc :id fb-location-node))))
+             (fb-location-name (cdr (assoc :name fb-location-node)))
+             (fb-location (get-facebook-location-data fb-location-id fb-token)))
         (pprint fb-data)
+        (pprint fb-location)
         (pprint fb-id)
         (terpri)
         (cond
@@ -215,9 +227,12 @@
             (see-other "/login"))
 
           (t
-           (flash fb-data)
-           (see-other "/signup")
-           ))))
+            (create-new-person-account fb-name
+                                       fb-email
+                                       :fb-id fb-id
+                                       :fb-token fb-token
+                                       :fb-expires fb-expires)
+            (see-other "/home")))))
 
     ;; Invitations
     (invitation
@@ -271,9 +286,9 @@
           (t
            (create-new-person-account name
                                       email
-                                      host
-                                      invitation
-                                      invite-request-id)
+                                      :invitation invitation
+                                      :host host
+                                      :invite-request-id invite-request-id)
            (see-other "/home")))))
 
       (t
@@ -312,9 +327,12 @@
 (defun create-new-person-account
   (name
    email
-   host
-   invitation
-   invite-request-id
+   &key invitation
+        (host +kindista-id+)
+        invite-request-id
+        fb-id
+        fb-token
+        fb-expires
    &aux new-id
         (aliases (unless (search (getf invitation :name) name :test #'equalp)
                    (list (getf invitation :name)))))
@@ -348,12 +366,15 @@
                  (setf *invite-request-index* (remove it *invite-request-index* :key #'result-id))))
               (index-person it (db it))
               it))
-          (create-person :name (post-parameter "name")
+          (create-person :name name
                          :aliases aliases
                          :pending (when (eq host +kindista-id+) t)
                          :host host
-                         :email (post-parameter "email")
-                         :password (post-parameter "password"))))
+                         :email email
+                         :fb-id fb-id
+                         :fb-token fb-token
+                         :fb-expires fb-expires
+                         :password (post-parameter-string "password"))))
   (setf (token-userid *token*) new-id)
   (dolist (group (getf invitation :groups))
     (add-group-member new-id group))

@@ -51,6 +51,7 @@ signup: "sign up with facebook" "already have an account? login!"
    - if by facebook, get a confirmation when they try to do anything that requires location
    - if signup via facebook and user has existing Kindista-ID, log in
 
+#FP profile pic
 
 #Review
 [ ] take screen shots

@@ -840,7 +840,7 @@
   (require-user (:allow-test-user t)
     (cond
       ((post-parameter "fb-logout")
-       (modify-db *userid* :fbtoken nil)
+       (modify-db *userid* :fb-token nil)
        (flash "Kindista no longer has access to your Facebook account")))
     (see-other "/settings/social")))
 
@@ -859,8 +859,8 @@
                                            facebook-token-data
                                            :test #'string=))))) )
         (when facebook-token-data
-          (modify-db *userid* :fbtoken token
-                              :fbexpires expires
+          (modify-db *userid* :fb-token token
+                              :fb-expires expires
                               :fb-link-active t)
           (unless (getf *user* :fb-id)
             (modify-db *userid* :fb-id (get-facebook-user-id token)))
@@ -868,7 +868,7 @@
       (settings-social-html))))
 
 (defun settings-social-html
-  (&aux (fb-token-p (getf *user* :fbtoken))
+  (&aux (fb-token-p (getf *user* :fb-token))
         (sign-in-button (facebook-sign-in-button
                           :redirect-uri "settings/social"
                           :button-text "Sign in to Facebook"))
