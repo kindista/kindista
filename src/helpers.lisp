@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -225,6 +225,10 @@
 (defun remove-private-items (items)
   (remove-if #'item-view-denied items :key #'result-privacy))
 
+(defun love-component (loves)
+   (* (+ (log loves) 0.1) 60000)
+   )
+
 (defun activity-rank
   (result
    &key (userid *userid*)
@@ -240,8 +244,9 @@
         (contact-p (intersection contacts (result-people result)))
         (self-offset (if (eql (car (result-people result)) userid)
                        ;; don't use "=" because userid can be nil
-                       -100000
+                       -300
                        0))
+        (time-component (/ 100 (log (+ 1 age))))
         (distance (unless sitewide
                     (if (and (result-latitude result)
                              (result-longitude result))
@@ -252,23 +257,26 @@
                                               (result-longitude result)))
                          5000)))
         (distance-component (unless sitewide
-                              (/ (* 100000 distance-multiplier)
-                                 (log (+ 1.5 (* distance 2))))))
+                              (/ (* 100 distance-multiplier)
+                                 (log (+ 1 (* distance 2))))))
         (contact-component (if contact-p
-                             (* 100000 contact-multiplier)
+                             (* 100 contact-multiplier)
                              0))
-        (love-component (* (length (loves (result-id result))) 60000)))
+        (love-component (* (log (+ 1 (length (loves (result-id result))))) 81)))
   "Lower scores rank higher."
   (declare (optimize (speed 3) (safety 0) (debug 0)))
 
-  (values (round (apply #'- (remove nil
-                                    (list age
-                                          self-offset
+  (values (round (apply #'+ (remove nil
+                                    (list self-offset
+                                          time-component
                                           distance-component
                                           contact-component
-                                          love-component))))
+                                          love-component
+                                          ))))
 
           (list :distance-component distance-component
+                :self-offset self-offset
+                :time-component time-component
                 :contact-component contact-component
                 :love-component love-component)))
 

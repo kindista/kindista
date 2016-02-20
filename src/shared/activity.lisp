@@ -617,7 +617,11 @@
                                            result
                                            :sitewide (eql distance 0))))
                                local-items))
-         (items (mapcar #'car (sort ranked-items #'< :key #'cdr))))
+         (items (mapcar #'car (sort ranked-items #'> :key #'cdr))))
+    (pprint (first ranked-items))
+    (pprint (assoc (gethash 27900 *db-results*) ranked-items :test #'equalp))
+    (pprint (position (gethash 30734 *db-results*) items))
+    (terpri)
 
     (activity-items items :page page
                           :count count
