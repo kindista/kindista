@@ -244,13 +244,13 @@
         (contact-p (intersection contacts (result-people result)))
         (self-offset (if (eql (car (result-people result)) userid)
                        ;; don't use "=" because userid can be nil
-                       -300
+                       -50
                        0))
-        (time-component (/ 100 (log (+ 1 age))))
+        (time-component (/ 3000 (log (+ 1 (/ age 400)))))
         (distance (unless sitewide
                     (if (and (result-latitude result)
                              (result-longitude result))
-                           (max 0.1
+                           (max 0.3
                                 (air-distance lat
                                               long
                                               (result-latitude result)
@@ -258,14 +258,13 @@
                          5000)))
         (distance-component (unless sitewide
                               (/ (* 100 distance-multiplier)
-                                 (log (+ 1 (* distance 2))))))
+                                 (log (+ 2.1  distance)))))
         (contact-component (if contact-p
-                             (* 100 contact-multiplier)
+                             (* 70 contact-multiplier)
                              0))
-        (love-component (* (log (+ 1 (length (loves (result-id result))))) 81)))
-  "Lower scores rank higher."
+        (love-component (* (log (+ 1 (length (loves (result-id result))))) 30)))
+  "Higher scores rank higher."
   (declare (optimize (speed 3) (safety 0) (debug 0)))
-
   (values (round (apply #'+ (remove nil
                                     (list self-offset
                                           time-component
@@ -278,7 +277,9 @@
                 :self-offset self-offset
                 :time-component time-component
                 :contact-component contact-component
-                :love-component love-component)))
+                :love-component love-component
+                :age (humanize-universal-time (result-time result))
+                )))
 
 (defun event-rank
   (result
@@ -297,20 +298,25 @@
                        4)))
             (* (length (loves (result-id result))) 60000))))
 
+(defun inventory-item-rank
+  (result
+   &aux (age (- (get-universal-time) (or (result-time result) 0)))
+        (loves (max 1 (length (loves (result-id result))))))
+   (* (/ 50
+         (log (+ (/ age 86400)
+                 6)))
+      (expt loves 0.15)))
+
 (defun inventory-rank
   (alist)
 "Takes an a-list of ((request . (whether the request had matching terms in the :title, :details, and/or :tags))...)  and returns a ranked list of results"
 
-  (flet ((inventory-item-rank (item)
-           (let* ((result (car item))
-                  (age (- (get-universal-time) (or (result-time result) 0)))
-                  (loves (max 1 (length (loves (result-id result))))))
-             (+ (* (/ 50 (log (+ (/ age 86400) 6)))
-                   (expt loves 0.3))
-                (if (find :title (cdr item)) 25 0)
-                (if (find :tags (cdr item)) 8 0)))))
+  (flet ((rank (item)
+           (+ (inventory-item-rank (car item))
+              (if (find :title (cdr item)) 25 0)
+              (if (find :tags (cdr item)) 8 0))))
 
-    (mapcar #'car (sort alist #'> :key #'inventory-item-rank))))
+    (mapcar #'car (sort alist #'> :key #'rank))))
 
 (defun refresh-item-time-in-indexes
   (id

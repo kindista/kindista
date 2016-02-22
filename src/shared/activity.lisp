@@ -613,16 +613,20 @@
                                          distance))))
          (ranked-items (mapcar #'(lambda (result)
                                    (cons result
-                                         (activity-rank
-                                           result
-                                           :sitewide (eql distance 0))))
+                                         (multiple-value-list
+                                           (activity-rank
+                                             result
+                                             :sitewide (eql distance 0)))))
                                local-items))
-         (items (mapcar #'car (sort ranked-items #'> :key #'cdr))))
-    (pprint (first ranked-items))
-    (pprint (assoc (gethash 27900 *db-results*) ranked-items :test #'equalp))
-    (pprint (position (gethash 30734 *db-results*) items))
-    (terpri)
+         (sorted-items (sort ranked-items #'> :key #'cadr))
+         (items (remove-duplicates
+                  (mapcar #'car sorted-items)
+                  :from-end t
+                  :key #'result-id)))
 
+   ;for debugging rank
+   ;(mapcar #'pprint (subseq sorted-items 0 4))
+   ;(terpri)
     (activity-items items :page page
                           :count count
                           :reciprocity t

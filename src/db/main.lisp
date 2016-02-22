@@ -138,6 +138,17 @@
                (deg->rad lat2)
                (deg->rad long2))))
 
+(defun result-distance (result1 result2)
+  "The air distance between two results. Note that gratitudes have multiple results in geo-index (for each party)."
+  (air-distance (result-latitude result1)
+                (result-longitude result1)
+                (result-latitude result2)
+                (result-longitude result2)))
+
+(defun id-air-distance (id1 id2)
+  "The air distance between two entities in the DB"
+  (result-distance (gethash id1 *db-results*) (gethash id2 *db-results*)))
+
 (defun person-distance (one &optional (two *user*))
   (air-distance (getf one :lat) (getf one :long) (getf two :lat) (getf two :long)))
 

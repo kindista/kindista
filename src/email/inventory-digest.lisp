@@ -1,4 +1,4 @@
-;;; Copyright 2015 CommonGoods Network, Inc.
+;;; Copyright 2015-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -117,23 +117,27 @@
   "Returns up to 24 recent inventory items."
 
   (when (and (getf user :location) lat long)
-    (labels ((rank (item)
-               (activity-rank item :user user
-                                   :userid userid
-                                   :contact-multiplier 4
-                                   :distance-multiplier 6))
-             (get-inventory (index)
-               (sort (remove-if #'(lambda (result)
-                                    (or (find userid (result-people result))
-                                        (< (result-time result)
-                                           (- now timeframe))
-                                        (item-view-denied
-                                          (result-privacy result)
-                                          userid)
-                                        (db (result-id result) :refreshed)))
-                                (geo-index-query index lat long distance))
-                     #'<
-                     :key #'rank)))
+    (labels
+      ((rank (item)
+         (activity-rank item :user user
+                             :userid userid
+                             :contact-multiplier 5
+                             :distance-multiplier 5))
+       (get-inventory (index)
+         (sort
+           (mapcar (lambda (result) (cons result (rank result)))
+                   (remove-if
+                     (lambda (result)
+                       (or (find userid (result-people result))
+                           (< (result-time result)
+                              (- now timeframe))
+                           (item-view-denied
+                             (result-privacy result)
+                             userid)
+                           (db (result-id result) :refreshed)))
+                     (geo-index-query index lat long distance)))
+           #'>
+           :key #'cdr)))
 
       (setf offers (get-inventory *offer-geo-index*))
       (setf offer-count (length offers))
@@ -152,17 +156,21 @@
          (asetf requests (subseq it 0 (min (- 25 offer-count)
                                            request-count)))))
 
-      (let* ((offer-ids (mapcar #'result-id offers))
-             (request-ids (mapcar #'result-id requests))
+      (let* ((offer-ids (mapcar (lambda (result-cons)
+                                  (result-id (car result-cons)))
+                                offers))
+             (request-ids (mapcar (lambda (result-cons)
+                                    (result-id (car result-cons)))
+                                  requests))
              (featured-offers-count (length offer-ids))
              (featured-requests-count (length request-ids)))
 
        (list :offers offer-ids
-              :more-offers (when (> offer-count featured-offers-count)
-                             (- offer-count featured-offers-count))
-              :requests request-ids
-              :more-requests (when (> request-count featured-requests-count)
-                               (- request-count featured-requests-count)))))))
+             :more-offers (when (> offer-count featured-offers-count)
+                            (- offer-count featured-offers-count))
+             :requests request-ids
+             :more-requests (when (> request-count featured-requests-count)
+                              (- request-count featured-requests-count)))))))
 
 (defun inventory-digest-email-text
   (userid
