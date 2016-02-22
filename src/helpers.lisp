@@ -257,12 +257,15 @@
                                               (result-longitude result)))
                          5000)))
         (distance-component (unless sitewide
-                              (/ (* 100 distance-multiplier)
-                                 (log (+ 2.1  distance)))))
+                              (/ (* 150 distance-multiplier)
+                                 (log (+ 4 distance)))))
         (contact-component (if contact-p
                              (* 70 contact-multiplier)
                              0))
-        (love-component (* (log (+ 1 (length (loves (result-id result))))) 30)))
+        (love-component (aif (loves (result-id result))
+                          (* (log (* 1.4 (length it)))
+                             27)
+                          0)))
   "Higher scores rank higher."
   (declare (optimize (speed 3) (safety 0) (debug 0)))
   (values (round (apply #'+ (remove nil
