@@ -1026,8 +1026,13 @@
 
              ((post-parameter "really-delete")
               (deactivate-inventory-item id)
-              (flash "Your event has been deleted!")
+              (flash "Your event has been deactivated!")
               (see-other (or (post-parameter "next") "/home")))
+
+             ((post-parameter "reactivate")
+              (index-event id (modify-db id :active t))
+              (flash "Your event has been reactivated!")
+              (see-other url))
 
              ((and (post-parameter "date") (not new-date-p))
               (try-again "Please enter your date with the format MM/DD/YYYY" t))

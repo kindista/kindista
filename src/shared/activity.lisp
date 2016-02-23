@@ -124,23 +124,23 @@
                    " &middot; "
                    (:input :type "submit" :name "edit" :value "Edit")
                    " &middot; "
-                   (cond
-                     (admin-delete
-                      (htm (:input :type "submit"
-                                   :name "inappropriate-item"
-                                   :value "Inappropriate")))
-                     (deactivate
-                      (htm (:input :type "submit"
-                                   :name "deactivate"
-                                   :value "Deactivate")))
-                     (t
-                      (htm (:input :type "submit"
-                                   :name "delete"
-                                   :value "Delete")))))))
-               (awhen reactivate
-                 (htm
-                   " &middot; "
-                   (:a :href it "Reactivate")))
+                   (if reactivate
+                     (htm (:input :type "submit"
+                           :name "reactivate"
+                           :value "Reactivate"))
+                     (cond
+                       (admin-delete
+                         (htm (:input :type "submit"
+                               :name "inappropriate-item"
+                               :value "Inappropriate")))
+                       (deactivate
+                         (htm (:input :type "submit"
+                               :name "deactivate"
+                               :value "Deactivate")))
+                       (t
+                        (htm (:input :type "submit"
+                              :name "delete"
+                              :value "Delete"))))))))
 
                (when image-text
                  (htm
@@ -186,9 +186,14 @@
       :edit (or (eql host *userid*)
                 group-adminp
                 (getf *user* :admin))
-      :deactivate (or (eql host *userid*)
-                      group-adminp
-                      (getf *user* :admin))
+      :deactivate (and (getf data :active)
+                       (or (eql host *userid*)
+                         group-adminp
+                         (getf *user* :admin)))
+      :reactivate (and (not (getf data :active))
+                       (or (eql host *userid*)
+                         group-adminp
+                         (getf *user* :admin)))
       :loves (loves item-id)
       ;:comments (length (comments item-id))
       :content (html
@@ -399,11 +404,10 @@
                             (or self group-adminp (getf *user* :admin)))
                  :deactivate (and active-p
                                   (or self group-adminp (getf *user* :admin)))
-                 :reactivate (when (and (not active-p)
-                                        (or self
-                                            group-adminp
-                                            (getf *user* :admin)))
-                               renew-link)
+                 :reactivate (and (not active-p)
+                                  (or self
+                                      group-adminp
+                                      (getf *user* :admin)))
                  :admin-delete (and (getf *user* :admin)
                                     (not self)
                                     (not group-adminp))
