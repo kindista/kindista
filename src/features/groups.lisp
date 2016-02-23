@@ -643,6 +643,9 @@
                             (gethash person *profile-activity-index*))
             while (< i count)
             when (and (not (member result activity)) ; prevent duplicates
+                      ;; activity rank needs dates in the past
+                      ;; so it doesn't work for upcoming events
+                      (not (eql (result-type result) :event))
                       (or (not type)
                           (if (eql type :gratitude)
                             (or (and (eql :gratitude (result-type result))
@@ -655,7 +658,7 @@
                    (asetf activity (push result it))
                    (asetf activity (list result)))
                  (incf i))))
-    (sort activity #'< :key #'activity-rank)))
+    (sort activity #'> :key #'activity-rank)))
 
 (defun get-groups ()
   (if (and *user*
