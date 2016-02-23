@@ -713,6 +713,12 @@
                                              "/home"
                                              (referer))))
 
+                ((post-parameter "reactivate")
+                  (see-other (s+ (url-compose (resource-url id)
+                                              "edit" "t"
+                                              "focus" "expiration")
+                                 "#expiration")))
+
                 ((and (post-parameter "really-delete")
                       (not (post-parameter "delete-inappropriate-item")))
                  (deactivate-inventory-item id)
