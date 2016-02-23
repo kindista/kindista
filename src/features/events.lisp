@@ -1025,12 +1025,13 @@
                               :next-url (referer)))
 
              ((post-parameter "really-delete")
+              (modify-db id :auto-updated-time nil)
               (deactivate-inventory-item id)
               (flash "Your event has been deactivated!")
               (see-other (or (post-parameter "next") "/home")))
 
              ((post-parameter "reactivate")
-              (index-event id (modify-db id :active t))
+              (index-event id (modify-db id :active t :auto-updated-time nil))
               (flash "Your event has been reactivated!")
               (see-other url))
 
