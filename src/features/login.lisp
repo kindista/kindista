@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -54,7 +54,11 @@
                  (:a :href "/reset" :class "reset"  "Forgot your password?"))))
             (str *or-divider*)
             (:div :class "social-signin"
-              (str (facebook-sign-in-button :redirect-uri "login")))
+              (str (if (get-parameter "facebook-signup")
+                     (facebook-sign-in-button
+                       :redirect-uri "signup"
+                       :button-text "Use Facebook to sign up for Kindista")
+                     (facebook-sign-in-button :redirect-uri "login"))))
             (:div :id "join"
               (:span "Not on Kindista yet? ")
               (:a :href "/signup"
@@ -111,8 +115,10 @@
             :error t)
      (notice :auth-failure :fb-id fb-id) 
      (see-other (if next
-                    (url-compose "/login" "next" (url-encode next))
-                    "/login")))
+                  (url-compose "/login"
+                               "next" (url-encode next)
+                               "facebook-signup" "t")
+                  (url-compose "/login" "facebook-signup" "t"))))
     (t
      (flash "The email or password you entered was not recognized.  Please try again." :error t)
      (notice :auth-failure :username userid)

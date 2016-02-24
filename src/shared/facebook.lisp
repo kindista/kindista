@@ -146,13 +146,9 @@
                                            (cons "type" "large")
                                            (cons "method" "get")))))
    (when (eql (second response) 200)
-     (ensure-directories-exist (strcat +db-path+ "tmp/"))
-     (setf (logical-pathname-translations "temporary-files")
-           (list (list "*.*.*" (strcat +db-path+ "tmp/"))))
-     (cl-fad:with-open-temporary-file (file)
-       (print (fifth response) file)
-       (setf image-id
-             (fb-image-test file (cdr (assoc :content-type (third response))))))))
+      (setf image-id
+            (create-image (first response)
+                          (cdr (assoc :content-type (third response)))))))
   image-id)
 
 (defun get-facebook-location-data (fb-location-id fb-token)

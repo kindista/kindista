@@ -17,41 +17,33 @@
 
 (in-package :kindista)
 
-(defun create-image (path content-type)
-  (let* ((suffix (cond
-                  ((string= content-type "image/jpeg")
-                   "jpg")
-                  ((string= content-type "image/png")
-                   "png")
-                  ((string= content-type "image/gif")
-                   "gif")
-                  (t
-                   (error "~S is not a supported content type" content-type))))
-         (image (insert-db (list :type :image
-                                 :content-type content-type
-                                 :modified (get-universal-time))))
-         (filename (strcat image "." suffix)))
-   (copy-file path (merge-pathnames *original-images* filename))
+(defun create-image
+  (path-or-octet-array
+   content-type
+   &aux (suffix (cond
+                 ((string= content-type "image/jpeg")
+                  "jpg")
+                 ((string= content-type "image/png")
+                  "png")
+                 ((string= content-type "image/gif")
+                  "gif")
+                 (t
+                  (error "~S is not a supported content type" content-type))))
+        (image (insert-db (list :type :image
+                                :content-type content-type
+                                :modified (get-universal-time))))
+        (filename (strcat image "." suffix))
+        (destination (merge-pathnames *original-images* filename)))
+   (if (eql (type-of path-or-octet-array) 'pathname)
+      (copy-file path-or-octet-array destination)
+      (with-open-file (file destination
+                            :element-type '(unsigned-byte 8)
+                            :direction :output
+                            :if-does-not-exist :create
+                            :if-exists :supersede)
+        (write-sequence path-or-octet-array file)))
    (modify-db image :filename filename)
-   (values image)))
-
-(defun fb-image-test (path content-type)
-  (let* ((suffix (cond
-                  ((string= content-type "image/jpeg")
-                   "jpg")
-                  ((string= content-type "image/png")
-                   "png")
-                  ((string= content-type "image/gif")
-                   "gif")
-                  (t
-                   (error "~S is not a supported content type" content-type))))
-         (image (insert-db (list :type :image
-                                 :content-type content-type
-                                 :modified (get-universal-time))))
-         (filename (strcat image "." suffix)))
-   (copy-file path (merge-pathnames (s+ +db-path+ "tmp/") filename))
-   (modify-db image :filename filename)
-   (values image)))
+   (values image))
 
 (defun new-image-form
   (action
@@ -190,6 +182,8 @@
            (flash "You have already posted the maximum of 5 images to this item.  Please delete one to add another." :error t)
            (see-other url))
           (t
+                       (pprint (first image))
+                       (terpri)
             (flet ((modify-item-images (item-id &key edited)
                      (handler-case
                        ;; hunchentoot returns a list containing

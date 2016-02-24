@@ -376,6 +376,8 @@
                          :fb-expires fb-expires
                          :password (post-parameter-string "password"))))
   (setf (token-userid *token*) new-id)
+  (when fb-id
+    (modify-db new-id :avatar (get-facebook-profile-picture new-id)))
   (dolist (group (getf invitation :groups))
     (add-group-member new-id group))
   (add-contact host new-id)
