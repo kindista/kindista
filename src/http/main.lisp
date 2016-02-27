@@ -90,6 +90,16 @@
     (see-other "/home")
     (see-other (or (referer) "/home"))))
 
+(defun email-required ()
+  (flash (html "You must have an email associated with your account to perform this action. "
+               "Add an email address on your "
+               (:a :href "/settings/communication#email" "settings page")
+               " so that you can be notified when people respond to your post.")
+         :error t)
+  (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
+    (see-other "/home")
+    (see-other (or (referer) "/home"))))
+
 ;;; routing and acceptor {{{
 
 (setf *methods-for-post-parameters* '(:post :put))
@@ -291,6 +301,7 @@
 
 (defmacro require-user
   ((&key require-active-user
+         require-email
          allow-test-user)
    &body body)
   `(with-user
@@ -300,6 +311,11 @@
           (progn
             (flash "This account has been suspended for posting inappropriate content or otherwise violating Kindista's Terms of Use.  If you believe this to be an error please email us so we can resolve this issue." :error t)
             (get-logout)))
+
+         ((and ,require-email
+               (not (car (getf *user* :emails))))
+          (email-required))
+
          ((and (getf *user* :test-user)
                (not ,allow-test-user))
           (test-users-prohibited))

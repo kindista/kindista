@@ -87,6 +87,11 @@
           (gethash username *email-index*))
          (t (gethash username *username-index*))))
 
+  (pprint facebook-token-data)
+  (pprint fb-id)
+  (pprint userid)
+  (terpri)
+
   (cond
     ((gethash username *banned-emails-index*)
      (flash (s+ "The email you have entered, "
@@ -113,7 +118,7 @@
     (fb-code
      (flash "There is no Kindista account associated with the Facebook account currently active on this browser. Please confirm that you are logged into Facebook, or Sign Up for Kindista below."
             :error t)
-     (notice :auth-failure :fb-id fb-id) 
+     (notice :auth-failure :fb-id fb-id)
      (see-other (if next
                   (url-compose "/login"
                                "next" (url-encode next)

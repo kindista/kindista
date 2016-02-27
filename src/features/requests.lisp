@@ -32,7 +32,7 @@
           " at the top of the screen.")))))
 
 (defun get-requests-new ()
-  (require-user (:allow-test-user t)
+  (require-user (:allow-test-user t :require-email t)
     (enter-inventory-item-details :page-title "Post a request"
                                   :action "/requests/new"
                                   :button-text "Post request"

@@ -35,7 +35,7 @@
           " at the top of the screen.")))))
 
 (defun get-offers-new ()
-  (require-user (:allow-test-user t)
+  (require-user (:allow-test-user t :require-email t)
     (enter-inventory-item-details :page-title "Post an offer"
                                   :action "/offers/new"
                                   :button-text "Post offer"

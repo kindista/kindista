@@ -541,7 +541,7 @@
         (by (getf item :by))
         (adminp (group-admin-p by)))
 
-  (require-user ()
+  (require-user (:require-email t)
     (cond
       ((and (or (and (eq type :offer)
                      (eq action-type :offered))
@@ -598,7 +598,7 @@
              (see-other (or next (strcat "/transactions/" id)))))))))
 
 (defun post-existing-inventory-item (type &key id url edit deactivate)
-  (require-user (:allow-test-user t)
+  (require-user (:allow-test-user t :require-email t)
     (let* ((id (safe-parse-integer id))
            (item (db id))
            (by (getf item :by))
@@ -913,7 +913,7 @@
                   groups-selected
                   :onchange "this.form.submit()")))
 
-         (when (and (getf *user* :fbtoken)
+         (when (and (getf *user* :fb-token)
                     (not restrictedp))
            (htm
              (:div :id "publish-facebook"

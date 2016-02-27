@@ -144,6 +144,10 @@
       (asetf (gethash id *profile-activity-index*)
              (safe-sort (push result it) #'> :key #'result-time)))
 
+    (when (and (getf data :fb-id) (getf data :fb-link-active))
+      (with-locked-hash-table (*facebook-id-index*)
+        (setf (gethash (getf data :fb-id) *facebook-id-index*) id)))
+
     (unless (getf data :test-user)
 
       (when (getf data :active)
@@ -176,10 +180,6 @@
       (awhen (getf data :host)
         (with-locked-hash-table (*invited-index*)
           (pushnew id (gethash it *invited-index*))))
-
-      (when (and (getf data :fb-id) (getf data :fb-link-active))
-        (with-locked-hash-table (*facebook-id-index*)
-          (setf (gethash (getf data :fb-id) *facebook-id-index*) id)))
 
       (unless (< (result-time result) (- (get-universal-time) 2592000))
         (with-mutex (*recent-activity-mutex*)

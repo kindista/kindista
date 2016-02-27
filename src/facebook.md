@@ -17,6 +17,9 @@ https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
  https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow#logout
 
 #Privacy setting
+ [ ] get and display current privacy setting
+ [ ] link to facebook page to change setting:
+     https://www.facebook.com/settings?tab=applications
 
 #List of friends using Kindista app
 https://graph.facebook.com/{user-id}/friends?fields=installed

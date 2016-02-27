@@ -373,7 +373,8 @@
                          :email email
                          :fb-id fb-id
                          :fb-token fb-token
-                         :fb-expires fb-expires
+                         :fb-expires (+ (get-universal-time)
+                                        (safe-parse-integer fb-expires))
                          :password (post-parameter-string "password"))))
   (setf (token-userid *token*) new-id)
   (when fb-id
