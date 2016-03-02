@@ -1,11 +1,8 @@
 https://developers.facebook.com/docs/facebook-login/permissions/v2.3
 https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
-[x] Save FB token and expriation to kindista user object
-[x] display whether or not there is a valid facebook token on k settings page
-[x] enable users to unlink kindista w/ facebook
+https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow#logout
 
 #Settings Page
- - don't allow link to facebook when pending?
  - List of permissions possible to select:
    - publish_actions
     - user_managed_groups, manage_pages, publish_pages (under-development)
@@ -13,8 +10,6 @@ https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
     - email - "we will only contact you via your 'primary email address',
                this permission helps us ensure that your kindista account
                is associated with the correct facebook account."
- [ ] handle when people uninstall app from facebook
- https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow#logout
 
 #Privacy setting
  [ ] get and display current privacy setting
@@ -32,11 +27,15 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 [ ] create facebook story w/ new inventory items
     - get caption to display correctly
 [ ] in the inventory item, indicate whether the item has been posted to FB
+[ ] when editing item (enter-inventory-item-details)  make sure :publish-facebook defaults to whether it's already been posted to FB
 [ ] edit facebook story when editing inventory item
 [ ] delete facebook story when deleting inventory item
 [ ] if facebook token has expired/deactivatd, invite user to get a new one and let them know that if they don't, changes will not be reflected on FB
 
 #Gratitude
+  - taggable friends:
+https://developers.facebook.com/docs/graph-api/reference/user/taggable_friends
+https://developers.facebook.com/docs/sharing/opengraph/using-actions#tags
 
 
 #Group-Accounts
@@ -47,12 +46,9 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 
 #FB login
 https://developers.facebook.com/docs/facebook-login/multiple-providers
-login: "login with facebook", "New to Kindista? Sign up!" 
 
 signup: "sign up with facebook" "already have an account? login!"
- - keep track of whether location was set by facebook or by user
-   - if by facebook, get a confirmation when they try to do anything that requires location
-   - if signup via facebook and user has existing Kindista-ID, log in
+  - if signup via facebook and user has existing Kindista-ID, log in
 
 #FP profile pic
 
@@ -63,13 +59,5 @@ https://developers.facebook.com/docs/apps/review
 
 - Remove admin restriction for :share-url in inventory-activity-item
 
-
 #Merge accounts (fb-id fbtoken)
-
-#Review
-[ ] take screen shots
-https://developers.facebook.com/docs/apps/review
-[ ] submit to facebook for review
-
-- Remove admin restriction for :share-url in inventory-activity-item
 

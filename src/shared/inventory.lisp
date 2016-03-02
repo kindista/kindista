@@ -220,7 +220,7 @@
       (cond
         ((and publish-facebook-p (not fb-id))
          (setf (getf data :fb-action-id)
-               (publish-facebook-action id))
+               (publish-facebook-action id :action-type "post"))
          (modify-db id :fb-object-id (get-facebook-object-id id)))
 
         ((and fb-id publish-facebook-p)
@@ -498,7 +498,7 @@
                 (contact-opt-out-flash (list *userid*) :item-type type)
 
                 (when (post-parameter "publish-facebook")
-                  (publish-facebook-action new-id))
+                  (publish-facebook-action new-id :action-type "post"))
 
                 (flash
                   (s+ "Congratulations, your "
@@ -840,7 +840,7 @@
 
   (standard-page page-title
     (html
-      (:div :class "item inventory-details" :id "edit-tags"
+      (:div :class "item inventory-details" :id "enter-inventory-details"
        (str (pending-disclaimer))
        (when error
          (htm
@@ -916,14 +916,16 @@
          (when (and (getf *user* :fb-token)
                     (not restrictedp))
            (htm
-             (:div :id "publish-facebook"
+             (:div :id "facebook"
                (:input :type "checkbox"
-                :name "publish-facebook"
-                :checked (when (or (not existingp)
-                                   publish-facebook)
-                    ""))
+                       :id "publish-facebook"
+                       :name "publish-facebook"
+                       :checked (when (or (not existingp)
+                                          publish-facebook)
+                           ""))
                (str (icon "facebook" "facebook-icon"))
-               (:span (str (s+ "Publish this "
+               (:label :for "publish-facebook"
+                 (str (s+ "Publish this "
                         typestring
                         " on my Facebook timeline."))))))
 
@@ -932,16 +934,19 @@
            (:legend "Select 1-5 categories")
            (:p :class "small"
              "Please note: selecting irrelevant categories is considered spam.")
-           (dolist (tag *top-tags*)
-             (htm
-               (:div :class "tag"
-                (:input :type "checkbox"
-                 :name "tag"
-                 :value tag
-                 :checked (when (member tag suggested :test #'string=)
-                            (setf suggested (remove tag suggested :test #'string=))
-                            ""))
-                (:span (str tag))))))
+           (:div :id "categories"
+             (dolist (tag *top-tags*)
+               (htm
+                 (:div :class "category"
+                   (:input :type "checkbox"
+                    :name "tag"
+                    :value tag
+                    :id tag
+                    :checked (when (member tag suggested :test #'string=)
+                               (setf suggested (remove tag suggested :test #'string=))
+                               ""))
+                  (:label :for tag (str tag))
+                )))))
          (:label :for "tags" "Additional keywords (optional)")
          (:p :class "small"
           "Please note: adding irrelevant keywords is considered spam.")

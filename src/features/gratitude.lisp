@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -346,7 +346,7 @@
 (defun simple-gratitude-compose
   (entity-id
    &key (entity (db entity-id))
-        (button-location :right)
+        cancel-button
         next
         transaction-id
         post-as
@@ -374,20 +374,23 @@
          (htm (:input :type "hidden" :name "transaction-id" :value it)))
        (:input :type "hidden" :name "subject" :value entity-id)
        (:input :type "hidden" :name "next" :value next)
-       (:table :class "post"
-        (:tr
-          (:td (:textarea :cols "1000" :rows "4" :name "text" :autofocus autofocus-p))
-          (when (eq button-location :right)
-            (htm (:td (str submit-button)))))
-        (when (eql button-location :bottom)
-          (htm
-            (:tr
-              (:td
-                (:button :class "cancel"
-                         :type "submit"
-                         :name "cancel"
-                  "Cancel")
-                (str submit-button))))))))))
+       (:textarea :cols "1000" :rows "4" :name "text" :autofocus autofocus-p)
+       (when (and (getf *user* :fb-token)
+                  (or (not (getf *user* :test-user))
+                      (getf entity :test-user)))
+         (htm
+           (:div :id "facebook"
+             (:input :type "checkbox"
+                     :id "publish-facebook"
+                     :name "publish-facebook"
+                     :checked "")
+             (str (icon "facebook" "facebook-icon"))
+             (:label :for "publish-facebook"
+              (str (s+ "Share on Facebook"))))))
+       (when cancel-button
+         (htm (:button :class "cancel" :type "submit" :name "cancel"
+                "Cancel")))
+       (str submit-button)))))
 
 (defun gratitude-compose
   (&key error
@@ -729,7 +732,7 @@
                           (results-from-ids (gethash thanker-id *request-index*)))))))
 
 (defun post-gratitudes-new ()
-  (require-active-user
+  (require-user (:allow-test-user t)
     (let* ((groupid (post-parameter-integer "identity-selection"))
            (adminp (group-admin-p groupid))
            (recipient-id (if adminp groupid *userid*))
@@ -902,7 +905,14 @@
                                                        :subject-account-reactivation)
                                             :time time
                                             :text text))
+                  (fb-object-id)
                   (gratitude-url (format nil "/gratitude/~A" new-id)))
+
+             (when (and (getf *user* :fb-link-active)
+                        (getf *user* :fb-id))
+               (setf fb-object-id
+                     (publish-facebook-action new-id :action-type "express"))
+               (modify-db new-id :fb-object-id (get-facebook-object-id new-id)))
 
              (if (getf *user* :pending)
                (progn
@@ -955,28 +965,36 @@
 
 (defun get-gratitude (id)
   (setf id (parse-integer id))
-  (aif (db id)
-    (require-user (:allow-test-user t)
-      (let* ((message (gethash id *db-messages*))
-             (mailboxes (when message
-                          (loop for person in (message-people message)
-                                when (eq (caar person) *userid*)
-                                collect (car person)))))
+  (let ((data (db id)))
+    (if data
+      (require-user (:allow-test-user t)
+        (let* ((message (gethash id *db-messages*))
+               (mailboxes (when message
+                            (loop for person in (message-people message)
+                                  when (eq (caar person) *userid*)
+                                  collect (car person)))))
 
-        (when (member (list *userid*) mailboxes :test #'equal)
-          (update-folder-data message :read))
+          (when (member (list *userid*) mailboxes :test #'equal)
+            (update-folder-data message :read))
 
-        (standard-page
-          "Gratitude"
-          (html
-            (:div :class "gratitude item"
-              (str (gratitude-activity-item (make-result :id id
-                                                         :time (getf it :created)
-                                                         :people (cons (getf it :author)
-                                                                       (getf it :subjects))))))
-            (str (item-images-html id)))
-          :selected (awhen (get-parameter-string "menu") it))))
-    (not-found)))
+          (standard-page
+            "Gratitude"
+            (html
+              (:div :class "gratitude item"
+                (str (gratitude-activity-item (make-result :id id
+                                                           :time (getf data :created)
+                                                           :people (cons (getf data :author)
+                                                                         (getf data :subjects))))))
+              (str (item-images-html id)))
+            :extra-head (facebook-item-meta-content
+                          id
+                          "gratitude"
+                          (s+ "Gratitude for "
+                              (name-list-all (getf data :subjects )
+                                             :stringp t))
+                          (getf data :text))
+            :selected (awhen (get-parameter-string "menu") it))))
+      (not-found))))
 
 (defun post-gratitude (id)
   (require-active-user

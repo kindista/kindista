@@ -180,21 +180,20 @@
         (invitation (db id))
         (host (getf invitation :host))
         (invite-request-id (getf invitation :invite-request-id))
-        (facebook-token-data (when (get-parameter "code")
+        (fb-token-data (when (get-parameter-string "code")
                                (register-facebook-user "signup")))
         (fb-token (cdr (assoc "access_token"
-                              facebook-token-data
+                              fb-token-data
                               :test #'string=)))
         (fb-expires (cdr (assoc "expires"
-                                facebook-token-data
+                                fb-token-data
                                 :test #'string=))))
 
   (when *user* (reset-token-cookie))
   (cond
     ;; Facebook signup
-    (facebook-token-data
-      (let* (
-             (fb-data (get-facebook-user-data fb-token))
+    (fb-token-data
+      (let* ((fb-data (get-facebook-user-data fb-token))
              (fb-id (safe-parse-integer (getf fb-data :id)))
              (unvalidated-fb-email (getf fb-data :email))
              (fb-email (when (scan +email-scanner+ unvalidated-fb-email)
@@ -202,20 +201,23 @@
              (fb-name (getf fb-data :name))
              (existing-k-id (gethash fb-id *facebook-id-index*))
              (existing-k-email (gethash fb-email *email-index*))
-             (fb-location-node (getf fb-data :location))
-             (fb-location-id (safe-parse-integer
-                               (cdr (assoc :id fb-location-node))))
-             (fb-location-name (cdr (assoc :name fb-location-node)))
-             (fb-location (get-facebook-location-data fb-location-id fb-token)))
+            ;(fb-location-node (getf fb-data :location))
+            ;(fb-location-id (safe-parse-integer
+            ;                  (cdr (assoc :id fb-location-node))))
+            ;(fb-location-name (cdr (assoc :name fb-location-node)))
+            ;(fb-location (get-facebook-location-data fb-location-id fb-token))
+             )
         (pprint fb-data)
-        (pprint fb-location)
         (pprint fb-id)
+        (pprint existing-k-id)
         (terpri)
         (cond
           (existing-k-id
-            ;; log in
-            ;; mofify-db with fb data if necessary
-            )
+            (flash (strcat* "There is already an existing Kindista acccount for "
+                            (db existing-k-id :name)
+                            ". You are now signed in."))
+            (post-login :fb-token-data fb-token-data
+                        :fb-data fb-data))
 
           (existing-k-email
             (flash (strcat*

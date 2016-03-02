@@ -860,7 +860,8 @@
                                            :test #'string=))))) )
         (when facebook-token-data
           (modify-db *userid* :fb-token token
-                              :fb-expires expires
+                              :fb-expires (+ (get-universal-time)
+                                             (safe-parse-integer expires))
                               :fb-link-active t)
           (unless (getf *user* :fb-id)
             (modify-db *userid* :fb-id (get-facebook-user-id token)))

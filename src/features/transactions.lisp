@@ -888,7 +888,7 @@
                       :on-id on-id
                       :submit-name "create"
                       :autofocus-p t
-                      :button-location :bottom))
+                      :cancel-button t))
                   (add-comment
                     (transaction-comment-input id))
                   (t (transaction-buttons-html

@@ -63,13 +63,13 @@
          (strcat* (if (listp scope)
                     (format nil "~{~A,~}" scope)
                     (s+ scope ","))
-                  "public_profile,publish_actions,email,user_location"))
+                  "public_profile,publish_actions,email"))
   (html
     (:a :class "blue"
         :href (url-compose "https://www.facebook.com/dialog/oauth"
                            "client_id" *facebook-app-id*
                            "scope" scope
-                           "redirect_uri" (s+ +base-url+ redirect-uri))
+                           "redirect_uri" (url-encode (s+ +base-url+ redirect-uri)))
         (str button-text))))
 
 (defun register-facebook-user
@@ -166,6 +166,7 @@
 (defun publish-facebook-action
   (id
    &key (userid *userid*)
+        (action-type "post")
    &aux (item (db id))
         (object-type (string-downcase (symbol-name (getf item :type))))
         (user (db userid))
@@ -176,7 +177,8 @@
                 (strcat *fb-graph-url*
                         "me"
                        ;(or *fb-id* (getf user :fb-id))
-                        "/kindistadotorg:post")
+                        "/kindistadotorg:"
+                        action-type)
                 :parameters (list (cons "access_token" (getf user :fb-token))
                                   (cons "method" "post")
                                   (cons object-type

@@ -66,16 +66,16 @@
       :hide-menu t))))
 
 (defun post-login
-  (&aux (username (post-parameter "username"))
-        (password (post-parameter-string "password"))
-        (next (awhen (post-parameter-string "next") (url-decode it)))
-        (fb-code (get-parameter-string "code"))
-        (facebook-token-data (when fb-code
+  (&key (fb-token-data (when (get-parameter-string "code")
                                (register-facebook-user "login")))
+
         (fb-token (cdr (assoc "access_token"
-                              facebook-token-data
+                              fb-token-data
                               :test #'string=)))
         (fb-data (when fb-token (get-facebook-user-data fb-token)))
+   &aux (username (post-parameter "username"))
+        (password (post-parameter-string "password"))
+        (next (awhen (post-parameter-string "next") (url-decode it)))
         (fb-id (safe-parse-integer (getf fb-data :id)))
         (existing-k-id (gethash fb-id *facebook-id-index*))
         (userid nil))
@@ -87,7 +87,7 @@
           (gethash username *email-index*))
          (t (gethash username *username-index*))))
 
-  (pprint facebook-token-data)
+  (pprint fb-token-data)
   (pprint fb-id)
   (pprint userid)
   (terpri)
@@ -115,7 +115,7 @@
      (see-other (if (not (db userid :active))
                   "/settings#reactivate"
                   (or next "/home"))))
-    (fb-code
+    (fb-token-data
      (flash "There is no Kindista account associated with the Facebook account currently active on this browser. Please confirm that you are logged into Facebook, or Sign Up for Kindista below."
             :error t)
      (notice :auth-failure :fb-id fb-id)

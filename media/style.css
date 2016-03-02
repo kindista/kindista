@@ -3344,25 +3344,27 @@ div.settings-avatar {
  white-space: nowrap;
 }
 
-#edit-tags {
+#edit-inventory-details {
  max-width: 40em;
 }
 
-#edit-tags blockquote.review-text {
+#edit-inventory-details blockquote.review-text {
  margin: .5em 0 .5em 0;
 }
 
-#edit-tags p.small {
+#edit-inventory-details p.small {
  margin: 0 0 0.2em;
 }
 
-#edit-tags #publish-facebook {
+form #facebook {
  margin-top: 0.7em;
 }
 
-#edit-tags #publish-facebook img {
- vertical-align: sub;
- margin-right: 0.3em;
+form #facebook img {
+ vertical-align: middle;
+ margin: 0 0.3em;
+ height: 1.5em;
+ width: 1.5em;
 }
 
 div.item-group-privacy {
@@ -3379,13 +3381,22 @@ div.item-group-privacy span {
  display: table-cell;
 }
 
-div.tag {
+#enter-inventory-details div.category {
  margin: 0.5em 0;
  display: inline-block;
+ width: 11em;
 }
 
-div.tag {
- width: 11em;
+form #facebook label,
+#enter-inventory-details #categories label {
+ font-weight: normal;
+ display: inline;
+}
+
+form #facebook label,
+form #facebook input,
+#enter-inventory-details #categories input {
+ vertical-align: middle;
 }
 
 form.matchmaker {
