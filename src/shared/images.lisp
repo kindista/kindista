@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -34,16 +34,17 @@
                                 :modified (get-universal-time))))
         (filename (strcat image "." suffix))
         (destination (merge-pathnames *original-images* filename)))
-   (if (eql (type-of path-or-octet-array) 'pathname)
-      (copy-file path-or-octet-array destination)
-      (with-open-file (file destination
-                            :element-type '(unsigned-byte 8)
-                            :direction :output
-                            :if-does-not-exist :create
-                            :if-exists :supersede)
-        (write-sequence path-or-octet-array file)))
-   (modify-db image :filename filename)
-   (values image))
+  (if (eql (type-of path-or-octet-array) 'pathname)
+     (copy-file path-or-octet-array destination)
+     (with-open-file (file destination
+                           :element-type '(unsigned-byte 8)
+                           :direction :output
+                           :if-does-not-exist :create
+                           :if-exists :supersede)
+       (write-sequence path-or-octet-array file)))
+  (modify-db image :filename filename)
+  (auto-rotate-image (strcat *original-images* filename))
+  (values image))
 
 (defun new-image-form
   (action
@@ -76,6 +77,10 @@
                               spinner-id
                               "\')")))
       (:div :id spinner-id :class "spinner"))))
+
+(defun auto-rotate-image (path)
+  "applies auto-rotate and strips out EXIF data"
+  (run-program *convert-path* (list "-auto-orient" "-strip" path path)))
 
 (defun rotate-image (id)
   (let* ((image (db id))
