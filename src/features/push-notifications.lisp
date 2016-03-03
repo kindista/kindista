@@ -39,23 +39,38 @@
        (setf (return-code*) +http-no-content+)
        nil))))
 
-(defun send-push-notification
+(defun send-push-through-chrome-api
+  (&aux
+     (registration-id "cBswLHGQV1A:APA91bHwhGopv0GJ4-k2uonkWHi9TFxXDJV6zmbjezJjZj0gRc2V1ZsvDlmdFeIKXuvsBHd2Ev8mJcUo9HjbXxZpkiA0o4AxMhmONfyD3s-HPr7bTFsyX_dBGmMBge8Jffj9cMjQeBsc")
+     (registration-ids (list registration-id))
+     (registration-json (json:encode-json-alist-to-string (list (cons "registration_ids" (list registration-id) ))))
+   )
+  (http-request "https://android.googleapis.com/gcm/send"
+                :additional-headers (list (cons "Authorization" "key=AIzaSyAs-MUgFWba1amFkk6SDazVkMIcg_RfPZ4"))
+                :method :post
+                :content-type "application/json"
+                :external-format-out :utf-8
+                :external-format-in :utf-8
+                :content registration-json))
+
+(defun send-unread-notifications
   (
-   &aux 
+   &aux
     (title "New Message")
     (body "new message recieved")
     (icon "kindista_favicon_180.png")
     (tag "new-message-tag")
-    ;may need to send data in json later
+    (url "http://localhost/messages")
     (raw-endpoint (getf (alist-plist (json:decode-json-from-string (raw-post-data :force-text t))) :endpoint))
     (registration-id (first (last (split "\\/" raw-endpoint))))
     ;check users message queue
     ;set title body etc to specific message
     ;dequeue that message from users message queue
-    (json-list ( list (cons "title"  title) (cons "body"  body) (cons "icon"  icon) (cons "tag"  tag)))
+    (json-list ( list (cons "title"  title) (cons "body"  body) (cons "icon"  icon) (cons "url" url) (cons "tag"  tag)))
     )
-  (pprint registration-id)
-  (terpri)
+  ;(pprint registration-id)
+  ;(pprint json-list)
+  ;(terpri)
   (json:encode-json-to-string json-list)
  ; (http-request "http://localhost/home/send-test-notification"
  ;                          :accept "application/json"

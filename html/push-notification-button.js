@@ -10,7 +10,7 @@ window.addEventListener('load', function() {
     }
   });
   if ('serviceWorker' in navigator) {
-   initialiseState();
+    initialiseState();
   } else {
     console.warn('service workers aren\'t supported in this browser.');
   }
@@ -19,29 +19,25 @@ window.addEventListener('load', function() {
 function sendSubscriptionToServer(subscription, action) {
    var subscriptionJSON = subscription.toJSON();
    subscriptionJSON.action = action;
-  //console.log(subscriptionJSON);
-  fetch('/subscribe-push-notifications', {
-    method: 'post',
-    credentials: 'include',
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
+   fetch('/push-notification-subscription', {
+     method: 'post',
+     credentials: 'include',
+     headers: {
+       'Accept': 'application/json',
+       'Content-Type': 'application/json'
+     },
    body: JSON.stringify(subscriptionJSON)
-    })
+     })
   .then(function(response) {
+   // add reload for flash response??
    //location.reload(true);
-   console.log(response);
-    if (response.status !== 204) {
-     console.log('There was a problem sending subscription to server: ' + response.status);
-     throw new Error();
-    }
-
-    //return response.json().then(function(data) {
-    //  console.log(data);
-    //});
+   //console.log(response);
+     if (response.status !== 204) {
+       console.log('There was a problem sending subscription to server: ' + response.status);
+       throw new Error();
+     }
   }).catch(function(err) {
-      console.log('error sending subscription to server', err);
+       console.log('error sending subscription to server', err);
     })
 }
 
@@ -50,7 +46,7 @@ function initialiseState() {
     console.warn('Notifications arent\'t supported.');
     return;
   }
-  
+
   if (Notification.permission === 'denied') {
     consle.warn('The user has blocked notifications.');
     return;
@@ -63,12 +59,11 @@ function initialiseState() {
 
    navigator.serviceWorker.ready.then(function(serviceWorkerRegistration) {
    serviceWorkerRegistration.pushManager.getSubscription().then(function(subscription) {
-    var pushButton = document.querySelector('.push-notification-button');
-    console.log(pushButton);
-    pushButton.disabled = false;
+     var pushButton = document.querySelector('.push-notification-button');
+     pushButton.disabled = false;
     
-    if(!subscription) {
-      return;
+     if(!subscription) {
+       return;
     }
     // keep subscription up to date
     sendSubscriptionToServer(subscription);
@@ -76,8 +71,8 @@ function initialiseState() {
     pushButton.textContent = 'Disable Push Messages';
     isPushEnabled = true;
   })
-   .catch(function(err) {
-      console.warn('Error during getSubscription()', err);
+    .catch(function(err) {
+       console.warn('Error during getSubscription()', err);
     });
   });
 }
@@ -93,10 +88,9 @@ function subscribe() {
           isPushEnabled = true;
           pushButton.textContent = 'Disable Push Messages';
           pushButton.disabled = false;
-          var action = "subscribe";
 
           // create sendSubscriptionToServer function
-          sendSubscriptionToServer(subscription,action);
+          sendSubscriptionToServer(subscription,"subscribe");
         })
         .catch(function(err) {
           if (Notification.permission === 'denied') {
@@ -128,13 +122,10 @@ function unsubscribe() {
         psuhButton.textContent = 'Enable Push Messages';
         return;
       }
-     console.log(pushSubscription); 
      var subscriptionId = pushSubscription.endpoint;
      // make a server request to remove the subscription id from database
      sendSubscriptionToServer(pushSubscription, "unsubscribe");
-     console.log(subscriptionId);  
      pushSubscription.unsubscribe({userVisibleOnly: true}).then(function(successful) {
-        console.log("successful!");
         pushButton.disabled = false;
         pushButton.textContent = 'Enable Push Messages';
         isPushEnabled = false;

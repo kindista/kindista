@@ -641,7 +641,7 @@
 (defun settings-push-notifications
   (
   &key ;(groupid group)
-       ;(user (userid *usderid*))
+       (userid *userid*)
   &aux ;(entity (or group user *user*))
        ;(group-name (when group (getf group :name)))
        ;(subject (or group-name "me"))

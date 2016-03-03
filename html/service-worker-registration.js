@@ -5,7 +5,6 @@ if ('serviceWorker' in navigator) {
     registration.pushManager.subscribe({
          userVisibleOnly: true
     }).then(function(sub) {
-        console.log('subscriptionId:', sub.subscriptionId);
         console.log('endpoint:', sub.endpoint);
         //send sub.endpoint 
     })

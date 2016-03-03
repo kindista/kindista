@@ -398,7 +398,7 @@
     :post post-push-notification-subscription)
 
   ("/unread-push-notifications"
-    :post send-push-notification)
+    :post send-unread-notifications)
 
   ;cron-jobs
 
