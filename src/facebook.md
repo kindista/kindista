@@ -60,6 +60,7 @@ https://developers.facebook.com/docs/apps/review
 - Remove admin restriction for :share-url in inventory-activity-item
 - Remove *productionp* restriction from signup and login pages
 - Create a tab for settings/social
+- change facebook app setting/advanced deauthorize callback
 
 #Merge accounts (fb-id fbtoken)
 

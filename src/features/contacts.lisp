@@ -74,13 +74,17 @@
   (amodify-db *userid* :hidden-suggested-contacts (push  (cons contact-id (quick-rank contact-id)) it)))
 
 (defun post-contacts ()
-  (require-user ()
+  (require-user (:require-active-user t :allow-test-user t)
     (let ((contacts (getf *user* :following)))
       (cond
         ((scan +number-scanner+ (post-parameter "add"))
          (let ((id (parse-integer (post-parameter "add"))))
-           (unless (member id contacts)
-             (add-contact id *userid*)))
+           (if (and (getf *user* :test-user)
+                    (not (db id :test-user)))
+             (flash "Test users can only add other test users to their contacts."
+                    :error t)
+             (unless (member id contacts)
+               (add-contact id *userid*))))
          (see-other (or (post-parameter "next") "/home")))
 
         ((scan +number-scanner+ (post-parameter "remove"))
