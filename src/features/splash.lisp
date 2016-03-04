@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -28,6 +28,7 @@
           (:a :id "logo" :href "/"
            (:img :id "symbol" :src "/media/logo.png"))
           (:div :id "splashlogin"
+            (:a :href "/login" :class "yes" "Sign In")
             (:form :action "/login" :method "post"
               (:label :for "username" "Email")
               (:input :id "username"
@@ -38,28 +39,33 @@
                       :type "password"
                       :name "password" )
               (:br)
-              (:a :href "/reset" "Forgot your password?")   
-              (:button :class "yes" :type "submit" "Log in")
-              ))))
+              (:a :href "/reset" "Forgot your password?")
+              (:button :class "yes" :type "submit" "Sign In")
+              (unless *productionp*
+                (htm
+                  (:div :class "social-signin"
+                    (:div :class "center" "or")
+                    (str
+                      (facebook-sign-in-button :redirect-uri "login")))))))))
 
         (:div :id "splashbox"
           (:div :class "half float-left"
-           (:h2 "Kindista helps you share offers, requests, and gratitude with people who live nearby.")
-           (:p "Make connections with people who can help you lead a more abundant life through the culture of sharing. "
+           (:h2 "Kindista helps you share offers, requests, and gratitude with friends and neighbors.")
+           (:p "Make new connections and lead a more abundant life through sharing. "
             (:strong "Because sharing is good.")))
          (:div :class "half float-left"
            (:h2 :class "center" "New to Kindista?")
            (:div :class "center"
              (:a :class "yes"
                  :id "big-ass-signup-button" 
-                 :href "/signup" "Sign up for an account."))
+                 :href "/signup" "Create an account."))
              (:p :class "center"
               (:a :href "/home" "...or try Kindista as a guest")))
            (:p :class "clear"))
 
         (:div :id "preview"
           (:h2 "What's happening on Kindista?")
-          (:p "People are sharing offers, requests, and gratitude with others who live near them. Here's a sampling of what's happening right now.")
+          (:p "People are sharing offers, requests, and gratitude with friends and neighbors. Here's what's happening now:")
           (:div :id "preview-cards"
             (with-location
               (str (activity-items
@@ -73,11 +79,11 @@
                      :location nil
                      :paginate nil))))
           (:div :class "splactions"
-            (:a :class "yes" :href "/home" "Try out Kindista")
+            (:a :class "yes" :href "/home" "Try Kindista")
             " "
-            (:a :class "yes" :href "/signup"  "Sign up for an account.")
+            (:a :class "yes" :href "/signup"  "Create an account")
             " "
-            (:a :class "yes" :href "/donate" "Make a donation")))
+            (:a :class "yes" :href "/donate" "Donate")))
 
 
         (:div :id "screenshots"
@@ -85,11 +91,11 @@
           (:p "It works great on computers, phones, and tablets.")
           (:img :src "/media/screenshot2.png")
           (:div :class "splactions"
-            (:a :class "yes" :href "/home" "Try out Kindista")
+            (:a :class "yes" :href "/home" "Try Kindista")
             " "
-            (:a :class "yes" :href "/signup" "Sign up for an account.")
+            (:a :class "yes" :href "/signup" "Create an account")
             " "
-            (:a :class "yes" :href "/donate" "Make a donation"))
+            (:a :class "yes" :href "/donate" "Donate"))
           (:br)
           (:p "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")
         (:div :class "splactions footer"

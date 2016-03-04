@@ -634,6 +634,7 @@
     (dolist (id id-list)
       (let ((entity (db id)))
         (when (or (not (getf entity :notify-message))
+                  ;; it's possible to use FB to sign up w/out an email
                   (and (eql (getf entity :type) :person)
                        (not (car (getf entity :emails)))))
           (if (eql (getf entity :type) :person)

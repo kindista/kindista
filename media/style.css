@@ -363,18 +363,6 @@ body.about h3 {
  text-align: left;
 }
 
-#login .or-divider {
- margin: 1em auto;
-}
-
-#login .or-divider > span {
- z-index: 10;
- font-size: 1.3em;
- font-weight: bold;
- padding: 0 0.7em;
- background: #fff;
-}
-
 #login hr {
  position: relative;
  top: -1.3em;
@@ -447,6 +435,7 @@ body.about h3 {
 
 .or-divider {
  margin: 1em auto;
+ text-align: center;
 }
 
 .or-divider > span {
@@ -723,6 +712,11 @@ body.splash #symbol {
  font-size: 1.6em;
 }
 
+#splashbox p {
+ font-size: 1.2em;
+ margin-bottom: 0;
+}
+
 #splashbox #big-ass-signup-button {
  display: block;
  margin: 0.75em auto;
@@ -735,62 +729,17 @@ body.splash #symbol {
  padding: 0.5em;
 }
 
-#splashbox a:last-of-type {
- font-size: 1.2em;
-}
-
 #splashlogin {
  float: right;
- margin: 0 0.5em 0 2em;
+ margin: 0.6em 2em 0 2em;
 }
 
-#splashlogin label {
- display: inline-block;
- font-size: 1.1em;
- font-weight: bold;
- margin: 0 0.2em 0 0.4em;
+#splashlogin form {
+ display:none;
 }
 
-#splashlogin a {
- display: inline-block;
- margin-top: 0.2em;
- margin-left: 0.4em;
-}
-
-#splashlogin button.yes {
- margin-left: 0.5em;
- margin-top: 0;
- padding: 0;
- width: 4.5em;
- float: right;
-}
-
-#splashlogin input:focus {
- border: 1px solid #5be;
- box-shadow: 0 0 0.5em rgba(80,160,230,0.6) inset 0 1px 3px rgba(0,0,0,0.1);
-}
-
-#splashlogin input,
-#splashlogin button.yes {
- height:1.7em;
- padding: 0 0.4em;
-}
-
-#splashlogin input[type=text] {
- width: 15em;
-}
-
-#splashlogin input[value=] {
- background: red;
-}
-
-#splashlogin input[type=password] {
- width: 10em;
-}
-
-#splashlogin p {
- text-align: right;
- margin-top: -0.3em;
+#splashlogin > a {
+ font-size: 1.2em;
 }
 
 #splashbox > p {
@@ -833,13 +782,14 @@ body.splash #symbol {
   background: none;
  }
  body.splash #header-container {
-  height: 17em;
+  height: auto;
   background: url('hands.jpg') no-repeat;
   background-size: cover;
  }
  body.splash #header {
-  height: 17em;
+  height: auto;
   background-color: rgba(255, 255, 255, 0.7);
+  padding-bottom: 2em;
  }
  body.splash #symbol {
   width: 18em;
@@ -856,12 +806,31 @@ body.splash #symbol {
   position: relative;
   width: 20em;
  }
+ #splashlogin form {
+  display:block;
+ }
+ #splashlogin > a.yes {
+  display:none;
+ }
+ #splashlogin button.yes {
+  margin: 0 0 0 0.5em;
+  width: 4.5em;
+  float: right;
+ }
+ #splashlogin p {
+  text-align: right;
+  margin-top: -0.3em;
+ }
  #splashlogin input,
  #splashlogin button.yes {
   height:2.3em;
+  padding: 0 0.4em;
  }
  #splashlogin label {
-  margin-right: 0.5em;
+  display: inline-block;
+  font-size: 1.1em;
+  font-weight: bold;
+  margin: 0 0.5em 0 0.4em;
  }
  #splashlogin input[type=text] {
   width: 16em;
@@ -869,11 +838,34 @@ body.splash #symbol {
  #splashlogin input[type=password] {
   width: 13.9em;
  }
+ #splashlogin input[value=] {
+  background: red;
+ }
+ #splashlogin input:focus {
+  border: 1px solid #5be;
+  box-shadow: 0 0 0.5em rgba(80,160,230,0.6) inset 0 1px 3px rgba(0,0,0,0.1);
+ }
  #splashlogin button.yes {
   margin-top: 0.3em;
  }
- #splashlogin a {
+ #splashlogin form > a {
+  display: inline-block;
+  margin-left: 0.4em;
   margin-top: 0.9em;
+ }
+ #splashlogin div.center {
+  clear: both;
+  margin: 0.5em 0;
+  font-weight:bold;
+  font-size: 1.5em;
+ }
+ #splashlogin .social-signin a.blue {
+  width: 100%;
+  display: block;
+  text-align: center;
+  margin: 0;
+  font-size: 1.3em;
+  line-height: inherit;
  }
 }
 

@@ -887,6 +887,12 @@
            (g-compose :error '(:text "Please select the item you are posting gratitude about from the list below."
                                :field "on-id")))
 
+          ((and (getf *user* :test-user)
+                (or (> (length subjects) 1)
+                    (not (db (car subjects) :test-user))))
+           (flash "Sorry, test users can only post gratitude about other test users." :error t)
+           (see-other (or next "/home")))
+
           ((and (post-parameter "create")
                 subjects
                 text)
@@ -914,50 +920,44 @@
                      (publish-facebook-action new-id :action-type "express"))
                (modify-db new-id :fb-object-id (get-facebook-object-id new-id)))
 
-             (if (getf *user* :pending)
-               (progn
-                 new-id
-                 (flash "Your item has been recorded. It will be posted after you post an offer and we have a chance to review it. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
-                 (see-other (or next "/home")))
-               (progn
-                 (awhen on-id
-                   (let* ((inventory-result (gethash on-id *db-results*))
-                          (pending-association (assoc inventory-result
-                                                      (getf (gethash recipient-id
-                                                                     *pending-gratitude-index*)
-                                                            on-types)))
-                          (transaction-id (or (cdr pending-association)
-                                              (post-parameter-integer "transaction-id"))))
+             (awhen on-id
+               (let* ((inventory-result (gethash on-id *db-results*))
+                      (pending-association (assoc inventory-result
+                                                  (getf (gethash recipient-id
+                                                                 *pending-gratitude-index*)
+                                                        on-types)))
+                      (transaction-id (or (cdr pending-association)
+                                          (post-parameter-integer "transaction-id"))))
 
-                     (when pending-association
+                 (when pending-association
 
-                       (with-locked-hash-table (*pending-gratitude-index*)
-                         (asetf (getf (gethash recipient-id
-                                               *pending-gratitude-index*)
-                                      on-types)
-                                (remove pending-association it :test #'equal))))
+                   (with-locked-hash-table (*pending-gratitude-index*)
+                     (asetf (getf (gethash recipient-id
+                                           *pending-gratitude-index*)
+                                  on-types)
+                            (remove pending-association it :test #'equal))))
 
-                     (when transaction-id
-                       (amodify-db transaction-id
-                                   :log (cons (list :time time
-                                                    :party (if adminp
-                                                             (cons *userid*
-                                                                   groupid)
-                                                             (list *userid*))
-                                                    :action :gratitude-posted
-                                                    :comment new-id)
-                                              it)))))
+                 (when transaction-id
+                   (amodify-db transaction-id
+                               :log (cons (list :time time
+                                                :party (if adminp
+                                                         (cons *userid*
+                                                               groupid)
+                                                         (list *userid*))
+                                                :action :gratitude-posted
+                                                :comment new-id)
+                                          it)))))
 
-                 (flash (if inactive-subject
-                          (s+ (getf inactive-subject :name)
-                              " has deactivated their account. "
-                              "Your statement of gratitude will be posted "
-                              "when they reactivate their account.")
-                          "Your statement of gratitude has been posted"))
-                 (see-other (or next
-                                (if inactive-subject
-                                  "/home"
-                                  gratitude-url)))))))
+             (flash (if inactive-subject
+                      (s+ (getf inactive-subject :name)
+                          " has deactivated their account. "
+                          "Your statement of gratitude will be posted "
+                          "when they reactivate their account.")
+                      "Your statement of gratitude has been posted"))
+             (see-other (or next
+                            (if inactive-subject
+                              "/home"
+                              gratitude-url)))))
 
           (t
            (g-compose :subjects subjects)))))))

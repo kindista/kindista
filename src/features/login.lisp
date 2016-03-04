@@ -52,13 +52,16 @@
                 (:button :type "submit" :class "yes" "Sign in")
                 (:span :class "forgot"
                  (:a :href "/reset" :class "reset"  "Forgot your password?"))))
-            (str *or-divider*)
-            (:div :class "social-signin"
-              (str (if (get-parameter "facebook-signup")
-                     (facebook-sign-in-button
-                       :redirect-uri "signup"
-                       :button-text "Use Facebook to sign up for Kindista")
-                     (facebook-sign-in-button :redirect-uri "login"))))
+            (when (or (not *productionp*)
+                      (get-parameter "facebook-signup"))
+              (htm
+                (str *or-divider*)
+                (:div :class "social-signin"
+                 (str (if (get-parameter "facebook-signup")
+                        (facebook-sign-in-button
+                          :redirect-uri "signup"
+                          :button-text "Use Facebook to sign up for Kindista")
+                        (facebook-sign-in-button :redirect-uri "login"))))))
             (:div :id "join"
               (:span "Not on Kindista yet? ")
               (:a :href "/signup"
@@ -86,11 +89,6 @@
          ((find #\@ username :test #'equal)
           (gethash username *email-index*))
          (t (gethash username *username-index*))))
-
-  (pprint fb-token-data)
-  (pprint fb-id)
-  (pprint userid)
-  (terpri)
 
   (cond
     ((gethash username *banned-emails-index*)

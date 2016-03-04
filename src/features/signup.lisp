@@ -52,10 +52,12 @@
   (signup-base
     (html
       (:h1 "Sign up for Kindista ")
-      (str (facebook-sign-in-button
-             :redirect-uri "signup"
-             :button-text "Use Facebook to sign up for Kindista"))
-      (str *or-divider*)
+      (unless *productionp*
+        (htm
+          (str (facebook-sign-in-button
+                 :redirect-uri "signup"
+                 :button-text "Use Facebook to sign up for Kindista"))
+          (str *or-divider*)))
       (:form :method "POST" :action "/signup" :id "signup-form"
        (:label :for "name" "Full Name")
        (:input :type "text" :id "name" :name "name" :value name)
@@ -107,7 +109,7 @@
        (:br)
        (:button :class "yes" :type "submit" "Sign up") 
 
-       (:span "Already have an account? " (:a :href "/login" "Log in"))))
+       (:span "Already have an account? " (:a :href "/login" "Sign in"))))
     :error error))
 
 (defun get-signup
@@ -207,10 +209,6 @@
             ;(fb-location-name (cdr (assoc :name fb-location-node)))
             ;(fb-location (get-facebook-location-data fb-location-id fb-token))
              )
-        (pprint fb-data)
-        (pprint fb-id)
-        (pprint existing-k-id)
-        (terpri)
         (cond
           (existing-k-id
             (flash (strcat* "There is already an existing Kindista acccount for "
