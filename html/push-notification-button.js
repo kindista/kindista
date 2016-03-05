@@ -66,7 +66,7 @@ function initialiseState() {
        return;
     }
     // keep subscription up to date
-    sendSubscriptionToServer(subscription);
+    sendSubscriptionToServer(subscription, "subscribe");
 
     pushButton.textContent = 'Disable Push Messages';
     isPushEnabled = true;

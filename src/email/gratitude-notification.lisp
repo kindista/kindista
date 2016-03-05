@@ -41,7 +41,9 @@
                           :unsubscribe-key (getf person :unsubscribe-key)
                           :id admin)
                     recipients))))))
-
+    (send-push-through-chrome-api recipients
+                                  :message-type "gratitude"
+                                  :author-name author-name)
     (dolist (recipient recipients)
       (cl-smtp:send-email +mail-server+
                           "Kindista <noreply@kindista.org>"

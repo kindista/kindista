@@ -36,22 +36,48 @@
          (setf (getf notifications :subscription)
                (when subscribe-p registration-id))
          (modify-db *userid* :chrome-push-notifications notifications))
+         ;modify hashtable
        (setf (return-code*) +http-no-content+)
        nil))))
 
 (defun send-push-through-chrome-api
-  (&aux
-     (registration-id "cBswLHGQV1A:APA91bHwhGopv0GJ4-k2uonkWHi9TFxXDJV6zmbjezJjZj0gRc2V1ZsvDlmdFeIKXuvsBHd2Ev8mJcUo9HjbXxZpkiA0o4AxMhmONfyD3s-HPr7bTFsyX_dBGmMBge8Jffj9cMjQeBsc")
-     (registration-ids (list registration-id))
-     (registration-json (json:encode-json-alist-to-string (list (cons "registration_ids" (list registration-id) ))))
-   )
-  (http-request "https://android.googleapis.com/gcm/send"
+  (recipients
+    &key message-type
+         author-name
+   &aux
+     (registration-ids)
+     ;(recipients (list (list :id 1) (list :id 3)))
+     (chrome-api-status)
+     (subscribed-push-users)
+     (registration-json))
+
+  ;get registration id's for each recipient
+  ;of the notification
+  ;if they are subscribed
+  (dolist (recipient recipients)
+          (awhen (getf (db (getf recipient :id) :chrome-push-notifications) 
+                                                :subscription)
+                 (push it registration-ids)
+                 (push (getf recipient :id) subscribed-push-users)
+                 ))
+
+  (setf registration-json (json:encode-json-alist-to-string (list (cons "registration_ids" registration-ids))))
+
+  (setf chrome-api-status
+        (multiple-value-list
+          (http-request "https://android.googleapis.com/gcm/send"
                 :additional-headers (list (cons "Authorization" "key=AIzaSyAs-MUgFWba1amFkk6SDazVkMIcg_RfPZ4"))
                 :method :post
                 :content-type "application/json"
                 :external-format-out :utf-8
                 :external-format-in :utf-8
-                :content registration-json))
+                :content registration-json)))
+  (when (= (second chrome-api-status) 200)
+      (pprint "status: 200")
+      (terpri)
+
+
+    ))
 
 (defun send-unread-notifications
   (
@@ -72,14 +98,4 @@
   ;(pprint json-list)
   ;(terpri)
   (json:encode-json-to-string json-list)
- ; (http-request "http://localhost/home/send-test-notification"
- ;                          :accept "application/json"
- ;                          :method :post
- ;                          :content-type "application/json"
- ;                          :external-format-out :utf-8
- ;                          :external-format-in :utf-8
-;                           :redirect 100
-;                   :content (json:encode-json-to-string '(("title" . "title") ("body". "body") ("icon" . "icon") ("tag" . "tag")))
-;                   :want-stream t
-;                           )
   )

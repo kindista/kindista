@@ -1,20 +1,12 @@
-function showNotification(title, body, icon, data) {
-  var notificationOptions = {
-    body: body,
-    icon: icon ? icon : 'kindista_favicon_180.png',
-    tag: 'new-message-tag',
-    data: data
-    };
-  return self.registration.showNotification(title, notificationOptions);
-}
-// set the callback for the install step
 self.addEventListener('install', function(event) {
   //return self.skipWaiting() // updates service worker, remove for production
   console.log('Installed', event);
 });
+
 self.addEventListener('activate', function(event) {
   console.log('Activated', event);
 });
+
 self.addEventListener('push', function(event) {
   event.waitUntil(
     self.registration.pushManager.getSubscription().then(function(subscription) {
@@ -62,7 +54,6 @@ self.addEventListener('push', function(event) {
             body = 'You have ' + notificationCount + ' new messsages waiting for you on Kindista.';
             notificationData.notificationCount = notificationCount;
           }
-        return showNotification(title, body, icon, notificationData);
         return self.registration.showNotification(title, {
                                  body: body,
                                  icon: icon ? icon : 'kindista_favicon_180.png',
@@ -84,12 +75,11 @@ self.addEventListener('push', function(event) {
       })
   }));
 });
-self.addEventListener('notificationclick', function(event) {
-  //close the notification when you click on it
-  event.notification.close();
 
-  // Check if page is open, if so focus on it
-    
+self.addEventListener('notificationclick', function(event) {
+  // Ensures the notification closes
+  event.notification.close();
+  // Check if message page is open, if so focus on it
   event.waitUntil(
     clients.matchAll({
       type: "window"
