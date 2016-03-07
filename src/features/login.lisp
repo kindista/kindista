@@ -52,8 +52,7 @@
                 (:button :type "submit" :class "yes" "Sign in")
                 (:span :class "forgot"
                  (:a :href "/reset" :class "reset"  "Forgot your password?"))))
-            (when (or (not *productionp*)
-                      (get-parameter "facebook-signup"))
+            (unless *productionp*
               (htm
                 (str *or-divider*)
                 (:div :class "social-signin"
