@@ -428,7 +428,8 @@
                                            :image (icon "white-request"))))
                  :class (s+ type " inventory-item")
                  :share-url (when (and self
-                                       (not *productionp*)
+                                       (or (not *productionp*)
+                                           (getf *user* :test-user))
                                        (getf *user* :fb-id)
                                        (not (getf data :fb-action-id)))
                               (url-compose

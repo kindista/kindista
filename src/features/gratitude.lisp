@@ -911,14 +911,15 @@
                                                        :subject-account-reactivation)
                                             :time time
                                             :text text))
-                  (fb-object-id)
                   (gratitude-url (format nil "/gratitude/~A" new-id)))
 
              (when (and (getf *user* :fb-link-active)
-                        (getf *user* :fb-id))
-               (setf fb-object-id
-                     (publish-facebook-action new-id :action-type "express"))
-               (modify-db new-id :fb-object-id (get-facebook-object-id new-id)))
+                        (getf *user* :fb-id)
+                        (post-parameter "publish-facebook"))
+               (modify-db new-id :fb-action-id
+                             (publish-facebook-action new-id
+                                                      :action-type "express"))
+               (register-facebook-object-id new-id))
 
              (awhen on-id
                (let* ((inventory-result (gethash on-id *db-results*))

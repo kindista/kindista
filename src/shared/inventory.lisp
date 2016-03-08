@@ -159,9 +159,7 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
-         (fb-object-id (getf data :fb-object-id))
          (fb-action-id (getf data :fb-action-id))
-         (fb-id (or fb-object-id fb-action-id))
          (by (getf data :by))
          (now (get-universal-time)))
 
@@ -210,7 +208,7 @@
                       :details details
                       :active t
                       :tags tags
-                      :fb-id fb-id
+                      :fb-action-id fb-action-id
                       :expires expires
                       :privacy privacy))
 
@@ -218,12 +216,12 @@
           )
 
       (cond
-        ((and publish-facebook-p (not fb-id))
+        ((and publish-facebook-p (not fb-action-id))
          (setf (getf data :fb-action-id)
                (publish-facebook-action id :action-type "post"))
-         (modify-db id :fb-object-id (get-facebook-object-id id)))
+         (register-facebook-object-id id))
 
-        ((and fb-id publish-facebook-p)
+        ((and fb-action-id publish-facebook-p)
          (update-facebook-object id))
 
         ((and (not publish-facebook-p) fb-action-id)
@@ -497,8 +495,13 @@
               (progn
                 (contact-opt-out-flash (list *userid*) :item-type type)
 
-                (when (post-parameter "publish-facebook")
-                  (publish-facebook-action new-id :action-type "post"))
+                (when (and (getf *user* :fb-link-active)
+                           (getf *user* :fb-id)
+                           (post-parameter "publish-facebook"))
+                  (modify-db new-id :fb-action-id (publish-facebook-action
+                                                    new-id
+                                                    :action-type "post"))
+                  (register-facebook-object-id new-id))
 
                 (flash
                   (s+ "Congratulations, your "
