@@ -390,6 +390,9 @@
     :get get-admin-sendmail
     :post post-admin-sendmail)
 
+  ("/publish-facebook"
+   :post post-new-facebook-action)
+
   ("/uninstall-facebook"
     :post post-uninstall-facebook)
 
