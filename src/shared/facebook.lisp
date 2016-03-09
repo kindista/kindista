@@ -163,10 +163,31 @@
                                                (cons "fields" "location")
                                                (cons "method" "get"))))))))
 
+(defun new-facebook-action-notice-handler
+  (&aux (data (notice-data)))
+  (http-request (s+ +base-url+ "publish-facebook")
+                :parameters (list (cons "item-id" (getf data :item-id))
+                                  (cons "userid" (getf data :userid))
+                                  (cons "action-type" (getf data :action-type)))
+                :method :post))
+
+(defun post-new-facebook-action
+  (&aux (item-id (get-parameter-integer "item-id"))
+        (userid (get-parameter-integer "userid"))
+        (action-type (get-parameter-string "action-type")))
+  (if (server-side-request-p)
+    (progn
+      (modify-db item-id :fb-action-id (publish-facebook-action item-id
+                                                                userid
+                                                                action-type))
+      (register-facebook-object-id item-id)
+      (setf (return-code*) +http-no-content+))
+    (setf (return-code*) +http-forbidden+)))
+
 (defun publish-facebook-action
   (id
-   &key (userid *userid*)
-        (action-type "post")
+   &optional (userid *userid*)
+             (action-type "post")
    &aux (item (db id))
         (object-type (string-downcase (symbol-name (getf item :type))))
         (user (db userid))

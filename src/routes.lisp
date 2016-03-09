@@ -390,6 +390,9 @@
     :get get-admin-sendmail
     :post post-admin-sendmail)
 
+  ("/uninstall-facebook"
+    :post post-uninstall-facebook)
+
   ; redirects
 
   ("/people/"
@@ -398,8 +401,6 @@
   ("/home/"
     :get go-home)
 
-  ("/uninstall-facebook"
-    :post post-uninstall-facebook)
   ;cron-jobs
 
   ("/inventory-expiration-reminders"

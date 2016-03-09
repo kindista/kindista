@@ -916,10 +916,7 @@
              (when (and (getf *user* :fb-link-active)
                         (getf *user* :fb-id)
                         (post-parameter "publish-facebook"))
-               (modify-db new-id :fb-action-id
-                             (publish-facebook-action new-id
-                                                      :action-type "express"))
-               (register-facebook-object-id new-id))
+               (notice :new-facebook-action :item-id new-id :action-type "express"))
 
              (awhen on-id
                (let* ((inventory-result (gethash on-id *db-results*))

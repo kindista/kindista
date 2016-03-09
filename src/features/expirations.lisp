@@ -79,9 +79,9 @@
         (now (get-universal-time))
         (10days (+ now (* 10 +day-in-seconds+)))
         (4days (+ now (* 4 +day-in-seconds+))))
-  (when (or (not *productionp*)
-            (getf *user* :admin)
-            (server-side-request-p))
+  (if (or (not *productionp*)
+          (getf *user* :admin)
+          (server-side-request-p))
     (flet ((remind-user (id &optional data)
              (send-inventory-expiration-notice id)
              (modify-db id :expiration-notice now)
@@ -95,24 +95,26 @@
                (userid (db id :by)))
           (if (< (getf item :expires) 4days)
             (cond
-             ((< time now)
-              (if (= userid 1)
-                (remind-user id)
-                (push (cons id (humanize-universal-time time)) expired))
-              (deactivate-inventory-item id))
-             ;; send reminders for items expiring soon
-             ((> time now)
-              (when (= userid 1)
-                (let* ((item (db id))
-                       (recent-reminder (getf item :expiration-notice)))
-                  (when (or (not recent-reminder)
-                            (> recent-reminder 10days))
-                    (remind-user id item))))
-              (push (cons id (humanize-future-time time)) expiring-soon)))
-            (return)))))
-    (if *productionp*
-      (see-other "/home")
-      (values expired expiring-soon))))
+              ((< time now)
+               (if (= userid 1)
+                 (remind-user id)
+                 (push (cons id (humanize-universal-time time)) expired))
+               (deactivate-inventory-item id))
+              ;; send reminders for items expiring soon
+              ((> time now)
+               (when (= userid 1)
+                 (let* ((item (db id))
+                        (recent-reminder (getf item :expiration-notice)))
+                   (when (or (not recent-reminder)
+                             (> recent-reminder 10days))
+                     (remind-user id item))))
+               (push (cons id (humanize-future-time time)) expiring-soon)))
+            (return))))
+      (if *productionp*
+        (see-other "/home")
+        (values expired expiring-soon)))
+
+    (setf (return-code*) +http-forbidden+)))
 
 (defun get-inventory-refresh
   (&aux refreshed-items

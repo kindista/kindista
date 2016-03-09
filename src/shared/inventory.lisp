@@ -208,7 +208,6 @@
                       :details details
                       :active t
                       :tags tags
-                      :fb-action-id fb-action-id
                       :expires expires
                       :privacy privacy))
 
@@ -217,9 +216,7 @@
 
       (cond
         ((and publish-facebook-p (not fb-action-id))
-         (setf (getf data :fb-action-id)
-               (publish-facebook-action id :action-type "post"))
-         (register-facebook-object-id id))
+         (notice :new-facebook-action :item-id id :action-type "post") )
 
         ((and fb-action-id publish-facebook-p)
          (update-facebook-object id))
@@ -498,10 +495,7 @@
                 (when (and (getf *user* :fb-link-active)
                            (getf *user* :fb-id)
                            (post-parameter "publish-facebook"))
-                  (modify-db new-id :fb-action-id (publish-facebook-action
-                                                    new-id
-                                                    :action-type "post"))
-                  (register-facebook-object-id new-id))
+                  (notice :new-facebook-action :item-id new-id :action-type "post"))
 
                 (flash
                   (s+ "Congratulations, your "
