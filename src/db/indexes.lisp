@@ -118,7 +118,7 @@
 (defvar *inventory-refresh-timer-index* ())
 (defvar *invite-request-mutex* (make-mutex))
 (defvar *invite-request-index* ())
-(defvar *push-subscription-userid-mutex* (make-mutex))
+(defvar *push-subscription-message-index* ())
 (defvar *recent-activity-mutex* (make-mutex))
 (defvar *recent-activity-index* ())
 (defvar *requests-without-matchmakers-mutex* (make-mutex))

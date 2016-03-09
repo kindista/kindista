@@ -62,7 +62,7 @@
                               (when (getf other-party :notify-message)
                                 (list other-party-id))))))
 
-  (labels ((gift-text (&key html-p)
+    (labels ((gift-text (&key html-p)
              (gift-given-notification-text (aif group-actor
                                                (getf it :name)
                                                event-actor-name)
@@ -95,6 +95,12 @@
                                             (:request "a request")))))))
 
     (when (and recipients (> (length recipients) 0))
+      (send-push-through-chrome-api recipients
+                                    :message-title (s+ "Someone has replied to your" on-type-string)
+                                    :message-body on-title
+                                    :message-tag "transaction-tag"
+                                    :message-url transaction-url
+                                    :message-type on-type)
       (dolist (recipient-id recipients)
         (let* ((recipient (db recipient-id))
                (inventory-author-and-type

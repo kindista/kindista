@@ -26,10 +26,20 @@
          (group-url (strcat* *email-url* "groups/" (username-or-id group-id)))
          (recipient-id (caaar (getf invitation :people)))
          (recipient (db recipient-id))
+         (push-recipients (list (list :id recipient-id)))
          (email (car (getf recipient :emails)))
          (unsubscribe-key (getf recipient :unsubscribe-key)))
 
      (when (getf recipient :notify-group-membership-invites)
+       (send-push-through-chrome-api push-recipients
+                                     :message-title "Invitation to kindista group"
+                                     :message-body (s+ host-name
+                                                  " has invited you to join, "
+                                                    group-name)
+                                     :message-tag "group-tag"
+                                     :message-url group-url
+                                     :message-type :group
+                                     )
        (cl-smtp:send-email +mail-server+
                            "Kindista <noreply@kindista.org>"
                            email

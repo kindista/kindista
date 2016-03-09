@@ -32,9 +32,21 @@
        (setf (return-code*) +http-not-implemented+)
        "Push Notifications have not been implemented for your browser.")
       (t
-       (let ((notifications (db *userid* :chrome-push-notifications)))
+       (let* ((notifications (copy-list
+                               (db *userid* :chrome-push-notifications)))
+              (old-registration-id (getf notifications :subscription))
+              (new-registration-id (when subscribe-p registration-id)))
          (setf (getf notifications :subscription)
-               (when subscribe-p registration-id))
+               new-registration-id)
+         (awhen old-registration-id
+           (with-locked-hash-table (*push-subscription-message-index*)
+             ;when subscribing update registration hashtable key
+             (setf (gethash new-registration-id
+                            *push-subscription-message-index*)
+                   (gethash it *push-subscription-message-index*))
+             ;remove old registration for both subscribe and unsubscribe
+             (remhash it *push-subscription-message-index*)
+             ))
          (modify-db *userid* :chrome-push-notifications notifications))
          ;modify hashtable
        (setf (return-code*) +http-no-content+)
@@ -42,24 +54,47 @@
 
 (defun send-push-through-chrome-api
   (recipients
-    &key message-type
-         author-name
+    &key
+         message-title
+         message-body
+         message-tag
+         message-url
+         message-type
+         ;author-name
    &aux
      (registration-ids)
+     (message-ellipsed (ellipsis message-body :length 100 :plain-text t))
      ;(recipients (list (list :id 1) (list :id 3)))
+     (message (list :title message-title
+                    :body message-ellipsed
+                    :tag message-tag
+                    :url message-url))
      (chrome-api-status)
-     (subscribed-push-users)
+     ;(subscribed-push-users)
      (registration-json))
 
   ;get registration id's for each recipient
   ;of the notification
   ;if they are subscribed
   (dolist (recipient recipients)
-          (awhen (getf (db (getf recipient :id) :chrome-push-notifications) 
+          (awhen (getf (db (getf recipient :id) :chrome-push-notifications)
                                                 :subscription)
                  (push it registration-ids)
-                 (push (getf recipient :id) subscribed-push-users)
-                 ))
+                 ;(push (getf recipient :id) subscribed-push-users)
+                 )
+          (case message-type
+            (:gratitude
+               (setf (getf message :body) (s+ message-body
+                                              (aif (getf recipient :group-name)
+                                                it
+                                                "you"))))
+            ;(:offer
+            ;  (setf (getf message :body) (s+ message-body
+            ;                                 (aif (getf recipient :group-name)
+            ;                                   it
+            ;                                   "you")))
+            ;  )
+          ))
 
   (setf registration-json (json:encode-json-alist-to-string (list (cons "registration_ids" registration-ids))))
 
@@ -72,30 +107,37 @@
                 :external-format-out :utf-8
                 :external-format-in :utf-8
                 :content registration-json)))
+
   (when (= (second chrome-api-status) 200)
-      (pprint "status: 200")
-      (terpri)
-
-
+      (dolist (registration registration-ids)
+        (with-locked-hash-table (*push-subscription-message-index*)
+          (push (list message)
+                (gethash registration *push-subscription-message-index*))))
     ))
 
+(defun remove-google-url-from-endpoint
+  (endpoint
+    &aux
+    (registration-id (first (last (split "\\/" raw-endpoint))))
+    )
+
+  )
 (defun send-unread-notifications
   (
    &aux
-    (title "New Message")
-    (body "new message recieved")
-    (icon "kindista_favicon_180.png")
-    (tag "new-message-tag")
-    (url "http://localhost/messages")
     (raw-endpoint (getf (alist-plist (json:decode-json-from-string (raw-post-data :force-text t))) :endpoint))
     (registration-id (first (last (split "\\/" raw-endpoint))))
-    ;check users message queue
-    ;set title body etc to specific message
+    (message (car (last (gethash registration-id *push-subscription-message-index*))))
+    (title (getf message :title))
+    (body (getf message :body))
+    (icon "kindista_favicon_180.png")
+    (tag (getf message :tag))
+    (url (getf message :url))
     ;dequeue that message from users message queue
-    (json-list ( list (cons "title"  title) (cons "body"  body) (cons "icon"  icon) (cons "url" url) (cons "tag"  tag)))
+    (json-list ( list (cons "title"  (title)) (cons "body"  body) (cons "icon"  icon) (cons "url" url) (cons "tag"  tag)))
     )
-  ;(pprint registration-id)
-  ;(pprint json-list)
-  ;(terpri)
+  (with-locked-hash-table (*push-subscription-message-index*)
+    ;dequeue message from users message queue
+    (asetf (gethash registration-id *push-subscription-message-index*) (butlast it)))
   (json:encode-json-to-string json-list)
   )
