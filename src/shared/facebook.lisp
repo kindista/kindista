@@ -166,8 +166,10 @@
 (defun new-facebook-action-notice-handler
   (&aux (data (notice-data)))
   (http-request (s+ +base-url+ "publish-facebook")
-                :parameters (list (cons "item-id" (getf data :item-id))
-                                  (cons "userid" (getf data :userid))
+                :parameters (list (cons "item-id"
+                                        (strcat (getf data :item-id)))
+                                  (cons "userid"
+                                        (strcat (getf data :userid)))
                                   (cons "action-type" (getf data :action-type)))
                 :method :post))
 
