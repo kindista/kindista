@@ -72,6 +72,10 @@
                            "redirect_uri" (url-encode (s+ +base-url+ redirect-uri)))
         (str button-text))))
 
+(defun facebook-debugging-log (message)
+  (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :append)
+    (format s "~S~%" message)))
+
 (defun register-facebook-user
   (&optional (redirect-uri "home")
              &aux reply)
@@ -89,11 +93,10 @@
       ((<= (second reply) 200)
        (quri.decode:url-decode-params (octets-to-string (first reply))))
       ((>= (second reply) 400)
-       (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
-         (format s "~S~%"
-                 (cdr (assoc :message
-                             (cdr (assoc :error
-                                         (decode-json-octets (first reply))))))))
+       (facebook-debugging-log
+         (cdr (assoc :message
+                     (cdr (assoc :error
+                                 (decode-json-octets (first reply)))))))
        nil)
       (t
        (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
@@ -176,8 +179,10 @@
 (defun post-new-facebook-action
   (&aux (item-id (get-parameter-integer "item-id"))
         (userid (get-parameter-integer "userid"))
-        (action-type (get-parameter-string "action-type")))
-  (if (server-side-request-p)
+        (action-type (get-parameter-string "action-type"))
+        (server-side-request-p (server-side-request-p)))
+  (facebook-debugging-log (strcat "Server-side-p: " server-side-request-p))
+  (if server-side-request-p
     (progn
       (modify-db item-id :fb-action-id (publish-facebook-action item-id
                                                                 userid
@@ -212,6 +217,7 @@
                                          (json:encode-json-to-string
                                            (list (cons "value" "SELF"))))))))))
 
+  (facebook-debugging-log reply)
   (when (= (second reply) 200)
     (parse-integer (cdr (assoc :id
                                (decode-json-octets (first reply)))))))
