@@ -177,9 +177,9 @@
                 :method :post))
 
 (defun post-new-facebook-action
-  (&aux (item-id (get-parameter-integer "item-id"))
-        (userid (get-parameter-integer "userid"))
-        (action-type (get-parameter-string "action-type"))
+  (&aux (item-id (post-parameter-integer "item-id"))
+        (userid (post-parameter-integer "userid"))
+        (action-type (post-parameter-string "action-type"))
         (server-side-request-p (server-side-request-p)))
   (facebook-debugging-log (strcat "Server-side-p: " server-side-request-p))
   (facebook-debugging-log item-id)
