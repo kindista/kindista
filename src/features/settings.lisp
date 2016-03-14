@@ -264,7 +264,7 @@
                           (if (eql (getf entity :location-privacy) :public)
                             "displayed publicly" "hidden")
                           ". You can change the visibility of this address on your group's settings page. ")
-                    (s+ "We will never share your exact location with anyone else.")))
+                    (s+ "We will never share your exact location with anyone else. ")))
                   "If you would like to know more about how we use the information you share with us,
                    please read our " (:a :href "/privacy" "privacy policy") ".")
               (str (static-google-map :size "280x150"

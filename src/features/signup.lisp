@@ -76,7 +76,7 @@
 
 
        (:div :id "login"
-        (:span "Already have an account? " (:a :href "/login" "Log in."))))
+        (:span "Already have an account? " (:a :href "/login" "Sign in."))))
     :error error))
 
 (defun email-verification-page (&key error name email token host)
@@ -88,7 +88,7 @@
         (htm (:h2 "Please RSVP to your invitation. ")))
       (:p "Your email address is: " (:strong (str email)))
       (:p "You will be able to change it or add additional email addresses on the Settings page after you sign up.")
-      (:form :method "POST" :action "/signup" :id "signup"
+      (:form :method "POST" :action "/signup" :id "signup-form"
        (:input :type "hidden" :name "token" :value token)
        (:input :type "hidden" :name "email" :value email)
        (unless (eq host +kindista-id+)
@@ -103,13 +103,13 @@
        (:input :type "password" :id "password" :name "password-2" :value "")
        (:div
          (str (signup-identity-selection)))
+       (:button :class "yes" :type "submit" "Sign up") 
        (:p :class "fineprint" "By creating an account, you are agreeing to our "
         (:a :href "/terms" "Terms of Service") " and " (:a :href "/privacy" "Privacy Policy"))
 
        (:br)
-       (:button :class "yes" :type "submit" "Sign up") 
-
-       (:span "Already have an account? " (:a :href "/login" "Sign in"))))
+       (:div :id "login"
+         (:span "Already have an account? " (:a :href "/login" "Sign in.")))))
     :error error))
 
 (defun get-signup
@@ -142,7 +142,7 @@
     "Confirm your email address"
     nil
     (html
-      (:div :id "body"
+      (:div :id "signup-resend-confirmation"
        (:h2
          "We have "
          (str (if resent "resent" "sent"))

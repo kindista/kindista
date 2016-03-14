@@ -417,6 +417,12 @@ body.about h3 {
  text-align: center;
 }
 
+#signup-resend-confirmation {
+ width: 100%;
+ max-width: 30em;
+ margin: 3em auto;
+}
+
 #login h1 {
  font-size: 2em;
  margin-bottom:0.1em;
