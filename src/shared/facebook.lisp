@@ -182,6 +182,8 @@
         (action-type (get-parameter-string "action-type"))
         (server-side-request-p (server-side-request-p)))
   (facebook-debugging-log (strcat "Server-side-p: " server-side-request-p))
+  (facebook-debugging-log item-id)
+  (facebook-debugging-log userid)
   (if server-side-request-p
     (progn
       (modify-db item-id :fb-action-id (publish-facebook-action item-id
@@ -217,6 +219,7 @@
                                          (json:encode-json-to-string
                                            (list (cons "value" "SELF"))))))))))
 
+  (facebook-debugging-log (getf user :fb-token))
   (facebook-debugging-log reply)
   (when (= (second reply) 200)
     (parse-integer (cdr (assoc :id
