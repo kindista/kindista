@@ -200,7 +200,10 @@
                   (progn
                     (refresh-item-time-in-indexes item-id :time now)
                     (modify-item-images item-id :edited now))
-                  (modify-item-images item-id))))
+                  (modify-item-images item-id)))
+              (awhen (getf item :fb-object-id)
+                (notice :new-facebook-action :object-modified t
+                                             :fb-object-id it)))
             (see-other url)))))))
 
 (defun post-existing-image (id)

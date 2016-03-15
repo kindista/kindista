@@ -145,10 +145,12 @@
                                            :without-terms without-terms
                                            :distance distance
                                            :notify-matches notify-matches)))))
-          :extra-head (facebook-item-meta-content id
-                                                  "request"
-                                                  (getf request :title)
-                                                  (getf request :details))
+          :extra-head (facebook-item-meta-content
+                        id
+                        "request"
+                        (strcat* "Request: " (getf request :title))
+                        :image (awhen (first (getf request :images))
+                                 (get-image-thumbnail it 1200 1200)))
           :selected "requests"))))))
 
 (defun get-request-reply (id)

@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -109,10 +109,12 @@
                        matching-requests)
               (str (item-matches-html id :data offer
                                          :current-matches matching-requests))))
-          :extra-head (facebook-item-meta-content id
-                                                  "offer"
-                                                  (getf offer :title)
-                                                  (getf offer :details))
+          :extra-head (facebook-item-meta-content
+                        id
+                        "offer"
+                        (strcat* "Offer: " (getf offer :title))
+                        :image (awhen (first (getf offer :images))
+                                 (get-image-thumbnail it 1200 1200)))
           :selected "offers"))))))
 
 (defun get-offer-reply (id)

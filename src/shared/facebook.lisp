@@ -34,7 +34,12 @@
          (*facebook-user-token-expiration* (getf *user* :fb-expires)))
      ,@body))
 
-(defun facebook-item-meta-content (id typestring title &optional description)
+(defun facebook-item-meta-content
+  (id
+   typestring
+   title
+   &key description
+        (image "/media/biglogo4facebook.jpg"))
   (html
     (:meta :property "og:type"
            :content (s+ "kindistadotorg:" typestring))
@@ -53,7 +58,9 @@
                       (or title (s+ "Kindista " (string-capitalize typestring)))))
     (awhen description
       (htm (:meta :property "og:description"
-                  :content (escape-for-html it))))))
+                  :content (escape-for-html it))))
+    (:meta :property "og:image"
+           :content image)))
 
 (defun facebook-sign-in-button
   (&key (redirect-uri "home")
@@ -168,20 +175,28 @@
 
 (defun new-facebook-action-notice-handler
   (&aux (data (notice-data))
+        (userid (getf data :userid))
         (item-id (getf data :item-id))
         (fb-action-id)
         (fb-object-id))
-  (setf fb-action-id
-        (publish-facebook-action item-id
-                                 (getf data :userid)
-                                 (getf data :action-type)))
-  (setf fb-object-id (get-facebook-object-id item-id))
-  (http-request
-    (s+ +base-url+ "publish-facebook")
-    :parameters (list (cons "item-id" (strcat item-id))
-                      (cons "fb-action-id" (strcat fb-action-id))
-                      (cons "fb-object-id" (strcat fb-object-id)))
-    :method :post))
+
+  ;; userid is included w/ new publish request but not scraping new data
+  (when userid
+    (setf fb-action-id
+          (publish-facebook-action item-id
+                                   userid
+                                   (getf data :action-type)))
+    (setf fb-object-id (get-facebook-object-id item-id)))
+  (cond
+    (userid
+      (http-request
+        (s+ +base-url+ "publish-facebook")
+        :parameters (list (cons "item-id" (strcat item-id))
+                          (cons "fb-action-id" (strcat fb-action-id))
+                          (cons "fb-object-id" (strcat fb-object-id)))
+        :method :post))
+    ((getf data :object-modified)
+      (scrape-facebook-item (getf data :fb-object-id)))))
 
 (defun post-new-facebook-data
   (&aux (item-id (post-parameter-integer "item-id"))
@@ -191,8 +206,11 @@
     (progn
       (modify-db item-id :fb-action-id fb-action-id
                          :fb-object-id fb-object-id)
-      (setf (return-code*) +http-no-content+))
-    (setf (return-code*) +http-forbidden+)))
+      (setf (return-code*) +http-no-content+)
+      nil)
+    (progn
+      (setf (return-code*) +http-forbidden+)
+      nil)))
 
 (defun publish-facebook-action
   (id
@@ -206,7 +224,6 @@
             (http-request
               (strcat *fb-graph-url*
                       "me"
-                     ;(or *fb-id* (getf user :fb-id))
                       "/kindistadotorg:"
                       action-type)
               :parameters (list (cons "access_token" (getf user :fb-token))
@@ -348,5 +365,7 @@
       (modify-db userid :fb-link-active nil)
       (with-locked-hash-table (*facebook-id-index*)
         (remhash fb-id *facebook-id-index*))
-      (setf (return-code*) +http-no-content+))
-    (setf (return-code*) +http-forbidden+)))
+      (setf (return-code*) +http-no-content+)
+      nil)
+    (progn (setf (return-code*) +http-forbidden+)
+           nil)))
