@@ -169,24 +169,18 @@
 (defun new-facebook-action-notice-handler
   (&aux (data (notice-data))
         (item-id (getf data :item-id))
-        (action-type (getf data :action-type))
         (fb-action-id)
         (fb-object-id))
-  (if (and (getf data :fb-action-published)
-           (not action-type))
-    (setf fb-object-id (get-facebook-object-id item-id))
-    (progn
-      (setf fb-action-id
-            (publish-facebook-action (getf data :item-id)
-                                     (getf data :userid)
-                                     (getf data :action-type)))
-      (notice :new-facebook-action :item-id item-id :fb-action-published t)))
+  (setf fb-action-id
+        (publish-facebook-action item-id
+                                 (getf data :userid)
+                                 (getf data :action-type)))
+  (setf fb-object-id (get-facebook-object-id item-id))
   (http-request
     (s+ +base-url+ "publish-facebook")
     :parameters (list (cons "item-id" (strcat item-id))
-                      (if fb-action-id
-                        (cons "fb-action-id" (strcat fb-action-id))
-                        (cons "fb-object-id" (strcat fb-object-id))))
+                      (cons "fb-action-id" (strcat fb-action-id))
+                      (cons "fb-object-id" (strcat fb-object-id)))
     :method :post))
 
 (defun post-new-facebook-data
@@ -195,10 +189,8 @@
         (fb-object-id (post-parameter-integer "fb-object-id")))
   (if (server-side-request-p)
     (progn
-      (cond
-        (fb-action-id (modify-db item-id :fb-action-id fb-action-id))
-        (fb-object-id (modify-db item-id :fb-object-id fb-object-id)))
-      (register-facebook-object-id item-id)
+      (modify-db item-id :fb-action-id fb-action-id
+                         :fb-object-id fb-object-id)
       (setf (return-code*) +http-no-content+))
     (setf (return-code*) +http-forbidden+)))
 
