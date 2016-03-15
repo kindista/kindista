@@ -391,7 +391,7 @@
     :post post-admin-sendmail)
 
   ("/publish-facebook"
-   :post post-new-facebook-action)
+   :post post-new-facebook-data)
 
   ("/uninstall-facebook"
     :post post-uninstall-facebook)

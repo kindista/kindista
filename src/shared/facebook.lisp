@@ -167,28 +167,37 @@
                                                (cons "method" "get"))))))))
 
 (defun new-facebook-action-notice-handler
-  (&aux (data (notice-data)))
-  (http-request (s+ +base-url+ "publish-facebook")
-                :parameters (list (cons "item-id"
-                                        (strcat (getf data :item-id)))
-                                  (cons "userid"
-                                        (strcat (getf data :userid)))
-                                  (cons "action-type" (getf data :action-type)))
-                :method :post))
-
-(defun post-new-facebook-action
-  (&aux (item-id (post-parameter-integer "item-id"))
-        (userid (post-parameter-integer "userid"))
-        (action-type (post-parameter-string "action-type"))
-        (server-side-request-p (server-side-request-p)))
-  (facebook-debugging-log (strcat "Server-side-p: " server-side-request-p))
-  (facebook-debugging-log item-id)
-  (facebook-debugging-log userid)
-  (if server-side-request-p
+  (&aux (data (notice-data))
+        (item-id (getf data :item-id))
+        (action-type (getf data :action-type))
+        (fb-action-id)
+        (fb-object-id))
+  (if (and (getf data :fb-action-published)
+           (not action-type))
+    (setf fb-object-id (get-facebook-object-id item-id))
     (progn
-      (modify-db item-id :fb-action-id (publish-facebook-action item-id
-                                                                userid
-                                                                action-type))
+      (setf fb-action-id
+            (publish-facebook-action (getf data :item-id)
+                                     (getf data :userid)
+                                     (getf data :action-type)))
+      (notice :new-facebook-action :item-id item-id :fb-action-published t)))
+  (http-request
+    (s+ +base-url+ "publish-facebook")
+    :parameters (list (cons "item-id" (strcat item-id))
+                      (if fb-action-id
+                        (cons "fb-action-id" (strcat fb-action-id))
+                        (cons "fb-object-id" (strcat fb-object-id))))
+    :method :post))
+
+(defun post-new-facebook-data
+  (&aux (item-id (post-parameter-integer "item-id"))
+        (fb-action-id (post-parameter-integer "fb-action-id"))
+        (fb-object-id (post-parameter-integer "fb-object-id")))
+  (if (server-side-request-p)
+    (progn
+      (cond
+        (fb-action-id (modify-db item-id :fb-action-id fb-action-id))
+        (fb-object-id (modify-db item-id :fb-object-id fb-object-id)))
       (register-facebook-object-id item-id)
       (setf (return-code*) +http-no-content+))
     (setf (return-code*) +http-forbidden+)))
@@ -202,25 +211,22 @@
         (user (db userid))
         (reply
           (multiple-value-list
-            (with-facebook-credentials
-              (http-request
-                (strcat *fb-graph-url*
-                        "me"
-                       ;(or *fb-id* (getf user :fb-id))
-                        "/kindistadotorg:"
-                        action-type)
-                :parameters (list (cons "access_token" (getf user :fb-token))
-                                  (cons "method" "post")
-                                  (cons object-type
-                                        (s+ "https://kindista.org"
-                                            (resource-url id item)))
-                                  (cons "fb:explicitly_shared" "true")
-                                  (cons "privacy"
-                                         (json:encode-json-to-string
-                                           (list (cons "value" "SELF"))))))))))
+            (http-request
+              (strcat *fb-graph-url*
+                      "me"
+                     ;(or *fb-id* (getf user :fb-id))
+                      "/kindistadotorg:"
+                      action-type)
+              :parameters (list (cons "access_token" (getf user :fb-token))
+                                (cons "method" "post")
+                                (cons object-type
+                                      (s+ "https://kindista.org"
+                                          (resource-url id item)))
+                                (cons "fb:explicitly_shared" "true")
+                                (cons "privacy"
+                                       (json:encode-json-to-string
+                                         (list (cons "value" "SELF")))))))))
 
-  (facebook-debugging-log (getf user :fb-token))
-  (facebook-debugging-log reply)
   (when (= (second reply) 200)
     (parse-integer (cdr (assoc :id
                                (decode-json-octets (first reply)))))))
@@ -241,9 +247,6 @@
       (getf (alist-plist (getf (alist-plist (decode-json-octets (first reply)))
                                :og--object))
             :id))))
-
-(defun register-facebook-object-id (k-id)
-  (modify-db k-id :fb-object-id (get-facebook-object-id k-id)))
 
 (defun get-user-facebook-objects-of-type
   (typestring
