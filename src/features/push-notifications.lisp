@@ -44,11 +44,10 @@
              (setf (gethash new-registration-id
                             *push-subscription-message-index*)
                    (gethash it *push-subscription-message-index*))
-             ;remove old registration for both subscribe and unsubscribe
+            ;remove old registration for both subscribe and unsubscribe
              (remhash it *push-subscription-message-index*)
              ))
          (modify-db *userid* :chrome-push-notifications notifications))
-         ;modify hashtable
        (setf (return-code*) +http-no-content+)
        nil))))
 
@@ -60,7 +59,6 @@
          message-tag
          message-url
          message-type
-         ;author-name
    &aux
      (registration-ids)
      (message-ellipsed (ellipsis message-body :length 100 :plain-text t))
@@ -111,17 +109,10 @@
   (when (= (second chrome-api-status) 200)
       (dolist (registration registration-ids)
         (with-locked-hash-table (*push-subscription-message-index*)
-          (push (list message)
+          (push message
                 (gethash registration *push-subscription-message-index*))))
     ))
 
-(defun remove-google-url-from-endpoint
-  (endpoint
-    &aux
-    (registration-id (first (last (split "\\/" raw-endpoint))))
-    )
-
-  )
 (defun send-unread-notifications
   (
    &aux
@@ -133,9 +124,8 @@
     (icon "kindista_favicon_180.png")
     (tag (getf message :tag))
     (url (getf message :url))
-    ;dequeue that message from users message queue
-    (json-list ( list (cons "title"  (title)) (cons "body"  body) (cons "icon"  icon) (cons "url" url) (cons "tag"  tag)))
-    )
+    (json-list ( list (cons "title"  title) (cons "body"  body) (cons "icon"  icon) (cons "url" url) (cons "tag"  tag))))
+
   (with-locked-hash-table (*push-subscription-message-index*)
     ;dequeue message from users message queue
     (asetf (gethash registration-id *push-subscription-message-index*) (butlast it)))

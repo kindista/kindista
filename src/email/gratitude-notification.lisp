@@ -45,6 +45,7 @@
                                   :message-title "Statement of Gratitude"
                                   :message-body (s+ author-name
                                                     " shared gratitude for ")
+                                  :message-tag "gratitude_tag"
                                   :message-url url
                                   :message-type :gratitude)
     (dolist (recipient recipients)
@@ -114,4 +115,3 @@ gratitude-url
                  (or (getf recipient :group-name) "you"))
              :groupid (getf recipient :groupid)))
       )))
-

@@ -17,17 +17,17 @@ window.addEventListener('load', function() {
 });
 
 function sendSubscriptionToServer(subscription, action) {
-   var subscriptionJSON = subscription.toJSON();
-   subscriptionJSON.action = action;
-   fetch('/push-notification-subscription', {
-     method: 'post',
-     credentials: 'include',
-     headers: {
-       'Accept': 'application/json',
-       'Content-Type': 'application/json'
-     },
-   body: JSON.stringify(subscriptionJSON)
-     })
+  var subscriptionJSON = subscription.toJSON();
+  subscriptionJSON.action = action;
+  fetch('/push-notification-subscription', {
+    method: 'post',
+    credentials: 'include',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+  body: JSON.stringify(subscriptionJSON)
+    })
   .then(function(response) {
    // add reload for flash response??
    //location.reload(true);
@@ -37,8 +37,8 @@ function sendSubscriptionToServer(subscription, action) {
        throw new Error();
      }
   }).catch(function(err) {
-       console.log('error sending subscription to server', err);
-    })
+      console.log('error sending subscription to server', err);
+  })
 }
 
 function initialiseState() {
@@ -57,11 +57,11 @@ function initialiseState() {
     return;
   }
 
-   navigator.serviceWorker.ready.then(function(serviceWorkerRegistration) {
-   serviceWorkerRegistration.pushManager.getSubscription().then(function(subscription) {
+  navigator.serviceWorker.ready.then(function(serviceWorkerRegistration) {
+  serviceWorkerRegistration.pushManager.getSubscription().then(function(subscription) {
      var pushButton = document.querySelector('.push-notification-button');
      pushButton.disabled = false;
-    
+
      if(!subscription) {
        return;
     }
@@ -116,7 +116,7 @@ function unsubscribe() {
     // get the subscription object
     serviceWorkerRegistration.pushManager.getSubscription().then(function(pushSubscription) {
      if (!pushSubscription) {
-        // no subscription allow user to subscribe to push
+        // no subscription. allow user to subscribe to push
         isPushEnabled = false;
         pushButton.disabled = false;
         psuhButton.textContent = 'Enable Push Messages';
@@ -130,8 +130,8 @@ function unsubscribe() {
         pushButton.textContent = 'Enable Push Messages';
         isPushEnabled = false;
     }).catch(function(err) {
-        //failed to unsubscribe
-        // remove users subscription from database
+        // failed to unsubscribe
+        // still remove users subscription from database
 
         console.log('Unsubscription error: ', err);
         pushButton.disabled = false;

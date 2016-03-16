@@ -87,6 +87,9 @@
          "")))))
 
 (defun get-logout ()
+  (html (:script :type "text/javascript" "function myfunction(){console.log('loggingout');} myfunction()"))
+  (pprint "Logging out")
+  (terpri)
   (notice :logout)
   (delete-token-cookie)
   (see-other "/"))

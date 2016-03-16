@@ -6,6 +6,7 @@
     - handle messages for gratitude, messages, group membership requests/invitations, transactions
   - create functions to handle the different kind of messages
   - update send-push-notification to send the right message
+  - group message not being marked as read in message folder
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
 ## accountability with user flaky-ness

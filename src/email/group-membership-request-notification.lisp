@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -27,6 +27,7 @@
                             (username-or-id group-id)
                             "/members"))
          (group (db group-id))
+         (push-recipients)
          (group-name (getf group :name))
          (admin-list (getf group :notify-membership-request)))
 
@@ -34,6 +35,7 @@
       (let* ((admin (db admin-id))
              (email (car (getf admin :emails)))
              (unsubscribe-key (getf admin :unsubscribe-key)))
+        (push (list :id admin-id) push-recipients)
         (cl-smtp:send-email +mail-server+
                           "Kindista <noreply@kindista.org>"
                           email
@@ -54,7 +56,16 @@
                                           group-id
                                           group-name
                                           email
-                                          unsubscribe-key))))))
+                                          unsubscribe-key))))
+    (send-push-through-chrome-api push-recipients
+                                  :message-title (s+ "Request to join" group-name)
+                                  :message-body (s+ requestor-name
+                                         " is requesting to join your group, "
+                                         group-name)
+                                  :message-tag "group-request-tag"
+                                  :message-url reply-url
+                                  :message-type :group-request
+                                  )))
 
 (defun group-membership-request-notification-email-text
   (requestor-name reply-url group-id group-name email unsubscribe-key)

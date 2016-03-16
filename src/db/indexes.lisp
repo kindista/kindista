@@ -97,6 +97,7 @@
 (defindex *username-index* :test 'equalp)
 (defindex *eventname-index* :test 'equalp)
 (defindex *user-tokens-index*)
+(defindex *push-subscription-message-index* :test 'equalp)
 
 (defvar *active-people-mutex* (make-mutex))
 (defvar *active-people-index* ())
@@ -118,7 +119,7 @@
 (defvar *inventory-refresh-timer-index* ())
 (defvar *invite-request-mutex* (make-mutex))
 (defvar *invite-request-index* ())
-(defvar *push-subscription-message-index* ())
+
 (defvar *recent-activity-mutex* (make-mutex))
 (defvar *recent-activity-index* ())
 (defvar *requests-without-matchmakers-mutex* (make-mutex))
