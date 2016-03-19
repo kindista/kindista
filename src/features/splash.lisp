@@ -39,7 +39,7 @@
                       :name "password" )
               (:br)
               (:a :href "/reset" "Forgot your password?")   
-              (:button :class "yes" :type "submit" "Log in")
+              (:button :id "login" :class "yes" :type "submit" "Log in")
               ))))
 
         (:div :id "splashbox"

@@ -22,9 +22,11 @@
     (json (alist-plist (json:decode-json-from-string
                          (raw-post-data :force-text t))))
     (subscribe-p (string= (getf json :action) "subscribe"))
+    (update-p (string= (getf json :action) "update"))
     (raw-endpoint (getf json :endpoint))
     (url-parts (split "\\/" raw-endpoint))
     (chrome-p (find "android.googleapis.com" url-parts :test #'string=))
+    (status-json)
     (registration-id (first (last url-parts))))
   (require-user
     (cond
@@ -32,13 +34,22 @@
        (setf (return-code*) +http-not-implemented+)
        "Push Notifications have not been implemented for your browser.")
       (t
-       (let* ((notifications (copy-list
-                               (db *userid* :chrome-push-notifications)))
-              (old-registration-id (getf notifications :subscription))
+       (let* ((subscriptions (copy-list
+                               (db *userid* :push-notification-subscriptions)))
+              (old-registration-id (getf subscriptions :chrome))
               (new-registration-id (when subscribe-p registration-id)))
-         (setf (getf notifications :subscription)
+         (setf (getf subscriptions :chrome)
                new-registration-id)
          (awhen old-registration-id
+           ;only update when there is an old registration
+           ;(user already subscribed)
+           (when update-p
+                 (pprint "updating subscription")
+                 (terpri)
+                 (setf new-registration-id registration-id)
+                 (setf (getf subscriptions :chrome)
+                       new-registration-id))
+
            (with-locked-hash-table (*push-subscription-message-index*)
              ;when subscribing update registration hashtable key
              (setf (gethash new-registration-id
@@ -47,9 +58,16 @@
             ;remove old registration for both subscribe and unsubscribe
              (remhash it *push-subscription-message-index*)
              ))
-         (modify-db *userid* :chrome-push-notifications notifications))
+         ;(pprint notifications)
+         ;(terpri)
+         (modify-db *userid* :push-notification-subscriptions subscriptions)
+         ;when trying to update but not subscribed
+         (when (and update-p (not new-registration-id))
+           (setf status-json (list (cons "stat" "unsubscribed")))))
        (setf (return-code*) +http-no-content+)
-       nil))))
+       nil)))
+  (json:encode-json-to-string status-json)
+  )
 
 (defun send-push-through-chrome-api
   (recipients
@@ -75,8 +93,8 @@
   ;of the notification
   ;if they are subscribed
   (dolist (recipient recipients)
-          (awhen (getf (db (getf recipient :id) :chrome-push-notifications)
-                                                :subscription)
+          (awhen (getf (db (getf recipient :id) :push-notification-subscriptions)
+                                                :chrome)
                  (push it registration-ids)
                  ;(push (getf recipient :id) subscribed-push-users)
                  )

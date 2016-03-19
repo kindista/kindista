@@ -45,7 +45,7 @@
                (:input :type "password"
                 :class "password"
                 :name "password"))
-             (:button :type "submit" :class "yes" "Log in")
+             (:button :id "login" :type "submit" :class "yes" "Log in")
              (:span (:a :href "/reset" :class "reset"  "Forgot your password?")))))
         :hide-menu t))))
 
@@ -87,9 +87,6 @@
          "")))))
 
 (defun get-logout ()
-  (html (:script :type "text/javascript" "function myfunction(){console.log('loggingout');} myfunction()"))
-  (pprint "Logging out")
-  (terpri)
   (notice :logout)
   (delete-token-cookie)
   (see-other "/"))

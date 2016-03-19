@@ -662,7 +662,7 @@
                              (:td
                                (:a :class (when (eq selected :settings) "selected") :href "/settings" "Settings")
                                " &middot; "
-                               (:a :href "/logout" "Log&nbsp;out"))))))
+                               (:a :href "/logout" :id "logout" "Log&nbsp;out"))))))
                      (str (login-box nil)))
 
                    (when *user*
