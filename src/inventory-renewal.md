@@ -1,26 +1,14 @@
-## Refresh in indexes every month
-  -  UI date should say how long since refresh, edit, created
+# send email to all users with expired offers/requests
 
-## Index to store expiration dates
-  - maybe share with invitation expirations?
-  - or use results?
+# refresh items created more than a month ago that haven't been refreshed in the last month
 
-## Keep track of when items expire
-  - another cronjob sending an http request to trigger checking which should expire
-  - deactivate expired ones, send reminders for any expiring in the next 5 days
-  - modify-db with expiration-reminder-sent time
+# fix the scheduler loop
 
-## Send email notification about inventory expiration
-  - *production-p* only!
+# show when items have been refreshed?
 
-## Deactivate the inventory item
+# turn on the scheduler loop before pushing changes to the server
 
-## Encourage users to deactivate old inventory
-  - deactivate button on first transaction emails (if no title is needed)
+On Server:
+notify-accounts-with-expired-inventory
+refresh-and-expire-inventory-items
 
-## Reactivate the inventory item with new time
-
-## Allow users to view deactivated inventory items
-
-## Add inventory expiration to list of notification-preferences
-  - add to all new users

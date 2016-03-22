@@ -103,7 +103,11 @@
               (unless (getf offer :active)
                 (htm
                   (:h2 :class "red" "This offer is no longer active.")))
-              (str (inventory-activity-item result :show-distance t :show-tags t)))
+              (str (inventory-activity-item result
+                                            :show-icon t
+                                            :show-recent-action t
+                                            :show-distance t
+                                            :show-tags t)))
             (str (item-images-html id))
             (when (and (or self group-admin-p)
                        matching-requests)

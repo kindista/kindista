@@ -2911,6 +2911,12 @@ div.card.inventory-item {
  color:#666;
 }
 
+.timestamp img {
+ height: 1.3em;
+ width: 1.3em;
+ vertical-align: -0.2em;
+}
+
 .item .timestamp a {
  font-weight: normal;
  color:#666;

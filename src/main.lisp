@@ -31,7 +31,7 @@
   (load-db)
   (load-tokens)
   (setf *acceptor-thread* (make-thread #'(lambda () (start *acceptor*))))
-  (start-scheduler-thread)
+  ;(start-scheduler-thread)
   (start (acceptor-metric-system *acceptor*))
   (start-notice-thread))
 

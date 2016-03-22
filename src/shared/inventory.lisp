@@ -1126,7 +1126,6 @@
 
                 ((and (>= i start) items)
                  (str (inventory-activity-item (pop items)
-                                               :show-when nil
                                                :show-distance t
                                                :truncate t
                                                :show-tags t)))

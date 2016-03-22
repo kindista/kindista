@@ -132,7 +132,11 @@
               (unless (getf request :active)
                 (htm
                   (:h2 :class "red" "This request is no longer active.")))
-              (str (inventory-activity-item result :show-distance t :show-tags t))
+              (str (inventory-activity-item result
+                                            :show-icon t
+                                            :show-recent-action t
+                                            :show-distance t
+                                            :show-tags t))
               (str (item-images-html id))
               (when (and (getf request :active)
                          (or self

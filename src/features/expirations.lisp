@@ -114,9 +114,69 @@
 
     (setf (return-code*) +http-forbidden+)))
 
+(defun notify-accounts-with-expired-inventory
+  (&aux (now (get-universal-time))
+        (accounts (make-hash-table)))
+  (dolist (id (hash-table-keys *db*))
+    (let* ((data (db id))
+           (type (getf data :type)))
+      (when (and (or (eq type :offer)
+                     (eq type :request))
+                 (getf data :expires)
+                 (< 3664858200
+                    (getf data :expires) now))
+        (push id (getf (gethash (getf data :by)
+                                accounts)
+                       type)))))
+  (if *productionp*
+    (dolist (id (hash-table-keys accounts))
+      (let ((inventory (gethash id accounts)))
+        (when (getf inventory :offer)
+          (send-inventory-expiration-by-account-notice
+            id
+            "offer"
+            (length (getf inventory :offer))))
+        (when (getf inventory :request)
+          (send-inventory-expiration-by-account-notice
+            id
+            "request"
+            (length (getf inventory :request))))))
+    (hash-table-count accounts)))
+
+(defun refresh-and-expire-inventory-items
+  (&optional (modify-db (when *productionp* t))
+   &aux (now (get-universal-time))
+        (4weeks (* 4 +week-in-seconds+))
+        (new-time-frame (- 4weeks 300))
+        (expired 0)
+        (refreshed 0))
+  "This is a utility function. It deactivates items that have expired and refreshes active inventory items that haven't been refreshed in the past month. It should only need to be run if the scheduler loop crashes and remains dead for a while."
+  (dolist (result (hash-table-values *db-results*))
+     (when (and (or (eq (result-type result) :offer)
+                    (eq (result-type result) :request)))
+       (let* ((id (result-id result))
+              (data (db id))
+              (new-time))
+         (cond
+           ((and (getf data :active)
+                 (<=(getf data :expires) now)
+                 (when (or *productionp* modify-db)
+                   (deactivate-inventory-item id))
+                 (incf expired)))
+           ((and (< (result-time result) (- now 4weeks))
+                 (getf data :active)
+                 (> (getf data :expires) now))
+            (when (or *productionp* modify-db)
+              (setf new-time (- now (random new-time-frame)))
+              (refresh-item-time-in-indexes id
+                                            :time new-time
+                                            :server-side-trigger-p t)
+              (modify-db id :refreshed new-time))
+            (incf refreshed))))))
+  (list :expired expired :refreshed refreshed))
+
 (defun get-inventory-refresh
-  (&aux refreshed-items
-        (now (get-universal-time))
+  (&aux (now (get-universal-time))
         (-1hour (- now 3600)))
   (when (or (not *productionp*)
             (getf *user* :admin)
@@ -129,7 +189,6 @@
                                         :time -1hour
                                         :server-side-trigger-p t)
           (modify-db id :refreshed -1hour))
-        (return))
-    (if *productionp*
-      (see-other "/home")
-      refreshed-items))))
+        (return)))
+  (setf (return-code*) +http-no-content+)
+  ""))

@@ -202,7 +202,7 @@
           (dolist (request requests)
             (str (inventory-activity-item request :truncate t
                                                   :show-distance t
-                                                  :show-what t
+                                                  :show-icon t
                                                   :show-tags t)))
           (str (paginate-links page more (url-compose  "matchmaker"
                                                        "selected" "without-matchmaker"))))))))
