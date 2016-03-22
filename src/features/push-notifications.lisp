@@ -26,7 +26,7 @@
     (raw-endpoint (getf json :endpoint))
     (url-parts (split "\\/" raw-endpoint))
     (chrome-p (find "android.googleapis.com" url-parts :test #'string=))
-    (status-json)
+    (status-json (list (cons "stat" "null")))
     (registration-id (first (last url-parts))))
   (require-user
     (cond
@@ -64,9 +64,11 @@
          ;when trying to update but not subscribed
          (when (and update-p (not new-registration-id))
            (setf status-json (list (cons "stat" "unsubscribed")))))
-       (setf (return-code*) +http-no-content+)
-       nil)))
-  (json:encode-json-to-string status-json)
+       (setf (return-code*) +http-ok+)
+       (json:encode-json-to-string status-json)
+       
+       )))
+      ; (json:encode-json-to-string status-json)
   )
 
 (defun send-push-through-chrome-api

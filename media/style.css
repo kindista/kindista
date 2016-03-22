@@ -970,6 +970,7 @@ button.link:hover {
  text-decoration: underline;
 }
 
+button:disabled,
 button.cancel, input.cancel, a.button.cancel {
  font-weight: bold;
  color: #fff;
@@ -2845,8 +2846,9 @@ div.activity-image {
  font-weight: bold;
 }
 
+button:disabled,
 .id-bar a {
- text-decoration: none;
+ text-decoration: none !important;
 }
 
 .id-bar img {
@@ -3475,6 +3477,11 @@ div.settings menu.bar {
  display: table;
  width: 100%;
  max-width: 55em;
+}
+
+div.settings #email-link {
+ font-size: 0.85em;
+ padding-left: 0.5em;
 }
 
 .settings-item li.notifications.border-top {

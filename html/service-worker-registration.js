@@ -54,7 +54,7 @@ function sendSubscriptionToServer(subscription, action) {
   body: JSON.stringify(subscriptionJSON)
     })
   .then(function(response) {
-    if (response.status !== 204) {
+    if (response.status !== 200) {
       console.log('There was a problem sending subscription to server: ' + response.status);
         throw new Error();
       }
@@ -68,12 +68,13 @@ function sendSubscriptionToServer(subscription, action) {
 }
 
 window.addEventListener('load', function() {
+  var foo = document.getElementsByClassName('right home');
+  console.log(foo[0]);
   login = document.getElementById('login');
-  if (login) {
+  if (foo[0]) {
     if(!('showNotification' in ServiceWorkerRegistration.prototype)) {
       return
     }
-    login.addEventListener('click', function() {
       if (Notification.permission === 'granted') {
        // notification permission already granted
        // subscribe on the device and 
@@ -82,13 +83,39 @@ window.addEventListener('load', function() {
         navigator.serviceWorker.ready.then(function(serviceWorkerRegistration) {
           serviceWorkerRegistration.pushManager.subscribe({userVisibleOnly: true})
           .then(function(subscription) {
-            sendSubscriptionToServer(subscription, "update");
+            var subscriptionJSON = subscription.toJSON();
+            subscriptionJSON.action = 'update';
+            fetch('/push-notification-subscription', {
+              method: 'post',
+              credentials: 'include',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              },
+            body: JSON.stringify(subscriptionJSON)
+              })
+            .then(function(response) {
+              if (response.status !== 200) {
+                console.log('There was a problem sending subscription to server: ' + response.status);
+                  throw new Error();
+                }
+
+              return response.json().then(function(data) {
+                console.log(data);
+                var stat = data.stat;
+                console.log(stat);
+                if (stat === 'unsubscribed') {
+                  subscription.unsubscribe({userVisibleOnly: true}).then(function(successful) {
+                  }).catch(function(err) {
+                    console.error('Failure to unsubscribe: ', err);
+                  });
+                }
         })
         .catch(function(err) {
           console.error('Unabe to subscribe to push. ', err);
-        });
+        })
       });
-    }
-  });
- }
-});
+            });
+    })
+  }
+  }});

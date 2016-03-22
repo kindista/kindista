@@ -1,7 +1,7 @@
 var isPushEnabled = false;
 
 window.addEventListener('load', function() {
-  var pushButton = document.querySelector('.push-notification-button');
+  var pushButton = document.querySelector('#push-notification-button');
   pushButton.addEventListener('click', function() {
     if(isPushEnabled) {
       unsubscribe();
@@ -32,12 +32,18 @@ function sendSubscriptionToServer(subscription, action) {
    // add reload for flash response??
    //location.reload(true);
    //console.log(response);
-     if (response.status !== 204) {
+     if (response.status !== 200) {
        console.log('There was a problem sending subscription to server: ' + response.status);
        throw new Error();
      }
+    // return response.json().then(function(data) {
+    //    console.log('data');
+    //    console.log(data);
+    //    var stat = data.stat;
+    //    console.log(stat);
+    // });
   }).catch(function(err) {
-      console.log('error sending subscription to server', err);
+      console.error('error sending subscription to server', err);
   })
 }
 
@@ -48,7 +54,8 @@ function initialiseState() {
   }
 
   if (Notification.permission === 'denied') {
-    consle.warn('The user has blocked notifications.');
+    console.warn('The user has blocked notifications.');
+    document.getElementById('push-notifications').querySelector('.current-value').innerHTML = "<strong class='red'> We cannot enable push notifications because you have blocked them in your browser.</strong><p> To unblock, go to chrome://settings/contentExceptions#notifications and select \"allow\" next to https://kindista.org</p>";
     return;
   }
 
@@ -59,14 +66,14 @@ function initialiseState() {
 
   navigator.serviceWorker.ready.then(function(serviceWorkerRegistration) {
   serviceWorkerRegistration.pushManager.getSubscription().then(function(subscription) {
-     var pushButton = document.querySelector('.push-notification-button');
+     var pushButton = document.querySelector('#push-notification-button');
      pushButton.disabled = false;
 
      if(!subscription) {
        return;
     }
     // keep subscription up to date
-    sendSubscriptionToServer(subscription, "subscribe");
+    sendSubscriptionToServer(subscription, "update");
 
     pushButton.textContent = 'Disable Push Messages';
     isPushEnabled = true;
@@ -78,7 +85,7 @@ function initialiseState() {
 }
 
 function subscribe() {
-  var pushButton = document.querySelector('.push-notification-button');
+  var pushButton = document.querySelector('#push-notification-button');
   pushButton.disabled = true;
 
   navigator.serviceWorker.ready.then(function(serviceWorkerRegistration) {
@@ -89,8 +96,28 @@ function subscribe() {
           pushButton.textContent = 'Disable Push Messages';
           pushButton.disabled = false;
 
-          // create sendSubscriptionToServer function
-          sendSubscriptionToServer(subscription,"subscribe");
+         // var subscriptionJSON = subscription.toJSON();
+         // subscriptionJSON.action = 'update';
+
+         // create sendSubscriptionToServer function
+            sendSubscriptionToServer(subscription,"subscribe");
+         // fetch('/push-notification-subscription', {
+         //   method: 'post',
+         //   credentials: 'include',
+         //   headers: {
+         //     'Accept': 'application/json',
+         //     'Content-Type': 'application/json'
+         //   },
+         //  body: JSON.stringify(subscriptionJSON)
+         // })
+         // .then(function(response) {
+         //   if (response.status != 200) {
+         //     console.log('There was a problem sending subscription to server:' + response.status);
+         //     throw new Error();
+         //   }
+         //   return response.json().then(function(data) {
+         //     console.log(data);
+         //   });
         })
         .catch(function(err) {
           if (Notification.permission === 'denied') {
@@ -98,18 +125,21 @@ function subscribe() {
            // user must manually change browser notification permissons
            // in order to subscribe.
            console.warn('Permission for Notifications was denied');
+
+           location.reload(true);
            pushButton.disabled = true;
         } else {
           console.error('Unable to subscribe to push.', err);
           pushButton.disabled = false;
           pushButton.textContent = 'Enable Push Messages';
         }
+        //});
      });
   });
 }
 
 function unsubscribe() {
-  var pushButton = document.querySelector('.push-notification-button');
+  var pushButton = document.querySelector('#push-notification-button');
   pushButton.disabled = true;
 
   navigator.serviceWorker.ready.then(function(serviceWorkerRegistration) {

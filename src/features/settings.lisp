@@ -62,8 +62,7 @@
                  (:div :class "title"
                   (str (or title (string-capitalize item))))))))
   (html
-    (:a :id (hyphenate item))
-    (:div :class "item settings-item"
+    (:div :id (hyphenate item) :class "item settings-item"
       (:div :class "settings-item-table"
         (str title-div)
         (:div :class (s+ "details " class)
@@ -86,10 +85,13 @@
              (htm (:div :class "content-container"
                     (:div :class "current-value" (str body))
                     (:div :class "buttons"
-                      (:a :class "yes small"
-                          :href (url-compose *base-url* "edit" item)
-                          (or (str edit-text)
-                              (htm "Edit"))))))))))
+                      (if buttons
+                        (str buttons)
+                        (htm
+                          (:a :class "yes small"
+                              :href (url-compose *base-url* "edit" item)
+                              (or (str edit-text)
+                                  (htm "Edit"))))))))))))
      (:p :class "help-text" (:em (str help-text))))))
 
 (defun settings-group-category (editable groupid group)
@@ -639,17 +641,16 @@
      (see-other "/settings/communication")))))
 
 (defun settings-push-notifications
-  (
-  &key ;(groupid group)
-       (userid *userid*)
-  &aux ;(entity (or group user *user*))
-       ;(group-name (when group (getf group :name)))
-       ;(subject (or group-name "me"))
-   )
-   (settings-item-html
-     "push-notification"
-     (html (:button :class "push-notification-button" :disabled t "enable push-notifications" )
-           ))
+  ()
+  (settings-item-html
+     "push notifications"
+     nil
+     :help-text (html (:span :id "push-help-text" "Push notifications allow you to recieve messages from other users on your phone or browser. ")
+                      (:strong "Currently only availabe on Chrome and Chromium version 42 and above."))
+     :buttons (html (:button :id "push-notification-button"
+                             :class "yes small"
+                             :disabled t "enable push-notifications" ))
+     )
   )
 
 (defun settings-notifications (&key groupid group user (userid *userid*))
@@ -955,10 +956,11 @@
                (str (or group-name "you"))". "
                "You can specify which actions you would like to be notified about.")
            (:p "Notifications will be sent to your primary email address: "
-               (:strong (str (car (getf *user* :emails)))))
-           (str (settings-push-notifications))
+               (:strong (str (car (getf *user* :emails))))
+               (:a :id "email-link" :href "/settings/communication#email" "change"))
            (str (settings-notifications :groupid groupid :group group))
            (:script :type "text/javascript" :src "/push-notification-button.js") 
+           (str (settings-push-notifications))
            (unless groupid
              (str (settings-emails (string= (get-parameter "edit") "email")
                                    :activate (get-parameter "activate"))))))))
