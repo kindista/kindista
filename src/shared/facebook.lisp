@@ -39,7 +39,7 @@
    typestring
    title
    &key description
-        (image "/media/biglogo4facebook.jpg"))
+        image)
   (html
     (:meta :property "og:type"
            :content (s+ "kindistadotorg:" typestring))
@@ -60,7 +60,7 @@
       (htm (:meta :property "og:description"
                   :content (escape-for-html it))))
     (:meta :property "og:image"
-           :content image)))
+           :content (or image "/media/biglogo4facebook.jpg"))))
 
 (defun facebook-sign-in-button
   (&key (redirect-uri "home")
