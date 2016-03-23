@@ -120,7 +120,7 @@
                  (htm
                    " &middot; "
                    (:input :type "submit" :name "delete" :value "Delete")))
-               (when edit
+               (when (or edit reactivate)
                  (htm
                    " &middot; "
                    (:input :type "submit" :name "edit" :value "Edit")
