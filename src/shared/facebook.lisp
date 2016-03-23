@@ -59,7 +59,7 @@
     (awhen description
       (htm (:meta :property "og:description"
                   :content (escape-for-html it))))
-    (:meta :property "og:image"
+    (:meta :property "og:image:secure_url"
            :content (s+ +base-url+ (or image "media/biglogo4fb.jpg")))))
 
 (defun facebook-sign-in-button
