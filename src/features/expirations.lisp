@@ -122,9 +122,11 @@
            (type (getf data :type)))
       (when (and (or (eq type :offer)
                      (eq type :request))
+                 (getf data :active)
                  (getf data :expires)
                  (< 3664858200
-                    (getf data :expires) now))
+                    (getf data :expires)
+                    now))
         (push id (getf (gethash (getf data :by)
                                 accounts)
                        type)))))
@@ -159,7 +161,7 @@
               (new-time))
          (cond
            ((and (getf data :active)
-                 (<=(getf data :expires) now)
+                 (<= (getf data :expires) now)
                  (when (or *productionp* modify-db)
                    (deactivate-inventory-item id))
                  (incf expired)))

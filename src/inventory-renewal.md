@@ -6,9 +6,8 @@
 
 # show when items have been refreshed?
 
-# turn on the scheduler loop before pushing changes to the server
-
 On Server:
+create cronjobs for inventory-expriation-remingers and inventory-refresh
 notify-accounts-with-expired-inventory
 refresh-and-expire-inventory-items
 

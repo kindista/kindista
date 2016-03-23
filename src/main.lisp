@@ -31,6 +31,8 @@
   (load-db)
   (load-tokens)
   (setf *acceptor-thread* (make-thread #'(lambda () (start *acceptor*))))
+  ;; don't use scheduler until we figure out what has caused
+  ;; scheduler-loop to get hung on a waitqueue (maybe in (sleep)).
   ;(start-scheduler-thread)
   (start (acceptor-metric-system *acceptor*))
   (start-notice-thread))
