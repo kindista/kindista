@@ -26,8 +26,8 @@
     (raw-endpoint (getf json :endpoint))
     (url-parts (split "\\/" raw-endpoint))
     (chrome-p (find "android.googleapis.com" url-parts :test #'string=))
-    (status-json (list (cons "stat" "null")))
-    (registration-id (first (last url-parts))))
+    (registration-id (first (last url-parts)))
+    (status-json (list (cons "subscriptionStatus" "null"))))
   (require-user
     (cond
       ((not chrome-p)
@@ -44,8 +44,6 @@
            ;only update when there is an old registration
            ;(user already subscribed)
            (when update-p
-                 (pprint "updating subscription")
-                 (terpri)
                  (setf new-registration-id registration-id)
                  (setf (getf subscriptions :chrome)
                        new-registration-id))
@@ -55,21 +53,14 @@
              (setf (gethash new-registration-id
                             *push-subscription-message-index*)
                    (gethash it *push-subscription-message-index*))
-            ;remove old registration for both subscribe and unsubscribe
-             (remhash it *push-subscription-message-index*)
-             ))
-         ;(pprint notifications)
-         ;(terpri)
+             ;remove old registration when subscribing and unsubscribing
+             (remhash it *push-subscription-message-index*)))
          (modify-db *userid* :push-notification-subscriptions subscriptions)
          ;when trying to update but not subscribed
          (when (and update-p (not new-registration-id))
-           (setf status-json (list (cons "stat" "unsubscribed")))))
+           (setf status-json (list (cons "subscriptionStatus" "unsubscribed")))))
        (setf (return-code*) +http-ok+)
-       (json:encode-json-to-string status-json)
-       
-       )))
-      ; (json:encode-json-to-string status-json)
-  )
+       (json:encode-json-to-string status-json)))))
 
 (defun send-push-through-chrome-api
   (recipients
@@ -82,13 +73,11 @@
    &aux
      (registration-ids)
      (message-ellipsed (ellipsis message-body :length 100 :plain-text t))
-     ;(recipients (list (list :id 1) (list :id 3)))
      (message (list :title message-title
                     :body message-ellipsed
                     :tag message-tag
                     :url message-url))
      (chrome-api-status)
-     ;(subscribed-push-users)
      (registration-json))
 
   ;get registration id's for each recipient
@@ -97,28 +86,20 @@
   (dolist (recipient recipients)
           (awhen (getf (db (getf recipient :id) :push-notification-subscriptions)
                                                 :chrome)
-                 (push it registration-ids)
-                 ;(push (getf recipient :id) subscribed-push-users)
-                 )
+                 (push it registration-ids))
           (case message-type
-            (:gratitude
+            (:gratitude ; add group-name to message
                (setf (getf message :body) (s+ message-body
                                               (aif (getf recipient :group-name)
                                                 it
-                                                "you"))))
-            ;(:offer
-            ;  (setf (getf message :body) (s+ message-body
-            ;                                 (aif (getf recipient :group-name)
-            ;                                   it
-            ;                                   "you")))
-            ;  )
-          ))
+                                                "you"))))))
 
   (setf registration-json (json:encode-json-alist-to-string (list (cons "registration_ids" registration-ids))))
 
   (setf chrome-api-status
         (multiple-value-list
           (http-request "https://android.googleapis.com/gcm/send"
+                ;CHANGE to server key when pushing to live
                 :additional-headers (list (cons "Authorization" "key=AIzaSyAs-MUgFWba1amFkk6SDazVkMIcg_RfPZ4"))
                 :method :post
                 :content-type "application/json"
@@ -130,8 +111,7 @@
       (dolist (registration registration-ids)
         (with-locked-hash-table (*push-subscription-message-index*)
           (push message
-                (gethash registration *push-subscription-message-index*))))
-    ))
+                (gethash registration *push-subscription-message-index*))))))
 
 (defun send-unread-notifications
   (
@@ -149,5 +129,4 @@
   (with-locked-hash-table (*push-subscription-message-index*)
     ;dequeue message from users message queue
     (asetf (gethash registration-id *push-subscription-message-index*) (butlast it)))
-  (json:encode-json-to-string json-list)
-  )
+  (json:encode-json-to-string json-list))

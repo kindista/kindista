@@ -27,12 +27,10 @@ self.addEventListener('push', function(event) {
       }
       // examine text
       return response.json().then(function(data) {
-        // check if there is a response?
         var title = data.title;
         var body = data.body;
         var icon = data.icon;
         var notificationData = data;
-        //var notificationTag = data.tag;
         var notificationTag = 'new-message-tag';
         var notificationFilter = {
           tag: notificationTag
@@ -87,17 +85,13 @@ self.addEventListener('notificationclick', function(event) {
     .then(function(clientList) {
       for (var i = 0; i < clientList.length; i++) {
         var client = clientList[i];
-        console.log(client.url);
-        console.log(event.notification.data.url);
         if (client.url == event.notification.data.url && 'focus' in client){
-          console.log('focus');
           return client.focus();
         }
       }
       if (clients.openWindow) {
-        console.log('new window');
         return clients.openWindow(event.notification.data.url);
-      } 
+      }
     })
   );
 });

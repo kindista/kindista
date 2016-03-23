@@ -1,8 +1,7 @@
 ## web apps
   - test sending messages on transactions!
   - test iphone webapp
-  - clean ui for push notification settings
-  - hide button when not on chrome browser 
+  - change api key when ready to push to live
   - test messages for gratitude, messages, group membership requests/invitations, transactions
   - group message not being marked as read in message folder
 ## split up database
