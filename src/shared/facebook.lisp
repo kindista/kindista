@@ -60,7 +60,7 @@
       (htm (:meta :property "og:description"
                   :content (escape-for-html it))))
     (:meta :property "og:image"
-           :content (s+ +base-url+ (or image "media/biglogo4facebook.jpg")))))
+           :content (s+ +base-url+ (or image "media/biglogo4fb.jpg")))))
 
 (defun facebook-sign-in-button
   (&key (redirect-uri "home")
