@@ -40,11 +40,10 @@
           (sleep 300)))
     (loop
         (when (< (or *scheduler-timer*
-                     ;; schedule for 5 min after system start up
+                     ;; schedule for 1/2 min after system start up
                      (setf *scheduler-timer* (+ (get-universal-time) 30)))
                  (get-universal-time))
           (setf *scheduler-timer* (+ (get-universal-time) 3600))
-          ;; (get-inventory-expriation-reminders)
           (call "inventory-expiration-reminders")
           (call "inventory-refresh")))))
 

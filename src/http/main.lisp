@@ -399,6 +399,7 @@
                                              (not *productionp*))
                                          (or (string= (script-name*) "/send-all-reminders")
                                              (string= (script-name*) "/inventory-refresh")
+                                             (string= (script-name*) "/inventory-expiration-reminders")
                                              (string= (script-name*) "/send-inventory-digest")))
                                     60)
                                    ((and (getf *user* :admin)

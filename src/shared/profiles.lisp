@@ -339,10 +339,10 @@
               (str (gift-activity-item item)))
             (:offer
               (str (inventory-activity-item item
-                                        :show-what (unless (eql type :offer) t))))
+                                        :show-icon (unless (eql type :offer) t))))
             (:request
               (str (inventory-activity-item item
-                                          :show-what (unless (eql type :request) t)))))))
+                                          :show-icon (unless (eql type :request) t)))))))
 
         (setf items (cdr items))
 
@@ -562,20 +562,25 @@
             (str (inventory-filter-html
                    (s+ *base-url* (if (eql type :offer) "/offers" "/requests")))))
           (when (and groupid (not show-inactive-inventory-p))
-            (str (group-activity-selection-html id name display (case type
-                                                                      (:gratitude "reputation")
-                                                                      (:offer "offers")
-                                                                      (:request "requests")
-                                                                      (t "activity")))))
-          (str (profile-activity-items :id id
-                                       :type type
-                                       :members (when (or (string= display "all")
-                                                          (string= display "members"))
-                                                  members)
-                                       :filter (when show-inactive-inventory-p
-                                                 "inactive")
-                                       :display display
-                                       :page (aif (get-parameter "p") (parse-integer it) 0)))))
+            (str (group-activity-selection-html
+                   id
+                   name
+                   display
+                   (case type
+                         (:gratitude "reputation")
+                         (:offer "offers")
+                         (:request "requests")
+                         (t "activity")))))
+          (str (profile-activity-items
+                 :id id
+                 :type type
+                 :members (when (or (string= display "all")
+                                    (string= display "members"))
+                            members)
+                 :filter (when show-inactive-inventory-p
+                           "inactive")
+                 :display display
+                 :page (aif (get-parameter "p") (parse-integer it) 0)))))
 
       :top (profile-top-html id)
       :right right
