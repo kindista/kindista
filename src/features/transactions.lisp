@@ -46,8 +46,8 @@
                                    (cons mailbox :read))
                                senders))
          (by-boxes (mapcar #'(lambda (mailbox)
-                                   (cons mailbox :unread))
-                               bys))
+                               (cons mailbox :unread))
+                           bys))
          (people (append by-boxes sender-boxes))
          (people-ids (mapcar #'car (remove-duplicates (append senders bys))))
          (message-folders (list :inbox people-ids

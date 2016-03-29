@@ -38,7 +38,7 @@
                                                     group-name)
                                      :message-tag "group-invite-tag"
                                      :message-url group-url
-                                     :message-type :group-invite
+                                     ;:message-type :group-invite
                                      )
        (cl-smtp:send-email +mail-server+
                            "Kindista <noreply@kindista.org>"

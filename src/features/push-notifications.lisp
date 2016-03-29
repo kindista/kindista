@@ -69,7 +69,7 @@
          message-body
          message-tag
          message-url
-         message-type
+         ;message-type
    &aux
      (registration-ids)
      (message-ellipsed (ellipsis message-body :length 100 :plain-text t))
@@ -86,13 +86,7 @@
   (dolist (recipient recipients)
           (awhen (getf (db (getf recipient :id) :push-notification-subscriptions)
                                                 :chrome)
-                 (push it registration-ids))
-          (case message-type
-            (:gratitude ; add group-name to message
-               (setf (getf message :body) (s+ message-body
-                                              (aif (getf recipient :group-name)
-                                                it
-                                                "you"))))))
+                 (push it registration-ids)))
 
   (setf registration-json (json:encode-json-alist-to-string (list (cons "registration_ids" registration-ids))))
 
