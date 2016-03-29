@@ -60,7 +60,7 @@
       (htm (:meta :property "og:description"
                   :content (escape-for-html it))))
     (:meta :property "og:image"
-           :content (s+ "https://kindista.org/" (or image "media/biglogo4fb.jpg")))
+           :content (s+ "http://kindista.org/" (or image "media/biglogo4fb.jpg")))
     (:meta :property "og:image:secure_url"
            :content (s+ "https://kindista.org/" (or image "media/biglogo4fb.jpg")))))
 
@@ -281,7 +281,7 @@
 (defun update-facebook-object
   (k-id
    &aux (item (db k-id))
-        (facebook-id (getf item :fb-id))
+        (facebook-id (getf item :fb-object-id))
         (typestring (string-downcase (symbol-name (getf item :type))))
         (reply (with-facebook-credentials
                 (multiple-value-list
@@ -291,15 +291,11 @@
                                             *facebook-app-token*)
                                       '("method" . "POST")
                                       (cons typestring
-                                            (url-compose
-                                              (strcat "https://kindista.org/"
-                                                      typestring
-                                                      "s/"
-                                                      k-id)))))))))
+                                            (strcat "https://kindista.org"
+                                                    (resource-url k-id item)))))))))
   "Works the same as (scrape-facebook-item)"
   (when (= (second reply) 200)
-    (decode-json-octets (first reply))
-   ))
+    (decode-json-octets (first reply))))
 
 (defun scrape-facebook-item
   (url-or-fb-id
