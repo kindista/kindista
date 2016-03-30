@@ -61,8 +61,8 @@
                   :content (escape-for-html it))))
     (:meta :property "og:image:secure_url"
            :content (s+ "https://kindista.org" (or image "/media/biglogo4fb.jpg")))
-   ;(:meta :property "og:image"
-  ;        :content (s+ "http://kindista.org" (or image "/media/biglogo4fb.jpg")))
+    (:meta :property "og:image"
+           :content (s+ "http://kindista.org" (or image "/media/biglogo4fb.jpg")))
   ))
 
 (defun facebook-sign-in-button
