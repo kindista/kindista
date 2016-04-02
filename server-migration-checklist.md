@@ -1,4 +1,4 @@
-## Edit settings.lip file
+## Edit settings.lisp file
 - new local ip address
 - correct path to image magic convert 
 
@@ -16,3 +16,8 @@
 ## Make sure root directory has all necessary subdirectories
 - media/blog
 - data/broadcasts
+
+## Make sure to transfer..
+- /etc/ssl
+- /usr/loca/etc/nginx/nginx.conf
+- /usr/loca/etc/postfix/nginx.conf

@@ -339,6 +339,7 @@
          (group-adminp (member *userid* (db by :admins))))
 
     (when (and (or (eql *userid* by) group-adminp server-side-trigger-p)
+               (not (db by :test-user))
                (or (eq type :gratitude)
                    (eq type :offer)
                    (eq type :request)))
