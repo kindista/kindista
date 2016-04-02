@@ -1,7 +1,9 @@
 ## web apps
   - test sending messages on transactions!
   - test iphone webapp
-  - change api key when ready to push to live
+  - !change api key when ready to push to live
+  - finish adding time-to-live when sending through lisp
+  - add ttl header in push http request to GCM
   - test messages for gratitude, group membership requests/invitations, transactions
   - group message not being marked as read in message folder
 ## split up database

@@ -59,7 +59,7 @@ window.addEventListener('load', function() {
            .then(function(response) {
              if (response.status !== 200) {
                console.error('There was a problem sending subscription to server: ' + response.status);
-                 throw new Error();
+               throw new Error();
              }
              return response.json().then(function(data) {
                var subscriptionStatus = data.subscriptionStatus;

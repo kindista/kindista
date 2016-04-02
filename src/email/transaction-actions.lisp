@@ -109,7 +109,6 @@
                (email (car (getf recipient :emails)))
                (unsub-key (getf recipient :unsubscribe-key)))
 
-          (pprint inventory-author-and-type)
           (send-push-through-chrome-api (list (list :id recipient-id))
                                         :message-title (s+ "New message about " push-message-author-and-type)
                                         :message-body on-title

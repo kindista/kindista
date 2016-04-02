@@ -65,20 +65,22 @@
 (defun send-push-through-chrome-api
   (recipients
     &key
-         message-title
-         message-body
-         message-tag
-         message-url
-         ;message-type
-   &aux
-     (registration-ids)
-     (message-ellipsed (ellipsis message-body :length 100 :plain-text t))
-     (message (list :title message-title
-                    :body message-ellipsed
-                    :tag message-tag
-                    :url message-url))
-     (chrome-api-status)
-     (registration-json))
+      message-title
+      message-body
+      message-tag
+      message-url
+      ;message-type
+    &aux
+      (registration-ids)
+      (message-ellipsed (ellipsis message-body :length 100 :plain-text t))
+      (time (get-universal-time))
+      (message (list :title message-title
+                     :body message-ellipsed
+                     :tag message-tag
+                     :time time
+                     :url message-url))
+      (chrome-api-status)
+      (registration-json))
 
   ;get registration id's for each recipient
   ;of the notification
@@ -108,8 +110,7 @@
                 (gethash registration *push-subscription-message-index*))))))
 
 (defun send-unread-notifications
-  (
-   &aux
+  (&aux
     (raw-endpoint (getf (alist-plist (json:decode-json-from-string (raw-post-data :force-text t))) :endpoint))
     (registration-id (first (last (split "\\/" raw-endpoint))))
     (message (car (last (gethash registration-id *push-subscription-message-index*))))

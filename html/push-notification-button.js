@@ -108,7 +108,7 @@ function subscribe() {
              pushButton.disabled = false;
              pushButton.textContent = 'Enable Push Messages';
           }
-        });
+      });
   });
 }
 
@@ -117,7 +117,7 @@ function unsubscribe() {
   pushButton.disabled = true;
 
   navigator.serviceWorker.ready.then(function(serviceWorkerRegistration) {
-   // get the subscription object
+    // get the subscription object
     serviceWorkerRegistration.pushManager.getSubscription().then(function(pushSubscription) {
       if (!pushSubscription) {
         // no subscription. allow user to subscribe to push
@@ -127,7 +127,7 @@ function unsubscribe() {
         return;
       }
       var subscriptionId = pushSubscription.endpoint;
-     // make a server request to remove the subscription id from database
+      // make a server request to remove the subscription id from database
       sendSubscriptionToServer(pushSubscription, "unsubscribe");
       pushSubscription.unsubscribe({userVisibleOnly: true}).then(function(successful) {
         pushButton.disabled = false;
@@ -136,12 +136,13 @@ function unsubscribe() {
       }).catch(function(err) {
           // failed to unsubscribe
           // still remove users subscription from database
+          sendSubscriptionToServer(pushSubscription, "unsubscribe");
           console.log('Unsubscription error: ', err);
           pushButton.disabled = false;
           pushButton.textContent = 'Enable Push Messages';
       });
     }).catch(function(err) {
-        console.error('Error thrown while unsubscribing from push messaging.', err);
+        console.error('Error while unsubscribing from push messaging.', err);
     });
   });
 }
