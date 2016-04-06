@@ -65,7 +65,7 @@
            :content (s+ "http://media.kindista.org"
                         (aif image
                           (regex-replace "/media" it "")
-                          "/media/biglogo4fb.jpg")))))
+                          "/biglogo4fb.jpg")))))
 
 (defun facebook-sign-in-button
   (&key (redirect-uri "home")
