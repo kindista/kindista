@@ -166,6 +166,67 @@
                           (cdr (assoc :content-type (third response)))))))
   image-id)
 
+(defun get-facebook-user-permissions
+  (k-id
+   &optional (user (db k-id))
+   &aux (fb-id (getf user :fb-id))
+        response
+        current-permissions)
+  (when (and fb-id (getf user :fb-link-active))
+     (setf response
+           (multiple-value-list
+             (http-request
+               (strcat *fb-graph-url*
+                       "v2.5/"
+                       fb-id "/permissions")
+               :parameters (list (cons "access_token" *facebook-app-token*)
+                                 (cons "access_token" (getf user :fb-token))
+                                 (cons "method" "get"))))))
+
+    (setf current-permissions
+          (mapcar
+            (lambda (pair)
+              (when (string= (cdr pair) "granted")
+                (make-keyword
+                  (string-upcase (substitute #\- #\_ (car pair))))))
+            (loop for permission in (getf (alist-plist
+                                            (decode-json-octets
+                                              (first response)))
+                                          :data)
+                  collect (cons (cdar permission) (cdadr permission)))))
+    current-permissions)
+
+(defun check-facebook-permission
+  (permission
+   &optional (userid *userid*)
+   &aux (user (db userid))
+        (saved-fb-permissions (getf user :fb-permissions))
+        (current-fb-permissions (get-facebook-user-permissions userid user)))
+  (when (set-exclusive-or saved-fb-permissions current-fb-permissions)
+    (modify-db userid :fb-permissions current-fb-permissions))
+  (find permission current-fb-permissions))
+
+(defun get-facebook-kindista-friends
+  (k-id
+   &aux (user (db k-id))
+        (fb-id (getf user :fb-id))
+        (response))
+  (when (and fb-id (getf user :fb-link-active))
+    (setf response
+          (multiple-value-list
+            (http-request
+              (strcat *fb-graph-url*
+                      "v2.5/"
+                      fb-id "/friends")
+              :parameters (list (cons "access_token" *facebook-app-token*)
+                                (cons "access_token" (getf user :fb-token))
+                                (cons "method" "get")))))
+    
+    
+    )
+  (decode-json-octets (first response))
+  )
+
 (defun get-facebook-location-data (fb-location-id fb-token)
   (alist-plist
     (cdr
@@ -175,6 +236,7 @@
                                      "v2.5/"
                                      fb-location-id)
                              :parameters (list (cons "access_token" fb-token)
+                                               (cons "access_token" *facebook-app-token*)
                                                (cons "fields" "location")
                                                (cons "method" "get"))))))))
 
@@ -280,6 +342,7 @@
 
   (when (= (second reply) 200)
     (decode-json-octets (first reply))))
+
 
 (defun update-facebook-object
   (k-id
