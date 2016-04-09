@@ -966,7 +966,8 @@
   (let ((data (db id)))
     (if data
       (require-user (:allow-test-user t)
-        (let* ((message (gethash id *db-messages*))
+        (let* ((result (gethash id *db-results*))
+               (message (gethash id *db-messages*))
                (mailboxes (when message
                             (loop for person in (message-people message)
                                   when (eq (caar person) *userid*)
@@ -979,10 +980,11 @@
             "Gratitude"
             (html
               (:div :class "gratitude item"
-                (str (gratitude-activity-item (make-result :id id
-                                                           :time (getf data :created)
-                                                           :people (cons (getf data :author)
-                                                                         (getf data :subjects))))))
+                (str (gratitude-activity-item
+                       result
+                       :reciprocity (and *userid*
+                                         (not (find *userid*
+                                                    (result-people result)))))))
               (str (item-images-html id)))
             :extra-head (facebook-item-meta-content
                           id

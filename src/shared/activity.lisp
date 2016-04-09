@@ -309,7 +309,7 @@
                        (html-text (getf data :text)))))
                  (unless (string= item-url (script-name*))
                    (str (activity-item-images images item-url "gift"))))
-      :related-items (when (and reciprocity (getf data :on) show-on-item)
+      :related-items (when (and (getf data :on) show-on-item)
                        (html
                          (when (and (getf data :on) show-on-item)
                            (str (gratitude-on-item-html
