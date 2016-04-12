@@ -911,12 +911,19 @@
                                                        :subject-account-reactivation)
                                             :time time
                                             :text text))
-                  (gratitude-url (format nil "/gratitude/~A" new-id)))
+                  (gratitude-url (format nil "/gratitude/~A" new-id))
+                  (facebook-recipients))
+
 
              (when (and (getf *user* :fb-link-active)
                         (getf *user* :fb-id)
                         (post-parameter "publish-facebook"))
-               (notice :new-facebook-action :item-id new-id :action-type "express"))
+               (notice :new-facebook-action :item-id new-id :action-type "express")
+               (dolist (subject-id g-subjects)
+                 (when (and (gethash subject-id *facebook-id-index*)
+                            (check-facebook-permission :user-friends
+                                                       subject-id))
+                   (push subject-id facebook-recipients))))
 
              (awhen on-id
                (let* ((inventory-result (gethash on-id *db-results*))
@@ -952,10 +959,22 @@
                           "Your statement of gratitude will be posted "
                           "when they reactivate their account.")
                       "Your statement of gratitude has been posted"))
-             (see-other (or next
-                            (if inactive-subject
-                              "/home"
-                              gratitude-url)))))
+             (see-other
+               (or (when (and (post-parameter "publish-facebook")
+                              facebook-recipients
+                              (not (check-facebook-permission :user-friends)))
+                     (flash "Your statement of gratitude has been published on Facebook")
+                     (apply #'url-compose
+                            (strcat "gratitude/" new-id)
+                            (flatten
+                              (mapcar (lambda (id)
+                                        (cons "authorize-fb-friend-tag"
+                                              (strcat id)))
+                                      facebook-recipients))))
+                   next
+                   (if inactive-subject
+                     "/home"
+                     gratitude-url)))))
 
           (t
            (g-compose :subjects subjects)))))))
@@ -963,38 +982,59 @@
 
 (defun get-gratitude (id)
   (setf id (parse-integer id))
-  (let ((data (db id)))
-    (if data
-      (require-user (:allow-test-user t)
-        (let* ((message (gethash id *db-messages*))
-               (mailboxes (when message
-                            (loop for person in (message-people message)
-                                  when (eq (caar person) *userid*)
-                                  collect (car person)))))
+  (let* ((data (db id))
+         (gratitude-page
+           (standard-page
+             "Gratitude"
+             (html
+               (:div :class "gratitude item"
+                (str (gratitude-activity-item
+                       (make-result :id id
+                                    :time (getf data :created)
+                                    :people (cons (getf data :author)
+                                                  (getf data :subjects))))))
+               (str (item-images-html id)))
+             :extra-head (facebook-item-meta-content
+                           id
+                           "gratitude"
+                           (s+ "Gratitude for "
+                               (name-list-all (getf data :subjects )
+                                              :stringp t))
+                           :description (getf data :text)
+                           :image (awhen (first (getf data :images))
+                                    (get-image-thumbnail it 1200 1200)))
+             :selected (awhen (get-parameter-string "menu") it))))
+    (cond
+      ((get-parameter "authorize-fb-friend-tags")
+       (if (eql (getf data :by) *userid*)
+         (facebook-friends-permission-html
+         :gratitude-id id
+         :redirect-uri (strcat "gratitude/" id)
+         :fb-gratitude-subjects (get-parameter-integer-list "authorize-fb-friend-tag"))
+         (permission-denied)))
+      ((string= (get-parameter "state") "tag_friends")
+       (let ((taggable-friends))
+         (dolist (subject-id (getf data :subjects))
+           (when (and (gethash subject-id *facebook-id-index*)
+                      (check-facebook-permission :user-friends
+                                                 subject-id))
+             (push subject-id taggable-friends)))
+         ;; need to flash when ther are no friends that can be tagged
+         (when taggable-friends
+           (pprint (get-facebook-kindista-friends *userid*))
+           (terpri))))
+      (data
+        (require-user (:allow-test-user t)
+          (let* ((message (gethash id *db-messages*))
+                 (mailboxes (when message
+                              (loop for person in (message-people message)
+                                    when (eq (caar person) *userid*)
+                                    collect (car person)))))
 
-          (when (member (list *userid*) mailboxes :test #'equal)
-            (update-folder-data message :read))
-
-          (standard-page
-            "Gratitude"
-            (html
-              (:div :class "gratitude item"
-                (str (gratitude-activity-item (make-result :id id
-                                                           :time (getf data :created)
-                                                           :people (cons (getf data :author)
-                                                                         (getf data :subjects))))))
-              (str (item-images-html id)))
-            :extra-head (facebook-item-meta-content
-                          id
-                          "gratitude"
-                          (s+ "Gratitude for "
-                              (name-list-all (getf data :subjects )
-                                             :stringp t))
-                          :description (getf data :text)
-                          :image (awhen (first (getf data :images))
-                                   (get-image-thumbnail it 1200 1200)))
-            :selected (awhen (get-parameter-string "menu") it))))
-      (not-found))))
+            (when (member (list *userid*) mailboxes :test #'equal)
+              (update-folder-data message :read))
+            gratitude-page)))
+      (t (not-found)))))
 
 (defun post-gratitude (id)
   (require-active-user

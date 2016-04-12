@@ -70,6 +70,7 @@
 (defun facebook-sign-in-button
   (&key (redirect-uri "home")
         (button-text "Sign in with Facebook")
+        state
         scope)
   (asetf scope
          (strcat* (if (listp scope)
@@ -78,10 +79,16 @@
                   "public_profile,publish_actions,email"))
   (html
     (:a :class "blue"
-        :href (url-compose "https://www.facebook.com/dialog/oauth"
-                           "client_id" *facebook-app-id*
-                           "scope" scope
-                           "redirect_uri" (url-encode (s+ +base-url+ redirect-uri)))
+        :href (apply #'url-compose
+                     "https://www.facebook.com/dialog/oauth"
+                     (remove nil
+                       (append
+                         (list "client_id" *facebook-app-id*
+                               "scope" scope
+                               "redirect_uri" (url-encode
+                                                (s+ +base-url+ redirect-uri)))
+                         (when state
+                           (list "state" state)))))
         (str button-text))))
 
 (defun facebook-debugging-log (message)
@@ -116,24 +123,31 @@
        nil))))
 
 (defun check-facebook-user-token
-  (&key (userid *userid*)
-        fb-token
-        &aux (*user* (or *user* (db userid)))
-        reply)
+  (&optional (userid *userid*)
+             (fb-token *facebook-user-token* )
+   &aux (*user* (or *user* (db userid)))
+        reply
+        data)
 
   (setf reply
         (multiple-value-list
           (with-facebook-credentials
             (http-request
               (s+ *fb-graph-url* "debug_token")
-              :parameters (list (cons "input_token"
-                                      (or fb-token *facebook-user-token*))
+              :parameters (list (cons "input_token" fb-token)
                                 (cons "access_token" *facebook-app-token*))))))
 
   (when (= (second reply) 200)
-    (cdr (find :data
-               (decode-json-octets (first reply))
-               :key #'car))))
+    (setf data
+          (alist-plist
+            (cdr (find :data
+                       (decode-json-octets (first reply))
+                       :key #'car)))))
+  (when (and (string= (getf data :app--id) *facebook-app-id*)
+             (eql (safe-parse-integer (getf data :user--id))
+                  (getf *user* :fb-id)))
+    data))
+
 
 (defun get-facebook-user-data (fb-token)
   (alist-plist
@@ -220,10 +234,7 @@
                       fb-id "/friends")
               :parameters (list (cons "access_token" *facebook-app-token*)
                                 (cons "access_token" (getf user :fb-token))
-                                (cons "method" "get")))))
-    
-    
-    )
+                                (cons "method" "get"))))))
   (decode-json-octets (first response))
   )
 
@@ -433,3 +444,51 @@
       nil)
     (progn (setf (return-code*) +http-forbidden+)
            nil)))
+
+(defun facebook-friends-permission-html
+  (&key gratitude-id
+        redirect-uri
+        fb-gratitude-subjects
+        (page-title "Tag your Facebook friends"))
+  (standard-page
+    page-title
+    (html
+      (:div :id "tag-fb-friends-auth"
+       (:h2 (str page-title))
+       (:p
+         (:strong (str (name-list-all fb-gratitude-subjects :stringp t)))
+         (str (if (> (length fb-gratitude-subjects) 1) " have " " has "))
+         " their Facebook account linked to Kindista.")
+       (:h3 "Would you like to tag them in the gratitude you published to Facebook?")
+       (:p "To enable tagging, Facebook requires that you give Kindista access to your Facebook friends list. We respect your privacy and your relationships; we will not spam your friends.")
+       (str (facebook-sign-in-button :redirect-uri redirect-uri
+                                     :scope "user_friends"
+                                     :state "tag_friends"
+                                     :button-text "Allow Kindista to see my list of Facebook friends"))))
+    :selected "people"
+    ))
+
+(defun tag-facebook-friends-html
+  (&key gratitude-id
+        fb-gratitude-subjects
+        (page-title "Tag your Facebook friends"))
+  (standard-page
+    page-title
+    (html
+      (:div :id "tag-fb-friends-auth"
+       (:h2 (str page-title))
+       (:form :method "post" :action (strcat "gratitude/" gratitude-id)
+         (:fieldset
+           (dolist (pair fb-gratitude-subjects)
+           (htm
+             (:div :class "g-recipient"
+              (:input :type "checkbox"
+                      :name "tag-friend"
+                      :value (cdr pair)
+                      :id (cdr pair)
+                      :checked "")
+              (:label :for (cdr pair) (str (car pair)))))))
+         (:p (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
+             (:button :class "yes" :type "submit" :class "submit" :name "tag-friends" "Tag Friends")))))
+    :selected "people"
+    ))

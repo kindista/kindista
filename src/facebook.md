@@ -39,7 +39,9 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
   - taggable friends:
 https://developers.facebook.com/docs/graph-api/reference/user/taggable_friends
 https://developers.facebook.com/docs/sharing/opengraph/using-actions#tags
-
+  - if gratitude-recipient is tagable, but user hasn't given friends-list permission
+    - ask if they want to tag the friend
+    - ask for permission
 
 #Group-Accounts
 - permissions:
