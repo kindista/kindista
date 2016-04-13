@@ -179,7 +179,8 @@
        (index-message id data))
 
      ;; unless gratitude is older than 180 days
-     (unless (< (result-time result) (- (get-universal-time) 15552000))
+     (unless (or (< (result-time result) (- (get-universal-time) 15552000))
+                 (getf author :test-user))
 
        (geo-index-insert *activity-geo-index* result)
 
