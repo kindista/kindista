@@ -375,18 +375,6 @@
        (:input :type "hidden" :name "subject" :value entity-id)
        (:input :type "hidden" :name "next" :value next)
        (:textarea :cols "1000" :rows "4" :name "text" :autofocus autofocus-p)
-       (when (and (getf *user* :fb-token)
-                  (or (not (getf *user* :test-user))
-                      (getf entity :test-user)))
-         (htm
-           (:div :id "facebook"
-             (:input :type "checkbox"
-                     :id "publish-facebook"
-                     :name "publish-facebook"
-                     :checked "")
-             (str (icon "facebook" "facebook-icon"))
-             (:label :for "publish-facebook"
-              (str (s+ "Share on Facebook"))))))
        (when cancel-button
          (htm (:button :class "cancel" :type "submit" :name "cancel"
                 "Cancel")))
@@ -513,6 +501,20 @@
                    :onclick "this.form.submit()"
                    :checked (when (string= on-type "other") "checked"))
                   "Something else"))))
+
+            (when (and (getf *user* :fb-token)
+                       (or (not (getf *user* :test-user))
+                           (and (= 1 (length subjects))
+                                (db (car subjects) :test-user))))
+              (htm
+                (:div :id "facebook"
+                  (:input :type "checkbox"
+                          :id "publish-facebook"
+                          :name "publish-facebook"
+                          :checked "")
+                  (str (icon "facebook" "facebook-icon"))
+                  (:label :for "publish-facebook"
+                   (str (s+ "Share on Facebook"))))))
 
            (if (and (or relevant-offers relevant-requests)
                     on-type
