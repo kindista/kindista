@@ -1,7 +1,5 @@
 ;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
-;;; This file is part of Kindista.
-;;;
 ;;; Kindista is free software: you can redistribute it and/or modify it
 ;;; under the terms of the GNU Affero General Public License as published
 ;;; by the Free Software Foundation, either version 3 of the License, or

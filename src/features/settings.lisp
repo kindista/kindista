@@ -641,17 +641,20 @@
      (see-other "/settings/communication")))))
 
 (defun settings-push-notifications
-  (&key group)
+  (&key group
+   &aux (adminp (getf *user* :admin)))
+
   (unless group
-    (settings-item-html
-      "push notifications"
-      (html (:script :type "text/javascript" :src "/push-notification-button.js"))
-      :help-text (html (:span :id "push-help-text" "Push notifications allow you to recieve messages from other users on your phone or browser. ")
-                       (:strong "Currently only availabe on Chrome and Chromium version 42 and above."))
-      :buttons (html (:button :id "push-notification-button"
-                              :class "yes small"
-                              :disabled t "Enable Push Messages" ))
-     )))
+    (when adminp
+      (settings-item-html
+       "push notifications"
+       (html (:script :type "text/javascript" :src "/push-notification-button.js"))
+       :help-text (html (:span :id "push-help-text" "Push notifications allow you to recieve messages from other users on your phone or browser. ")
+                        (:strong "Currently only availabe on Chrome and Chromium version 42 and above."))
+       :buttons (html (:button :id "push-notification-button"
+                               :class "yes small"
+                               :disabled t "Enable Push Messages" ))
+      ))))
 
 (defun settings-notifications (&key groupid group user (userid *userid*))
   (let* ((entity (or group  user *user*))

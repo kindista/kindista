@@ -21,9 +21,12 @@ function hidePushButton() {
   document.querySelector('#push-notification-button').style.visibility = 'hidden';
 }
 
-function sendSubscriptionToServer(subscription, action) {
+function sendSubActionToServer(subscription, action) {
   var subscriptionJSON = subscription.toJSON();
   subscriptionJSON.action = action;
+  if (/Android/i.test(navigator.userAgent)) {
+    subscriptionJSON.mobile = 'true';
+  }
   fetch('/push-notification-subscription', {
     method: 'post',
     credentials: 'include',
@@ -52,7 +55,7 @@ function initialiseState() {
 
   if (Notification.permission === 'denied') {
     console.warn('The user has blocked notifications.');
-    document.getElementById('push-notifications').querySelector('.current-value').innerHTML = "<strong class='red'> We cannot enable push notifications because you have blocked them in your browser.</strong><p> To unblock, go to chrome://settings/contentExceptions#notifications and select \"allow\" next to https://kindista.org</p>";
+    document.getElementById('push-notifications').querySelector('.current-value').innerHTML = "<strong class='red'> We cannot enable push notifications because they have been blocked in your browser.</strong><p> To unblock, go to chrome://settings/contentExceptions#notifications and select \"allow\" next to https://kindista.org</p>";
     return;
   }
 
@@ -71,7 +74,7 @@ function initialiseState() {
       return;
     }
     // keep subscription up to date
-    sendSubscriptionToServer(subscription, "update");
+    sendSubActionToServer(subscription, "update");
 
     pushButton.textContent = 'Disable Push Messages';
     isPushEnabled = true;
@@ -93,7 +96,7 @@ function subscribe() {
         isPushEnabled = true;
         pushButton.textContent = 'Disable Push Messages';
         pushButton.disabled = false;
-        sendSubscriptionToServer(subscription,"subscribe");
+        sendSubActionToServer(subscription,"subscribe");
       })
         .catch(function(err) {
           if (Notification.permission === 'denied') {
@@ -128,7 +131,7 @@ function unsubscribe() {
       }
       var subscriptionId = pushSubscription.endpoint;
       // make a server request to remove the subscription id from database
-      sendSubscriptionToServer(pushSubscription, "unsubscribe");
+      sendSubActionToServer(pushSubscription, "unsubscribe");
       pushSubscription.unsubscribe({userVisibleOnly: true}).then(function(successful) {
         pushButton.disabled = false;
         pushButton.textContent = 'Enable Push Messages';
@@ -136,7 +139,7 @@ function unsubscribe() {
       }).catch(function(err) {
           // failed to unsubscribe
           // still remove users subscription from database
-          sendSubscriptionToServer(pushSubscription, "unsubscribe");
+          sendSubActionToServer(pushSubscription, "unsubscribe");
           console.log('Unsubscription error: ', err);
           pushButton.disabled = false;
           pushButton.textContent = 'Enable Push Messages';
