@@ -614,11 +614,13 @@
               (append (mapcar #'format-function display-ids ) (list it))
               (mapcar #'format-function display-ids))))))
 
-(defun name-list-all (ids &key stringp)
-  (format nil *english-list* (if stringp
-                               (loop for id in ids
-                                     collect (db id :name))
-                               (mapcar #'person-link ids))))
+(defun name-list-all (ids &key stringp (conjunction :and))
+  (format nil (case conjunction
+                (:and *english-list*)
+                (t *english-list-or*))
+          (if stringp
+            (loop for id in ids collect (db id :name))
+            (mapcar #'person-link ids))))
 
 
 (defun humanize-number (n)
@@ -747,6 +749,12 @@
 (defun get-parameter-integer (name)
   (when (scan +number-scanner+ (get-parameter name))
     (parse-integer (get-parameter name))))
+
+(defun get-parameter-integer-list (name)
+  (loop for pair in (get-parameters*)
+        for i = (parse-integer (cdr pair) :junk-allowed t)
+        when (and (string= (car pair) name) i)
+        collect i))
 
 (defun post-parameter-float (name)
   (awhen (post-parameter name) (when (scan +float-scanner+ it) (read-from-string it))))
