@@ -1027,17 +1027,17 @@
          (when taggable-friends
            (pprint (get-facebook-kindista-friends *userid*))
            (terpri))))
-      (data
-        (require-user (:allow-test-user t)
-          (let* ((message (gethash id *db-messages*))
-                 (mailboxes (when message
-                              (loop for person in (message-people message)
-                                    when (eq (caar person) *userid*)
-                                    collect (car person)))))
+      ((and *user* data)
+       (let* ((message (gethash id *db-messages*))
+              (mailboxes (when message
+                           (loop for person in (message-people message)
+                                 when (eq (caar person) *userid*)
+                                 collect (car person)))))
 
-            (when (member (list *userid*) mailboxes :test #'equal)
-              (update-folder-data message :read))
-            gratitude-page)))
+         (when (member (list *userid*) mailboxes :test #'equal)
+           (update-folder-data message :read))
+         gratitude-page))
+      (data gratitude-page)
       (t (not-found)))))
 
 (defun post-gratitude (id)
