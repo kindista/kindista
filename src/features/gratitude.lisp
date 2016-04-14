@@ -988,26 +988,27 @@
   (let* ((data (db id))
          (result (gethash id *db-results*))
          (gratitude-page
-           (standard-page
-             "Gratitude"
-             (html
-               (:div :class "gratitude item"
-                (str (gratitude-activity-item
-                       result
-                       :reciprocity (and *userid*
-                                         (not (find *userid*
-                                                    (result-people result))))   )))
-               (str (item-images-html id)))
-             :extra-head (facebook-item-meta-content
-                           id
-                           "gratitude"
-                           (s+ "Gratitude for "
-                               (name-list-all (getf data :subjects )
-                                              :stringp t))
-                           :description (getf data :text)
-                           :image (awhen (first (getf data :images))
-                                    (get-image-thumbnail it 1200 1200)))
-             :selected (awhen (get-parameter-string "menu") it))))
+           (when result
+             (standard-page
+               "Gratitude"
+               (html
+                 (:div :class "gratitude item"
+                  (str (gratitude-activity-item
+                         result
+                         :reciprocity (and *userid*
+                                           (not (find *userid*
+                                                      (result-people result))))   )))
+                 (str (item-images-html id)))
+               :extra-head (facebook-item-meta-content
+                             id
+                             "gratitude"
+                             (s+ "Gratitude for "
+                                 (name-list-all (getf data :subjects )
+                                                :stringp t))
+                             :description (getf data :text)
+                             :image (awhen (first (getf data :images))
+                                      (get-image-thumbnail it 1200 1200)))
+               :selected (awhen (get-parameter-string "menu") it)))))
     (cond
       ((get-parameter "authorize-fb-friend-tags")
        (if (eql (getf data :by) *userid*)
