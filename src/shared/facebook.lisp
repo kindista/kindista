@@ -382,6 +382,7 @@
                                             (strcat "https://kindista.org"
                                                     (resource-url k-id item)))))))))
   "Works the same as (scrape-facebook-item)"
+  (facebook-debugging-log reply (second reply) (decode-json-octets (first reply)))
   (when (= (second reply) 200)
     (decode-json-octets (first reply))))
 
