@@ -39,10 +39,13 @@
    typestring
    title
    &key description
+        determiner
         image)
   (html
     (:meta :property "og:type"
            :content (s+ "kindistadotorg:" typestring))
+    (awhen determiner
+      (htm (:meta :property "og:determiner" :content it)))
     (:meta :property "fb:app_id"
            :content *facebook-app-id*)
     (:meta :property "og:url"
@@ -91,9 +94,10 @@
                            (list "state" state)))))
         (str button-text))))
 
-(defun facebook-debugging-log (message)
+(defun facebook-debugging-log (&rest messages)
   (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :append)
-    (format s "~S~%" message)))
+    (setf *print-readably* nil)
+    (format s "~{~S~%~}" messages)))
 
 (defun register-facebook-user
   (&optional (redirect-uri "home")
@@ -257,16 +261,17 @@
         (item-id (getf data :item-id))
         (fb-action-id)
         (fb-object-id))
+  (facebook-debugging-log data)
 
   ;; userid is included w/ new publish request but not scraping new data
+  (facebook-debugging-log userid)
   (when userid
     (setf fb-action-id
-          (publish-facebook-action item-id
-                                   userid
-                                   (getf data :action-type)))
+          (publish-facebook-action item-id userid))
     (setf fb-object-id (get-facebook-object-id item-id)))
   (cond
     (userid
+      ;; update kindista DB with new facebook object/action ids
       (http-request
         (s+ +base-url+ "publish-facebook")
         :parameters (list (cons "item-id" (strcat item-id))
@@ -293,15 +298,17 @@
 (defun publish-facebook-action
   (id
    &optional (userid *userid*)
-             (action-type "post")
    &aux (item (db id))
+        (action-type (case (getf item :type)
+                       (:gratitude "express")
+                       (t "post")))
         (object-type (string-downcase (symbol-name (getf item :type))))
         (user (db userid))
         (reply
           (multiple-value-list
             (http-request
               (strcat *fb-graph-url*
-                      "me"
+                      "v2.5/me"
                       "/kindistadotorg:"
                       action-type)
               :parameters (list (cons "access_token" (getf user :fb-token))
@@ -314,9 +321,13 @@
                                        (json:encode-json-to-string
                                          (list (cons "value" "SELF")))))))))
 
+  (facebook-debugging-log (decode-json-octets (first reply))
+                          (second reply)
+                          (third reply))
   (when (= (second reply) 200)
-    (parse-integer (cdr (assoc :id
-                               (decode-json-octets (first reply)))))))
+    (let ((data (alist-plist (decode-json-octets (first reply)))))
+      (facebook-debugging-log data)
+      (parse-integer (getf data :id)))))
 
 (defun get-facebook-object-id
   (k-id
@@ -330,10 +341,10 @@
                                  )))))
 
   (when (= (second reply) 200)
-    (parse-integer
-      (getf (alist-plist (getf (alist-plist (decode-json-octets (first reply)))
-                               :og--object))
-            :id))))
+    ;; data and object are usefull for debugging
+    (let* ((data (alist-plist (decode-json-octets (first reply))))
+           (object (alist-plist (getf data :og--object))))
+      (parse-integer (getf object :id)))))
 
 (defun get-user-facebook-objects-of-type
   (typestring

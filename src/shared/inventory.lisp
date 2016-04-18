@@ -216,7 +216,7 @@
 
       (cond
         ((and publish-facebook-p (not fb-action-id))
-         (notice :new-facebook-action :item-id id :action-type "post") )
+         (notice :new-facebook-action :item-id id))
 
         ((and fb-action-id publish-facebook-p)
          (update-facebook-object id))
@@ -495,7 +495,7 @@
                 (when (and (getf *user* :fb-link-active)
                            (getf *user* :fb-id)
                            (post-parameter "publish-facebook"))
-                  (notice :new-facebook-action :item-id new-id :action-type "post"))
+                  (notice :new-facebook-action :item-id new-id))
 
                 (flash
                   (s+ "Congratulations, your "

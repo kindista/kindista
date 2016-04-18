@@ -921,12 +921,14 @@
              (when (and (getf *user* :fb-link-active)
                         (getf *user* :fb-id)
                         (post-parameter "publish-facebook"))
-               (notice :new-facebook-action :item-id new-id :action-type "express")
+               (notice :new-facebook-action :item-id new-id)
                (dolist (subject-id g-subjects)
-                 (when (and (gethash subject-id *facebook-id-index*)
-                            (check-facebook-permission :user-friends
-                                                       subject-id))
-                   (push subject-id facebook-recipients))))
+                 (let ((subject-data (db subject-id)))
+                   (when (and (getf subject-data :fb-id)
+                              (getf subject-data :fb-link-active)
+                              (check-facebook-permission :user-friends
+                                                         subject-id))
+                     (push subject-id facebook-recipients)))))
 
              (awhen on-id
                (let* ((inventory-result (gethash on-id *db-results*))
@@ -1006,6 +1008,7 @@
                                  (name-list-all (getf data :subjects )
                                                 :stringp t))
                              :description (getf data :text)
+                             :determiner ""
                              :image (awhen (first (getf data :images))
                                       (get-image-thumbnail it 1200 1200)))
                :selected (awhen (get-parameter-string "menu") it)))))

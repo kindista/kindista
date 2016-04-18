@@ -1,3 +1,6 @@
+
+https://developers.facebook.com/tools/debug/sharing
+
 https://developers.facebook.com/docs/facebook-login/permissions/v2.3
 https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
 https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow#logout
