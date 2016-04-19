@@ -46,9 +46,9 @@
            ;only update when there is an old registration
            ;(user already subscribed)
            (when update-p
-                 (setf new-registration-id registration-id)
-                 (setf (getf subscriptions sub-type)
-                       new-registration-id))
+             (setf new-registration-id registration-id)
+             (setf (getf subscriptions sub-type)
+                   new-registration-id))
 
            (with-locked-hash-table (*push-subscription-message-index*)
              ;when subscribing update registration hashtable key
@@ -96,21 +96,21 @@
     (setf registration-json (json:encode-json-alist-to-string (list (cons "registration_ids" registration-ids))))
 
     (setf chrome-api-status
-          (multiple-value-list
-            (http-request "https://android.googleapis.com/gcm/send"
-                          ;CHANGE to server key when pushing to live
-                          :additional-headers (list (cons "Authorization" "key=AIzaSyAs-MUgFWba1amFkk6SDazVkMIcg_RfPZ4"))
-                          :method :post
-                          :content-type "application/json"
-                          :external-format-out :utf-8
-                          :external-format-in :utf-8
-                          :content registration-json)))
+      (multiple-value-list
+        (http-request "https://android.googleapis.com/gcm/send"
+                      ;CHANGE to server key when pushing to live
+                      :additional-headers (list (cons "Authorization" "key=AIzaSyAs-MUgFWba1amFkk6SDazVkMIcg_RfPZ4"))
+                      :method :post
+                      :content-type "application/json"
+                      :external-format-out :utf-8
+                      :external-format-in :utf-8
+                      :content registration-json)))
 
     (when (= (second chrome-api-status) 200)
       (dolist (registration registration-ids)
         (with-locked-hash-table (*push-subscription-message-index*)
           (push message
-                (gethash registration *push-subscription-message-index*)))))))
+            (gethash registration *push-subscription-message-index*)))))))
 
 (defun send-unread-notifications
   (&aux

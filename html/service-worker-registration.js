@@ -46,6 +46,9 @@ window.addEventListener('load', function() {
          serviceWorkerRegistration.pushManager.subscribe({userVisibleOnly: true})
          .then(function(subscription) {
            var subscriptionJSON = subscription.toJSON();
+           if (/Android/i.test(navigator.userAgent)) {
+             subscriptionJSON.mobile = 'true';
+           }
            subscriptionJSON.action = 'update';
            fetch('/push-notification-subscription', {
              method: 'post',

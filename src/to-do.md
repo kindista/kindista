@@ -1,11 +1,8 @@
 ## web apps
-  - test sending messages on transactions!
   - test iphone webapp
   - !change api key when ready to push to live
-  - only allow admin-use of push notifications to test on live site
-  - send messages to each chrome subscription
-  - grab messages for each chrome subscription
-  - test messages for gratitude, group membership requests/invitations, transactions
+  - change manifest file when ready to push to live
+  - test messages for phones
   - group message not being marked as read in message folder
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
