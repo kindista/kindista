@@ -2410,6 +2410,10 @@ button.card > img {
  font-size: 0.9em;
 }
 
+.large {
+ font-size: 1.2em;
+}
+
 .item.reverse {
  background: #87a767;
 }

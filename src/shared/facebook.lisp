@@ -73,6 +73,7 @@
 (defun facebook-sign-in-button
   (&key (redirect-uri "home")
         (button-text "Sign in with Facebook")
+        re-request
         state
         scope)
   (asetf scope
@@ -90,6 +91,8 @@
                                "scope" scope
                                "redirect_uri" (url-encode
                                                 (s+ +base-url+ redirect-uri)))
+                         (when re-request
+                           (list "auth_type" " rerequest"))
                          (when state
                            (list "state" state)))))
         (str button-text))))
@@ -201,17 +204,21 @@
                                  (cons "access_token" (getf user :fb-token))
                                  (cons "method" "get"))))))
 
-    (setf current-permissions
-          (mapcar
-            (lambda (pair)
-              (when (string= (cdr pair) "granted")
-                (make-keyword
-                  (string-upcase (substitute #\- #\_ (car pair))))))
-            (loop for permission in (getf (alist-plist
-                                            (decode-json-octets
-                                              (first response)))
-                                          :data)
-                  collect (cons (cdar permission) (cdadr permission)))))
+  (facebook-debugging-log (decode-json-octets (first response)))
+  (mapcar
+    (lambda (pair)
+      (push
+        (make-keyword
+          (string-upcase (substitute #\- #\_ (car pair))))
+        (getf current-permissions (cdr pair))))
+    (loop for permission in (getf (alist-plist
+                                    (decode-json-octets
+                                      (first response)))
+                                  :data)
+          collect (cons (cdar permission)
+                        (if (string= (cdadr permission) "granted")
+                          :granted
+                          :declined))))
     current-permissions)
 
 (defun check-facebook-permission
@@ -219,10 +226,13 @@
    &optional (userid *userid*)
    &aux (user (db userid))
         (saved-fb-permissions (getf user :fb-permissions))
-        (current-fb-permissions (get-facebook-user-permissions userid user)))
-  (when (set-exclusive-or saved-fb-permissions current-fb-permissions)
-    (modify-db userid :fb-permissions current-fb-permissions))
-  (find permission current-fb-permissions))
+        (current-fb-permissions (get-facebook-user-permissions userid user))
+        (granted-fb-permissions (getf current-fb-permissions :granted)))
+  (when (set-exclusive-or saved-fb-permissions granted-fb-permissions)
+    (modify-db userid :fb-permissions granted-fb-permissions))
+  (values (find permission granted-fb-permissions)
+          (when (find permission (getf current-fb-permissions :declined))
+            :declined)))
 
 (defun get-facebook-kindista-friends
   (k-id
@@ -458,27 +468,29 @@
            nil)))
 
 (defun facebook-friends-permission-html
-  (&key gratitude-id
-        redirect-uri
+  (&key redirect-uri
         fb-gratitude-subjects
+        (cancel-link "home")
+        re-request
         (page-title "Tag your Facebook friends"))
   (standard-page
     page-title
     (html
       (:div :id "tag-fb-friends-auth"
-       (:h2 (str page-title))
-       (:p
-         (:strong (str (name-list-all fb-gratitude-subjects :stringp t)))
-         (str (if (> (length fb-gratitude-subjects) 1) " have " " has "))
-         " their Facebook account linked to Kindista.")
-       (:h3 "Would you like to tag them in the gratitude you published to Facebook?")
-       (:p "To enable tagging, Facebook requires that you give Kindista access to your Facebook friends list. We respect your privacy and your relationships; we will not spam your friends.")
+       (:p :class "large"
+         "Would you like to tag "
+         (:strong (str (name-list-all fb-gratitude-subjects :stringp t
+                                                            :conjunction :or)))
+         " in the gratitude you published to Facebook?")
+       (:p :class "small"
+         "To enable tagging, Facebook requires that you give Kindista access to your Facebook friends list. We respect your privacy and your relationships; we will not spam your friends.")
        (str (facebook-sign-in-button :redirect-uri redirect-uri
                                      :scope "user_friends"
                                      :state "tag_friends"
-                                     :button-text "Allow Kindista to see my list of Facebook friends"))))
-    :selected "people"
-    ))
+                                     :re-request re-request
+                                     :button-text "Allow Kindista to see my list of Facebook friends"))
+       (:a :href cancel-link :class "gray-text cancel" "Not now")))
+    :selected "people"))
 
 (defun tag-facebook-friends-html
   (&key gratitude-id

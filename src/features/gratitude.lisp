@@ -989,6 +989,29 @@
   (setf id (parse-integer id))
   (let* ((data (db id))
          (result (gethash id *db-results*))
+         (fb-user-friends-permission (multiple-value-list
+                                       (check-facebook-permission :user-friends
+                                                                  *userid*)))
+         (friend-tags-to-authorize (get-parameter-integer-list
+                                     "authorize-fb-friend-tag"))
+         (fb-friends-to-tag
+           (or friend-tags-to-authorize
+               (remove nil
+                       (mapcar (lambda (subject-id)
+                                 (let ((subject (db subject-id)))
+                                   (when (and (getf subject :fb-id)
+                                              (getf subject :fb-link-active)
+                                              (check-facebook-permission
+                                                :user-friends
+                                                subject-id))
+                                   subject-id)))
+                         (getf data :subjects)))))
+         (authorize-tagging
+           (facebook-friends-permission-html
+             :redirect-uri (strcat "gratitude/" id)
+             :re-request (eql (second fb-user-friends-permission) :declined)
+             :cancel-link (strcat "gratitude/" id)
+             :fb-gratitude-subjects fb-friends-to-tag))
          (gratitude-page
            (when result
              (standard-page
@@ -1013,24 +1036,25 @@
                                       (get-image-thumbnail it 1200 1200)))
                :selected (awhen (get-parameter-string "menu") it)))))
     (cond
-      ((get-parameter "authorize-fb-friend-tags")
-       (if (eql (getf data :by) *userid*)
-         (facebook-friends-permission-html
-         :gratitude-id id
-         :redirect-uri (strcat "gratitude/" id)
-         :fb-gratitude-subjects (get-parameter-integer-list "authorize-fb-friend-tag"))
+      (friend-tags-to-authorize
+       (if (eql (getf data :author) *userid*)
+         authorize-tagging
          (permission-denied)))
       ((string= (get-parameter "state") "tag_friends")
-       (let ((taggable-friends))
-         (dolist (subject-id (getf data :subjects))
-           (when (and (gethash subject-id *facebook-id-index*)
-                      (check-facebook-permission :user-friends
-                                                 subject-id))
-             (push subject-id taggable-friends)))
-         ;; need to flash when ther are no friends that can be tagged
-         (when taggable-friends
-           (pprint (get-facebook-kindista-friends *userid*))
-           (terpri))))
+       (if (first fb-user-friends-permission)
+         (progn
+
+
+           ;; need to flash when ther are no friends that can be tagged
+
+
+           (facebook-debugging-log (get-facebook-kindista-friends *userid*))
+           (tag-facebook-friends-html
+             :gratitude-id id
+             :fb-gratitude-subjects (mapcar (lambda (id) (cons (db id :name)
+                                                               id))
+                                            fb-friends-to-tag)))
+         authorize-tagging))
       ((and *user* data)
        (let* ((message (gethash id *db-messages*))
               (mailboxes (when message
