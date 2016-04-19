@@ -70,6 +70,7 @@ https://developers.facebook.com/docs/apps/review
 - Create a tab for settings/social
 - change facebook app setting/advanced deauthorize callback
 - change "privacy" setting in publish-facebook-action
+- remove all facebook-debubbing blocks
 
 #Merge accounts (fb-id fbtoken)
 
