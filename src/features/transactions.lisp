@@ -1,128 +1,123 @@
- ;;; Copyright 2012-2016 CommonGoods Network, Inc.
- ;;;
- ;;; This file is part of Kindista.
- ;;;
- ;;; Kindista is free software: you can redistribute it and/or modify it
- ;;; under the terms of the GNU Affero General Public License as published
- ;;; by the Free Software Foundation, either version 3 of the License, or
- ;;; (at your option) any later version.
- ;;;
- ;;; Kindista is distributed in the hope that it will be useful, but WITHOUT
- ;;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- ;;; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public
- ;;; License for more details.
- ;;;
- ;;; You should have received a copy of the GNU Affero General Public License
- ;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
+;;;
+;;; This file is part of Kindista.
+;;;
+;;; Kindista is free software: you can redistribute it and/or modify it
+;;; under the terms of the GNU Affero General Public License as published
+;;; by the Free Software Foundation, either version 3 of the License, or
+;;; (at your option) any later version.
+;;;
+;;; Kindista is distributed in the hope that it will be useful, but WITHOUT
+;;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+;;; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public
+;;; License for more details.
+;;;
+;;; You should have received a copy of the GNU Affero General Public License
+;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
- (in-package :kindista)
+(in-package :kindista)
 
- (defun migrate-to-new-transaction-format ()
-   (dolist (id (hash-table-keys *db*))
-     (let* ((data (db id))
-            (type (getf data :type)))
-       (when (eq type :reply)
-         (modify-db id :type :transaction)))))
+(defun new-transaction-action-notice-handler ()
+  (let* ((log-event (getf (cddddr *notice*) :log-event))
+         (text (getf (cddddr *notice*) :text)))
+    (send-transaction-action-notification-email (getf (cddddr *notice*)
+                                                      :transaction-id)
+                                                log-event
+                                                text)))
 
- (defun new-transaction-action-notice-handler ()
-   (let* ((log-event (getf (cddddr *notice*) :log-event))
-          (text (getf (cddddr *notice*) :text)))
-     (send-transaction-action-notification-email (getf (cddddr *notice*)
-                                                       :transaction-id)
-                                                 log-event
-                                                 text)))
+(defun create-transaction (&key on text action match-id pending-deletion (userid *userid*))
+  (let* ((time (get-universal-time))
+         (on-item (db on))
+         (by (getf on-item :by))
+         (item-violates-terms-p (and (getf *user* :admin) pending-deletion))
+         (participants (list (if item-violates-terms-p +kindista-id+ userid) by))
+         (senders (if item-violates-terms-p
+                    (mailbox-ids (list +kindista-id+))
+                    (mailbox-ids (list userid))))
+         (bys (mailbox-ids (list by)))
+         (sender-boxes (mapcar #'(lambda (mailbox)
+                                   (cons mailbox :read))
+                               senders))
+         (by-boxes (mapcar #'(lambda (mailbox)
+                                   (cons mailbox :unread))
+                               bys))
+         (people (append by-boxes sender-boxes))
+         (people-ids (mapcar #'car (remove-duplicates (append senders bys))))
+         (message-folders (list :inbox people-ids
+                                :unread (remove userid people-ids)))
+         (log (when action (list (list :time time :party (list userid) :action action))))
+         (id (insert-db (if item-violates-terms-p
+                          (list :type :transaction
+                                :on on
+                                :deleted-item-details (getf on-item :details)
+                                :deleted-item-title (getf on-item :title)
+                                :deleted-item-type (getf on-item :type)
+                                :by +kindista-id+
+                                :participants participants
+                                :message-folders message-folders
+                                :people people
+                                :created time)
+                          (list :type :transaction
+                                :on on
+                                :by userid
+                                :participants participants
+                                :message-folders message-folders
+                                :people people
+                                :log log
+                                :created time)))))
 
- (defun create-transaction (&key on text action match-id pending-deletion (userid *userid*))
-   (let* ((time (get-universal-time))
-          (on-item (db on))
-          (by (getf on-item :by))
-          (item-violates-terms-p (and (getf *user* :admin) pending-deletion))
-          (participants (list (if item-violates-terms-p +kindista-id+ userid) by))
-          (senders (if item-violates-terms-p
-                     (mailbox-ids (list +kindista-id+))
-                     (mailbox-ids (list userid))))
-          (bys (mailbox-ids (list by)))
-          (sender-boxes (mapcar #'(lambda (mailbox)
-                                    (cons mailbox :read))
-                                senders))
-          (by-boxes (mapcar #'(lambda (mailbox)
-                                (cons mailbox :unread))
-                            bys))
-          (people (append by-boxes sender-boxes))
-          (people-ids (mapcar #'car (remove-duplicates (append senders bys))))
-          (message-folders (list :inbox people-ids
-                                 :unread (remove userid people-ids)))
-          (log (when action (list (list :time time :party (list userid) :action action))))
-          (id (insert-db (if item-violates-terms-p
-                           (list :type :transaction
-                                 :on on
-                                 :deleted-item-details (getf on-item :details)
-                                 :deleted-item-title (getf on-item :title)
-                                 :deleted-item-type (getf on-item :type)
-                                 :by +kindista-id+
-                                 :participants participants
-                                 :message-folders message-folders
-                                 :people people
-                                 :created time)
-                           (list :type :transaction
-                                 :on on
-                                 :by userid
-                                 :participants participants
-                                 :message-folders message-folders
-                                 :people people
-                                 :log log
-                                 :created time)))))
+    (when text (create-comment :on id
+                               :by (if item-violates-terms-p
+                                     (cons userid +kindista-id+)
+                                     (list userid))
+                               :text text
+                               :send-email-p nil
+                               :time (+ time 1) ; if there is both text/action, they need separate times for sorting in transaction log UI display
+                               ))
+    (when match-id
+      (case (getf on-item :type)
+        (:offer (hide-matching-offer match-id on))
+        (:request (hide-matching-offer on match-id))))
 
-     (when text (create-comment :on id
-                                :by (if item-violates-terms-p
-                                      (cons userid +kindista-id+)
-                                      (list userid))
-                                :text text
-                                :send-email-p nil
-                                :time (+ time 1) ; if there is both text/action, they need separate times for sorting in transaction log UI display
-                                ))
-     (when match-id
-       (case (getf on-item :type)
-         (:offer (hide-matching-offer match-id on))
-         (:request (hide-matching-offer on match-id))))
+    (notice :new-transaction-action :time time
+                                    :transaction-id id
+                                    :log-event (car log)
+                                    :text text)
+    id))
 
-     (notice :new-transaction-action :time time
-                                     :transaction-id id
-                                     :log-event (car log)
-                                     :text text)
-     id))
+(defun transactions-pending-gratitude-for-account (account-id)
+  (let* ((all-pending (gethash account-id *pending-gratitude-index*)))
+    (mapcar #'cdr
+            (append (getf all-pending :offers)
+                    (getf all-pending :requests)))))
 
- (defun transactions-pending-gratitude-for-account (account-id)
-   (let* ((all-pending (gethash account-id *pending-gratitude-index*)))
-     (mapcar #'cdr
-             (append (getf all-pending :offers)
-                     (getf all-pending :requests)))))
+(defun transactions-pending-gratitude-for-user
+  (&optional (userid *userid*)
+   &aux (groups (mapcar #'car (groups-with-user-as-admin userid)))
+        (transactions))
+  (dolist (account (cons userid groups))
+    (asetf transactions
+           (append (transactions-pending-gratitude-for-account account)
+                   it)))
+  transactions)
 
- (defun transactions-pending-gratitude-for-user
-   (&optional (userid *userid*)
-    &aux (groups (mapcar #'car (groups-with-user-as-admin userid)))
-         (transactions))
-   (dolist (account (cons userid groups))
-     (asetf transactions
-            (append (transactions-pending-gratitude-for-account account)
-                    it)))
-   transactions)
+(defun transaction-pending-gratitude-p
+  (transaction-id &optional (data (db transaction-id))
+                  &aux (pending-gratitude-p))
 
- (defun transaction-pending-gratitude-p
-   (transaction-id &optional (data (db transaction-id))
-                   &aux (pending-gratitude-p))
-
-   (loop for event in (getf data :log)
-         when (or (eq (getf event :action) :gave)
-                  (eq (getf event :action) :received))
-         do (setf pending-gratitude-p t)
-         when (or (eq (getf event :action) :withheld)
-                  (eq (getf event :action) :decline))
-         do (setf pending-gratitude-p nil)
-         when (eq (getf event :action) :gratitude-posted)
-         do (progn (setf pending-gratitude-p nil)
-                   (loop-finish)))
-
+  (loop for event in (getf data :log)
+        when (eq (getf event :action) :gratitude-posted)
+        do (progn (setf pending-gratitude-p nil)
+                  (loop-finish))
+        when (or (eq (getf event :action) :withheld)
+                 (eq (getf event :action) :disputed)
+                 (eq (getf event :action) :decline))
+        do (progn (setf pending-gratitude-p nil)
+                  (loop-finish))
+        when (or (eq (getf event :action) :gave)
+                 (eq (getf event :action) :received))
+        do (progn (setf pending-gratitude-p t)
+                  (loop-finish)))
   pending-gratitude-p)
 
 (defun sitewide-transaction-gratitude (&aux (completed 0) (pending 0))
@@ -566,7 +561,7 @@
                  (t (html
                       (:span :class "none" "deleted offer or request")))))))
         (offer-p (eql on-type :offer))
-        (most-recent-log-event (car (last (getf data :log))))
+        (most-recent-log-event (first (getf data :log)))
         (status (getf most-recent-log-event :action)))
 
   (standard-page
@@ -669,12 +664,35 @@
     :class "transaction"
     ))
 
+(defun fix-transaction-logs (&aux (count 0) example)
+  (dolist (id (hash-table-keys *db*))
+    (let* ((data (db id))
+           (type (getf data :type))
+           (log (getf data :log)))
+      (when (and (eql type :transaction)
+                 log
+                 (not (apply #'>= (mapcar (lambda (event) (getf event :time))
+                                          log))))
+        (modify-db id :log (sort log
+                                 #'>
+                                 :key (lambda (event) (getf event :time))))
+        (incf count)
+        (setf example id)
+        )))
+  (values count example)
+  )
+
 (defun transaction-options-for-user
   (transaction-id
    &key (userid *userid*)
         (transaction (db transaction-id))
    &aux (transaction-mailboxes (mapcar #'car (getf transaction :people)))
-        (log (getf transaction :log))
+        ;; some transactions in the database ordered logs because of a change
+        ;; introduced in commit: 9f6c08e89768862774b8dc5ba79f8af52189f468
+        ;; until that is fixed, we need to sort the log here
+        (log (sort (getf transaction :log)
+                   #'>
+                   :key #'(lambda (event) (getf event :time))))
         (inventory-item (db (getf transaction :on)))
         (inventory-type (getf inventory-item :type))
         (inventory-by (getf inventory-item :by))
@@ -699,15 +717,13 @@
                              :key #'(lambda (event)
                                        (if (eql representing userid)
                                          (car (getf event :party))
-                                         (cdr (getf event :party))))
-                             :from-end t))
+                                         (cdr (getf event :party))))))
         (other-party-event (find-if-not
                              #'(lambda (event)
-                                 (if representing
-                                   (eql representing (cdr (getf event :party)))
-                                   (eql userid (car (getf event :party)))))
-                             log
-                             :from-end t))
+                                 (if (eql representing userid)
+                                   (eql userid (car (getf event :party)))
+                                   (eql representing (cdr (getf event :party)))))
+                             log))
         (options ()))
 
   "Returns (1) a list of actions the user can take on a given transaction id and (2) the entity the user is representing (i.e. *userid* or a groupid)"
@@ -774,7 +790,7 @@
 
 (defun get-transaction (id)
 "when called, (modify-db conversation-id :people '((userid . this-comment-id) (other-user-id . whatever)))"
-  (require-user
+  (require-user ()
     (setf id (parse-integer id))
     (let* ((message (gethash id *db-messages*))
            (people (message-people message))
@@ -871,7 +887,7 @@
                       :on-id on-id
                       :submit-name "create"
                       :autofocus-p t
-                      :button-location :bottom))
+                      :cancel-button t))
                   (add-comment
                     (transaction-comment-input id))
                   (t (transaction-buttons-html
@@ -911,8 +927,10 @@
                          :action new-action)))
   (index-message
     transaction-id
-    (amodify-db transaction-id :message-folders folders
-                               :log (cons log-event it))))
+    (if (eql new-action :deactivated)
+      (amodify-db transaction-id :log (cons log-event it))
+      (amodify-db transaction-id :message-folders folders
+                                 :log (cons log-event it)))))
 
 (defun post-transaction (id)
   (require-active-user

@@ -260,6 +260,9 @@
   ("/settings/verify-address"
     :get get-verify-address)
 
+  ("/settings/location"
+    :post post-settings-location)
+
   ("/settings/ccard"
     :post post-settings-ccard)
 
@@ -267,7 +270,8 @@
     :get get-settings-communication)
 
   ("/settings/social"
-    :get get-settings-social)
+    :get get-settings-social
+    :post post-settings-social)
 
   ("/settings/notifications"
     :post post-settings-notification)
@@ -385,6 +389,12 @@
   ("/admin/sendmail"
     :get get-admin-sendmail
     :post post-admin-sendmail)
+
+  ("/publish-facebook"
+   :post post-new-facebook-data)
+
+  ("/uninstall-facebook"
+    :post post-uninstall-facebook)
 
   ; redirects
 

@@ -119,7 +119,7 @@
     (see-other "/faq")))
 
 (defun post-feedbacks ()
-  (require-user
+  (require-user ()
     (let ((text (post-parameter "text")))
       (cond
         ((and text (not (string= text "")))
@@ -129,7 +129,7 @@
     (see-other "/feedback")))
 
 (defun get-feedback (id)
-  (require-user
+  (require-user ()
     (let* ((id (parse-integer id))
            (data (db id)))
       (if (eq (getf data :type) :feedback)
@@ -140,7 +140,7 @@
         (not-found)))))
 
 (defun post-feedback (id)
-  (require-user
+  (require-user ()
     (let* ((id (parse-integer id))
            (data (db id)))
       (if (eq (getf data :type) :feedback)
@@ -163,7 +163,7 @@
            (see-other "/feedback")))))))
 
 (defun go-contact-us ()
-  (require-user
+  (require-user ()
     (new-conversation :people (list +kindista-id+)
                       :single-recipient "t"
                       :next (or (referer) "/home"))))

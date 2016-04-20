@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -17,23 +17,34 @@
 
 (in-package :kindista)
 
-(defun create-image (path content-type)
-  (let* ((suffix (cond
-                  ((string= content-type "image/jpeg")
-                   "jpg")
-                  ((string= content-type "image/png")
-                   "png")
-                  ((string= content-type "image/gif")
-                   "gif")
-                  (t
-                   (error "~S is not a supported content type" content-type))))
-         (image (insert-db (list :type :image
-                                 :content-type content-type
-                                 :modified (get-universal-time))))
-         (filename (strcat image "." suffix)))
-   (copy-file path (merge-pathnames *original-images* filename))
-   (modify-db image :filename filename)
-   (values image)))
+(defun create-image
+  (path-or-octet-array
+   content-type
+   &aux (suffix (cond
+                 ((string= content-type "image/jpeg")
+                  "jpg")
+                 ((string= content-type "image/png")
+                  "png")
+                 ((string= content-type "image/gif")
+                  "gif")
+                 (t
+                  (error "~S is not a supported content type" content-type))))
+        (image (insert-db (list :type :image
+                                :content-type content-type
+                                :modified (get-universal-time))))
+        (filename (strcat image "." suffix))
+        (destination (merge-pathnames *original-images* filename)))
+  (if (eql (type-of path-or-octet-array) 'pathname)
+     (copy-file path-or-octet-array destination)
+     (with-open-file (file destination
+                           :element-type '(unsigned-byte 8)
+                           :direction :output
+                           :if-does-not-exist :create
+                           :if-exists :supersede)
+       (write-sequence path-or-octet-array file)))
+  (modify-db image :filename filename)
+  (auto-rotate-image (strcat *original-images* filename))
+  (values image))
 
 (defun new-image-form
   (action
@@ -66,6 +77,10 @@
                               spinner-id
                               "\')")))
       (:div :id spinner-id :class "spinner"))))
+
+(defun auto-rotate-image (path)
+  "applies auto-rotate and strips out EXIF data"
+  (run-program *convert-path* (list "-auto-orient" "-strip" path path)))
 
 (defun rotate-image (id)
   (let* ((image (db id))
@@ -152,7 +167,7 @@
                               "Delete")))))))))))
 
 (defun post-new-image ()
-  (require-active-user
+  (require-user (:require-active-user t :allow-test-user t)
     (let* ((item-id (parse-integer (post-parameter "on")))
            (item (db item-id))
            (image (post-parameter "image"))
@@ -185,11 +200,14 @@
                   (progn
                     (refresh-item-time-in-indexes item-id :time now)
                     (modify-item-images item-id :edited now))
-                  (modify-item-images item-id))))
+                  (modify-item-images item-id)))
+              (awhen (getf item :fb-object-id)
+                (notice :new-facebook-action :object-modified t
+                                             :fb-object-id it)))
             (see-other url)))))))
 
 (defun post-existing-image (id)
-  (require-active-user
+  (require-user (:require-active-user t :allow-test-user t)
     (let* ((item-id (parse-integer (post-parameter "item-id")))
            (item (db item-id))
            (image-id (parse-integer id))

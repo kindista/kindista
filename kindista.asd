@@ -61,6 +61,7 @@
                              (:module shared
                               :serial t
                               :components ((:file "broadcasts")
+                                           (:file "facebook")
                                            (:file "form-elements")
                                            (:file "inventory")
                                            (:file "images")
@@ -73,7 +74,6 @@
                                            (:file "matchmaker")
                                            (:file "verify-location")
                                            (:file "time")
-                                           (:file "facebook")
                                            (:file "suggested-connections")))
                              (:module features
                               :serial t

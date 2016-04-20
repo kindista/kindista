@@ -146,14 +146,13 @@
           (:p "Kindista is a social network for " (:strong "building and supporting real community") ".
                We use your location to help you find " (:strong "local people, offers, and events") ".
                To get started, we need to know where you call home.")
-          (:p "We will never share your exact location with anyone else.
-               If you would like to know more about how we use the information you share with us,
+          (:p "We will never share your exact location with anyone else. If you would like to know more about how we use the information you share with us,
                please read our " (:a :href "/privacy" "privacy policy") ".")
           (:h2 "Where do you call home?")
           (:em "If you are travelling or do not have a permanent address, you may enter the city or location where you will be sleeping tonight. You can change your address at any time on the settings page.")
           (:p :class "small help-text"
             "Enter a street address and click \"Next\". We'll show you a map to confirm the location.")
-          (:form :method "post" :action "/settings"
+          (:form :method "post" :action "/settings/location"
             (:input :type "hidden"
                      :name "next"
                      :value "/home")

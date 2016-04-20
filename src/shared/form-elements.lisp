@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -16,6 +16,12 @@
 ;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :kindista)
+
+(defvar *or-divider*
+  (html
+    (:div :class "or-divider"
+     (:span "or")
+     (:hr))))
 
 (defun number-selection-html (name end &key id selected auto-submit)
   (html

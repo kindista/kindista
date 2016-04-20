@@ -17,9 +17,10 @@
 
 (in-package :kindista)
 
-(defun timestamp (time &key type verb class)
+(defun timestamp (time &key type verb class icon)
   (html
     (:h3 :class (strcat* "timestamp " class) :data-time time :data-type type
+       (awhen icon (str it))
        (awhen verb (htm (str it) " "))
        (str (humanize-universal-time time)))))
 
@@ -119,28 +120,28 @@
                  (htm
                    " &middot; "
                    (:input :type "submit" :name "delete" :value "Delete")))
-               (when edit
+               (when (or edit reactivate)
                  (htm
                    " &middot; "
                    (:input :type "submit" :name "edit" :value "Edit")
                    " &middot; "
-                   (cond
-                     (admin-delete
-                      (htm (:input :type "submit"
-                                   :name "inappropriate-item"
-                                   :value "Inappropriate")))
-                     (deactivate
-                      (htm (:input :type "submit"
-                                   :name "deactivate"
-                                   :value "Deactivate")))
-                     (t
-                      (htm (:input :type "submit"
-                                   :name "delete"
-                                   :value "Delete")))))))
-               (awhen reactivate
-                 (htm
-                   " &middot; "
-                   (:a :href it "Reactivate")))
+                   (if reactivate
+                     (htm (:input :type "submit"
+                           :name "reactivate"
+                           :value "Reactivate"))
+                     (cond
+                       (admin-delete
+                         (htm (:input :type "submit"
+                               :name "inappropriate-item"
+                               :value "Inappropriate")))
+                       (deactivate
+                         (htm (:input :type "submit"
+                               :name "deactivate"
+                               :value "Deactivate")))
+                       (t
+                        (htm (:input :type "submit"
+                              :name "delete"
+                              :value "Delete"))))))))
 
                (when image-text
                  (htm
@@ -186,9 +187,14 @@
       :edit (or (eql host *userid*)
                 group-adminp
                 (getf *user* :admin))
-      :deactivate (or (eql host *userid*)
-                      group-adminp
-                      (getf *user* :admin))
+      :deactivate (and (getf data :active)
+                       (or (eql host *userid*)
+                         group-adminp
+                         (getf *user* :admin)))
+      :reactivate (and (not (getf data :active))
+                       (or (eql host *userid*)
+                         group-adminp
+                         (getf *user* :admin)))
       :loves (loves item-id)
       ;:comments (length (comments item-id))
       :content (html
@@ -228,15 +234,16 @@
                      (:td (:strong "Place: "))
                      (:td (str (getf data :address))
                       (when (and show-distance (not sidebar))
-                        (htm (:small
-                          " (within "
-                          (str
-                            (distance-string
-                              (air-distance (result-latitude result)
-                                            (result-longitude result)
-                                            *latitude*
-                                            *longitude*)))
-                        ")"))))))
+                        (with-location
+                          (htm (:small
+                            " (within "
+                            (str
+                              (distance-string
+                                (air-distance (result-latitude result)
+                                              (result-longitude result)
+                                              *latitude*
+                                              *longitude*)))
+                          ")")))))))
 
                  (:p
                    (str
@@ -302,7 +309,7 @@
                        (html-text (getf data :text)))))
                  (unless (string= item-url (script-name*))
                    (str (activity-item-images images item-url "gift"))))
-      :related-items (when (and reciprocity (getf data :on) show-on-item)
+      :related-items (when (and (getf data :on) show-on-item)
                        (html
                          (when (and (getf data :on) show-on-item)
                            (str (gratitude-on-item-html
@@ -346,9 +353,9 @@
   (result
    &key truncate
         show-distance
-        show-what
+        show-icon
         show-tags
-        (show-when t)
+        show-recent-action
    &aux (user-id (first (result-people result)))
         (self (eql user-id *userid*))
         (item-id (result-id result))
@@ -361,6 +368,8 @@
         (images (getf data :images))
         (item-url (strcat "/" type "s/" item-id))
         (active-p (getf data :active))
+        (refreshed (getf data :refreshed))
+        (edited (getf data :edited))
         (renew-link (s+ (url-compose item-url
                                      "edit" "t"
                                      "focus" "expiration")
@@ -370,20 +379,30 @@
         (timestamp (if active-p
                      (timestamp
                        time
+                       ;; indicate to admins which items are refreshed
+                       ;; to make sure refreshing thread hasn't died
+                       :icon (when (and (getf *user* :admin)
+                                        refreshed
+                                        (or (not edited)
+                                            (> refreshed edited)))
+                               (icon "home"))
                        :class (when
                                 (or (not active-p)
                                     (and self
-                                        (< time (+ (get-universal-time)
-                                                   (* 5 +day-in-seconds+)))))
+                                         (< time (+ (get-universal-time)
+                                                    (* 5 +day-in-seconds+)))))
                                 "red")
                        :type type
                        :verb (if self
                                "expires"
-                               (when (and show-what
-                                          (not show-when))
+                               (when show-recent-action
                                  (cond
-                                   ((getf data :refreshed) "refreshed")
-                                   ((getf data :edited) "edited")
+                                   ((and refreshed edited)
+                                    (if (> refreshed edited)
+                                      "refreshed"
+                                      "edited"))
+                                   (refreshed "refreshed")
+                                   (edited  "edited")
                                    ((string= type "request") "requested")
                                    ((string= type "offer") "offered")))))
                      (html (:h3 :class "timestamp red" "inactive")))))
@@ -398,11 +417,10 @@
                             (or self group-adminp (getf *user* :admin)))
                  :deactivate (and active-p
                                   (or self group-adminp (getf *user* :admin)))
-                 :reactivate (when (and (not active-p)
-                                        (or self
-                                            group-adminp
-                                            (getf *user* :admin)))
-                               renew-link)
+                 :reactivate (and (not active-p)
+                                  (or self
+                                      group-adminp
+                                      (getf *user* :admin)))
                  :admin-delete (and (getf *user* :admin)
                                     (not self)
                                     (not group-adminp))
@@ -422,7 +440,11 @@
                                            :text "Request This"
                                            :image (icon "white-request"))))
                  :class (s+ type " inventory-item")
-                 :share-url (when (and self (not *productionp*))
+                 :share-url (when (and self
+                                       (or (not *productionp*)
+                                           (getf *user* :test-user))
+                                       (getf *user* :fb-id)
+                                       (not (getf data :fb-action-id)))
                               (url-compose
                                 "https://www.facebook.com/dialog/share_open_graph"
                                 "app_id" *facebook-app-id*
@@ -448,7 +470,7 @@
                                                   :truncate truncate
                                                   :data data
                                                   :show-distance show-distance
-                                                  :show-what show-what
+                                                  :show-icon show-icon
                                                   :show-tags show-tags)
 
                  :related-items (when (and (or self
@@ -469,7 +491,7 @@
 
 (defun inventory-item-content
   (result
-   &key show-distance show-what show-tags truncate data
+   &key show-distance show-icon show-tags truncate data
    &aux (item-id (result-id result))
         (item (or data (db item-id)))
         (by (getf item :by))
@@ -482,9 +504,9 @@
         (tags (getf item :tags)))
   (html
     (:div
-      (when (or title show-what)
+      (when (or title show-icon)
         (htm (:div :class "inventory-title"
-               (when (and title show-what)
+               (when (and title show-icon)
                  (htm (str (icon (if requestp "requests" "offers")))))
                (awhen title
                  (htm (:h3 :class "inventory-title"
@@ -567,9 +589,9 @@
                      (:person
                        (str (joined-activity-item item)))
                      (:offer
-                       (str (inventory-activity-item item :show-what t :show-distance location :show-tags show-tags :truncate t)))
+                       (str (inventory-activity-item item :show-icon t :show-distance location :show-tags show-tags :truncate t)))
                      (:request
-                       (str (inventory-activity-item item :show-what t :show-distance location :truncate t :show-tags show-tags)))))
+                       (str (inventory-activity-item item :show-icon t :show-distance location :truncate t :show-tags show-tags)))))
                  (setf items (cdr items)))
 
                 (t
@@ -609,12 +631,20 @@
                                          distance))))
          (ranked-items (mapcar #'(lambda (result)
                                    (cons result
-                                         (activity-rank
-                                           result
-                                           :sitewide (eql distance 0))))
+                                         (multiple-value-list
+                                           (activity-rank
+                                             result
+                                             :sitewide (eql distance 0)))))
                                local-items))
-         (items (mapcar #'car (sort ranked-items #'< :key #'cdr))))
+         (sorted-items (sort ranked-items #'> :key #'cadr))
+         (items (remove-duplicates
+                  (mapcar #'car sorted-items)
+                  :from-end t
+                  :key #'result-id)))
 
+   ;for debugging rank
+   ;(mapcar #'pprint (subseq sorted-items 0 4))
+   ;(terpri)
     (activity-items items :page page
                           :count count
                           :reciprocity t

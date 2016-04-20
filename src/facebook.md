@@ -1,9 +1,9 @@
+
+https://developers.facebook.com/tools/debug/sharing
+
 https://developers.facebook.com/docs/facebook-login/permissions/v2.3
 https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
-[ ] Save FB token and expriation to kindista user object
-[ ] display whether or not there is a valid facebook token on k settings page
-[ ] enable users to unlink kindista w/ facebook
-[ ] let users completely opt out of facebook integration (don't show them buttons for posting facebook stories)
+https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow#logout
 
 #Settings Page
  - List of permissions possible to select:
@@ -15,7 +15,9 @@ https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
                is associated with the correct facebook account."
 
 #Privacy setting
-https://developers.facebook.com/docs/graph-api/reference/v2.4/post
+ [ ] get and display current privacy setting
+ [ ] link to facebook page to change setting:
+     https://www.facebook.com/settings?tab=applications
 
 #List of friends using Kindista app
 https://graph.facebook.com/{user-id}/friends?fields=installed
@@ -25,12 +27,38 @@ https://developers.facebook.com/docs/sharing/reference/share-dialog
 https://developers.facebook.com/docs/graph-api/using-graph-api/v2.3
 https://developers.facebook.com/docs/sharing/opengraph/custom
 https://developers.facebook.com/docs/sharing/opengraph/using-actions
+[ ] add :submitted-to-fb field
+[ ] do the submitting in a separate request from a (notice)
+[ ] give a link to share on fb if it's been longer than 60s and we still haven't heard back from  fb
 [ ] create facebook story w/ new inventory items
     - get caption to display correctly
 [ ] in the inventory item, indicate whether the item has been posted to FB
+[ ] when editing item (enter-inventory-item-details)  make sure :publish-facebook defaults to whether it's already been posted to FB
 [ ] edit facebook story when editing inventory item
 [ ] delete facebook story when deleting inventory item
 [ ] if facebook token has expired/deactivatd, invite user to get a new one and let them know that if they don't, changes will not be reflected on FB
+
+#Gratitude
+  - taggable friends:
+https://developers.facebook.com/docs/graph-api/reference/user/taggable_friends
+https://developers.facebook.com/docs/sharing/opengraph/using-actions#tags
+  - if gratitude-recipient is tagable, but user hasn't given friends-list permission
+    - ask if they want to tag the friend
+    - ask for permission
+
+#Group-Accounts
+- permissions:
+    manage_pages, publish_pages
+
+#Invite Friends?
+
+#FB login
+https://developers.facebook.com/docs/facebook-login/multiple-providers
+
+signup: "sign up with facebook" "already have an account? login!"
+  - if signup via facebook and user has existing Kindista-ID, log in
+
+#FP profile pic
 
 #Review
 [ ] take screen shots
@@ -38,9 +66,10 @@ https://developers.facebook.com/docs/apps/review
 [ ] submit to facebook for review
 
 - Remove admin restriction for :share-url in inventory-activity-item
+- Remove *productionp* restriction from signup and login pages
+- Create a tab for settings/social
+- change facebook app setting/advanced deauthorize callback
+- change "privacy" setting in publish-facebook-action
 
-#Group-Accounts
-- permissions:
-    manage_pages, publish_pages
+#Merge accounts (fb-id fbtoken)
 
-#Invite Friends?

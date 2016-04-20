@@ -79,7 +79,7 @@
                    :notify-group-membership-invites t
                    :notify-kindista t))
 
-(defun create-person (&key name email password host aliases pending)
+(defun create-person (&key name email password host aliases pending test-user-p fb-id fb-token fb-expires)
   (let* ((person-id (insert-db (list :type :person
                                      :name name
                                      :aliases aliases
@@ -88,9 +88,14 @@
                                      :pending pending
                                      :active t
                                      :help t
-                                     :pass (new-password password)
+                                     :pass (awhen password (new-password it))
                                      :created (get-universal-time)
                                      :unsubscribe-key (random-password 18)
+                                     :fb-id fb-id
+                                     :fb-token fb-token
+                                     :fb-expires fb-expires
+                                     :fb-link-active (when fb-id t)
+                                     :test-user test-user-p
                                      :notify-gratitude t
                                      :notify-message t
                                      :notify-reminders t
@@ -128,61 +133,71 @@
         (names (cons (getf data :name)
                      (getf data :aliases))))
 
-    (when (getf data :active)
-      (with-mutex (*active-people-mutex*)
-      (push id *active-people-index*)))
-
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (when (and (getf data :emails)
-               (not (getf data :banned)))
-      (with-locked-hash-table (*email-index*)
-        (dolist (email (getf data :emails))
-          (when email ;some deleted accounts might have :emails (nil)
-            (setf (gethash email *email-index*) id)))))
-
-    (awhen (getf data :banned)
-      (with-locked-hash-table (*banned-emails-index*)
-        (dolist (email (getf data :emails))
-          (setf (gethash email *banned-emails-index*) id))))
-
-    (setf (gethash (getf data :username) *username-index*) id)
-
-    (awhen (getf data :following)
-      (with-locked-hash-table (*followers-index*)
-        (dolist (person it)
-          (push id (gethash person *followers-index*)))))
-
-    (awhen (getf data :host)
-      (with-locked-hash-table (*invited-index*)
-        (pushnew id (gethash it *invited-index*))))
+    (when (getf data :username)
+      (with-locked-hash-table (*username-index*)
+        (setf (gethash (getf data :username) *username-index*) id)))
 
     (with-locked-hash-table (*profile-activity-index*)
       (asetf (gethash id *profile-activity-index*)
              (safe-sort (push result it) #'> :key #'result-time)))
 
-    (unless (< (result-time result) (- (get-universal-time) 2592000))
-      (with-mutex (*recent-activity-mutex*)
-        (push result *recent-activity-index*)))
+    (when (and (getf data :fb-id) (getf data :fb-link-active))
+      (with-locked-hash-table (*facebook-id-index*)
+        (setf (gethash (getf data :fb-id) *facebook-id-index*) id)))
 
-    (when (and (getf data :created)
-               (getf data :active))
+    (unless (getf data :test-user)
 
-      (dolist (item-id (getf data :loves))
-        (index-love item-id id))
+      (when (getf data :active)
+        (with-mutex (*active-people-mutex*)
+          (push id *active-people-index*)))
 
-      (metaphone-index-insert names result)
+      (when (and (getf data :emails)
+                 (not (getf data :banned)))
+        (with-locked-hash-table (*email-index*)
+          (dolist (email (getf data :emails))
+            (when email ;some deleted accounts might have :emails (nil)
+              (setf (gethash email *email-index*) id)))))
 
-      (when (and (getf data :lat)
-                 (getf data :long)
-                 (getf data :created)
+      (awhen (getf data :banned)
+        (with-locked-hash-table (*banned-emails-index*)
+          (dolist (email (getf data :emails))
+            (setf (gethash email *banned-emails-index*) id))))
+
+      (awhen (getf data :following)
+        (with-locked-hash-table (*followers-index*)
+          (dolist (person it)
+            (push id (gethash person *followers-index*)))))
+
+      (when (getf data :loves)
+        (with-locked-hash-table (*love-index*)
+          (dolist (item (getf data :loves))
+            (unless (member id (gethash item *love-index*))
+              (push id (gethash item *love-index*))))))
+
+      (awhen (getf data :host)
+        (with-locked-hash-table (*invited-index*)
+          (pushnew id (gethash it *invited-index*))))
+
+      (unless (< (result-time result) (- (get-universal-time) 2592000))
+        (with-mutex (*recent-activity-mutex*)
+          (push result *recent-activity-index*)))
+
+      (when (and (getf data :created)
                  (getf data :active))
+        (metaphone-index-insert names result)
 
-         (geo-index-insert *people-geo-index* result)
+        (when (and (getf data :lat)
+                   (getf data :long)
+                   (getf data :created)
+                   (getf data :active))
 
-         (unless (< (result-time result) (- (get-universal-time) 15552000))
-           (geo-index-insert *activity-geo-index* result))))))
+          (geo-index-insert *people-geo-index* result)
+
+          (unless (< (result-time result) (- (get-universal-time) 15552000))
+            (geo-index-insert *activity-geo-index* result)))))))
 
 (defun reindex-person-location (id)
   ;when people change locations
@@ -575,13 +590,13 @@
                                                       duplicate-id
                                                       (getf old-data
                                                             :participants)))
-                          :message-folders (subst id-to-keep
-                                                  duplicate-id
-                                                  (getf old-data
-                                                        :message-folders))
-                          :people (subst id-to-keep
-                                         duplicate-id
-                                         (getf old-data :people)))))
+                           :message-folders (subst id-to-keep
+                                                   duplicate-id
+                                                   (getf old-data
+                                                         :message-folders))
+                           :people (subst id-to-keep
+                                          duplicate-id
+                                          (getf old-data :people)))))
              (when (eq (message-type message) :transaction)
                (asetf new-message-data
                       (append (list :log (subst id-to-keep
@@ -869,17 +884,17 @@
     (person-activity-html id :type :gratitude)))
 
 (defun get-person-offers (id)
-  (require-user
+  (require-user (:allow-test-user t)
     (ensuring-userid (id "/people/~a/offers")
       (person-activity-html id :type :offer))))
 
 (defun get-person-requests (id)
-  (require-user
+  (require-user (:allow-test-user t)
     (ensuring-userid (id "/people/~a/requests")
       (person-activity-html id :type :request))))
 
 (defun get-person-mutual-connections (id)
-  (require-user
+  (require-user (:allow-test-user t)
     (ensuring-userid (id "/people/~a/connections")
       (profile-mutual-connections-html id))))
 
@@ -957,7 +972,7 @@
     (see-other "/people/nearby")))
 
 (defun get-people-invited ()
-  (require-user
+  (require-user (:allow-test-user t)
     (let ((confirmed (gethash *userid* *invited-index*))
           (unconfirmed (unconfirmed-invites)))
       (standard-page

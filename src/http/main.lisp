@@ -74,8 +74,28 @@
   (flash "The page you requested is only available when you are logged in to Kindista." :error t)
   (see-other (url-compose "/login" "next" (url-encode (request-uri*)))))
 
+(defun test-users-prohibited ()
+  (flash "Sorry, this functionality is not available for test users."
+         :error t)
+  (see-other "/home"))
+
+(defun disregard-test-data ()
+  (flash "Sorry, the data requested is for testing purposes only."
+         :error t)
+  (see-other "/home"))
+
 (defun active-status-required ()
   (flash "Sorry, you must reactivate your account to perform that action." :error t)
+  (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
+    (see-other "/home")
+    (see-other (or (referer) "/home"))))
+
+(defun email-required ()
+  (flash (html "You must have an email associated with your account to perform this action. "
+               "Add an email address on your "
+               (:a :href "/settings/communication#email" "settings page")
+               " so that you can be notified when people respond to your post.")
+         :error t)
   (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
     (see-other "/home")
     (see-other (or (referer) "/home"))))
@@ -279,23 +299,38 @@
                                                       :name (getf *user* :name))))))
        ,@body)))
 
-(defmacro require-user (&body body)
+(defmacro require-user
+  ((&key require-active-user
+         require-email
+         allow-test-user)
+   &body body)
   `(with-user
      (if *userid*
-       (if (getf *user* :banned)
-         (progn
-           (flash "This account has been suspended for posting inappropriate content or otherwise violating Kindista's Terms of Use.  If you believe this to be an error please email us so we can resolve this issue." :error t)
-           (get-logout))
-         (progn ,@body))
+       (cond
+         ((getf *user* :banned)
+          (progn
+            (flash "This account has been suspended for posting inappropriate content or otherwise violating Kindista's Terms of Use.  If you believe this to be an error please email us so we can resolve this issue." :error t)
+            (get-logout)))
+
+         ((and ,require-email
+               (not (car (getf *user* :emails))))
+          (email-required))
+
+         ((and (getf *user* :test-user)
+               (not ,allow-test-user))
+          (test-users-prohibited))
+
+         ((and ,require-active-user
+               (not (getf *user* :active)))
+          (active-status-required))
+
+         (t (progn ,@body)))
+
        (login-required))))
 
 (defmacro require-active-user (&body body)
-  `(with-user
-     (if *userid*
-       (if (eq (getf *user* :active) t) 
-         (progn ,@body)
-         (active-status-required))
-       (login-required))))
+  `(require-user (:require-active-user t)
+     (progn ,@body)))
 
 (defmacro require-admin (&body body)
   `(with-user
@@ -364,6 +399,7 @@
                                              (not *productionp*))
                                          (or (string= (script-name*) "/send-all-reminders")
                                              (string= (script-name*) "/inventory-refresh")
+                                             (string= (script-name*) "/inventory-expiration-reminders")
                                              (string= (script-name*) "/send-inventory-digest")))
                                     60)
                                    ((and (getf *user* :admin)

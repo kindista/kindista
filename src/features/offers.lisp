@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -35,7 +35,7 @@
           " at the top of the screen.")))))
 
 (defun get-offers-new ()
-  (require-user
+  (require-user (:allow-test-user t :require-email t)
     (enter-inventory-item-details :page-title "Post an offer"
                                   :action "/offers/new"
                                   :button-text "Post offer"
@@ -51,15 +51,16 @@
          (by (getf offer :by))
          (self (eql *userid* by))
          (result (gethash id *db-results*))
+         (fb-action-id (when (string= (referer)
+                                      "https://www.facebook.com/")
+                         (get-parameter-integer "post_id")))
          (action-type (get-parameter-string "action-type"))
-         (facebook-item-id (when (string= (referer)
-                                          "https://www.facebook.com/")
-                             (get-parameter-integer "post_id")))
+         (group-admin-p (group-admin-p by *userid*))
          (matching-requests (gethash id *offers-with-matching-requests-index*)))
 
-    (when (and facebook-item-id
-               (not (eql (getf offer :facebook-id) facebook-item-id)))
-      (modify-db id :facebook-id facebook-item-id))
+    (when (and fb-action-id
+               (not (eql (getf offer :fb-action-id) fb-action-id)))
+      (modify-db id :fb-action-id fb-action-id))
 
     (cond
       ((or (not offer)
@@ -87,7 +88,7 @@
                                     :deactivate t
                                     :url (script-name*)))
 
-     ((and self (get-parameter "edit"))
+     ((and (or self group-admin-p) (get-parameter "edit"))
       (post-existing-inventory-item "offer"
                                     :id id
                                     :edit t
@@ -102,20 +103,26 @@
               (unless (getf offer :active)
                 (htm
                   (:h2 :class "red" "This offer is no longer active.")))
-              (str (inventory-activity-item result :show-distance t :show-tags t)))
+              (str (inventory-activity-item result
+                                            :show-icon t
+                                            :show-recent-action t
+                                            :show-distance t
+                                            :show-tags t)))
             (str (item-images-html id))
-            (when (and (or self (group-admin-p by))
+            (when (and (or self group-admin-p)
                        matching-requests)
               (str (item-matches-html id :data offer
                                          :current-matches matching-requests))))
-          :extra-head (facebook-item-meta-content id
-                                                  "offer"
-                                                  (getf offer :title)
-                                                  (getf offer :details))
+          :extra-head (facebook-item-meta-content
+                        id
+                        "offer"
+                        (strcat* "Offer: " (getf offer :title))
+                        :image (awhen (first (getf offer :images))
+                                 (get-image-thumbnail it 1200 1200)))
           :selected "offers"))))))
 
 (defun get-offer-reply (id)
-  (require-user
+  (require-user ()
     (let* ((id (parse-integer id))
            (data (db id)))
       (if (eql (getf data :type) :offer)

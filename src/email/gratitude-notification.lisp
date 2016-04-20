@@ -28,27 +28,30 @@
       (let* ((data (db subject))
              (name (getf data :name)))
         (if (eql (getf data :type) :person)
-          (when (getf data :notify-gratitude)
+          (when (and (getf data :notify-gratitude)
+                     (getf data :active))
             (push (list :id subject
                         :email (car (getf data :emails))
                         :unsubscribe-key (getf data :unsubscribe-key))
                 recipients))
           (dolist (admin (getf data :notify-gratitude))
             (let ((person (db admin)))
-              (push (list :group-name name
-                          :groupid subject
-                          :email (car (getf person :emails))
-                          :unsubscribe-key (getf person :unsubscribe-key)
-                          :id admin)
-                    recipients))))))
+              (when (getf person :active)
+                (push (list :group-name name
+                            :groupid subject
+                            :email (car (getf person :emails))
+                            :unsubscribe-key (getf person :unsubscribe-key)
+                            :id admin)
+                    recipients)))))))
     (send-push-through-chrome-api recipients
                                   :message-title "Statement of Gratitude"
                                   :message-body (s+ author-name
                                                     " shared gratitude for you")
                                   :message-tag "gratitude_tag"
                                   ;:message-type :gratitude
-                                  :message-url url
-                                  )
+                                  :message-url (strcat +base-url+
+                                                       "gratitude/"
+                                                       gratitude-id))
     (dolist (recipient recipients)
       (cl-smtp:send-email +mail-server+
                           "Kindista <noreply@kindista.org>"

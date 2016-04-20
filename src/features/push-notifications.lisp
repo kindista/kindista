@@ -29,7 +29,7 @@
     (mobile-chrome-p (string= (getf json :mobile) "true"))
     (registration-id (first (last url-parts)))
     (status-json (list (cons "subscriptionStatus" "null"))))
-  (require-user
+  (require-user ()
     (cond
       ((not chrome-p)
        (setf (return-code*) +http-not-implemented+)
@@ -39,22 +39,20 @@
                                (db *userid* :push-notification-subscriptions)))
               (sub-type (if mobile-chrome-p :mobile-chrome :chrome))
               (old-registration-id (getf subscriptions sub-type))
-              (new-registration-id (when subscribe-p registration-id)))
+              (new-registration-id (when (or subscribe-p
+                                             (and old-registration-id
+                                                  update-p))
+                                     registration-id)))
          (setf (getf subscriptions sub-type)
+               ;; change reg ID or unsubscribe
                new-registration-id)
          (awhen old-registration-id
-           ;only update when there is an old registration
-           ;(user already subscribed)
-           (when update-p
-             (setf new-registration-id registration-id)
-             (setf (getf subscriptions sub-type)
-                   new-registration-id))
-
            (with-locked-hash-table (*push-subscription-message-index*)
              ;when subscribing update registration hashtable key
-             (setf (gethash new-registration-id
-                            *push-subscription-message-index*)
-                   (gethash it *push-subscription-message-index*))
+             (when new-registration-id
+               (setf (gethash new-registration-id
+                              *push-subscription-message-index*)
+                     (gethash it *push-subscription-message-index*)))
              ;remove old registration when subscribing and unsubscribing
              (remhash it *push-subscription-message-index*)))
          (modify-db *userid* :push-notification-subscriptions subscriptions)
@@ -88,9 +86,9 @@
   (dolist (recipient recipients)
     (setf subscriptions (db (getf recipient :id) :push-notification-subscriptions))
     ;push both desktop and mobile registration-ids
-    (awhen subscriptions :chrome
+    (awhen (getf subscriptions :chrome)
       (push it registration-ids))
-    (awhen subscriptions :mobile-chrome
+    (awhen (getf subscriptions :mobile-chrome)
       (push it registration-ids)))
   (when registration-ids
     (setf registration-json (json:encode-json-alist-to-string (list (cons "registration_ids" registration-ids))))
@@ -105,6 +103,9 @@
                       :external-format-out :utf-8
                       :external-format-in :utf-8
                       :content registration-json)))
+
+    (facebook-debugging-log chrome-api-status
+                            (decode-json-octets (first chrome-api-status)))
 
     (when (= (second chrome-api-status) 200)
       (dolist (registration registration-ids)

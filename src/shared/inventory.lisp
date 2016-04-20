@@ -20,37 +20,6 @@
 (defun new-pending-offer-notice-handler ()
   (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
 
-(defun fix-transactions-with-incorrect-action-type (&aux transactions-to-fix)
-  "To clean the DB because of a bug in which some transactions were initiated with wrong action-type. e.g. user 'offered' an :offer"
-  (dolist (id (hash-table-keys *db*))
-    (let* ((data (db id))
-           (type (getf data :type))
-           (first-log-entry (car (getf data :log)))
-           (first-log-entry-party (car (getf first-log-entry :party)))
-           (first-action (getf first-log-entry :action)))
-      (when (eq type :transaction)
-        (let* ((inventory-id (getf data :on))
-               (inventory-item (db inventory-id))
-               (inventory-by (getf inventory-item :by))
-               (inventory-type (getf inventory-item :type))
-               (new-first-log-entry))
-          (unless (or (eql first-log-entry-party inventory-by)
-                      (group-admin-p inventory-by first-log-entry-party))
-            (cond
-              ((and (eq inventory-type :offer)
-                    (eq first-action :offered))
-               (setf new-first-log-entry
-                     (substitute :requested :offered first-log-entry)))
-              ((and (eq inventory-type :request)
-                    (eq first-action :requested))
-               (setf new-first-log-entry
-                     (substitute :offered :requested first-log-entry)))))
-          (when new-first-log-entry
-            (push id transactions-to-fix)
-            (amodify-db id :log (cons new-first-log-entry
-                                      (cdr it))))))))
-  transactions-to-fix)
-
 (defun create-inventory-item (&key type (by *userid*) title details tags privacy expires)
   (insert-db (list :type type
                    :active t
@@ -80,7 +49,6 @@
                                                   (getf item :edited)
                                                   (getf item :created))))
                        :tags (getf item :tags))))))
-
 
 (defun index-inventory-item
   (id
@@ -133,41 +101,41 @@
        (with-locked-hash-table (*request-index*)
          (pushnew id (gethash by-id *request-index*))))
 
-     (when locationp
-       (let ((title-stems (stem-text (getf data :title)))
-             (details-stems (stem-text (getf data :details)))
-             (tag-stems (stem-text (separate-with-spaces
-                                     (getf data :tags)))))
+     (unless (getf by :test-user)
+       (when locationp
+         (let ((title-stems (stem-text (getf data :title)))
+               (details-stems (stem-text (getf data :details)))
+               (tag-stems (stem-text (separate-with-spaces
+                                       (getf data :tags)))))
+           (if (eq type :offer)
+             (with-locked-hash-table (*offer-stem-index*)
+               (dolist (stem title-stems)
+                 (pushnew result
+                          (getf (gethash stem *offer-stem-index*) :title)))
+               (dolist (stem details-stems)
+                 (pushnew result
+                          (getf (gethash stem *offer-stem-index*) :details)))
+               (dolist (stem tag-stems)
+                 (pushnew result (getf (gethash stem *offer-stem-index*) :tags))))
+
+             (with-locked-hash-table (*request-stem-index*)
+               (dolist (stem title-stems)
+                 (pushnew result (getf (gethash stem *request-stem-index*) :title)))
+               (dolist (stem details-stems)
+                 (pushnew result (getf (gethash stem *request-stem-index*) :details)))
+               (dolist (stem tag-stems)
+                 (pushnew result (getf (gethash stem *request-stem-index*) :tags))))))
          (if (eq type :offer)
-           (with-locked-hash-table (*offer-stem-index*)
-             (dolist (stem title-stems)
-               (pushnew result
-                        (getf (gethash stem *offer-stem-index*) :title)))
-             (dolist (stem details-stems)
-               (pushnew result
-                        (getf (gethash stem *offer-stem-index*) :details)))
-             (dolist (stem tag-stems)
-               (pushnew result (getf (gethash stem *offer-stem-index*) :tags))))
+           (geo-index-insert *offer-geo-index* result)
+           (geo-index-insert *request-geo-index* result))
 
-           (with-locked-hash-table (*request-stem-index*)
-             (dolist (stem title-stems)
-               (pushnew result (getf (gethash stem *request-stem-index*) :title)))
-             (dolist (stem details-stems)
-               (pushnew result (getf (gethash stem *request-stem-index*) :details)))
-             (dolist (stem tag-stems)
-               (pushnew result (getf (gethash stem *request-stem-index*) :tags))))))
-
-       (if (eq type :offer)
-         (geo-index-insert *offer-geo-index* result)
-         (geo-index-insert *request-geo-index* result))
-
-       ;; unless item is older than 180 days
-       (unless (< (result-time result) (- (get-universal-time) 15552000))
-         ;; unless item is older than 30 days
-         (unless (< (result-time result) (- (get-universal-time) 2592000))
-           (with-mutex (*recent-activity-mutex*)
-             (pushnew result *recent-activity-index*)))
-         (geo-index-insert *activity-geo-index* result)))
+         ;; unless item is older than 180 days
+         (unless (< (result-time result) (- (get-universal-time) 15552000))
+           ;; unless item is older than 30 days
+           (unless (< (result-time result) (- (get-universal-time) 2592000))
+             (with-mutex (*recent-activity-mutex*)
+               (pushnew result *recent-activity-index*)))
+           (geo-index-insert *activity-geo-index* result))))
 
      (when (eq type :request)
        (if (or (getf data :match-all-terms)
@@ -191,7 +159,7 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
-         (fb-id (getf data :facebook-id))
+         (fb-action-id (getf data :fb-action-id))
          (by (getf data :by))
          (now (get-universal-time)))
 
@@ -240,26 +208,21 @@
                       :details details
                       :active t
                       :tags tags
-                      :fb-id fb-id
                       :expires expires
                       :privacy privacy))
-          (typestring (string-downcase (symbol-name type))))
+
+         ;(typestring (string-downcase (symbol-name type)))
+          )
 
       (cond
-        ((and publish-facebook-p (not fb-id))
-         (setf (getf data :fb-id)
-               (publish-facebook-action id)))
-        ((and (not fb-id) publish-facebook-p)
-         (setf (getf data :fb-id)
-               (update-facebook-object fb-id
-                                       typestring
-                                       (url-compose (strcat +base-url+
-                                                            typestring
-                                                            "s/"
-                                                            id)))))
-        ((and (not publish-facebook-p) fb-id)
-         "delete from facebook"
-         ))
+        ((and publish-facebook-p (not fb-action-id))
+         (notice :new-facebook-action :item-id id))
+
+        ((and fb-action-id publish-facebook-p)
+         (update-facebook-object id))
+
+        ((and (not publish-facebook-p) fb-action-id)
+         (delete-facebook-action fb-action-id)))
 
       (deindex-inventory-expiration id data)
       (index-inventory-expiration id data)
@@ -270,7 +233,7 @@
         (refresh-item-time-in-indexes id :time now)
         (append data (list :edited now)))
 
-      (apply #'modify-db id data) )
+      (apply #'modify-db id data))
 
     (case (result-type result)
       (:offer (update-matchmaker-offer-data id))
@@ -283,6 +246,7 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
+         (fb-action-id (getf data :fb-action-id))
          (now (get-universal-time))
          (by-id (getf data :by))
          (by-group-p (eq (db by-id :type) :group))
@@ -365,7 +329,12 @@
         (with-mutex (*recent-activity-mutex*)
           (asetf *recent-activity-index* (remove id it :key #'result-id)))))
 
+    (when fb-action-id
+      (delete-facebook-action fb-action-id))
+
     (modify-db id :active nil
+                  :deleted-fb-action-id fb-action-id
+                  :fb-action-id nil
                   :deactivated now
                   :violates-terms violates-terms)))
 
@@ -401,7 +370,7 @@
         from-name ", Kindista"))
 
 (defun post-new-inventory-item (type &key url)
-  (require-active-user
+  (require-user (:allow-test-user t :require-active-user t)
     (let* ((tags (post-parameter-string-list "tag"
                                              #'(lambda (tag)
                                                  (scan *tag-scanner* tag))))
@@ -522,6 +491,12 @@
                 (see-other "/home"))
               (progn
                 (contact-opt-out-flash (list *userid*) :item-type type)
+
+                (when (and (getf *user* :fb-link-active)
+                           (getf *user* :fb-id)
+                           (post-parameter "publish-facebook"))
+                  (notice :new-facebook-action :item-id new-id))
+
                 (flash
                   (s+ "Congratulations, your "
                       type
@@ -563,7 +538,7 @@
         (by (getf item :by))
         (adminp (group-admin-p by)))
 
-  (require-user
+  (require-user (:require-email t)
     (cond
       ((and (or (and (eq type :offer)
                      (eq action-type :offered))
@@ -620,7 +595,7 @@
              (see-other (or next (strcat "/transactions/" id)))))))))
 
 (defun post-existing-inventory-item (type &key id url edit deactivate)
-  (require-user
+  (require-user (:allow-test-user t :require-email t)
     (let* ((id (safe-parse-integer id))
            (item (db id))
            (by (getf item :by))
@@ -650,6 +625,14 @@
               (eql by *userid*)
               (getf *user* :admin))
          (deactivated-item-error (string-downcase (getf item :type))))
+
+        ((and (not (eql by *userid*))
+              (getf *user* :test-user))
+         (test-users-prohibited))
+
+        ((and (not (getf *user* :test-user))
+              (db by :test-user))
+         (disregard-test-data))
 
         ((and (not (eql by *userid*))
               (item-view-denied (result-privacy (gethash id *db-results*))))
@@ -726,6 +709,12 @@
                                  :next-url (if (string= (referer) (strcat "/" type "s/" id))
                                              "/home"
                                              (referer))))
+
+                ((post-parameter "reactivate")
+                  (see-other (s+ (url-compose (resource-url id)
+                                              "edit" "t"
+                                              "focus" "expiration")
+                                 "#expiration")))
 
                 ((and (post-parameter "really-delete")
                       (not (post-parameter "delete-inappropriate-item")))
@@ -848,7 +837,7 @@
 
   (standard-page page-title
     (html
-      (:div :class "item inventory-details" :id "edit-tags"
+      (:div :class "item inventory-details" :id "enter-inventory-details"
        (str (pending-disclaimer))
        (when error
          (htm
@@ -921,17 +910,19 @@
                   groups-selected
                   :onchange "this.form.submit()")))
 
-         (when (and (getf *user* :fbtoken)
+         (when (and (getf *user* :fb-token)
                     (not restrictedp))
            (htm
-             (:div :id "publish-facebook"
+             (:div :id "facebook"
                (:input :type "checkbox"
-                :name "publish-facebook"
-                :checked (when (or (not existingp)
-                                   publish-facebook)
-                    ""))
+                       :id "publish-facebook"
+                       :name "publish-facebook"
+                       :checked (when (or (not existingp)
+                                          publish-facebook)
+                           ""))
                (str (icon "facebook" "facebook-icon"))
-               (:span (str (s+ "Publish this "
+               (:label :for "publish-facebook"
+                 (str (s+ "Publish this "
                         typestring
                         " on my Facebook timeline."))))))
 
@@ -940,16 +931,19 @@
            (:legend "Select 1-5 categories")
            (:p :class "small"
              "Please note: selecting irrelevant categories is considered spam.")
-           (dolist (tag *top-tags*)
-             (htm
-               (:div :class "tag"
-                (:input :type "checkbox"
-                 :name "tag"
-                 :value tag
-                 :checked (when (member tag suggested :test #'string=)
-                            (setf suggested (remove tag suggested :test #'string=))
-                            ""))
-                (:span (str tag))))))
+           (:div :id "categories"
+             (dolist (tag *top-tags*)
+               (htm
+                 (:div :class "category"
+                   (:input :type "checkbox"
+                    :name "tag"
+                    :value tag
+                    :id tag
+                    :checked (when (member tag suggested :test #'string=)
+                               (setf suggested (remove tag suggested :test #'string=))
+                               ""))
+                  (:label :for tag (str tag))
+                )))))
          (:label :for "tags" "Additional keywords (optional)")
          (:p :class "small"
           "Please note: adding irrelevant keywords is considered spam.")
@@ -1132,7 +1126,6 @@
 
                 ((and (>= i start) items)
                  (str (inventory-activity-item (pop items)
-                                               :show-when nil
                                                :show-distance t
                                                :truncate t
                                                :show-tags t)))

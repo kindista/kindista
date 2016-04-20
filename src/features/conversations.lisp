@@ -131,7 +131,7 @@
     :selected "messages"))
 
 (defun get-conversations-new ()
-  (require-active-user
+  (require-user (:require-active-user t :require-email t)
     (if (getf *user* :pending)
        (progn
          (pending-flash "contact other Kindista members")
@@ -139,7 +139,7 @@
       (new-conversation :people (parse-subject-list (get-parameter "people"))))))
 
 (defun post-conversations-new ()
-  (require-active-user
+  (require-user (:require-active-user t :require-email t)
     (cond
       ((getf *user* :pending)
        (pending-flash "contact other Kindista members")
@@ -304,7 +304,7 @@
 
 (defun get-conversation (id)
 "when called, (modify-db conversation-id :people '((userid . this-comment-id) (other-user-id . whatever)))"
-  (require-user
+  (require-user ()
     (setf id (parse-integer id))
     (let* ((message (gethash id *db-messages*))
            (people (message-people message))
@@ -348,7 +348,7 @@
       (t (not-found))))))
 
 (defun get-conversation-leave (id)
-  (require-user
+  (require-user ()
     (setf id (parse-integer id))
     (let ((it (db id)))
       (if (and it (eql (getf it :type) :conversation))

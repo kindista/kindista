@@ -179,7 +179,8 @@
        (index-message id data))
 
      ;; unless gratitude is older than 180 days
-     (unless (< (result-time result) (- (get-universal-time) 15552000))
+     (unless (or (< (result-time result) (- (get-universal-time) 15552000))
+                 (getf author :test-user))
 
        (geo-index-insert *activity-geo-index* result)
 
@@ -346,7 +347,7 @@
 (defun simple-gratitude-compose
   (entity-id
    &key (entity (db entity-id))
-        (button-location :right)
+        cancel-button
         next
         transaction-id
         post-as
@@ -374,20 +375,11 @@
          (htm (:input :type "hidden" :name "transaction-id" :value it)))
        (:input :type "hidden" :name "subject" :value entity-id)
        (:input :type "hidden" :name "next" :value next)
-       (:table :class "post"
-        (:tr
-          (:td (:textarea :cols "1000" :rows "4" :name "text" :autofocus autofocus-p))
-          (when (eq button-location :right)
-            (htm (:td (str submit-button)))))
-        (when (eql button-location :bottom)
-          (htm
-            (:tr
-              (:td
-                (:button :class "cancel"
-                         :type "submit"
-                         :name "cancel"
-                  "Cancel")
-                (str submit-button))))))))))
+       (:textarea :cols "1000" :rows "4" :name "text" :autofocus autofocus-p)
+       (when cancel-button
+         (htm (:button :class "cancel" :type "submit" :name "cancel"
+                "Cancel")))
+       (str submit-button)))))
 
 (defun gratitude-compose
   (&key error
@@ -510,6 +502,20 @@
                    :onclick "this.form.submit()"
                    :checked (when (string= on-type "other") "checked"))
                   "Something else"))))
+
+            (when (and (getf *user* :fb-token)
+                       (or (not (getf *user* :test-user))
+                           (and (= 1 (length subjects))
+                                (db (car subjects) :test-user))))
+              (htm
+                (:div :id "facebook"
+                  (:input :type "checkbox"
+                          :id "publish-facebook"
+                          :name "publish-facebook"
+                          :checked "")
+                  (str (icon "facebook" "facebook-icon"))
+                  (:label :for "publish-facebook"
+                   (str (s+ "Share on Facebook"))))))
 
            (if (and (or relevant-offers relevant-requests)
                     on-type
@@ -682,7 +688,7 @@
                        :gratitude-id gratitude-id)))
 
 (defun get-gratitudes-new ()
-  (require-user
+  (require-user ()
     (gratitude-compose :subjects (parse-subject-list (get-parameter "subject"))
                        :next (referer))))
 
@@ -729,7 +735,7 @@
                           (results-from-ids (gethash thanker-id *request-index*)))))))
 
 (defun post-gratitudes-new ()
-  (require-active-user
+  (require-user (:allow-test-user t)
     (let* ((groupid (post-parameter-integer "identity-selection"))
            (adminp (group-admin-p groupid))
            (recipient-id (if adminp groupid *userid*))
@@ -884,6 +890,12 @@
            (g-compose :error '(:text "Please select the item you are posting gratitude about from the list below."
                                :field "on-id")))
 
+          ((and (getf *user* :test-user)
+                (or (> (length subjects) 1)
+                    (not (db (car subjects) :test-user))))
+           (flash "Sorry, test users can only post gratitude about other test users." :error t)
+           (see-other (or next "/home")))
+
           ((and (post-parameter "create")
                 subjects
                 text)
@@ -902,52 +914,72 @@
                                                        :subject-account-reactivation)
                                             :time time
                                             :text text))
-                  (gratitude-url (format nil "/gratitude/~A" new-id)))
+                  (gratitude-url (format nil "/gratitude/~A" new-id))
+                  (facebook-recipients))
 
-             (if (getf *user* :pending)
-               (progn
-                 new-id
-                 (flash "Your item has been recorded. It will be posted after you post an offer and we have a chance to review it. In the meantime, please consider posting additional offers, requests, or statements of gratitude. Thank you for your patience.")
-                 (see-other (or next "/home")))
-               (progn
-                 (awhen on-id
-                   (let* ((inventory-result (gethash on-id *db-results*))
-                          (pending-association (assoc inventory-result
-                                                      (getf (gethash recipient-id
-                                                                     *pending-gratitude-index*)
-                                                            on-types)))
-                          (transaction-id (or (cdr pending-association)
-                                              (post-parameter-integer "transaction-id"))))
 
-                     (when pending-association
+             (when (and (getf *user* :fb-link-active)
+                        (getf *user* :fb-id)
+                        (post-parameter "publish-facebook"))
+               (notice :new-facebook-action :item-id new-id)
+               (dolist (subject-id g-subjects)
+                 (let ((subject-data (db subject-id)))
+                   (when (and (getf subject-data :fb-id)
+                              (getf subject-data :fb-link-active)
+                              (check-facebook-permission :user-friends
+                                                         subject-id))
+                     (push subject-id facebook-recipients)))))
 
-                       (with-locked-hash-table (*pending-gratitude-index*)
-                         (asetf (getf (gethash recipient-id
-                                               *pending-gratitude-index*)
-                                      on-types)
-                                (remove pending-association it :test #'equal))))
+             (awhen on-id
+               (let* ((inventory-result (gethash on-id *db-results*))
+                      (pending-association (assoc inventory-result
+                                                  (getf (gethash recipient-id
+                                                                 *pending-gratitude-index*)
+                                                        on-types)))
+                      (transaction-id (or (cdr pending-association)
+                                          (post-parameter-integer "transaction-id"))))
 
-                     (when transaction-id
-                       (amodify-db transaction-id
-                                   :log (append
-                                          it
-                                          (list (list :time time
-                                                      :party (if adminp
-                                                               (cons *userid* groupid)
-                                                               (list *userid*))
-                                                      :action :gratitude-posted
-                                                      :comment new-id)))))))
+                 (when pending-association
 
-                 (flash (if inactive-subject
-                          (s+ (getf inactive-subject :name)
-                              " has deactivated their account. "
-                              "Your statement of gratitude will be posted "
-                              "when they reactivate their account.")
-                          "Your statement of gratitude has been posted"))
-                 (see-other (or next
-                                (if inactive-subject
-                                  "/home"
-                                  gratitude-url)))))))
+                   (with-locked-hash-table (*pending-gratitude-index*)
+                     (asetf (getf (gethash recipient-id
+                                           *pending-gratitude-index*)
+                                  on-types)
+                            (remove pending-association it :test #'equal))))
+
+                 (when transaction-id
+                   (amodify-db transaction-id
+                               :log (cons (list :time time
+                                                :party (if adminp
+                                                         (cons *userid*
+                                                               groupid)
+                                                         (list *userid*))
+                                                :action :gratitude-posted
+                                                :comment new-id)
+                                          it)))))
+
+             (flash (if inactive-subject
+                      (s+ (getf inactive-subject :name)
+                          " has deactivated their account. "
+                          "Your statement of gratitude will be posted "
+                          "when they reactivate their account.")
+                      "Your statement of gratitude has been posted"))
+             (see-other
+               (or (when (and (post-parameter "publish-facebook")
+                              facebook-recipients
+                              (not (check-facebook-permission :user-friends)))
+                     (flash "Your statement of gratitude has been published on Facebook")
+                     (apply #'url-compose
+                            (strcat "gratitude/" new-id)
+                            (flatten
+                              (mapcar (lambda (id)
+                                        (cons "authorize-fb-friend-tag"
+                                              (strcat id)))
+                                      facebook-recipients))))
+                   next
+                   (if inactive-subject
+                     "/home"
+                     gratitude-url)))))
 
           (t
            (g-compose :subjects subjects)))))))
@@ -955,28 +987,91 @@
 
 (defun get-gratitude (id)
   (setf id (parse-integer id))
-  (aif (db id)
-    (require-user
-      (let* ((message (gethash id *db-messages*))
-             (mailboxes (when message
-                          (loop for person in (message-people message)
-                                when (eq (caar person) *userid*)
-                                collect (car person)))))
+  (let* ((data (db id))
+         (result (gethash id *db-results*))
+         (self-author-p (eql (getf data :author) *userid*))
+         (new-fb-authorization-p
+           (string= (get-parameter "state") "tag_friends"))
+         (friend-tags-to-authorize (get-parameter-integer-list
+                                     "authorize-fb-friend-tag"))
+         (fb-user-friends-permission
+           (when (or (and friend-tags-to-authorize self-author-p)
+                     new-fb-authorization-p)
+             (multiple-value-list (check-facebook-permission :user-friends
+                                                             *userid*))))
+         (fb-friends-to-tag
+           (or friend-tags-to-authorize
+               (remove nil
+                       (mapcar (lambda (subject-id)
+                                 (let ((subject (db subject-id)))
+                                   (when (and (getf subject :fb-id)
+                                              (getf subject :fb-link-active)
+                                              (check-facebook-permission
+                                                :user-friends
+                                                subject-id))
+                                   subject-id)))
+                         (getf data :subjects)))))
+         (authorize-tagging
+           (facebook-friends-permission-html
+             :redirect-uri (strcat "gratitude/" id)
+             :re-request (eql (second fb-user-friends-permission) :declined)
+             :cancel-link (strcat "gratitude/" id)
+             :fb-gratitude-subjects fb-friends-to-tag))
+         (gratitude-page
+           (when result
+             (standard-page
+               "Gratitude"
+               (html
+                 (:div :class "gratitude item"
+                  (str (gratitude-activity-item
+                         result
+                         :reciprocity (and *userid*
+                                           (not (find *userid*
+                                                      (result-people result))))   )))
+                 (str (item-images-html id)))
+               :extra-head (facebook-item-meta-content
+                             id
+                             "gratitude"
+                             (s+ "Gratitude for "
+                                 (name-list-all (getf data :subjects )
+                                                :stringp t))
+                             :description (getf data :text)
+                             :determiner ""
+                             :image (awhen (first (getf data :images))
+                                      (get-image-thumbnail it 1200 1200)))
+               :selected (awhen (get-parameter-string "menu") it)))))
+    (cond
+      (friend-tags-to-authorize
+       (if self-author-p
+         authorize-tagging
+         (permission-denied)))
+      (new-fb-authorization-p
+       (if (first fb-user-friends-permission)
+         (progn
 
-        (when (member (list *userid*) mailboxes :test #'equal)
-          (update-folder-data message :read))
 
-        (standard-page
-          "Gratitude"
-          (html
-            (:div :class "gratitude item"
-              (str (gratitude-activity-item (make-result :id id
-                                                         :time (getf it :created)
-                                                         :people (cons (getf it :author)
-                                                                       (getf it :subjects))))))
-            (str (item-images-html id)))
-          :selected (awhen (get-parameter-string "menu") it))))
-    (not-found)))
+           ;; need to flash when ther are no friends that can be tagged
+
+
+           (facebook-debugging-log (get-facebook-kindista-friends *userid*))
+           (tag-facebook-friends-html
+             :gratitude-id id
+             :fb-gratitude-subjects (mapcar (lambda (id) (cons (db id :name)
+                                                               id))
+                                            fb-friends-to-tag)))
+         authorize-tagging))
+      ((and *user* data)
+       (let* ((message (gethash id *db-messages*))
+              (mailboxes (when message
+                           (loop for person in (message-people message)
+                                 when (eq (caar person) *userid*)
+                                 collect (car person)))))
+
+         (when (member (list *userid*) mailboxes :test #'equal)
+           (update-folder-data message :read))
+         gratitude-page))
+      (data gratitude-page)
+      (t (not-found)))))
 
 (defun post-gratitude (id)
   (require-active-user
@@ -1001,7 +1096,7 @@
       (not-found))))
 
 (defun get-gratitude-edit (id)
-  (require-user
+  (require-user ()
     (let* ((gratitude (db (parse-integer id)))
            (author (getf gratitude :author))
            (adminp (group-admin-p author)))
@@ -1026,7 +1121,7 @@
                              :existing-url (s+ "/gratitude/" id "/edit")))))))
 
 (defun post-gratitude-edit (id)
-  (require-user
+  (require-user ()
     (let* ((gratitude (db (parse-integer id)))
            (author (getf gratitude :author)))
       (require-test ((or (eql *userid* author)

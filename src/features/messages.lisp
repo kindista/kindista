@@ -202,13 +202,19 @@
                  (:conversation
                   (db (getf data :latest-comment) :created))
                  (:transaction
-                   (apply #'max
-                          (remove nil
-                                 (list (getf (car (last (getf data :log)))
-                                             :time)
-                                       (getf data :created)
-                                       (db (getf data :latest-comment)
-                                           :created)))))
+                   (apply
+                     #'max
+                     (remove
+                       nil
+                       (list (getf (first (remove-if
+                                            (lambda (event)
+                                              (eq :deactivated
+                                                  (getf event :action)))
+                                            (getf data :log)))
+                                         :time)
+                                   (getf data :created)
+                                   (db (getf data :latest-comment)
+                                       :created)))))
                  ((or :group-membership-invitation
                       :group-membership-request)
                   (or (getf data :resent)
@@ -581,10 +587,9 @@
    &aux (id (message-id message))
         (transaction (db id))
         (latest-comment (message-latest-comment message))
-        (latest-transaction-action (car (last (getf transaction :log))))
+        (latest-transaction-action (first (getf transaction :log)))
         (latest-gratitude-entry (find :gratitude-posted
                                   (getf transaction :log)
-                                  :from-end t
                                   :key #'(lambda (log-entry)
                                            (getf log-entry :action))))
         (comment-data (db latest-comment))
@@ -682,7 +687,7 @@
             "Express Gratitude"))))))
 
 (defun get-messages ()
-  (require-user
+  (require-user ()
     (let ((mailbox (or (awhen (get-parameter "mailbox")
                          (parse-cons it))
                        (list *userid*))))
@@ -711,7 +716,7 @@
           message :read :last-read-comment (message-latest-comment message))))))
 
 (defun post-messages ()
-  (require-user
+  (require-active-user
     (let ((messages (loop for pair in (post-parameters*)
                           when (and (string= (car pair) "message-id")
                                     (scan +number-scanner+ (cdr pair)))

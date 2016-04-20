@@ -237,46 +237,51 @@
                 *user*)))
     (or (getf user :admin) (getf user :matchmaker))))
 
-(defun find-matching-requests-for-offer (offer-id)
-  (let* ((offer (db offer-id))
-         (offer-result (gethash offer-id *db-results*))
-         (by-id (getf offer :by))
-         (by (db by-id))
-         (lat (or (getf offer :lat) (getf by :lat)))
-         (long (or (getf offer :long) (getf by :long)))
-         (stems (stem-text (s+ (getf offer :title)
-                               " "
-                               (getf offer :details))))
-         (tags (getf offer :tags)))
+(defun find-matching-requests-for-offer
+  (offer-id
+   &aux (offer (db offer-id))
+        (offer-result (gethash offer-id *db-results*))
+        (by-id (getf offer :by))
+        (by (db by-id))
+        (lat (or (getf offer :lat) (getf by :lat)))
+        (long (or (getf offer :long) (getf by :long)))
+        (stems (stem-text (s+ (getf offer :title)
+                              " "
+                              (getf offer :details))))
+        (tags (getf offer :tags))
+        (results))
 
-    (flet ((find-strings (fn request-data offer-data)
-             (or (not request-data)
-                 (funcall fn #'(lambda (string)
-                                 (find string offer-data :test #'equalp))
-                             request-data))))
+  (flet ((find-strings (fn request-data offer-data)
+           (or (not request-data)
+               (funcall fn #'(lambda (string)
+                               (find string offer-data :test #'equalp))
+                        request-data))))
 
-      (loop for matchmaker
-            in (append *global-matchmaker-requests-index*
-                       (geo-index-query *matchmaker-requests-geo-index* lat long 100))
-            when (and (find-strings #'some (match-tags matchmaker) tags)
-                      (find-strings #'some (match-any-terms matchmaker) stems)
-                      (find-strings #'every (match-all-terms matchmaker) stems)
-                      (find-strings #'notany (match-without-terms matchmaker) stems)
-                      (or (not (match-distance matchmaker))
-                          (<= (air-distance lat
-                                           long
-                                           (match-latitude matchmaker)
-                                           (match-longitude matchmaker))
-                               (match-distance matchmaker)))
-                      (not (item-view-denied (match-privacy matchmaker) by-id))
-                      (not (item-view-denied (result-privacy offer-result)
-                                             (db (match-id matchmaker) :by))))
-          collect (result-id matchmaker)))))
+    (dolist (matchmaker (append *global-matchmaker-requests-index*
+                                (geo-index-query *matchmaker-requests-geo-index* lat long 100)))
+      (let ((request-author (db (match-id matchmaker) :by)))
+        (when (and (find-strings #'some (match-tags matchmaker) tags)
+                 (find-strings #'some (match-any-terms matchmaker) stems)
+                 (find-strings #'every (match-all-terms matchmaker) stems)
+                 (find-strings #'notany (match-without-terms matchmaker) stems)
+                 (or (not (match-distance matchmaker))
+                     (<= (air-distance lat
+                                       long
+                                       (match-latitude matchmaker)
+                                       (match-longitude matchmaker))
+                         (match-distance matchmaker)))
+                 (not (eq request-author by-id))
+                 (not (item-view-denied (match-privacy matchmaker) by-id))
+                 (not (item-view-denied (result-privacy offer-result)
+                                        request-author)))
+        (push (result-id matchmaker) results)))))
+    results)
 
 (defun find-matching-offers-for-request (request-id &optional matchmaker)
   (let* ((matchmaker (or matchmaker
                          (gethash request-id *matchmaker-requests*)))
          (distance (match-distance matchmaker))
+         (request (db request-id))
          (nearby-offers (awhen distance
                           (geo-index-query *offer-geo-index*
                                            (match-latitude matchmaker)
@@ -309,9 +314,10 @@
                          offers-matching-terms)
           when (and (intersection (match-tags matchmaker) (result-tags offer)
                                   :test #'equalp)
+                    (not (eql (getf request :by) (first (result-people offer))))
                     (not (item-view-denied (result-privacy offer) *userid*))
                     (not (item-view-denied (match-privacy matchmaker)
-                                           (db (result-id offer) :by))))
+                                           (first (result-people offer)))))
           collect (result-id offer))))
 
 (defun hide-matching-offer (request-id offer-id)

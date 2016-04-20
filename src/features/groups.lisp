@@ -60,8 +60,9 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (with-locked-hash-table (*username-index*)
-      (setf (gethash (getf data :username) *username-index*) id))
+    (when (getf data :username)
+      (with-locked-hash-table (*username-index*)
+        (setf (gethash (getf data :username) *username-index*) id)))
 
     (with-locked-hash-table (*group-privileges-index*)
       (dolist (person (getf data :admins))
@@ -643,6 +644,9 @@
                             (gethash person *profile-activity-index*))
             while (< i count)
             when (and (not (member result activity)) ; prevent duplicates
+                      ;; activity rank needs dates in the past
+                      ;; so it doesn't work for upcoming events
+                      (not (eql (result-type result) :event))
                       (or (not type)
                           (if (eql type :gratitude)
                             (or (and (eql :gratitude (result-type result))
@@ -655,7 +659,7 @@
                    (asetf activity (push result it))
                    (asetf activity (list result)))
                  (incf i))))
-    (sort activity #'< :key #'activity-rank)))
+    (sort activity #'> :key #'activity-rank)))
 
 (defun get-groups ()
   (if (and *user*
@@ -696,7 +700,7 @@
   (nearby-profiles-html "groups" (groups-tabs-html :tab :nearby)))
 
 (defun get-groups-new ()
-  (require-active-user
+  (require-user (:require-active-user t :require-email t)
     (if (getf *user* :pending)
       (progn
         (pending-flash "create group profiles on Kindista")
@@ -755,111 +759,112 @@
                     "Create")))))))
 
 (defun post-groups-new ()
-  (let ((location (post-parameter-string "location"))
-        (name (when (scan +text-scanner+ (post-parameter "name"))
-                (post-parameter "name")))
-        (lat (post-parameter-float "lat"))
-        (long (post-parameter-float "long"))
-        (city (post-parameter-string "city"))
-        (state (post-parameter-string  "state"))
-        (country (post-parameter-string "country"))
-        (street (awhen (post-parameter "street")
-                  (unless (or (string= it "")
-                              (equalp it "nil nil"))
-                 it)))
-        (zip (post-parameter-string "zip"))
-        (group-category (or (post-parameter-string "custom-group-category")
-                            (post-parameter-string "group-category")))
-        (membership-method (post-parameter-string "membership-method"))
-        (public (when (post-parameter "public-location") t)))
+  (require-user (:require-active-user t :require-email t)
+    (let ((location (post-parameter-string "location"))
+          (name (when (scan +text-scanner+ (post-parameter "name"))
+                  (post-parameter "name")))
+          (lat (post-parameter-float "lat"))
+          (long (post-parameter-float "long"))
+          (city (post-parameter-string "city"))
+          (state (post-parameter-string  "state"))
+          (country (post-parameter-string "country"))
+          (street (awhen (post-parameter "street")
+                    (unless (or (string= it "")
+                                (equalp it "nil nil"))
+                   it)))
+          (zip (post-parameter-string "zip"))
+          (group-category (or (post-parameter-string "custom-group-category")
+                              (post-parameter-string "group-category")))
+          (membership-method (post-parameter-string "membership-method"))
+          (public (when (post-parameter "public-location") t)))
 
-    (labels ((try-again (&optional e)
-               (enter-new-group-details :name (post-parameter "name")
-                                        :location location
-                                        :membership-method membership-method
-                                        :error e))
-             (new-group ()
-               (see-other
-                 (strcat "/groups/"
-                         (create-group :name name
-                                       :creator *userid*
-                                       :lat lat
-                                       :long long
-                                       :address location
-                                       :street street
-                                       :city city
-                                       :state state
-                                       :country country
-                                       :zip zip
-                                       :category (awhen group-category
-                                                   (unless (string= "other"
-                                                                    it)
-                                                     it))
-                                       :membership-method (if (string= membership-method
-                                                                       "invite-only")
-                                                            :invite-only
-                                                            :group-admin-approval)
-                                       :location-privacy (if public
-                                                           :public
-                                                           :private)))))
+      (labels ((try-again (&optional e)
+                 (enter-new-group-details :name (post-parameter "name")
+                                          :location location
+                                          :membership-method membership-method
+                                          :error e))
+               (new-group ()
+                 (see-other
+                   (strcat "/groups/"
+                           (create-group :name name
+                                         :creator *userid*
+                                         :lat lat
+                                         :long long
+                                         :address location
+                                         :street street
+                                         :city city
+                                         :state state
+                                         :country country
+                                         :zip zip
+                                         :category (awhen group-category
+                                                     (unless (string= "other"
+                                                                      it)
+                                                       it))
+                                         :membership-method (if (string= membership-method
+                                                                         "invite-only")
+                                                              :invite-only
+                                                              :group-admin-approval)
+                                         :location-privacy (if public
+                                                             :public
+                                                             :private)))))
 
-             (confirm-location ()
-               (multiple-value-bind (clat clong caddress ccity cstate ccountry cstreet czip)
-                 (geocode-address location)
-                 (verify-location "/groups/new"
-                                  "Please verify your group's location."
-                                  clat
-                                  clong
-                                  "name" name
-                                  "location" caddress
-                                  "city" ccity
-                                  "state" cstate
-                                  "country" ccountry
-                                  "street" cstreet
-                                  "zip" czip
-                                  "group-category" group-category
-                                  "membership-method" membership-method
-                                  (when public "public-location")
-                                  (when public "t")))))
+               (confirm-location ()
+                 (multiple-value-bind (clat clong caddress ccity cstate ccountry cstreet czip)
+                   (geocode-address location)
+                   (verify-location "/groups/new"
+                                    "Please verify your group's location."
+                                    clat
+                                    clong
+                                    "name" name
+                                    "location" caddress
+                                    "city" ccity
+                                    "state" cstate
+                                    "country" ccountry
+                                    "street" cstreet
+                                    "zip" czip
+                                    "group-category" group-category
+                                    "membership-method" membership-method
+                                    (when public "public-location")
+                                    (when public "t")))))
 
-      (cond
-        ((getf *user* :pending)
-         (pending-flash "create group profiles on Kindista")
-         (see-other (or (referer) "/home")))
+        (cond
+          ((getf *user* :pending)
+           (pending-flash "create group profiles on Kindista")
+           (see-other (or (referer) "/home")))
 
-        ((post-parameter "cancel")
-         (see-other "/groups"))
+          ((post-parameter "cancel")
+           (see-other "/groups"))
 
-        ((> (length group-category) 48)
-         (try-again "Please use a shorter custom group category name"))
+          ((> (length group-category) 48)
+           (try-again "Please use a shorter custom group category name"))
 
-        ((and group-category
-              (nor (post-parameter "create-group")
-                   (post-parameter "confirm-location")))
-         (try-again))
+          ((and group-category
+                (nor (post-parameter "create-group")
+                     (post-parameter "confirm-location")))
+           (try-again))
 
-        ((< (length name) 4)
-         (try-again "Please use a longer name for your group"))
+          ((< (length name) 4)
+           (try-again "Please use a longer name for your group"))
 
-        ((or (not location)
-             (string= location ""))
-         (try-again "Please add a location for your group"))
+          ((or (not location)
+               (string= location ""))
+           (try-again "Please add a location for your group"))
 
-       ((post-parameter "reset-location")
-        (enter-new-group-details :name name
-                                 :membership-method membership-method))
+         ((post-parameter "reset-location")
+          (enter-new-group-details :name name
+                                   :membership-method membership-method))
 
-       ((not (and lat long city state location country))
-        ;geocode the address
-        (confirm-location))
+         ((not (and lat long city state location country))
+          ;geocode the address
+          (confirm-location))
 
-       ((post-parameter "confirm-location")
-        (aif (search-groups name :lat lat :long long)
-          (confirm-group-uniqueness it name lat long location city state country street zip membership-method :public-location public)
-          (new-group)))
+         ((post-parameter "confirm-location")
+          (aif (search-groups name :lat lat :long long)
+            (confirm-group-uniqueness it name lat long location city state country street zip membership-method :public-location public)
+            (new-group)))
 
-       ((and lat long city state location country (post-parameter "confirm-uniqueness"))
-        (new-group))))))
+         ((and lat long city state location country (post-parameter "confirm-uniqueness"))
+          (new-group)))))))
 
 (defun resend-group-membership-request (request-id)
   (index-message request-id
@@ -1023,17 +1028,17 @@
     (group-activity-html id :type :gratitude)))
 
 (defun get-group-offers (id)
-  (require-user
+  (require-user (:allow-test-user t)
     (ensuring-userid (id "/groups/~a/offers")
       (group-activity-html id :type :offer))))
 
 (defun get-group-requests (id)
-  (require-user
+  (require-user (:allow-test-user t)
     (ensuring-userid (id "/groups/~a/requests")
       (group-activity-html id :type :request))))
 
 (defun get-group-members (id)
-  (require-user
+  (require-user (:allow-test-user t)
     (ensuring-userid (id "/groups/~a/members")
       (profile-group-members-html id))))
 
@@ -1259,7 +1264,7 @@
       )))
 
 (defun post-existing-group (id)
-  (require-user
+  (require-active-user
     (let* ((id (parse-integer id))
            (group (db id))
            (url (strcat "/groups/" (username-or-id id))))

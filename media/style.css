@@ -338,17 +338,189 @@ body.about h3 {
 }
 
 #signup h2 {
- margin-bottom:.5em;
+ margin-bottom:0.5em;
+}
+
+#login {
+ width: 100%;
+ max-width: 30em;
+ margin: 0 auto;
+ text-align: center;
+}
+
+#login h1 {
+ font-size: 2em;
+ margin-bottom:0.1em;
+}
+
+#login h3 {
+ margin: 0 auto 0.7em;
+ font-weight: normal;
+ color: #333;
+}
+
+#login-form {
+ text-align: left;
+}
+
+#login hr {
+ position: relative;
+ top: -1.3em;
+ color: #ccc;
+ background: #ccc;
+ height: 0.15em;
+ z-index: -1;
+}
+
+#login div#join {
+ margin-top: 1.5em;
+ font-size: 1.1em;
+ font-weight: bold;
+}
+
+
+#login button,
+#login a.blue {
+ font-size: 1.3em;
+ height: 2.1em;
+ vertical-align: middle;
+ line-height: inherit;
+ padding: 0.4em;
+}
+
+#login a.blue {
+ width: 100%;
+ display: block;
+}
+
+#login span.forgot,
+#login button {
+ width: 50%;
+ margin-right: 0;
+}
+
+#login span.forgot {
+ text-align: center;
+ display: inline-block;
+}
+
+#login span a {
+ font-size: 1em;
+ color: #333;
+}
+
+#signup,
+#login {
+ width: 100%;
+ max-width: 30em;
+ margin: 3em auto;
+ text-align: center;
+}
+
+#signup-resend-confirmation {
+ width: 100%;
+ max-width: 30em;
+ margin: 3em auto;
+}
+
+#login h1 {
+ font-size: 2em;
+ margin-bottom:0.1em;
+}
+
+#login h3 {
+ margin: 0 auto 0.7em;
+ font-weight: normal;
+ color: #333;
+}
+
+#signup-form,
+#login-form {
+ text-align: left;
+}
+
+.or-divider {
+ margin: 1em auto;
+ text-align: center;
+}
+
+.or-divider > span {
+ z-index: 10;
+ font-size: 1.3em;
+ font-weight: bold;
+ padding: 0 0.7em;
+ background: #fff;
+}
+
+.or-divider hr {
+ position: relative;
+ top: -1.4em;
+ color: #ccc;
+ background: #ccc;
+ height: 0.15em;
+ z-index: -1;
+}
+
+#signup div#login,
+#login div#join {
+ margin-top: 1.5em;
+ font-size: 1.1em;
+ font-weight: bold;
+}
+
+
+#login button,
+#login a.blue,
+#signup button,
+#signup a.blue {
+ font-size: 1.3em;
+ height: 2.1em;
+ vertical-align: middle;
+ line-height: inherit;
+ padding: 0.4em;
+}
+
+#signup a.blue,
+#login a.blue {
+ width: 100%;
+ display: block;
+}
+
+#signup a.blue {
+ margin-bottom: 1.5em;
+}
+
+#signup button,
+#signup p.fineprint,
+#login span.forgot,
+#login button {
+ display: inline-block;
+ width: 50%;
+ margin-right: 0;
+}
+
+#signup p.fineprint {
+ padding-left: 1em;
+ margin: 0;
+ vertical-align: middle;
+}
+
+#login span.forgot {
+ text-align: center;
+ display: inline-block;
+}
+
+#login span a {
+ font-size: 1em;
+ color: #333;
+}
+
+#signup #login span a {
+ color: #5c8a2f;
 }
 
 #broadcast label {
  display: block;
-}
-
-#signup label {
- display: inline-block;
- vertical-align: middle;
- width: 6em;
 }
 
 input[type=radio] {
@@ -360,7 +532,15 @@ input[type=radio].first-option {
 }
 
 #signup .identity-selection {
- margin-top: 0.8em;
+ margin: 0.8em 0 1em;
+}
+
+#signup .identity-selection input {
+ margin-left: 0;
+}
+
+#signup .identity-selection label {
+ font-weight: normal;
 }
 
 #signup .fineprint {
@@ -385,7 +565,7 @@ div.new-gratitude div#gratitude-by-email p.small,
  padding-right: 0;
 }
 
-#signup button, #broadcast button, .login button.yes {
+#broadcast button, .login button.yes {
  min-width: 5em;
  margin-right: 1.2em;
  vertical-align: middle;
@@ -538,6 +718,11 @@ body.splash #symbol {
  font-size: 1.6em;
 }
 
+#splashbox p {
+ font-size: 1.2em;
+ margin-bottom: 0;
+}
+
 #splashbox #big-ass-signup-button {
  display: block;
  margin: 0.75em auto;
@@ -550,62 +735,17 @@ body.splash #symbol {
  padding: 0.5em;
 }
 
-#splashbox a:last-of-type {
- font-size: 1.2em;
-}
-
 #splashlogin {
  float: right;
- margin: 0 0.5em 0 2em;
+ margin: 0.6em 2em 0 2em;
 }
 
-#splashlogin label {
- display: inline-block;
- font-size: 1.1em;
- font-weight: bold;
- margin: 0 0.2em 0 0.4em;
+#splashlogin form {
+ display:none;
 }
 
-#splashlogin a {
- display: inline-block;
- margin-top: 0.2em;
- margin-left: 0.4em;
-}
-
-#splashlogin button.yes {
- margin-left: 0.5em;
- margin-top: 0;
- padding: 0;
- width: 4.5em;
- float: right;
-}
-
-#splashlogin input:focus {
- border: 1px solid #5be;
- box-shadow: 0 0 0.5em rgba(80,160,230,0.6) inset 0 1px 3px rgba(0,0,0,0.1);
-}
-
-#splashlogin input,
-#splashlogin button.yes {
- height:1.7em;
- padding: 0 0.4em;
-}
-
-#splashlogin input[type=text] {
- width: 15em;
-}
-
-#splashlogin input[value=] {
- background: red;
-}
-
-#splashlogin input[type=password] {
- width: 10em;
-}
-
-#splashlogin p {
- text-align: right;
- margin-top: -0.3em;
+#splashlogin > a {
+ font-size: 1.2em;
 }
 
 #splashbox > p {
@@ -648,13 +788,14 @@ body.splash #symbol {
   background: none;
  }
  body.splash #header-container {
-  height: 17em;
+  height: auto;
   background: url('hands.jpg') no-repeat;
   background-size: cover;
  }
  body.splash #header {
-  height: 17em;
+  height: auto;
   background-color: rgba(255, 255, 255, 0.7);
+  padding-bottom: 2em;
  }
  body.splash #symbol {
   width: 18em;
@@ -671,12 +812,31 @@ body.splash #symbol {
   position: relative;
   width: 20em;
  }
+ #splashlogin form {
+  display:block;
+ }
+ #splashlogin > a.yes {
+  display:none;
+ }
+ #splashlogin button.yes {
+  margin: 0 0 0 0.5em;
+  width: 4.5em;
+  float: right;
+ }
+ #splashlogin p {
+  text-align: right;
+  margin-top: -0.3em;
+ }
  #splashlogin input,
  #splashlogin button.yes {
   height:2.3em;
+  padding: 0 0.4em;
  }
  #splashlogin label {
-  margin-right: 0.5em;
+  display: inline-block;
+  font-size: 1.1em;
+  font-weight: bold;
+  margin: 0 0.5em 0 0.4em;
  }
  #splashlogin input[type=text] {
   width: 16em;
@@ -684,11 +844,34 @@ body.splash #symbol {
  #splashlogin input[type=password] {
   width: 13.9em;
  }
+ #splashlogin input[value=] {
+  background: red;
+ }
+ #splashlogin input:focus {
+  border: 1px solid #5be;
+  box-shadow: 0 0 0.5em rgba(80,160,230,0.6) inset 0 1px 3px rgba(0,0,0,0.1);
+ }
  #splashlogin button.yes {
   margin-top: 0.3em;
  }
- #splashlogin a {
+ #splashlogin form > a {
+  display: inline-block;
+  margin-left: 0.4em;
   margin-top: 0.9em;
+ }
+ #splashlogin div.center {
+  clear: both;
+  margin: 0.5em 0;
+  font-weight:bold;
+  font-size: 1.5em;
+ }
+ #splashlogin .social-signin a.blue {
+  width: 100%;
+  display: block;
+  text-align: center;
+  margin: 0;
+  font-size: 1.3em;
+  line-height: inherit;
  }
 }
 
@@ -1549,6 +1732,8 @@ menu#fine-print-links a {
  max-width: 60em;
 }
 
+#login label,
+#signup label,
 .blog.item label,
 .item.create-event label,
 .item.create-group label,
@@ -1613,6 +1798,8 @@ select.focus {
  border: 0.2em solid;
 }
 
+#signup input[type=text],
+#login input,
 .inventory-details select.identity,
 .inventory-details input[type=text],
 .matchmaker input[type=text],
@@ -2224,6 +2411,10 @@ button.card > img {
  font-size: 0.9em;
 }
 
+.large {
+ font-size: 1.2em;
+}
+
 .item.reverse {
  background: #87a767;
 }
@@ -2725,6 +2916,12 @@ div.card.inventory-item {
  color:#666;
 }
 
+.timestamp img {
+ height: 1.3em;
+ width: 1.3em;
+ vertical-align: -0.2em;
+}
+
 .item .timestamp a {
  font-weight: normal;
  color:#666;
@@ -3157,25 +3354,27 @@ div.settings-avatar {
  white-space: nowrap;
 }
 
-#edit-tags {
+#edit-inventory-details {
  max-width: 40em;
 }
 
-#edit-tags blockquote.review-text {
+#edit-inventory-details blockquote.review-text {
  margin: .5em 0 .5em 0;
 }
 
-#edit-tags p.small {
+#edit-inventory-details p.small {
  margin: 0 0 0.2em;
 }
 
-#edit-tags #publish-facebook {
+form #facebook {
  margin-top: 0.7em;
 }
 
-#edit-tags #publish-facebook img {
- vertical-align: sub;
- margin-right: 0.3em;
+form #facebook img {
+ vertical-align: middle;
+ margin: 0 0.3em;
+ height: 1.5em;
+ width: 1.5em;
 }
 
 div.item-group-privacy {
@@ -3192,13 +3391,22 @@ div.item-group-privacy span {
  display: table-cell;
 }
 
-div.tag {
+#enter-inventory-details div.category {
  margin: 0.5em 0;
  display: inline-block;
+ width: 11em;
 }
 
-div.tag {
- width: 11em;
+form #facebook label,
+#enter-inventory-details #categories label {
+ font-weight: normal;
+ display: inline;
+}
+
+form #facebook label,
+form #facebook input,
+#enter-inventory-details #categories input {
+ vertical-align: middle;
 }
 
 form.matchmaker {
@@ -3568,6 +3776,12 @@ div.settings #email-link {
  }
 }
 
+@media (max-width:40em) {
+ .settings-item .details.facebook {
+   display: table-cell;
+ }
+}
+
 .settings-item .address-input.content {
  max-width: 30em;
 }
@@ -3706,7 +3920,7 @@ div.setup p.help-text {
 
 div.settings p.help-text {
  margin-top: 0.4em;
- width: 100%
+ width: 100%;
  max-width: 55em;
 }
 
@@ -4321,12 +4535,16 @@ background-color: #f8f8f8;
  color:#333333;
 }
 
+div.or-divider hr,
 div.related.activity.items hr {
  display: block;
+ border: none;
+}
+
+div.related.activity.items hr {
+ height: 0.1em;
  color: #fafafa;
  background: #fafafa;
- height: 0.1em;
- border: none;
 }
 
 .tags a, .side-sug a {
