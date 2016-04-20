@@ -550,6 +550,8 @@
         (:link :rel "apple-touch-icon" :sizes "180x180" :href  "/media/icons/kindista_favicon_180.png")
         (:script :type "text/javascript" :src "/kindista.js")
         (:script :type "text/javascript" :src "/service-worker-registration.js")
+        ;; if serviceworker js, inline login subscription here
+
         ;(str "<!--[if lt IE 9]>")
         ;(:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
         ;(str "<![endif]-->")

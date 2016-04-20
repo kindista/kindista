@@ -2,8 +2,20 @@
   - test iphone webapp
   - !change api key when ready to push to live
   - change manifest file when ready to push to live
+  - check if account is active when sending notification
   - test messages for phones
+  - inline login subscription update
+  - remove facebook debugging blocks
+  - javascript error handeling to lisp server
+  - add sending push notification on comments
+  - catch when error not registered when sending to chrome
+    - decode-json-octets (first chrome-api-status))
+    (a list to plist => results)
+    delete registration id from user db
+  - add helper function add and remove registration id from user db
   - group message not being marked as read in message folder
+  # web app live server
+    - test push subscriptions on different computers
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
 ## accountability with user flaky-ness
