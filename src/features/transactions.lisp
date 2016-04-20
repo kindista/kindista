@@ -118,7 +118,6 @@
                  (eq (getf event :action) :received))
         do (progn (setf pending-gratitude-p t)
                   (loop-finish)))
-
   pending-gratitude-p)
 
 (defun sitewide-transaction-gratitude (&aux (completed 0) (pending 0))

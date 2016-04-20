@@ -1,6 +1,9 @@
 ## web apps
-  - iphone - https://developer.apple.com/library/ios/documentation/AppleApplications/Reference/SafariWebContent/ConfiguringWebApplications/ConfiguringWebApplications.html
-  - android
+  - test iphone webapp
+  - !change api key when ready to push to live
+  - change manifest file when ready to push to live
+  - test messages for phones
+  - group message not being marked as read in message folder
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
 ## accountability with user flaky-ness

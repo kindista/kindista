@@ -18,7 +18,7 @@
 (in-package :kindista)
 
 (defun new-comment-notice-handler ()
-  (send-comment-notification-email (getf (cddddr *notice*) :id)))
+  (send-comment-notification (getf (cddddr *notice*) :id)))
 
 (defun create-comment (&key on (by (list *userid*)) (send-email-p t) text (time (get-universal-time)))
   (let* ((id (insert-db (list :type :comment
@@ -55,10 +55,13 @@
       ;; for feedback
       (modify-db on :latest-comment id))
 
-    (when (and (or (eq on-type :conversation)
-                   (eq on-type :transaction))
-               send-email-p)
-      (notice :new-comment :time time :id id))
+    (when send-email-p
+      (case on-type
+        (:conversation (notice :new-comment :time time :id id))
+        (:transaction (notice :new-transaction-action
+                              :time time
+                              :transaction-id on-message
+                              :text text))))
     id))
 
 (defun delete-comment (id)
