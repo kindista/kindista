@@ -35,7 +35,8 @@
   ;; scheduler-loop to get hung on a waitqueue (maybe in (sleep)).
   ;(start-scheduler-thread)
   (start (acceptor-metric-system *acceptor*))
-  (start-notice-thread))
+  (start-notice-thread)
+  (setf *facebook-app-token* (get-facebook-app-token)))
 
 (defun load-notice-handlers ()
   (clrhash *notice-handlers*)
