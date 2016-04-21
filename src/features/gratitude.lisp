@@ -989,11 +989,16 @@
   (setf id (parse-integer id))
   (let* ((data (db id))
          (result (gethash id *db-results*))
-         (fb-user-friends-permission (multiple-value-list
-                                       (check-facebook-permission :user-friends
-                                                                  *userid*)))
+         (self-author-p (eql (getf data :author) *userid*))
+         (new-fb-authorization-p
+           (string= (get-parameter "state") "tag_friends"))
          (friend-tags-to-authorize (get-parameter-integer-list
                                      "authorize-fb-friend-tag"))
+         (fb-user-friends-permission
+           (when (or (and friend-tags-to-authorize self-author-p)
+                     new-fb-authorization-p)
+             (multiple-value-list (check-facebook-permission :user-friends
+                                                             *userid*))))
          (fb-friends-to-tag
            (or friend-tags-to-authorize
                (remove nil
@@ -1037,10 +1042,10 @@
                :selected (awhen (get-parameter-string "menu") it)))))
     (cond
       (friend-tags-to-authorize
-       (if (eql (getf data :author) *userid*)
+       (if self-author-p
          authorize-tagging
          (permission-denied)))
-      ((string= (get-parameter "state") "tag_friends")
+      (new-fb-authorization-p
        (if (first fb-user-friends-permission)
          (progn
 
@@ -1076,7 +1081,7 @@
                         (group-admin-p (getf it :author))
                         (getf *user* :admin))
                    (s+ "You can only edit your own statatements of gratitude."))
-       (cond
+       (acond
          ((post-parameter "delete")
           (confirm-delete :url (script-name*)
                           :type "gratitude"
@@ -1086,6 +1091,9 @@
           (delete-gratitude id)
           (flash "Your statement of gratitude has been deleted!")
           (see-other (or (post-parameter "next") "/home")))
+         ((post-parameter-integer-list "tag-fb-friend")
+          nil)
+
          ((post-parameter "edit")
           (see-other (strcat "/gratitude/" id "/edit")))))
       (not-found))))

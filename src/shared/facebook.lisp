@@ -26,10 +26,7 @@
 (defvar *fb-id* nil)
 
 (defmacro with-facebook-credentials (&body body)
-  `(let ((*facebook-app-token* (or *facebook-app-token*
-                                   (setf *facebook-app-token*
-                                         (get-facebook-app-token))))
-         (*fb-id* (getf *user* :fb-id))
+  `(let ((*fb-id* (getf *user* :fb-id))
          (*facebook-user-token* (getf *user* :fb-token))
          (*facebook-user-token-expiration* (getf *user* :fb-expires)))
      ,@body))
@@ -251,6 +248,50 @@
                                 (cons "method" "get"))))))
   (decode-json-octets (first response))
   )
+
+(defun active-facebook-user-p
+  (&optional (userid *userid*)
+             (user (if (eql userid *userid*) *user* (db userid))))
+  (and (getf user :fb-id) (getf user :fb-link-active) ))
+
+(defun get-taggable-fb-friends
+  (&optional (userid *userid*)
+             (user (if (eql userid *userid*) *user* (db userid)))
+   &aux (response))
+  "Not useful. Facebook only returns encoded friend-tag tokens, not friend ids. No way to cross check with Kindista IDs."
+  (when (active-facebook-user-p userid user)
+    (setf response
+          (multiple-value-list
+            (http-request
+              (strcat *fb-graph-url*
+                      "v2.6/"
+                      (getf user :fb-id)
+                      "/taggable_friends")
+              :parameters (list (cons "access_token" *facebook-app-token*)
+                                (cons "access_token" (getf user :fb-token))
+                                (cons "method" "get"))))))
+    (when (eql (second response) 200)
+      (decode-json-octets (first response))))
+
+(defun tag-facebook-friends
+  (k-item-id
+   fb-friends-to-tag
+   &optional (userid *userid*)
+   &aux (item (db k-item-id))
+        (user (if (eql userid *userid*) *user* (db userid)))
+        (response))
+  (when (active-facebook-user-p userid user)
+    (setf response
+          (multiple-value-list
+            (http-request
+              (strcat *fb-graph-url*
+                      "v2.5/"
+                      (getf item :fb-action-id))
+              :parameters (list (cons "access_token" (getf user :fb-token))
+                                (cons "tags"
+                                      (separate-with-commas fb-friends-to-tag)))
+              :method :post)))
+    (decode-json-octets (first response))))
 
 (defun get-facebook-location-data (fb-location-id fb-token)
   (alist-plist
@@ -495,24 +536,39 @@
 (defun tag-facebook-friends-html
   (&key gratitude-id
         fb-gratitude-subjects
-        (page-title "Tag your Facebook friends"))
+        (page-title "Tag your Facebook friends")
+   &aux (gratitude (when gratitude-id (db gratitude-id)))
+        (fb-g-subject-ids (mapcar #'cdr fb-gratitude-subjects)))
+  (awhen (set-difference (getf gratitude :subjects) fb-g-subject-ids)
+    (flash (s+ (name-list it :links nil :maximum-links 10)
+               " cannot be tagged. Either they have not linked their Facebook"
+               " accounts with Kindista or they have not given permission"
+               " for Kindista to see if you are friends on Facebook.")))
   (standard-page
     page-title
     (html
-      (:div :id "tag-fb-friends-auth"
-       (:h2 (str page-title))
+      (:div :id "tag-fb-friends"
+       (:h3 "You have published this Statement of Gratitude on your Facebook feed:")
+       (:blockquote
+         (str (gratitude-activity-item (gethash gratitude-id *db-results*)
+                                       :show-actions nil)))
+
        (:form :method "post" :action (strcat "gratitude/" gratitude-id)
          (:fieldset
+           (:legend (str page-title))
            (dolist (pair fb-gratitude-subjects)
-           (htm
-             (:div :class "g-recipient"
-              (:input :type "checkbox"
-                      :name "tag-friend"
-                      :value (cdr pair)
-                      :id (cdr pair)
-                      :checked "")
-              (:label :for (cdr pair) (str (car pair)))))))
+             (htm
+               (:div :class "friend-to-tag"
+                  (:div :class "g-recipient item"
+                    (:input :type "checkbox"
+                            :name "tag-fb-friend"
+                            :value (cdr pair)
+                            :id (cdr pair)
+                            :checked "")
+                    (:label :for (cdr pair)
+                     (:img :src (get-avatar-thumbnail (cdr pair) 70 70))
+                     (str (car pair))))))))
          (:p (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
              (:button :class "yes" :type "submit" :class "submit" :name "tag-friends" "Tag Friends")))))
-    :selected "people"
-    ))
+    
+    :selected "people"))

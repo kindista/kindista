@@ -615,7 +615,7 @@
              :class (s+ class (when hide-menu " hide-menu"))
              :extra-head extra-head))
 
-(defun standard-page (title body &key selected top right search search-scope class extra-head)
+(defun standard-page (title body &key selected top right search search-scope class id extra-head)
   (declare (optimize (speed 3) (debug 0) (safety 0)))
   (header-page title
                (html
@@ -722,6 +722,7 @@
                    (:a :class "dark" :href "#top"
                        "Back to the top")))
                :extra-head extra-head
+               :id id
                :class (cond
                         ((and right class) (s+ "right " class))
                         (right "right")
