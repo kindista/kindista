@@ -338,6 +338,7 @@
                                        (json:encode-json-to-string
                                          (list (cons "value" "SELF")))))))))
 
+  (facebook-dbugging-log reply (alist-plist (decode-json-octets (first reply))))
   (when (= (second reply) 200)
     (let ((data (alist-plist (decode-json-octets (first reply)))))
       (facebook-debugging-log data)
@@ -354,6 +355,7 @@
                                  (cons "id" (s+ "https://kindista.org" (resource-url k-id item)))
                                  )))))
 
+  (facebook-dbugging-log reply (alist-plist (decode-json-octets (first reply))))
   (when (= (second reply) 200)
     ;; data and object are usefull for debugging
     (let* ((data (alist-plist (decode-json-octets (first reply))))
