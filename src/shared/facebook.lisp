@@ -341,7 +341,7 @@
   (facebook-debugging-log reply (alist-plist (decode-json-octets (first reply))))
   (when (= (second reply) 200)
     (let ((data (alist-plist (decode-json-octets (first reply)))))
-      (parse-integer (getf data :id)))))
+      (awhen (getf data :id) (safe-parse-integer it)))))
 
 (defun get-facebook-object-id
   (k-id
@@ -359,7 +359,7 @@
     ;; data and object are usefull for debugging
     (let* ((data (alist-plist (decode-json-octets (first reply))))
            (object (alist-plist (getf data :og--object))))
-      (parse-integer (getf object :id)))))
+      (when object (safe-parse-integer (getf object :id))))))
 
 (defun get-user-facebook-objects-of-type
   (typestring
