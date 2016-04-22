@@ -35,16 +35,21 @@
       (let* ((admin (db admin-id))
              (email (car (getf admin :emails)))
              (unsubscribe-key (getf admin :unsubscribe-key)))
-        (push (list :id admin-id) push-recipients)
-        (send-push-through-chrome-api push-recipients
-                                          :message-title (s+ "Request to join " group-name)
-                                          :message-body (s+ requestor-name
-                                                 " is requesting to join your group, "
-                                                 group-name)
-                                          :message-tag "group-request-tag"
-                                          :message-url reply-url
-                                          ;:message-type :group-request
-                                          )
+        (when (getf admin-id :active)
+          (push (list :id admin-id) push-recipients)
+          (send-push-through-chrome-api push-recipients
+                                        :message-title (s+ "Request to join "
+                                                           group-name)
+                                        :message-body (s+ requestor-name
+                                                          " is requesting to join your group, "
+                                                          group-name)
+                                        :message-tag "group-request-tag"
+                                        :message-url (strcat +base-url+
+                                                             "groups/"
+                                                             (username-or-id group-id)
+                                                             "/members")
+                                        ;:message-type :group-request
+                                        ))
         (cl-smtp:send-email +mail-server+
                           "Kindista <noreply@kindista.org>"
                           email

@@ -96,6 +96,7 @@ function subscribe() {
         isPushEnabled = true;
         pushButton.textContent = 'Disable Push Messages';
         pushButton.disabled = false;
+        var errSubID = subscription;
         sendSubActionToServer(subscription,"subscribe");
       })
         .catch(function(err) {

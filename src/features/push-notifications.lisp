@@ -17,6 +17,7 @@
 
 (in-package :kindista)
 
+
 (defun post-push-notification-subscription
  (&aux
     (json (alist-plist (json:decode-json-from-string
@@ -104,14 +105,15 @@
                       :external-format-in :utf-8
                       :content registration-json)))
 
-    (facebook-debugging-log chrome-api-status
-                            (decode-json-octets (first chrome-api-status)))
 
-    (when (= (second chrome-api-status) 200)
-      (dolist (registration registration-ids)
-        (with-locked-hash-table (*push-subscription-message-index*)
-          (push message
-            (gethash registration *push-subscription-message-index*)))))))
+    (do ((results (getf (alist-plist (decode-json-octets (first chrome-api-status)))
+               :results) (rest results))
+         (reg-ids registration-ids (rest reg-ids)))
+         ((null results) 'done)
+           (unless (eql (car (first (first results))) :error)
+             (with-locked-hash-table (*push-subscription-message-index*)
+               (push message
+                 (gethash (first reg-ids) *push-subscription-message-index*)))))))
 
 (defun send-unread-notifications
   (&aux

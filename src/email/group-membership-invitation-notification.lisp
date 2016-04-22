@@ -30,14 +30,17 @@
          (email (car (getf recipient :emails)))
          (unsubscribe-key (getf recipient :unsubscribe-key)))
 
-     (when (getf recipient :notify-group-membership-invites)
+     (when (and (getf recipient :notify-group-membership-invites)
+                (getf recipient :active))
        (send-push-through-chrome-api push-recipients
                                      :message-title "Invitation to kindista group"
                                      :message-body (s+ host-name
                                                   " has invited you to join, "
                                                     group-name)
                                      :message-tag "group-invite-tag"
-                                     :message-url group-url
+                                     :message-url (strcat +base-url+
+                                                         "groups/"
+                                                         (username-or-id group-id))
                                      ;:message-type :group-invite
                                      )
        (cl-smtp:send-email +mail-server+

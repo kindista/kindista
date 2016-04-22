@@ -59,7 +59,8 @@
         (recipients (remove nil
                             (if other-party-is-group-p
                               (getf other-party :notify-message)
-                              (when (getf other-party :notify-message)
+                              (when (and (getf other-party :notify-message)
+                                         (getf other-party :active))
                                 (list other-party-id))))))
     (labels ((gift-text (&key html-p)
                (gift-given-notification-text (aif group-actor
@@ -114,7 +115,9 @@
                                         :message-body on-title
                                         :message-tag "transaction-tag"
                                         ;:message-type on-type
-                                        :message-url transaction-url)
+                                        :message-url (strcat +base-url+
+                                                             "transactions/"
+                                                             transaction-id))
           (when (or *productionp*
                     (getf recipient :test-user))
             (cl-smtp:send-email

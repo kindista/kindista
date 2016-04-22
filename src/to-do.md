@@ -2,12 +2,11 @@
   - test iphone webapp
   - !change api key when ready to push to live
   - change manifest file when ready to push to live
-  - check if account is active when sending notification
+  - comment notification active person help
   - test messages for phones
   - inline login subscription update
   - remove facebook debugging blocks
   - javascript error handeling to lisp server
-  - add sending push notification on comments
   - catch when error not registered when sending to chrome
     - decode-json-octets (first chrome-api-status))
     (a list to plist => results)

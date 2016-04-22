@@ -74,6 +74,14 @@
          (all-recipients (append valid-recipient-people
                                  valid-recipient-group-admins))
          )
+    (send-push-through-chrome-api all-recipients
+                                  :message-title subject
+                                  :message-body "click here to view conversation"
+                                  :message-tag "comment_tag"
+                                  :message-url (strcat +base-url+
+                                                       "conversations/"
+                                                       on-id)
+                                  )
     (dolist (recipient all-recipients)
       (let* ((groupid (cdar recipient))
              (person (cdr recipient))
