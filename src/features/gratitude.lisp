@@ -995,8 +995,9 @@
          (friend-tags-to-authorize (get-parameter-integer-list
                                      "authorize-fb-friend-tag"))
          (fb-user-friends-permission
-           (when (or (and friend-tags-to-authorize self-author-p)
-                     new-fb-authorization-p)
+           (when (and *user*
+                      (or (and friend-tags-to-authorize self-author-p)
+                          new-fb-authorization-p))
              (multiple-value-list (check-facebook-permission :user-friends
                                                              *userid*))))
          (fb-friends-to-tag
@@ -1041,6 +1042,8 @@
                                       (get-image-thumbnail it 1200 1200)))
                :selected (awhen (get-parameter-string "menu") it)))))
     (cond
+      ((and data (not *user*))
+       gratitude-page)
       (friend-tags-to-authorize
        (if self-author-p
          authorize-tagging
@@ -1060,7 +1063,7 @@
                                                                id))
                                             fb-friends-to-tag)))
          authorize-tagging))
-      ((and *user* data)
+      (data
        (let* ((message (gethash id *db-messages*))
               (mailboxes (when message
                            (loop for person in (message-people message)
@@ -1070,18 +1073,20 @@
          (when (member (list *userid*) mailboxes :test #'equal)
            (update-folder-data message :read))
          gratitude-page))
-      (data gratitude-page)
       (t (not-found)))))
 
-(defun post-gratitude (id)
-  (require-active-user
+(defun post-gratitude
+  (id
+   &aux (url (strcat "/gratitude/" id))
+        (friends-to-tag (post-parameter-integer-list "tag-fb-friend")))
+  (require-user (:require-active-user t :allow-test-user t)
     (setf id (parse-integer id))
     (aif (db id)
      (require-test ((or (eql *userid* (getf it :author))
                         (group-admin-p (getf it :author))
                         (getf *user* :admin))
                    (s+ "You can only edit your own statatements of gratitude."))
-       (acond
+       (cond
          ((post-parameter "delete")
           (confirm-delete :url (script-name*)
                           :type "gratitude"
@@ -1091,11 +1096,11 @@
           (delete-gratitude id)
           (flash "Your statement of gratitude has been deleted!")
           (see-other (or (post-parameter "next") "/home")))
-         ((post-parameter-integer-list "tag-fb-friend")
-          nil)
-
+         (friends-to-tag
+          (tag-facebook-friends id friends-to-tag)
+          (see-other url))
          ((post-parameter "edit")
-          (see-other (strcat "/gratitude/" id "/edit")))))
+          (see-other (s+ url "/edit")))))
       (not-found))))
 
 (defun get-gratitude-edit (id)

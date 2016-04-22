@@ -1,4 +1,3 @@
-
 https://developers.facebook.com/tools/debug/sharing
 
 https://developers.facebook.com/docs/facebook-login/permissions/v2.3
@@ -30,8 +29,6 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 [ ] add :submitted-to-fb field
 [ ] do the submitting in a separate request from a (notice)
 [ ] give a link to share on fb if it's been longer than 60s and we still haven't heard back from  fb
-[ ] create facebook story w/ new inventory items
-    - get caption to display correctly
 [ ] in the inventory item, indicate whether the item has been posted to FB
 [ ] when editing item (enter-inventory-item-details)  make sure :publish-facebook defaults to whether it's already been posted to FB
 [ ] edit facebook story when editing inventory item
