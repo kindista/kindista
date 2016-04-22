@@ -261,6 +261,45 @@
              (user (if (eql userid *userid*) *user* (db userid))))
   (and (getf user :fb-id) (getf user :fb-link-active) ))
 
+(defun get-taggable-fb-friends
+  (&optional (userid *userid*)
+             (user (if (eql userid *userid*) *user* (db userid)))
+   &aux (response))
+  "Not useful. Facebook only returns encoded friend-tag tokens, not friend ids. No way to cross check with Kindista IDs."
+  (when (active-facebook-user-p userid user)
+    (setf response
+          (multiple-value-list
+            (http-request
+              (strcat *fb-graph-url*
+                      "v2.6/"
+                      (getf user :fb-id)
+                      "/taggable_friends")
+              :parameters (list (cons "access_token" *facebook-app-token*)
+                                (cons "access_token" (getf user :fb-token))
+                                (cons "method" "get"))))))
+    (when (eql (second response) 200)
+      (decode-json-octets (first response))))
+
+(defun tag-facebook-friends
+  (k-item-id
+   fb-friends-to-tag
+   &optional (userid *userid*)
+   &aux (item (db k-item-id))
+        (user (if (eql userid *userid*) *user* (db userid)))
+        (response))
+  (when (active-facebook-user-p userid user)
+    (setf response
+          (multiple-value-list
+            (http-request
+              (strcat *fb-graph-url*
+                      "v2.5/"
+                      (getf item :fb-action-id))
+              :parameters (list (cons "access_token" (getf user :fb-token))
+                                (cons "tags"
+                                      (separate-with-commas fb-friends-to-tag)))
+              :method :post)))
+    (decode-json-octets (first response))))
+
 (defun get-facebook-location-data (fb-location-id fb-token)
   (alist-plist
     (cdr
@@ -569,4 +608,3 @@
       nil)
     (progn (setf (return-code*) +http-forbidden+)
            nil)))
-
