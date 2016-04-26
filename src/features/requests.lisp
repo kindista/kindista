@@ -67,15 +67,12 @@
                      *userid*))
          (self (eql userid by))
          (group-admin-p (group-admin-p by *userid*))
-         (fb-action-id (when (string= (referer)
-                                          "https://www.facebook.com")
-                             (get-parameter-integer "post_id")))
+         ;; now using publish-facebook-action to get action-id
+        ;(fb-action-id (when (string= (referer)
+        ;                             "https://www.facebook.com/")
+        ;                (get-parameter-integer "post_id")))
          (matchmaker-admin (matchmaker-admin-p))
          (result (gethash id *db-results*)))
-
-    (when (and fb-action-id
-               (not (eql (getf request :fb-action-id) fb-action-id)))
-      (modify-db id :fb-action-id fb-action-id))
 
     (cond
      ((or (not request)

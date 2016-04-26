@@ -25,6 +25,23 @@
 (defvar *facebook-user-token-expiration* nil)
 (defvar *fb-id* nil)
 
+(defun reassign-fb-action-ids ()
+  "Utility function. Should only be run once."
+  (dolist (userid '(1 33383 33385))
+    (dolist (result (gethash userid *profile-activity-index*))
+      (let* ((item-id (result-id result))
+             (data (db item-id)))
+        (awhen (getf data :fb-action-id)
+          (modify-db item-id
+                     :fb-action-id nil
+                     :fb-actions (list
+                                   (list
+                                     :userid userid
+                                     :fb-action-type (case (getf data :type)
+                                                       (:gratitude "express")
+                                                       (t "post"))
+                                     :fb-action-id it))))))))
+
 (defun get-facebook-app-token ()
     (string-left-trim "access_token="
       (http-request
@@ -293,7 +310,9 @@
             (http-request
               (strcat *fb-graph-url*
                       "v2.5/"
-                      (getf item :fb-action-id))
+                      (first (fb-object-actions-by-user k-item-id
+                                                        :data item
+                                                        :userid userid)))
               :parameters (list (cons "access_token" (getf user :fb-token))
                                 (cons "tags"
                                       (separate-with-commas fb-friends-to-tag)))
@@ -317,34 +336,48 @@
   (&aux (data (notice-data))
         (userid (getf data :userid))
         (item-id (getf data :item-id))
+        (item (db item-id))
+        (action-type (case (getf item :type)
+                       (:gratitude "express")
+                       (t "post")))
         (fb-action-id)
         (fb-object-id))
 
   ;; userid is included w/ new publish request but not scraping new data
   (when userid
     (setf fb-action-id
-          (publish-facebook-action item-id userid))
+          (publish-facebook-action item-id
+                                   :userid userid
+                                   :item item
+                                   :action-type action-type))
     (setf fb-object-id (get-facebook-object-id item-id)))
   (cond
+    ((getf data :object-modified)
+      (scrape-facebook-item (getf data :fb-object-id)))
     (userid
       ;; update kindista DB with new facebook object/action ids
       (http-request
         (s+ +base-url+ "publish-facebook")
         :parameters (list (cons "item-id" (strcat item-id))
                           (cons "fb-action-id" (strcat fb-action-id))
-                          (cons "fb-object-id" (strcat fb-object-id)))
-        :method :post))
-    ((getf data :object-modified)
-      (scrape-facebook-item (getf data :fb-object-id)))))
+                          (cons "fb-action-type" action-type)
+                          (cons "fb-object-id" (strcat fb-object-id))
+                          (cons "userid" (strcat userid)))
+        :method :post))))
 
 (defun post-new-facebook-data
   (&aux (item-id (post-parameter-integer "item-id"))
         (fb-action-id (post-parameter-integer "fb-action-id"))
-        (fb-object-id (post-parameter-integer "fb-object-id")))
+        (fb-object-id (post-parameter-integer "fb-object-id"))
+        (userid (post-parameter-integer "userid"))
+        (fb-action-type (post-parameter-string "fb-action-type")))
   (if (server-side-request-p)
     (progn
-      (modify-db item-id :fb-action-id fb-action-id
-                         :fb-object-id fb-object-id)
+      (amodify-db item-id :fb-object-id fb-object-id
+                          :fb-actions (cons (list :userid userid
+                                                  :fb-action-type fb-action-type
+                                                  :fb-action-id fb-action-id)
+                                            it))
       (setf (return-code*) +http-no-content+)
       nil)
     (progn
@@ -353,12 +386,12 @@
 
 (defun publish-facebook-action
   (id
-   &optional (userid *userid*)
-   &aux (item (db id))
+   &key (item (db id))
         (action-type (case (getf item :type)
                        (:gratitude "express")
                        (t "post")))
-        (object-type (string-downcase (symbol-name (getf item :type))))
+        (userid *userid*)
+   &aux (object-type (string-downcase (symbol-name (getf item :type))))
         (user (db userid))
         (reply
           (multiple-value-list
@@ -419,6 +452,16 @@
   (when (= (second reply) 200)
     (decode-json-octets (first reply))))
 
+(defun fb-object-actions-by-user
+  (k-item-id
+   &key (data (db k-item-id))
+        (userid *userid*)
+   &aux (actions))
+  (when userid
+    (dolist (action (getf data :fb-actions))
+      (when (eql (getf action :userid) userid)
+        (push (getf action :fb-action-id) actions))))
+  actions)
 
 (defun update-facebook-object
   (k-id
@@ -457,6 +500,25 @@
   "Works the same as (update-facebook-object)"
   (when (= (second reply) 200)
     (decode-json-octets (first reply))))
+
+(defun get-facebook-action
+  (k-id
+   &optional (k-userid *userid*)
+   &aux (k-item (db k-id))
+        (action-id (cdr (assoc k-userid (getf k-item :fb-actions))))
+        (user (db k-userid))
+        (reply (multiple-value-list
+                 (with-facebook-credentials
+                   (http-request
+                     (strcat "https://graph.facebook.com/" action-id)
+                     :parameters (list (cons "access_token"
+                                             *facebook-app-token*)
+                                       (cons "access_token"
+                                             (getf user :fb-token))
+                                       '("method" . "GET")))))))
+ (values
+   (decode-json-octets (first reply))
+   (second reply)))
 
 (defun delete-facebook-action
   (facebook-action-id
@@ -506,7 +568,9 @@
             (http-request
               (strcat *fb-graph-url*
                       "v2.5/"
-                      (getf item :fb-action-id))
+                      (first (fb-object-actions-by-user k-item-id
+                                                        :data item
+                                                        :userid userid)))
               :parameters (list (cons "access_token" (getf user :fb-token))
                                 (cons "tags"
                                       (separate-with-commas fb-friends-to-tag)))

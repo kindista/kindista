@@ -51,16 +51,13 @@
          (by (getf offer :by))
          (self (eql *userid* by))
          (result (gethash id *db-results*))
-         (fb-action-id (when (string= (referer)
-                                      "https://www.facebook.com/")
-                         (get-parameter-integer "post_id")))
+         ;; now using publish-facebook-action to get action-id
+        ;(fb-action-id (when (string= (referer)
+        ;                             "https://www.facebook.com/")
+        ;                (get-parameter-integer "post_id")))
          (action-type (get-parameter-string "action-type"))
          (group-admin-p (group-admin-p by *userid*))
          (matching-requests (gethash id *offers-with-matching-requests-index*)))
-
-    (when (and fb-action-id
-               (not (eql (getf offer :fb-action-id) fb-action-id)))
-      (modify-db id :fb-action-id fb-action-id))
 
     (cond
       ((or (not offer)

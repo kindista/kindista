@@ -159,7 +159,7 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
-         (fb-action-id (getf data :fb-action-id))
+         (fb-action-id (first (fb-object-actions-by-user id :data data)))
          (by (getf data :by))
          (now (get-universal-time)))
 
@@ -246,7 +246,7 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
-         (fb-action-id (getf data :fb-action-id))
+         (fb-actions (getf data :fb-actions))
          (now (get-universal-time))
          (by-id (getf data :by))
          (by-group-p (eq (db by-id :type) :group))
@@ -329,12 +329,13 @@
         (with-mutex (*recent-activity-mutex*)
           (asetf *recent-activity-index* (remove id it :key #'result-id)))))
 
-    (when fb-action-id
-      (delete-facebook-action fb-action-id))
+    (when fb-actions
+      (dolist (action fb-actions)
+        (delete-facebook-action (getf action :fb-action-id))))
 
     (modify-db id :active nil
-                  :deleted-fb-action-id fb-action-id
-                  :fb-action-id nil
+                  :deleted-fb-actions fb-actions
+                  :fb-actions nil
                   :deactivated now
                   :violates-terms violates-terms)))
 
