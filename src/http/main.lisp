@@ -576,14 +576,24 @@
         (:meta :name "HandheldFriendly" :content "True")
         (:meta :property "og:site_name" :content "Kindista Generosity Network")
         (:meta :property "og:locale" :content "en_US")
+        (:meta :name "apple-mobile-web-app-capable" :content "yes") ;hide safari user interface
         ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
         (:link :rel "stylesheet" :href "/media/style.css")
         (:link :href "//fonts.googleapis.com/css?family=Varela+Round"
                :rel "stylesheet"
                :type "text/css")
-        (:link :rel "manifest" :href "/manifest.json") ;link for phone integration
+        (:link :rel "manifest" :href "/manifest.json") ;link for android integration
+        (:link :rel "apple-touch-icon" :sizes "76x76" :href "/media/icons/kindista_favicon_76.png")
+        (:link :rel "apple-touch-icon" :sizes "120x120" :href "/media/icons/kindista_favicon_120.png")
+        (:link :rel "apple-touch-icon" :sizes "152x152" :href "/media/icons/kindista_favicon_152.png")
+        (:link :rel "apple-touch-icon" :sizes "180x180" :href  "/media/icons/kindista_favicon_180.png")
         (:script :type "text/javascript" :src "/kindista.js")
         (:script :type "text/javascript" :src "/service-worker-registration.js")
+        (when (and *userid* (string= (referer) (s+ +base-url+ "login")))
+          (htm (:script :type "text/javascript"
+                        :src "/update-push-registration.js")))
+        ;; if serviceworker js, inline login subscription here
+
         ;(str "<!--[if lt IE 9]>")
         ;(:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
         ;(str "<![endif]-->")
@@ -696,7 +706,7 @@
                              (:td
                                (:a :class (when (eq selected :settings) "selected") :href "/settings" "Settings")
                                " &middot; "
-                               (:a :href "/logout" "Log&nbsp;out"))))))
+                               (:a :href "/logout" :id "logout" "Log&nbsp;out"))))))
                      (str (login-box nil)))
 
                    (when *user*
