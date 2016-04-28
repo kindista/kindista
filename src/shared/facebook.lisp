@@ -36,7 +36,7 @@
                      :fb-action-id nil
                      :fb-actions (list
                                    (list
-                                     :userid userid
+                                     :fb-id (db userid :fb-id)
                                      :fb-action-type (case (getf data :type)
                                                        (:gratitude "express")
                                                        (t "post"))
@@ -189,6 +189,9 @@
 (defun get-facebook-user-id (fb-token)
   (safe-parse-integer (getf (get-facebook-user-data fb-token) :id)))
 
+(defun fb-k-id (fb-id)
+  (gethash fb-id *facebook-id-index*))
+
 (defun get-facebook-profile-picture
   (k-user-id
    &aux (user (db k-user-id))
@@ -310,9 +313,11 @@
             (http-request
               (strcat *fb-graph-url*
                       "v2.5/"
-                      (first (fb-object-actions-by-user k-item-id
-                                                        :data item
-                                                        :userid userid)))
+                      (first (fb-object-actions-by-user
+                               k-item-id
+                               :data item
+                               :userid userid
+                               :fb-id (getf user :fb-id))))
               :parameters (list (cons "access_token" (getf user :fb-token))
                                 (cons "tags"
                                       (separate-with-commas fb-friends-to-tag)))
@@ -362,19 +367,19 @@
                           (cons "fb-action-id" (strcat fb-action-id))
                           (cons "fb-action-type" action-type)
                           (cons "fb-object-id" (strcat fb-object-id))
-                          (cons "userid" (strcat userid)))
+                          (cons "fb-id" (strcat (db userid :fb-id))))
         :method :post))))
 
 (defun post-new-facebook-data
   (&aux (item-id (post-parameter-integer "item-id"))
         (fb-action-id (post-parameter-integer "fb-action-id"))
         (fb-object-id (post-parameter-integer "fb-object-id"))
-        (userid (post-parameter-integer "userid"))
+        (fb-id (post-parameter-integer "fb-id"))
         (fb-action-type (post-parameter-string "fb-action-type")))
   (if (server-side-request-p)
     (progn
       (amodify-db item-id :fb-object-id fb-object-id
-                          :fb-actions (cons (list :userid userid
+                          :fb-actions (cons (list :fb-id fb-id
                                                   :fb-action-type fb-action-type
                                                   :fb-action-id fb-action-id)
                                             it))
@@ -456,10 +461,11 @@
   (k-item-id
    &key (data (db k-item-id))
         (userid *userid*)
+        (fb-id (getf *userid* :fb-id))
    &aux (actions))
   (when userid
     (dolist (action (getf data :fb-actions))
-      (when (eql (getf action :userid) userid)
+      (when (eql (getf action :fb-id) fb-id)
         (push (getf action :fb-action-id) actions))))
   actions)
 
@@ -504,9 +510,10 @@
 (defun get-facebook-action
   (k-id
    &optional (k-userid *userid*)
+             (user (or *user* (db k-userid)))
    &aux (k-item (db k-id))
-        (action-id (cdr (assoc k-userid (getf k-item :fb-actions))))
-        (user (db k-userid))
+        (action-id (cdr (assoc (getf user :fb-id)
+                               (getf k-item :fb-actions))))
         (reply (multiple-value-list
                  (with-facebook-credentials
                    (http-request
@@ -568,9 +575,11 @@
             (http-request
               (strcat *fb-graph-url*
                       "v2.5/"
-                      (first (fb-object-actions-by-user k-item-id
-                                                        :data item
-                                                        :userid userid)))
+                      (first (fb-object-actions-by-user
+                               k-item-id
+                               :data item
+                               :userid userid
+                               :fb-id (getf user :fb-id))))
               :parameters (list (cons "access_token" (getf user :fb-token))
                                 (cons "tags"
                                       (separate-with-commas fb-friends-to-tag)))
