@@ -20,7 +20,7 @@
 (defun new-transaction-action-notice-handler ()
   (let* ((log-event (getf (cddddr *notice*) :log-event))
          (text (getf (cddddr *notice*) :text)))
-    (send-transaction-action-notification-email (getf (cddddr *notice*)
+    (send-transaction-action-notifications (getf (cddddr *notice*)
                                                       :transaction-id)
                                                 log-event
                                                 text)))

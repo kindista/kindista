@@ -17,7 +17,7 @@
 
 (in-package :kindista)
 
-(defun send-transaction-action-notification-email
+(defun send-transaction-action-notifications
   (transaction-id
    log-event
    &optional message
@@ -110,7 +110,7 @@
                (email (car (getf recipient :emails)))
                (unsub-key (getf recipient :unsubscribe-key)))
 
-          (send-push-through-chrome-api (list (list :id recipient-id))
+          (send-push-through-chrome-api (list recipient-id)
                                         :message-title (s+ "New message about " push-message-author-and-type)
                                         :message-body on-title
                                         :message-tag "transaction-tag"

@@ -22,7 +22,9 @@
          (from (getf gratitude :author))
          (author-name (db from :name))
          (url (strcat *email-url* "gratitude/" gratitude-id))
-         (recipients))
+         (recipients)
+         (push-recipients)
+         )
 
     (dolist (subject (getf gratitude :subjects))
       (let* ((data (db subject))
@@ -33,7 +35,8 @@
             (push (list :id subject
                         :email (car (getf data :emails))
                         :unsubscribe-key (getf data :unsubscribe-key))
-                recipients))
+                recipients)
+            (push subject push-recipients))
           (dolist (admin (getf data :notify-gratitude))
             (let ((person (db admin)))
               (when (getf person :active)
@@ -43,7 +46,7 @@
                             :unsubscribe-key (getf person :unsubscribe-key)
                             :id admin)
                     recipients)))))))
-    (send-push-through-chrome-api recipients
+    (send-push-through-chrome-api push-recipients
                                   :message-title "Statement of Gratitude"
                                   :message-body (s+ author-name
                                                     " shared gratitude for you")

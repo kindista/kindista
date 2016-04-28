@@ -111,7 +111,6 @@
        (asetf (gethash userid *user-tokens-index*)
               (push (cons (cookie-in "token") *token*) it)))
      (notice :login)
-      ;; set serviceworker js global var to be true
      (see-other (if (not (db userid :active))
                   "/settings#reactivate"
                   (or next "/home"))))

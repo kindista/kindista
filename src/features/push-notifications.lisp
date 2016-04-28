@@ -17,6 +17,18 @@
 
 (in-package :kindista)
 
+(defun remove-push-registration
+  (user-id
+   sub-type
+   registration-id)
+   (let*
+     ((subscriptions (copy-list
+                       (db user-id :push-notification-subscriptions))))
+
+     (setf (getf subscriptions sub-type) nil)
+       (with-locked-hash-table (*push-subscription-message-index*)
+         (remhash registration-id *push-subscription-message-index*))
+     (modify-db *userid* :push-notification-subscriptions subscriptions)))
 
 (defun post-push-notification-subscription
  (&aux
@@ -85,7 +97,7 @@
   ;get registration id's for each recipient
   ;if they are subscribed
   (dolist (recipient recipients)
-    (setf subscriptions (db (getf recipient :id) :push-notification-subscriptions))
+    (setf subscriptions (db recipient :push-notification-subscriptions))
     ;push both desktop and mobile registration-ids
     (awhen (getf subscriptions :chrome)
       (push it registration-ids))

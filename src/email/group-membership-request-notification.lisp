@@ -36,7 +36,7 @@
              (email (car (getf admin :emails)))
              (unsubscribe-key (getf admin :unsubscribe-key)))
         (when (getf admin-id :active)
-          (push (list :id admin-id) push-recipients)
+          (push admin-id push-recipients)
           (send-push-through-chrome-api push-recipients
                                         :message-title (s+ "Request to join "
                                                            group-name)

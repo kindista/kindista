@@ -4,14 +4,7 @@
   - change manifest file when ready to push to live
   - comment notification active person help
   - test messages for phones
-  - inline login subscription update
-  - remove facebook debugging blocks
-  - javascript error handeling to lisp server
-  - catch when error not registered when sending to chrome
-    - decode-json-octets (first chrome-api-status))
-    (a list to plist => results)
-    delete registration id from user db
-  - add helper function add and remove registration id from user db
+  - javascript error handeling to lisp server?
   - group message not being marked as read in message folder
   # web app live server
     - test push subscriptions on different computers
