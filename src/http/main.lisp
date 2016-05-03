@@ -24,6 +24,7 @@
 (setf hunchentoot:*show-lisp-backtraces-p* t)
 (setf hunchentoot:*show-lisp-errors-p* t)
 
+(defvar *client-errors-log-lock* (make-mutex :name "client errors log"))
 (defvar *flashes* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 
 (defvar *base-url* "/")
@@ -51,6 +52,17 @@
                                   :url (getf data :url)
                                   :data (getf data :data)
                                   :userid (getf data :userid))))
+(defun client-side-error-logger
+  (&aux
+   (errorJSON (decode-json-octets (raw-post-data :force-text t))))
+  (pprint "calling logger")
+  (terpri)
+  (require-user ()
+    (with-mutex (*client-errors-log-lock*)
+      (with-open-file (s (s+ +db-path+ "client-side-errors") :direction :output
+                                                             :if-exists :append)
+        (let ((*print-readably* nil))
+          (format s "~{~S~%~}" errorJSON))))))
 
 (defun not-found ()
   (flash "The page you requested could not be found." :error t)
