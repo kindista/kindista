@@ -20,7 +20,7 @@
 (defun new-transaction-action-notice-handler ()
   (let* ((log-event (getf (cddddr *notice*) :log-event))
          (text (getf (cddddr *notice*) :text)))
-    (send-transaction-action-notification-email (getf (cddddr *notice*)
+    (send-transaction-action-notifications (getf (cddddr *notice*)
                                                       :transaction-id)
                                                 log-event
                                                 text)))
@@ -118,7 +118,6 @@
                  (eq (getf event :action) :received))
         do (progn (setf pending-gratitude-p t)
                   (loop-finish)))
-
   pending-gratitude-p)
 
 (defun sitewide-transaction-gratitude (&aux (completed 0) (pending 0))

@@ -1,6 +1,7 @@
 {
   "short_name": "Kindista",
   "name": "Kindista Social Generosity Network",
+  "gcm_sender_id": "405786015583",
   "icons": [
     {
       "src": "media/icons/kindista_favicon_144.png",

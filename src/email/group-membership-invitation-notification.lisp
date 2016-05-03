@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -29,7 +29,19 @@
          (email (car (getf recipient :emails)))
          (unsubscribe-key (getf recipient :unsubscribe-key)))
 
-     (when (getf recipient :notify-group-membership-invites)
+     (when (and (getf recipient :notify-group-membership-invites)
+                (getf recipient :active))
+       (send-push-through-chrome-api (list recipient-id)
+                                     :message-title "Invitation to kindista group"
+                                     :message-body (s+ host-name
+                                                  " has invited you to join, "
+                                                    group-name)
+                                     :message-tag "group-invite-tag"
+                                     :message-url (strcat +base-url+
+                                                         "groups/"
+                                                         (username-or-id group-id))
+                                     ;:message-type :group-invite
+                                     )
        (cl-smtp:send-email +mail-server+
                            "Kindista <noreply@kindista.org>"
                            email

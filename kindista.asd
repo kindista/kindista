@@ -98,6 +98,7 @@
                                            (:file "offers")
                                            (:file "people")
                                            (:file "privacy")
+                                           (:file "push-notifications")
                                            (:file "requests")
                                            (:file "request-invitation")
                                            (:file "reset-password")

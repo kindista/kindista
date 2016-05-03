@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -34,27 +34,42 @@
       (let* ((admin (db admin-id))
              (email (car (getf admin :emails)))
              (unsubscribe-key (getf admin :unsubscribe-key)))
-        (cl-smtp:send-email +mail-server+
-                          "Kindista <noreply@kindista.org>"
-                          email
-                          (s+ requestor-name
-                              " is requesting to join your group, "
-                              group-name
-                              ", on Kindista")
-                          (group-membership-request-notification-email-text
-                            requestor-name
-                            reply-url
-                            group-id
-                            group-name
-                            email
-                            unsubscribe-key)
-                          :html-message (group-membership-request-notification-email-html
-                                          requestor-name
-                                          reply-url
-                                          group-id
-                                          group-name
-                                          email
-                                          unsubscribe-key))))))
+        (when (getf admin :active)
+          (send-push-through-chrome-api (list admin-id)
+                                        :message-title (s+ "Request to join "
+                                                           group-name)
+                                        :message-body (s+ requestor-name
+                                                          " is requesting to join your group, "
+                                                          group-name)
+                                        :message-tag "group-request-tag"
+                                        :message-url (strcat +base-url+
+                                                             "groups/"
+                                                             (username-or-id group-id)
+                                                             "/members")
+                                        ;:message-type :group-request
+                                        )
+          (cl-smtp:send-email +mail-server+
+                              "Kindista <noreply@kindista.org>"
+                              email
+                              (s+ requestor-name
+                                  " is requesting to join your group, "
+                                  group-name
+                                  ", on Kindista")
+                              (group-membership-request-notification-email-text
+                                requestor-name
+                                reply-url
+                                group-id
+                                group-name
+                                email
+                                unsubscribe-key)
+                              :html-message (group-membership-request-notification-email-html
+                                              requestor-name
+                                              reply-url
+                                              group-id
+                                              group-name
+                                              email
+                                              unsubscribe-key)))))
+    ))
 
 (defun group-membership-request-notification-email-text
   (requestor-name reply-url group-id group-name email unsubscribe-key)
