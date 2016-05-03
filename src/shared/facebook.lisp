@@ -461,7 +461,9 @@
   (k-item-id
    &key (data (db k-item-id))
         (userid *userid*)
-        (fb-id (getf *userid* :fb-id))
+        (fb-id (if (eql *userid* userid)
+                 (getf *user* :fb-id)
+                 (db userid :fb-id)))
    &aux (actions))
   (when userid
     (dolist (action (getf data :fb-actions))
