@@ -54,9 +54,7 @@
                                   :userid (getf data :userid))))
 (defun client-side-error-logger
   (&aux
-   (errorJSON (decode-json-octets (raw-post-data :force-text t))))
-  (pprint "calling logger")
-  (terpri)
+   (errorJSON (json:decode-json-from-string (raw-post-data :force-text t))))
   (require-user ()
     (with-mutex (*client-errors-log-lock*)
       (with-open-file (s (s+ +db-path+ "client-side-errors") :direction :output

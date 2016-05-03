@@ -12,7 +12,6 @@ window.addEventListener('load', function() {
   if (!('serviceWorker' in navigator)) {
     return;
   }
-  throw new Error();
   // unregister the browser from push notifications when logging out
   logout = document.getElementById('logout');
   if (logout) {
@@ -35,7 +34,6 @@ window.onerror = function(msg, url, lineNo, colNo, error) {
                    "url":url,
                    "lineNo":lineNo,
                    "colNo":colNo,
-                   "error":error,
                    "stack":error.stack};
   fetch('/client-side-error-logger', {
     method: 'post',
@@ -43,7 +41,7 @@ window.onerror = function(msg, url, lineNo, colNo, error) {
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json'
-   },
-     body: JSON.stringify(errorJSON)
-   })
- }
+    },
+    body: JSON.stringify(errorJSON)
+  })
+}

@@ -117,6 +117,9 @@
                       :external-format-in :utf-8
                       :content registration-json)))
 
+    (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :append)
+      (let ((*print-readably* nil))
+        (format s "~{~S~%~}" (decode-json-octets (first chrome-api-status)))))
 
     (do ((results (getf (alist-plist (decode-json-octets (first chrome-api-status)))
                :results) (rest results))
