@@ -113,7 +113,7 @@
       (multiple-value-list
         (http-request "https://android.googleapis.com/gcm/send"
                       ;CHANGE to server key when pushing to live
-                      :additional-headers (list (cons "Authorization" "key=AIzaSyAs-MUgFWba1amFkk6SDazVkMIcg_RfPZ4"))
+                      :additional-headers (list (cons "Authorization" (s+ "key=" *chrome-push-secret*)))
                       :method :post
                       :content-type "application/json"
                       :external-format-out :utf-8
@@ -123,6 +123,9 @@
     (setf chrome-results
           (getf (alist-plist (decode-json-octets (first chrome-api-status)))
                 :results))
+    (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :append)
+      (let ((*print-readably* nil))
+        (format s "~{~S~%~}" (decode-json-octets (first chrome-api-status)))))
 
     (do ((results chrome-results (rest results))
          (reg-ids registration-ids (rest reg-ids)))

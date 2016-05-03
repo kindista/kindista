@@ -390,6 +390,9 @@
     :get get-admin-sendmail
     :post post-admin-sendmail)
 
+  ("/client-side-error-logger"
+    :post client-side-error-logger)
+
   ("/publish-facebook"
    :post post-new-facebook-data)
 
