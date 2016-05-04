@@ -349,6 +349,7 @@
         (fb-object-id))
 
   ;; userid is included w/ new publish request but not scraping new data
+  (facebook-debugging-log "new-facebook-action" notice-data)
   (when userid
     (setf fb-action-id
           (publish-facebook-action item-id
@@ -378,11 +379,13 @@
         (fb-action-type (post-parameter-string "fb-action-type")))
   (if (server-side-request-p)
     (progn
-      (amodify-db item-id :fb-object-id fb-object-id
-                          :fb-actions (cons (list :fb-id fb-id
-                                                  :fb-action-type fb-action-type
-                                                  :fb-action-id fb-action-id)
-                                            it))
+      (facebook-debugging-log
+        "modifying the DB"
+        (amodify-db item-id :fb-object-id fb-object-id
+                            :fb-actions (cons (list :fb-id fb-id
+                                                    :fb-action-type fb-action-type
+                                                    :fb-action-id fb-action-id)
+                                              it)))
       (setf (return-code*) +http-no-content+)
       nil)
     (progn
