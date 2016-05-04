@@ -8,6 +8,7 @@
   - group message not being marked as read in message folder
   # web app live server
     - test push subscriptions on different computers
+## post offers/requests to facebook
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
 ## accountability with user flaky-ness
@@ -15,7 +16,6 @@
     with the other party
   - timeliness, enjoyment of interaction, etc.
   - ability to see constructive feedback if others can see yours
-## post offers/requests to facebook
 ## notify of contact adds
 ## better matching of search results
 ## group discussions

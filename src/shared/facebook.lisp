@@ -338,9 +338,9 @@
                                                (cons "method" "get"))))))))
 
 (defun new-facebook-action-notice-handler
-  (&aux (data (notice-data))
-        (userid (getf data :userid))
-        (item-id (getf data :item-id))
+  (&aux (notice-data (notice-data))
+        (userid (getf notice-data :userid))
+        (item-id (getf notice-data :item-id))
         (item (db item-id))
         (action-type (case (getf item :type)
                        (:gratitude "express")
@@ -357,8 +357,8 @@
                                    :action-type action-type))
     (setf fb-object-id (get-facebook-object-id item-id)))
   (cond
-    ((getf data :object-modified)
-      (scrape-facebook-item (getf data :fb-object-id)))
+    ((getf notice-data :object-modified)
+     (scrape-facebook-item (getf notice-data :fb-object-id)))
     (userid
       ;; update kindista DB with new facebook object/action ids
       (http-request
@@ -506,6 +506,7 @@
                       :method :post)))))
 
   "Works the same as (update-facebook-object)"
+  (facebook-debugging-log url-or-fb-id reply (decode-json-octets (first reply)))
   (when (= (second reply) 200)
     (decode-json-octets (first reply))))
 
