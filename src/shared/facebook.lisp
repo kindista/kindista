@@ -357,6 +357,7 @@
                                    :item item
                                    :action-type action-type))
     (setf fb-object-id (get-facebook-object-id item-id)))
+  (facebook-debugging-log (strcat "fb-object-id: " fb-object-id))
   (cond
     ((getf notice-data :object-modified)
      (scrape-facebook-item (getf notice-data :fb-object-id)))
@@ -381,6 +382,8 @@
     (progn
       (facebook-debugging-log
         "modifying the DB"
+        (post-parameters*)
+        (strcat "fb-object-id: " fb-object-id)
         (amodify-db item-id :fb-object-id fb-object-id
                             :fb-actions (cons (list :fb-id fb-id
                                                     :fb-action-type fb-action-type
