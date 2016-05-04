@@ -122,7 +122,8 @@
 (defun facebook-debugging-log (&rest messages)
   (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :append)
     (let ((*print-readably* nil))
-      (format s "~{~S~%~}" messages))))
+      (format s "~{~S~%~}" messages))
+    (fsync s)))
 
 (defun register-facebook-user
   (&optional (redirect-uri "home")
