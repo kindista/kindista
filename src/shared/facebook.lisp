@@ -121,8 +121,8 @@
 
 (defun facebook-debugging-log (&rest messages)
   (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :append)
-    (setf *print-readably* nil)
-    (format s "~{~S~%~}" messages)))
+    (let ((*print-readably* nil))
+      (format s "~{~S~%~}" messages))))
 
 (defun register-facebook-user
   (&optional (redirect-uri "home")

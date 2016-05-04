@@ -29,3 +29,19 @@ window.addEventListener('load', function() {
   }
 });
 
+window.onerror = function(msg, url, lineNo, colNo, error) {
+  var errorJSON = {"msg":msg,
+                   "url":url,
+                   "lineNo":lineNo,
+                   "colNo":colNo,
+                   "stack":error.stack};
+  fetch('/client-side-error-logger', {
+    method: 'post',
+    credentials: 'include',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(errorJSON)
+  })
+}
