@@ -85,13 +85,10 @@
              (htm (:div :class "content-container"
                     (:div :class "current-value" (str body))
                     (:div :class "buttons"
-                      (if buttons
-                        (str buttons)
-                        (htm
-                          (:a :class "yes small"
-                              :href (url-compose *base-url* "edit" item)
-                              (or (str edit-text)
-                                  (htm "Edit"))))))))))))
+                      (:a :class "yes small"
+                          :href (url-compose *base-url* "edit" item)
+                          (or (str edit-text)
+                              (htm "Edit"))))))))))
      (:p :class "help-text" (:em (str help-text))))))
 
 (defun settings-group-category (editable groupid group)
@@ -652,6 +649,7 @@
        (html (:script :type "text/javascript" :src "/push-notification-button.js"))
        :help-text (html (:span :id "push-help-text" "Push notifications allow you to recieve messages from other users on your phone or browser. ")
                         (:strong "Currently only availabe on Chrome and Chromium version 42 and above."))
+       :editable t
        :buttons (html (:button :id "push-notification-button"
                                :class "yes small"
                                :disabled t "Enable Push Messages" ))
