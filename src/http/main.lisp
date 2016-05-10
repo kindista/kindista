@@ -58,7 +58,8 @@
   (require-user ()
     (with-mutex (*client-errors-log-lock*)
       (with-open-file (s (s+ +db-path+ "client-side-errors") :direction :output
-                                                             :if-exists :append)
+                                                             :if-exists :append
+                                                             :if-does-not-exist :create)
         (let ((*print-readably* nil))
           (format s "~{~S~%~}" errorJSON))))))
 

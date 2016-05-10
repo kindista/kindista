@@ -1067,7 +1067,7 @@
                                  when (eq (caar person) *userid*)
                                  collect (car person)))))
 
-         (when (member (list *userid*) mailboxes :test #'equal)
+         (when (eql *userid* (caar mailboxes))
            (update-folder-data message :read))
          gratitude-page))
       (data gratitude-page)
