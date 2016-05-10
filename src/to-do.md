@@ -1,3 +1,9 @@
+## BUG
+  - when posting gratitude about an item received through profile (not through transaction), the gratitude should still show up in the transaction (see 35012)
+  - create a function that goes through all transactions
+    - when there is gratitude-on the on item (after a received/gave action)
+    - modify the transaction-log to include the gratitude
+  - include transaction-id when gratitude isn't posted from transaction UI
 ## web apps
   - test iphone webapp
   - !change api key when ready to push to live

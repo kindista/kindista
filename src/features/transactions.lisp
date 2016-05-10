@@ -25,6 +25,40 @@
                                                 log-event
                                                 text)))
 
+(defun completed-transactions-marked-incomplete
+  (&aux (pending-transactions (make-hash-table))
+        ;; k=on-item-id, v=tansactions
+        times
+        to-be-confirmed)
+  (flet ((check-transaction (message-id message)
+           (when (and (eq (message-type message) :transaction)
+                      (transaction-pending-gratitude-p message-id))
+             (let ((on-id (db message-id :on)))
+               (push message (gethash on-id pending-transactions)))))
+         (check-gratitude (result-id result)
+           (when (eq :gratitude (result-type result))
+             (let* ((gratitude (db result-id ))
+                    (gratitude-created (getf gratitude :created))
+                    (on-item-id (getf gratitude :on))
+                    (transactions (gethash on-item-id pending-transactions)))
+               (dolist (transaction transactions)
+                 (let* ((transaction-id (message-id transaction))
+                        (transaction (db transaction-id)))
+                   (dolist (action (getf transaction :log))
+                     (case (getf action :action)
+                       (:gratitude-posted (return))
+                       ((or :given :received)
+                        (when (> gratitude-created (getf action :time))
+                          (push (humanize-exact-time (getf action :time)
+                                                     :year-first t)
+                                times)
+                          (pushnew transaction to-be-confirmed)))))))))))
+    (maphash #'check-transaction *db-messages*)
+    (maphash #'check-gratitude *db-results*))
+  to-be-confirmed
+  (values times
+          (length to-be-confirmed)))
+
 (defun create-transaction (&key on text action match-id pending-deletion (userid *userid*))
   (let* ((time (get-universal-time))
          (on-item (db on))
@@ -925,6 +959,23 @@
         (log-event (list :time time
                          :party party
                          :action new-action)))
+
+  (when (find new-action '(:gave :received))
+    (let* ((on-item-id (getf transaction :on))
+           (on-item (db on-item-id))
+           (giver-id (getf on-item :by))
+           (recipient-id (car (remove giver-id (getf transaction
+                                                     :participants)))))
+      (with-locked-hash-table (*pending-gratitude-index*)
+        (pushnew (cons (gethash on-item-id *db-results*)
+                       transaction-id)
+                 (getf (gethash recipient-id *pending-gratitude-index*)
+                       (case (getf on-item :type)
+                         (:offer :offers)
+                         (:request :requests)))
+                 :test #'eql
+                 :key #'cdr))))
+
   (index-message
     transaction-id
     (if (eql new-action :deactivated)
