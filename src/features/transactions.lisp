@@ -26,6 +26,7 @@
                                            log-event
                                            :message text
                                            :party party)))
+
 (defun create-transaction (&key on text action match-id pending-deletion (userid *userid*))
   (let* ((time (get-universal-time))
          (on-item (db on))
