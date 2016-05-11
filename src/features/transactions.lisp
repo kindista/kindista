@@ -115,7 +115,8 @@
                                          (sort (cons
                                                  (list :time gratitude-created
                                                        :party (list (getf gratitude :author))
-                                                       :action :gratitude-posted)
+                                                       :action :gratitude-posted
+                                                       :comment result-id)
                                                  (getf data :log))
                                                #'>
                                                :key (lambda (action)
@@ -139,8 +140,6 @@
           (cons (car pair)
                 (modify-db (car pair) :log (cdr pair)))))
   (values (cdr to-be-confirmed) last-fixed ))
-
-
 
 (defun transactions-pending-gratitude-for-account (account-id)
   (let* ((all-pending (gethash account-id *pending-gratitude-index*)))
