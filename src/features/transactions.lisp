@@ -19,11 +19,13 @@
 
 (defun new-transaction-action-notice-handler ()
   (let* ((log-event (getf (cddddr *notice*) :log-event))
-         (text (getf (cddddr *notice*) :text)))
+         (text (getf (cddddr *notice*) :text))
+         (party (getf (cddddr *notice*) :party)))
     (send-transaction-action-notifications (getf (cddddr *notice*)
-                                                      :transaction-id)
-                                                log-event
-                                                text)))
+                                                 :transaction-id)
+                                           log-event
+                                           :message text
+                                           :party party)))
 (defun create-transaction (&key on text action match-id pending-deletion (userid *userid*))
   (let* ((time (get-universal-time))
          (on-item (db on))

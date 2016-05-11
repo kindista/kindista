@@ -61,6 +61,7 @@
         (:transaction (notice :new-transaction-action
                               :time time
                               :transaction-id on
+                              :party (list *userid*)
                               :text text))))
     id))
 
