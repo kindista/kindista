@@ -24,63 +24,6 @@
                                                       :transaction-id)
                                                 log-event
                                                 text)))
-
-(defun completed-transactions-marked-incomplete
-  (&aux (pending-transactions (make-hash-table))
-        ;; k=on-item-id, v=tansactions
-        times
-        to-be-confirmed)
-  "Utility to identify gratitudes that need to be matched with Transactions"
-  (flet ((check-transaction (message-id message)
-           (when (and (eq (message-type message) :transaction)
-                      (transaction-pending-gratitude-p message-id))
-             (let ((on-id (db message-id :on)))
-               (push message (gethash on-id pending-transactions)))))
-         (check-gratitude (result-id result)
-           (when (eq :gratitude (result-type result))
-             (let* ((gratitude (db result-id))
-                    (gratitude-created (getf gratitude :created))
-                    (on-item-id (getf gratitude :on))
-                    (transactions (gethash on-item-id pending-transactions)))
-               (dolist (transaction transactions)
-                 (let* ((transaction-id (message-id transaction))
-                        (data (db transaction-id)))
-                   (dolist (action (getf data :log))
-                     (case (getf action :action)
-                       (:gratitude-posted (return))
-                       ((or :given :received)
-                          (push (humanize-exact-time (getf action :time)
-                                                     :year-first t)
-                                times)
-                          (pushnew (cons transaction-id
-                                         (sort (cons
-                                                 (list :time gratitude-created
-                                                       :party (list (getf gratitude :author))
-                                                       :action :gratitude-posted)
-                                                 (getf data :log))
-                                               #'>
-                                               :key (lambda (action)
-                                                      (getf action :time))))
-                                   to-be-confirmed
-                                   :test #'eql
-                                   :key #'car)
-                          (return))))))))))
-    (maphash #'check-transaction *db-messages*)
-    (maphash #'check-gratitude *db-results*))
-  (values
-    to-be-confirmed
-    (length to-be-confirmed)))
-
-(defun fix-completed-transactions-marked-incomplete
-  (&aux (to-be-confirmed (multiple-value-list (completed-transactions-marked-incomplete)))
-        last-fixed)
-  "Utility to add gratitude-posted to certain transactions that had not had those gratitudes posted due to a bug."
-  (dolist (pair (car to-be-confirmed))
-    (setf last-fixed
-          (cons (car pair)
-                (modify-db (car pair) :log (cdr pair)))))
-  (values (cdr to-be-confirmed) last-fixed ))
-
 (defun create-transaction (&key on text action match-id pending-deletion (userid *userid*))
   (let* ((time (get-universal-time))
          (on-item (db on))
@@ -140,6 +83,64 @@
                                     :log-event (car log)
                                     :text text)
     id))
+
+(defun completed-transactions-marked-incomplete
+  (&aux (pending-transactions (make-hash-table))
+        ;; k=on-item-id, v=tansactions
+        times
+        to-be-confirmed)
+  "Utility to identify gratitudes that need to be matched with Transactions"
+  (flet ((check-transaction (message-id message)
+           (when (and (eq (message-type message) :transaction)
+                      (transaction-pending-gratitude-p message-id))
+             (let ((on-id (db message-id :on)))
+               (push message (gethash on-id pending-transactions)))))
+         (check-gratitude (result-id result)
+           (when (eq :gratitude (result-type result))
+             (let* ((gratitude (db result-id))
+                    (gratitude-created (getf gratitude :created))
+                    (on-item-id (getf gratitude :on))
+                    (transactions (gethash on-item-id pending-transactions)))
+               (dolist (transaction transactions)
+                 (let* ((transaction-id (message-id transaction))
+                        (data (db transaction-id)))
+                   (dolist (action (getf data :log))
+                     (case (getf action :action)
+                       (:gratitude-posted (return))
+                       ((or :given :received)
+                          (push (humanize-exact-time (getf action :time)
+                                                     :year-first t)
+                                times)
+                          (pushnew (cons transaction-id
+                                         (sort (cons
+                                                 (list :time gratitude-created
+                                                       :party (list (getf gratitude :author))
+                                                       :action :gratitude-posted)
+                                                 (getf data :log))
+                                               #'>
+                                               :key (lambda (action)
+                                                      (getf action :time))))
+                                   to-be-confirmed
+                                   :test #'eql
+                                   :key #'car)
+                          (return))))))))))
+    (maphash #'check-transaction *db-messages*)
+    (maphash #'check-gratitude *db-results*))
+  (values
+    to-be-confirmed
+    (length to-be-confirmed)))
+
+(defun fix-completed-transactions-marked-incomplete
+  (&aux (to-be-confirmed (multiple-value-list (completed-transactions-marked-incomplete)))
+        last-fixed)
+  "Utility to add gratitude-posted to certain transactions that had not had those gratitudes posted due to a bug."
+  (dolist (pair (car to-be-confirmed))
+    (setf last-fixed
+          (cons (car pair)
+                (modify-db (car pair) :log (cdr pair)))))
+  (values (cdr to-be-confirmed) last-fixed ))
+
+
 
 (defun transactions-pending-gratitude-for-account (account-id)
   (let* ((all-pending (gethash account-id *pending-gratitude-index*)))
