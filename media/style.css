@@ -1745,6 +1745,7 @@ menu#fine-print-links a {
  margin-top: 0.5em;
 }
 
+#tag-fb-friends fieldset,
 .item.inventory-details label,
 .item.inventory-details fieldset {
  margin-top: 1em;
@@ -3405,8 +3406,35 @@ form #facebook label,
 
 form #facebook label,
 form #facebook input,
+div#tag-fb-friends div.g-recipient *,
 #enter-inventory-details #categories input {
  vertical-align: middle;
+}
+
+div#tag-fb-friends h3 {
+ margin-bottom: 0.5em;
+}
+
+div#tag-fb-friends legend {
+ font-size: 1.2em;
+}
+
+div#tag-fb-friends div.g-recipient {
+ width: 100%;
+ max-width: 25em;
+ padding: 0.4em 0;
+}
+
+div#tag-fb-friends div.g-recipient input {
+ padding-right: 0.5em;
+}
+
+div#tag-fb-friends div.g-recipient img {
+ display: inline-block;
+ max-width: 3em;
+ height: auto;
+ margin-left: 0.5em;
+ margin-right: 0.3em;
 }
 
 form.matchmaker {

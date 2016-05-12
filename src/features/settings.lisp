@@ -867,23 +867,22 @@
     (require-user (:allow-test-user t)
       (let* ((now (get-universal-time))
              (facebook-token-data (when (get-parameter "code")
-                                    (register-facebook-user
-                                      (s+ +base-url+ "settings/social"))))
+                                    (register-facebook-user "settings/social")))
              (token (cdr (assoc "access_token"
                                 facebook-token-data
                                 :test #'string=)))
-             (expires (+ now (safe-parse-integer
-                               (cdr (assoc "expires"
-                                           facebook-token-data
-                                           :test #'string=))))) )
+             (expires (awhen facebook-token-data
+                        (+ now (safe-parse-integer
+                                 (cdr (assoc "expires" it :test #'string=)))))))
         (when facebook-token-data
           (modify-db *userid* :fb-token token
-                              :fb-expires (+ (get-universal-time)
-                                             (safe-parse-integer expires))
-                              :fb-link-active t)
+                     :fb-expires (+ (get-universal-time)
+                                    (safe-parse-integer expires))
+                     :fb-link-active t)
           (unless (getf *user* :fb-id)
             (modify-db *userid* :fb-id (get-facebook-user-id token)))
-          (flash "You have successfully linked Kindista to your Facebook account.")))
+          (flash "You have successfully linked Kindista to your Facebook account."))
+        (facebook-debugging-log facebook-token-data))
       (settings-social-html))))
 
 (defun settings-social-html

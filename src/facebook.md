@@ -1,4 +1,3 @@
-
 https://developers.facebook.com/tools/debug/sharing
 
 https://developers.facebook.com/docs/facebook-login/permissions/v2.3
@@ -30,8 +29,6 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 [ ] add :submitted-to-fb field
 [ ] do the submitting in a separate request from a (notice)
 [ ] give a link to share on fb if it's been longer than 60s and we still haven't heard back from  fb
-[ ] create facebook story w/ new inventory items
-    - get caption to display correctly
 [ ] in the inventory item, indicate whether the item has been posted to FB
 [ ] when editing item (enter-inventory-item-details)  make sure :publish-facebook defaults to whether it's already been posted to FB
 [ ] edit facebook story when editing inventory item
@@ -43,8 +40,8 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 https://developers.facebook.com/docs/graph-api/reference/user/taggable_friends
 https://developers.facebook.com/docs/sharing/opengraph/using-actions#tags
   - if gratitude-recipient is tagable, but user hasn't given friends-list permission
-    - ask if they want to tag the friend
     - ask for permission
+    - ask if they want to tag the friend
 
 #Group-Accounts
 - permissions:
@@ -55,9 +52,6 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions#tags
 #FB login
 https://developers.facebook.com/docs/facebook-login/multiple-providers
 
-signup: "sign up with facebook" "already have an account? login!"
-  - if signup via facebook and user has existing Kindista-ID, log in
-
 #FP profile pic
 
 #Review
@@ -65,11 +59,15 @@ signup: "sign up with facebook" "already have an account? login!"
 https://developers.facebook.com/docs/apps/review
 [ ] submit to facebook for review
 
+#Merge accounts (fb-id fbtoken)
 - Remove admin restriction for :share-url in inventory-activity-item
 - Remove *productionp* restriction from signup and login pages
 - Create a tab for settings/social
 - change facebook app setting/advanced deauthorize callback
 - change "privacy" setting in publish-facebook-action
+- remove all facebook-debubbing blocks
 
-#Merge accounts (fb-id fbtoken)
 
+#Deploy on server
+- load notice handlers
+- (setf *facebook-app-token* (get-facebook-app-token))

@@ -30,6 +30,7 @@
          (sender (db sender-id))
          (sender-name (getf sender :name))
          (subject (s+ "New message from " sender-name " on Kindista"))
+         (push-subject (s+ "New Kindista message from " sender-name))
          ;; get an a list of (person-id . group-id)
          (people-boxes (mapcar #'car (getf on-item :people)))
          (recipient-boxes (remove-if #'(lambda (box)
@@ -38,6 +39,7 @@
          ;;get a list of '(((person-id) . recipient-data) ...)
          ;;for boxes without group-ids as cdr
          (recipient-people (mapcar #'(lambda (box) (cons box (db (car box))))
+                                   ;; cdr means a group id
                                    (remove-if #'cdr recipient-boxes)))
          ;;remove people who don't want notification emails
          (valid-recipient-people (remove-if-not #'(lambda (recipient)
@@ -77,40 +79,40 @@
     (dolist (recipient all-recipients)
       (let* ((groupid (cdar recipient))
              (person (cdr recipient))
-             (person-id (car recipient))
+             (person-id (caar recipient))
              (email (car (getf person :emails)))
              (unsub-key (getf person :unsubscribe-key)))
         (when (or *productionp*
                   (getf person :admin)
                   (getf person :test-user))
           (when (getf (db person-id) :active)
-            (send-push-through-chrome-api person-id
-                                          :message-title subject
+            (send-push-through-chrome-api (list person-id)
+                                          :message-title push-subject
                                           :message-body "click here to view conversation"
                                           :message-tag "comment_tag"
                                           :message-url (strcat +base-url+
                                                                "conversations/"
-                                                               on-id)))
-          (cl-smtp:send-email
-          +mail-server+
-          "Kindista <noreply@kindista.org>"
-          email
-          subject
-          (comment-notification-email-text on-id
-                                           sender-name
-                                           subject
-                                           :email email
-                                           :unsubscribe-key unsub-key
-                                           :group-name (getf sender-group
-                                                             :name)
-                                           :groupid groupid)
-          :html-message (comment-notification-email-html
-                          on-id
-                          subject
-                          :email email
-                          :unsubscribe-key unsub-key
-                          :group-name (getf sender-group :name)
-                          :groupid groupid)))))))
+                                                               on-id))
+            (cl-smtp:send-email
+              +mail-server+
+              "Kindista <noreply@kindista.org>"
+              email
+              subject
+              (comment-notification-email-text on-id
+                                               sender-name
+                                               subject
+                                               :email email
+                                               :unsubscribe-key unsub-key
+                                               :group-name (getf sender-group
+                                                                 :name)
+                                               :groupid groupid)
+              :html-message (comment-notification-email-html
+                              on-id
+                              subject
+                              :email email
+                              :unsubscribe-key unsub-key
+                              :group-name (getf sender-group :name)
+                              :groupid groupid))))))))
 
 (defun comment-notification-email-text
   (on-id

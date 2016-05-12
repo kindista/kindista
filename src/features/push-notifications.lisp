@@ -20,15 +20,12 @@
 (defun remove-push-registration
   (user-id
    sub-type
-   registration-id)
-   (let*
-     ((subscriptions (copy-list
-                       (db user-id :push-notification-subscriptions))))
-
-     (setf (getf subscriptions sub-type) nil)
-       (with-locked-hash-table (*push-subscription-message-index*)
-         (remhash registration-id *push-subscription-message-index*))
-     (modify-db *userid* :push-notification-subscriptions subscriptions)))
+   registration-id
+   &aux (subscriptions (copy-list (db user-id :push-notification-subscriptions))))
+  (setf (getf subscriptions sub-type) nil)
+    (with-locked-hash-table (*push-subscription-message-index*)
+      (remhash registration-id *push-subscription-message-index*))
+  (modify-db *userid* :push-notification-subscriptions subscriptions))
 
 (defun post-push-notification-subscription
  (&aux
@@ -92,7 +89,8 @@
                      :url message-url))
       (chrome-api-status)
       (subscriptions)
-      (registration-json))
+      (registration-json)
+      (chrome-results))
 
   ;get registration id's for each recipient
   ;if they are subscribed
@@ -106,29 +104,38 @@
   (when registration-ids
     (setf registration-json (json:encode-json-alist-to-string (list (cons "registration_ids" registration-ids))))
 
+  (dolist (reg-id registration-ids)
+    (with-locked-hash-table (*push-subscription-message-index*)
+      (push message
+        (gethash reg-id *push-subscription-message-index*))))
+
     (setf chrome-api-status
       (multiple-value-list
         (http-request "https://android.googleapis.com/gcm/send"
                       ;CHANGE to server key when pushing to live
-                      :additional-headers (list (cons "Authorization" (s+ "key=" *chrome-push-secret*)))
+                      :additional-headers (list (cons "Authorization"
+                                                      (s+ "key="
+                                                          *chrome-push-secret*)))
                       :method :post
                       :content-type "application/json"
                       :external-format-out :utf-8
                       :external-format-in :utf-8
                       :content registration-json)))
 
+    (setf chrome-results
+          (getf (alist-plist (decode-json-octets (first chrome-api-status)))
+                :results))
     (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :append)
       (let ((*print-readably* nil))
         (format s "~{~S~%~}" (decode-json-octets (first chrome-api-status)))))
 
-    (do ((results (getf (alist-plist (decode-json-octets (first chrome-api-status)))
-               :results) (rest results))
+    (do ((results chrome-results (rest results))
          (reg-ids registration-ids (rest reg-ids)))
-         ((null results) 'done)
-           (unless (eql (car (first (first results))) :error)
-             (with-locked-hash-table (*push-subscription-message-index*)
-               (push message
-                 (gethash (first reg-ids) *push-subscription-message-index*)))))))
+        ((null results) 'done)
+        (when (eql (car (first (first results))) :error)
+          (with-locked-hash-table (*push-subscription-message-index*)
+            (asetf (gethash (first reg-ids) *push-subscription-message-index*)
+              (remove message it)))))))
 
 (defun send-unread-notifications
   (&aux

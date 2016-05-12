@@ -415,7 +415,10 @@
                                     60)
                                    ((and (getf *user* :admin)
                                          (string= (script-name*) "/admin/sendmail")) 600)
-                                   (t 5)))
+                                   ((string= (script-name*)
+                                             "/settings/social")
+                                    15)
+                                   (t 10)))
                                (unwind-protect
                                  (apply (fdefinition rule-function) (coerce results 'list))
                                  (unschedule-timer timer)))))

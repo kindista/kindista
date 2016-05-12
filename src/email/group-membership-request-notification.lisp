@@ -27,7 +27,6 @@
                             (username-or-id group-id)
                             "/members"))
          (group (db group-id))
-         (push-recipients)
          (group-name (getf group :name))
          (admin-list (getf group :notify-membership-request)))
 
@@ -35,9 +34,8 @@
       (let* ((admin (db admin-id))
              (email (car (getf admin :emails)))
              (unsubscribe-key (getf admin :unsubscribe-key)))
-        (when (getf admin-id :active)
-          (push admin-id push-recipients)
-          (send-push-through-chrome-api push-recipients
+        (when (getf admin :active)
+          (send-push-through-chrome-api (list admin-id)
                                         :message-title (s+ "Request to join "
                                                            group-name)
                                         :message-body (s+ requestor-name
@@ -49,28 +47,28 @@
                                                              (username-or-id group-id)
                                                              "/members")
                                         ;:message-type :group-request
-                                        ))
-        (cl-smtp:send-email +mail-server+
-                          "Kindista <noreply@kindista.org>"
-                          email
-                          (s+ requestor-name
-                              " is requesting to join your group, "
-                              group-name
-                              ", on Kindista")
-                          (group-membership-request-notification-email-text
-                            requestor-name
-                            reply-url
-                            group-id
-                            group-name
-                            email
-                            unsubscribe-key)
-                          :html-message (group-membership-request-notification-email-html
-                                          requestor-name
-                                          reply-url
-                                          group-id
-                                          group-name
-                                          email
-                                          unsubscribe-key))))
+                                        )
+          (cl-smtp:send-email +mail-server+
+                              "Kindista <noreply@kindista.org>"
+                              email
+                              (s+ requestor-name
+                                  " is requesting to join your group, "
+                                  group-name
+                                  ", on Kindista")
+                              (group-membership-request-notification-email-text
+                                requestor-name
+                                reply-url
+                                group-id
+                                group-name
+                                email
+                                unsubscribe-key)
+                              :html-message (group-membership-request-notification-email-html
+                                              requestor-name
+                                              reply-url
+                                              group-id
+                                              group-name
+                                              email
+                                              unsubscribe-key)))))
     ))
 
 (defun group-membership-request-notification-email-text
