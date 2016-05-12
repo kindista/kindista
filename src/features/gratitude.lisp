@@ -438,7 +438,9 @@
                                  :name "remove"
                                  :value subject
                                  " ⨯ "))))))
-              (unless (or single-recipient existing-url)
+              (unless (or single-recipient
+                          existing-url
+                         (getf *user* :test-user))
                 (htm
                   (:li :class "recipients" (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or group")))))
 
@@ -876,6 +878,11 @@
                 (see-other (or next "/home")))
              (g-compose :error '(:text "Please enter some more details about what you are grateful for."
                                  :field "text"))))
+
+          ((and (getf *user* :test-user)
+                (or (> (length subjects) 1)
+                    (not (db (car subjects) :test-user))))
+           (g-compose :error '(:text "Test users can only post gratitude about one other Test User at a time.")))
 
           ((and (or relevant-offers relevant-requests)
                 (not on-id)
