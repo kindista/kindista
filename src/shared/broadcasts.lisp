@@ -210,10 +210,11 @@
 (defvar *latest-broadcast*)
 
 (defun post-broadcast-new
-  (&aux (author-id (awhen (post-parameter "author-id")
-                     (if (safe-parse-integer it)
+  (&aux (author-post-id (post-parameter-string "author-id"))
+        (author-id (when author-post-id
+                     (aif (safe-parse-integer author-post-id)
                        it
-                       (gethash it *username-index*))))
+                       (gethash author-post-id *username-index*))))
         (admin-email (first (getf *user* :emails)))
         (author-email (post-parameter-string "from"))
         (blog-p (when (post-parameter "blog-p") t))
