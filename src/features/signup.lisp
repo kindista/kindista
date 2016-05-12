@@ -146,7 +146,7 @@
        (:h2
          "We have "
          (str (if resent "resent" "sent"))
-         " sent a confirmation email to " (str email))
+         " a confirmation email to " (str email))
        (:p
          "You should be receiving this email very soon. "
          "Please check your email and follow the instructions we sent you to complete the sign-up process. "

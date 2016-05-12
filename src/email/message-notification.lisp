@@ -30,7 +30,7 @@
          (sender (db sender-id))
          (sender-name (getf sender :name))
          (subject (s+ "New message from " sender-name " on Kindista"))
-         (push-subject (s+ "New Kindista message from " sender-name))
+         (push-subject (s+ "New message from " sender-name))
          ;; get an a list of (person-id . group-id)
          (people-boxes (mapcar #'car (getf on-item :people)))
          (recipient-boxes (remove-if #'(lambda (box)
@@ -88,7 +88,10 @@
           (when (getf (db person-id) :active)
             (send-push-through-chrome-api (list person-id)
                                           :message-title push-subject
-                                          :message-body "click here to view conversation"
+                                          :message-body (ellipsis
+                                                          (getf comment :text)
+                                                          :length 18
+                                                          :plain-text t)
                                           :message-tag "comment_tag"
                                           :message-url (strcat +base-url+
                                                                "conversations/"

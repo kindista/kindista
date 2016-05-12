@@ -32,10 +32,10 @@
      (when (and (getf recipient :notify-group-membership-invites)
                 (getf recipient :active))
        (send-push-through-chrome-api (list recipient-id)
-                                     :message-title "Invitation to kindista group"
+                                     :message-title (s+ "Invitation to join "
+                                                        group-name)
                                      :message-body (s+ host-name
-                                                  " has invited you to join, "
-                                                    group-name)
+                                                  " invited you to join their group")
                                      :message-tag "group-invite-tag"
                                      :message-url (strcat +base-url+
                                                          "groups/"

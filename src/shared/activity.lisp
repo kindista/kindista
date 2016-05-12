@@ -444,7 +444,9 @@
                                        (or (not *productionp*)
                                            (getf *user* :test-user))
                                        (getf *user* :fb-id)
-                                       (not (getf data :fb-action-id)))
+                                       (not (fb-object-actions-by-user
+                                              item-id
+                                              :data data)))
                               (url-compose
                                 "https://www.facebook.com/dialog/share_open_graph"
                                 "app_id" *facebook-app-id*
