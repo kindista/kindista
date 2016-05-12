@@ -74,8 +74,8 @@
                                 :key #'car)
                      :key #'car)))
          (all-recipients (append valid-recipient-people
-                                 valid-recipient-group-admins))
-         )
+                                 valid-recipient-group-admins)))
+
     (dolist (recipient all-recipients)
       (let* ((groupid (cdar recipient))
              (person (cdr recipient))
