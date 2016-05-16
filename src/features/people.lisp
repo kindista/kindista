@@ -364,7 +364,7 @@
                            (cons +kindista-id+ ids-to-deactivate))))
         (setf (getf data-to-keep :host) (getf data :host)))
 
-      (dolist (prop '(:bio :bio-summary :bio-doing :bio-contact :bio-skills :bio-into))
+      (dolist (prop '(:bio :bio-summary :bio-doing :bio-contact :bio-skills :bio-into :fb-id :fb-token :fb-link-active :fb-expires))
         (when (or (not (getf data-to-keep prop))
                   (string= (getf data-to-keep prop) ""))
           (setf (getf data-to-keep prop)
