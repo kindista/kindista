@@ -174,10 +174,13 @@
                                       (string-downcase string))
                            "-"))
 
-(defun words-from-string (string)
-  (iter (for word in (split " " (ppcre:regex-replace-all "[\\r\\n,<|>]" (string-downcase string) " ")))
-        (when (ppcre:scan +text-scanner+ word)
-          (collect word))))
+(defun words-from-string (string-to-split)
+  (when string-to-split
+    (iter (for word in (split " " (ppcre:regex-replace-all "[\\r\\n,<|>]"
+                                                           (string-downcase string-to-split)
+                                                           " ")))
+          (when (ppcre:scan +text-scanner+ word)
+            (collect word)))))
 
 (defun word-count (string)
   (length (words-from-string string)))
