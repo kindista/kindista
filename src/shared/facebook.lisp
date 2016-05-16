@@ -111,6 +111,7 @@
                        (append
                          (list "client_id" *facebook-app-id*
                                "scope" scope
+                               "response_type" "code,granted_scopes"
                                "redirect_uri" (url-encode
                                                 (s+ +base-url+ redirect-uri)))
                          (when re-request
@@ -282,48 +283,7 @@
              (user (if (eql userid *userid*) *user* (db userid))))
   (and (getf user :fb-id) (getf user :fb-link-active) ))
 
-(defun get-taggable-fb-friends
-  (&optional (userid *userid*)
-             (user (if (eql userid *userid*) *user* (db userid)))
-   &aux (response))
-  "Not useful. Facebook only returns encoded friend-tag tokens, not friend ids. No way to cross check with Kindista IDs."
-  (when (active-facebook-user-p userid user)
-    (setf response
-          (multiple-value-list
-            (http-request
-              (strcat *fb-graph-url*
-                      "v2.6/"
-                      (getf user :fb-id)
-                      "/taggable_friends")
-              :parameters (list (cons "access_token" *facebook-app-token*)
-                                (cons "access_token" (getf user :fb-token))
-                                (cons "method" "get"))))))
-    (when (eql (second response) 200)
-      (decode-json-octets (first response))))
 
-(defun tag-facebook-friends
-  (k-item-id
-   fb-friends-to-tag
-   &optional (userid *userid*)
-   &aux (item (db k-item-id))
-        (user (if (eql userid *userid*) *user* (db userid)))
-        (response))
-  (when (active-facebook-user-p userid user)
-    (setf response
-          (multiple-value-list
-            (http-request
-              (strcat *fb-graph-url*
-                      "v2.5/"
-                      (first (fb-object-actions-by-user
-                               k-item-id
-                               :data item
-                               :userid userid
-                               :fb-id (getf user :fb-id))))
-              :parameters (list (cons "access_token" (getf user :fb-token))
-                                (cons "tags"
-                                      (separate-with-commas fb-friends-to-tag)))
-              :method :post)))
-    (decode-json-octets (first response))))
 
 (defun get-facebook-location-data (fb-location-id fb-token)
   (alist-plist
@@ -569,6 +529,32 @@
     (when (eql (second response) 200)
       (decode-json-octets (first response))))
 
+
+(defun facebook-friends-permission-html
+  (&key redirect-uri
+        fb-gratitude-subjects
+        (cancel-link "home")
+        re-request
+        (page-title "Tag your Facebook friends"))
+  (standard-page
+    page-title
+    (html
+      (:div :id "tag-fb-friends-auth"
+       (:p :class "large"
+         "Would you like to tag "
+         (:strong (str (name-list-all fb-gratitude-subjects :stringp t
+                                                            :conjunction :or)))
+         " in the gratitude you published to Facebook?")
+       (:p :class "small"
+         "To enable tagging, Facebook requires that you give Kindista access to your Facebook friends list. We respect your privacy and your relationships; we will not spam your friends.")
+       (str (facebook-sign-in-button :redirect-uri redirect-uri
+                                     :scope "user_friends"
+                                     :state "user_friends_scope_granted"
+                                     :re-request re-request
+                                     :button-text "Allow Kindista to see my list of Facebook friends"))
+       (:a :href cancel-link :class "gray-text cancel" "Not now")))
+    :selected "people"))
+
 (defun tag-facebook-friends
   (k-item-id
    fb-friends-to-tag
@@ -597,31 +583,6 @@
     (setf response (decode-json-octets (first response)))
     (facebook-debugging-log response message)
     message))
-
-(defun facebook-friends-permission-html
-  (&key redirect-uri
-        fb-gratitude-subjects
-        (cancel-link "home")
-        re-request
-        (page-title "Tag your Facebook friends"))
-  (standard-page
-    page-title
-    (html
-      (:div :id "tag-fb-friends-auth"
-       (:p :class "large"
-         "Would you like to tag "
-         (:strong (str (name-list-all fb-gratitude-subjects :stringp t
-                                                            :conjunction :or)))
-         " in the gratitude you published to Facebook?")
-       (:p :class "small"
-         "To enable tagging, Facebook requires that you give Kindista access to your Facebook friends list. We respect your privacy and your relationships; we will not spam your friends.")
-       (str (facebook-sign-in-button :redirect-uri redirect-uri
-                                     :scope "user_friends"
-                                     :state "tag_friends"
-                                     :re-request re-request
-                                     :button-text "Allow Kindista to see my list of Facebook friends"))
-       (:a :href cancel-link :class "gray-text cancel" "Not now")))
-    :selected "people"))
 
 (defun tag-facebook-friends-html
   (&key gratitude-id
