@@ -570,7 +570,7 @@
           (multiple-value-list
             (http-request
               (strcat *fb-graph-url*
-                      "v2.5/"
+                      "v2.6/"
                       (first (fb-object-actions-by-user
                                k-item-id
                                :data item

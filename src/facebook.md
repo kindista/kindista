@@ -42,6 +42,9 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions#tags
   - if gratitude-recipient is tagable, but user hasn't given friends-list permission
     - ask for permission
     - ask if they want to tag the friend
+- make sure final piece is a post request
+- modify-db with tagged-friends
+- remove tagged friends from options of contatcts who can be tagged
 
 #Group-Accounts
 - permissions:

@@ -1071,8 +1071,7 @@
 
       ((and (post-parameter "tag-friends") confirm-fb-friends-to-tag)
        (tag-facebook-friends id confirm-fb-friends-to-tag)
-       (see-other (strcat "gratitudes/" id))
-       )
+       (see-other (strcat "gratitude/" id)))
 
       (t (not-found)))))
 
