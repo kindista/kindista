@@ -212,8 +212,8 @@
                                           "@mailinator.com")
                                       it))))))))
 
-(defun separate-with-commas (list)
-  (format nil "~{~A, ~}" list))
+(defun separate-with-commas (list &key omit-spaces)
+  (format nil (if omit-spaces "~{~A,~}" "~{~A, ~}") list))
 
 (defun separate-with-spaces (list)
   (format nil "~{~A ~}" list))

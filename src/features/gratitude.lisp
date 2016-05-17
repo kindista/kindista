@@ -998,7 +998,6 @@
          (friend-tags-to-authorize (get-parameter-integer-list
                                      "authorize-fb-friend-tag"))
          (new-fb-authorization (string= (get-parameter-string "state") "user_friends_scope_granted"))
-         (confirm-fb-friends-to-tag (post-parameter-integer-list "tag-fb-friend"))
          (fb-user-friends-permission
            (when (and *user* self-author-p (or friend-tags-to-authorize new-fb-authorization))
              (multiple-value-list (check-facebook-permission :user-friends *userid*))))
@@ -1069,16 +1068,13 @@
                                                            id))
                                         possible-fb-friends-to-tag)))
 
-      ((and (post-parameter "tag-friends") confirm-fb-friends-to-tag)
-       (tag-facebook-friends id confirm-fb-friends-to-tag)
-       (see-other (strcat "gratitude/" id)))
-
       (t (not-found)))))
 
 (defun post-gratitude
   (id
    &aux (url (strcat "/gratitude/" id))
-        (friends-to-tag (post-parameter-integer-list "tag-fb-friend")))
+        (friends-to-tag (when (post-parameter "tag-friends")
+                          (post-parameter-integer-list "tag-fb-friend"))))
   (require-user (:require-active-user t :allow-test-user t)
     (setf id (parse-integer id))
     (aif (db id)

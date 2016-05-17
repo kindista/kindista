@@ -555,35 +555,6 @@
        (:a :href cancel-link :class "gray-text cancel" "Not now")))
     :selected "people"))
 
-(defun tag-facebook-friends
-  (k-item-id
-   fb-friends-to-tag
-   &optional (userid *userid*)
-   &aux (item (db k-item-id))
-        (user (if (eql userid *userid*) *user* (db userid)))
-        (response)
-        (message))
-  (asetf fb-friends-to-tag
-         (remove nil (mapcar (lambda (id) (db id :fb-id)) it)))
-  (when (active-facebook-user-p userid user)
-    (setf response
-          (multiple-value-list
-            (http-request
-              (strcat *fb-graph-url*
-                      "v2.6/"
-                      (first (fb-object-actions-by-user
-                               k-item-id
-                               :data item
-                               :userid userid
-                               :fb-id (getf user :fb-id))))
-              :parameters (list (cons "access_token" (getf user :fb-token))
-                                (cons "tags"
-                                      (separate-with-commas fb-friends-to-tag)))
-              :method :post)))
-    (setf response (decode-json-octets (first response)))
-    (facebook-debugging-log response message)
-    message))
-
 (defun tag-facebook-friends-html
   (&key gratitude-id
         fb-gratitude-subjects
@@ -622,6 +593,36 @@
          (:p (:button :class "cancel" :type "submit" :class "cancel" :name "cancel" "Cancel")
              (:button :class "yes" :type "submit" :class "submit" :name "tag-friends" "Tag Friends")))))
     :selected "people"))
+
+(defun tag-facebook-friends
+  (k-item-id
+   k-contacts-to-tag-on-fb
+   &optional (userid *userid*)
+   &aux (item (db k-item-id))
+        (user (if (eql userid *userid*) *user* (db userid)))
+        (response)
+        (message)
+        (friends-to-tag (separate-with-commas
+                          (remove nil (mapcar (lambda (id) (db id :fb-id))
+                                              k-contacts-to-tag-on-fb))
+                          :omit-spaces t))
+        (action-id (first (fb-object-actions-by-user k-item-id
+                                                     :data item
+                                                     :userid userid
+                                                     :fb-id (getf user :fb-id)))))
+  (when (active-facebook-user-p userid user)
+    (setf response
+          (multiple-value-list
+            (http-request
+              (strcat *fb-graph-url*
+                      "v2.6/"
+                      action-id)
+              :parameters (list (cons "access_token" (getf user :fb-token))
+                                (cons "tags" friends-to-tag))
+              :method :post)))
+    (setf response (decode-json-octets (first response)))
+    (facebook-debugging-log action-id friends-to-tag response message )
+    message))
 
 (defun post-uninstall-facebook
   (&aux (signed-request (post-parameter "signed_request"))
