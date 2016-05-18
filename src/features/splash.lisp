@@ -48,11 +48,12 @@
                     (str
                       (facebook-sign-in-button :redirect-uri "login")))))))))
 
+        (:h1 "Share offers, requests, and gratitude with friends and neighbors.")
         (:div :id "splashbox"
           (:div :class "half float-left"
-           (:h2 "Kindista helps you share offers, requests, and gratitude with friends and neighbors.")
-           (:p "Make new connections and lead a more abundant life through sharing. "
-            (:strong "Because sharing is good.")))
+           "Make new connections and lead a more abundant life through sharing. "
+           (:br)
+           (:strong "Because sharing is good."))
          (:div :class "half float-left"
            (:h2 :class "center" "New to Kindista?")
            (:div :class "center"
@@ -63,51 +64,49 @@
               (:a :href "/home" "...or try Kindista as a guest")))
            (:p :class "clear"))
 
-        (:div :id "preview"
-          (:h2 "What's happening on Kindista?")
-          (:p "People are sharing offers, requests, and gratitude with friends and neighbors. Here's what's happening now:")
-          (:div :id "preview-cards"
-            (with-location
-              (str (activity-items
-                     (remove-private-items
-                       (safe-sort *recent-activity-index*
-                                  #'> :key
-                                  #'result-time))
-                     :url "/"
-                     :page 0
-                     :count 10
-                     :location nil
-                     :paginate nil))))
-          (:div :class "splactions"
-            (:a :class "yes" :href "/home" "Try Kindista")
-            " "
-            (:a :class "yes" :href "/signup"  "Create an account")
-            " "
-            (:a :class "yes" :href "/donate" "Donate")))
+        (:div :id "word-association"
+         (:h2 "Our vision:")
+         (:p
+           (str (icon "offers")) " offering free " (str (icon "gift")) " resources "
+           "fulfilling " (str (icon "map-marker")) " local requests " (str (icon "requests"))
+           "sharing prosperity " (str (icon "gratitude-love")) " gratitude "
+           "freedom " (str (icon "groups")) " connection ease "
+           (str (icon "share")) " honoring reputation " (str (icon "verified-identity"))
+           " giving abundance trusting love "
+           "receiving plenty")
+         )
+       ;(:div :id "preview"
+       ;  (:h2 "What's happening on Kindista?")
+       ;  (:p "People are sharing offers, requests, and gratitude with friends and neighbors. Here's what's happening now:")
+       ;  (:div :id "preview-cards"
+       ;    (with-location
+       ;      (str (activity-items
+       ;             (remove-private-items
+       ;               (safe-sort *recent-activity-index*
+       ;                          #'> :key
+       ;                          #'result-time))
+       ;             :url "/"
+       ;             :page 0
+       ;             :count 10
+       ;             :location nil
+       ;             :paginate nil))))
+       ;  (:div :class "splactions"
+       ;    (:a :class "yes" :href "/home" "Try Kindista")
+       ;    " "
+       ;    (:a :class "yes" :href "/signup"  "Create an account")
+       ;    " "
+       ;    (:a :class "yes" :href "/donate" "Donate")))
 
-
-        (:div :id "screenshots"
-          (:h2 "What does Kindista look like?")
-          (:p "It works great on computers, phones, and tablets.")
-          (:img :src "/media/screenshot2.png")
-          (:div :class "splactions"
-            (:a :class "yes" :href "/home" "Try Kindista")
-            " "
-            (:a :class "yes" :href "/signup" "Create an account")
-            " "
-            (:a :class "yes" :href "/donate" "Donate"))
-          (:br)
-          (:p "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")
-        (:div :class "splactions footer"
-          (if *userid*
-            (htm (:a :href "/contact-kindista" "contact"))
-            (htm (:a :href "mailto:info@kindista.org" "contact")))
-          " &middot; "
-          (:a :href "/about" "about")
-          " &middot; "
-          (:a :href "/terms" "terms")
-          " &middot; "
-          (:a :href "/privacy" "privacy")  
-         )))
+       (:div :class "about splactions" "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")
+       (:div :class "splactions footer"
+         (if *userid*
+           (htm (:a :href "/contact-kindista" "contact"))
+           (htm (:a :href "mailto:info@kindista.org" "contact")))
+         " &middot; "
+         (:a :href "/about" "about")
+         " &middot; "
+         (:a :href "/terms" "terms")
+         " &middot; "
+         (:a :href "/privacy" "privacy")))
 
       :class "splash")))

@@ -76,11 +76,6 @@ body {
  font-size: 0.85em;
 }
 
-body.splash {
- background: url('hands.jpg') no-repeat;
- background-size: 100% auto;
-}
-
 html {
  overflow-y: scroll;
 }
@@ -702,11 +697,36 @@ body.landing > p {
  box-shadow: 0 0 1px rgba(0,0,0,0.8);
 }
 
-body.splash #header {
+body.splash {
+ background: #e5d3f1;
+}
+
+body.splash > * {
+ margin: 0 0.8em;
+ max-width: 54em;
+}
+
+body.splash > h1:first-of-type {
+ margin: 1.2em 0.8em;
+ font-size: 2.1em;
+ text-align: center;
+ color: #333;
+}
+
+body.splash #header-container {
+ margin: 0 0;
+ width: 100%;
+ max-width: none;
  background: rgba(255,255,255,0.7);
+}
+
+body.splash #header {
+ max-width: 70em;
+ margin: 0 auto;
  height: 4.3em;
  box-shadow: none;
  overflow: hidden;
+ background: none;
 }
 
 body.splash #symbol {
@@ -716,6 +736,10 @@ body.splash #symbol {
 
 #splashbox h2 {
  font-size: 1.6em;
+}
+
+#splashbox > div {
+ top: 50%;
 }
 
 #splashbox p {
@@ -735,6 +759,13 @@ body.splash #symbol {
  padding: 0.5em;
 }
 
+#splashbox > div:first-child {
+ font-size: 1.6em;
+ position:relative;
+ top: 0.4em;
+ line-height: 1.5em;
+}
+
 #splashlogin {
  float: right;
  margin: 0.6em 2em 0 2em;
@@ -748,34 +779,61 @@ body.splash #symbol {
  font-size: 1.2em;
 }
 
-#splashbox > p {
+#splashbox  p {
  font-size: 1.5em;
 }
 
 #splashbox {
- background: rgba(255,255,255,0.85);
+ background: rgba(255,255,255,0.6);
  padding: 2em;
  border-radius: 2em;
  box-shadow: 0.05em 0.05em 2em rgba(0,0,0,0.3);
  width: 54em;
  margin: 4em auto;
+ position: relative;
+ overflow:hidden;
+}
+
+.splash #word-association {
+ text-align: justify;
+ margin: 0 1em;
+ font-weight: bold;
+ color: #858585;
+ font-size:1em;
+ font-size: 5.6vw;
+ line-height:1em;
+ line-height: 7vw;
+}
+
+.splash #word-association p {
+ margin-top: 0.1em;
+}
+
+.splash #word-association h2 {
+ margin-top: 1em;
+ font-size: 1.1em;
+ color: #666;
+}
+
+.splash #word-association img.icon {
+ vertical-align: middle;
+ height: 1em;
+ height: 6vw;
+ width: auto;
+}
+
+.splash #about {
+ text-align: center;
 }
 
 @media (max-width:50em) {
  #splashbox {
-  width: 100%;
   padding: 1em;
-  background: none;
-  margin: 0;
-  box-shadow: none;
- }
- body.splash {
-  background: none;
+  width:auto;
+  margin: 0.8em 0.8em;
  }
  body.splash #header-container {
   height: 4.3em;
-  background: url('hands.jpg') no-repeat;
-  background-size: cover;
  }
 }
 
@@ -784,13 +842,8 @@ body.splash #symbol {
   width:100%;
   text-align: center;
  }
- body.splash {
-  background: none;
- }
  body.splash #header-container {
   height: auto;
-  background: url('hands.jpg') no-repeat;
-  background-size: cover;
  }
  body.splash #header {
   height: auto;
@@ -880,10 +933,15 @@ body.splash #symbol {
  text-align: center;
 }
 
+.splactions.about {
+ font-size: 1.2em;
+ color: #333;
+}
+
 .splactions.footer a {
- color: #ccc;
+ color: #777;
  font-size: 1.3em;
- padding: 0 .5em;
+ padding: 0 0.5em 1em;
 }
 
 .settings-item .submit-image label,
