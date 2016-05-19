@@ -438,7 +438,9 @@
                                  :name "remove"
                                  :value subject
                                  " ⨯ "))))))
-              (unless (or single-recipient existing-url)
+              (unless (or single-recipient
+                          existing-url
+                         (getf *user* :test-user))
                 (htm
                   (:li :class "recipients" (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or group")))))
 
@@ -877,6 +879,11 @@
              (g-compose :error '(:text "Please enter some more details about what you are grateful for."
                                  :field "text"))))
 
+          ((and (getf *user* :test-user)
+                (or (> (length subjects) 1)
+                    (not (db (car subjects) :test-user))))
+           (g-compose :error '(:text "Test users can only post gratitude about one other Test User at a time.")))
+
           ((and (or relevant-offers relevant-requests)
                 (not on-id)
                 (not posted-on-type))
@@ -965,9 +972,7 @@
                           "when they reactivate their account.")
                       "Your statement of gratitude has been posted"))
              (see-other
-               (or (when (and (post-parameter "publish-facebook")
-                              facebook-recipients
-                              (not (check-facebook-permission :user-friends)))
+               (or (when (and (post-parameter "publish-facebook") facebook-recipients)
                      (flash "Your statement of gratitude has been published on Facebook")
                      (apply #'url-compose
                             (strcat "gratitude/" new-id)
@@ -990,17 +995,13 @@
   (let* ((data (db id))
          (result (gethash id *db-results*))
          (self-author-p (eql (getf data :author) *userid*))
-         (new-fb-authorization-p
-           (string= (get-parameter "state") "tag_friends"))
          (friend-tags-to-authorize (get-parameter-integer-list
                                      "authorize-fb-friend-tag"))
+         (new-fb-authorization (string= (get-parameter-string "state") "user_friends_scope_granted"))
          (fb-user-friends-permission
-           (when (and *user*
-                      (or (and friend-tags-to-authorize self-author-p)
-                          new-fb-authorization-p))
-             (multiple-value-list (check-facebook-permission :user-friends
-                                                             *userid*))))
-         (fb-friends-to-tag
+           (when (and *user* self-author-p (or friend-tags-to-authorize new-fb-authorization))
+             (multiple-value-list (check-facebook-permission :user-friends *userid*))))
+         (possible-fb-friends-to-tag
            (or friend-tags-to-authorize
                (remove nil
                        (mapcar (lambda (subject-id)
@@ -1012,12 +1013,7 @@
                                                 subject-id))
                                    subject-id)))
                          (getf data :subjects)))))
-         (authorize-tagging
-           (facebook-friends-permission-html
-             :redirect-uri (strcat "gratitude/" id)
-             :re-request (eql (second fb-user-friends-permission) :declined)
-             :cancel-link (strcat "gratitude/" id)
-             :fb-gratitude-subjects fb-friends-to-tag))
+
          (gratitude-page
            (when result
              (standard-page
@@ -1043,26 +1039,8 @@
     (cond
       ((and data (not *user*))
        gratitude-page)
-      (friend-tags-to-authorize
-       (if self-author-p
-         authorize-tagging
-         (permission-denied)))
-      (new-fb-authorization-p
-       (if (first fb-user-friends-permission)
-         (progn
 
-
-           ;; need to flash when ther are no friends that can be tagged
-
-
-           (facebook-debugging-log (get-facebook-kindista-friends *userid*))
-           (tag-facebook-friends-html
-             :gratitude-id id
-             :fb-gratitude-subjects (mapcar (lambda (id) (cons (db id :name)
-                                                               id))
-                                            fb-friends-to-tag)))
-         authorize-tagging))
-      (data
+      ((and data (not (get-parameters*)))
        (let* ((message (gethash id *db-messages*))
               (mailboxes (when message
                            (loop for person in (message-people message)
@@ -1072,12 +1050,31 @@
          (when (eql *userid* (caar mailboxes))
            (update-folder-data message :read))
          gratitude-page))
+
+      ((not self-author-p)
+       (permission-denied))
+
+      ((not (first fb-user-friends-permission))
+       (facebook-friends-permission-html
+             :redirect-uri (strcat "gratitude/" id)
+             :re-request (eql (second fb-user-friends-permission) :declined)
+             :cancel-link (strcat "gratitude/" id)
+             :fb-gratitude-subjects possible-fb-friends-to-tag))
+
+      (possible-fb-friends-to-tag
+       (tag-facebook-friends-html
+         :gratitude-id id
+         :fb-gratitude-subjects (mapcar (lambda (id) (cons (db id :name)
+                                                           id))
+                                        possible-fb-friends-to-tag)))
+
       (t (not-found)))))
 
 (defun post-gratitude
   (id
    &aux (url (strcat "/gratitude/" id))
-        (friends-to-tag (post-parameter-integer-list "tag-fb-friend")))
+        (friends-to-tag (when (post-parameter "tag-friends")
+                          (post-parameter-integer-list "tag-fb-friend"))))
   (require-user (:require-active-user t :allow-test-user t)
     (setf id (parse-integer id))
     (aif (db id)

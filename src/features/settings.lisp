@@ -639,21 +639,17 @@
      (see-other "/settings/communication")))))
 
 (defun settings-push-notifications
-  (&key group
-   &aux (adminp (getf *user* :admin)))
-
+  (&optional group)
   (unless group
-    (when adminp
-      (settings-item-html
-       "push notifications"
-       (html (:script :type "text/javascript" :src "/push-notification-button.js"))
-       :help-text (html (:span :id "push-help-text" "Push notifications allow you to recieve messages from other users on your phone or browser. ")
-                        (:strong "Currently only availabe on Chrome and Chromium version 42 and above."))
-       :editable t
-       :buttons (html (:button :id "push-notification-button"
-                               :class "yes small"
-                               :disabled t "Enable Push Messages" ))
-      ))))
+    (settings-item-html
+     "push notifications"
+     (html (:script :type "text/javascript" :src "/push-notification-button.js"))
+     :help-text (html (:span :id "push-help-text" "Push notifications allow you to recieve messages from other users on your phone or browser. ")
+                      (:strong "Currently only availabe on Chrome and Chromium version 42 and above."))
+     :editable t
+     :buttons (html (:button :id "push-notification-button"
+                             :class "yes small"
+                             :disabled t "Enable Push Messages" )))))
 
 (defun settings-notifications (&key groupid group user (userid *userid*))
   (let* ((entity (or group  user *user*))
@@ -950,7 +946,7 @@
                (:strong (str (car (getf *user* :emails))))
                (:a :id "email-link" :href "/settings/communication#email" "change"))
            (str (settings-notifications :groupid groupid :group group))
-           (str (settings-push-notifications :group group))
+           (str (settings-push-notifications group))
            (unless groupid
              (str (settings-emails (string= (get-parameter "edit") "email")
                                    :activate (get-parameter "activate"))))))))
