@@ -83,7 +83,6 @@
 (defindex *person-alias-index*)
 (defindex *person-mailbox-index*)
 (defindex *person-invitation-index*)
-(defindex *person-notification-index*) ;doesn't appear to be used yet
 (defindex *person-suggested-connections-index*)
 (defindex *profile-activity-index*)
 (defindex *account-inventory-matches-index*) ;k=person/groupid v=(:requests :offers)

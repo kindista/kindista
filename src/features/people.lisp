@@ -76,6 +76,7 @@
                    :notify-expired-invites t
                    :notify-blog t
                    :notify-inventory-digest t
+                   :notify-new-contact t
                    :notify-group-membership-invites t
                    :notify-kindista t))
 
@@ -101,6 +102,7 @@
                                      :notify-reminders t
                                      :notify-expired-invites t
                                      :notify-blog t
+                                     :notify-new-contact t
                                      :notify-group-membership-invites t
                                      :notify-inventory-digest t
                                      :notify-kindista t)))

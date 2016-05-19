@@ -7,7 +7,6 @@
     with the other party
   - timeliness, enjoyment of interaction, etc.
   - ability to see constructive feedback if others can see yours
-## notify of contact adds
 ## better matching of search results
 ## group discussions
 ## email preferences for deactivated accounts
