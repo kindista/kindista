@@ -908,10 +908,18 @@
               (:span
                 (str (if fb-token-p
                        "Your Kindista account is currently linked to your Facebook account."
-                       "Your Kindista account is not currently linked to Facebook.")))))
+                       "Your Kindista account is not currently linked to Facebook."))))
+            )
 
        :buttons (if fb-token-p sign-out-button sign-in-button)
-       :help-text "You can connect your Kindista account with Facebook to post your offers, requests, and gratitude to your Facebook timeline."
+       :help-text (if fb-token-p
+                    (html
+                       "You can manage the types of Facebook data that Kindista has access to "
+                       (:strong
+                         (:a :href "https://www.facebook.com/settings?tab=applications"
+                             "here"))
+              ".")
+                    "You can connect your Kindista account with Facebook to post your offers, requests, and gratitude to your Facebook timeline.")
        :action "/settings/social"
        :class "facebook"
        :title "Facebook"
