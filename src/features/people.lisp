@@ -112,6 +112,7 @@
     (unless (and (getf person :active)
                  (getf person :notify-gratitude)
                  (getf person :notify-message)
+                 (getf person :notify-new-contact)
                  (getf person :notify-reminders)
                  (getf person :notify-expired-invites)
                  (getf person :notify-blog)
@@ -718,6 +719,7 @@
     (deactivate-inventory-item offer-id))
   (modify-db id :active nil
                 :notify-message nil
+                :notify-new-contact nil
                 :notify-kindista nil
                 :notify-reminders nil
                 :notify-expired-invites nil
@@ -746,6 +748,7 @@
           (modify-db gratitude-id :pending nil)))))
   (modify-db id :active t
                 :notify-message t
+                :notify-new-contatct t
                 :notify-kindista t
                 :notify-reminders t
                 :notify-expired-invites t
