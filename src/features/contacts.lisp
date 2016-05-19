@@ -21,14 +21,21 @@
   (send-contact-notification (getf (cddddr *notice*) :from-id)
                              (getf (cddddr *notice*) :to-id)))
 
-(defun sign-users-up-for-new-contact-notifications ()
+(defun sign-users-up-for-new-contact-notifications
+  (&aux (modifications 0))
   "To be run when we implement contact notifications"
   (dolist (id (hash-table-keys *db*))
-    (let ((data (db id)))
-      (when (or (eq (getf data :type) :person)
-                (eq (getf data :type) :deleted-person-account))
-        (modify-db id :notify-new-contact (and (getf data :notify-message)
-                                               (getf data :active)))))))
+    (let* ((data (db id))
+           (notify-new-contact (and (getf data :notify-message)
+                                    (getf data :active))))
+      (when (and (or (eq (getf data :type) :person)
+                     (eq (getf data :type) :deleted-person-account))
+                 (or (not (find :notify-new-contact data))
+                     (and notify-new-contact
+                          (not (getf data :notify-new-contact)))))
+        (modify-db id :notify-new-contact notify-new-contact)
+        (incf modifications))))
+  modifications)
 
 (defun add-contact
   (new-contact-id
