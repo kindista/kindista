@@ -69,7 +69,7 @@
                 :name "email"
                 :id "email"
                 :placeholder "enter your email address")
-               (:button :class "yes small"
+               (:button :class "yes"
                 :type "submit"
                 "Reset password"))))))))
     :hide-menu t))

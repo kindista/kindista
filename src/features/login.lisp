@@ -117,6 +117,7 @@
     ((or existing-k-id
          (and password (password-match-p userid password)))
      (register-login userid next))
+
     (fb-token-data
      (flash "There is no Kindista account associated with the Facebook account currently active on this browser. Please confirm that you are logged into Facebook, or Sign Up for Kindista below."
             :error t)
