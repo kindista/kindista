@@ -148,18 +148,18 @@
       (with-locked-hash-table (*facebook-id-index*)
         (setf (gethash (getf data :fb-id) *facebook-id-index*) id)))
 
-    (unless (getf data :test-user)
-
-      (when (getf data :active)
-        (with-mutex (*active-people-mutex*)
-          (push id *active-people-index*)))
-
       (when (and (getf data :emails)
                  (not (getf data :banned)))
         (with-locked-hash-table (*email-index*)
           (dolist (email (getf data :emails))
             (when email ;some deleted accounts might have :emails (nil)
               (setf (gethash email *email-index*) id)))))
+
+    (unless (getf data :test-user)
+
+      (when (getf data :active)
+        (with-mutex (*active-people-mutex*)
+          (push id *active-people-index*)))
 
       (awhen (getf data :banned)
         (with-locked-hash-table (*banned-emails-index*)

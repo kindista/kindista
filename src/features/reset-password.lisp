@@ -54,7 +54,7 @@
                          (:input :type "password"
                                  :name "new-password-2"
                                  :placeholder "please retype your new password")))
-                     (:button :class "yes small" :type "submit" :class "submit" "Change password"))
+                     (:button :class "yes" :type "submit" :class "submit" "Change password"))
                (:p :class "help-text"
                 "Minimum of 8 characters. "
                 "We strongly recommend using either a mix of upper- and "
