@@ -377,10 +377,7 @@
                                 (cons object-type
                                       (s+ "https://kindista.org"
                                           (resource-url id item)))
-                                (cons "fb:explicitly_shared" "true")
-                                (cons "privacy"
-                                       (json:encode-json-to-string
-                                         (list (cons "value" "SELF")))))))))
+                                (cons "fb:explicitly_shared" "true"))))))
 
   (facebook-debugging-log reply (alist-plist (decode-json-octets (first reply))))
   (when (= (second reply) 200)
