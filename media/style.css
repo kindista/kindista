@@ -114,6 +114,11 @@ li {
  list-style-type: none;
 }
 
+ol.numeric,
+ol.numeric > li {
+ list-style-type: decimal;
+}
+
 hr {
  display: none;
 }
@@ -702,12 +707,16 @@ body.splash {
 }
 
 body.splash > * {
- margin: 0 0.8em;
- max-width: 54em;
+ padding: 0 1.5rem 0;
+ max-width: 60rem;
+ margin: 1em auto;
 }
 
-body.splash > h1:first-of-type {
- margin: 1.2em 0.8em;
+body.splash > div:first-child {
+ padding-top: 0;
+}
+
+body.splash > h1 {
  font-size: 2.1em;
  text-align: center;
  color: #333;
@@ -717,8 +726,14 @@ body.splash #header-container {
  margin: 0 0;
  width: 100%;
  max-width: none;
- background: rgba(255,255,255,0.7);
+ background: #f7f2fb;
 }
+
+body.splash #header-container,
+body.splash #header-container .or-divider > span {
+ background: #f7f2fb;
+}
+
 
 body.splash #header {
  max-width: 70em;
@@ -788,17 +803,28 @@ body.splash #symbol {
  padding: 2em;
  border-radius: 2em;
  box-shadow: 0.05em 0.05em 2em rgba(0,0,0,0.3);
- width: 54em;
- margin: 4em auto;
+ max-width: 54em;
+ margin: 1em auto 0.8em;;
  position: relative;
  overflow:hidden;
 }
 
+.splash .details {
+ font-size: 1.5em;
+ color: #333;
+}
+
+.splash .details ol {
+ margin-top: 0.5em;
+ padding-left: 1.2em;
+}
+
+.splash ol li {
+ margin-bottom: 0.3em;
+}
+
 .splash #word-association {
- text-align: justify;
- margin: 0 1em;
  font-weight: bold;
- color: #858585;
  font-size:1em;
  font-size: 5.6vw;
  line-height:1em;
@@ -806,20 +832,44 @@ body.splash #symbol {
 }
 
 .splash #word-association p {
- margin-top: 0.1em;
+ text-align: justify;
+ -moz-text-align-last: justify;
+ text-align-last: justify;
+ color: #777;
+ margin:0.2vw 0;
 }
 
-.splash #word-association h2 {
- margin-top: 1em;
- font-size: 1.1em;
- color: #666;
+.splash #word-association p:last-child {
+ -moz-text-align-last: left;
+ text-align-last: left;
 }
 
 .splash #word-association img.icon {
- vertical-align: middle;
+ vertical-align: -10%;
  height: 1em;
  height: 6vw;
  width: auto;
+}
+
+@media (min-width:63em){
+.splash #word-association {
+ font-size: 3.5rem;
+ line-height: 4.1rem;
+}
+.splash #word-association p {
+ margin:0.2rem 0;
+}
+
+.splash #word-association img.icon {
+ height: 4rem;
+}
+}
+.splash h2 {
+ margin-top: 1em;
+ font-size: 1.1em;
+}
+.splash #word-association h2 {
+ font-size: 0.85em;
 }
 
 .splash #about {
@@ -829,8 +879,8 @@ body.splash #symbol {
 @media (max-width:50em) {
  #splashbox {
   padding: 1em;
-  width:auto;
-  margin: 0.8em 0.8em;
+  margin-left: 1em;
+  margin-right: 1em;
  }
  body.splash #header-container {
   height: 4.3em;
@@ -847,11 +897,12 @@ body.splash #symbol {
  }
  body.splash #header {
   height: auto;
-  background-color: rgba(255, 255, 255, 0.7);
   padding-bottom: 2em;
  }
  body.splash #symbol {
   width: 18em;
+  margin: 2em auto;
+  display: block;
  }
  #header #splashlogin,
  body.splash a#logo {
@@ -863,7 +914,8 @@ body.splash #symbol {
  #header #splashlogin {
   float: none;
   position: relative;
-  width: 20em;
+  width: 100%;
+  max-width: 30em;
  }
  #splashlogin form {
   display:block;
@@ -872,8 +924,7 @@ body.splash #symbol {
   display:none;
  }
  #splashlogin button.yes {
-  margin: 0 0 0 0.5em;
-  width: 4.5em;
+  width: 7em;
   float: right;
  }
  #splashlogin p {
@@ -886,16 +937,22 @@ body.splash #symbol {
   padding: 0 0.4em;
  }
  #splashlogin label {
-  display: inline-block;
+  display: block;
   font-size: 1.1em;
   font-weight: bold;
-  margin: 0 0.5em 0 0.4em;
+  margin: 0.2em 0.5em 0 0;
  }
- #splashlogin input[type=text] {
-  width: 16em;
+ #splashlogin #password {
+  margin-bottom: 1em;
  }
- #splashlogin input[type=password] {
-  width: 13.9em;
+ #splashlogin input {
+  -moz-box-shadow: 1px 2px 5px #ddd inset;
+  -webkit-box-shadow: 1px 2px 5px #ddd inset;
+  box-shadow: 1px 2px 5px #ddd inset;
+  width:100%;
+ }
+ #splashlogin button {
+  font-size: inherit;
  }
  #splashlogin input[value=] {
   background: red;
@@ -904,19 +961,13 @@ body.splash #symbol {
   border: 1px solid #5be;
   box-shadow: 0 0 0.5em rgba(80,160,230,0.6) inset 0 1px 3px rgba(0,0,0,0.1);
  }
- #splashlogin button.yes {
-  margin-top: 0.3em;
- }
- #splashlogin form > a {
+ #splashlogin #email-signin > a {
   display: inline-block;
   margin-left: 0.4em;
   margin-top: 0.9em;
  }
- #splashlogin div.center {
-  clear: both;
-  margin: 0.5em 0;
-  font-weight:bold;
-  font-size: 1.5em;
+ #splashlogin #email-signin {
+  font-size: 1.2em;
  }
  #splashlogin .social-signin a.blue {
   width: 100%;
@@ -4547,6 +4598,7 @@ background-color: #f8f8f8;
 
 .clear {
  clear: both;
+ line-height: 0;
 }
 
 .bold {

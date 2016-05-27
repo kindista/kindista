@@ -30,25 +30,26 @@
           (:div :id "splashlogin"
             (:a :href "/login" :class "yes" "Sign In")
             (:form :action "/login" :method "post"
+             (:div :id "email-signin"
               (:label :for "username" "Email")
               (:input :id "username"
-                      :type "text"
-                      :name "username" )
+               :type "text"
+               :name "username" )
               (:label :for "password" "Password")
               (:input :id "password"
-                      :type "password"
-                      :name "password" )
-              (:br)
+               :type "password"
+               :name "password" )
               (:a :href "/reset" "Forgot your password?")
               (:button :class "yes" :type "submit" "Sign In")
+              (:br :class "clear"))
               (unless *productionp*
                 (htm
                   (:div :class "social-signin"
-                    (:div :class "center" "or")
+                    (str *or-divider*)
                     (str
                       (facebook-sign-in-button :redirect-uri "login")))))))))
 
-        (:h1 "Share offers, requests, and gratitude with friends and neighbors.")
+        (:h1 "Share resources and gratitude with friends and neighbors.")
         (:div :id "splashbox"
           (:div :class "half float-left"
            "Make new connections and lead a more abundant life through sharing. "
@@ -62,19 +63,29 @@
                  :href "/signup" "Create an account."))
              (:p :class "center"
               (:a :href "/home" "...or try Kindista as a guest")))
+
            (:p :class "clear"))
 
-        (:div :id "word-association"
-         (:h2 "Our vision:")
-         (:p
-           (str (icon "offers")) " offering free " (str (icon "gift")) " resources "
-           "fulfilling " (str (icon "map-marker")) " local requests " (str (icon "requests"))
-           "sharing prosperity " (str (icon "gratitude-love")) " gratitude "
-           "freedom " (str (icon "groups")) " connection ease "
-           (str (icon "share")) " honoring reputation " (str (icon "verified-identity"))
-           " giving abundance trusting love "
-           "receiving plenty")
-         )
+       (:div :class "details"
+          (:h2 "How does Kindista work?")
+          (:ol :class "numeric"
+            (:li (:strong "Everything shared is given freely. ")
+             "That means no bartering, renting, or selling.")
+            (:li (:strong "You choose who you want to share with. ")
+             "When considering sharing with someone you don't already know, you can check their reputation and get references from mutual connections.")
+            (:li (:strong "Be kind and respectful."))))
+
+       (:div :id "word-association"
+         (:h2 "What does it mean to be a Kindista?")
+         (:p (str (icon "offers")) " offering free " (str (icon "gift")) " resources ")
+         (:p "fulfilling " (str (icon "map-marker")) " local requests " (str (icon "requests")))
+         (:p "growing community generosity")
+         (:p "sharing prosperity " (str (icon "gratitude-love")) " gratitude ")
+         (:p "freedom " (str (icon "groups")) " connection ease ")
+         (:p (str (icon "share")) " honoring reputation " (str (icon "verified-identity")))
+         (:p " giving abundance trusting love ")
+         (:p (str (icon "home")) " receiving plenty"))
+
        ;(:div :id "preview"
        ;  (:h2 "What's happening on Kindista?")
        ;  (:p "People are sharing offers, requests, and gratitude with friends and neighbors. Here's what's happening now:")
