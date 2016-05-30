@@ -704,28 +704,35 @@ body.landing > p {
 
 body.splash {
  background: #e5d3f1;
+ font-size: 1.3em;
+ font-size: 1.3rem;
 }
 
 body.splash > * {
- padding: 0 1.5rem 0;
- max-width: 60rem;
- margin: 1em auto;
+ padding: 0 1em 0;
+ max-width: 34em;
+ margin: 1.5em auto 1em;
 }
 
 body.splash > div:first-child {
  padding-top: 0;
 }
 
-body.splash > h1 {
- font-size: 2.1em;
+body.splash h2,
+body.splash h1 {
  text-align: center;
  color: #333;
+ font-size: 1.7em;
+}
+.splash h2 {
+ margin-bottom: 0.5em;
 }
 
 body.splash #header-container {
  margin: 0 0;
  width: 100%;
  max-width: none;
+ font-size: 0.85em;
  background: #f7f2fb;
 }
 
@@ -734,32 +741,48 @@ body.splash #header-container .or-divider > span {
  background: #f7f2fb;
 }
 
-
 body.splash #header {
- max-width: 70em;
+ max-width: 40em;
  margin: 0 auto;
- height: 4.3em;
  box-shadow: none;
- overflow: hidden;
  background: none;
 }
 
 body.splash #symbol {
- margin: 0.7em 1em;
+ padding: 0.2em;
+ margin: 0 0 0 0;
  width: 13em;
+}
+
+#splashlogin > a.yes {
+ font-size: 0.85em;
+ display: block;
+ line-height: inherit;
+ margin: 0.5em 0;
+}
+
+#splashlogin {
+ float: right;
+}
+
+#splashbox-container {
+  padding: 0.7em;
+ }
+
+#splashbox {
+  padding: 1em;
 }
 
 #splashbox h2 {
  font-size: 1.6em;
 }
 
-#splashbox > div {
- top: 50%;
+#splashbox div p:first-child {
+ margin-top: 0;
 }
 
 #splashbox p {
- font-size: 1.2em;
- margin-bottom: 0;
+ margin: 0.5em auto 0;
 }
 
 #splashbox #big-ass-signup-button {
@@ -767,56 +790,36 @@ body.splash #symbol {
  margin: 0.75em auto;
  line-height: 2em;
  width: 13em;
- font-size: 1.5em;
 }
 
 #splashbox > div {
  padding: 0.5em;
-}
-
-#splashbox > div:first-child {
- font-size: 1.6em;
- position:relative;
- top: 0.4em;
- line-height: 1.5em;
-}
-
-#splashlogin {
- float: right;
- margin: 0.6em 2em 0 2em;
+ text-align: center;
+ margin: 0;
+ width: initial;
 }
 
 #splashlogin form {
  display:none;
 }
 
-#splashlogin > a {
- font-size: 1.2em;
-}
-
-#splashbox  p {
- font-size: 1.5em;
-}
-
 #splashbox {
  background: rgba(255,255,255,0.6);
- padding: 2em;
  border-radius: 2em;
  box-shadow: 0.05em 0.05em 2em rgba(0,0,0,0.3);
- max-width: 54em;
- margin: 1em auto 0.8em;;
+ width:100%;
  position: relative;
  overflow:hidden;
+ margin: 0 auto;
 }
 
 .splash .details {
- font-size: 1.5em;
  color: #333;
 }
 
 .splash .details ol {
- margin-top: 0.5em;
  padding-left: 1.2em;
+ margin-top: 0;
 }
 
 .splash ol li {
@@ -835,7 +838,7 @@ body.splash #symbol {
  text-align: justify;
  -moz-text-align-last: justify;
  text-align-last: justify;
- color: #777;
+ color: #555;
  margin:0.2vw 0;
 }
 
@@ -851,23 +854,53 @@ body.splash #symbol {
  width: auto;
 }
 
-@media (min-width:63em){
+@media (min-width:46em){
+body.splash #header-container {
+ height: 3.5em;
+}
+body.splash #symbol {
+ padding: 0.5em;
+ width:14em;
+}
+#splashlogin > a.yes {
+ font-size: inherit;
+ margin: 0.6em 0;
+ line-height: inherit;
+}
 .splash #word-association {
- font-size: 3.5rem;
- line-height: 4.1rem;
+ font-size: 1.8em;
+ line-height: 1.3em;
 }
 .splash #word-association p {
- margin:0.2rem 0;
+ margin: 0;
+}
+.splash #word-association img.icon {
+ height: 1.2em;
+}
+ body.splash h2,
+ body.splash h1 {
+  margin: 0.5em auto 0.1em;
+}
+ body.splash h2 {
+  text-align: left;
+}
+#splashbox > div {
+ display: table-cell;
+ vertical-align: middle;
 }
 
-.splash #word-association img.icon {
- height: 4rem;
+#splashbox > div:first-child {
+ text-align: left;
+}
+#splashbox div p:first-child {
+ margin-bottom: 1.3em;
 }
 }
-.splash h2 {
- margin-top: 1em;
- font-size: 1.1em;
+
+.splashbox h3 {
+ font-size: 1.2em;
 }
+
 .splash #word-association h2 {
  font-size: 0.85em;
 }
@@ -876,24 +909,14 @@ body.splash #symbol {
  text-align: center;
 }
 
-@media (max-width:50em) {
- #splashbox {
-  padding: 1em;
-  margin-left: 1em;
-  margin-right: 1em;
- }
- body.splash #header-container {
-  height: 4.3em;
- }
-}
-
-@media (max-width:42em) {
- #splashbox > div.half {
-  width:100%;
-  text-align: center;
+@media (max-width:32em) {
+ body.splash {
+ font-size: 1em;
+ font-size: 1rem;
  }
  body.splash #header-container {
   height: auto;
+  font-size: 1em;
  }
  body.splash #header {
   height: auto;
@@ -901,7 +924,9 @@ body.splash #symbol {
  }
  body.splash #symbol {
   width: 18em;
-  margin: 2em auto;
+  max-width:100%;
+  padding: 1em 0;
+  margin: 0 auto;
   display: block;
  }
  #header #splashlogin,
@@ -923,22 +948,15 @@ body.splash #symbol {
  #splashlogin > a.yes {
   display:none;
  }
- #splashlogin button.yes {
-  width: 7em;
-  float: right;
- }
  #splashlogin p {
   text-align: right;
   margin-top: -0.3em;
  }
- #splashlogin input,
- #splashlogin button.yes {
-  height:2.3em;
-  padding: 0 0.4em;
+ #splashlogin input {
+  height: 2.5em;
  }
  #splashlogin label {
   display: block;
-  font-size: 1.1em;
   font-weight: bold;
   margin: 0.2em 0.5em 0 0;
  }
@@ -951,9 +969,6 @@ body.splash #symbol {
   box-shadow: 1px 2px 5px #ddd inset;
   width:100%;
  }
- #splashlogin button {
-  font-size: inherit;
- }
  #splashlogin input[value=] {
   background: red;
  }
@@ -961,42 +976,58 @@ body.splash #symbol {
   border: 1px solid #5be;
   box-shadow: 0 0 0.5em rgba(80,160,230,0.6) inset 0 1px 3px rgba(0,0,0,0.1);
  }
- #splashlogin #email-signin > a {
-  display: inline-block;
-  margin-left: 0.4em;
-  margin-top: 0.9em;
+ #splashlogin #email-signin a,
+ #splashlogin #email-signin div#signin-button {
+  display: table-cell;
+  font-size: inherit;
+  margin: 0 0;
+ }
+ #splashlogin #email-signin div#signin-button {
+  text-align: right;
+ }
+ #splashlogin #email-signin button {
+  display: inline;
+  width: 7em;
+  height: 2.3em;
+ }
+ #splashlogin #email-signin > div {
+  display: table;
+  width: 100%;
  }
  #splashlogin #email-signin {
-  font-size: 1.2em;
+  overflow: hidden;
  }
  #splashlogin .social-signin a.blue {
   width: 100%;
   display: block;
   text-align: center;
   margin: 0;
-  font-size: 1.3em;
   line-height: inherit;
+ }
+ #splashbox #big-ass-signup-button {
+  font-size: 1.1em;
  }
 }
 
-.splactions {
- padding-top: 2em;
- text-align: center;
-}
-
-.splactions.about {
- font-size: 1.2em;
+.splash .about {
  color: #333;
 }
 
-.splactions.footer a {
+.splash .footer {
+ margin: 1em auto;
+}
+.splash .footer a {
  color: #777;
- font-size: 1.3em;
- padding: 0 0.5em 1em;
+ padding: 0.5em;
 }
 
-.settings-item .submit-image label,
-.splactions a.yes {
+.splash .about,
+.splash .footer {
+ font-size: 85%;
+ text-align: center;
+}
+
+.settings-item .submit-image label {
  margin: 0.5em;
  line-height: 4em;
 }
@@ -1322,42 +1353,6 @@ img.small {
  width: auto;
 }
 
-#preview {
- margin-top: 3em;
- background: #444;
- padding: 2em;
- box-shadow: 0 0 4em #000;
-}
-
-#preview h2, #screenshots h2 {
- color: #fff;
- text-align: center;
- font-size: 3em;
-}
-
-#preview > p, #screenshots > p {
- font-size: 1.3em;
- text-align: center;
- font-weight: bold;
- margin-bottom: 1.5em;
- color: #fff;
-}
-
-#preview-cards {
- column-count: 3;
- -moz-column-count: 3;
- -webkit-column-count: 3;
-}
-
-#preview-cards .card {
- padding: 0em 1.2em 1.2em 1.2em;
- background: #fff;
- position: static; /* safari bug */
- display: inline-block;
-}
-
-
-#preview-cards .card,
 .card.joined,
 .card.offer,
 .card.request,
@@ -1397,31 +1392,6 @@ img.small {
 #screenshots h2 {
  font-size: 3em;
 }
-
-@media (max-width:49em) {
- #preview-cards {
-  column-count: 2;
-  -moz-column-count: 2;
-  -webkit-column-count: 2;
- }
-}
-
-@media (max-width:30em) {
- #splashbox h2 {
-  margin-top: 2em;
-  font-size: 1.5em;
- }
- #preview {
-  margin-top: 0;
-  box-shadow: none;
- }
- #preview-cards {
-  column-count: 1;
-  -moz-column-count: 1;
-  -webkit-column-count: 1;
- }
-}
-
 
 #header h1 {
  color:#5c8a2f;
@@ -3007,7 +2977,6 @@ button.primary-action img {
  vertical-align: middle;
 }
 
-#preview-cards .card.inventory-item,
 div.card.inventory-item {
  padding-top: 0.9em;
 }

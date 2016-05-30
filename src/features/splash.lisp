@@ -39,9 +39,10 @@
               (:input :id "password"
                :type "password"
                :name "password" )
-              (:a :href "/reset" "Forgot your password?")
-              (:button :class "yes" :type "submit" "Sign In")
-              (:br :class "clear"))
+              (:div
+                (:a :href "/reset" "Forgot your password?")
+                (:div :id "signin-button"
+                  (:button :class "yes" :type "submit" "Sign In"))))
               (unless *productionp*
                 (htm
                   (:div :class "social-signin"
@@ -49,22 +50,23 @@
                     (str
                       (facebook-sign-in-button :redirect-uri "login")))))))))
 
-        (:h1 "Share resources and gratitude with friends and neighbors.")
-        (:div :id "splashbox"
-          (:div :class "half float-left"
-           "Make new connections and lead a more abundant life through sharing. "
-           (:br)
-           (:strong "Because sharing is good."))
-         (:div :class "half float-left"
-           (:h2 :class "center" "New to Kindista?")
-           (:div :class "center"
-             (:a :class "yes"
-                 :id "big-ass-signup-button" 
-                 :href "/signup" "Create an account."))
-             (:p :class "center"
-              (:a :href "/home" "...or try Kindista as a guest")))
+        (:div
+          (:h1 "Share resources and gratitude with friends and neighbors"))
+        (:div :id "splashbox-container"
+          (:div :id "splashbox"
+            (:div
+             (:p "Make new connections and lead a more abundant life through sharing. ")
+             (:p (:strong "Because sharing is good.")))
+           (:div
+             (:h3 :class "center" "New to Kindista?")
+             (:div :class "center"
+               (:a :class "yes"
+                   :id "big-ass-signup-button"
+                   :href "/signup" "Create an account"))
+               (:p :class "center"
+                (:a :href "/home" "...or try Kindista as a guest")))
 
-           (:p :class "clear"))
+             (:p :class "clear")))
 
        (:div :class "details"
           (:h2 "How does Kindista work?")
@@ -73,51 +75,32 @@
              "That means no bartering, renting, or selling.")
             (:li (:strong "You choose who you want to share with. ")
              "When considering sharing with someone you don't already know, you can check their reputation and get references from mutual connections.")
+            (:li (:strong "Post gratitude to celebrate generosity in your community. ") "Statements of gratitude build the reputation of givers and function as a currency to promote more sharing.")
             (:li (:strong "Be kind and respectful."))))
 
-       (:div :id "word-association"
+       (:div
          (:h2 "What does it mean to be a Kindista?")
-         (:p (str (icon "offers")) " offering free " (str (icon "gift")) " resources ")
-         (:p "fulfilling " (str (icon "map-marker")) " local requests " (str (icon "requests")))
-         (:p "growing community generosity")
-         (:p "sharing prosperity " (str (icon "gratitude-love")) " gratitude ")
-         (:p "freedom " (str (icon "groups")) " connection ease ")
-         (:p (str (icon "share")) " honoring reputation " (str (icon "verified-identity")))
-         (:p " giving abundance trusting love ")
-         (:p (str (icon "home")) " receiving plenty"))
+         (:div :id "word-association"
+           (:p (str (icon "offers")) " offering free " (str (icon "gift")) " resources ")
+           (:p "fulfilling " (str (icon "map-marker")) " local requests " (str (icon "requests")))
+           (:p "growing community generosity")
+           (:p "sharing prosperity " (str (icon "gratitude-love")) " gratitude ")
+           (:p "freedom " (str (icon "groups")) " connection ease ")
+           (:p (str (icon "share")) " honoring reputation " (str (icon "verified-identity")))
+           (:p " giving abundance trusting love ")
+           (:p (str (icon "home")) " receiving plenty")))
 
-       ;(:div :id "preview"
-       ;  (:h2 "What's happening on Kindista?")
-       ;  (:p "People are sharing offers, requests, and gratitude with friends and neighbors. Here's what's happening now:")
-       ;  (:div :id "preview-cards"
-       ;    (with-location
-       ;      (str (activity-items
-       ;             (remove-private-items
-       ;               (safe-sort *recent-activity-index*
-       ;                          #'> :key
-       ;                          #'result-time))
-       ;             :url "/"
-       ;             :page 0
-       ;             :count 10
-       ;             :location nil
-       ;             :paginate nil))))
-       ;  (:div :class "splactions"
-       ;    (:a :class "yes" :href "/home" "Try Kindista")
-       ;    " "
-       ;    (:a :class "yes" :href "/signup"  "Create an account")
-       ;    " "
-       ;    (:a :class "yes" :href "/donate" "Donate")))
-
-       (:div :class "about splactions" "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")
-       (:div :class "splactions footer"
-         (if *userid*
-           (htm (:a :href "/contact-kindista" "contact"))
-           (htm (:a :href "mailto:info@kindista.org" "contact")))
-         " &middot; "
-         (:a :href "/about" "about")
-         " &middot; "
-         (:a :href "/terms" "terms")
-         " &middot; "
-         (:a :href "/privacy" "privacy")))
+       (:div
+         (:div :class "about" "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")
+         (:div :class "footer"
+          (if *userid*
+            (htm (:a :href "/contact-kindista" "contact"))
+            (htm (:a :href "mailto:info@kindista.org" "contact")))
+          " &middot; "
+          (:a :href "/about" "about")
+          " &middot; "
+          (:a :href "/terms" "terms")
+          " &middot; "
+          (:a :href "/privacy" "privacy"))))
 
       :class "splash")))
