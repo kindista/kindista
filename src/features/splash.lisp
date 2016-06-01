@@ -50,35 +50,36 @@
                     (str
                       (facebook-sign-in-button :redirect-uri "login")))))))))
 
-        (:div
-          (:h1 "Share resources and gratitude with friends and neighbors"))
-        (:div :id "splashbox-container"
+        (:div :class "full-width lt-fuchsia-bg"
+         (:div
+           (:h1 "Share resources and gratitude with friends and neighbors"))
+         (:div :id "splashbox-container"
           (:div :id "splashbox"
-            (:div
+           (:div
              (:p "Make new connections and lead a more abundant life through sharing. ")
              (:p (:strong "Because sharing is good.")))
            (:div
              (:h3 :class "center" "New to Kindista?")
              (:div :class "center"
-               (:a :class "yes"
-                   :id "big-ass-signup-button"
-                   :href "/signup" "Create an account"))
-               (:p :class "center"
-                (:a :href "/home" "...or try Kindista as a guest")))
+              (:a :class "yes"
+               :id "big-ass-signup-button"
+               :href "/signup" "Create an account"))
+             (:p :class "center"
+              (:a :href "/home" "...or try Kindista as a guest"))))))
 
-             (:p :class "clear")))
-
-       (:div :class "details"
+       (:div :class "full-width lt-blue-bg"
+        (:div :class "details"
           (:h2 "How does Kindista work?")
           (:ol :class "numeric"
             (:li (:strong "Everything shared is given freely. ")
              "That means no bartering, renting, or selling.")
+            (:li (:strong "Post gratitude to celebrate generosity in your community. ") "Statements of gratitude build the reputation of givers and function as a currency to promote more sharing.")
             (:li (:strong "You choose who you want to share with. ")
              "When considering sharing with someone you don't already know, you can check their reputation and get references from mutual connections.")
-            (:li (:strong "Post gratitude to celebrate generosity in your community. ") "Statements of gratitude build the reputation of givers and function as a currency to promote more sharing.")
-            (:li (:strong "Be kind and respectful."))))
+            (:li (:strong "Be kind and respectful.")))))
 
-       (:div
+       (:div :class "full-width green-bg"
+        (:div :class "details"
          (:h2 "What does it mean to be a Kindista?")
          (:div :id "word-association"
            (:p (str (icon "offers")) " offering free " (str (icon "gift")) " resources ")
@@ -88,19 +89,20 @@
            (:p "freedom " (str (icon "groups")) " connection ease ")
            (:p (str (icon "share")) " honoring reputation " (str (icon "verified-identity")))
            (:p " giving abundance trusting love ")
-           (:p (str (icon "home")) " receiving plenty")))
+           (:p (str (icon "home")) " receiving plenty"))))
 
-       (:div
-         (:div :class "about" "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")
+       (:div :class "full-width details dk-brown-bg"
          (:div :class "footer"
-          (if *userid*
-            (htm (:a :href "/contact-kindista" "contact"))
-            (htm (:a :href "mailto:info@kindista.org" "contact")))
-          " &middot; "
-          (:a :href "/about" "about")
-          " &middot; "
-          (:a :href "/terms" "terms")
-          " &middot; "
-          (:a :href "/privacy" "privacy"))))
+           (:div :class "about" "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")
+           (:div
+            (if *userid*
+              (htm (:a :href "/contact-kindista" "contact"))
+              (htm (:a :href "mailto:info@kindista.org" "contact")))
+            " &middot; "
+            (:a :href "/about" "about")
+            " &middot; "
+            (:a :href "/terms" "terms")
+            " &middot; "
+            (:a :href "/privacy" "privacy")))))
 
       :class "splash")))
