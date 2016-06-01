@@ -703,7 +703,6 @@ body.landing > p {
 }
 
 body.splash {
- background: #e5d3f1;
  font-size: 1.3em;
  font-size: 1.3rem;
 }
@@ -711,19 +710,35 @@ body.splash {
 body.splash > * {
  padding: 0 1em 0;
  max-width: 34em;
- margin: 1.5em auto 1em;
+ margin: 0 auto;
 }
 
 body.splash > div:first-child {
- padding-top: 0;
+ margin: 0 auto;
 }
 
 body.splash h2,
 body.splash h1 {
  text-align: center;
- color: #333;
  font-size: 1.7em;
 }
+
+.semi-transparent-lt {
+ color: rgba(255,255,255,0.6);
+}
+
+.semi-transparent-drker
+body.splash h1,
+body.splash h2 {
+ color: rgba(0,0,0,0.7);
+}
+
+.semi-transparent-drk,
+.splash .details,
+.splash .footer a {
+ color: rgba(0,0,0,0.6);
+}
+
 .splash h2 {
  margin-bottom: 0.5em;
 }
@@ -733,12 +748,12 @@ body.splash #header-container {
  width: 100%;
  max-width: none;
  font-size: 0.85em;
- background: #f7f2fb;
 }
 
+.splash .full-width.light,
 body.splash #header-container,
 body.splash #header-container .or-divider > span {
- background: #f7f2fb;
+ background: #f5daff;
 }
 
 body.splash #header {
@@ -804,7 +819,7 @@ body.splash #symbol {
 }
 
 #splashbox {
- background: rgba(255,255,255,0.6);
+ background: rgba(255,255,255,0.9);
  border-radius: 2em;
  box-shadow: 0.05em 0.05em 2em rgba(0,0,0,0.3);
  width:100%;
@@ -813,8 +828,58 @@ body.splash #symbol {
  margin: 0 auto;
 }
 
-.splash .details {
- color: #333;
+.splash .full-width {
+ width: 100%;
+ max-width: 100%;
+ padding: 1em;
+ margin: 0 0;
+}
+
+.green-bg {
+ background:#b1c253;
+}
+
+.lt-green-bg {
+ background:#ddeb80;
+}
+
+.blue-bg {
+ background:#347977;
+}
+.lt-blue-bg {
+ background:#589391;
+}
+
+.fuchsia-bg {
+ background: #a44676;
+}
+
+.lt-fuchsia-bg {
+ background:#c777a0;
+}
+
+.pale-fuchsia-bg {
+ background:#e1abc6;
+}
+
+.lt-brown-bg {
+ background:#f2d191;
+}
+.brown-bg {
+ background:#c8ab56;
+}
+.dk-brown-bg {
+ background:#9f822b;
+
+}
+
+.rust-bg {
+ background:#eb9b7d;
+}
+
+.splash .full-width > div {
+ max-width: 34em;
+ margin: 0 auto;
 }
 
 .splash .details ol {
@@ -838,7 +903,6 @@ body.splash #symbol {
  text-align: justify;
  -moz-text-align-last: justify;
  text-align-last: justify;
- color: #555;
  margin:0.2vw 0;
 }
 
@@ -854,7 +918,7 @@ body.splash #symbol {
  width: auto;
 }
 
-@media (min-width:46em){
+@media (min-width:48em){
 body.splash #header-container {
  height: 3.5em;
 }
@@ -868,7 +932,7 @@ body.splash #symbol {
  line-height: inherit;
 }
 .splash #word-association {
- font-size: 1.8em;
+ font-size: 2em;
  line-height: 1.3em;
 }
 .splash #word-association p {
@@ -886,6 +950,7 @@ body.splash #symbol {
 }
 #splashbox > div {
  display: table-cell;
+ font-size: 1.1em;
  vertical-align: middle;
 }
 
@@ -1009,22 +1074,19 @@ body.splash #symbol {
  }
 }
 
-.splash .about {
- color: #333;
-}
-
 .splash .footer {
  margin: 1em auto;
+ text-align: center;
+}
+.splash .footer > * {
+ font-size: 85%;
 }
 .splash .footer a {
- color: #777;
- padding: 0.5em;
+ font-weight: bold;
+ font-size: 1.1em;
 }
-
-.splash .about,
-.splash .footer {
- font-size: 85%;
- text-align: center;
+.splash .footer > div:first-child {
+ margin-bottom: 0.5em;
 }
 
 .settings-item .submit-image label {
@@ -1286,7 +1348,7 @@ button.simple-link {
 }
 
 button.no-padding {
- padding: 0;
+ padding: 0 0 0 0;
 }
 
 button.link:hover {
@@ -4576,6 +4638,14 @@ background-color: #f8f8f8;
 
 .middle {
  vertical-align: middle;
+}
+
+.no-margin {
+ margin: 0 0 0 0;
+}
+
+.no-padding {
+ padding: 0 0 0 0;
 }
 
 .center {
