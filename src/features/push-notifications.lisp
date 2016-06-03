@@ -113,7 +113,9 @@
       (multiple-value-list
         (http-request "https://android.googleapis.com/gcm/send"
                       ;CHANGE to server key when pushing to live
-                      :additional-headers (list (cons "Authorization" (s+ "key=" *chrome-push-secret*)))
+                      :additional-headers (list (cons "Authorization"
+                                                      (s+ "key="
+                                                          *chrome-push-secret*)))
                       :method :post
                       :content-type "application/json"
                       :external-format-out :utf-8

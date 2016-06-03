@@ -23,8 +23,7 @@
          (author-name (db from :name))
          (url (strcat *email-url* "gratitude/" gratitude-id))
          (recipients)
-         (push-recipients)
-         )
+         (push-recipients))
 
     (dolist (subject (getf gratitude :subjects))
       (let* ((data (db subject))

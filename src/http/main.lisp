@@ -58,7 +58,8 @@
   (require-user ()
     (with-mutex (*client-errors-log-lock*)
       (with-open-file (s (s+ +db-path+ "client-side-errors") :direction :output
-                                                             :if-exists :append)
+                                                             :if-exists :append
+                                                             :if-does-not-exist :create)
         (let ((*print-readably* nil))
           (format s "~{~S~%~}" errorJSON))))))
 
@@ -599,7 +600,7 @@
         (:link :rel "apple-touch-icon" :sizes "180x180" :href  "/media/icons/kindista_favicon_180.png")
         (:script :type "text/javascript" :src "/kindista.js")
         (:script :type "text/javascript" :src "/service-worker-registration.js")
-        (when (and *userid* (string= (referer) (s+ +base-url+ "login")))
+        (when (and *userid* (string= (referer) (strcat +base-url+ "login")))
           (htm (:script :type "text/javascript"
                         :src "/update-push-registration.js")))
         ;; if serviceworker js, inline login subscription here

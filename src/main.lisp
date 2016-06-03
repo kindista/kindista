@@ -54,6 +54,7 @@
                       #'new-group-membership-request-notice-handler)
   (add-notice-handler :new-group-membership-invitation
                       #'new-group-membership-invitation-notice-handler)
+  (add-notice-handler :new-contact #'new-contact-notice-handler)
   (add-notice-handler :new-gratitude #'new-gratitude-notice-handler)
   (add-notice-handler :updated-notifications #'updated-notifications-handler))
 

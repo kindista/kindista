@@ -683,7 +683,11 @@
                           " a message or responds to "
                           (if group "our" "my")
                           " offers/requests")))
-            (:li (:input :type "checkbox"
+           (:li (:input :type "checkbox"
+                      :name "new-contact"
+                      :checked (checkbox-value :notify-new-contact))
+                     "when someone adds me to their list of contacts")
+           (:li (:input :type "checkbox"
                   :name "inventory-expiration"
                   :checked (checkbox-value :notify-inventory-expiration))
                  "when my offers and requests are about to expire ")
@@ -697,10 +701,6 @@
 
             (unless group
               (htm
-               ;(:li (:input :type "checkbox"
-               ;      :name "new-contact"
-               ;      :checked (checkbox-value :notify-new-contact))
-               ;     "when someone adds me to their list of contacts")
                 (:li (:input :type "checkbox"
                       :name "expired-invites"
                       :checked (checkbox-value :notify-expired-invites))
