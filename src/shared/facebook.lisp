@@ -179,7 +179,6 @@
                   (getf *user* :fb-id)))
     data))
 
-
 (defun get-facebook-user-data (fb-token)
   (alist-plist
     (decode-json-octets
@@ -199,8 +198,7 @@
    &aux (user (db k-user-id))
         (fb-token (getf user :fb-token))
         (fb-user-id (getf user :fb-id))
-        (response)
-        (image-id))
+        (response))
   (when (and fb-token fb-user-id)
    (setf response
          (multiple-value-list
@@ -209,10 +207,23 @@
                                            (cons "type" "large")
                                            (cons "method" "get")))))
    (when (eql (second response) 200)
-      (setf image-id
-            (create-image (first response)
-                          (cdr (assoc :content-type (third response)))))))
-  image-id)
+     (values (first response)
+             (cdr (assoc :content-type (third response)))
+             (fourth response)))))
+
+(defun save-facebook-profile-picture-to-avatar (k-userid)
+  (multiple-value-bind
+    (octet-array content-type image-url)
+    (get-facebook-profile-picture k-userid)
+    (declare (ignore image-url))
+    (create-image octet-array content-type)))
+
+(defun facebook-image-identifyier (k-userid)
+  (car (last (puri:uri-parsed-path
+               (third (multiple-value-list
+                        (get-facebook-profile-picture k-userid)))))))
+
+
 
 (defun get-facebook-user-permissions
   (k-id
@@ -282,8 +293,6 @@
   (&optional (userid *userid*)
              (user (if (eql userid *userid*) *user* (db userid))))
   (and (getf user :fb-id) (getf user :fb-link-active) ))
-
-
 
 (defun get-facebook-location-data (fb-location-id fb-token)
   (alist-plist
@@ -510,22 +519,78 @@
 (defun get-taggable-fb-friends
   (&optional (userid *userid*)
              (user (if (eql userid *userid*) *user* (db userid)))
+             (url (strcat *fb-graph-url*
+                          "v2.6/"
+                          (getf user :fb-id)
+                          "/taggable_friends"))
    &aux (response))
-  "Not useful. Facebook only returns encoded friend-tag tokens, not friend ids. No way to cross check with Kindista IDs."
+  "Performs a call to the FB graph taggable_friends endpoint to get a list of all taggable friends."
   (when (active-facebook-user-p userid user)
     (setf response
           (multiple-value-list
             (http-request
-              (strcat *fb-graph-url*
-                      "v2.6/"
-                      (getf user :fb-id)
-                      "/taggable_friends")
+              url
               :parameters (list (cons "access_token" *facebook-app-token*)
                                 (cons "access_token" (getf user :fb-token))
+                                (cons "limit" "5000")
                                 (cons "method" "get"))))))
     (when (eql (second response) 200)
-      (decode-json-octets (first response))))
+      (let ((results (decode-json-octets (first response))))
+        (values results
+                (length (car results))))))
 
+(defun get-all-taggable-fb-friends
+  (&optional (userid *userid*)
+             (user (if (eql userid *userid*) *user* (db userid)))
+   &aux (all-results)
+        (current-results)
+        (next)
+        (requests 0))
+  "Performs multiple calls to the FB graph taggable_friends endpoint to accumulate a list of all taggable friends. Not currently needed because that endpoint allows a 'limit' get parameter to get a list of all taggable friends."
+  (labels ((request-loop ()
+             (setf current-results
+                   (apply #'get-taggable-fb-friends (remove nil (list userid user next))))
+             (setf next (cdr (find :next
+                                   (cdr (find :paging current-results :key 'car))
+                                   :key 'car)))
+             (incf requests)
+             (if all-results
+               (asetf all-results (append it (cdr (find :data current-results :key 'car))))
+               (setf all-results (cdr (find :data current-results :key 'car))))
+             ;; don't let it loop indefinitely
+             (when (and (< requests 5)
+                        (stringp next))
+               (request-loop))))
+    (request-loop))
+  all-results)
+
+(defun facebook-taggable-friend-tokens
+  (k-user-ids-to-test
+   &optional (userid *userid*)
+   &aux (image-identifiers (mapcar (lambda (id)
+                                     (cons id (facebook-image-identifyier id)))
+                                   k-user-ids-to-test))
+        (taggable-fb-friends (cdr (find :data (get-taggable-fb-friends userid) :key 'car)))
+        (taggable-k-users))
+  (flet ((get-pic-url-identifier (fb-data)
+           (car
+             (split "\\?"
+               (car
+                 (last
+                   (url-parts
+                     (cdr (find :url
+                                (cdr (find :data
+                                           (cdr (find :picture fb-data :key 'car))
+                                           :key 'car))
+                                :key 'car)))))))))
+   (dolist (pair image-identifiers)
+    (awhen (find (cdr pair)
+                 taggable-fb-friends
+                 :key #'get-pic-url-identifier
+                 :test #'string=)
+      (push (cons (car pair) (getf (alist-plist it) :id))
+            taggable-k-users))))
+  taggable-k-users)
 
 (defun facebook-friends-permission-html
   (&key redirect-uri

@@ -237,7 +237,8 @@
               (unless (getf user :avatar)
                 (asetf new-data
                        (append
-                         (list :avatar (get-facebook-profile-picture userid))
+                         (list :avatar (save-facebook-profile-picture-to-avatar
+                                         (userid)))
                          it)))
               (apply #'modify-db userid new-data)
               (when new-name (reindex-person-names userid))
@@ -396,7 +397,7 @@
                          :password (post-parameter-string "password"))))
   (setf (token-userid *token*) new-id)
   (when fb-id
-    (modify-db new-id :avatar (get-facebook-profile-picture new-id)))
+    (modify-db new-id :avatar (save-facebook-profile-picture-to-avatar new-id)))
   (dolist (group (getf invitation :groups))
     (add-group-member new-id group))
   (add-contact host new-id)
