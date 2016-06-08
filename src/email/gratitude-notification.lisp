@@ -36,7 +36,7 @@
                         :email (car (getf data :emails))
                         :unsubscribe-key (getf data :unsubscribe-key))
                 recipients)
-            (push subject push-recipients))
+            (push subject (getf push-recipients :individuals)))
           (dolist (admin (getf data :notify-gratitude))
             (let ((person (db admin)))
               (when (getf person :active)
@@ -45,8 +45,9 @@
                             :email (car (getf person :emails))
                             :unsubscribe-key (getf person :unsubscribe-key)
                             :id admin)
-                    recipients)))))))
-    (send-push-through-chrome-api push-recipients
+                    recipients)
+                (push admin (getf push-recipients :groups))))))))
+    (send-push-through-chrome-api (getf push-recipients :individuals)
                                   :message-title "Statement of Gratitude"
                                   :message-body (s+ author-name
                                                     " shared gratitude for you")
@@ -55,6 +56,15 @@
                                   :message-url (strcat +base-url+
                                                        "gratitude/"
                                                        gratitude-id))
+    (send-push-through-chrome-api (getf push-recipients :groups)
+                                 :message-title "Statement of Gratitude"
+                                 :message-body (s+ author-name
+                                                   " shared gratitude for a group you manage")
+                                 :message-tag "gratitude_tag"
+                                 ;:message-type :gratitude
+                                 :message-url (strcat +base-url+
+                                                      "gratitude/"
+                                                      gratitude-id))
     (dolist (recipient recipients)
       (cl-smtp:send-email +mail-server+
                           "Kindista <noreply@kindista.org>"

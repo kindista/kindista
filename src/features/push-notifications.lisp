@@ -20,15 +20,12 @@
 (defun remove-push-registration
   (user-id
    sub-type
-   registration-id)
-   (let*
-     ((subscriptions (copy-list
-                       (db user-id :push-notification-subscriptions))))
-
-     (setf (getf subscriptions sub-type) nil)
-       (with-locked-hash-table (*push-subscription-message-index*)
-         (remhash registration-id *push-subscription-message-index*))
-     (modify-db *userid* :push-notification-subscriptions subscriptions)))
+   registration-id
+   &aux (subscriptions (copy-list (db user-id :push-notification-subscriptions))))
+  (setf (getf subscriptions sub-type) nil)
+    (with-locked-hash-table (*push-subscription-message-index*)
+      (remhash registration-id *push-subscription-message-index*))
+  (modify-db *userid* :push-notification-subscriptions subscriptions))
 
 (defun post-push-notification-subscription
  (&aux
@@ -98,7 +95,8 @@
                      :url message-url))
       (chrome-api-status)
       (subscriptions)
-      (registration-json))
+      (registration-json)
+      (chrome-results))
 
   ;get registration id's for each recipient
   ;if they are subscribed
@@ -112,6 +110,11 @@
   (when registration-ids
     (setf registration-json (json:encode-json-alist-to-string (list (cons "registration_ids" registration-ids))))
 
+  (dolist (reg-id registration-ids)
+    (with-locked-hash-table (*push-subscription-message-index*)
+      (push message
+        (gethash reg-id *push-subscription-message-index*))))
+
     (setf chrome-api-status
       (multiple-value-list
         (http-request "https://android.googleapis.com/gcm/send"
@@ -123,18 +126,20 @@
                       :external-format-in :utf-8
                       :content registration-json)))
 
+    (setf chrome-results
+          (getf (alist-plist (decode-json-octets (first chrome-api-status)))
+                :results))
     (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :append)
       (let ((*print-readably* nil))
         (format s "~{~S~%~}" (decode-json-octets (first chrome-api-status)))))
 
-    (do ((results (getf (alist-plist (decode-json-octets (first chrome-api-status)))
-               :results) (rest results))
+    (do ((results chrome-results (rest results))
          (reg-ids registration-ids (rest reg-ids)))
-         ((null results) 'done)
-           (unless (eql (car (first (first results))) :error)
-             (with-locked-hash-table (*push-subscription-message-index*)
-               (push message
-                 (gethash (first reg-ids) *push-subscription-message-index*)))))))
+        ((null results) 'done)
+        (when (eql (car (first (first results))) :error)
+          (with-locked-hash-table (*push-subscription-message-index*)
+            (asetf (gethash (first reg-ids) *push-subscription-message-index*)
+              (remove message it)))))))
 
 (defun send-unread-notifications
   (&aux
@@ -152,3 +157,30 @@
     ;dequeue message from users message queue
     (asetf (gethash registration-id *push-subscription-message-index*) (butlast it)))
   (json:encode-json-to-string json-list))
+
+
+;; see:
+;; page 91 of http://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf
+;; secton 4.3.7 http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.202.2977&rep=rep1&type=pdf
+(defun base64-string-to-ec-point
+  (&key (string "BO7CSzihgoAD5y7-PuppaOBC1VI1jh9QxPJXCOGzc77KM-vez5Fw4bX0adkig2eiI48vLZdwQFIiHzslS2p-PKc=")
+        (prime 115792089210356248762697446949407573530086143415290314195533631308867097853951)
+        (base-pointx (ironclad:octets-to-integer
+                       (ironclad:hex-string-to-byte-array
+                         "6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296")))
+        (base-pointy (ironclad:octets-to-integer
+                       (ironclad:hex-string-to-byte-array
+                         "4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5")))
+   &aux (octets (base64:base64-string-to-usb8-array
+                  (substitute #\+ #\- (substitute #\/ #\_ string))))
+        (raw-length (length octets))
+        (pc (aref octets 0))
+        (point-length (/ (- raw-length 1) 2))
+        (x (ironclad:octets-to-integer (subseq octets 1 (+ point-length 1))))
+        (y (ironclad:octets-to-integer (subseq octets (+ point-length 1) raw-length))))
+  (when (= pc 4)
+    (values (mod base-pointy prime)
+            (expt y 2)
+            (+ (expt x 3) (* base-pointx x) (mod base-pointy prime))
+            (list :x x :y y))))
+
