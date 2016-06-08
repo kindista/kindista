@@ -151,3 +151,30 @@
     ;dequeue message from users message queue
     (asetf (gethash registration-id *push-subscription-message-index*) (butlast it)))
   (json:encode-json-to-string json-list))
+
+
+;; see:
+;; page 91 of http://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf
+;; secton 4.3.7 http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.202.2977&rep=rep1&type=pdf
+(defun base64-string-to-ec-point
+  (&key (string "BO7CSzihgoAD5y7-PuppaOBC1VI1jh9QxPJXCOGzc77KM-vez5Fw4bX0adkig2eiI48vLZdwQFIiHzslS2p-PKc=")
+        (prime 115792089210356248762697446949407573530086143415290314195533631308867097853951)
+        (base-pointx (ironclad:octets-to-integer
+                       (ironclad:hex-string-to-byte-array
+                         "6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296")))
+        (base-pointy (ironclad:octets-to-integer
+                       (ironclad:hex-string-to-byte-array
+                         "4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5")))
+   &aux (octets (base64:base64-string-to-usb8-array
+                  (substitute #\+ #\- (substitute #\/ #\_ string))))
+        (raw-length (length octets))
+        (pc (aref octets 0))
+        (point-length (/ (- raw-length 1) 2))
+        (x (ironclad:octets-to-integer (subseq octets 1 (+ point-length 1))))
+        (y (ironclad:octets-to-integer (subseq octets (+ point-length 1) raw-length))))
+  (when (= pc 4)
+    (values (mod base-pointy prime)
+            (expt y 2)
+            (+ (expt x 3) (* base-pointx x) (mod base-pointy prime))
+            (list :x x :y y))))
+
