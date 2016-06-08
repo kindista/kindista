@@ -1,13 +1,5 @@
 ## web apps
-  - test iphone webapp
-  - !change api key when ready to push to live
-  - change manifest file when ready to push to live
-  - comment notification active person help
-  - test messages for phones
-  - javascript error handeling to lisp server?
   - group message not being marked as read in message folder
-  # web app live server
-    - test push subscriptions on different computers
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
 ## accountability with user flaky-ness
