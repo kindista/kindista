@@ -1,4 +1,5 @@
 ## web apps
+## When clicking "offer this" or "request this" we need an option to select offering/requesting on behalf of a group instead of the individual
 ## post offers/requests to facebook
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
