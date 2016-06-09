@@ -754,10 +754,11 @@
     (parse-integer (get-parameter name))))
 
 (defun get-parameter-integer-list (name)
-  (loop for pair in (get-parameters*)
-        for i = (parse-integer (cdr pair) :junk-allowed t)
-        when (and (string= (car pair) name) i)
-        collect i))
+  (remove nil
+          (loop for pair in (get-parameters*)
+                for i = (parse-integer (cdr pair) :junk-allowed t)
+                when (and (string= (car pair) name) i)
+                collect i)))
 
 (defun post-parameter-float (name)
   (awhen (post-parameter name) (when (scan +float-scanner+ it) (read-from-string it))))

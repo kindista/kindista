@@ -922,26 +922,21 @@
                                             :time time
                                             :text text))
                   (gratitude-url (format nil "/gratitude/~A" new-id))
-                 ; (facebook-recipients)
-                  )
-
+                  (facebook-friends-on-kindista (get-facebook-kindista-friends))
+                  (facebook-recipients))
 
              (when (and (getf *user* :fb-link-active)
                         (getf *user* :fb-id)
                         (post-parameter "publish-facebook"))
                (notice :new-facebook-action :item-id new-id)
-              ;; Tagging is convoluted until Facebook changes it's API to allow apps to pass
-              ;; FB user ids to tag an item. Now they only pass a special token that prevents
-              ;; us from verifying that a gratitude recipient is also a facebook friend.
-
-              ;(dolist (subject-id g-subjects)
-              ;  (let ((subject-data (db subject-id)))
-              ;    (when (and (getf subject-data :fb-id)
-              ;               (getf subject-data :fb-link-active)
-              ;               (check-facebook-permission :user-friends
-              ;                                          subject-id))
-              ;      (push subject-id facebook-recipients))))
-               )
+               (dolist (subject-id g-subjects)
+                 (let ((subject-data (db subject-id)))
+                   (when (and (getf subject-data :fb-id)
+                              (getf subject-data :fb-link-active)
+                              (find subject-id facebook-friends-on-kindista)
+                              (check-facebook-permission :user-friends
+                                                         subject-id))
+                     (push subject-id facebook-recipients)))))
 
              (awhen on-id
                (let* ((inventory-result (gethash on-id *db-results*))
@@ -979,17 +974,15 @@
                       "Your statement of gratitude has been posted"))
              (see-other
                (or (when (and (post-parameter "publish-facebook")
-                             ;facebook-recipients
-                              )
+                              facebook-recipients)
                      (flash "Your statement of gratitude has been published on Facebook")
                      (apply #'url-compose
                             (strcat "gratitude/" new-id)
-                           ;(flatten
-                           ;  (mapcar (lambda (id)
-                           ;            (cons "authorize-fb-friend-tag"
-                           ;                  (strcat id)))
-                           ;          facebook-recipients))
-                            ))
+                            (flatten
+                              (mapcar (lambda (id)
+                                        (cons "authorize-fb-friend-tag"
+                                              (strcat id)))
+                                      facebook-recipients))))
                    next
                    (if inactive-subject
                      "/home"
@@ -1026,28 +1019,31 @@
                              :image (awhen (first (getf data :images))
                                       (get-image-thumbnail it 1200 1200)))
                :selected (awhen (get-parameter-string "menu") it))))
-        ;; Tagging is convoluted until Facebook changes it's API to allow apps to pass
-        ;; FB user ids to tag an item. Now they only pass a special token that prevents
-        ;; us from verifying that a gratitude recipient is also a facebook friend.
-        ;(friend-tags-to-authorize (get-parameter-integer-list
-        ;                            "authorize-fb-friend-tag"))
-        ;(new-fb-authorization (string= (get-parameter-string "state") "user_friends_scope_granted"))
-        ;(fb-user-friends-permission
-        ;  (when (and *user* self-author-p (or friend-tags-to-authorize new-fb-authorization))
-        ;    (multiple-value-list (check-facebook-permission :user-friends *userid*))))
-        ;(possible-fb-friends-to-tag
-        ;  (or friend-tags-to-authorize
-        ;      (remove nil
-        ;              (mapcar (lambda (subject-id)
-        ;                        (let ((subject (db subject-id)))
-        ;                          (when (and (getf subject :fb-id)
-        ;                                     (getf subject :fb-link-active)
-        ;                                     (check-facebook-permission
-        ;                                       :user-friends
-        ;                                       subject-id))
-        ;                          subject-id)))
-        ;                (getf data :subjects)))))
-         )
+         (friend-tags-to-authorize (get-parameter-integer-list
+                                     "authorize-fb-friend-tag"))
+         (new-fb-authorization (string= (get-parameter-string "state") "user_friends_scope_granted"))
+         (fb-user-friends-permission
+           (when (and *user* self-author-p (or friend-tags-to-authorize
+                                               (get-parameter "tag-fb-friends")
+                                               new-fb-authorization))
+             (multiple-value-list (check-facebook-permission :user-friends *userid*))))
+         (possible-fb-friends-to-tag friend-tags-to-authorize))
+
+    (when (and self-author-p (not possible-fb-friends-to-tag))
+      (let ((facebook-friends-on-kindista (get-facebook-kindista-friends *userid*)))
+        (when facebook-friends-on-kindista
+          (setf possible-fb-friends-to-tag
+                (remove nil
+                       (mapcar (lambda (subject-id)
+                                 (let ((subject (db subject-id)))
+                                   (when (and (getf subject :fb-id)
+                                              (getf subject :fb-link-active)
+                                              (find subject facebook-friends-on-kindista)
+                                              (check-facebook-permission
+                                                :user-friends
+                                                subject-id))
+                                     subject-id)))
+                               (getf data :subjects)))))))
 
     (cond
       ((and data (not *user*))
@@ -1071,27 +1067,26 @@
       ;; FB user ids to tag an item. Now they only pass a special token that prevents
       ;; us from verifying that a gratitude recipient is also a facebook friend.
 
-     ;((not (first fb-user-friends-permission))
-     ; (facebook-friends-permission-html
-     ;       :redirect-uri (strcat "gratitude/" id)
-     ;       :re-request (eql (second fb-user-friends-permission) :declined)
-     ;       :cancel-link (strcat "gratitude/" id)
-     ;       :fb-gratitude-subjects possible-fb-friends-to-tag))
+      ((not (first fb-user-friends-permission))
+       (facebook-friends-permission-html
+             :redirect-uri (strcat "gratitude/" id)
+             :re-request (eql (second fb-user-friends-permission) :declined)
+             :cancel-link (strcat "gratitude/" id)
+             :fb-gratitude-subjects possible-fb-friends-to-tag))
 
-     ;(possible-fb-friends-to-tag
-     ; (tag-facebook-friends-html
-     ;   :gratitude-id id
-     ;   :fb-gratitude-subjects (mapcar (lambda (id) (cons (db id :name)
-     ;                                                     id))
-     ;                                  possible-fb-friends-to-tag)))
+      (possible-fb-friends-to-tag
+       (tag-facebook-friends-html
+         :gratitude-id id
+         :fb-gratitude-subjects (mapcar (lambda (id) (cons (db id :name)
+                                                           id))
+                                        possible-fb-friends-to-tag)))
       (t (not-found)))))
 
 (defun post-gratitude
   (id
    &aux (url (strcat "/gratitude/" id))
-       ;(friends-to-tag (when (post-parameter "tag-friends")
-       ;                  (post-parameter-integer-list "tag-fb-friend")))
-       )
+        (friends-to-tag (when (post-parameter "tag-friends")
+                          (post-parameter-integer-list "tag-fb-friend"))))
   (require-user (:require-active-user t :allow-test-user t)
     (setf id (parse-integer id))
     (aif (db id)
@@ -1109,9 +1104,9 @@
           (delete-gratitude id)
           (flash "Your statement of gratitude has been deleted!")
           (see-other (or (post-parameter "next") "/home")))
-        ;(friends-to-tag
-        ; (tag-facebook-friends id friends-to-tag)
-        ; (see-other url))
+         (friends-to-tag
+          (tag-facebook-friends id friends-to-tag)
+          (see-other url))
          ((post-parameter "edit")
           (see-other (s+ url "/edit")))))
       (not-found))))

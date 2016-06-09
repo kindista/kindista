@@ -223,8 +223,6 @@
                (third (multiple-value-list
                         (get-facebook-profile-picture k-userid)))))))
 
-
-
 (defun get-facebook-user-permissions
   (k-id
    &optional (user (db k-id))
@@ -272,7 +270,7 @@
             :declined)))
 
 (defun get-facebook-kindista-friends
-  (k-id
+  (&optional (k-id *userid*)
    &aux (user (db k-id))
         (fb-id (getf user :fb-id))
         (response))
@@ -286,8 +284,10 @@
               :parameters (list (cons "access_token" *facebook-app-token*)
                                 (cons "access_token" (getf user :fb-token))
                                 (cons "method" "get"))))))
-  (decode-json-octets (first response))
-  )
+  (mapcar (lambda (friend)
+            (gethash (safe-parse-integer (cdr (find :id friend :key 'car)))
+                     *facebook-id-index*))
+          (cdr (find :data (decode-json-octets (first response)) :key 'car))))
 
 (defun active-facebook-user-p
   (&optional (userid *userid*)
@@ -536,8 +536,7 @@
                                 (cons "method" "get"))))))
     (when (eql (second response) 200)
       (let ((results (decode-json-octets (first response))))
-        (values results
-                (length (car results))))))
+        results)))
 
 (defun get-all-taggable-fb-friends
   (&optional (userid *userid*)
@@ -570,8 +569,9 @@
    &aux (image-identifiers (mapcar (lambda (id)
                                      (cons id (facebook-image-identifyier id)))
                                    k-user-ids-to-test))
-        (taggable-fb-friends (cdr (find :data (get-taggable-fb-friends userid) :key 'car)))
+        (taggable-fb-friends (get-all-taggable-fb-friends userid))
         (taggable-k-users))
+  "Returns and a-list of (k-userid . fb-taggable-token)"
   (flet ((get-pic-url-identifier (fb-data)
            (car
              (split "\\?"
@@ -663,15 +663,22 @@
    &aux (item (db k-item-id))
         (user (if (eql userid *userid*) *user* (db userid)))
         (response)
-        (message)
+        (taggable-friend-tokens (facebook-taggable-friend-tokens
+                                  k-contacts-to-tag-on-fb
+                                  userid))
+        ;; taggable-friend-tokens is an a-list of (k-userid . fb-taggable-token)
         (friends-to-tag (separate-with-commas
-                          (remove nil (mapcar (lambda (id) (db id :fb-id))
+                          (remove nil (mapcar (lambda (id)
+                                                (cdr (assoc id taggable-friend-tokens)))
                                               k-contacts-to-tag-on-fb))
                           :omit-spaces t))
         (action-id (first (fb-object-actions-by-user k-item-id
                                                      :data item
                                                      :userid userid
                                                      :fb-id (getf user :fb-id)))))
+  ;; Tagging is convoluted until Facebook changes it's API to allow apps to pass
+  ;; FB user ids to tag an item. Now we have to associate taggable-tokens with known profile
+  ;; pic urls associated with fb-ids.
   (when (active-facebook-user-p userid user)
     (setf response
           (multiple-value-list
@@ -683,8 +690,8 @@
                                 (cons "tags" friends-to-tag))
               :method :post)))
     (setf response (decode-json-octets (first response)))
-    (facebook-debugging-log action-id friends-to-tag response message )
-    message))
+    (facebook-debugging-log action-id k-contacts-to-tag-on-fb taggable-friend-tokens friends-to-tag response)
+    response))
 
 (defun post-uninstall-facebook
   (&aux (signed-request (post-parameter "signed_request"))
