@@ -199,7 +199,7 @@
         (fb-token (getf user :fb-token))
         (fb-user-id (getf user :fb-id))
         (response))
-  (when (and fb-token fb-user-id)
+  (when (and fb-token fb-user-id (getf user :fb-link-active))
    (setf response
          (multiple-value-list
            (http-request (strcat *fb-graph-url* "v2.5/" fb-user-id "/picture")
@@ -219,9 +219,8 @@
     (create-image octet-array content-type)))
 
 (defun facebook-image-identifyier (k-userid)
-  (car (last (puri:uri-parsed-path
-               (third (multiple-value-list
-                        (get-facebook-profile-picture k-userid)))))))
+  (awhen (third (multiple-value-list (get-facebook-profile-picture k-userid)))
+    (car (last (puri:uri-parsed-path it)))))
 
 (defun get-facebook-user-permissions
   (k-id
@@ -274,6 +273,7 @@
    &aux (user (db k-id))
         (fb-id (getf user :fb-id))
         (response))
+
   (when (and fb-id (getf user :fb-link-active))
     (setf response
           (multiple-value-list
@@ -286,9 +286,9 @@
                                 (cons "method" "get"))))))
   (when (= (second response) 200)
     (mapcar (lambda (friend)
-              (gethash (safe-parse-integer (cdr (find :id friend :key 'car)))
-                       *facebook-id-index*))
-            (cdr (find :data (decode-json-octets (first response)) :key 'car)))))
+            (gethash (safe-parse-integer (cdr (find :id friend :key 'car)))
+                     *facebook-id-index*))
+          (cdr (find :data (decode-json-octets (first response)) :key 'car)))))
 
 (defun active-facebook-user-p
   (&optional (userid *userid*)

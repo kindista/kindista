@@ -922,22 +922,14 @@
                                             :time time
                                             :text text))
                   (gratitude-url (format nil "/gratitude/~A" new-id))
-                  (facebook-friends-on-kindista)
-                  (facebook-recipients))
+                  (facebook-g-subjects))
 
              (when (and (getf *user* :fb-link-active)
                         (getf *user* :fb-id)
                         (post-parameter "publish-facebook"))
-               (setf facebook-friends-on-kindista (get-facebook-kindista-friends))
-               (notice :new-facebook-action :item-id new-id)
-               (dolist (subject-id g-subjects)
-                 (let ((subject-data (db subject-id)))
-                   (when (and (getf subject-data :fb-id)
-                              (getf subject-data :fb-link-active)
-                              (find subject-id facebook-friends-on-kindista)
-                              (check-facebook-permission :user-friends
-                                                         subject-id))
-                     (push subject-id facebook-recipients)))))
+               (setf facebook-g-subjects
+                     (facebook-taggable-friend-tokens g-subjects))
+               (notice :new-facebook-action :item-id new-id))
 
              (awhen on-id
                (let* ((inventory-result (gethash on-id *db-results*))
@@ -975,15 +967,15 @@
                       "Your statement of gratitude has been posted"))
              (see-other
                (or (when (and (post-parameter "publish-facebook")
-                              facebook-recipients)
+                              facebook-g-subjects)
                      (flash "Your statement of gratitude has been published on Facebook")
                      (apply #'url-compose
                             (strcat "gratitude/" new-id)
                             (flatten
-                              (mapcar (lambda (id)
+                              (mapcar (lambda (pair)
                                         (cons "authorize-fb-friend-tag"
-                                              (strcat id)))
-                                      facebook-recipients))))
+                                              (strcat (car pair))))
+                                      facebook-g-subjects))))
                    next
                    (if inactive-subject
                      "/home"
