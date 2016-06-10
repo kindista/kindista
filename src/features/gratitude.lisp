@@ -922,12 +922,13 @@
                                             :time time
                                             :text text))
                   (gratitude-url (format nil "/gratitude/~A" new-id))
-                  (facebook-friends-on-kindista (get-facebook-kindista-friends))
+                  (facebook-friends-on-kindista)
                   (facebook-recipients))
 
              (when (and (getf *user* :fb-link-active)
                         (getf *user* :fb-id)
                         (post-parameter "publish-facebook"))
+               (setf facebook-friends-on-kindista (get-facebook-kindista-friends))
                (notice :new-facebook-action :item-id new-id)
                (dolist (subject-id g-subjects)
                  (let ((subject-data (db subject-id)))

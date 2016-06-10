@@ -284,10 +284,11 @@
               :parameters (list (cons "access_token" *facebook-app-token*)
                                 (cons "access_token" (getf user :fb-token))
                                 (cons "method" "get"))))))
-  (mapcar (lambda (friend)
-            (gethash (safe-parse-integer (cdr (find :id friend :key 'car)))
-                     *facebook-id-index*))
-          (cdr (find :data (decode-json-octets (first response)) :key 'car))))
+  (when (= (second response) 200)
+    (mapcar (lambda (friend)
+              (gethash (safe-parse-integer (cdr (find :id friend :key 'car)))
+                       *facebook-id-index*))
+            (cdr (find :data (decode-json-octets (first response)) :key 'car)))))
 
 (defun active-facebook-user-p
   (&optional (userid *userid*)
