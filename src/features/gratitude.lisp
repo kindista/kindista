@@ -970,7 +970,7 @@
                               facebook-g-subjects)
                      (flash "Your statement of gratitude has been published on Facebook")
                      (apply #'url-compose
-                            (strcat "gratitude/" new-id)
+                            gratitude-url
                             (flatten
                               (mapcar (lambda (pair)
                                         (cons "authorize-fb-friend-tag"
