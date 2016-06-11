@@ -1023,21 +1023,10 @@
          (possible-fb-friends-to-tag friend-tags-to-authorize))
 
     (when (and self-author-p (not possible-fb-friends-to-tag))
-      (let ((facebook-friends-on-kindista (get-facebook-kindista-friends *userid*)))
-        (when facebook-friends-on-kindista
-          (setf possible-fb-friends-to-tag
-                (remove nil
-                       (mapcar (lambda (subject-id)
-                                 (let ((subject (db subject-id)))
-                                   (when (and (getf subject :fb-id)
-                                              (getf subject :fb-link-active)
-                                              (find subject facebook-friends-on-kindista)
-                                              (check-facebook-permission
-                                                :user-friends
-                                                subject-id))
-                                     subject-id)))
-                               (getf data :subjects)))))))
-
+      (setf possible-fb-friends-to-tag
+            (remove nil (mapcar 'car
+                                (facebook-taggable-friend-tokens
+                                  (getf data :subjects))))))
     (cond
       ((and data (not *user*))
        gratitude-page)
