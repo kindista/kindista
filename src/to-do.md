@@ -1,4 +1,5 @@
 ## web apps
+## are things actually expiring?
 ## post offers/requests to facebook
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
