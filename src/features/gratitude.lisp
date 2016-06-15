@@ -381,6 +381,18 @@
                 "Cancel")))
        (str submit-button)))))
 
+(defun gratitude-linked-inventory-indicator
+  (inventory-id
+   &optional (userid *userid*)
+   &aux (inventory-item (db inventory-id)))
+  (html
+    (str
+      (strcat (possessive-name (getf inventory-item :by) :userid userid)
+              " "
+              (string-downcase (symbol-name (getf inventory-item :type)))
+              ": "))
+    (:strong (str (getf inventory-item :title)))))
+
 (defun gratitude-compose
   (&key error
         subjects
@@ -392,7 +404,7 @@
         groupid
         on-type
         on-id
-        on-item
+        on-item-description
         relevant-offers
         relevant-requests
    &aux (submit-buttons
@@ -464,60 +476,48 @@
                       :name "text"
                       (str text))
 
-           (:div :class (s+ "gratitude-selectors "
-                            (when (string= (getf error :field) "on-type")
-                              "error-border"))
-            (when (or relevant-offers relevant-requests)
-              (htm
-                (:h3 :class (when (string= (getf error :field) "on-type")
-                              "red")
-                 "This statement of gratitude is for...")))
+           (unless existing-url
+             (htm
+               (:div :class (s+ "gratitude-selectors "
+                                (when (string= (getf error :field) "on-type")
+                                  "error-border"))
+                (when (or relevant-offers relevant-requests)
+                  (htm
+                    (:h3 :class (when (string= (getf error :field) "on-type")
+                                  "red")
+                     "This statement of gratitude is for...")))
 
-            (when (and relevant-offers
-                       single-recipient-name)
-              (htm
-                (:div ;:class "inline-block"
-                  (:input :type "radio"
-                   :name "on-type"
-                   :value "offer"
-                   :onclick "this.form.submit()"
-                   :checked (when (string= on-type "offer") "checked"))
-                  "An offer posted by "
-                  (str single-recipient-name))))
+                (when (and relevant-offers
+                           single-recipient-name)
+                  (htm
+                    (:div ;:class "inline-block"
+                      (:input :type "radio"
+                       :name "on-type"
+                       :value "offer"
+                       :onclick "this.form.submit()"
+                       :checked (when (string= on-type "offer") "checked"))
+                      "An offer posted by "
+                      (str single-recipient-name))))
 
-            (when relevant-requests
-              (htm
-                (:div ;:class "inline-block"
-                  (:input :type "radio"
-                   :name "on-type"
-                   :value "request"
-                   :onclick "this.form.submit()"
-                   :checked (when (string= on-type "request") "checked"))
-                  "A request I made on Kindista")))
+                (when relevant-requests
+                  (htm
+                    (:div ;:class "inline-block"
+                      (:input :type "radio"
+                       :name "on-type"
+                       :value "request"
+                       :onclick "this.form.submit()"
+                       :checked (when (string= on-type "request") "checked"))
+                      "A request I made on Kindista")))
 
-            (when (or relevant-offers relevant-requests)
-              (htm
-                (:div ;:class "inline-block"
-                  (:input :type "radio"
-                   :name "on-type"
-                   :value "other"
-                   :onclick "this.form.submit()"
-                   :checked (when (string= on-type "other") "checked"))
-                  "Something else"))))
-
-            (when (and (getf *user* :fb-token)
-                       (or (not (getf *user* :test-user))
-                           (and (= 1 (length subjects))
-                                (db (car subjects) :test-user))))
-              (htm
-                (:div :id "facebook"
-                  (:input :type "checkbox"
-                          :id "publish-facebook"
-                          :name "publish-facebook"
-                          :checked "")
-                  (str (icon "facebook" "facebook-icon"))
-                  (:label :for "publish-facebook"
-                   (str (s+ "Share on Facebook"))))))
+                (when (or relevant-offers relevant-requests)
+                  (htm
+                    (:div ;:class "inline-block"
+                      (:input :type "radio"
+                       :name "on-type"
+                       :value "other"
+                       :onclick "this.form.submit()"
+                       :checked (when (string= on-type "other") "checked"))
+                      "Something else"))))))
 
            (if (and (or relevant-offers relevant-requests)
                     on-type
@@ -544,11 +544,29 @@
                                   (str submit-buttons))))))
 
              (htm
-               (awhen on-item
-                 (str it))
+               (awhen on-item-description
+                 (htm
+                   (:p "This statement of gratitude is about "
+                       (str it))))
 
+               (when (and (getf *user* :fb-token)
+                          (or (not (getf *user* :test-user))
+                              (and (= 1 (length subjects))
+                                   (db (car subjects) :test-user))))
+                 (htm
+                   (:div :id "facebook"
+                     (:input :type "checkbox"
+                             :id "publish-facebook"
+                             :name "publish-facebook"
+                             :checked "")
+                     (str (icon "facebook" "facebook-icon"))
+                     (:label :for "publish-facebook"
+                      (str (s+ "Share on Facebook"))))))
                (:div
-                 (str submit-buttons)))))))))
+                 (str submit-buttons))))))))
+      :class (if existing-url
+               "edit-gratitude"
+               "express-gratitude"))
     ;; else
     (gratitude-add-subject :text text :next next)))
 
@@ -1104,9 +1122,11 @@
         (let* ((subjects (getf gratitude :subjects))
                (single-recipient (when (= (length subjects) 1)
                                    (car subjects)))
-               (on-item (awhen (getf gratitude :on)
-                          (html (:blockquote (str (html-text (db it :details)))))))
-               (relevant-inventory (unless on-item
+               (on-item-id (getf gratitude :on))
+               (on-item-description
+                 (awhen on-item-id
+                        (gratitude-linked-inventory-indicator on-item-id)))
+               (relevant-inventory (unless on-item-id
                                      (possible-inventory-for-gratitude
                                        author
                                        single-recipient)))
@@ -1114,7 +1134,8 @@
                (relevant-offers (getf relevant-inventory :offers)))
           (gratitude-compose :subjects subjects
                              :text (getf gratitude :text)
-                             :on-item on-item
+                             :on-item-description on-item-description
+                             :on-id on-item-id
                              :relevant-offers relevant-offers
                              :relevant-requests relevant-requests
                              :existing-url (s+ "/gratitude/" id "/edit")))))))
@@ -1129,9 +1150,11 @@
         (let* ((subjects (getf gratitude :subjects))
                (single-recipient (when (= (length subjects) 1)
                                    (car subjects)))
-               (on-item (awhen (getf gratitude :on)
-                          (html (:blockquote (str (html-text (db it :details)))))))
-               (relevant-inventory (unless on-item
+               (on-item-id (getf gratitude :on))
+               (on-item-description
+                 (awhen on-item-id
+                        (gratitude-linked-inventory-indicator on-item-id)))
+               (relevant-inventory (unless on-item-id
                                      (possible-inventory-for-gratitude
                                        author
                                        single-recipient)))
@@ -1153,7 +1176,8 @@
             (t
              (gratitude-compose :subjects (getf gratitude :subjects)
                                 :text (getf gratitude :text)
-                                :on-item on-item
+                                :on-id on-item-id
+                                :on-item-description on-item-description
                                 :relevant-offers relevant-offers
                                 :relevant-requests relevant-requests
                                 :existing-url (s+ "/gratitude/" id "/edit")))))))))
