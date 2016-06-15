@@ -27,15 +27,18 @@
                                            :message text
                                            :party party)))
 
-(defun create-transaction (&key on text action match-id pending-deletion (userid *userid*))
+(defun create-transaction (&key on text action match-id pending-deletion (userid *userid*) groupid)
   (let* ((time (get-universal-time))
          (on-item (db on))
          (by (getf on-item :by))
          (item-violates-terms-p (and (getf *user* :admin) pending-deletion))
-         (participants (list (if item-violates-terms-p +kindista-id+ userid) by))
+         (participants (list (if item-violates-terms-p
+                               +kindista-id+
+                               (or groupid userid))
+                             by))
          (senders (if item-violates-terms-p
                     (mailbox-ids (list +kindista-id+))
-                    (mailbox-ids (list userid))))
+                    (mailbox-ids (list (or groupid userid)))))
          (bys (mailbox-ids (list by)))
          (sender-boxes (mapcar #'(lambda (mailbox)
                                    (cons mailbox :read))
@@ -47,7 +50,9 @@
          (people-ids (mapcar #'car (remove-duplicates (append senders bys))))
          (message-folders (list :inbox people-ids
                                 :unread (remove userid people-ids)))
-         (log (when action (list (list :time time :party (list userid) :action action))))
+         (log (when action (list (list :time time
+                                       :party (cons userid groupid)
+                                       :action action))))
          (id (insert-db (if item-violates-terms-p
                           (list :type :transaction
                                 :on on
@@ -61,7 +66,7 @@
                                 :created time)
                           (list :type :transaction
                                 :on on
-                                :by userid
+                                :by (or groupid userid)
                                 :participants participants
                                 :message-folders message-folders
                                 :people people
@@ -71,7 +76,7 @@
     (when text (create-comment :on id
                                :by (if item-violates-terms-p
                                      (cons userid +kindista-id+)
-                                     (list userid))
+                                     (cons userid groupid))
                                :text text
                                :send-email-p nil
                                :time (+ time 1) ; if there is both text/action, they need separate times for sorting in transaction log UI display
