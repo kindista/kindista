@@ -35,6 +35,8 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions#tags
 - make sure final piece is a post request
 - modify-db with tagged-friends
 - remove tagged friends from options of contatcts who can be tagged
+- no indefinite article (og:determiner=""):
+https://developers.facebook.com/docs/sharing/opengraph/object-properties
 
 #Group-Accounts
 - permissions:
