@@ -564,6 +564,13 @@
     (request-loop))
   all-results)
 
+(defun find-taggable-fb-friend-by-name (k-id name)
+  (find name
+        (get-all-taggable-fb-friends k-id)
+        :key (lambda (item)
+               (cdr (find :name item :key 'car)))
+        :test #'string=))
+
 (defun facebook-taggable-friend-tokens
   (k-user-ids-to-test
    &optional (userid *userid*)

@@ -763,6 +763,15 @@
 (defun post-parameter-float (name)
   (awhen (post-parameter name) (when (scan +float-scanner+ it) (read-from-string it))))
 
+(defun possessive-name
+  (owner-id
+   &key (userid *userid*)
+        linkp)
+  (cond
+    ((= owner-id userid) "your")
+    (linkp (person-link owner-id :possessive t))
+    (t (s+ (db owner-id :name) "'s"))))
+
 (defun post-parameter-integer (name)
   (when (scan +number-scanner+ (post-parameter name))
     (parse-integer (post-parameter name))))
