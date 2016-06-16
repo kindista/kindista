@@ -537,6 +537,8 @@
         reply
    &aux (type (getf item :type))
         (by (getf item :by))
+        (groupid (awhen (post-parameter-integer "identity-selection")
+                              (unless (= it *userid*) it)))
         (adminp (group-admin-p by)))
 
   (require-user (:require-email t)
@@ -562,8 +564,7 @@
                   :text reply-text
                   :action-type action-type
                   :next next
-                  :identity-selection (post-parameter-integer
-                                        "identity-selection")
+                  :identity-selection groupid
                   :match (post-parameter-integer "match")
                   :error (when (and (not (post-parameter "reply"))
                                     (not reply-text)
@@ -589,6 +590,7 @@
                                                *userid*)))
              (create-transaction :on id
                                  :text reply-text
+                                 :groupid groupid
                                  :action (cond
                                            ((string= action-type "offer")
                                             :offered)
