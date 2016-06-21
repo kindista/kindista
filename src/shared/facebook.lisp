@@ -69,8 +69,6 @@
       (htm
         (:meta :property "og:type"
                :content (s+ "kindistadotorg:" typestring))))
-    (:meta :property "site_name"
-           :content "Kindista")
     (awhen determiner
       (htm (:meta :property "og:determiner" :content it)))
     (:meta :property "fb:app_id"
