@@ -1027,7 +1027,6 @@
                                  (name-list-all (getf data :subjects )
                                                 :stringp t))
                              :description (getf data :text)
-                             :determiner ""
                              :image (awhen (first (getf data :images))
                                       (get-image-thumbnail it 1200 1200)))
                :selected (awhen (get-parameter-string "menu") it))))
