@@ -62,22 +62,27 @@
    title
    &key description
         determiner
+        url
         image)
   (html
     (:meta :property "og:type"
            :content (s+ "kindistadotorg:" typestring))
+    (:meta :property "site_name"
+                           :content "Kindista")
     (awhen determiner
       (htm (:meta :property "og:determiner" :content it)))
     (:meta :property "fb:app_id"
            :content *facebook-app-id*)
     (:meta :property "og:url"
-           :content (strcat* +base-url+
-                             typestring
-                             (when (or (string= typestring "offer")
-                                       (string= typestring "request"))
-                               "s")
-                             "/"
-                             id))
+           :content (or url
+                        (strcat* +base-url+
+
+                                 typestring
+                                 (when (or (string= typestring "offer")
+                                           (string= typestring "request"))
+                                   "s")
+                                 "/"
+                                 id)))
     (:meta :property "og:title"
            :content (escape-for-html
                       (or title (s+ "Kindista " (string-capitalize typestring)))))
