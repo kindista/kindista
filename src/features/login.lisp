@@ -69,6 +69,16 @@
                "Join the kindness revolution!"))))
       :hide-menu t))))
 
+(defun register-login (userid &optional next)
+     (setf (token-userid *token*) userid)
+     (with-locked-hash-table (*user-tokens-index*)
+       (asetf (gethash userid *user-tokens-index*)
+              (push (cons (cookie-in "token") *token*) it)))
+     (notice :login)
+     (see-other (if (not (db userid :active))
+                  "/settings#reactivate"
+                  (or next "/home"))))
+
 (defun post-login
   (&key (fb-token-data (when (get-parameter-string "code")
                                (register-facebook-user "login")))
@@ -106,14 +116,8 @@
 
     ((or existing-k-id
          (and password (password-match-p userid password)))
-     (setf (token-userid *token*) userid)
-     (with-locked-hash-table (*user-tokens-index*)
-       (asetf (gethash userid *user-tokens-index*)
-              (push (cons (cookie-in "token") *token*) it)))
-     (notice :login)
-     (see-other (if (not (db userid :active))
-                  "/settings#reactivate"
-                  (or next "/home"))))
+     (register-login userid next))
+
     (fb-token-data
      (flash "There is no Kindista account associated with the Facebook account currently active on this browser. Please confirm that you are logged into Facebook, or Sign Up for Kindista below."
             :error t)

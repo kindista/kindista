@@ -1,19 +1,5 @@
-## BUG
-  - when posting gratitude about an item received through profile (not through transaction), the gratitude should still show up in the transaction (see 35012)
-  - create a function that goes through all transactions
-    - when there is gratitude-on the on item (after a received/gave action)
-    - modify the transaction-log to include the gratitude
-  - include transaction-id when gratitude isn't posted from transaction UI
 ## web apps
-  - test iphone webapp
-  - !change api key when ready to push to live
-  - change manifest file when ready to push to live
-  - comment notification active person help
-  - test messages for phones
-  - javascript error handeling to lisp server?
-  - group message not being marked as read in message folder
-  # web app live server
-    - test push subscriptions on different computers
+## are things actually expiring?
 ## post offers/requests to facebook
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
@@ -22,7 +8,6 @@
     with the other party
   - timeliness, enjoyment of interaction, etc.
   - ability to see constructive feedback if others can see yours
-## notify of contact adds
 ## better matching of search results
 ## group discussions
 ## email preferences for deactivated accounts

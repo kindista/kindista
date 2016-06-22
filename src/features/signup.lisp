@@ -202,7 +202,7 @@
                          unvalidated-fb-email))
              (fb-name (getf fb-data :name))
              (existing-k-id (gethash fb-id *facebook-id-index*))
-             (existing-k-email (gethash fb-email *email-index*))
+             (existing-k-email-id (gethash fb-email *email-index*))
             ;(fb-location-node (getf fb-data :location))
             ;(fb-location-id (safe-parse-integer
             ;                  (cdr (assoc :id fb-location-node))))
@@ -217,14 +217,33 @@
             (post-login :fb-token-data fb-token-data
                         :fb-data fb-data))
 
-          (existing-k-email
-            (flash (strcat*
-                     "The email associated with this Facebook account, "
-                     "\"" existing-k-email "\","
-                     " already belongs to a Kindista account. "
-                     "Please login below or reset your password if you "
-                     "don't remember it.") :error t)
-            (see-other "/login"))
+          (existing-k-email-id
+            (let* ((userid existing-k-email-id)
+                   (user (db userid))
+                   (new-name)
+                   (new-data))
+              (modify-db userid :fb-id fb-id
+                                :fb-token fb-token
+                                :fb-expires fb-expires)
+
+              (unless (find fb-name (getf user :aliases) :test #'equalp)
+                (setf new-name fb-name)
+                (asetf new-data
+                       (append
+                         (list :aliases
+                               (append (getf user :aliases)
+                                       (list fb-name)))
+                         it)))
+              (unless (getf user :avatar)
+                (asetf new-data
+                       (append
+                         (list :avatar (save-facebook-profile-picture-to-avatar
+                                         (userid)))
+                         it)))
+              (apply #'modify-db userid new-data)
+              (when new-name (reindex-person-names userid))
+
+              (register-login userid)))
 
           (t
             (create-new-person-account fb-name
@@ -378,7 +397,7 @@
                          :password (post-parameter-string "password"))))
   (setf (token-userid *token*) new-id)
   (when fb-id
-    (modify-db new-id :avatar (get-facebook-profile-picture new-id)))
+    (modify-db new-id :avatar (save-facebook-profile-picture-to-avatar new-id)))
   (dolist (group (getf invitation :groups))
     (add-group-member new-id group))
   (add-contact host new-id)

@@ -537,6 +537,8 @@
         reply
    &aux (type (getf item :type))
         (by (getf item :by))
+        (groupid (awhen (post-parameter-integer "identity-selection")
+                              (unless (= it *userid*) it)))
         (adminp (group-admin-p by)))
 
   (require-user (:require-email t)
@@ -562,6 +564,7 @@
                   :text reply-text
                   :action-type action-type
                   :next next
+                  :identity-selection groupid
                   :match (post-parameter-integer "match")
                   :error (when (and (not (post-parameter "reply"))
                                     (not reply-text)
@@ -587,6 +590,7 @@
                                                *userid*)))
              (create-transaction :on id
                                  :text reply-text
+                                 :groupid groupid
                                  :action (cond
                                            ((string= action-type "offer")
                                             :offered)
@@ -1247,49 +1251,66 @@
                      (unless (= i 1)
                        (str ", ")))))))))))))
 
-(defun inventory-item-reply (type id data &key action-type next match text error)
-  (let ((next (or next (get-parameter "next")))
+(defun inventory-item-reply
+  (type
+   id
+   data
+   &key action-type
+        next
+        match
+        text
+        error
+        (identity-selection *userid*)
+   &aux (next (or next (get-parameter "next")))
         (url (strcat "/" type "s/" id)))
-    (if (item-view-denied (result-privacy (gethash id *db-results*)))
-      (permission-denied)
-      (standard-page
-        "Reply"
-        (html
-          (when error
-            (flash "Please enter a message to send." :error t))
-          (htm
-            (:h2
-              (str (s+ (if action-type "Respond" "Reply")
-                       " to "
-                       (person-link (getf data :by) :possessive t)
-                       type
-                       ":"))))
-          (:blockquote
-            (:p
-              (awhen (getf data :title)
-                (htm (:strong (:a :href url (str (html-text it))))
-                     (:br)))
-              (awhen (getf data :details)
-                (str (html-text it)))))
-          (if action-type
-            (htm (:h4 "Include a message: (optional)"))
-            (htm (:h4 "Write your reply:")))
-          (:div :class "reply item"
-            (:form :method "post" :action url
-              (:input :type "hidden" :name "next" :value next)
-              (:input :type "hidden" :name "match" :value match)
-              (:input :type "hidden" :name "action-type" :value action-type)
+  (if (item-view-denied (result-privacy (gethash id *db-results*)))
+    (permission-denied)
+    (standard-page
+      "Reply"
+      (html
+        (when error
+          (flash "Please enter a message to send." :error t))
+        (htm
+          (:h2
+            (str (s+ (if action-type "Respond" "Reply")
+                     " to "
+                     (person-link (getf data :by) :possessive t)
+                     type
+                     ":"))))
+        (:blockquote
+          (:p
+            (awhen (getf data :title)
+              (htm (:strong (:a :href url (str (html-text it))))
+                   (:br)))
+            (awhen (getf data :details)
+              (str (html-text it)))))
+        (:div :class "reply item"
+          (:form :method "post" :action url
+            (:input :type "hidden" :name "next" :value next)
+            (:input :type "hidden" :name "match" :value match)
+            (:input :type "hidden" :name "action-type" :value action-type)
+            (awhen (groups-with-user-as-admin)
+              (htm
+                (:label :for "identity-selection"
+                  (str (if action-type
+                         (s+ (string-capitalize action-type) "ed by:")
+                         "Reply as:")))
+                (str (identity-selection-html identity-selection it))))
 
-              (:textarea :cols "1000" :rows "4" :name "reply-text" (str text))
+            (:label :for "reply-text"
+              (str (if action-type
+                     "Include a message: (optional)"
+                     "Write your reply:")))
+            (:textarea :cols "1000" :rows "4" :id "reply-text" :name "reply-text" (str text))
 
-              (:div
-                (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
-                (:button :class "yes"
-                 :type "submit"
-                 :class "submit"
-                 (str (aif action-type
-                        (s+ (string-capitalize it) " This")
-                        "Reply")))))))
+            (:div
+              (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
+              (:button :class "yes"
+               :type "submit"
+               :class "submit"
+               (str (aif action-type
+                      (s+ (string-capitalize it) " This")
+                      "Reply")))))))
 
-        :selected (s+ type "s")
-        :class "inventory-reply"))))
+      :selected (s+ type "s")
+      :class "inventory-reply")))

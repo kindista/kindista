@@ -683,7 +683,11 @@
                           " a message or responds to "
                           (if group "our" "my")
                           " offers/requests")))
-            (:li (:input :type "checkbox"
+           (:li (:input :type "checkbox"
+                      :name "new-contact"
+                      :checked (checkbox-value :notify-new-contact))
+                     "when someone adds me to their list of contacts")
+           (:li (:input :type "checkbox"
                   :name "inventory-expiration"
                   :checked (checkbox-value :notify-inventory-expiration))
                  "when my offers and requests are about to expire ")
@@ -697,10 +701,6 @@
 
             (unless group
               (htm
-               ;(:li (:input :type "checkbox"
-               ;      :name "new-contact"
-               ;      :checked (checkbox-value :notify-new-contact))
-               ;     "when someone adds me to their list of contacts")
                 (:li (:input :type "checkbox"
                       :name "expired-invites"
                       :checked (checkbox-value :notify-expired-invites))
@@ -857,7 +857,8 @@
     (see-other "/settings/social")))
 
 (defun get-settings-social ()
-  (unless *productionp*
+  (when (or (not *productionp*)
+            (getf *user* :admin))
     (require-user (:allow-test-user t)
       (let* ((now (get-universal-time))
              (facebook-token-data (when (get-parameter "code")
@@ -908,10 +909,18 @@
               (:span
                 (str (if fb-token-p
                        "Your Kindista account is currently linked to your Facebook account."
-                       "Your Kindista account is not currently linked to Facebook.")))))
+                       "Your Kindista account is not currently linked to Facebook."))))
+            )
 
        :buttons (if fb-token-p sign-out-button sign-in-button)
-       :help-text "You can connect your Kindista account with Facebook to post your offers, requests, and gratitude to your Facebook timeline."
+       :help-text (if fb-token-p
+                    (html
+                       "You can manage the types of Facebook data that Kindista has access to "
+                       (:strong
+                         (:a :href "https://www.facebook.com/settings?tab=applications"
+                             "here"))
+              ".")
+                    "You can connect your Kindista account with Facebook to post your offers, requests, and gratitude to your Facebook timeline.")
        :action "/settings/social"
        :class "facebook"
        :title "Facebook"

@@ -13,23 +13,13 @@ https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow#
                this permission helps us ensure that your kindista account
                is associated with the correct facebook account."
 
-#Privacy setting
- [ ] get and display current privacy setting
- [ ] link to facebook page to change setting:
-     https://www.facebook.com/settings?tab=applications
-
 #List of friends using Kindista app
 https://graph.facebook.com/{user-id}/friends?fields=installed
 
 #Offers and Requests
 https://developers.facebook.com/docs/sharing/reference/share-dialog
-https://developers.facebook.com/docs/graph-api/using-graph-api/v2.3
 https://developers.facebook.com/docs/sharing/opengraph/custom
 https://developers.facebook.com/docs/sharing/opengraph/using-actions
-[ ] add :submitted-to-fb field
-[ ] do the submitting in a separate request from a (notice)
-[ ] give a link to share on fb if it's been longer than 60s and we still haven't heard back from  fb
-[ ] in the inventory item, indicate whether the item has been posted to FB
 [ ] when editing item (enter-inventory-item-details)  make sure :publish-facebook defaults to whether it's already been posted to FB
 [ ] edit facebook story when editing inventory item
 [ ] delete facebook story when deleting inventory item
@@ -45,6 +35,8 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions#tags
 - make sure final piece is a post request
 - modify-db with tagged-friends
 - remove tagged friends from options of contatcts who can be tagged
+- no indefinite article (og:determiner=""):
+https://developers.facebook.com/docs/sharing/opengraph/object-properties
 
 #Group-Accounts
 - permissions:
@@ -54,8 +46,9 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions#tags
 
 #FB login
 https://developers.facebook.com/docs/facebook-login/multiple-providers
-
-#FP profile pic
+ - steps above "adding manual login info to a Facebook Login created account" are done
+ - make sure to grab fb-profile-pic when no k-avatar
+ - make sure button displays right when signing up through settings page
 
 #Review
 [ ] take screen shots

@@ -754,13 +754,23 @@
     (parse-integer (get-parameter name))))
 
 (defun get-parameter-integer-list (name)
-  (loop for pair in (get-parameters*)
-        for i = (parse-integer (cdr pair) :junk-allowed t)
-        when (and (string= (car pair) name) i)
-        collect i))
+  (remove nil
+          (loop for pair in (get-parameters*)
+                for i = (parse-integer (cdr pair) :junk-allowed t)
+                when (and (string= (car pair) name) i)
+                collect i)))
 
 (defun post-parameter-float (name)
   (awhen (post-parameter name) (when (scan +float-scanner+ it) (read-from-string it))))
+
+(defun possessive-name
+  (owner-id
+   &key (userid *userid*)
+        linkp)
+  (cond
+    ((= owner-id userid) "your")
+    (linkp (person-link owner-id :possessive t))
+    (t (s+ (db owner-id :name) "'s"))))
 
 (defun post-parameter-integer (name)
   (when (scan +number-scanner+ (post-parameter name))

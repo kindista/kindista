@@ -253,7 +253,7 @@ input[type=text], input[type=password] {
  border: 1px solid #444;
  margin: .3em 0;
  padding: 0 0.4em;
- height: 2.05em;
+ height: 2.5em;
  border-radius: 0.25em;
  box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);
 }
@@ -3508,7 +3508,7 @@ div.settings-avatar {
 }
 
 form #facebook {
- margin-top: 0.7em;
+ margin: 0.7em 0;
 }
 
 form #facebook img {
@@ -4474,6 +4474,12 @@ span.highlight {
 
 .comments form label {
  padding-top: 0.5em;
+}
+
+.inventory-reply label {
+ font-weight: bold;
+ display: block;
+ margin: 0.8em 0 0.3em;
 }
 
 .inventory-reply blockquote {

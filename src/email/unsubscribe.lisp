@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -68,6 +68,10 @@
     (unless group
       (record-option :notify-expired-invites
         "when invitatations you send for your friends to join Kindista expire" )
+
+      (record-option :notify-new-contact
+        "when someone sends you to their list of contacts")
+
       (record-option :notify-group-membership-invites
         "when someone invites you to join a group on Kindista (e.g. a business, non-profit, or other organization I belong to within my community)")
 
