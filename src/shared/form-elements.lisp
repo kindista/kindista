@@ -17,10 +17,10 @@
 
 (in-package :kindista)
 
-(defvar *or-divider*
+(defparameter *or-divider*
   (html
     (:div :class "or-divider"
-     (:span "or")
+     (:span "OR")
      (:hr))))
 
 (defun number-selection-html (name end &key id selected auto-submit)

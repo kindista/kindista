@@ -23,87 +23,88 @@
     (base-page
       "Welcome to Kindista"
       (html
-        (:div :id "header-container"
-         (:div :id "header"
-          (:a :id "logo" :href "/"
-           (:img :id "symbol" :src "/media/logo.png"))
-          (:div :id "splashlogin"
-            (:a :href "/login" :class "yes" "Sign In")
-            (:form :action "/login" :method "post"
-             (:div :id "email-signin"
-              (:label :for "username" "Email")
-              (:input :id "username"
-               :type "text"
-               :name "username" )
-              (:label :for "password" "Password")
-              (:input :id "password"
-               :type "password"
-               :name "password" )
-              (:div
-                (:a :href "/reset" "Forgot your password?")
-                (:div :id "signin-button"
-                  (:button :class "yes" :type "submit" "Sign In"))))
-              (unless *productionp*
-                (htm
-                  (:div :class "social-signin"
-                    (str *or-divider*)
-                    (str
-                      (facebook-sign-in-button :redirect-uri "login")))))))))
+        (:div :id "splash-top"
+         (:div :id "header-container" :class "full-width"
+          (:div :id "header"
+           (:a :id "logo" :href "/"
+            (:img :id "symbol" :src "/media/logo.png"))
+           (:div :id "splashlogin"
+            (:a :href "/login" :class "yes" "LOGIN")
+          ; (:form :action "/login" :method "post"
+          ;  (:div :id "email-signin"
+          ;   (:label :for "username" "Email")
+          ;   (:input :id "username"
+          ;    :type "text"
+          ;    :name "username" )
+          ;   (:label :for "password" "Password")
+          ;   (:input :id "password"
+          ;    :type "password"
+          ;    :name "password" )
+          ;   (:div
+          ;     (:a :href "/reset" "Forgot your password?")
+          ;     (:div :id "signin-button"
+          ;      (:button :class "yes" :type "submit" "Sign In"))))
+          ;  (unless *productionp*
+          ;    (htm
+          ;      (:div :class "social-signin"
+          ;       (str *or-divider*)
+          ;       (str
+          ;         (facebook-sign-in-button :redirect-uri "login"))))))
+          )))
 
-        (:div :class "full-width lt-fuchsia-bg"
-         (:div
-           (:h1 "Share resources and gratitude with friends and neighbors"))
-         (:div :id "splashbox-container"
-          (:div :id "splashbox"
+          (:div :id "signup"
            (:div
-             (:p "Make new connections and lead a more abundant life through sharing. ")
-             (:p (:strong "Because sharing is good.")))
-           (:div
-             (:h3 :class "center" "New to Kindista?")
              (:div :class "center"
-              (:a :class "yes"
+              (:h1 (:em "Join the Revolution of Kindness")) 
+              (:a :class "purple"
                :id "big-ass-signup-button"
-               :href "/signup" "Create an account"))
-             (:p :class "center"
-              (:a :href "/home" "...or try Kindista as a guest"))))))
+               :href "/signup" "SIGN UP FOR FREE"))
+             (:div :id "demo" :class "center"
+              (:a :href "/home" "...or try Kindista as a guest")))))
 
-       (:div :class "full-width lt-blue-bg"
-        (:div :class "details"
-          (:h2 "How does Kindista work?")
-          (:ol :class "numeric"
-            (:li (:strong "Everything shared is given freely. ")
-             "That means no bartering, renting, or selling.")
-            (:li (:strong "Post gratitude to celebrate generosity in your community. ") "Statements of gratitude build the reputation of givers and function as a currency to promote more sharing.")
-            (:li (:strong "You choose who you want to share with. ")
-             "When considering sharing with someone you don't already know, you can check their reputation and get references from mutual connections.")
-            (:li (:strong "Be kind and respectful.")))))
+        ; (:ol :class "numeric"
+        ;   (:li (:strong "Everything shared is given freely. ")
+        ;    "That means no bartering, renting, or selling.")
+        ;   (:li (:strong "Post gratitude to celebrate generosity in your community. ") "Statements of gratitude build the reputation of givers and function as a currency to promote more sharing.")
+        ;   (:li (:strong "You choose who you want to share with. ")
+        ;    "When considering sharing with someone you don't already know, you can check their reputation and get references from mutual connections.")
+        ;   (:li (:strong "Be kind and respectful.")))  
 
        (:div :class "full-width green-bg"
         (:div :class "details"
-         (:h2 "What does it mean to be a Kindista?")
-         (:div :id "word-association"
-           (:p (str (icon "offers")) " offering free " (str (icon "gift")) " resources ")
-           (:p "fulfilling " (str (icon "map-marker")) " local requests " (str (icon "requests")))
-           (:p "growing community generosity")
-           (:p "sharing prosperity " (str (icon "gratitude-love")) " gratitude ")
-           (:p "freedom " (str (icon "groups")) " connection ease ")
-           (:p (str (icon "share")) " honoring reputation " (str (icon "verified-identity")))
-           (:p " giving abundance trusting love ")
-           (:p (str (icon "home")) " receiving plenty"))))
+          (:h2 "Gift Economy?")
+          (:div :class "float-right"
+           (str (icon "offers")))
+          (:p "After decades of hyper-consumerism, we live in a world of abundance.  During the same time we've lost our true sense of community and the ability to share.")
+          (:p "Kindista is a tool that allows people to gift and share their goods and services for free, the way neighbors use to.")))
 
-       (:div :class "full-width details dk-brown-bg"
+       (:div :class "full-width white-bg"
+        (:div :class "details"
+          (:h2 :class "text-right" "Free Stuff? Really? What's the catch")
+          (:div :class "float-left"
+           (str (icon "requests")))
+          (:div :class "text-right"
+            (:p "There is no catch. We're a non-profit dedicated to growing gift economy.")
+            (:p "No trading. No bartering. No renting. This is not a classified service; just free stuff in your area"))))
+
+       (:div :class "full-width details dk-grey-bg"
          (:div :class "footer"
-           (:div :class "about" "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")
            (:div
+            (:a :href "/signup" "SIGNUP")
+            (:a :href "/login" "LOGIN")
+            (:a :href "/donate" "DONATE"))
+           (:div :class "small"
             (if *userid*
-              (htm (:a :href "/contact-kindista" "contact"))
-              (htm (:a :href "mailto:info@kindista.org" "contact")))
-            " &middot; "
-            (:a :href "/about" "about")
-            " &middot; "
-            (:a :href "/terms" "terms")
-            " &middot; "
-            (:a :href "/privacy" "privacy")))))
+              (htm (:a :href "/contact-kindista" "CONTACT"))
+              (htm (:a :href "mailto:info@kindista.org" "CONTACT")))
+           ;" &middot; "
+            (:a :href "/about" "ABOUT")
+           ;" &middot; "
+            (:a :href "/terms" "TERMS")
+           ;" &middot; "
+            (:a :href "/privacy" "PRIVACY"))
+           (:div :class "about text-right" "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")
+           )))
 
       :extra-head (facebook-item-meta-content
                     nil

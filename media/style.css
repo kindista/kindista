@@ -445,19 +445,29 @@ body.about h3 {
 }
 
 .or-divider > span {
+ -webkit-border-top-right-radius: 1.2em;
+ -webkit-border-bottom-right-radius: 1.2em;
+ -moz-border-radius-topright: 1.2em;
+ -moz-border-radius-bottomright: 1.2em;
+ border-top-right-radius: 1.2em;
+ border-bottom-right-radius: 1.2em;
+ -webkit-border-top-left-radius: 1.2em;
+ -webkit-border-bottom-left-radius: 1.2em;
+ -moz-border-radius-topleft: 1.2em;
+ -moz-border-radius-bottomleft: 1.2em;
+ border-top-left-radius: 1.2em;
+ border-bottom-left-radius: 1.2em;
  z-index: 10;
- font-size: 1.3em;
- font-weight: bold;
- padding: 0 0.7em;
- background: #fff;
-}
+ font-size:0.9em;
+ padding: 0.6em 0.6em;
+ color: #fff;
+ background: #888; }
 
 .or-divider hr {
  position: relative;
- top: -1.4em;
- color: #ccc;
- background: #ccc;
- height: 0.15em;
+ top: -1.15em;
+ background: #888;
+ height: 0.13em;
  z-index: -1;
 }
 
@@ -559,6 +569,9 @@ div.new-gratitude div#gratitude-by-email p.small,
  max-width: 50em;
 }
 
+.invite.item {
+ margin-top: 1.5em;
+}
 
 #signup button, .login button {
  padding-left: 0;
@@ -702,25 +715,27 @@ body.landing > p {
  box-shadow: 0 0 1px rgba(0,0,0,0.8);
 }
 
-body.splash {
- font-size: 1.3em;
- font-size: 1.3rem;
+#splash-top {
+ background: url('team-hands.jpg') no-repeat;
+ background-size:60em auto;
+ background-position: center top;
 }
 
-body.splash > * {
- padding: 0 1em 0;
- max-width: 34em;
- margin: 0 auto;
-}
-
-body.splash > div:first-child {
- margin: 0 auto;
-}
-
-body.splash h2,
 body.splash h1 {
- text-align: center;
- font-size: 1.7em;
+ font-size: 2.3em;
+}
+
+body.splash .details img.icon {
+ height: 5em;
+ width: 5em;
+}
+
+body.splash .float-right img.icon {
+ margin-left: 1em;
+}
+
+body.splash .float-left img.icon {
+ margin-right: 1em;
 }
 
 .semi-transparent-lt {
@@ -733,9 +748,7 @@ body.splash h2 {
  color: rgba(0,0,0,0.7);
 }
 
-.semi-transparent-drk,
-.splash .details,
-.splash .footer a {
+.semi-transparent-drk {
  color: rgba(0,0,0,0.6);
 }
 
@@ -747,18 +760,12 @@ body.splash #header-container {
  margin: 0 0;
  width: 100%;
  max-width: none;
- font-size: 0.85em;
-}
-
-.splash .full-width.light,
-body.splash #header-container,
-body.splash #header-container .or-divider > span {
- background: #f5daff;
+ padding: 1em;
+ font-size: 1.2em;
+ background: rgba(255,255,255,0.9);
 }
 
 body.splash #header {
- max-width: 40em;
- margin: 0 auto;
  box-shadow: none;
  background: none;
 }
@@ -780,52 +787,34 @@ body.splash #symbol {
  float: right;
 }
 
-#splashbox-container {
-  padding: 0.7em;
- }
-
-#splashbox {
-  padding: 1em;
+.splash #signup {
+  font-size: 1.3em;
+  margin: 0 auto;
+  height: 20em;
+  max-width: 22em;
+  padding-top: 3.3em;
 }
 
-#splashbox h2 {
- font-size: 1.6em;
+body.splash h1,
+.splash #demo a {
+ color: #fff;
+ text-shadow: 0 0 6px rgba(0,0,0,0.3);
 }
 
-#splashbox div p:first-child {
- margin-top: 0;
+.splash #demo a {
+ font-size: 0.85em;
 }
 
-#splashbox p {
- margin: 0.5em auto 0;
-}
-
-#splashbox #big-ass-signup-button {
+#big-ass-signup-button {
  display: block;
  margin: 0.75em auto;
- line-height: 2em;
- width: 13em;
-}
-
-#splashbox > div {
- padding: 0.5em;
- text-align: center;
- margin: 0;
- width: initial;
+ line-height: inherit;
+ display: inline-block;
+ font-size: 1.4em;
 }
 
 #splashlogin form {
  display:none;
-}
-
-#splashbox {
- background: rgba(255,255,255,0.9);
- border-radius: 2em;
- box-shadow: 0.05em 0.05em 2em rgba(0,0,0,0.3);
- width:100%;
- position: relative;
- overflow:hidden;
- margin: 0 auto;
 }
 
 .splash .full-width {
@@ -836,7 +825,7 @@ body.splash #symbol {
 }
 
 .green-bg {
- background:#b1c253;
+ background:#97c642;
 }
 
 .lt-green-bg {
@@ -870,15 +859,19 @@ body.splash #symbol {
 }
 .dk-brown-bg {
  background:#9f822b;
-
+}
+.dk-grey-bg {
+ background:#484848;
 }
 
 .rust-bg {
  background:#eb9b7d;
 }
 
+body.splash #header,
 .splash .full-width > div {
  max-width: 34em;
+ max-width: 34rem;
  margin: 0 auto;
 }
 
@@ -891,87 +884,19 @@ body.splash #symbol {
  margin-bottom: 0.3em;
 }
 
-.splash #word-association {
- font-weight: bold;
- font-size:1em;
- font-size: 5.6vw;
- line-height:1em;
- line-height: 7vw;
-}
-
-.splash #word-association p {
- text-align: justify;
- -moz-text-align-last: justify;
- text-align-last: justify;
- margin:0.2vw 0;
-}
-
-.splash #word-association p:last-child {
- -moz-text-align-last: left;
- text-align-last: left;
-}
-
-.splash #word-association img.icon {
- vertical-align: -10%;
- height: 1em;
- height: 6vw;
- width: auto;
-}
-
 @media (min-width:48em){
-body.splash #header-container {
- height: 3.5em;
-}
-body.splash #symbol {
- padding: 0.5em;
- width:14em;
+#splash-top {
+ background-size:100%;
 }
 #splashlogin > a.yes {
  font-size: inherit;
  margin: 0.6em 0;
  line-height: inherit;
 }
-.splash #word-association {
- font-size: 2em;
- line-height: 1.3em;
-}
-.splash #word-association p {
- margin: 0;
-}
-.splash #word-association img.icon {
- height: 1.2em;
-}
  body.splash h2,
  body.splash h1 {
   margin: 0.5em auto 0.1em;
 }
- body.splash h2 {
-  text-align: left;
-}
-#splashbox > div {
- display: table-cell;
- font-size: 1.1em;
- vertical-align: middle;
-}
-
-#splashbox > div:first-child {
- text-align: left;
-}
-#splashbox div p:first-child {
- margin-bottom: 1.3em;
-}
-}
-
-.splashbox h3 {
- font-size: 1.2em;
-}
-
-.splash #word-association h2 {
- font-size: 0.85em;
-}
-
-.splash #about {
- text-align: center;
 }
 
 @media (max-width:32em) {
@@ -979,22 +904,25 @@ body.splash #symbol {
  font-size: 1em;
  font-size: 1rem;
  }
+ #splash-top {
+  background-size: auto 120%;
+ }
  body.splash #header-container {
   height: auto;
   font-size: 1em;
  }
- body.splash #header {
+/* body.splash #header {
   height: auto;
   padding-bottom: 2em;
  }
  body.splash #symbol {
-  width: 18em;
-  max-width:100%;
-  padding: 1em 0;
-  margin: 0 auto;
-  display: block;
+   width: 18em;
+   max-width:100%;
+   padding: 1em 0;
+   margin: 0 auto;
+   display: block;
  }
- #header #splashlogin,
+ #header #splashlogin,*/
  body.splash a#logo {
   display: block;
   margin-right: auto;
@@ -1002,16 +930,15 @@ body.splash #symbol {
  }
  body.splash a#logo,
  #header #splashlogin {
-  float: none;
+/*float: none;
   position: relative;
   width: 100%;
-  max-width: 30em;
+  max-width: 30em;*/
  }
  #splashlogin form {
   display:block;
  }
  #splashlogin > a.yes {
-  display:none;
  }
  #splashlogin p {
   text-align: right;
@@ -1052,8 +979,7 @@ body.splash #symbol {
  }
  #splashlogin #email-signin button {
   display: inline;
-  width: 7em;
-  height: 2.3em;
+  width: 9em;
  }
  #splashlogin #email-signin > div {
   display: table;
@@ -1067,24 +993,41 @@ body.splash #symbol {
   display: block;
   text-align: center;
   margin: 0;
-  line-height: inherit;
  }
- #splashbox #big-ass-signup-button {
+ #splashlogin #email-signin button,
+ #splashlogin .social-signin a.blue {
+  line-height: inherit;
+  height: 2.3em;
+  font-size: 1.1em;
+ }
+ #big-ass-signup-button {
   font-size: 1.1em;
  }
 }
 
 .splash .footer {
  margin: 1em auto;
- text-align: center;
+ color: #fff;
+ overflow: hidden;
 }
 .splash .footer > * {
  font-size: 85%;
 }
+.splash .footer .about {
+ float: right;
+ max-width: 50%;
+}
 .splash .footer a {
  font-weight: bold;
+ color: #fff;
+ padding-right: 1.3em;
  font-size: 1.1em;
 }
+.splash .footer div.small a {
+ font-size: 0.85em;
+ padding-right: 0.7em;
+}
+
 .splash .footer > div:first-child {
  margin-bottom: 0.5em;
 }
@@ -1094,29 +1037,37 @@ body.splash #symbol {
  line-height: 4em;
 }
 
+.settings-item .submit-image label,
+button.gray,
+button.red,
 button.yes,
 button.cancel,
 a.yes,
+button.purple,
+a.purple,
 button.blue,
 a.blue {
+ color: #fff;
  font-weight: bold;
  vertical-align: middle;
- height: 2.5em;
- padding: 0.2em 0.4em;
+ height: inherit;
+ padding: 0.5em 0.7em;
  margin: 0.35em 0;
- border: 1px solid #444;
- border-radius: 0.25em;
+ border-radius: 0.5em;
  white-space: nowrap;
- box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);
+ border:none;
+ text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+ box-shadow: 0 0 1px rgba(0,0,0,0.3),
+       inset 0 0 2px 1px rgba(0,0,0,0.3);
 }
 
 div.horiz a.button.blue {
- font-size: 0.9em;
  margin-right: 0.7em;
- color: #fff;
- padding: 0.4em;
+ font-size: 0.95em;
  display: inline-block;
- line-height: 1em;
+}
+div.horiz a.button.blue:last-child {
+ margin-right: 0;
 }
 
 div.horiz a.button.blue img {
@@ -1124,13 +1075,13 @@ div.horiz a.button.blue img {
  margin-right: 0.4em;
 }
 
-@media (max-width:28em) {
+@media (max-width:31em) {
  .home div.horiz a.button.blue {
    display: block;
    width: 100%;
-   font-size: 1em;
+   font-size: 1.1em;
    text-align: center;
-   margin-bottom: 0.6em;
+   margin-bottom: 1em;
  }
  .home div.horiz a.button.blue span {
    display: inline-block;
@@ -1162,15 +1113,10 @@ button.yes, a.yes {
   linear, left top, left bottom, 
   from(#96c42b),
   to(#6f9321));
- border: 1px solid #474747;
- text-shadow:
-  1px 1px 2px rgba(0,0,0,0.4);
   padding: 0.5em 0.7em;
 }
 
 button.red  {
- font-weight: bold;
- color: #fff;
  background: #f76959;
  background: -moz-linear-gradient(
   top,
@@ -1192,10 +1138,6 @@ button.red  {
   linear, left top, left bottom, 
   from(#f76959),
   to(#92020));
- border: 1px solid #474747;
- text-shadow:
-  1px 1px 2px rgba(0,0,0,0.4);
-  padding: 0.5em 0.7em;
 }
 
 button.red.simple-link {
@@ -1240,14 +1182,34 @@ a.blue {
   linear, left top, left bottom, 
   from(#3c6dc8),
   to(#29519c));
- border: 1px solid #474747;
- text-shadow:
-  1px 1px 2px rgba(0,0,0,0.4);
-  padding: 0.5em 0.7em;
+}
+
+a.purple,
+button.purple {
+ background: #570e6a;
+ background: -moz-linear-gradient(
+  top,
+  #ac3cc8 0%,
+  #570e6a);
+ background: -ms-linear-gradient(
+  top,
+  #ac3cc8 0%,
+  #570e6a);
+ background: -o-linear-gradient(
+  top,
+  #ac3cc8 0%,
+  #570e6a);
+ background: -webkit-linear-gradient(
+  top,
+  #ac3cc8 0%,
+  #570e6a);
+ background: -webkit-gradient(
+  linear, left top, left bottom, 
+  from(#ac3cc8),
+  to(#570e6a));
 }
 
 a.yes, a.blue {
- line-height: 2.5em;
  margin: 0.35em 0.5em 0.35em 0;
  height: auto;
 }
@@ -1258,8 +1220,6 @@ button, .settings-item .content a {
 }
 
 button.gray {
- font-weight: bold;
- color: #fff;
  background: -moz-linear-gradient(
   top,
   #999 0%,
@@ -1276,10 +1236,6 @@ button.gray {
   linear, left top, left bottom, 
   from(#999),
   to(#666));
- border: 1px solid #474747;
- text-shadow:
-  1px 1px 2px rgba(0,0,0,0.4);
-  padding: 0.5em 0.7em;
 }
 
 .gray-text {
@@ -1345,6 +1301,7 @@ button.simple-link {
  border:0;
  background-color: transparent;
  font-size: inherit;
+ box-shadow:none;
 }
 
 button.no-padding {
@@ -1375,10 +1332,8 @@ button.cancel, input.cancel, a.button.cancel {
   linear, left top, left bottom, 
   from(#999),
   to(#666));
- border: 1px solid #474747;
  text-shadow:
   1px 1px 2px rgba(0,0,0,0.4);
-  padding: 0.5em 0.7em;
 }
 
 a.cancel, button.cancel {
@@ -1394,7 +1349,6 @@ button.small, a.small {
  font-size: 0.8em;
  line-height: normal;
  height: auto;
- padding: 0.3em;
 }
 
 button span {
@@ -2606,23 +2560,19 @@ button.card > img {
  margin: 0.5em 0;
 }
 
-@media (min-width:56em) {
+@media (min-width:62em) {
  .profile .item.right {
   margin:50px 8px 8px;
  }
-
   menu.bar .no-rightbar {
   display:none;
  }
-
  #body {
   padding: 1em;
  }
-
  body.right #body {
   margin-right:21em;
  }
-
  #right {
   position: absolute;
   right: 0;
@@ -2640,10 +2590,9 @@ button.card > img {
  body.right #full, body.right .flash {
   margin-right: 21em;
  }
-
 }
 
-@media (max-width:56em) {
+@media (max-width:62em) {
  .item.right.only {
   display:none;
  }
@@ -3021,7 +2970,6 @@ form.primary-action {
 
 .card button.primary-action {
  margin: 0 0.5em 0.4em 0;
- padding: 0.4em 0.5em;
  font-size: 0.9em;
 }
 
@@ -3146,12 +3094,8 @@ div.submit-image {
  /*display:inline-block;*/
 }
 
+.submit-image label,
 .settings-item .submit-image label {
- border-radius: 0.25em;
- cursor: pointer;
-}
-
-.submit-image label {
  cursor: pointer;
 }
 
@@ -4631,6 +4575,10 @@ background-color: #f8f8f8;
 
 .float-left {
  float: left;
+}
+
+.text-right {
+ text-align: right;
 }
 
 .clear {
