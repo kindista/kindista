@@ -18,9 +18,8 @@
 (in-package :kindista)
 
 (defun get-login (&aux (next (get-parameter "next")))
-  (when next
-    (setf (getf (token-session-data *token*) :login-redirect)
-          next))
+  (setf (getf (token-session-data *token*) :login-redirect)
+        next)
   (cond
    ((get-parameter-string "code") (post-login))
    (*user* (see-other "/home"))
