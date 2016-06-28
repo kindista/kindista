@@ -23,8 +23,9 @@
 
 (defparameter +text-scanner+ (create-scanner "[a-zA-Z]+"))
 
-(defparameter +email-scanner+ (create-scanner
-                                 "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"))
+;old-email-scanner "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"))
+;;http://www.regular-expressions.info/email.html
+(defparameter +email-scanner+ (create-scanner "^(?=[a-zA-Z0-9][a-zA-Z0-9@._%+-]{5,253}$)[a-zA-Z0-9._%+-]{1,64}@(?:(?=[a-zA-Z0-9-]{1,63}\\.)[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*\\.){1,8}[a-zA-Z]{2,63}$"))
 (defparameter *english-list*
   "~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}")
 (defparameter *english-list-or*

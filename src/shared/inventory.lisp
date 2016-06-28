@@ -702,7 +702,8 @@
                (cond
                 ((or (post-parameter "edit") edit)
                  (inventory-details
-                   :publish-facebook (when (getf item :facebook-id) t)))
+                   :publish-facebook (when (fb-object-actions-by-user id :data item)
+                                       t)))
 
                 ((or deactivate (post-parameter "deactivate"))
                  (confirm-delete :url url

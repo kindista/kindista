@@ -158,7 +158,9 @@
             (when email ;some deleted accounts might have :emails (nil)
               (setf (gethash email *email-index*) id)))))
 
-    (unless (getf data :test-user)
+    ;; don't index test-users on the live server
+    (unless (and (getf data :test-user)
+                 *productionp*)
 
       (when (getf data :active)
         (with-mutex (*active-people-mutex*)

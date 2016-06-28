@@ -17,7 +17,9 @@
 
 (in-package :kindista)
 
-(defun get-login ()
+(defun get-login (&aux (next (get-parameter "next")))
+  (setf (getf (token-session-data *token*) :login-redirect)
+        next)
   (cond
    ((get-parameter-string "code") (post-login))
    (*user* (see-other "/home"))
@@ -38,8 +40,8 @@
                        (unless (string= it "")
                            (htm (:p (:a :href (s+ "/signup?email=" it)
                                         "Would you like to create an account?"))))))
-                (awhen (get-parameter "next")
-                  (htm (:input :type "hidden" :name "next" :value it)))
+                (when next
+                  (htm (:input :type "hidden" :name "next" :value next)))
                 (:label "Username or email"
                   (:input :type "text"
                    :class "username"
@@ -70,14 +72,16 @@
       :hide-menu t))))
 
 (defun register-login (userid &optional next)
-     (setf (token-userid *token*) userid)
-     (with-locked-hash-table (*user-tokens-index*)
-       (asetf (gethash userid *user-tokens-index*)
-              (push (cons (cookie-in "token") *token*) it)))
-     (notice :login)
-     (see-other (if (not (db userid :active))
-                  "/settings#reactivate"
-                  (or next "/home"))))
+  (setf (token-userid *token*) userid)
+  (asetf (token-session-data *token*)
+         (remove-from-plist it :login-redirect))
+  (with-locked-hash-table (*user-tokens-index*)
+    (asetf (gethash userid *user-tokens-index*)
+           (push (cons (cookie-in "token") *token*) it)))
+  (notice :login)
+  (see-other (if (not (db userid :active))
+               "/settings#reactivate"
+               (or next "/home"))))
 
 (defun post-login
   (&key (fb-token-data (when (get-parameter-string "code")
@@ -89,7 +93,9 @@
         (fb-data (when fb-token (get-facebook-user-data fb-token)))
    &aux (username (post-parameter "username"))
         (password (post-parameter-string "password"))
-        (next (awhen (post-parameter-string "next") (url-decode it)))
+        (login-token-redirect (getf (token-session-data *token*) :login-redirect))
+        (next (or login-token-redirect
+                  (awhen (post-parameter-string "next") (url-decode it))))
         (fb-id (safe-parse-integer (getf fb-data :id)))
         (existing-k-id (gethash fb-id *facebook-id-index*))
         (userid nil))

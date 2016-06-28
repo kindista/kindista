@@ -44,8 +44,10 @@
     "Sign up"
     nil
     (html
+      (dolist (flash (flashes))
+        (str flash))
       (when error (htm (:div :class "signup flash err" (str error))))
-        (:div :id "signup" (str body)))
+      (:div :id "signup" (str body)))
     :hide-menu t))
 
 (defun signup-page (&key error name email email2)
@@ -56,6 +58,7 @@
         (htm
           (str (facebook-sign-in-button
                  :redirect-uri "signup"
+                 :re-request (get-parameter-string "rerequest-email-permission")
                  :button-text "Use Facebook to sign up for Kindista"))
           (str *or-divider*)))
       (:form :method "POST" :action "/signup" :id "signup-form"
@@ -237,14 +240,16 @@
               (unless (getf user :avatar)
                 (asetf new-data
                        (append
-                         (list :avatar (save-facebook-profile-picture-to-avatar
-                                         (userid)))
+                         (list :avatar (save-facebook-profile-picture-to-avatar userid))
                          it)))
               (apply #'modify-db userid new-data)
               (when new-name (reindex-person-names userid))
 
               (register-login userid)))
 
+          ((not fb-email)
+           (flash "Kindista needs a valid email address so we can let you know when someone is replying to an offer or request that you post. After you sign up, you can edit which types of notifications you want to receive from Kindista on your settings page." :error t)
+           (see-other "/signup?rerequest-email-permission=t"))
           (t
             (create-new-person-account fb-name
                                        fb-email
