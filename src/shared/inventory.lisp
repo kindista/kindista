@@ -219,7 +219,9 @@
          (notice :new-facebook-action :item-id id))
 
         ((and fb-action-id publish-facebook-p)
-         (update-facebook-object id))
+         (notice :new-facebook-action :object-modified t
+                                      :userid nil
+                                      :fb-object-id (getf data :fb-object-id)))
 
         ((and (not publish-facebook-p) fb-action-id)
          (delete-facebook-action fb-action-id)))

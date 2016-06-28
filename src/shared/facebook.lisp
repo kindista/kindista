@@ -326,7 +326,7 @@
 
   ;; userid is included w/ new publish request but not scraping new data
   (facebook-debugging-log "new-facebook-action" notice-data)
-  (when userid
+  (when (and userid (not (getf notice-data :fb-object-id)))
     (setf fb-action-id
           (publish-facebook-action item-id
                                    :userid userid
