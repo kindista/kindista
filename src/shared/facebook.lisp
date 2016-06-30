@@ -471,18 +471,18 @@
 
 (defun scrape-facebook-item
   (url-or-fb-id
-   &aux (reply  (multiple-value-list
-                  (with-facebook-credentials
-                    (http-request
-                      "https://graph.facebook.com/"
-                      :parameters (list (cons "id"
-                                              (if (integerp url-or-fb-id)
-                                                (write-to-string url-or-fb-id)
-                                                url-or-fb-id))
-                                         (cons "access_token"
-                                               *facebook-app-token*)
-                                        '("scrape" . "true"))
-                      :method :post)))))
+   &aux (reply (multiple-value-list
+                 (with-facebook-credentials
+                   (http-request
+                     "https://graph.facebook.com/"
+                     :parameters (list (cons "id"
+                                             (if (integerp url-or-fb-id)
+                                               (write-to-string url-or-fb-id)
+                                               url-or-fb-id))
+                                        (cons "access_token"
+                                              *facebook-app-token*)
+                                       '("scrape" . "true"))
+                     :method :post)))))
 
   "Works the same as (update-facebook-object)"
   (facebook-debugging-log url-or-fb-id reply (decode-json-octets (first reply)))

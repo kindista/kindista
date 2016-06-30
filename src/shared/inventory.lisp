@@ -204,15 +204,12 @@
 
     (setf (result-privacy result) privacy)
 
-    (let ((data (list :title title
-                      :details details
-                      :active t
-                      :tags tags
-                      :expires expires
-                      :privacy privacy))
-
-         ;(typestring (string-downcase (symbol-name type)))
-          )
+    (let ((new-data (list :title title
+                          :details details
+                          :active t
+                          :tags tags
+                          :expires expires
+                          :privacy privacy)))
 
       (cond
         ((and publish-facebook-p (not fb-action-id))
@@ -226,16 +223,15 @@
         ((and (not publish-facebook-p) fb-action-id)
          (delete-facebook-action fb-action-id)))
 
-      (deindex-inventory-expiration id data)
-      (index-inventory-expiration id data)
-
       (unless (and (getf *user* :admin)
                    (not (group-admin-p by))
                    (not (eql *userid* by)))
         (refresh-item-time-in-indexes id :time now)
-        (append data (list :edited now)))
+        (append new-data (list :edited now)))
 
-      (apply #'modify-db id data))
+      (apply #'modify-db id new-data)
+      (deindex-inventory-expiration id)
+      (index-inventory-expiration id))
 
     (case (result-type result)
       (:offer (update-matchmaker-offer-data id))
