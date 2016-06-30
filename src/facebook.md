@@ -12,8 +12,6 @@ https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
 https://developers.facebook.com/docs/sharing/reference/share-dialog
 https://developers.facebook.com/docs/sharing/opengraph/custom
 https://developers.facebook.com/docs/sharing/opengraph/using-actions
-[ ] edit facebook story when editing inventory item
-[ ] delete facebook story when deleting inventory item
 [ ] if facebook token has expired/deactivatd, invite user to get a new one and let them know that if they don't, changes will not be reflected on FB
 
 #Gratitude

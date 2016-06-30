@@ -790,7 +790,8 @@
                  (require-test ((not (getf item :violates-terms))
                                 "This item violated Kindista's Terms of Use. It has been deactivated and cannot be modified.")
                    (when (not (getf item :active))
-                     (index-inventory-item id (modify-db id :active t)))
+                     (index-inventory-item id (modify-db id :active t))
+                     (notice :new-facebook-action :item-id id))
                    (modify-inventory-item id :title (post-parameter "title")
                                              :details (post-parameter "details")
                                              :tags tags
