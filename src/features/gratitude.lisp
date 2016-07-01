@@ -1049,7 +1049,9 @@
       ((and data (not *user*))
        gratitude-page)
 
-      ((and data (not (get-parameters*)))
+      ((and data (nor new-fb-authorization
+                      friend-tags-to-authorize
+                      (get-parameter "taggable-fb-friends")))
        (let* ((message (gethash id *db-messages*))
               (mailboxes (when message
                            (loop for person in (message-people message)
