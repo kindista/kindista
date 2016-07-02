@@ -1,5 +1,6 @@
 ## web apps
-  - group message not being marked as read in message folder
+  - handle sending messages to firefox
+  - look at people who are subscribed to push notifications to send message
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
 ## accountability with user flaky-ness

@@ -410,9 +410,6 @@
   ("/push-notification-subscription"
     :post post-push-notification-subscription)
 
-  ("/unread-push-notifications"
-    :post send-unread-notifications)
-
   ;cron-jobs
 
   ("/inventory-expiration-reminders"
