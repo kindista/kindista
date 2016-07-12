@@ -71,8 +71,14 @@
                "Join the kindness revolution!"))))
       :hide-menu t))))
 
-(defun register-login (userid &optional next)
+(defun register-login (userid &key next fb-token fb-expires &aux (user (db userid)))
   (setf (token-userid *token*) userid)
+  (unless (and (getf user :fb-link-active)
+               (string= (getf user :fb-token)
+                        fb-token))
+    (modify-db userid :fb-token fb-token
+                      :fb-expires fb-expires
+                      :fb-link-active t))
   (asetf (token-session-data *token*)
          (remove-from-plist it :login-redirect))
   (with-locked-hash-table (*user-tokens-index*)
@@ -90,6 +96,10 @@
         (fb-token (cdr (assoc "access_token"
                               fb-token-data
                               :test #'string=)))
+        (fb-expires (+ (get-universal-time)
+                       (safe-parse-integer (cdr (assoc "expires"
+                                                       fb-token-data
+                                                       :test #'string=)))))
         (fb-data (when fb-token (get-facebook-user-data fb-token)))
    &aux (username (post-parameter "username"))
         (password (post-parameter-string "password"))
@@ -122,7 +132,9 @@
 
     ((or existing-k-id
          (and password (password-match-p userid password)))
-     (register-login userid next))
+     (register-login userid :next next
+                            :fb-token fb-token
+                            :fb-expires fb-expires))
 
     (fb-token-data
      (flash "There is no Kindista account associated with the Facebook account currently active on this browser. Please confirm that you are logged into Facebook, or Sign Up for Kindista below."
