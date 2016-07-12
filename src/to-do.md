@@ -1,5 +1,7 @@
 ## web apps
-## are things actually expiring?
+## big red unsubscribe link on email-unsubscribe-page
+  - when clicking the link automatically unsubscribe from specific email
+  - big red button unsubscribes from everything
 ## post offers/requests to facebook
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)

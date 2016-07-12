@@ -56,6 +56,11 @@
          (*facebook-user-token-expiration* (getf *user* :fb-expires)))
      ,@body))
 
+(defmacro require-active-fb-token (&body body)
+  `(require-active-user
+     (with-facebook-credentials
+       ,@body)))
+
 (defun facebook-item-meta-content
   (id
    typestring
@@ -291,8 +296,8 @@
                                 (cons "method" "get"))))))
   (when (= (second response) 200)
     (mapcar (lambda (friend)
-            (gethash (safe-parse-integer (cdr (find :id friend :key 'car)))
-                     *facebook-id-index*))
+              (gethash (safe-parse-integer (cdr (find :id friend :key 'car)))
+                       *facebook-id-index*))
           (cdr (find :data (decode-json-octets (first response)) :key 'car)))))
 
 (defun active-facebook-user-p
@@ -729,9 +734,9 @@
                 (base64:base64-string-to-stream raw-data :uri t :stream s))))
       (setf fb-id (safe-parse-integer (getf json :user-id)))
       (setf userid (gethash fb-id *facebook-id-index*))
-      (modify-db userid :fb-link-active nil)
-      (with-locked-hash-table (*facebook-id-index*)
-        (remhash fb-id *facebook-id-index*))
+      (modify-db userid :fb-link-active nil
+                        :fb-token nil
+                        :fb-expires (get-universal-time))
       (setf (return-code*) +http-no-content+)
       nil)
     (progn (setf (return-code*) +http-forbidden+)
