@@ -726,6 +726,7 @@
   (setf expected-sig
         (remove #\= (base64:usb8-array-to-base64-string
                       (ironclad:hmac-digest hmac))))
+  (facebook-debugging-log signed-request expected-sig signature)
   (if (equalp expected-sig signature)
     (progn
       (setf json
@@ -734,6 +735,7 @@
                 (base64:base64-string-to-stream raw-data :uri t :stream s))))
       (setf fb-id (safe-parse-integer (getf json :user-id)))
       (setf userid (gethash fb-id *facebook-id-index*))
+      (facebook-debugging-log json fb-id userid)
       (modify-db userid :fb-link-active nil
                         :fb-token nil
                         :fb-expires (get-universal-time))
