@@ -733,7 +733,7 @@
             (json:decode-json-from-string
               (with-output-to-string (s)
                 (base64:base64-string-to-stream raw-data :uri t :stream s))))
-      (setf fb-id (safe-parse-integer (getf json :user-id)))
+      (setf fb-id (safe-parse-integer (getf (alist-plist json) :user-id)))
       (setf userid (gethash fb-id *facebook-id-index*))
       (facebook-debugging-log json fb-id userid)
       (modify-db userid :fb-link-active nil
