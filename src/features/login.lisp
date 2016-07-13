@@ -96,10 +96,11 @@
         (fb-token (cdr (assoc "access_token"
                               fb-token-data
                               :test #'string=)))
-        (fb-expires (+ (get-universal-time)
-                       (safe-parse-integer (cdr (assoc "expires"
-                                                       fb-token-data
-                                                       :test #'string=)))))
+        (fb-expires (when fb-token-data
+                      (+ (get-universal-time)
+                         (safe-parse-integer (cdr (assoc "expires"
+                                                         fb-token-data
+                                                         :test #'string=))))))
         (fb-data (when fb-token (get-facebook-user-data fb-token)))
    &aux (username (post-parameter "username"))
         (password (post-parameter-string "password"))
