@@ -92,16 +92,12 @@
       (plaintext-data (json:encode-json-to-string json-message-list))
       (chrome-api-status)
       (subscriptions))
-
-  ;get registration id's for each recipient
-  ;if they are subscribed
   (dolist (recipient recipients)
     (setf subscriptions (db recipient :push-notification-subscriptions))
-    ;push both desktop and mobile registration-ids
     (dolist (client '(:chrome :mobile-chrome))
       (awhen (getf subscriptions client)
         (let ((encrypted-results (get-encrypted-message
-                                    it
+                                    it ;subscription-data
                                     plaintext-data)))
           (setf chrome-api-status
             (multiple-value-list
