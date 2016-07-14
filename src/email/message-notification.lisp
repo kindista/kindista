@@ -85,7 +85,7 @@
         (when (or *productionp*
                   (getf person :admin)
                   (getf person :test-user))
-          (when (getf (db person-id) :active)
+          (when (getf person :active)
             (send-push-through-chrome-api (list person-id)
                                           :message-title push-subject
                                           :message-body (ellipsis
