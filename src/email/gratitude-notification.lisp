@@ -129,5 +129,5 @@ gratitude-url
              (getf recipient :email)
              (s+ "notifications when people post statements of gratitude about "
                  (or (getf recipient :group-name) "you"))
-             :groupid (getf recipient :groupid)))
-      )))
+             :groupid (getf recipient :groupid)
+             :unsub-type "gratitude")))))
