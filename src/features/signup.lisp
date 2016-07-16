@@ -333,6 +333,17 @@
 
             ((not (string= email (post-parameter "email-2")))
               (try-again "Your email confirmation did not match the email you entered"))
+
+            ((gethash email *email-index*)
+              (flash
+                (html "There is already a Kindista account for the email address: "
+                      (str email)
+                      ". If this is your email address and you forgot your password, you can "
+                      (:a :href (s+ +base-url+ "reset") "reset it")
+                      ". If you know your password, you can sign in below.")
+                :error t)
+              (see-other "/login"))
+
             ((not person-p)
               (try-again "Please select an account type"))
 
