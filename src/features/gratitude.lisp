@@ -761,8 +761,8 @@
            (recipient-id (if adminp groupid *userid*))
            (posted-on-type (post-parameter-string "on-type"))
            (invitation-name (post-parameter-string "invitation-name"))
-           (unvalidated-invitation-email (post-parameter-string
-                                           "invitation-email"))
+           (unvalidated-invitation-email (remove #\space (post-parameter-string
+                                                           "invitation-email")))
            (invitation-email (when (scan +email-scanner+ unvalidated-invitation-email)
                                unvalidated-invitation-email))
            (on-types (cond

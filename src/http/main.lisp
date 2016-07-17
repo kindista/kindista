@@ -46,23 +46,6 @@
             (delete-duplicates (gethash *token* *flashes*) :test #'string=))
       (remhash *token* *flashes*))))
 
-(defun new-error-notice-handler ()
-  (let ((data (cddddr *notice*)))
-   (send-error-notification-email :on (getf data :on)
-                                  :url (getf data :url)
-                                  :data (getf data :data)
-                                  :userid (getf data :userid))))
-(defun client-side-error-logger
-  (&aux
-   (errorJSON (json:decode-json-from-string (raw-post-data :force-text t))))
-  (require-user ()
-    (with-mutex (*client-errors-log-lock*)
-      (with-open-file (s (s+ +db-path+ "client-side-errors") :direction :output
-                                                             :if-exists :append
-                                                             :if-does-not-exist :create)
-        (let ((*print-readably* nil))
-          (format s "~{~S~%~}" errorJSON))))))
-
 (defun not-found ()
   (flash "The page you requested could not be found." :error t)
   (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
@@ -362,6 +345,23 @@
            (flash ,message)
            (see-other "/")) 
         `(see-other "/"))))
+
+(defun new-error-notice-handler ()
+  (let ((data (cddddr *notice*)))
+   (send-error-notification-email :on (getf data :on)
+                                  :url (getf data :url)
+                                  :data (getf data :data)
+                                  :userid (getf data :userid))))
+(defun client-side-error-logger
+  (&aux
+   (errorJSON (json:decode-json-from-string (raw-post-data :force-text t))))
+  (require-user ()
+    (with-mutex (*client-errors-log-lock*)
+      (with-open-file (s (s+ +db-path+ "client-side-errors") :direction :output
+                                                             :if-exists :append
+                                                             :if-does-not-exist :create)
+        (let ((*print-readably* nil))
+          (format s "~{~S~%~}" errorJSON))))))
 
 (defun markdown-file (path)
   (nth-value 1 (markdown (pathname path) :stream nil)))
