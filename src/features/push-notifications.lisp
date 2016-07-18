@@ -31,6 +31,8 @@
    (registration-id (first (last url-parts)))
    (status-json (list (cons "subscriptionStatus" "null"))))
   (require-user ()
+    (pprint json)
+    (terpri)
     (cond
       ((not chrome-p)
         (setf (return-code*) +http-not-implemented+)
