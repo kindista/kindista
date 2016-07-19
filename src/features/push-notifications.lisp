@@ -96,9 +96,11 @@
     (setf subscriptions (db recipient :push-notification-subscriptions))
     (dolist (client '(:chrome :mobile-chrome))
       (awhen (getf subscriptions client)
-        (let ((encrypted-results (get-encrypted-message
-                                    it ;subscription-data
-                                    plaintext-data)))
+        (let ((encrypted-results (when (and (getf it :p-256-dh)
+                                            (getf it :auth))
+                                   (get-encrypted-message
+                                      it
+                                      plaintext-data))))
           (setf chrome-api-status
             (multiple-value-list
               (http-request
@@ -115,10 +117,10 @@
                 :external-format-out :utf-8
                 :external-format-in :utf-8
                 :content (json:encode-json-alist-to-string
-                           (list (cons "registration_ids" (list (getf encrypted-results :reg-id)))
+                           (list (cons "registration_ids" (list (getf it :reg-id)))
                                  (cons "raw_data" (getf encrypted-results :encrypted-message)))))))
           (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :append)
             (let ((*print-readably* nil))
-              (format s "~{~S~%~}" chrome-api-status))))))))
+              (format s "~{~S~%~}" chrome-api-status)))))))
 
 

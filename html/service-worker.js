@@ -24,6 +24,8 @@ self.addEventListener('push', function(event) {
       }
       return self.registration.getNotifications(notificationFilter)
         .then(function(notifications) {
+          // notifications are what has already been displayed on the client
+          // and not yet dismissed
           if (notifications && notifications.length > 0) {
             //start with one to account for the new notification
             var notificationCount = 1;
