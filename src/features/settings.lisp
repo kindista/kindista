@@ -858,7 +858,8 @@
 
 (defun get-settings-social ()
   (when (or (not *productionp*)
-            (getf *user* :admin))
+            (getf *user* :admin)
+            (getf *user* :test-user))
     (require-user (:allow-test-user t)
       (let* ((now (get-universal-time))
              (facebook-token-data (when (get-parameter "code")
