@@ -476,6 +476,20 @@
                       :name "text"
                       (str text))
 
+           (when (and (getf *user* :fb-token)
+                          (or (not (getf *user* :test-user))
+                              (and (= 1 (length subjects))
+                                   (db (car subjects) :test-user))))
+                 (htm
+                   (:div :id "facebook"
+                     (:input :type "checkbox"
+                             :id "publish-facebook"
+                             :name "publish-facebook"
+                             :checked "")
+                     (str (icon "facebook" "facebook-icon"))
+                     (:label :for "publish-facebook"
+                      (str (s+ "Share on Facebook"))))))
+
            (unless existing-url
              (htm
                (:div :class (s+ "gratitude-selectors "
@@ -549,21 +563,9 @@
                    (:p "This statement of gratitude is about "
                        (str it))))
 
-               (when (and (getf *user* :fb-token)
-                          (or (not (getf *user* :test-user))
-                              (and (= 1 (length subjects))
-                                   (db (car subjects) :test-user))))
-                 (htm
-                   (:div :id "facebook"
-                     (:input :type "checkbox"
-                             :id "publish-facebook"
-                             :name "publish-facebook"
-                             :checked "")
-                     (str (icon "facebook" "facebook-icon"))
-                     (:label :for "publish-facebook"
-                      (str (s+ "Share on Facebook"))))))
                (:div
                  (str submit-buttons))))))))
+
       :class (if existing-url
                "edit-gratitude"
                "express-gratitude"))
