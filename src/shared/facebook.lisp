@@ -61,7 +61,8 @@
         (next "/home"))
   (setf (getf (token-session-data *token*) :publish-to-fb)
         item-to-publish)
-  (setf (getf (token-session-data *token*) :token-login-redirect) next)
+  (setf (getf (token-session-data *token*) :token-login-redirect)
+        (url-decode next))
   (see-other (url-compose "/renew-fb-token" "next" (url-encode next))))
 
 (defun facebook-item-meta-content
