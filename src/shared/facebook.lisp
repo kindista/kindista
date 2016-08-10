@@ -50,16 +50,19 @@
                      "client_secret" *facebook-secret*
                      "grant_type" "client_credentials"))))
 
-(defmacro with-facebook-credentials (&body body)
-  `(let ((*fb-id* (getf *user* :fb-id))
-         (*facebook-user-token* (getf *user* :fb-token))
-         (*facebook-user-token-expiration* (getf *user* :fb-expires)))
-     ,@body))
+(defun current-fb-token-p ()
+  (with-user (and (integerp *facebook-user-token-expiration*)
+                  (> *facebook-user-token-expiration*
+                     (+ (get-universal-time) +day-in-seconds+))
+                  (not (facebook-token-validation-error-p *userid*)))))
 
-(defmacro require-active-fb-token (&body body)
-  `(require-active-user
-     (with-facebook-credentials
-       ,@body)))
+(defun renew-fb-token
+  (&key item-to-publish
+        (next "/home"))
+  (setf (getf (token-session-data *token*) :publish-to-fb)
+        item-to-publish)
+  (setf (getf (token-session-data *token*) :token-login-redirect) next)
+  (see-other (url-compose "/renew-fb-token" "next" (url-encode next))))
 
 (defun facebook-item-meta-content
   (id
@@ -130,6 +133,43 @@
                            (list "state" state)))))
         (str button-text))))
 
+(defun get-renew-fb-token
+  (&aux (next (or (get-parameter-string "next") "/home"))
+        (new-fb-item (getf (token-session-data *token*) :publish-to-fb))
+        (item-type (string-downcase (awhen new-fb-item (symbol-name (db it :type))))))
+  (standard-page
+    "Reauthorize Facebook App"
+   (html
+     (:h2 "Your Facebook session has expired on Kindista")
+     (str (facebook-sign-in-button
+            :redirect-uri "/login"
+            :button-text "Reauthorize Facebook"
+            :scope (mapcar (lambda (permission)
+                             (regex-replace-all
+                               "-"
+                               (string-downcase (symbol-name permission))
+                               "_"))
+                           (getf *user* :fb-permissions))))
+     (:p (:strong "Please note: ")
+      (awhen item-type
+        (htm "We will publish your " (str it) " to Facebook after you reauthorize Kindista's access to your Facebook account. "))
+      "We are unable to publish "
+      (str (if new-fb-item
+             "this or any other"
+             "any"))
+      " items to Facebook on your behalf until you reauthorize your account. ")
+     (:div :class "small"
+      (:span "No longer want to use Facebook with Kindista?")
+      (:form :method "post"
+       :action "/settings/social"
+       :class "inline-block"
+       (:input :type "hidden" :name "next" :value next)
+       (:button :class "simple-link red bold"
+        :type "submit"
+        :name "fb-logout"
+        "Deactivate Facebook App"))))
+    :class "fb-reauth"))
+
 (defun facebook-debugging-log (&rest messages)
   (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :append)
     (let ((*print-readably* nil))
@@ -165,18 +205,17 @@
 
 (defun check-facebook-user-token
   (&optional (userid *userid*)
-             (fb-token *facebook-user-token* )
+             (fb-token (or *facebook-user-token* (db userid :fb-token)))
    &aux (*user* (or *user* (db userid)))
         reply
         data)
 
   (setf reply
         (multiple-value-list
-          (with-facebook-credentials
-            (http-request
-              (s+ *fb-graph-url* "debug_token")
-              :parameters (list (cons "input_token" fb-token)
-                                (cons "access_token" *facebook-app-token*))))))
+          (http-request
+            (s+ *fb-graph-url* "debug_token")
+            :parameters (list (cons "input_token" fb-token)
+                              (cons "access_token" *facebook-app-token*)))))
 
   (when (= (second reply) 200)
     (setf data
@@ -188,6 +227,13 @@
              (eql (safe-parse-integer (getf data :user--id))
                   (getf *user* :fb-id)))
     data))
+
+(defun facebook-token-validation-error-p
+  (&optional (userid *userid*)
+   &aux (fb-response (check-facebook-user-token userid)))
+  (or (not (getf fb-response :is--valid))
+      (eql (getf fb-response :expires--at) 0)
+      (eql 190 (getf (alist-plist (getf fb-response :error)) :code))))
 
 (defun get-facebook-user-data (fb-token)
   (alist-plist
@@ -428,15 +474,14 @@
    &aux (user (db userid))
         (reply
           (multiple-value-list
-            (with-facebook-credentials
-              (http-request
-                (strcat *fb-graph-url*
-                        "me"
-                       ;(or *fb-id* (getf user :fb-id))
-                        "/kindistadotorg:post/"
-                        typestring)
-                :parameters (list (cons "access_token" (getf user :fb-token))
-                                  (cons "method" "get")))))))
+            (http-request
+              (strcat *fb-graph-url*
+                      "me"
+                     ;(or *fb-id* (getf user :fb-id))
+                      "/kindistadotorg:post/"
+                      typestring)
+              :parameters (list (cons "access_token" (getf user :fb-token))
+                                (cons "method" "get"))))))
 
   (when (= (second reply) 200)
     (decode-json-octets (first reply))))
@@ -460,16 +505,15 @@
    &aux (item (db k-id))
         (facebook-id (getf item :fb-object-id))
         (typestring (string-downcase (symbol-name (getf item :type))))
-        (reply (with-facebook-credentials
-                (multiple-value-list
-                  (http-request
-                    (strcat "https://graph.facebook.com/" facebook-id)
-                    :parameters (list (cons "access_token"
-                                            *facebook-app-token*)
-                                      '("method" . "POST")
-                                      (cons typestring
-                                            (strcat "https://kindista.org"
-                                                    (resource-url k-id item)))))))))
+        (reply (multiple-value-list
+                 (http-request
+                   (strcat "https://graph.facebook.com/" facebook-id)
+                   :parameters (list (cons "access_token"
+                                           *facebook-app-token*)
+                                     '("method" . "POST")
+                                     (cons typestring
+                                           (strcat "https://kindista.org"
+                                                   (resource-url k-id item))))))))
   "Works the same as (scrape-facebook-item)"
   (when (= (second reply) 200)
     (decode-json-octets (first reply))))
@@ -477,17 +521,16 @@
 (defun scrape-facebook-item
   (url-or-fb-id
    &aux (reply (multiple-value-list
-                 (with-facebook-credentials
-                   (http-request
-                     "https://graph.facebook.com/"
-                     :parameters (list (cons "id"
-                                             (if (integerp url-or-fb-id)
-                                               (write-to-string url-or-fb-id)
-                                               url-or-fb-id))
-                                        (cons "access_token"
-                                              *facebook-app-token*)
-                                       '("scrape" . "true"))
-                     :method :post)))))
+                 (http-request
+                   "https://graph.facebook.com/"
+                   :parameters (list (cons "id"
+                                           (if (integerp url-or-fb-id)
+                                             (write-to-string url-or-fb-id)
+                                             url-or-fb-id))
+                                      (cons "access_token"
+                                            *facebook-app-token*)
+                                     '("scrape" . "true"))
+                   :method :post))))
 
   "Works the same as (update-facebook-object)"
   (facebook-debugging-log url-or-fb-id reply (decode-json-octets (first reply)))
@@ -502,14 +545,13 @@
         (action-id (cdr (assoc (getf user :fb-id)
                                (getf k-item :fb-actions))))
         (reply (multiple-value-list
-                 (with-facebook-credentials
-                   (http-request
-                     (strcat "https://graph.facebook.com/" action-id)
-                     :parameters (list (cons "access_token"
-                                             *facebook-app-token*)
-                                       (cons "access_token"
-                                             (getf user :fb-token))
-                                       '("method" . "GET")))))))
+                 (http-request
+                   (strcat "https://graph.facebook.com/" action-id)
+                   :parameters (list (cons "access_token"
+                                           *facebook-app-token*)
+                                     (cons "access_token"
+                                           (getf user :fb-token))
+                                     '("method" . "GET"))))))
  (values
    (decode-json-octets (first reply))
    (second reply)))
@@ -517,12 +559,11 @@
 (defun delete-facebook-action
   (facebook-action-id
    &aux (reply (multiple-value-list
-                 (with-facebook-credentials
-                   (http-request
-                     (strcat "https://graph.facebook.com/" facebook-action-id)
-                     :parameters (list (cons "access_token"
-                                             *facebook-app-token*)
-                                       '("method" . "DELETE")))))))
+                 (http-request
+                   (strcat "https://graph.facebook.com/" facebook-action-id)
+                   :parameters (list (cons "access_token"
+                                           *facebook-app-token*)
+                                     '("method" . "DELETE"))))))
  (values
    (decode-json-octets (first reply))
    (second reply)))

@@ -854,7 +854,7 @@
       ((post-parameter "fb-logout")
        (modify-db *userid* :fb-token nil)
        (flash "Kindista no longer has access to your Facebook account")))
-    (see-other "/settings/social")))
+    (see-other (or (post-parameter-string "next") "/settings/social"))))
 
 (defun get-settings-social ()
   (when (or (not *productionp*)

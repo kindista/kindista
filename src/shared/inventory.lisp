@@ -52,7 +52,7 @@
 
 (defun index-inventory-item
   (id
-   data
+   &optional (data (db id))
    &aux (by-id (getf data :by))
         (by (db by-id))
         (type (getf data :type))
@@ -159,6 +159,7 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
+         (reactivate (not (getf data :active)))
          (fb-action-id (first (fb-object-actions-by-user id :data data)))
          (by (getf data :by))
          (now (get-universal-time)))
@@ -213,7 +214,10 @@
 
       (cond
         ((and publish-facebook-p (not fb-action-id))
-         (notice :new-facebook-action :item-id id))
+         (if (current-fb-token-p)
+           (notice :new-facebook-action :item-id id)
+           (renew-fb-token :item-to-publish id
+                           :next (resource-url id data))))
 
         ((and fb-action-id publish-facebook-p)
          (notice :new-facebook-action :object-modified t
@@ -230,8 +234,11 @@
         (append new-data (list :edited now)))
 
       (apply #'modify-db id new-data)
-      (deindex-inventory-expiration id)
-      (index-inventory-expiration id))
+      (if reactivate
+        (index-inventory-item id)
+        (progn
+          (deindex-inventory-expiration id)
+          (index-inventory-expiration id))))
 
     (case (result-type result)
       (:offer (update-matchmaker-offer-data id))
@@ -461,22 +468,23 @@
            (inventory-details :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
 
          ((and (post-parameter "create") title)
-          (let ((new-id (create-inventory-item
-                          :type (if (string= type "request") :request
-                                                             :offer)
-                          :by (if adminp
-                                (or groupid identity-selection)
-                                *userid*)
-                          :privacy groups-selected
-                          :expires expiration-time
-                          :title title
-                          :details details
-                          :tags tags)))
+          (let* ((new-id (create-inventory-item
+                           :type (if (string= type "request") :request
+                                                              :offer)
+                           :by (if adminp
+                                 (or groupid identity-selection)
+                                 *userid*)
+                           :privacy groups-selected
+                           :expires expiration-time
+                           :title title
+                           :details details
+                           :tags tags))
+                 (new-url (strcat "/" type "s/" new-id)))
 
-            (send-metric* (if (string= type "request")
-                            :new-request
-                            :new-offer)
-                          new-id)
+             (send-metric* (if (string= type "request")
+                             :new-request
+                             :new-offer)
+                           new-id)
 
             (if (getf *user* :pending)
               (progn
@@ -490,12 +498,6 @@
                 (see-other "/home"))
               (progn
                 (contact-opt-out-flash (list *userid*) :item-type type)
-
-                (when (and (getf *user* :fb-link-active)
-                           (getf *user* :fb-id)
-                           (post-parameter "publish-facebook"))
-                  (notice :new-facebook-action :item-id new-id))
-
                 (flash
                   (s+ "Congratulations, your "
                       type
@@ -515,7 +517,20 @@
                       "; you decide who you want to share with on Kindista."))
                 (when (string= type "offer")
                   (update-matchmaker-offer-data new-id))
-                (see-other (format nil (strcat "/" type "s/" new-id)))))))
+                (cond
+                  ((not publish-facebook)
+                   (see-other new-url))
+                  ((and (getf *user* :fb-link-active)
+                        (getf *user* :fb-id))
+                   (if (current-fb-token-p)
+                     (progn
+                       (notice :new-facebook-action :item-id new-id)
+                       (flash (s+ "Your "
+                                  type
+                                  " has been published on Facebook"))
+                       (see-other new-url))
+                     (renew-fb-token :item-to-publish new-id
+                                     :next new-url))))))))
 
          (t (inventory-details)))))))
 
@@ -789,9 +804,6 @@
                 ((post-parameter "create")
                  (require-test ((not (getf item :violates-terms))
                                 "This item violated Kindista's Terms of Use. It has been deactivated and cannot be modified.")
-                   (when (not (getf item :active))
-                     (index-inventory-item id (modify-db id :active t))
-                     (notice :new-facebook-action :item-id id))
                    (modify-inventory-item id :title (post-parameter "title")
                                              :details (post-parameter "details")
                                              :tags tags
@@ -799,7 +811,11 @@
                                              :publish-facebook-p (post-parameter "publish-facebook")
                                              :privacy (when restrictedp
                                                       groups-selected)))
-                 (see-other (strcat "/" type "s/" id)))
+                 ;; new fb actions are redirected via
+                 ;; modify-inventory-item to ensure current fb-token
+                 (when (or (not (post-parameter "publish-facebook"))
+                           (fb-object-actions-by-user id))
+                   (see-other (strcat "/" type "s/" id))))
 
                 (t
                   (inventory-details)))))))))))

@@ -771,6 +771,7 @@
            (on-id (post-parameter-integer "on-id"))
            (text (post-parameter-string "text"))
            (next (post-parameter-string "next"))
+           (publish-facebook-p (post-parameter "publish-facebook"))
            (subjects (remove (post-parameter-integer "remove")
                              (parse-subject-list
                                (format nil "~A,~A" (post-parameter "add")
@@ -939,15 +940,7 @@
                                                        :subject-account-reactivation)
                                             :time time
                                             :text text))
-                  (gratitude-url (format nil "/gratitude/~A" new-id))
-                  (facebook-g-subjects))
-
-             (when (and (getf *user* :fb-link-active)
-                        (getf *user* :fb-id)
-                        (post-parameter "publish-facebook"))
-               (setf facebook-g-subjects
-                     (facebook-taggable-friend-tokens g-subjects))
-               (notice :new-facebook-action :item-id new-id))
+                  (gratitude-url (format nil "/gratitude/~A" new-id)))
 
              (awhen on-id
                (let* ((inventory-result (gethash on-id *db-results*))
@@ -983,21 +976,26 @@
                           "Your statement of gratitude will be posted "
                           "when they reactivate their account.")
                       "Your statement of gratitude has been posted"))
-             (see-other
-               (or (when (and (post-parameter "publish-facebook")
-                              facebook-g-subjects)
-                     (flash "Your statement of gratitude has been published on Facebook")
-                     (apply #'url-compose
-                            gratitude-url
-                            (flatten
-                              (mapcar (lambda (pair)
-                                        (cons "authorize-fb-friend-tag"
-                                              (strcat (car pair))))
-                                      facebook-g-subjects))))
-                   next
-                   (if inactive-subject
-                     "/home"
-                     gratitude-url)))))
+
+             (if (not publish-facebook-p)
+               (see-other (or next
+                              (if inactive-subject "/home" gratitude-url)))
+               (let ((next (apply #'url-compose
+                                  gratitude-url
+                                  (awhen (facebook-taggable-friend-tokens
+                                           g-subjects)
+                                    (flatten
+                                      (mapcar (lambda (pair)
+                                                (cons "authorize-fb-friend-tag"
+                                                      (strcat (car pair))))
+                                              it))))))
+                 (cond
+                   ((current-fb-token-p)
+                    (notice :new-facebook-action :item-id new-id)
+                    (flash "Your statement of gratitude has been published on Facebook")
+                    (see-other next))
+                   (t (renew-fb-token :item-to-publish new-id
+                                      :next next)))))))
 
           (t
            (g-compose :subjects subjects)))))))

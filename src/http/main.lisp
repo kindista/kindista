@@ -273,8 +273,11 @@
            (*user-group-privileges* (or *user-group-privileges*
                                          (gethash *userid* *group-privileges-index*)))
            (*user-mailbox* (or *user-mailbox*
-                               (gethash *userid* *person-mailbox-index*))))
-       ,@body)))
+                               (gethash *userid* *person-mailbox-index*)))
+           (*fb-id* (getf *user* :fb-id))
+           (*facebook-user-token* (getf *user* :fb-token))
+           (*facebook-user-token-expiration* (getf *user* :fb-expires)))
+      ,@body)))
 
 (defmacro with-location (&body body)
   `(let ((*latitude* (or (getf *user* :lat) 44.028297))

@@ -13,6 +13,13 @@ https://developers.facebook.com/docs/sharing/reference/share-dialog
 https://developers.facebook.com/docs/sharing/opengraph/custom
 https://developers.facebook.com/docs/sharing/opengraph/using-actions
 [ ] if facebook token has expired/deactivatd, invite user to get a new one and let them know that if they don't, changes will not be reflected on FB
+[ ] require-fb-token macro for adding/modifying inventory, gratitude, images?
+[ ] recieve new token/expiration and update db
+[ ] redirects in the fb-renew function
+[ ] add a flash that item has been updated/published on facebook
+[ ] create a notice to actually do the publishing
+[ ] test
+    -token expires: 3682543262
 
 #Gratitude
 [ ] taggable friends:
@@ -45,6 +52,7 @@ https://developers.facebook.com/docs/apps/review
 [ ] submit to facebook for review
 
 #Merge accounts (fb-id fbtoken)
+[ ] review code
 
 #Clean-up
 [ ] Remove admin restriction for :share-url in inventory-activity-item
@@ -56,5 +64,8 @@ https://developers.facebook.com/docs/apps/review
 
 
 #Deploy on server
+[ ] quickload
+[ ] reload routes
+[ ] redefine with-user with-token
 [ ] load notice handlers
 [ ] (setf *facebook-app-token* (get-facebook-app-token))

@@ -396,6 +396,9 @@
   ("/publish-facebook"
    :post post-new-facebook-data)
 
+  ("/renew-fb-token"
+   :get get-renew-fb-token)
+
   ("/uninstall-facebook"
     :post post-uninstall-facebook)
 
