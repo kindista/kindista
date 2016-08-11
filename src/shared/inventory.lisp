@@ -215,7 +215,10 @@
       (cond
         ((and publish-facebook-p (not fb-action-id))
          (if (current-fb-token-p)
-           (notice :new-facebook-action :item-id id)
+           (progn (notice :new-facebook-action :item-id id)
+                  (flash (s+ "Your "
+                             (string-downcase (symbol-name type))
+                             " has been published on Facebook")))
            (renew-fb-token :item-to-publish id
                            :next (resource-url id data))))
 

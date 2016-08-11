@@ -17,9 +17,10 @@
 
 (in-package :kindista)
 
-(defun get-login (&aux (next (get-parameter "next")))
-  (setf (getf (token-session-data *token*) :login-redirect)
-        next)
+(defun get-login (&aux (next (get-parameter-string "next")))
+  (when next
+    (setf (getf (token-session-data *token*) :login-redirect)
+          next))
   (cond
    ((get-parameter-string "code") (post-login))
    (*user* (see-other "/home"))
@@ -87,8 +88,6 @@
            (item (db id))
            (type (getf item :type)))
       (notice :new-facebook-action :item-id id)
-      (pprint "published to facebook")
-      (terpri)
       (flash (s+ "Your "
                  (string-downcase (symbol-name type))
                  " has been published on Facebook"))
