@@ -44,8 +44,10 @@
     "Sign up"
     nil
     (html
+      (dolist (flash (flashes))
+        (str flash))
       (when error (htm (:div :class "signup flash err" (str error))))
-        (:div :id "signup" (str body)))
+      (:div :id "signup" (str body)))
     :hide-menu t))
 
 (defun signup-page (&key error name email email2)
@@ -56,6 +58,7 @@
         (htm
           (str (facebook-sign-in-button
                  :redirect-uri "signup"
+                 :re-request (get-parameter-string "rerequest-email-permission")
                  :button-text "Use Facebook to sign up for Kindista"))
           (str *or-divider*)))
       (:form :method "POST" :action "/signup" :id "signup-form"
@@ -146,7 +149,7 @@
        (:h2
          "We have "
          (str (if resent "resent" "sent"))
-         " sent a confirmation email to " (str email))
+         " a confirmation email to " (str email))
        (:p
          "You should be receiving this email very soon. "
          "Please check your email and follow the instructions we sent you to complete the sign-up process. "
@@ -202,7 +205,7 @@
                          unvalidated-fb-email))
              (fb-name (getf fb-data :name))
              (existing-k-id (gethash fb-id *facebook-id-index*))
-             (existing-k-email (gethash fb-email *email-index*))
+             (existing-k-email-id (gethash fb-email *email-index*))
             ;(fb-location-node (getf fb-data :location))
             ;(fb-location-id (safe-parse-integer
             ;                  (cdr (assoc :id fb-location-node))))
@@ -217,15 +220,36 @@
             (post-login :fb-token-data fb-token-data
                         :fb-data fb-data))
 
-          (existing-k-email
-            (flash (strcat*
-                     "The email associated with this Facebook account, "
-                     "\"" existing-k-email "\","
-                     " already belongs to a Kindista account. "
-                     "Please login below or reset your password if you "
-                     "don't remember it.") :error t)
-            (see-other "/login"))
+          (existing-k-email-id
+            (let* ((userid existing-k-email-id)
+                   (user (db userid))
+                   (new-name)
+                   (new-data))
+              (modify-db userid :fb-id fb-id
+                                :fb-token fb-token
+                                :fb-expires fb-expires)
 
+              (unless (find fb-name (getf user :aliases) :test #'equalp)
+                (setf new-name fb-name)
+                (asetf new-data
+                       (append
+                         (list :aliases
+                               (append (getf user :aliases)
+                                       (list fb-name)))
+                         it)))
+              (unless (getf user :avatar)
+                (asetf new-data
+                       (append
+                         (list :avatar (save-facebook-profile-picture-to-avatar userid))
+                         it)))
+              (apply #'modify-db userid new-data)
+              (when new-name (reindex-person-names userid))
+
+              (register-login userid)))
+
+          ((not fb-email)
+           (flash "Kindista needs a valid email address so we can let you know when someone is replying to an offer or request that you post. After you sign up, you can edit which types of notifications you want to receive from Kindista on your settings page." :error t)
+           (see-other "/signup?rerequest-email-permission=t"))
           (t
             (create-new-person-account fb-name
                                        fb-email
@@ -309,6 +333,17 @@
 
             ((not (string= email (post-parameter "email-2")))
               (try-again "Your email confirmation did not match the email you entered"))
+
+            ((gethash email *email-index*)
+              (flash
+                (html "There is already a Kindista account for the email address: "
+                      (str email)
+                      ". If this is your email address and you forgot your password, you can "
+                      (:a :href (s+ +base-url+ "reset") "reset it")
+                      ". If you know your password, you can sign in below.")
+                :error t)
+              (see-other "/login"))
+
             ((not person-p)
               (try-again "Please select an account type"))
 
@@ -378,7 +413,7 @@
                          :password (post-parameter-string "password"))))
   (setf (token-userid *token*) new-id)
   (when fb-id
-    (modify-db new-id :avatar (get-facebook-profile-picture new-id)))
+    (modify-db new-id :avatar (save-facebook-profile-picture-to-avatar new-id)))
   (dolist (group (getf invitation :groups))
     (add-group-member new-id group))
   (add-contact host new-id)

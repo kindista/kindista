@@ -60,7 +60,8 @@
         (:conversation (notice :new-comment :time time :id id))
         (:transaction (notice :new-transaction-action
                               :time time
-                              :transaction-id on-message
+                              :transaction-id on
+                              :party (list *userid*)
                               :text text))))
     id))
 

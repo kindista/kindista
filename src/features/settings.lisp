@@ -85,13 +85,10 @@
              (htm (:div :class "content-container"
                     (:div :class "current-value" (str body))
                     (:div :class "buttons"
-                      (if buttons
-                        (str buttons)
-                        (htm
-                          (:a :class "yes small"
-                              :href (url-compose *base-url* "edit" item)
-                              (or (str edit-text)
-                                  (htm "Edit"))))))))))))
+                      (:a :class "yes small"
+                          :href (url-compose *base-url* "edit" item)
+                          (or (str edit-text)
+                              (htm "Edit"))))))))))
      (:p :class "help-text" (:em (str help-text))))))
 
 (defun settings-group-category (editable groupid group)
@@ -642,20 +639,17 @@
      (see-other "/settings/communication")))))
 
 (defun settings-push-notifications
-  (&key group
-   &aux (adminp (getf *user* :admin)))
-
+  (&optional group)
   (unless group
-    (when adminp
-      (settings-item-html
-       "push notifications"
-       (html (:script :type "text/javascript" :src "/push-notification-button.js"))
-       :help-text (html (:span :id "push-help-text" "Push notifications allow you to recieve messages from other users on your phone or browser. ")
-                        (:strong "Currently only availabe on Chrome and Chromium version 42 and above."))
-       :buttons (html (:button :id "push-notification-button"
-                               :class "yes small"
-                               :disabled t "Enable Push Messages" ))
-      ))))
+    (settings-item-html
+     "push notifications"
+     (html (:script :type "text/javascript" :src "/push-notification-button.js"))
+     :help-text (html (:span :id "push-help-text" "Push notifications allow you to recieve messages from other users on your phone or browser. ")
+                      (:strong "Currently only availabe on Chrome and Chromium version 42 and above."))
+     :editable t
+     :buttons (html (:button :id "push-notification-button"
+                             :class "yes small"
+                             :disabled t "Enable Push Messages" )))))
 
 (defun settings-notifications (&key groupid group user (userid *userid*))
   (let* ((entity (or group  user *user*))
@@ -689,7 +683,11 @@
                           " a message or responds to "
                           (if group "our" "my")
                           " offers/requests")))
-            (:li (:input :type "checkbox"
+           (:li (:input :type "checkbox"
+                      :name "new-contact"
+                      :checked (checkbox-value :notify-new-contact))
+                     "when someone adds me to their list of contacts")
+           (:li (:input :type "checkbox"
                   :name "inventory-expiration"
                   :checked (checkbox-value :notify-inventory-expiration))
                  "when my offers and requests are about to expire ")
@@ -703,10 +701,6 @@
 
             (unless group
               (htm
-               ;(:li (:input :type "checkbox"
-               ;      :name "new-contact"
-               ;      :checked (checkbox-value :notify-new-contact))
-               ;     "when someone adds me to their list of contacts")
                 (:li (:input :type "checkbox"
                       :name "expired-invites"
                       :checked (checkbox-value :notify-expired-invites))
@@ -860,30 +854,31 @@
       ((post-parameter "fb-logout")
        (modify-db *userid* :fb-token nil)
        (flash "Kindista no longer has access to your Facebook account")))
-    (see-other "/settings/social")))
+    (see-other (or (post-parameter-string "next") "/settings/social"))))
 
 (defun get-settings-social ()
-  (unless *productionp*
+  (when (or (not *productionp*)
+            (getf *user* :admin)
+            (getf *user* :test-user))
     (require-user (:allow-test-user t)
       (let* ((now (get-universal-time))
              (facebook-token-data (when (get-parameter "code")
-                                    (register-facebook-user
-                                      (s+ +base-url+ "settings/social"))))
+                                    (register-facebook-user "settings/social")))
              (token (cdr (assoc "access_token"
                                 facebook-token-data
                                 :test #'string=)))
-             (expires (+ now (safe-parse-integer
-                               (cdr (assoc "expires"
-                                           facebook-token-data
-                                           :test #'string=))))) )
+             (expires (awhen facebook-token-data
+                        (+ now (safe-parse-integer
+                                 (cdr (assoc "expires" it :test #'string=)))))))
         (when facebook-token-data
           (modify-db *userid* :fb-token token
-                              :fb-expires (+ (get-universal-time)
-                                             (safe-parse-integer expires))
-                              :fb-link-active t)
+                     :fb-expires (+ (get-universal-time)
+                                    (safe-parse-integer expires))
+                     :fb-link-active t)
           (unless (getf *user* :fb-id)
             (modify-db *userid* :fb-id (get-facebook-user-id token)))
-          (flash "You have successfully linked Kindista to your Facebook account.")))
+          (flash "You have successfully linked Kindista to your Facebook account."))
+        (facebook-debugging-log facebook-token-data))
       (settings-social-html))))
 
 (defun settings-social-html
@@ -915,10 +910,18 @@
               (:span
                 (str (if fb-token-p
                        "Your Kindista account is currently linked to your Facebook account."
-                       "Your Kindista account is not currently linked to Facebook.")))))
+                       "Your Kindista account is not currently linked to Facebook."))))
+            )
 
        :buttons (if fb-token-p sign-out-button sign-in-button)
-       :help-text "You can connect your Kindista account with Facebook to post your offers, requests, and gratitude to your Facebook timeline."
+       :help-text (if fb-token-p
+                    (html
+                       "You can manage the types of Facebook data that Kindista has access to "
+                       (:strong
+                         (:a :href "https://www.facebook.com/settings?tab=applications"
+                             "here"))
+              ".")
+                    "You can connect your Kindista account with Facebook to post your offers, requests, and gratitude to your Facebook timeline.")
        :action "/settings/social"
        :class "facebook"
        :title "Facebook"
@@ -953,7 +956,7 @@
                (:strong (str (car (getf *user* :emails))))
                (:a :id "email-link" :href "/settings/communication#email" "change"))
            (str (settings-notifications :groupid groupid :group group))
-           (str (settings-push-notifications :group group))
+           (str (settings-push-notifications group))
            (unless groupid
              (str (settings-emails (string= (get-parameter "edit") "email")
                                    :activate (get-parameter "activate"))))))))

@@ -110,4 +110,11 @@
           (:a :href "/privacy" "privacy")  
          )))
 
+      :extra-head (facebook-item-meta-content
+                    nil
+                    nil
+                    "Join the Revolution of Kindness"
+                    :url +base-url+
+                    :description "Kindista is a revolutionary economic network where everything is free and the currency is gratitude."
+                    )
       :class "splash")))

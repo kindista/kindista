@@ -82,14 +82,17 @@
   "applies auto-rotate and strips out EXIF data"
   (run-program *convert-path* (list "-auto-orient" "-strip" path path)))
 
-(defun rotate-image (id)
+(defun rotate-image (id &key on-item-data)
   (let* ((image (db id))
          (original-file (strcat *original-images* (getf image :filename))))
     (run-program *convert-path*
                  (list original-file "-rotate"  "90" original-file))
     (modify-db id :modified (get-universal-time))
     (dolist (path (directory (strcat *images-path* id "-*.*")))
-      (delete-file path))))
+      (delete-file path))
+    (awhen (getf on-item-data :fb-object-id)
+      (notice :new-facebook-action :object-modified t
+                                   :fb-object-id it))))
 
 (defun delete-image (id)
   (dolist (path (directory (strcat *images-path* id "-*.*")))
@@ -224,7 +227,7 @@
                     (s+ "You can only add photos to items you have posted."))
         (cond
           ((post-parameter "rotate-image")
-           (rotate-image image-id)
+           (rotate-image image-id :on-item-data item)
            (see-other (referer)))
           ((post-parameter "delete-image")
            (confirm-delete :url (strcat "/image/" image-id)

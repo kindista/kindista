@@ -20,7 +20,8 @@
 (defun send-transaction-action-notifications
   (transaction-id
    log-event
-   &optional message
+   &key message
+        party
    &aux (transaction (db transaction-id))
         (inventory-id (getf transaction :on))
         (on-item (db inventory-id))
@@ -31,9 +32,10 @@
                           (:request "request")))
         (on-title (getf on-item :title))
         (on-details (getf on-item :details))
-        (event-party (if (getf transaction :log)
-                       (getf log-event :party)
-                       (list (getf transaction :by))))
+        (event-party (or party
+                         (if (getf transaction :log)
+                           (getf log-event :party)
+                           (list (getf transaction :by)))))
         (transaction-action (getf log-event :action))
         (event-actor-id (car event-party))
         (event-actor (db event-actor-id))

@@ -114,6 +114,7 @@
                              (:module email
                               :serial t
                               :components ((:file "helpers")
+                                           (:file "contact-notification")
                                            (:file "email-verification")
                                            (:file "error-notifications")
                                            (:file "expired-inventory-notice")

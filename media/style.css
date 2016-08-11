@@ -253,7 +253,7 @@ input[type=text], input[type=password] {
  border: 1px solid #444;
  margin: .3em 0;
  padding: 0 0.4em;
- height: 2.05em;
+ height: 2.5em;
  border-radius: 0.25em;
  box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);
 }
@@ -1745,6 +1745,7 @@ menu#fine-print-links a {
  margin-top: 0.5em;
 }
 
+#tag-fb-friends fieldset,
 .item.inventory-details label,
 .item.inventory-details fieldset {
  margin-top: 1em;
@@ -3367,7 +3368,7 @@ div.settings-avatar {
 }
 
 form #facebook {
- margin-top: 0.7em;
+ margin: 0.7em 0;
 }
 
 form #facebook img {
@@ -3405,8 +3406,35 @@ form #facebook label,
 
 form #facebook label,
 form #facebook input,
+div#tag-fb-friends div.g-recipient *,
 #enter-inventory-details #categories input {
  vertical-align: middle;
+}
+
+div#tag-fb-friends h3 {
+ margin-bottom: 0.5em;
+}
+
+div#tag-fb-friends legend {
+ font-size: 1.2em;
+}
+
+div#tag-fb-friends div.g-recipient {
+ width: 100%;
+ max-width: 25em;
+ padding: 0.4em 0;
+}
+
+div#tag-fb-friends div.g-recipient input {
+ padding-right: 0.5em;
+}
+
+div#tag-fb-friends div.g-recipient img {
+ display: inline-block;
+ max-width: 3em;
+ height: auto;
+ margin-left: 0.5em;
+ margin-right: 0.3em;
 }
 
 form.matchmaker {
@@ -4306,6 +4334,12 @@ span.highlight {
 
 .comments form label {
  padding-top: 0.5em;
+}
+
+.inventory-reply label {
+ font-weight: bold;
+ display: block;
+ margin: 0.8em 0 0.3em;
 }
 
 .inventory-reply blockquote {

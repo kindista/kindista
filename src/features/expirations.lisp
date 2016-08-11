@@ -29,7 +29,7 @@
        (setf *inventory-refresh-timer-index*
              (remove result *inventory-refresh-timer-index*))))
 
-(defun index-inventory-expiration (id data)
+(defun index-inventory-expiration (id &optional (data (db id)))
   (when (getf data :expires)
     (with-mutex (*inventory-expiration-timer-mutex*)
       (setf *inventory-expiration-timer-index*
@@ -40,7 +40,7 @@
                        #'<
                        :key #'(lambda (item) (getf item :expires)))))))
 
-(defun deindex-inventory-expiration (id data)
+(defun deindex-inventory-expiration (id &optional (data (db id)))
   (when (getf data :expires)
     (with-mutex (*inventory-expiration-timer-mutex*)
         (asetf *inventory-expiration-timer-index*

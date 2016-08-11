@@ -23,8 +23,9 @@
 
 (defparameter +text-scanner+ (create-scanner "[a-zA-Z]+"))
 
-(defparameter +email-scanner+ (create-scanner
-                                 "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"))
+;old-email-scanner "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"))
+;;http://www.regular-expressions.info/email.html
+(defparameter +email-scanner+ (create-scanner "^(?=[a-zA-Z0-9][a-zA-Z0-9@._%+-]{5,253}$)[a-zA-Z0-9._%+-]{1,64}@(?:(?=[a-zA-Z0-9-]{1,63}\\.)[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*\\.){1,8}[a-zA-Z]{2,63}$"))
 (defparameter *english-list*
   "~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}")
 (defparameter *english-list-or*
@@ -174,10 +175,13 @@
                                       (string-downcase string))
                            "-"))
 
-(defun words-from-string (string)
-  (iter (for word in (split " " (ppcre:regex-replace-all "[\\r\\n,<|>]" (string-downcase string) " ")))
-        (when (ppcre:scan +text-scanner+ word)
-          (collect word))))
+(defun words-from-string (string-to-split)
+  (when string-to-split
+    (iter (for word in (split " " (ppcre:regex-replace-all "[\\r\\n,<|>]"
+                                                           (string-downcase string-to-split)
+                                                           " ")))
+          (when (ppcre:scan +text-scanner+ word)
+            (collect word)))))
 
 (defun word-count (string)
   (length (words-from-string string)))
@@ -209,8 +213,8 @@
                                           "@mailinator.com")
                                       it))))))))
 
-(defun separate-with-commas (list)
-  (format nil "~{~A, ~}" list))
+(defun separate-with-commas (list &key omit-spaces)
+  (format nil (if omit-spaces "~{~A,~}" "~{~A, ~}") list))
 
 (defun separate-with-spaces (list)
   (format nil "~{~A ~}" list))
@@ -751,13 +755,23 @@
     (parse-integer (get-parameter name))))
 
 (defun get-parameter-integer-list (name)
-  (loop for pair in (get-parameters*)
-        for i = (parse-integer (cdr pair) :junk-allowed t)
-        when (and (string= (car pair) name) i)
-        collect i))
+  (remove nil
+          (loop for pair in (get-parameters*)
+                for i = (parse-integer (cdr pair) :junk-allowed t)
+                when (and (string= (car pair) name) i)
+                collect i)))
 
 (defun post-parameter-float (name)
   (awhen (post-parameter name) (when (scan +float-scanner+ it) (read-from-string it))))
+
+(defun possessive-name
+  (owner-id
+   &key (userid *userid*)
+        linkp)
+  (cond
+    ((= owner-id userid) "your")
+    (linkp (person-link owner-id :possessive t))
+    (t (s+ (db owner-id :name) "'s"))))
 
 (defun post-parameter-integer (name)
   (when (scan +number-scanner+ (post-parameter name))

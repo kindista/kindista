@@ -10,6 +10,10 @@
    [ ] push encryption path (encrypt.sh) in settings on live server
    [ ] migrate push registration db with helper function
    [ ] touch push-log file in data (?)
+## big red unsubscribe link on email-unsubscribe-page
+  - when clicking the link automatically unsubscribe from specific email
+  - big red button unsubscribes from everything
+## post offers/requests to facebook
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
 ## accountability with user flaky-ness
@@ -17,8 +21,6 @@
     with the other party
   - timeliness, enjoyment of interaction, etc.
   - ability to see constructive feedback if others can see yours
-## post offers/requests to facebook
-## notify of contact adds
 ## better matching of search results
 ## group discussions
 ## email preferences for deactivated accounts

@@ -381,6 +381,18 @@
                 "Cancel")))
        (str submit-button)))))
 
+(defun gratitude-linked-inventory-indicator
+  (inventory-id
+   &optional (userid *userid*)
+   &aux (inventory-item (db inventory-id)))
+  (html
+    (str
+      (strcat (possessive-name (getf inventory-item :by) :userid userid)
+              " "
+              (string-downcase (symbol-name (getf inventory-item :type)))
+              ": "))
+    (:strong (str (getf inventory-item :title)))))
+
 (defun gratitude-compose
   (&key error
         subjects
@@ -392,7 +404,7 @@
         groupid
         on-type
         on-id
-        on-item
+        on-item-description
         relevant-offers
         relevant-requests
    &aux (submit-buttons
@@ -438,7 +450,9 @@
                                  :name "remove"
                                  :value subject
                                  " ⨯ "))))))
-              (unless (or single-recipient existing-url)
+              (unless (or single-recipient
+                          existing-url
+                         (getf *user* :test-user))
                 (htm
                   (:li :class "recipients" (:button :type "submit" :class "text" :name "add" :value "new" "+ Add a person or group")))))
 
@@ -462,60 +476,62 @@
                       :name "text"
                       (str text))
 
-           (:div :class (s+ "gratitude-selectors "
-                            (when (string= (getf error :field) "on-type")
-                              "error-border"))
-            (when (or relevant-offers relevant-requests)
-              (htm
-                (:h3 :class (when (string= (getf error :field) "on-type")
-                              "red")
-                 "This statement of gratitude is for...")))
+           (when (and (getf *user* :fb-token)
+                          (or (not (getf *user* :test-user))
+                              (and (= 1 (length subjects))
+                                   (db (car subjects) :test-user))))
+                 (htm
+                   (:div :id "facebook"
+                     (:input :type "checkbox"
+                             :id "publish-facebook"
+                             :name "publish-facebook"
+                             :checked "")
+                     (str (icon "facebook" "facebook-icon"))
+                     (:label :for "publish-facebook"
+                      (str (s+ "Share on Facebook"))))))
 
-            (when (and relevant-offers
-                       single-recipient-name)
-              (htm
-                (:div ;:class "inline-block"
-                  (:input :type "radio"
-                   :name "on-type"
-                   :value "offer"
-                   :onclick "this.form.submit()"
-                   :checked (when (string= on-type "offer") "checked"))
-                  "An offer posted by "
-                  (str single-recipient-name))))
+           (unless existing-url
+             (htm
+               (:div :class (s+ "gratitude-selectors "
+                                (when (string= (getf error :field) "on-type")
+                                  "error-border"))
+                (when (or relevant-offers relevant-requests)
+                  (htm
+                    (:h3 :class (when (string= (getf error :field) "on-type")
+                                  "red")
+                     "This statement of gratitude is for...")))
 
-            (when relevant-requests
-              (htm
-                (:div ;:class "inline-block"
-                  (:input :type "radio"
-                   :name "on-type"
-                   :value "request"
-                   :onclick "this.form.submit()"
-                   :checked (when (string= on-type "request") "checked"))
-                  "A request I made on Kindista")))
+                (when (and relevant-offers
+                           single-recipient-name)
+                  (htm
+                    (:div ;:class "inline-block"
+                      (:input :type "radio"
+                       :name "on-type"
+                       :value "offer"
+                       :onclick "this.form.submit()"
+                       :checked (when (string= on-type "offer") "checked"))
+                      "An offer posted by "
+                      (str single-recipient-name))))
 
-            (when (or relevant-offers relevant-requests)
-              (htm
-                (:div ;:class "inline-block"
-                  (:input :type "radio"
-                   :name "on-type"
-                   :value "other"
-                   :onclick "this.form.submit()"
-                   :checked (when (string= on-type "other") "checked"))
-                  "Something else"))))
+                (when relevant-requests
+                  (htm
+                    (:div ;:class "inline-block"
+                      (:input :type "radio"
+                       :name "on-type"
+                       :value "request"
+                       :onclick "this.form.submit()"
+                       :checked (when (string= on-type "request") "checked"))
+                      "A request I made on Kindista")))
 
-            (when (and (getf *user* :fb-token)
-                       (or (not (getf *user* :test-user))
-                           (and (= 1 (length subjects))
-                                (db (car subjects) :test-user))))
-              (htm
-                (:div :id "facebook"
-                  (:input :type "checkbox"
-                          :id "publish-facebook"
-                          :name "publish-facebook"
-                          :checked "")
-                  (str (icon "facebook" "facebook-icon"))
-                  (:label :for "publish-facebook"
-                   (str (s+ "Share on Facebook"))))))
+                (when (or relevant-offers relevant-requests)
+                  (htm
+                    (:div ;:class "inline-block"
+                      (:input :type "radio"
+                       :name "on-type"
+                       :value "other"
+                       :onclick "this.form.submit()"
+                       :checked (when (string= on-type "other") "checked"))
+                      "Something else"))))))
 
            (if (and (or relevant-offers relevant-requests)
                     on-type
@@ -542,11 +558,17 @@
                                   (str submit-buttons))))))
 
              (htm
-               (awhen on-item
-                 (str it))
+               (awhen on-item-description
+                 (htm
+                   (:p "This statement of gratitude is about "
+                       (str it))))
 
                (:div
-                 (str submit-buttons)))))))))
+                 (str submit-buttons))))))))
+
+      :class (if existing-url
+               "edit-gratitude"
+               "express-gratitude"))
     ;; else
     (gratitude-add-subject :text text :next next)))
 
@@ -741,8 +763,8 @@
            (recipient-id (if adminp groupid *userid*))
            (posted-on-type (post-parameter-string "on-type"))
            (invitation-name (post-parameter-string "invitation-name"))
-           (unvalidated-invitation-email (post-parameter-string
-                                           "invitation-email"))
+           (unvalidated-invitation-email (remove #\space (post-parameter-string
+                                                           "invitation-email")))
            (invitation-email (when (scan +email-scanner+ unvalidated-invitation-email)
                                unvalidated-invitation-email))
            (on-types (cond
@@ -751,6 +773,7 @@
            (on-id (post-parameter-integer "on-id"))
            (text (post-parameter-string "text"))
            (next (post-parameter-string "next"))
+           (publish-facebook-p (post-parameter "publish-facebook"))
            (subjects (remove (post-parameter-integer "remove")
                              (parse-subject-list
                                (format nil "~A,~A" (post-parameter "add")
@@ -877,6 +900,11 @@
              (g-compose :error '(:text "Please enter some more details about what you are grateful for."
                                  :field "text"))))
 
+          ((and (getf *user* :test-user)
+                (or (> (length subjects) 1)
+                    (not (db (car subjects) :test-user))))
+           (g-compose :error '(:text "Test users can only post gratitude about one other Test User at a time.")))
+
           ((and (or relevant-offers relevant-requests)
                 (not on-id)
                 (not posted-on-type))
@@ -914,21 +942,7 @@
                                                        :subject-account-reactivation)
                                             :time time
                                             :text text))
-                  (gratitude-url (format nil "/gratitude/~A" new-id))
-                  (facebook-recipients))
-
-
-             (when (and (getf *user* :fb-link-active)
-                        (getf *user* :fb-id)
-                        (post-parameter "publish-facebook"))
-               (notice :new-facebook-action :item-id new-id)
-               (dolist (subject-id g-subjects)
-                 (let ((subject-data (db subject-id)))
-                   (when (and (getf subject-data :fb-id)
-                              (getf subject-data :fb-link-active)
-                              (check-facebook-permission :user-friends
-                                                         subject-id))
-                     (push subject-id facebook-recipients)))))
+                  (gratitude-url (format nil "/gratitude/~A" new-id)))
 
              (awhen on-id
                (let* ((inventory-result (gethash on-id *db-results*))
@@ -964,22 +978,26 @@
                           "Your statement of gratitude will be posted "
                           "when they reactivate their account.")
                       "Your statement of gratitude has been posted"))
-             (see-other
-               (or (when (and (post-parameter "publish-facebook")
-                              facebook-recipients
-                              (not (check-facebook-permission :user-friends)))
-                     (flash "Your statement of gratitude has been published on Facebook")
-                     (apply #'url-compose
-                            (strcat "gratitude/" new-id)
-                            (flatten
-                              (mapcar (lambda (id)
-                                        (cons "authorize-fb-friend-tag"
-                                              (strcat id)))
-                                      facebook-recipients))))
-                   next
-                   (if inactive-subject
-                     "/home"
-                     gratitude-url)))))
+
+             (if (not publish-facebook-p)
+               (see-other (or next
+                              (if inactive-subject "/home" gratitude-url)))
+               (let ((next (apply #'url-compose
+                                  gratitude-url
+                                  (awhen (facebook-taggable-friend-tokens
+                                           g-subjects)
+                                    (flatten
+                                      (mapcar (lambda (pair)
+                                                (cons "authorize-fb-friend-tag"
+                                                      (strcat (car pair))))
+                                              it))))))
+                 (cond
+                   ((current-fb-token-p)
+                    (notice :new-facebook-action :item-id new-id)
+                    (flash "Your statement of gratitude has been published on Facebook")
+                    (see-other next))
+                   (t (renew-fb-token :item-to-publish new-id
+                                      :next next)))))))
 
           (t
            (g-compose :subjects subjects)))))))
@@ -990,33 +1008,6 @@
   (let* ((data (db id))
          (result (gethash id *db-results*))
          (self-author-p (eql (getf data :author) *userid*))
-         (new-fb-authorization-p
-           (string= (get-parameter "state") "tag_friends"))
-         (friend-tags-to-authorize (get-parameter-integer-list
-                                     "authorize-fb-friend-tag"))
-         (fb-user-friends-permission
-           (when (or (and friend-tags-to-authorize self-author-p)
-                     new-fb-authorization-p)
-             (multiple-value-list (check-facebook-permission :user-friends
-                                                             *userid*))))
-         (fb-friends-to-tag
-           (or friend-tags-to-authorize
-               (remove nil
-                       (mapcar (lambda (subject-id)
-                                 (let ((subject (db subject-id)))
-                                   (when (and (getf subject :fb-id)
-                                              (getf subject :fb-link-active)
-                                              (check-facebook-permission
-                                                :user-friends
-                                                subject-id))
-                                   subject-id)))
-                         (getf data :subjects)))))
-         (authorize-tagging
-           (facebook-friends-permission-html
-             :redirect-uri (strcat "gratitude/" id)
-             :re-request (eql (second fb-user-friends-permission) :declined)
-             :cancel-link (strcat "gratitude/" id)
-             :fb-gratitude-subjects fb-friends-to-tag))
          (gratitude-page
            (when result
              (standard-page
@@ -1036,31 +1027,31 @@
                                  (name-list-all (getf data :subjects )
                                                 :stringp t))
                              :description (getf data :text)
-                             :determiner ""
                              :image (awhen (first (getf data :images))
                                       (get-image-thumbnail it 1200 1200)))
-               :selected (awhen (get-parameter-string "menu") it)))))
+               :selected (awhen (get-parameter-string "menu") it))))
+         (friend-tags-to-authorize (get-parameter-integer-list
+                                     "authorize-fb-friend-tag"))
+         (new-fb-authorization (string= (get-parameter-string "state") "user_friends_scope_granted"))
+         (fb-user-friends-permission
+           (when (and *user* self-author-p (or friend-tags-to-authorize
+                                               (get-parameter "tag-fb-friends")
+                                               new-fb-authorization))
+             (multiple-value-list (check-facebook-permission :user-friends *userid*))))
+         (possible-fb-friends-to-tag friend-tags-to-authorize))
+
+    (when (and self-author-p (not possible-fb-friends-to-tag))
+      (setf possible-fb-friends-to-tag
+            (remove nil (mapcar 'car
+                                (facebook-taggable-friend-tokens
+                                  (getf data :subjects))))))
     (cond
-      (friend-tags-to-authorize
-       (if self-author-p
-         authorize-tagging
-         (permission-denied)))
-      (new-fb-authorization-p
-       (if (first fb-user-friends-permission)
-         (progn
+      ((and data (not *user*))
+       gratitude-page)
 
-
-           ;; need to flash when ther are no friends that can be tagged
-
-
-           (facebook-debugging-log (get-facebook-kindista-friends *userid*))
-           (tag-facebook-friends-html
-             :gratitude-id id
-             :fb-gratitude-subjects (mapcar (lambda (id) (cons (db id :name)
-                                                               id))
-                                            fb-friends-to-tag)))
-         authorize-tagging))
-      ((and *user* data)
+      ((and data (nor new-fb-authorization
+                      friend-tags-to-authorize
+                      (get-parameter "taggable-fb-friends")))
        (let* ((message (gethash id *db-messages*))
               (mailboxes (when message
                            (loop for person in (message-people message)
@@ -1070,11 +1061,35 @@
          (when (eql *userid* (caar mailboxes))
            (update-folder-data message :read))
          gratitude-page))
-      (data gratitude-page)
+
+      ((not self-author-p)
+       (permission-denied))
+
+      ;; Tagging is convoluted until Facebook changes it's API to allow apps to pass
+      ;; FB user ids to tag an item. Now they only pass a special token that prevents
+      ;; us from verifying that a gratitude recipient is also a facebook friend.
+
+      ((not (first fb-user-friends-permission))
+       (facebook-friends-permission-html
+             :redirect-uri (strcat "gratitude/" id)
+             :re-request (eql (second fb-user-friends-permission) :declined)
+             :cancel-link (strcat "gratitude/" id)
+             :fb-gratitude-subjects possible-fb-friends-to-tag))
+
+      (possible-fb-friends-to-tag
+       (tag-facebook-friends-html
+         :gratitude-id id
+         :fb-gratitude-subjects (mapcar (lambda (id) (cons (db id :name)
+                                                           id))
+                                        possible-fb-friends-to-tag)))
       (t (not-found)))))
 
-(defun post-gratitude (id)
-  (require-active-user
+(defun post-gratitude
+  (id
+   &aux (url (strcat "/gratitude/" id))
+        (friends-to-tag (when (post-parameter "tag-friends")
+                          (post-parameter-integer-list "tag-fb-friend"))))
+  (require-user (:require-active-user t :allow-test-user t)
     (setf id (parse-integer id))
     (aif (db id)
      (require-test ((or (eql *userid* (getf it :author))
@@ -1091,8 +1106,11 @@
           (delete-gratitude id)
           (flash "Your statement of gratitude has been deleted!")
           (see-other (or (post-parameter "next") "/home")))
+         (friends-to-tag
+          (tag-facebook-friends id friends-to-tag)
+          (see-other url))
          ((post-parameter "edit")
-          (see-other (strcat "/gratitude/" id "/edit")))))
+          (see-other (s+ url "/edit")))))
       (not-found))))
 
 (defun get-gratitude-edit (id)
@@ -1105,9 +1123,11 @@
         (let* ((subjects (getf gratitude :subjects))
                (single-recipient (when (= (length subjects) 1)
                                    (car subjects)))
-               (on-item (awhen (getf gratitude :on)
-                          (html (:blockquote (str (html-text (db it :details)))))))
-               (relevant-inventory (unless on-item
+               (on-item-id (getf gratitude :on))
+               (on-item-description
+                 (awhen on-item-id
+                        (gratitude-linked-inventory-indicator on-item-id)))
+               (relevant-inventory (unless on-item-id
                                      (possible-inventory-for-gratitude
                                        author
                                        single-recipient)))
@@ -1115,7 +1135,8 @@
                (relevant-offers (getf relevant-inventory :offers)))
           (gratitude-compose :subjects subjects
                              :text (getf gratitude :text)
-                             :on-item on-item
+                             :on-item-description on-item-description
+                             :on-id on-item-id
                              :relevant-offers relevant-offers
                              :relevant-requests relevant-requests
                              :existing-url (s+ "/gratitude/" id "/edit")))))))
@@ -1130,9 +1151,11 @@
         (let* ((subjects (getf gratitude :subjects))
                (single-recipient (when (= (length subjects) 1)
                                    (car subjects)))
-               (on-item (awhen (getf gratitude :on)
-                          (html (:blockquote (str (html-text (db it :details)))))))
-               (relevant-inventory (unless on-item
+               (on-item-id (getf gratitude :on))
+               (on-item-description
+                 (awhen on-item-id
+                        (gratitude-linked-inventory-indicator on-item-id)))
+               (relevant-inventory (unless on-item-id
                                      (possible-inventory-for-gratitude
                                        author
                                        single-recipient)))
@@ -1154,7 +1177,8 @@
             (t
              (gratitude-compose :subjects (getf gratitude :subjects)
                                 :text (getf gratitude :text)
-                                :on-item on-item
+                                :on-id on-item-id
+                                :on-item-description on-item-description
                                 :relevant-offers relevant-offers
                                 :relevant-requests relevant-requests
                                 :existing-url (s+ "/gratitude/" id "/edit")))))))))

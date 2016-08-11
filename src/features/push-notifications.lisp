@@ -113,6 +113,7 @@
       (subscriptions))
   (dolist (recipient recipients)
     (setf subscriptions (db recipient :push-notification-subscriptions))
+<<<<<<< HEAD
     (dolist (client '(:chrome :mobile-chrome))
       (awhen (getf subscriptions client)
         (let ((encrypted-results (when (and (getf it :p-256-dh)
@@ -141,5 +142,47 @@
           (with-open-file (s (s+ +db-path+ "push-log") :direction :output :if-exists :append)
             (let ((*print-readably* nil))
               (format s "~{~S~%~}" chrome-api-status))))))))
+=======
+    ;push both desktop and mobile registration-ids
+    (awhen (getf subscriptions :chrome)
+      (push it registration-ids))
+    (awhen (getf subscriptions :mobile-chrome)
+      (push it registration-ids)))
+  (when registration-ids
+    (setf registration-json (json:encode-json-alist-to-string (list (cons "registration_ids" registration-ids))))
+
+  (dolist (reg-id registration-ids)
+    (with-locked-hash-table (*push-subscription-message-index*)
+      (push message
+        (gethash reg-id *push-subscription-message-index*))))
+
+    (setf chrome-api-status
+      (multiple-value-list
+        (http-request "https://android.googleapis.com/gcm/send"
+                      ;CHANGE to server key when pushing to live
+                      :additional-headers (list (cons "Authorization"
+                                                      (s+ "key="
+                                                          *chrome-push-secret*)))
+                      :method :post
+                      :content-type "application/json"
+                      :external-format-out :utf-8
+                      :external-format-in :utf-8
+                      :content registration-json)))
+
+    (setf chrome-results
+          (getf (alist-plist (decode-json-octets (first chrome-api-status)))
+                :results))
+    (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :append)
+      (let ((*print-readably* nil))
+        (format s "~{~S~%~}" (decode-json-octets (first chrome-api-status)))))
+
+    (do ((results chrome-results (rest results))
+         (reg-ids registration-ids (rest reg-ids)))
+        ((null results) 'done)
+        (when (eql (car (first (first results))) :error)
+          (with-locked-hash-table (*push-subscription-message-index*)
+            (asetf (gethash (first reg-ids) *push-subscription-message-index*)
+              (remove message it)))))))
+>>>>>>> master
 
 
