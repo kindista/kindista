@@ -1,3 +1,4 @@
+## make sure style sheet is loaded (not over https)
 ## web apps
 ## big red unsubscribe link on email-unsubscribe-page
   - when clicking the link automatically unsubscribe from specific email
