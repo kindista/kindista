@@ -17,6 +17,25 @@
 
 (in-package :kindista)
 
+(defun migrate-push-registration-ids ()
+  ;move push-notification-subscriptions to a p list of client
+  ;with reg-id as a key
+  (dolist (id (hash-table-keys *db*))
+    (let* ((push-subscription
+             (copy-list (getf (db id) :push-notification-subscriptions)))
+           (old-chrome-p (stringp (getf push-subscription :chrome)))
+           (old-mobile-p (stringp (getf push-subscription :mobile-chrome)))
+           (changes-p nil))
+      (when push-subscription
+        (when old-chrome-p
+          (asetf (getf push-subscription :chrome) (list :reg-id it))
+          (setf changes-p t))
+        (when old-mobile-p
+          (asetf (getf push-subscription :mobile-chrome) (list :reg-id it))
+          (setf changes-p t))
+        (when changes-p
+          (modify-db id :push-notification-subscriptions push-subscription)))) ))
+
 (defun post-push-notification-subscription
  (&aux
    (json (alist-plist (json:decode-json-from-string
@@ -119,8 +138,8 @@
                 :content (json:encode-json-alist-to-string
                            (list (cons "registration_ids" (list (getf it :reg-id)))
                                  (cons "raw_data" (getf encrypted-results :encrypted-message)))))))
-          (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :append)
+          (with-open-file (s (s+ +db-path+ "push-log") :direction :output :if-exists :append)
             (let ((*print-readably* nil))
-              (format s "~{~S~%~}" chrome-api-status)))))))
+              (format s "~{~S~%~}" chrome-api-status))))))))
 
 

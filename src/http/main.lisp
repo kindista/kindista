@@ -596,7 +596,7 @@
         (:link :rel "apple-touch-icon" :sizes "152x152" :href "/media/icons/kindista_favicon_152.png")
         (:link :rel "apple-touch-icon" :sizes "180x180" :href  "/media/icons/kindista_favicon_180.png")
         (:script :type "text/javascript" :src "/kindista.js")
-        (:script :type "text/javascript" :src "/service-worker-registration.js")
+        (:script :type "text/javascript" :src "/service-worker-registration.js?v=1.0") ;add query version number to ensure cache busting
         (when (and *userid* (string= (referer) (s+ +base-url+ "login")))
           (htm (:script :type "text/javascript"
                         :src "/update-push-registration.js")))

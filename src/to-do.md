@@ -1,13 +1,15 @@
 ## web apps
- [ ] handle sending messages to firefox
- [ ] look at people who are subscribed to push notifications to send message
- [ ] hide button for anything but chrome and mobile chrome
+ [x] hide button for anything but chrome and mobile chrome
  [x] check if the encryption keys are there before encryption
- [ ] create specific push notification log file
- [ ] cache busting for service worker js
- [ ] push encryption path in settings on live server
- [ ] write function to migrate data from registration id string to reg-id list
- [ ] default message goes to message inbox
+ [x] create specific push notification log file
+ [x] cache busting for service worker js
+ [x] write function to migrate data from registration id string to reg-id list
+ [x] default message goes to message inbox
+ ## on server
+   [ ] look at people already subscribed to push notifications to send message
+   [ ] push encryption path (encrypt.sh) in settings on live server
+   [ ] migrate push registration db with helper function
+   [ ] touch push-log file in data (?)
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)
 ## accountability with user flaky-ness

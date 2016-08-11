@@ -1,3 +1,4 @@
+console.log("something newer");
 self.addEventListener('install', function(event) {
   //return self.skipWaiting() // updates service worker, remove for production
   console.log('Installed', event);
@@ -10,7 +11,10 @@ self.addEventListener('activate', function(event) {
 self.addEventListener('push', function(event) {
   event.waitUntil(
     self.registration.pushManager.getSubscription().then(function(subscription) {
-      var data = event.data.json();
+      var data = {}
+      if (event.data){
+        data = event.data.json();
+      }
       var title = data.title;
       var body = data.body;
       var icon = data.icon;
@@ -48,16 +52,18 @@ self.addEventListener('push', function(event) {
                                  data: data});
       });
   }).catch(function(err) {
-      console.error('Unable to retrieve data', err);
+      console.error('Unable to retrieve push data', err);
+      var data = {}
       var title = 'You have a new message';
       var body = 'A new message is waiting for you in your Kindista inbox.';
       var icon = 'kindista_favicon_180.png';
       var notificationTag = 'notification-error';
+      data.url = "https://kindista.org/messages";
       return self.registration.showNotification(title, {
         body: body,
         icon: icon,
-        tag: notificationTag
-        });
+        tag: notificationTag,
+        data: data });
       })
   );
 });
