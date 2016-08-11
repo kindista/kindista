@@ -521,19 +521,16 @@
                 (when (string= type "offer")
                   (update-matchmaker-offer-data new-id))
                 (cond
-                  ((not publish-facebook)
+                  ((nor (getf *user* :fb-id) publish-facebook)
                    (see-other new-url))
-                  ((and (getf *user* :fb-link-active)
-                        (getf *user* :fb-id))
-                   (if (current-fb-token-p)
-                     (progn
-                       (notice :new-facebook-action :item-id new-id)
-                       (flash (s+ "Your "
-                                  type
-                                  " has been published on Facebook"))
-                       (see-other new-url))
-                     (renew-fb-token :item-to-publish new-id
-                                     :next new-url))))))))
+                  ((current-fb-token-p)
+                   (notice :new-facebook-action :item-id new-id)
+                   (flash (s+ "Your "
+                              type
+                              " has been published on Facebook"))
+                   (see-other new-url))
+                  (t (renew-fb-token :item-to-publish new-id
+                                     :next new-url)))))))
 
          (t (inventory-details)))))))
 

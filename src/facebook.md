@@ -18,8 +18,9 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 [x] redirects in the fb-renew function
 [x] add a flash that item has been updated/published on facebook
 [x] create a notice to actually do the publishing
-[ ] test
-[ ] test that redirect urls work
+[x] test
+[x] test that redirect urls work
+[ ] test "share on facebook" links under items
 
 #Gratitude
 [ ] taggable friends:
