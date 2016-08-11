@@ -12,14 +12,14 @@ https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
 https://developers.facebook.com/docs/sharing/reference/share-dialog
 https://developers.facebook.com/docs/sharing/opengraph/custom
 https://developers.facebook.com/docs/sharing/opengraph/using-actions
-[ ] if facebook token has expired/deactivatd, invite user to get a new one and let them know that if they don't, changes will not be reflected on FB
-[ ] require-fb-token macro for adding/modifying inventory, gratitude, images?
-[ ] recieve new token/expiration and update db
-[ ] redirects in the fb-renew function
-[ ] add a flash that item has been updated/published on facebook
-[ ] create a notice to actually do the publishing
+[x] if facebook token has expired/deactivatd, invite user to get a new one and let them know that if they don't, changes will not be reflected on FB
+[x] check fb auth when adding/modifying inventory, gratitude
+[x] recieve new token/expiration and update db
+[x] redirects in the fb-renew function
+[x] add a flash that item has been updated/published on facebook
+[x] create a notice to actually do the publishing
 [ ] test
-    -token expires: 3682543262
+[ ] test that redirect urls work
 
 #Gratitude
 [ ] taggable friends:
