@@ -1,5 +1,5 @@
 var isPushEnabled = false;
-var isChrome = !!window.chrome && !!window.chrome.webstore;
+var isChrome = !!window.chrome;
 
 window.addEventListener('load', function() {
   var pushButton = document.querySelector('#push-notification-button');

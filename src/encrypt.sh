@@ -12,5 +12,4 @@ MESSAGE=$3
 BASEDIR=$(dirname $0)
 
 cd ${BASEDIR}
-export PYTHONPATH=$PYTHONPATH:/usr/local/lib/python2.7/site-packages
-python push-encryption.py $PUBKEY $AUTH "$MESSAGE"
+python2 push-encryption.py $PUBKEY $AUTH "$MESSAGE"

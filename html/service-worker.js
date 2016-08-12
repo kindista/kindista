@@ -1,4 +1,3 @@
-console.log("something newer");
 self.addEventListener('install', function(event) {
   //return self.skipWaiting() // updates service worker, remove for production
   console.log('Installed', event);
