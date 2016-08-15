@@ -40,6 +40,11 @@ https://developers.facebook.com/docs/sharing/reference/send-dialog
 [ ] create an invitation with a special token
 [ ] use the token in the signup (enroll) url passed to the send-dialog
 [ ] when signing a person up, if they are FB friends with the inviter, add them to kindista friends as host
+[ ] invitation via gratitude
+
+#FAQs
+[ ] how do I share my offers/req/grat on facebook?
+[ ] how do I tag my fb friends in gratitude?
 
 #FB login
 https://developers.facebook.com/docs/facebook-login/multiple-providers
