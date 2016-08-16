@@ -1061,6 +1061,8 @@
     (cond
       ((not data) (not-found))
 
+      ((not *userid*) gratitude-page)
+
       ((not self-author-p)
        (let* ((message (gethash id *db-messages*))
               (mailboxes (when message
