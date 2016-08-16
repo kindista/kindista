@@ -1102,6 +1102,7 @@
 (defun post-gratitude
   (id
    &aux (url (strcat "/gratitude/" id))
+        (next (or (post-parameter-string "next") url))
         (friends-to-tag (when (post-parameter "tag-friends")
                           (post-parameter-integer-list "tag-fb-friend"))))
   (require-user (:require-active-user t :allow-test-user t)
@@ -1121,6 +1122,16 @@
           (delete-gratitude id)
           (flash "Your statement of gratitude has been deleted!")
           (see-other (or (post-parameter "next") "/home")))
+         ((and publish-facebook
+               (not (fb-object-actions-by-user id)))
+          (if (current-fb-token-p)
+            (progn (notice :new-facebook-action :item-id id)
+                   (flash (s+ "Your "
+                              (string-downcase (symbol-name type))
+                              " has been published on Facebook"))
+                   (see-other next))
+            (renew-fb-token :item-to-publish id
+                            :next next)))
          (friends-to-tag
           (tag-facebook-friends id friends-to-tag)
           (see-other url))

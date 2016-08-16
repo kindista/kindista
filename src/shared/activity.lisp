@@ -51,7 +51,7 @@
       )))
 
 (defun activity-item
-  (&key id url share-url content time primary-action loves comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t) event-time
+  (&key id url publish-facebook content time primary-action loves comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t) event-time
    &aux (here (request-uri*))
         (next (if (find (strcat id) (url-parts here) :test #'string=)
                 here
@@ -103,13 +103,14 @@
                        ;; don't use anchor link. otherwise user can't see
                        ;; the success flash after they post a reply
                        :value (request-uri*))
-               (when (and share-url
+               (when (and publish-facebook
                           (or (not *productionp*)
                               (getf *user* :test-user)
                               (getf *user* :admin)))
                  (htm
                    " &middot; "
-                   (:a :href share-url "Share on Facebook")))
+
+                   (:input :type "submit" :name "publish-facebook" :value "Share on Facebook")))
                (when reply
                  (htm
                   " &middot; "
@@ -277,7 +278,7 @@
          ; item.
          (data (db item-id))
          (author (getf data :author))
-         (gratitude-recipients (remove author (result-people result)))
+        ;(gratitude-recipients (remove author (result-people result)))
          (adminp (group-admin-p author))
          (images (getf data :images))
          (item-url (strcat "/gratitude/" item-id)))
@@ -313,30 +314,13 @@
                        (html-text (getf data :text)))))
                  (unless (string= item-url (script-name*))
                    (str (activity-item-images images item-url "gift"))))
-      :share-url (when (and self
+      :publish-facebook (and self
                             (or (not *productionp*)
                                 (getf *user* :test-user))
                             (getf *user* :fb-id)
                             (not (fb-object-actions-by-user
                                    item-id
                                    :data data)))
-                   (url-compose
-                     "https://www.facebook.com/dialog/share_open_graph"
-                     "app_id" *facebook-app-id*
-                     "display" "popup"
-                     "action_type" (s+ "kindistadotorg:"
-                                       (cond
-                                         (self "express")
-                                         ((find *userid* gratitude-recipients)
-                                          "receive")))
-                     "action_properties" (url-encode
-                                           (json:encode-json-to-string
-                                             (list
-                                               (cons
-                                                 "gratitude"
-                                                 (s+ "https://kindista.org" item-url)))))
-                     "redirect_uri" (s+ +base-url+
-                                        (string-left-trim "/" (request-uri*)))))
       :related-items (when (and (getf data :on) show-on-item)
                        (html
                          (when (and (getf data :on) show-on-item)
@@ -468,26 +452,13 @@
                                            :text "Request This"
                                            :image (icon "white-request"))))
                  :class (s+ type " inventory-item")
-                 :share-url (when (and self
-                                       (or (not *productionp*)
-                                           (getf *user* :test-user))
-                                       (getf *user* :fb-id)
-                                       (not (fb-object-actions-by-user
-                                              item-id
-                                              :data data)))
-                              (url-compose
-                                "https://www.facebook.com/dialog/share_open_graph"
-                                "app_id" *facebook-app-id*
-                                "display" "popup"
-                                "action_type" "kindistadotorg:post"
-                                "action_properties" (url-encode
-                                                      (json:encode-json-to-string
-                                                        (list
-                                                          (cons
-                                                            type
-                                                            (s+ "https://kindista.org" item-url)))))
-                                "redirect_uri" (s+ +base-url+
-                                                   (string-left-trim "/" (request-uri*)))))
+                 :publish-facebook (and self
+                                        (or (not *productionp*)
+                                            (getf *user* :test-user))
+                                        (getf *user* :fb-id)
+                                        (not (fb-object-actions-by-user
+                                               item-id
+                                               :data data)))
                  :reply (unless (or self
                                     (not (getf data :active)))
                           t)

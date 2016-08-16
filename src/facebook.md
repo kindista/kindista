@@ -20,8 +20,7 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 [x] create a notice to actually do the publishing
 [x] test
 [x] test that redirect urls work
-[ ] test "share on facebook" links under items
-[ ] modify-db when "share on fb" link is used
+[ ] test "share on facebook" links under items both when fb token is inactive and active
 
 #Gratitude
 [ ] taggable friends:
