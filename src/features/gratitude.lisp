@@ -1043,6 +1043,7 @@
          (possible-fb-friends-to-tag friend-tags-to-authorize))
 
     (when (and self-author-p
+               (getf *user* :fb-link-active)
                (not (getf data :fb-tagged-friends))
                (not possible-fb-friends-to-tag))
       (setf fb-taggable-friends
