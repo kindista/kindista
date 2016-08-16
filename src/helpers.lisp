@@ -153,6 +153,9 @@
 (defun string-intersection (list1 list2)
   (intersection list1 list2 :test #'string=))
 
+(defun string-to-keyword (string)
+  (make-keyword (string-upcase (substitute #\- #\_ string))))
+
 (defun remove-nil-plist-pairs (plist)
   (let (new-list)
     (doplist (key value plist)

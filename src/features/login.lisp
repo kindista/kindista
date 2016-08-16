@@ -72,7 +72,7 @@
                "Join the kindness revolution!"))))
       :hide-menu t))))
 
-(defun register-login (userid &key next fb-token fb-expires &aux (user (db userid)))
+(defun register-login (userid &key next fb-token fb-expires fb-scope &aux (user (db userid)))
   (setf (token-userid *token*) userid)
   (unless (and (getf user :fb-link-active)
                (string= (getf user :fb-token)
@@ -80,6 +80,7 @@
                (eql fb-expires (getf user :fb-expires)))
     (modify-db userid :fb-token fb-token
                       :fb-expires fb-expires
+                      :fb-scope fb-scope
                       :fb-link-active t))
   (asetf (token-session-data *token*)
          (remove-from-plist it :login-redirect))
@@ -104,7 +105,10 @@
 (defun post-login
   (&key (fb-token-data (when (get-parameter-string "code")
                                (register-facebook-user "login")))
-
+        (fb-scope (when fb-token-data
+                    (awhen (get-parameter-string "granted_scopes")
+                      (mapcar #'string-to-keyword
+                              (words-from-string it)))))
         (fb-token (cdr (assoc "access_token"
                               fb-token-data
                               :test #'string=)))
@@ -145,9 +149,12 @@
 
     ((or existing-k-id
          (and password (password-match-p userid password)))
-     (register-login userid :next next
-                            :fb-token fb-token
-                            :fb-expires fb-expires))
+     (apply #'register-login userid
+            (remove-nil-plist-pairs
+              (list :next next
+                    :fb-token fb-token
+                    :fb-expires fb-expires
+                    :fb-scope fb-scope))))
 
     (fb-token-data
      (flash "There is no Kindista account associated with the Facebook account currently active on this browser. Please confirm that you are logged into Facebook, or Sign Up for Kindista below."

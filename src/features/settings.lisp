@@ -867,14 +867,22 @@
              (token (cdr (assoc "access_token"
                                 facebook-token-data
                                 :test #'string=)))
+             (fb-scope (when facebook-token-data
+                         (awhen (get-parameter-string "granted_scopes")
+                           (mapcar #'string-to-keyword
+                                   (words-from-string it)))))
              (expires (awhen facebook-token-data
                         (+ now (safe-parse-integer
                                  (cdr (assoc "expires" it :test #'string=)))))))
         (when facebook-token-data
-          (modify-db *userid* :fb-token token
-                     :fb-expires (+ (get-universal-time)
-                                    (safe-parse-integer expires))
-                     :fb-link-active t)
+          (apply #'modify-db
+                 *userid*
+                 (remove-nil-plist-pairs
+                   (list :fb-token token
+                         :fb-expires (+ (get-universal-time)
+                                        (safe-parse-integer expires))
+                         :fb-link-active t
+                         :fb-permissions fb-scope)))
           (unless (getf *user* :fb-id)
             (modify-db *userid* :fb-id (get-facebook-user-id token)))
           (flash "You have successfully linked Kindista to your Facebook account."))

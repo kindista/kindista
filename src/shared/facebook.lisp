@@ -263,22 +263,27 @@
                          :parameters (list (cons "access_token" fb-token)
                                            (cons "type" "large")
                                            (cons "method" "get")))))
-   (facebook-debugging-log response)
-   (when (eql (second response) 200)
-     (values (first response)
-             (cdr (assoc :content-type (third response)))
-             (fourth response)))))
+   (values (first response)
+           (second response)
+           (cdr (assoc :content-type (third response)))
+           (fourth response))))
 
 (defun save-facebook-profile-picture-to-avatar (k-userid)
   (multiple-value-bind
-    (octet-array content-type image-url)
+    (octet-array status-code content-type image-url)
     (get-facebook-profile-picture k-userid)
     (declare (ignore image-url))
-    (create-image octet-array content-type)))
+    (when (eql status-code 200)
+      (create-image octet-array content-type))))
 
 (defun facebook-image-identifyier (k-userid)
-  (awhen (third (multiple-value-list (get-facebook-profile-picture k-userid)))
-    (car (last (puri:uri-parsed-path it)))))
+  (multiple-value-bind
+    (octet-array status-code content-type image-url)
+    (get-facebook-profile-picture k-userid)
+    (declare (ignore octet-array content-type))
+    (case status-code
+      (200 (awhen image-url (car (last (puri:uri-parsed-path it)))))
+      (t :authentication-error))))
 
 (defun get-facebook-user-permissions
   (k-id
@@ -299,10 +304,8 @@
 
   (mapcar
     (lambda (pair)
-      (push
-        (make-keyword
-          (string-upcase (substitute #\- #\_ (car pair))))
-        (getf current-permissions (cdr pair))))
+      (push (string-to-keyword (car pair))
+            (getf current-permissions (cdr pair))))
     (loop for permission in (getf (alist-plist
                                     (decode-json-octets
                                       (first response)))
@@ -631,6 +634,7 @@
    &aux (image-identifiers (mapcar (lambda (id)
                                      (cons id (facebook-image-identifyier id)))
                                    k-user-ids-to-test))
+        (logged-out-of-fb)
         (taggable-fb-friends (get-all-taggable-fb-friends userid))
         (taggable-k-users))
   "Returns and a-list of (k-userid . fb-taggable-token)"
@@ -646,13 +650,23 @@
                                            :key 'car))
                                 :key 'car)))))))))
    (dolist (pair image-identifiers)
-    (awhen (find (cdr pair)
+    (if (eql (cdr pair) :authentication-error)
+      (push (car pair) logged-out-of-fb)
+      (awhen (find (cdr pair)
                  taggable-fb-friends
                  :key #'get-pic-url-identifier
                  :test #'string=)
       (push (cons (car pair) (getf (alist-plist it) :id))
-            taggable-k-users))))
-  taggable-k-users)
+            taggable-k-users)))))
+  (values taggable-k-users logged-out-of-fb))
+
+(defun fb-taggable-friends-auth-warning (id-list)
+  (when id-list
+    (flash (s+ (name-list-all id-list)
+               (if (> (length id-list) 1)
+                 " are"  " is")
+               " not logged into Facebook through Kindista. You can tag them in this statement of gratitude after they reauthorize their Facebook account through Kindista.")
+           :error t)))
 
 (defun facebook-friends-permission-html
   (&key redirect-uri
