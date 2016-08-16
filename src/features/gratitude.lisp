@@ -994,7 +994,7 @@
                                                       (strcat (car pair))))
                                               it))))))
 
-                 (fb-taggable-friends-auth-warning (second-taggable-friends))
+                 (fb-taggable-friends-auth-warning (second taggable-friends))
 
                  (cond
                    ((current-fb-token-p)
