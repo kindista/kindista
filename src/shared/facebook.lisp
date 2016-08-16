@@ -591,10 +591,13 @@
                                 (cons "access_token" (getf user :fb-token))
                                 (cons "limit" "5000")
                                 (cons "method" "get"))))))
-  (facebook-debugging-log response)
-    (when (eql (second response) 200)
-      (let ((results (decode-json-octets (first response))))
-        results)))
+  (case (second response)
+    (200 (decode-json-octets (first response)))
+    (t (facebook-debugging-log *userid*
+                               (second response)
+                               (if (stringp (first response))
+                                 (first response)
+                                 (decode-json-octets (first response)))))))
 
 (defun get-all-taggable-fb-friends
   (&optional (userid *userid*)
@@ -658,6 +661,7 @@
                  :test #'string=)
       (push (cons (car pair) (getf (alist-plist it) :id))
             taggable-k-users)))))
+  (facebook-debugging-log *userid* taggable-k-users logged-out-of-fb)
   (values taggable-k-users logged-out-of-fb))
 
 (defun fb-taggable-friends-auth-warning (id-list)
