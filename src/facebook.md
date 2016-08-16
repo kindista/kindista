@@ -26,6 +26,8 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 [ ] taggable friends:
 https://developers.facebook.com/docs/graph-api/reference/user/taggable_friends
 https://developers.facebook.com/docs/sharing/opengraph/using-actions#tags
+[ ] test: https://kindista.org/gratitude/36509
+[ ] verify: https://www.facebook.com/benjamin.crandall/posts/10153497078451331:0
 [ ] modify-db with tagged-friends
 [ ] remove tagged friends from options of contatcts who can be tagged
 [ ] no indefinite article (og:determiner=""):
@@ -67,7 +69,7 @@ https://developers.facebook.com/docs/apps/review
 [ ] change facebook app setting/advanced deauthorize callback
 [ ] change "privacy" setting in publish-facebook-action
 [ ] remove all facebook-debubbing blocks
-
+[ ] hide tagging feature if facebook still hasn't fixed it
 
 #Deploy on server
 [ ] quickload

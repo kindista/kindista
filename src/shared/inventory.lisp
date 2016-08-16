@@ -521,7 +521,8 @@
                 (when (string= type "offer")
                   (update-matchmaker-offer-data new-id))
                 (cond
-                  ((nor (getf *user* :fb-id) publish-facebook)
+                  ((or (not (getf *user* :fb-id))
+                       (not publish-facebook))
                    (see-other new-url))
                   ((current-fb-token-p)
                    (notice :new-facebook-action :item-id new-id)
