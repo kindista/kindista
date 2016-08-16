@@ -21,6 +21,7 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 [x] test
 [x] test that redirect urls work
 [ ] test "share on facebook" links under items
+[ ] modify-db when "share on fb" link is used
 
 #Gratitude
 [ ] taggable friends:
