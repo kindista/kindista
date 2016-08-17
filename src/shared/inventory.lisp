@@ -775,6 +775,18 @@
                                 "/home"
                                 (post-parameter "next")))))
 
+                ((and publish-facebook
+                      (not (post-parameter "create"))
+                      (not (fb-object-actions-by-user id)))
+                 (if (current-fb-token-p)
+                   (progn (notice :new-facebook-action :item-id id)
+                          (flash (s+ "Your "
+                                     (string-downcase (symbol-name type))
+                                     " has been published on Facebook"))
+                          (see-other next))
+                   (renew-fb-token :item-to-publish id
+                                   :next next)))
+
                 ((not title)
                  (flash (s+ "Please enter a title for your " type "."))
                  (inventory-details))
@@ -802,18 +814,6 @@
                 ((> (length (set-difference tags *top-tags* :test #'string=))
                     10)
                   (inventory-details :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
-
-                ((and publish-facebook
-                      (not (post-parameter "create"))
-                      (not (fb-object-actions-by-user id)))
-                 (if (current-fb-token-p)
-                   (progn (notice :new-facebook-action :item-id id)
-                          (flash (s+ "Your "
-                                     (string-downcase (symbol-name type))
-                                     " has been published on Facebook"))
-                          (see-other next))
-                   (renew-fb-token :item-to-publish id
-                                   :next next)))
 
                 ((post-parameter "create")
                  (require-test ((not (getf item :violates-terms))
