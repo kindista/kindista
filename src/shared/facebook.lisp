@@ -192,7 +192,10 @@
                     :force-binary t)))
     (cond
       ((<= (second reply) 200)
-       (quri.decode:url-decode-params (octets-to-string (first reply))))
+       (let* ((token-data-params (octets-to-string (first reply)))
+              (token-data (quri.decode:url-decode-params token-data-params)))
+         (facebook-debugging-log *userid* token-data-params token-data)
+         token-data))
       ((>= (second reply) 400)
        (facebook-debugging-log
          (cdr (assoc :message
