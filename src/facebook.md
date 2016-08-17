@@ -28,9 +28,9 @@ https://developers.facebook.com/docs/graph-api/reference/user/taggable_friends
 https://developers.facebook.com/docs/sharing/opengraph/using-actions#tags
 [ ] test: https://kindista.org/gratitude/36509
 [ ] verify: https://www.facebook.com/benjamin.crandall/posts/10153497078451331:0
-[ ] modify-db with tagged-friends
+[ ] when response is ((:SUCCESS . T)) modify-db with tagged-friends
 [ ] remove tagged friends from options of contatcts who can be tagged
-[ ] no indefinite article (og:determiner=""):
+[x] no indefinite article (og:determiner=""):
 https://developers.facebook.com/docs/sharing/opengraph/object-properties
 
 #Group-Accounts
@@ -51,8 +51,9 @@ https://developers.facebook.com/docs/sharing/reference/send-dialog
 #FB login
 https://developers.facebook.com/docs/facebook-login/multiple-providers
 [ ] steps above "adding manual login info to a Facebook Login created account" are done
-[ ] make sure to grab fb-profile-pic when no k-avatar
+[ ] make sure to grab fb-profile-pic when no k-avatar (esp when user relogs through the settings page)
 [ ] make sure button displays right when signing up through settings page
+
 
 #Review
 [ ] take screen shots
