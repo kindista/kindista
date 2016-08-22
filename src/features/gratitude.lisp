@@ -1043,20 +1043,18 @@
          (possible-fb-friends-to-tag friend-tags-to-authorize))
 
     (when (and self-author-p
-               (getf *user* :fb-link-active)
-               (not (getf data :fb-tagged-friends))
-               (not possible-fb-friends-to-tag))
-      (setf fb-taggable-friends
-            (multiple-value-list (facebook-taggable-friend-tokens
-                                   (getf data :subjects))))
-      (setf possible-fb-friends-to-tag
-            (remove nil (mapcar 'car (first fb-taggable-friends))))
+               (getf *user* :fb-link-active))
+      (unless possible-fb-friends-to-tag
+        (setf fb-taggable-friends
+              (multiple-value-list (facebook-taggable-friend-tokens
+                                     (getf data :subjects))))
+        (awhen (remove nil (mapcar 'car (first fb-taggable-friends)))
+          (when (set-difference it (getf data :fb-tagged-friends))
+            (setf possible-fb-friends-to-tag it))))
       (when (and (not new-fb-authorization)
                  possible-fb-friends-to-tag)
         (setf fb-user-friends-permission
               (multiple-value-list (check-facebook-permission :user-friends *userid*)))))
-    (pprint possible-fb-friends-to-tag)
-    (terpri)
 
     (cond
       ((not data) (not-found))
