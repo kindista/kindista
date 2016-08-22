@@ -778,6 +778,7 @@
     (setf response (decode-json-octets (first response)))
     (when (and (eql (caar response) :success)
                (eql (cdar response) t))
+      (flash (s+ (name-list-all tagged-friends) " have been tagged in your statement of gratitude on Facebook."))
       (amodify-db k-item-id :fb-tagged-friends (append tagged-friends it)))
     (facebook-debugging-log action-id k-contacts-to-tag-on-fb taggable-friend-tokens friends-to-tag response)
     response))

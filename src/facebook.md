@@ -23,13 +23,13 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 [ ] test "share on facebook" links under items both when fb token is inactive and active
 
 #Gratitude
-[ ] taggable friends:
+[x] taggable friends:
 https://developers.facebook.com/docs/graph-api/reference/user/taggable_friends
 https://developers.facebook.com/docs/sharing/opengraph/using-actions#tags
-[ ] test: https://kindista.org/gratitude/36509
-[ ] verify: https://www.facebook.com/benjamin.crandall/posts/10153497078451331:0
-[ ] when response is ((:SUCCESS . T)) modify-db with tagged-friends
-[ ] remove tagged friends from options of contatcts who can be tagged
+[x] test: https://kindista.org/gratitude/36509
+[x] verify: https://www.facebook.com/benjamin.crandall/posts/10153497078451331:0
+[x] when response is ((:SUCCESS . T)) modify-db with tagged-friends
+[x] remove tagged friends from options of contatcts who can be tagged
 [x] no indefinite article (og:determiner=""):
 https://developers.facebook.com/docs/sharing/opengraph/object-properties
 
@@ -69,8 +69,7 @@ https://developers.facebook.com/docs/apps/review
 [ ] Create a tab for settings/social
 [ ] change facebook app setting/advanced deauthorize callback
 [ ] change "privacy" setting in publish-facebook-action
-[ ] remove all facebook-debubbing blocks
-[ ] hide tagging feature if facebook still hasn't fixed it
+[ ] remove all facebook-debugging blocks
 
 #Deploy on server
 [ ] quickload
