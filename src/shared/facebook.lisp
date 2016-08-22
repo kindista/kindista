@@ -750,11 +750,8 @@
                                   k-contacts-to-tag-on-fb
                                   userid))
         ;; taggable-friend-tokens is an a-list of (k-userid . fb-taggable-token)
-        (friends-to-tag (separate-with-commas
-                          (remove nil (mapcar (lambda (id)
-                                                (cdr (assoc id taggable-friend-tokens)))
-                                              k-contacts-to-tag-on-fb))
-                          :omit-spaces t))
+        (friends-to-tag)
+        (tagged-friends)
         (action-id (first (fb-object-actions-by-user k-item-id
                                                      :data item
                                                      :userid userid
@@ -762,7 +759,13 @@
   ;; Tagging is convoluted until Facebook changes it's API to allow apps to pass
   ;; FB user ids to tag an item. Now we have to associate taggable-tokens with known profile
   ;; pic urls associated with fb-ids.
-  (when (active-facebook-user-p userid user)
+
+  (dolist (id k-contacts-to-tag-on-fb)
+    (awhen (assoc id taggable-friend-tokens)
+      (push (car it) tagged-friends)
+      (push (cdr it) friends-to-tag)))
+  (when (and friends-to-tag (active-facebook-user-p userid user))
+    (asetf friends-to-tag (separate-with-commas it :omit-spaces t))
     (setf response
           (multiple-value-list
             (http-request
@@ -773,6 +776,9 @@
                                 (cons "tags" friends-to-tag))
               :method :post)))
     (setf response (decode-json-octets (first response)))
+    (when (and (eql (caar response) :success)
+               (eql (cdar response) t))
+      (amodify-db k-item-id :fb-tagged-friends (append tagged-friends it)))
     (facebook-debugging-log action-id k-contacts-to-tag-on-fb taggable-friend-tokens friends-to-tag response)
     response))
 

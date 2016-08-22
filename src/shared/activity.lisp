@@ -103,14 +103,6 @@
                        ;; don't use anchor link. otherwise user can't see
                        ;; the success flash after they post a reply
                        :value (request-uri*))
-               (when (and publish-facebook
-                          (or (not *productionp*)
-                              (getf *user* :test-user)
-                              (getf *user* :admin)))
-                 (htm
-                   " &middot; "
-
-                   (:input :type "submit" :name "publish-facebook" :value "Share on Facebook")))
                (when reply
                  (htm
                   " &middot; "
@@ -157,7 +149,16 @@
                (when comments
                  (htm
                    " &middot; "
-                   (str (comment-button url))))))))
+                   (str (comment-button url))))
+
+               (when (and publish-facebook
+                          (or (not *productionp*)
+                              (getf *user* :test-user)
+                              (getf *user* :admin)))
+                 (htm
+                   (:form :method "post" :action url
+                     " &middot; "
+                     (:input :type "submit" :name "publish-facebook" :value "Share on Facebook"))))))))
 
       (when (or loves related-items)
         (htm
