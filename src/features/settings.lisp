@@ -940,7 +940,10 @@
                                 (getf *user* :emails)
                                 :test #'string=)))
             (flash "You must first sign out of this account before you can change settings on a different account." :error t))
-
+        (when (get-parameter "type")
+                (pprint "type")
+                (pprint (get-parameter-string "type"))
+                (terpri))
          (settings-template-html
           (aif (get-parameter "groupid")
             (url-compose "/settings/communication"

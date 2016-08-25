@@ -59,7 +59,8 @@
   unsubscribe-key
   email
   "notifications when people add you to their list of Kindista contacts "
-  :detailed-notification-description "notifications when people add you")))
+  :detailed-notification-description "notifications when people add you"
+  :unsub-type "new-contact")))
 
 
 (defun contact-notification-email-html
@@ -77,5 +78,6 @@
              unsubscribe-key
              email
              "notifications when people add you to their list of Kindista contacts "
-             :detailed-notification-description "notifications when people add you")))))
+             :detailed-notification-description "notifications when people add you"
+             :unsub-type "new-contact")))))
 

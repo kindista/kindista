@@ -143,7 +143,8 @@
       (s+ "notifications when people send "
           (or group-name "you")
           " messages through Kindista")
-      :groupid groupid)))
+      :groupid groupid
+      :unsub-type "message")))
 
 (defun comment-notification-email-html
   (on-id
@@ -171,5 +172,6 @@
              (s+ "notifications when people send "
                  (or group-name "you")
                  " messages through Kindista")
-             :groupid groupid)))))
+             :groupid groupid
+             :unsub-type "message")))))
 

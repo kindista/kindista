@@ -1,3 +1,7 @@
+## unsubscriptions
+  - unsubscribe someone from that service email link
+  - flash that they are unsubscribed
+  - add button to unsubscribe from everything
 ## web apps
 ## are things actually expiring?
 ## post offers/requests to facebook

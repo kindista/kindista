@@ -27,13 +27,15 @@
                      unsubscribe-key
                      email
                      "occasional email suggestions about how you can get the most out of Kindista"
-                     :detailed-notification-description "these occasional suggestions" )))
+                     :detailed-notification-description "these occasional suggestions" 
+                     :unsub-type "reminders")))
          (html (s+ (html-email-base (nth-value 1 (markdown message :stream nil)))
                    (unsubscribe-notice-ps-html
                      unsubscribe-key
                      email
                      "occasional email suggestions about how you can get the most out of Kindista"
-                     :detailed-notification-description "these occasional suggestions" ))))
+                     :detailed-notification-description "these occasional suggestions" 
+                     :unsub-type "reminders"))))
     (when email
      (cl-smtp:send-email +mail-server+
                          "Kindista <info@kindista.org>"
