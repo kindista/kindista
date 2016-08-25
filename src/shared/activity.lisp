@@ -270,15 +270,14 @@
          ; result-people is a list
          ; car of list is person showing gratitude
          ; cdr of list is subjects
-    &aux (user-id (first (result-people result)))
-         ; tests to see if the user is the author of this item
-         (self (eql user-id *userid*))
-         ;item-id is derived from "result" which is passed in.
+    &aux ;item-id is derived from "result" which is passed in.
          (item-id (result-id result))
          ; data is a plist with all relevant info about the gratitude
          ; item.
          (data (db item-id))
+         ; tests to see if the user is the author of this item
          (author (getf data :author))
+         (self (eql author *userid*))
         ;(gratitude-recipients (remove author (result-people result)))
          (adminp (group-admin-p author))
          (images (getf data :images))
@@ -300,7 +299,7 @@
       :loves (loves item-id)
       ;:comments (length (comments item-id))
       :content (html
-                 (:p (str (person-link user-id))
+                 (:p (str (person-link author))
                      " expressed "
                      (:a :href item-url "gratitude")
                      " for "
