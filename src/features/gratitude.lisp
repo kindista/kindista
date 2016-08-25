@@ -255,6 +255,9 @@
          (transaction-pending-gratitude-p))
     (dolist (image-id (getf data :images))
       (delete-image image-id))
+    (awhen (getf data :fb-actions)
+      (dolist (action it)
+        (delete-facebook-action (getf action :fb-action-id))))
     (delete-comments id)
     ;; remove it from the transaction-log
     (when transaction-id
@@ -291,6 +294,7 @@
 
   (when (gethash id *db-messages*)
     (remove-message-from-indexes id))
+  
   (deindex-gratitude id)
   (remove-from-db id))
 
