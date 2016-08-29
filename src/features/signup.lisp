@@ -44,18 +44,23 @@
     "Sign up"
     nil
     (html
+      (dolist (flash (flashes))
+        (str flash))
       (when error (htm (:div :class "signup flash err" (str error))))
-        (:div :id "signup" (str body)))
+      (:div :id "signup" (str body)))
     :hide-menu t))
 
 (defun signup-page (&key error name email email2)
   (signup-base
     (html
       (:h1 "Sign up for Kindista ")
-      (unless *productionp*
+      (when (or (not *productionp*)
+                (string= (get-parameter "sekrut-fb-access")
+                         "not-ready-for-prime-time"))
         (htm
           (str (facebook-sign-in-button
                  :redirect-uri "signup"
+                 :re-request (get-parameter-string "rerequest-email-permission")
                  :button-text "Use Facebook to sign up for Kindista"))
           (str *or-divider*)))
       (:form :method "POST" :action "/signup" :id "signup-form"
@@ -237,14 +242,16 @@
               (unless (getf user :avatar)
                 (asetf new-data
                        (append
-                         (list :avatar (save-facebook-profile-picture-to-avatar
-                                         (userid)))
+                         (list :avatar (save-facebook-profile-picture-to-avatar userid))
                          it)))
               (apply #'modify-db userid new-data)
               (when new-name (reindex-person-names userid))
 
               (register-login userid)))
 
+          ((not fb-email)
+           (flash "Kindista needs a valid email address so we can let you know when someone is replying to an offer or request that you post. After you sign up, you can edit which types of notifications you want to receive from Kindista on your settings page." :error t)
+           (see-other "/signup?rerequest-email-permission=t"))
           (t
             (create-new-person-account fb-name
                                        fb-email
@@ -328,6 +335,17 @@
 
             ((not (string= email (post-parameter "email-2")))
               (try-again "Your email confirmation did not match the email you entered"))
+
+            ((gethash email *email-index*)
+              (flash
+                (html "There is already a Kindista account for the email address: "
+                      (str email)
+                      ". If this is your email address and you forgot your password, you can "
+                      (:a :href (s+ +base-url+ "reset") "reset it")
+                      ". If you know your password, you can sign in below.")
+                :error t)
+              (see-other "/login"))
+
             ((not person-p)
               (try-again "Please select an account type"))
 

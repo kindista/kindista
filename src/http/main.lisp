@@ -46,23 +46,6 @@
             (delete-duplicates (gethash *token* *flashes*) :test #'string=))
       (remhash *token* *flashes*))))
 
-(defun new-error-notice-handler ()
-  (let ((data (cddddr *notice*)))
-   (send-error-notification-email :on (getf data :on)
-                                  :url (getf data :url)
-                                  :data (getf data :data)
-                                  :userid (getf data :userid))))
-(defun client-side-error-logger
-  (&aux
-   (errorJSON (json:decode-json-from-string (raw-post-data :force-text t))))
-  (require-user ()
-    (with-mutex (*client-errors-log-lock*)
-      (with-open-file (s (s+ +db-path+ "client-side-errors") :direction :output
-                                                             :if-exists :append
-                                                             :if-does-not-exist :create)
-        (let ((*print-readably* nil))
-          (format s "~{~S~%~}" errorJSON))))))
-
 (defun not-found ()
   (flash "The page you requested could not be found." :error t)
   (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
@@ -290,8 +273,11 @@
            (*user-group-privileges* (or *user-group-privileges*
                                          (gethash *userid* *group-privileges-index*)))
            (*user-mailbox* (or *user-mailbox*
-                               (gethash *userid* *person-mailbox-index*))))
-       ,@body)))
+                               (gethash *userid* *person-mailbox-index*)))
+           (*fb-id* (getf *user* :fb-id))
+           (*facebook-user-token* (getf *user* :fb-token))
+           (*facebook-user-token-expiration* (getf *user* :fb-expires)))
+      ,@body)))
 
 (defmacro with-location (&body body)
   `(let ((*latitude* (or (getf *user* :lat) 44.028297))
@@ -362,6 +348,23 @@
            (flash ,message)
            (see-other "/")) 
         `(see-other "/"))))
+
+(defun new-error-notice-handler ()
+  (let ((data (cddddr *notice*)))
+   (send-error-notification-email :on (getf data :on)
+                                  :url (getf data :url)
+                                  :data (getf data :data)
+                                  :userid (getf data :userid))))
+(defun client-side-error-logger
+  (&aux
+   (errorJSON (json:decode-json-from-string (raw-post-data :force-text t))))
+  (require-user ()
+    (with-mutex (*client-errors-log-lock*)
+      (with-open-file (s (s+ +db-path+ "client-side-errors") :direction :output
+                                                             :if-exists :append
+                                                             :if-does-not-exist :create)
+        (let ((*print-readably* nil))
+          (format s "~{~S~%~}" errorJSON))))))
 
 (defun markdown-file (path)
   (nth-value 1 (markdown (pathname path) :stream nil)))
@@ -599,8 +602,9 @@
         (:link :rel "apple-touch-icon" :sizes "152x152" :href "/media/icons/kindista_favicon_152.png")
         (:link :rel "apple-touch-icon" :sizes "180x180" :href  "/media/icons/kindista_favicon_180.png")
         (:script :type "text/javascript" :src "/kindista.js")
-        (:script :type "text/javascript" :src "/service-worker-registration.js")
-        (when (and *userid* (string= (referer) (strcat +base-url+ "login")))
+        (:script :type "text/javascript" :src "/service-worker-registration.js?v=1.0") ;add query version number to ensure cache busting
+        (when (and *userid* (or (string= (referer) (s+ +base-url+ "login"))
+                                (string= (referer) "http://localhost/login")))
           (htm (:script :type "text/javascript"
                         :src "/update-push-registration.js")))
         ;; if serviceworker js, inline login subscription here

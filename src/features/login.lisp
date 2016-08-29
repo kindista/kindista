@@ -17,7 +17,10 @@
 
 (in-package :kindista)
 
-(defun get-login ()
+(defun get-login (&aux (next (get-parameter-string "next")))
+  (when next
+    (setf (getf (token-session-data *token*) :login-redirect)
+          next))
   (cond
    ((get-parameter-string "code") (post-login))
    (*user* (see-other "/home"))
@@ -38,8 +41,8 @@
                        (unless (string= it "")
                            (htm (:p (:a :href (s+ "/signup?email=" it)
                                         "Would you like to create an account?"))))))
-                (awhen (get-parameter "next")
-                  (htm (:input :type "hidden" :name "next" :value it)))
+                (when next
+                  (htm (:input :type "hidden" :name "next" :value next)))
                 (:label "Username or email"
                   (:input :type "text"
                    :class "username"
@@ -69,27 +72,57 @@
                "Join the kindness revolution!"))))
       :hide-menu t))))
 
-(defun register-login (userid &optional next)
-     (setf (token-userid *token*) userid)
-     (with-locked-hash-table (*user-tokens-index*)
-       (asetf (gethash userid *user-tokens-index*)
-              (push (cons (cookie-in "token") *token*) it)))
-     (notice :login)
-     (see-other (if (not (db userid :active))
-                  "/settings#reactivate"
-                  (or next "/home"))))
+(defun register-login (userid &key next fb-token fb-expires fb-scope &aux (user (db userid)))
+  (setf (token-userid *token*) userid)
+  (unless (and (getf user :fb-link-active)
+               (string= (getf user :fb-token)
+                        fb-token)
+               (eql fb-expires (getf user :fb-expires)))
+    (modify-db userid :fb-token fb-token
+                      :fb-expires fb-expires
+                      :fb-scope fb-scope
+                      :fb-link-active t))
+  (asetf (token-session-data *token*)
+         (remove-from-plist it :login-redirect))
+  (when (getf (token-session-data *token*) :publish-to-fb)
+    (let* ((id (getf (token-session-data *token*) :publish-to-fb))
+           (item (db id))
+           (type (getf item :type)))
+      (notice :new-facebook-action :item-id id)
+      (flash (s+ "Your "
+                 (string-downcase (symbol-name type))
+                 " has been published on Facebook"))
+      (asetf (token-session-data *token*)
+             (remove-from-plist it :publish-to-fb))))
+  (with-locked-hash-table (*user-tokens-index*)
+    (asetf (gethash userid *user-tokens-index*)
+           (push (cons (cookie-in "token") *token*) it)))
+  (notice :login)
+  (see-other (if (not (db userid :active))
+               "/settings#reactivate"
+               (or next "/home"))))
 
 (defun post-login
   (&key (fb-token-data (when (get-parameter-string "code")
                                (register-facebook-user "login")))
-
+        (fb-scope (when fb-token-data
+                    (awhen (get-parameter-string "granted_scopes")
+                      (mapcar #'string-to-keyword
+                              (words-from-string it)))))
         (fb-token (cdr (assoc "access_token"
                               fb-token-data
                               :test #'string=)))
+        (fb-expires (when fb-token-data
+                      (+ (get-universal-time)
+                         (safe-parse-integer (cdr (assoc "expires"
+                                                         fb-token-data
+                                                         :test #'string=))))))
         (fb-data (when fb-token (get-facebook-user-data fb-token)))
    &aux (username (post-parameter "username"))
         (password (post-parameter-string "password"))
-        (next (awhen (post-parameter-string "next") (url-decode it)))
+        (login-token-redirect (getf (token-session-data *token*) :login-redirect))
+        (next (or login-token-redirect
+                  (awhen (post-parameter-string "next") (url-decode it))))
         (fb-id (safe-parse-integer (getf fb-data :id)))
         (existing-k-id (gethash fb-id *facebook-id-index*))
         (userid nil))
@@ -116,7 +149,12 @@
 
     ((or existing-k-id
          (and password (password-match-p userid password)))
-     (register-login userid next))
+     (apply #'register-login userid
+            (remove-nil-plist-pairs
+              (list :next next
+                    :fb-token fb-token
+                    :fb-expires fb-expires
+                    :fb-scope fb-scope))))
 
     (fb-token-data
      (flash "There is no Kindista account associated with the Facebook account currently active on this browser. Please confirm that you are logged into Facebook, or Sign Up for Kindista below."

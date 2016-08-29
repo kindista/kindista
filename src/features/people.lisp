@@ -147,7 +147,9 @@
       (asetf (gethash id *profile-activity-index*)
              (safe-sort (push result it) #'> :key #'result-time)))
 
-    (when (and (getf data :fb-id) (getf data :fb-link-active))
+    ;; index fb-id's even when :fb-link-active is nil so we can use it to log in and reactivate
+    ;; the app
+    (when (getf data :fb-id)
       (with-locked-hash-table (*facebook-id-index*)
         (setf (gethash (getf data :fb-id) *facebook-id-index*) id)))
 
@@ -158,7 +160,9 @@
             (when email ;some deleted accounts might have :emails (nil)
               (setf (gethash email *email-index*) id)))))
 
-    (unless (getf data :test-user)
+    ;; don't index test-users on the live server
+    (unless (and (getf data :test-user)
+                 *productionp*)
 
       (when (getf data :active)
         (with-mutex (*active-people-mutex*)

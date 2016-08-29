@@ -255,6 +255,9 @@
          (transaction-pending-gratitude-p))
     (dolist (image-id (getf data :images))
       (delete-image image-id))
+    (awhen (getf data :fb-actions)
+      (dolist (action it)
+        (delete-facebook-action (getf action :fb-action-id))))
     (delete-comments id)
     ;; remove it from the transaction-log
     (when transaction-id
@@ -291,6 +294,7 @@
 
   (when (gethash id *db-messages*)
     (remove-message-from-indexes id))
+  
   (deindex-gratitude id)
   (remove-from-db id))
 
@@ -476,6 +480,20 @@
                       :name "text"
                       (str text))
 
+           (when (and (getf *user* :fb-token)
+                          (or (not (getf *user* :test-user))
+                              (and (= 1 (length subjects))
+                                   (db (car subjects) :test-user))))
+                 (htm
+                   (:div :id "facebook"
+                     (:input :type "checkbox"
+                             :id "publish-facebook"
+                             :name "publish-facebook"
+                             :checked "")
+                     (str (icon "facebook" "facebook-icon"))
+                     (:label :for "publish-facebook"
+                      (str (s+ "Share on Facebook"))))))
+
            (unless existing-url
              (htm
                (:div :class (s+ "gratitude-selectors "
@@ -549,21 +567,9 @@
                    (:p "This statement of gratitude is about "
                        (str it))))
 
-               (when (and (getf *user* :fb-token)
-                          (or (not (getf *user* :test-user))
-                              (and (= 1 (length subjects))
-                                   (db (car subjects) :test-user))))
-                 (htm
-                   (:div :id "facebook"
-                     (:input :type "checkbox"
-                             :id "publish-facebook"
-                             :name "publish-facebook"
-                             :checked "")
-                     (str (icon "facebook" "facebook-icon"))
-                     (:label :for "publish-facebook"
-                      (str (s+ "Share on Facebook"))))))
                (:div
                  (str submit-buttons))))))))
+
       :class (if existing-url
                "edit-gratitude"
                "express-gratitude"))
@@ -761,8 +767,8 @@
            (recipient-id (if adminp groupid *userid*))
            (posted-on-type (post-parameter-string "on-type"))
            (invitation-name (post-parameter-string "invitation-name"))
-           (unvalidated-invitation-email (post-parameter-string
-                                           "invitation-email"))
+           (unvalidated-invitation-email (remove #\space (post-parameter-string
+                                                           "invitation-email")))
            (invitation-email (when (scan +email-scanner+ unvalidated-invitation-email)
                                unvalidated-invitation-email))
            (on-types (cond
@@ -771,6 +777,7 @@
            (on-id (post-parameter-integer "on-id"))
            (text (post-parameter-string "text"))
            (next (post-parameter-string "next"))
+           (publish-facebook-p (post-parameter "publish-facebook"))
            (subjects (remove (post-parameter-integer "remove")
                              (parse-subject-list
                                (format nil "~A,~A" (post-parameter "add")
@@ -939,15 +946,7 @@
                                                        :subject-account-reactivation)
                                             :time time
                                             :text text))
-                  (gratitude-url (format nil "/gratitude/~A" new-id))
-                  (facebook-g-subjects))
-
-             (when (and (getf *user* :fb-link-active)
-                        (getf *user* :fb-id)
-                        (post-parameter "publish-facebook"))
-               (setf facebook-g-subjects
-                     (facebook-taggable-friend-tokens g-subjects))
-               (notice :new-facebook-action :item-id new-id))
+                  (gratitude-url (format nil "/gratitude/~A" new-id)))
 
              (awhen on-id
                (let* ((inventory-result (gethash on-id *db-results*))
@@ -983,21 +982,31 @@
                           "Your statement of gratitude will be posted "
                           "when they reactivate their account.")
                       "Your statement of gratitude has been posted"))
-             (see-other
-               (or (when (and (post-parameter "publish-facebook")
-                              facebook-g-subjects)
-                     (flash "Your statement of gratitude has been published on Facebook")
-                     (apply #'url-compose
-                            gratitude-url
-                            (flatten
-                              (mapcar (lambda (pair)
-                                        (cons "authorize-fb-friend-tag"
-                                              (strcat (car pair))))
-                                      facebook-g-subjects))))
-                   next
-                   (if inactive-subject
-                     "/home"
-                     gratitude-url)))))
+
+             (if (not publish-facebook-p)
+               (see-other (or next
+                              (if inactive-subject "/home" gratitude-url)))
+               (let* ((taggable-friends (multiple-value-list
+                                          (facebook-taggable-friend-tokens
+                                            g-subjects)))
+                      (next (apply #'url-compose
+                                  gratitude-url
+                                  (awhen (first taggable-friends)
+                                    (flatten
+                                      (mapcar (lambda (pair)
+                                                (cons "authorize-fb-friend-tag"
+                                                      (strcat (car pair))))
+                                              it))))))
+
+                 (fb-taggable-friends-auth-warning (second taggable-friends))
+
+                 (cond
+                   ((current-fb-token-p)
+                    (notice :new-facebook-action :item-id new-id)
+                    (flash "Your statement of gratitude has been published on Facebook")
+                    (see-other next))
+                   (t (renew-fb-token :item-to-publish new-id
+                                      :next next)))))))
 
           (t
            (g-compose :subjects subjects)))))))
@@ -1033,23 +1042,30 @@
          (friend-tags-to-authorize (get-parameter-integer-list
                                      "authorize-fb-friend-tag"))
          (new-fb-authorization (string= (get-parameter-string "state") "user_friends_scope_granted"))
-         (fb-user-friends-permission
-           (when (and *user* self-author-p (or friend-tags-to-authorize
-                                               (get-parameter "tag-fb-friends")
-                                               new-fb-authorization))
-             (multiple-value-list (check-facebook-permission :user-friends *userid*))))
+         (fb-user-friends-permission)
+         (fb-taggable-friends)
          (possible-fb-friends-to-tag friend-tags-to-authorize))
 
-    (when (and self-author-p (not possible-fb-friends-to-tag))
-      (setf possible-fb-friends-to-tag
-            (remove nil (mapcar 'car
-                                (facebook-taggable-friend-tokens
-                                  (getf data :subjects))))))
-    (cond
-      ((and data (not *user*))
-       gratitude-page)
+    (when (and self-author-p
+               (getf *user* :fb-link-active))
+      (unless possible-fb-friends-to-tag
+        (setf fb-taggable-friends
+              (multiple-value-list (facebook-taggable-friend-tokens
+                                     (getf data :subjects))))
+        (awhen (remove nil (mapcar 'car (first fb-taggable-friends)))
+          (when (set-difference it (getf data :fb-tagged-friends))
+            (setf possible-fb-friends-to-tag it))))
+      (when (and (not new-fb-authorization)
+                 possible-fb-friends-to-tag)
+        (setf fb-user-friends-permission
+              (multiple-value-list (check-facebook-permission :user-friends *userid*)))))
 
-      ((and data (not (get-parameters*)))
+    (cond
+      ((not data) (not-found))
+
+      ((not *userid*) gratitude-page)
+
+      ((not self-author-p)
        (let* ((message (gethash id *db-messages*))
               (mailboxes (when message
                            (loop for person in (message-people message)
@@ -1060,31 +1076,35 @@
            (update-folder-data message :read))
          gratitude-page))
 
-      ((not self-author-p)
-       (permission-denied))
+      ((or (getf data :fb-tagged-friends)
+           (not possible-fb-friends-to-tag)
+           (get-parameter "skip-fb-tagging"))
+       gratitude-page)
 
       ;; Tagging is convoluted until Facebook changes it's API to allow apps to pass
       ;; FB user ids to tag an item. Now they only pass a special token that prevents
       ;; us from verifying that a gratitude recipient is also a facebook friend.
 
       ((not (first fb-user-friends-permission))
+       (fb-taggable-friends-auth-warning (second fb-taggable-friends))
        (facebook-friends-permission-html
              :redirect-uri (strcat "gratitude/" id)
              :re-request (eql (second fb-user-friends-permission) :declined)
-             :cancel-link (strcat "gratitude/" id)
+             :cancel-link (url-compose (strcat "gratitude/" id)
+                                       "skip-fb-tagging" "t")
              :fb-gratitude-subjects possible-fb-friends-to-tag))
 
       (possible-fb-friends-to-tag
-       (tag-facebook-friends-html
-         :gratitude-id id
-         :fb-gratitude-subjects (mapcar (lambda (id) (cons (db id :name)
-                                                           id))
-                                        possible-fb-friends-to-tag)))
-      (t (not-found)))))
+        (tag-facebook-friends-html
+          :gratitude-id id
+          :fb-gratitude-subjects (mapcar (lambda (id) (cons (db id :name)
+                                                            id))
+                                         possible-fb-friends-to-tag))))))
 
 (defun post-gratitude
   (id
    &aux (url (strcat "/gratitude/" id))
+        (next (or (post-parameter-string "next") url))
         (friends-to-tag (when (post-parameter "tag-friends")
                           (post-parameter-integer-list "tag-fb-friend"))))
   (require-user (:require-active-user t :allow-test-user t)
@@ -1104,6 +1124,14 @@
           (delete-gratitude id)
           (flash "Your statement of gratitude has been deleted!")
           (see-other (or (post-parameter "next") "/home")))
+         ((and (post-parameter "publish-facebook")
+               (not (fb-object-actions-by-user id)))
+          (if (current-fb-token-p)
+            (progn (notice :new-facebook-action :item-id id)
+                   (flash (s+ "Your gratitude has been published on Facebook"))
+                   (see-other next))
+            (renew-fb-token :item-to-publish id
+                            :next next)))
          (friends-to-tag
           (tag-facebook-friends id friends-to-tag)
           (see-other url))

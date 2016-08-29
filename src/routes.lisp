@@ -396,6 +396,9 @@
   ("/publish-facebook"
    :post post-new-facebook-data)
 
+  ("/renew-fb-token"
+   :get get-renew-fb-token)
+
   ("/uninstall-facebook"
     :post post-uninstall-facebook)
 
@@ -409,9 +412,6 @@
 
   ("/push-notification-subscription"
     :post post-push-notification-subscription)
-
-  ("/unread-push-notifications"
-    :post send-unread-notifications)
 
   ;cron-jobs
 
