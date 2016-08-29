@@ -78,12 +78,21 @@
           (:p "After decades of hyper-consumerism, we live in a world of abundance.  During the same time we've lost our true sense of community and the ability to share.")
           (:p "Kindista is a tool that allows people to gift and share their goods and services for free, the way neighbors use to.")))
 
-       (:div :class "full-width white-bg"
+       (:div :class "full-width"
         (:div :class "details"
-          (:h2 :class "text-right" "Free Stuff? Really? What's the catch")
+          (:h2 :class "text-right" "Free Stuff? Really? What's the catch?")
           (:div :class "float-left"
            (str (icon "requests")))
           (:div :class "text-right"
+            (:p "There is no catch. We're a non-profit dedicated to growing gift economy.")
+            (:p "No trading. No bartering. No renting. This is not a classified service; just free stuff in your area"))))
+
+       (:div :class "full-width purple-bg"
+        (:div :class "details white"
+          (:h2 "Gratitude is the currency.")
+          (:div :class "float-right"
+           (str (icon "gratitude-love-light")))
+          (:div :class "text-left"
             (:p "There is no catch. We're a non-profit dedicated to growing gift economy.")
             (:p "No trading. No bartering. No renting. This is not a classified service; just free stuff in your area"))))
 

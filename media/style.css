@@ -742,9 +742,12 @@ body.splash .float-left img.icon {
  color: rgba(255,255,255,0.6);
 }
 
+.semi-transparent-lighter {
+ color: rgba(255,255,255,0.8);
+}
+
 .semi-transparent-drker
-body.splash h1,
-body.splash h2 {
+body.splash h1 {
  color: rgba(0,0,0,0.7);
 }
 
@@ -824,6 +827,10 @@ body.splash h1,
  margin: 0 0;
 }
 
+.white {
+ color:#fff;
+}
+
 .green-bg {
  background:#97c642;
 }
@@ -866,6 +873,10 @@ body.splash h1,
 
 .rust-bg {
  background:#eb9b7d;
+}
+
+.purple-bg {
+ background:#652b75;
 }
 
 body.splash #header,
@@ -1800,12 +1811,9 @@ menu#fine-print-links a {
  clear:left;
 }
 
-.white, .item {
- margin:1em 0;
-}
-
 .item {
  clear:left;
+ margin:1em 0;
  padding-bottom: 1em;
  border-bottom: 1px solid #eee;
 }
