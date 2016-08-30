@@ -715,10 +715,30 @@ body.landing > p {
  box-shadow: 0 0 1px rgba(0,0,0,0.8);
 }
 
+body.splash div.container {
+ background:#858585;
+ z-index: -1;
+}
+
+body.splash div.container > * {
+ max-width: 60em;
+ margin: auto;
+ z-index; 1;
+}
+
+body.splash div.container > div:first-child {
+ width: 100%;
+ max-width: 100%;
+ position:absolute;
+ height: 6em;
+ z-index: 0;
+ background: rgba(255,255,255,0.9);
+}
+
 #splash-top {
  background: url('team-hands.jpg') no-repeat;
- background-size:60em auto;
  background-position: center top;
+ position: relative;
 }
 
 body.splash h1 {
@@ -757,11 +777,13 @@ body.splash h1 {
 
 .splash h2 {
  margin-bottom: 0.5em;
+ font-size: 1.5em;
 }
 
 body.splash #header-container {
  margin: 0 0;
  width: 100%;
+ height: 5em;
  max-width: none;
  padding: 1em;
  font-size: 1.2em;
@@ -822,13 +844,16 @@ body.splash h1,
 
 .splash .full-width {
  width: 100%;
- max-width: 100%;
- padding: 1em;
+ padding: 2em 1em;
  margin: 0 0;
 }
 
 .white {
  color:#fff;
+}
+
+.white-bg {
+ background:#fff;
 }
 
 .green-bg {
