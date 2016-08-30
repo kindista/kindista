@@ -75,7 +75,7 @@ text "\"
 
 "
 As a reminder, in an effort to prevent spam some features may not be "
-"available until someone on Kindista vouches for you, or until you "
+"available until you "
 "post some offers and we have time to review them. 
 "
 "
@@ -122,7 +122,7 @@ Thanks for sharing your gifts with us!
                                   "token" token))))
     (:p :style *style-p*
       "As a reminder, in an effort to prevent spam some features may not be "
-      "available until someone on Kindista vouches for you, or until you "
+      "available until you "
       "post some offers and we have time to review them." )
 
     (:p :style *style-p*

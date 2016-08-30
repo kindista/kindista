@@ -20,7 +20,7 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 [x] create a notice to actually do the publishing
 [x] test
 [x] test that redirect urls work
-[ ] test "share on facebook" links under items both when fb token is inactive and active
+[x] test "share on facebook" links under items both when fb token is inactive and active
 
 #Gratitude
 [x] taggable friends:
@@ -50,7 +50,6 @@ https://developers.facebook.com/docs/sharing/reference/send-dialog
 
 #FB login
 https://developers.facebook.com/docs/facebook-login/multiple-providers
-[ ] steps above "adding manual login info to a Facebook Login created account" are done
 [ ] make sure to grab fb-profile-pic when no k-avatar (esp when user relogs through the settings page)
 [ ] make sure button displays right when signing up through settings page
 
