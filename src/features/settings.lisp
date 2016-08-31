@@ -852,7 +852,9 @@
   (require-user (:allow-test-user t)
     (cond
       ((post-parameter "fb-logout")
-       (modify-db *userid* :fb-token nil)
+       (modify-db *userid* :fb-token nil
+                           :fb-expires nil
+                           :fb-link-active nil)
        (flash "Kindista no longer has access to your Facebook account")))
     (see-other (or (post-parameter-string "next") "/settings/social"))))
 
@@ -875,16 +877,15 @@
                         (+ now (safe-parse-integer
                                  (cdr (assoc "expires" it :test #'string=)))))))
         (when facebook-token-data
-          (apply #'modify-db
-                 *userid*
-                 (remove-nil-plist-pairs
-                   (list :fb-token token
-                         :fb-expires (+ (get-universal-time)
-                                        (safe-parse-integer expires))
-                         :fb-link-active t
-                         :fb-permissions fb-scope)))
+          (modify-db *userid* :fb-token token
+                              :fb-expires (+ (get-universal-time)
+                                             (safe-parse-integer expires))
+                              :fb-link-active t
+                              :fb-permissions fb-scope)
           (unless (getf *user* :fb-id)
             (modify-db *userid* :fb-id (get-facebook-user-id token)))
+          (unless (getf *user* :avatar)
+            (modify-db *userid* :avatar (save-facebook-profile-picture-to-avatar *userid*)))
           (flash "You have successfully linked Kindista to your Facebook account."))
         (facebook-debugging-log facebook-token-data))
       (settings-social-html))))

@@ -53,12 +53,6 @@ https://developers.facebook.com/docs/facebook-login/multiple-providers
 [ ] make sure to grab fb-profile-pic when no k-avatar (esp when user relogs through the settings page)
 [ ] make sure button displays right when signing up through settings page
 
-
-#Review
-[ ] take screen shots
-https://developers.facebook.com/docs/apps/review
-[ ] submit to facebook for review
-
 #Merge accounts (fb-id fbtoken)
 [ ] review code
 

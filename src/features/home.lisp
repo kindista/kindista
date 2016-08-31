@@ -176,5 +176,7 @@
      (get-verify-address :next-url "/home"))
 
     (t
+     (pprint *userid*)
+     (terpri)
      (notice :home-setup)
      (newuser-home))))

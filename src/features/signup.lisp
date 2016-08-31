@@ -435,7 +435,7 @@
                                        (+ (get-universal-time) it))
                          :password (post-parameter-string "password"))))
   (setf (token-userid *token*) new-id)
-  (pprint *token*)
+  (pprint new-id)
   (terpri)
   (when fb-id
     (modify-db new-id :avatar (save-facebook-profile-picture-to-avatar new-id)))
@@ -445,8 +445,6 @@
   (dolist (group (getf invitation :groups))
     (add-group-member new-id group))
   (add-contact host new-id)
-  (pprint (db new-id :following))
-  (terpri)
   (unless (eql host +kindista-id+)
     (add-contact +kindista-id+ new-id))
   (with-locked-hash-table (*invited-index*)
@@ -454,7 +452,5 @@
   ;; see if anyone has invited this email to a group
   ;; posted gratitude
   ;; or added to contacts
-  (pprint "last-step")
-  (terpri)
   (pending-email-actions email :userid new-id))
 

@@ -266,6 +266,7 @@
                          :parameters (list (cons "access_token" fb-token)
                                            (cons "type" "large")
                                            (cons "method" "get")))))
+   (facebook-debugging-log "foo!!!" (first response) (second response) (fourth response))
    (values (first response)
            (second response)
            (cdr (assoc :content-type (third response)))
@@ -276,6 +277,7 @@
     (octet-array status-code content-type image-url)
     (get-facebook-profile-picture k-userid)
     (declare (ignore image-url))
+    (facebook-debugging-log *userid* "get-facebook-profile-picture" status-code)
     (when (eql status-code 200)
       (create-image octet-array content-type))))
 
