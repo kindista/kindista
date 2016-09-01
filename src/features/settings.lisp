@@ -667,6 +667,8 @@
             (htm (:input :type "hidden" :name "k" :value it)))
           (awhen (get-parameter-string "email")
             (htm (:input :type "hidden" :name "email" :value it)))
+          (when (get-parameter-string "type")
+            (htm (:input :type "hidden" :name "type" :value "none")))
           (when groupid
             (htm (:input :type "hidden" :name "groupid" :value groupid)))
           (:ul :class "padding-top"
@@ -926,6 +928,59 @@
        :title "Facebook"
        :editable t)))))
 
+(defun unsub-notify-from-email
+  (email
+   unsub-type
+    &aux (userid (gethash email *email-index*)))
+  (when (string= unsub-type "gratitude")
+    (modify-db userid :notify-gratitude nil)
+    (flash "You are now unsubscribed from reciving notificaitons when someone posts gratitude about you"))
+  (when (string= unsub-type "message")
+    (modify-db userid :notify-message nil)
+    (flash "You are now unsubscribed from reciving notificaitons when someone sends you a message or responds to your offers/requests"))
+  (when (string= unsub-type "inventory-expiration")
+    (modify-db userid :notify-inventory-expiration nil)
+    (flash  "You are now unsubscribed from reciving notificaitons when your offers and requests are about to expire"))
+  (when (string= unsub-type "new-contact")
+    (modify-db userid :notify-new-contact nil)
+    (flash "You are now unsubscribed from reciving notificaitons when someone adds you to their list of contacts"))
+  (when (string= unsub-type "inventory-digest")
+    (modify-db userid :notify-inventory-digest nil)
+    (flash "You are now unsubscribed from reciving notificaitons of new offers and requests in your area"))
+  (when (string= unsub-type "reminders")
+    (modify-db userid :notify-blog nil)
+    (flash "You are now unsubscribed from reciving reminders for how to get the most out of Kindista"))
+  (when (string= unsub-type "expired-invites")
+    (modify-db userid :notify-expired-invites nil)
+    (flash "You are now unsubscribed from reciving notificaitons when invitations you sent to friends to join Kindista expire"))
+  (when (string= unsub-type "group-membership-invites")
+    (modify-db userid :notify-group-membership-invites nil)
+    (flash "You are now unsubscribed from reciving notificaitons when someone invites you to join a group on Kindista "))
+  (when (string= unsub-type "kindista")
+    (modify-db userid :notify-kindista nil)
+    (flash "You are now unsubscribed from reciving updates and information about Kindista")))
+
+(defun settings-unsubscribe-all ()
+     (settings-item-html
+     "Unsubscribe Notifications"
+     (html 
+       (awhen (get-parameter-string "k")
+         (htm (:input :type "hidden" :name "k" :value it)))
+       (awhen (get-parameter-string "email")
+         (htm (:input :type "hidden" :name "email" :value it)))
+       (when (get-parameter-string "type")
+            (htm (:input :type "hidden" :name "type" :value "none")))
+       ;(when (get-parameter-string "type")
+       ;  (htm (:input :type "hidden" :name "unsub" :value "unsub-all")))
+       (:p "If you want to unsubscribe from reciving any notifications, or you can change individual preferences above"))
+     :editable t
+     :buttons (html (:button :class "no small"
+                             :type "submit"
+                             :name "unsubscribe-all"
+                             "Unsubscribe All Notifications" ))
+     :action "/settings/notifications"
+     ))
+
 (defun get-settings-communication ()
   (if *user*
      (if (and (scan +number-scanner+ (get-parameter "invitation-id"))
@@ -936,14 +991,13 @@
         (progn
           (when (and (get-parameter "k")
                      (get-parameter "email")
-                     (not (find (get-parameter-string "email")
-                                (getf *user* :emails)
-                                :test #'string=)))
-            (flash "You must first sign out of this account before you can change settings on a different account." :error t))
-        (when (get-parameter "type")
-                (pprint "type")
-                (pprint (get-parameter-string "type"))
-                (terpri))
+                     (get-parameter "type"))
+            (if (not (find (get-parameter-string "email")
+                           (getf *user* :emails)
+                           :test #'string=))
+              (flash "You must first sign out of this account before you can change settings on a different account." :error t)
+              (unsub-notify-from-email (get-parameter-string "email")
+                                       (get-parameter-string "type"))))
          (settings-template-html
           (aif (get-parameter "groupid")
             (url-compose "/settings/communication"
@@ -957,22 +1011,32 @@
            (:p "Notifications will be sent to your primary email address: "
                (:strong (str (car (getf *user* :emails))))
                (:a :id "email-link" :href "/settings/communication#email" "change"))
+           
            (str (settings-notifications :groupid groupid :group group))
+           (when (and (get-parameter "k")
+                      (get-parameter "email")
+                      (get-parameter "type"))
+             (str (settings-unsubscribe-all)))
            (str (settings-push-notifications group))
            (unless groupid
              (str (settings-emails (string= (get-parameter "edit") "email")
                                    :activate (get-parameter "activate"))))))))
 
-     (if (and (get-parameter "k") (get-parameter "email"))
+     (if (and (get-parameter "k")
+              (get-parameter "email")
+              (get-parameter "type"))
        (let* ((email (get-parameter-string "email"))
               (userid (gethash email *email-index*))
+              (unsub-type (get-parameter-string "type"))
               (user (db userid))
               (unverified-groupid (get-parameter-integer "groupid"))
               (groups (groups-with-user-as-admin userid))
               (groupid (awhen (find unverified-groupid groups :key #'car) (car it)))
               (group (db groupid)))
          (if (string= (get-parameter-string "k") (getf user :unsubscribe-key))
-           (header-page
+           (progn
+            (unsub-notify-from-email email unsub-type )
+             (header-page
              "Communication Settings"
              nil
              (html
@@ -990,8 +1054,9 @@
                 (str (settings-notifications :user user
                                              :userid userid
                                              :group group
-                                             :groupid groupid))))
-             :hide-menu t)
+                                             :groupid groupid))
+                (str (settings-unsubscribe-all))))
+             :hide-menu t))
            (login-required)))
         (login-required))))
 
@@ -1165,7 +1230,8 @@
 
 (defun post-settings-notification
   (&aux (k (post-parameter-string "k"))
-        (unverified-email (post-parameter-string "email")))
+        (unverified-email (post-parameter-string "email"))
+        (unsub-type (post-parameter-string "type")))
   "Requires a logged in user or credentials from an unsubscribe link.  When both are present, unsubscribe link credentials are used."
   (if (and (not *user*)
            (or (not k) (not unverified-email)))
@@ -1180,6 +1246,7 @@
            (userid (or (when verified-user unverified-userid)
                        *userid*))
            (user (or verified-user *user*))
+           (unsub-all-p (post-parameter "unsubscribe-all"))
            (save (post-parameter "save-notifications"))
            ;; for identity-selection-html
            (identity (post-parameter-integer "identity-selection"))
@@ -1188,7 +1255,8 @@
            (group (db groupid))
            (next (or (post-parameter "next")
                      (url-compose "/settings/communication"
-                          "groupid" groupid
+                          ;"groupid" groupid
+                          "type" unsub-type
                           "email" unverified-email
                           "k" k))))
 
@@ -1223,7 +1291,22 @@
                                                  (remove userid it)))
          (notice :updated-notifications :userid userid :groupid groupid)
          (flash "Your notification preferences have been saved.")
-         (see-other next) )
+         (see-other next))
+        (unsub-all-p
+         (modify-db userid
+                    :notify-gratitude nil
+                    :notify-message nil
+                    :notify-inventory-expiration nil
+                    :notify-new-contact nil
+                    :notify-reminders nil
+                    :notify-inventory-digest nil
+                    :notify-blog nil
+                    :notify-expired-invites nil
+                    :notify-group-membership-invites nil
+                    :notify-kindista nil)
+         (notice :updated-notifications :userid userid)
+         (flash "You are now unsubscribed from reciving any notifications from Kindista")
+         (see-other next))
         (save
          (modify-db userid
                     :notify-gratitude (when (post-parameter "gratitude") t)
