@@ -42,6 +42,8 @@
       )
       |#
 
+    (str (facebook-signup-sidebar))
+
     (str (donate-sidebar))
 
     (str (invite-sidebar :mobile t))
@@ -176,7 +178,5 @@
      (get-verify-address :next-url "/home"))
 
     (t
-     (pprint *userid*)
-     (terpri)
      (notice :home-setup)
      (newuser-home))))

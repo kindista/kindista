@@ -2611,7 +2611,7 @@ button.card > img {
   right: 0;
   top: 3em;
   background: #ffffff;
-  padding: 0 1em 4em;
+  padding: 1em 1em 4em;
   margin: 1em 0;
   border-left: 1px solid #eee;
   border-bottom: none;
@@ -3484,6 +3484,17 @@ div.settings-avatar {
  margin: 0 0 0.2em;
 }
 
+a.facebook-button {
+ line-height:1.5em;
+}
+
+a.facebook-button img {
+ height: 1em;
+ width: auto;
+ vertical-align: -0.1em;
+ margin-right: 0.625em;
+}
+
 form #facebook {
  margin: 0.7em 0;
 }
@@ -3918,12 +3929,6 @@ div.settings #email-link {
 @media (max-width:40em) {
  .settings-item .details {
    display: block;
- }
-}
-
-@media (max-width:40em) {
- .settings-item .details.facebook {
-   display: table-cell;
  }
 }
 

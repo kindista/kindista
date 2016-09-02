@@ -44,14 +44,11 @@ https://developers.facebook.com/docs/sharing/reference/send-dialog
 [ ] when signing a person up, if they are FB friends with the inviter, add them to kindista friends as host
 [ ] invitation via gratitude
 
-#FAQs
-[ ] how do I share my offers/req/grat on facebook?
-[ ] how do I tag my fb friends in gratitude?
-
 #FB login
+[x] add button on home screen to get registerred with facebook
 https://developers.facebook.com/docs/facebook-login/multiple-providers
-[ ] make sure to grab fb-profile-pic when no k-avatar (esp when user relogs through the settings page)
-[ ] make sure button displays right when signing up through settings page
+[x] make sure to grab fb-profile-pic when no k-avatar (esp when user relogs through the settings page)
+[x] make sure button displays right when signing up through settings page
 
 #Merge accounts (fb-id fbtoken)
 [ ] review code
@@ -68,5 +65,6 @@ https://developers.facebook.com/docs/facebook-login/multiple-providers
 [ ] quickload
 [ ] reload routes
 [ ] redefine with-user with-token
+[ ] redefine defparamater *faq-html*
 [ ] load notice handlers
 [ ] (setf *facebook-app-token* (get-facebook-app-token))

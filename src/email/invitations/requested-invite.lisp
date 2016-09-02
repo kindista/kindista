@@ -74,9 +74,9 @@ text "\"
              "token" token)
 
 "
-As a reminder, in an effort to prevent spam some features may not be "
+Please note: some features on Kindista will not be "
 "available until you "
-"post some offers and we have time to review them. 
+"post your first offer and we have time to review it.
 "
 "
 Thanks for sharing your gifts with us!
@@ -121,9 +121,9 @@ Thanks for sharing your gifts with us!
                                   "email" email
                                   "token" token))))
     (:p :style *style-p*
-      "As a reminder, in an effort to prevent spam some features may not be "
+      "Please note: some features on Kindista will not be "
       "available until you "
-      "post some offers and we have time to review them." )
+      "post your first offer and we have time to review it" )
 
     (:p :style *style-p*
       "Thanks for sharing your gifts with us!")

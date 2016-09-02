@@ -118,7 +118,7 @@
                     (s+ scope ","))
                   "public_profile,publish_actions,email"))
   (html
-    (:a :class "blue"
+    (:a :class "blue facebook-button"
         :href (apply #'url-compose
                      "https://www.facebook.com/dialog/oauth"
                      (remove nil
@@ -132,7 +132,7 @@
                            (list "auth_type" " rerequest"))
                          (when state
                            (list "state" state)))))
-        (str button-text))))
+        (str (icon "facebook-white")) (str button-text))))
 
 (defun get-renew-fb-token
   (&aux (next (or (get-parameter-string "next") "/home"))

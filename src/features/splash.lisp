@@ -60,7 +60,7 @@
               (:h1 (:em "Join the Revolution of Kindness")) 
               (:a :class "purple"
                :id "big-ass-signup-button"
-               :href "/signup" "SIGN UP FOR FREE"))
+               :href "/signup" "SIGN UP NOW"))
              (:div :id "demo" :class "center"
               (:a :href "/home" "...or try Kindista as a guest")))))
 
