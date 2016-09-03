@@ -49,6 +49,9 @@ https://developers.facebook.com/docs/sharing/reference/send-dialog
 https://developers.facebook.com/docs/facebook-login/multiple-providers
 [x] make sure to grab fb-profile-pic when no k-avatar (esp when user relogs through the settings page)
 [x] make sure button displays right when signing up through settings page
+[ ] test functionality of "pending accounts" for Facebook signups
+[ ] when are offers/requests posted to facebook?
+[ ] when is gratitude posted?
 
 #Merge accounts (fb-id fbtoken)
 [ ] review code
