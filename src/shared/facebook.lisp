@@ -25,22 +25,12 @@
 (defvar *facebook-user-token-expiration* nil)
 (defvar *fb-id* nil)
 
-(defun reassign-fb-action-ids ()
-  "Utility function. Should only be run once."
-  (dolist (userid '(1 33383 33385))
-    (dolist (result (gethash userid *profile-activity-index*))
-      (let* ((item-id (result-id result))
-             (data (db item-id)))
-        (awhen (getf data :fb-action-id)
-          (modify-db item-id
-                     :fb-action-id nil
-                     :fb-actions (list
-                                   (list
-                                     :fb-id (db userid :fb-id)
-                                     :fb-action-type (case (getf data :type)
-                                                       (:gratitude "express")
-                                                       (t "post"))
-                                     :fb-action-id it))))))))
+(defun fix-fb-link-active-error ()
+  (dolist (id *active-people-index*)
+    (let ((person (db id)))
+      (when (and (getf person :fb-link-active)
+                 (not (getf person :fb-id)))
+        (modify-db id :fb-link-active nil)))))
 
 (defun get-facebook-app-token ()
     (string-left-trim "access_token="

@@ -874,7 +874,7 @@
              (expires (awhen facebook-token-data
                         (+ now (safe-parse-integer
                                  (cdr (assoc "expires" it :test #'string=)))))))
-        (when facebook-token-data
+        (when token
           (apply #'modify-db
                  *userid*
                  (remove-nil-plist-pairs

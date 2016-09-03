@@ -74,14 +74,18 @@
 
 (defun register-login (userid &key next fb-token fb-expires fb-scope &aux (user (db userid)))
   (setf (token-userid *token*) userid)
-  (unless (and (getf user :fb-link-active)
-               (string= (getf user :fb-token)
-                        fb-token)
-               (eql fb-expires (getf user :fb-expires)))
-    (modify-db userid :fb-token fb-token
-                      :fb-expires fb-expires
-                      :fb-scope fb-scope
-                      :fb-link-active t))
+  (when (and fb-token
+             fb-expires
+             (or (not (string= (getf user :fb-token)
+                               fb-token))
+                 (not (eql fb-expires (getf user :fb-expires)))))
+    (apply #'modify-db
+           userid
+           (remove-nil-plist-pairs
+             (list :fb-token fb-token
+                   :fb-expires fb-expires
+                   :fb-scope fb-scope
+                   :fb-link-active t))))
   (asetf (token-session-data *token*)
          (remove-from-plist it :login-redirect))
   (when (getf (token-session-data *token*) :publish-to-fb)
