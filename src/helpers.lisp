@@ -219,6 +219,11 @@
 (defun separate-with-commas (list &key omit-spaces)
   (format nil (if omit-spaces "~{~A,~}" "~{~A, ~}") list))
 
+(defun remove-whitespace-around-string (string)
+  (string-trim
+    '(#\Space #\Newline #\Backspace #\Tab #\Linefeed #\Page #\Return #\Rubout)
+    string))
+
 (defun separate-with-spaces (list)
   (format nil "~{~A ~}" list))
 

@@ -122,7 +122,7 @@
                                                          fb-token-data
                                                          :test #'string=))))))
         (fb-data (when fb-token (get-facebook-user-data fb-token)))
-   &aux (username (post-parameter "username"))
+   &aux (username (remove-whitespace-around-string (post-parameter "username")))
         (password (post-parameter-string "password"))
         (login-token-redirect (getf (token-session-data *token*) :login-redirect))
         (next (or login-token-redirect
