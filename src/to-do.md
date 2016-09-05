@@ -1,5 +1,16 @@
 ## unsubscriptions
-  - 
+ [x] new-contact
+ [x] gratitude
+ [x] inventory-digest
+ [x] message
+ [x] reminders
+ [ ] expired-invites
+ [ ] membership-request
+ [ ] inventory-expiration
+ [ ] group-membership-invites
+ [ ] blog
+ [ ] kindista
+
 ## web apps
  [x] hide button for anything but chrome and mobile chrome
  [x] check if the encryption keys are there before encryption
