@@ -1,7 +1,20 @@
 ## unsubscriptions
   - 
 ## web apps
-## are things actually expiring?
+ [x] hide button for anything but chrome and mobile chrome
+ [x] check if the encryption keys are there before encryption
+ [x] create specific push notification log file
+ [x] cache busting for service worker js
+ [x] write function to migrate data from registration id string to reg-id list
+ [x] default message goes to message inbox
+ ## on server
+   [ ] look at people already subscribed to push notifications to send message
+   [ ] push encryption path (encrypt.sh) in settings on live server
+   [ ] migrate push registration db with helper function
+   [ ] touch push-log file in data (?)
+## big red unsubscribe link on email-unsubscribe-page
+  - when clicking the link automatically unsubscribe from specific email
+  - big red button unsubscribes from everything
 ## post offers/requests to facebook
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)

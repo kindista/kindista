@@ -17,9 +17,10 @@
 
 (in-package :kindista)
 
-(defun get-login (&aux (next (get-parameter "next")))
-  (setf (getf (token-session-data *token*) :login-redirect)
-        next)
+(defun get-login (&aux (next (get-parameter-string "next")))
+  (when next
+    (setf (getf (token-session-data *token*) :login-redirect)
+          next))
   (cond
    ((get-parameter-string "code") (post-login))
    (*user* (see-other "/home"))
@@ -71,10 +72,32 @@
                "Join the kindness revolution!"))))
       :hide-menu t))))
 
-(defun register-login (userid &optional next)
+(defun register-login (userid &key next fb-token fb-expires fb-scope &aux (user (db userid)))
   (setf (token-userid *token*) userid)
+  (when (and fb-token
+             fb-expires
+             (or (not (string= (getf user :fb-token)
+                               fb-token))
+                 (not (eql fb-expires (getf user :fb-expires)))))
+    (apply #'modify-db
+           userid
+           (remove-nil-plist-pairs
+             (list :fb-token fb-token
+                   :fb-expires fb-expires
+                   :fb-scope fb-scope
+                   :fb-link-active t))))
   (asetf (token-session-data *token*)
          (remove-from-plist it :login-redirect))
+  (when (getf (token-session-data *token*) :publish-to-fb)
+    (let* ((id (getf (token-session-data *token*) :publish-to-fb))
+           (item (db id))
+           (type (getf item :type)))
+      (notice :new-facebook-action :item-id id)
+      (flash (s+ "Your "
+                 (string-downcase (symbol-name type))
+                 " has been published on Facebook"))
+      (asetf (token-session-data *token*)
+             (remove-from-plist it :publish-to-fb))))
   (with-locked-hash-table (*user-tokens-index*)
     (asetf (gethash userid *user-tokens-index*)
            (push (cons (cookie-in "token") *token*) it)))
@@ -86,12 +109,20 @@
 (defun post-login
   (&key (fb-token-data (when (get-parameter-string "code")
                                (register-facebook-user "login")))
-
+        (fb-scope (when fb-token-data
+                    (awhen (get-parameter-string "granted_scopes")
+                      (mapcar #'string-to-keyword
+                              (words-from-string it)))))
         (fb-token (cdr (assoc "access_token"
                               fb-token-data
                               :test #'string=)))
+        (fb-expires (when fb-token-data
+                      (+ (get-universal-time)
+                         (safe-parse-integer (cdr (assoc "expires"
+                                                         fb-token-data
+                                                         :test #'string=))))))
         (fb-data (when fb-token (get-facebook-user-data fb-token)))
-   &aux (username (post-parameter "username"))
+   &aux (username (remove-whitespace-around-string (post-parameter "username")))
         (password (post-parameter-string "password"))
         (login-token-redirect (getf (token-session-data *token*) :login-redirect))
         (next (or login-token-redirect
@@ -122,7 +153,12 @@
 
     ((or existing-k-id
          (and password (password-match-p userid password)))
-     (register-login userid next))
+     (apply #'register-login userid
+            (remove-nil-plist-pairs
+              (list :next next
+                    :fb-token fb-token
+                    :fb-expires fb-expires
+                    :fb-scope fb-scope))))
 
     (fb-token-data
      (flash "There is no Kindista account associated with the Facebook account currently active on this browser. Please confirm that you are logged into Facebook, or Sign Up for Kindista below."

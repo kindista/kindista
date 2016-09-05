@@ -97,7 +97,6 @@
 (defindex *username-index* :test 'equalp)
 (defindex *eventname-index* :test 'equalp)
 (defindex *user-tokens-index*)
-(defindex *push-subscription-message-index* :test 'equalp)
 
 (defvar *active-people-mutex* (make-mutex))
 (defvar *active-people-index* ())

@@ -1,4 +1,5 @@
 var isPushEnabled = false;
+var isChrome = !!window.chrome;
 
 window.addEventListener('load', function() {
   var pushButton = document.querySelector('#push-notification-button');
@@ -9,7 +10,10 @@ window.addEventListener('load', function() {
       subscribe();
     }
   });
-  if ('serviceWorker' in navigator) {
+  if (!isChrome) {
+    console.warn('service workers aren\'t supported in this browser.');
+    hidePushButton();
+  } else if ('serviceWorker' in navigator) {
     initialiseState();
   } else {
     console.warn('service workers aren\'t supported in this browser.');
