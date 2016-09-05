@@ -17,6 +17,15 @@
 
 (in-package :kindista)
 
+(defun reset-blog-notification-settings (&aux (count 0))
+  "accidentally unsubscribed people from the blog when they were trying to unsubscribe from reminders"
+  (dolist (id *active-people-index*)
+    (let ((data (db id)))
+      (when (and (getf data :notify-kindista)
+                 (not (getf data :notify-blog)))
+        (modify-db id :notify-blog t))))
+  count)
+
 (defun settings-tabs-html (tab &optional groupid)
   (html
     (:menu :type "toolbar ":class "bar"
@@ -876,12 +885,15 @@
              (expires (awhen facebook-token-data
                         (+ now (safe-parse-integer
                                  (cdr (assoc "expires" it :test #'string=)))))))
-        (when facebook-token-data
-          (modify-db *userid* :fb-token token
-                              :fb-expires (+ (get-universal-time)
-                                             (safe-parse-integer expires))
-                              :fb-link-active t
-                              :fb-permissions fb-scope)
+        (when token
+          (apply #'modify-db
+                 *userid*
+                 (remove-nil-plist-pairs
+                   (list :fb-token token
+                         :fb-expires (+ (get-universal-time)
+                                        (safe-parse-integer expires))
+                         :fb-link-active t
+                         :fb-permissions fb-scope)))
           (unless (getf *user* :fb-id)
             (modify-db *userid* :fb-id (get-facebook-user-id token)))
           (unless (getf *user* :avatar)
@@ -1239,7 +1251,7 @@
                     :notify-new-contact (when (post-parameter "new-contact") t)
                     :notify-reminders (when (post-parameter "reminders") t)
                     :notify-inventory-digest (when (post-parameter "inventory-digest") t)
-                    :notify-blog (when (post-parameter "reminders") t)
+                    :notify-blog (when (post-parameter "blog") t)
                     :notify-expired-invites (when (post-parameter "expired-invites") t)
                     :notify-group-membership-invites (when (post-parameter "group-membership-invites") t)
                    :notify-kindista (when (post-parameter "kindista") t))
