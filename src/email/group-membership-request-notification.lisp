@@ -92,7 +92,7 @@ reply-url
   email
   (s+ "notifications when people request to join " group-name)
   :groupid group-id
-  :unsub-type "group-membership-invites")))
+  :unsub-type "membership-request")))
 
 
 (defun group-membership-request-notification-email-html
@@ -120,5 +120,5 @@ reply-url
           email
           (s+ "notifications when people request to join " group-name)
           :groupid group-id
-          :unsub-type "group-membership-invites")))))
+          :unsub-type "membership-request")))))
 
