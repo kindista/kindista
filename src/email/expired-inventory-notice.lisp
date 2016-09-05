@@ -106,7 +106,8 @@
       (getf recipient :unsubscribe-key)
       (getf recipient :email)
       "notifications when your offers and requests are about to expire"
-      :groupid (getf recipient :groupid))))
+      :groupid (getf recipient :groupid)
+      :unsub-type "inventory-expiration")))
 
 (defun inventory-expiration-email-html
   (message item-description typestring url recipient)
@@ -127,7 +128,8 @@
              (getf recipient :unsubscribe-key)
              (getf recipient :email)
              "notifications when your offers and requests are about to expire"
-             :groupid (getf recipient :groupid)))
+             :groupid (getf recipient :groupid)
+             :unsub-type "inventory-expiration"))
       )))
 
 (defun send-inventory-expiration-by-account-notice
@@ -209,7 +211,8 @@
       (getf recipient :unsubscribe-key)
       (getf recipient :email)
       "notifications when your offers and requests are about to expire"
-      :groupid (getf recipient :groupid))))
+      :groupid (getf recipient :groupid)
+      :unsub-type "inventory-expiration")))
 
 (defun inventory-expiration-by-account-email-html
   (message typestring count url recipient)
@@ -231,6 +234,7 @@
              (getf recipient :unsubscribe-key)
              (getf recipient :email)
              "notifications when your offers and requests are about to expire"
-             :groupid (getf recipient :groupid)))
+             :groupid (getf recipient :groupid)
+             :unsub-type "inventory-expiration"))
       )))
 

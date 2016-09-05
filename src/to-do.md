@@ -4,12 +4,12 @@
  [x] inventory-digest
  [x] message
  [x] reminders
- [ ] expired-invites
- [ ] membership-request
- [ ] inventory-expiration
- [ ] group-membership-invites
- [ ] blog
- [ ] kindista
+ [x] expired-invites
+ [?] membership-request
+ [x] inventory-expiration
+ [x] group-membership-invites
+ [x] blog
+ [x] kindista
 
 ## web apps
  [x] hide button for anything but chrome and mobile chrome

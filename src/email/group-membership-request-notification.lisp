@@ -91,7 +91,8 @@ reply-url
   unsubscribe-key
   email
   (s+ "notifications when people request to join " group-name)
-  :groupid group-id)))
+  :groupid group-id
+  :unsub-type "group-membership-invites")))
 
 
 (defun group-membership-request-notification-email-html
@@ -118,5 +119,6 @@ reply-url
           unsubscribe-key
           email
           (s+ "notifications when people request to join " group-name)
-          :groupid group-id)))))
+          :groupid group-id
+          :unsub-type "group-membership-invites")))))
 

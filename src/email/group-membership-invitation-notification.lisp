@@ -82,7 +82,8 @@
       unsubscribe-key
       email
       "notifications when people invite you to join groups on Kindista"
-      :detailed-notification-description "group invite notifications")
+      :detailed-notification-description "group invite notifications"
+      :unsub-type "group-membership-invites")
     ))
 
 
@@ -107,5 +108,6 @@
              unsubscribe-key
              email
              "notifications when people invite you to join groups on Kindista"
-             :detailed-notification-description "group invite notifications")))))
+             :detailed-notification-description "group invite notifications"
+             :unsub-type "group-membership-invites")))))
 
