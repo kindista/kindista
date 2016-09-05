@@ -695,13 +695,12 @@
                           (if group "our" "my")
                           " offers/requests")))
            (:li (:input :type "checkbox"
-                      :name "new-contact"
-                      :checked (checkbox-value :notify-new-contact))
-                     "when someone adds me to their list of contacts")
-           (:li (:input :type "checkbox"
                   :name "inventory-expiration"
                   :checked (checkbox-value :notify-inventory-expiration))
-                 "when my offers and requests are about to expire ")
+                 (str
+                   (s+ "when "
+                       (if group-name "this group's" "my")
+                       " offers and requests are about to expire ")))
 
             (when group
               (htm
@@ -720,6 +719,10 @@
                       :name "group-membership-invites"
                       :checked (checkbox-value :notify-group-membership-invites))
                      "when someone invites me to join a group on Kindista (e.g. a business, non-profit, or other organization I belong to within my community)")
+                (:li (:input :type "checkbox"
+                           :name "new-contact"
+                           :checked (checkbox-value :notify-new-contact))
+                          "when someone adds me to their list of contacts")
                 (:li :class "notifications border-top"
                      (:input :type "checkbox"
                       :name "reminders"

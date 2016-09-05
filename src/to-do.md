@@ -4,15 +4,17 @@
  [x] inventory-digest
  [x] message
  [x] reminders
- [ ] expired-invites
- [ ] membership-request
- [ ] inventory-expiration
- [ ] group-membership-invites
- [ ] blog
- [ ] kindista
+ [x] expired-invites
+ [?] membership-request
+ [x] inventory-expiration
+ [x] group-membership-invites
+ [x] blog
+ [x] kindista
  [ ] make sure there's a case in unsub-notify-from-email for each *notification-types*
  [ ] how does unsubscribe all handle notifications for group admins
- [ ] placement of unsubscrib-all button
+ [ ] when unsubscribing from all as a group, make a call to (contact-opt-out-flash)
+ [ ] make sure group notifications work for inventory-expirations
+ [ ] make sure group unsubscribes work for inventory-expirations
 
 ## post offers/requests to facebook
 ## split up database

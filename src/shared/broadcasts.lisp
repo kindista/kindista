@@ -152,7 +152,8 @@
                                         "emails for new articles from the Kindista blog"
                                         "updates from Kindista")
                                       :detailed-notification-description
-                                        (unless blog-p "occasional updates like this from Kindista")))))
+                                        (unless blog-p "occasional updates like this from Kindista")
+                                      :unsub-type "blog"))))
            (text-message (s+ (when blog-p
                                (strcat
                                  (getf broadcast :title)
@@ -168,7 +169,8 @@
                                (if blog-p
                                  "emails for new articles from the Kindista blog"
                                  "updates from Kindista")
-                               :detailed-notification-description (unless blog-p "occasional updates like this from Kindista")))) )
+                               :detailed-notification-description (unless blog-p "occasional updates like this from Kindista")
+                               :unsub-type "blog"))))
       (when (and email
                  (if blog-p
                    (getf user :notify-blog)
@@ -268,7 +270,8 @@
                  (getf *user* :unsubscribe-key)
                  admin-email
                  "updates from Kindista"
-                 :detailed-notification-description "occasional updates like this from Kindista"))
+                 :detailed-notification-description "occasional updates like this from Kindista"
+                 :unsub-type "kindista"))
            :html-message (html-email-base
                            (strcat* html-broadcast
                                     (when amazon-smile-p
@@ -278,7 +281,8 @@
                                             :unsubscribe-key)
                                       admin-email
                                       "updates from Kindista"
-                                      :detailed-notification-description "occasional updates like this from Kindista"))))
+                                      :detailed-notification-description "occasional updates like this from Kindista"
+                                      :unsub-type "kindista"))))
          (flash "test email has been sent")
          (try-again))
 
