@@ -3011,6 +3011,11 @@ div.submit-image {
  cursor: pointer;
 }
 
+.logged-out #unsubscribe button,
+.settings #unsubscribe button {
+ min-width: 10em;
+}
+
 .submit-image label {
  cursor: pointer;
 }

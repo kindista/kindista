@@ -82,6 +82,19 @@
     (regex-replace-all "\\n" string "<br>")
     ""))
 
+(defparameter *notification-types*
+  '(:notify-blog
+    :notify-expired-invites
+    :notify-gratitude
+    :notify-group-membership-invites
+    :notify-inventory-expiration
+    :notify-inventory-digest
+    :notify-kindista
+    :notify-membership-request
+    :notify-message
+    :notify-new-contact
+    :notify-reminders))
+
 (defun person-name (id)
   (db id :name))
 

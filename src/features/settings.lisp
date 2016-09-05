@@ -949,39 +949,41 @@
 (defun unsub-notify-from-email
   (email
    unsub-type
-    &aux (userid (gethash email *email-index*)))
-  (when (string= unsub-type "gratitude")
-    (modify-db userid :notify-gratitude nil)
-    (flash "You are now unsubscribed from reciving notificaitons when someone posts gratitude about you"))
-  (when (string= unsub-type "message")
-    (modify-db userid :notify-message nil)
-    (flash "You are now unsubscribed from reciving notificaitons when someone sends you a message or responds to your offers/requests"))
-  (when (string= unsub-type "inventory-expiration")
-    (modify-db userid :notify-inventory-expiration nil)
-    (flash  "You are now unsubscribed from reciving notificaitons when your offers and requests are about to expire"))
-  (when (string= unsub-type "new-contact")
-    (modify-db userid :notify-new-contact nil)
-    (flash "You are now unsubscribed from reciving notificaitons when someone adds you to their list of contacts"))
-  (when (string= unsub-type "inventory-digest")
-    (modify-db userid :notify-inventory-digest nil)
-    (flash "You are now unsubscribed from reciving notificaitons of new offers and requests in your area"))
-  (when (string= unsub-type "reminders")
-    (modify-db userid :notify-blog nil)
-    (flash "You are now unsubscribed from reciving reminders for how to get the most out of Kindista"))
-  (when (string= unsub-type "expired-invites")
-    (modify-db userid :notify-expired-invites nil)
-    (flash "You are now unsubscribed from reciving notificaitons when invitations you sent to friends to join Kindista expire"))
-  (when (string= unsub-type "group-membership-invites")
-    (modify-db userid :notify-group-membership-invites nil)
-    (flash "You are now unsubscribed from reciving notificaitons when someone invites you to join a group on Kindista "))
-  (when (string= unsub-type "kindista")
-    (modify-db userid :notify-kindista nil)
-    (flash "You are now unsubscribed from reciving updates and information about Kindista")))
+   &aux (userid (gethash email *email-index*))
+        (notify-type (string-upcase (s+ "notify-" unsub-type))))
+
+  (when (find notify-type
+              (mapcar #'symbol-name *notification-types*)
+              :test #'string=)
+    (setf unsub-type (intern notify-type :keyword)))
+
+  (flet ((unsub (message)
+           (modify-db userid unsub-type nil)
+           (flash message)))
+    (case unsub-type
+      (:notify-expired-invites
+        (unsub "You are now unsubscribed from reciving notificaitons when invitations you sent to friends to join Kindista expire"))
+      (:notify-gratitude
+        (unsub "You are now unsubscribed from reciving notificaitons when someone posts gratitude about you"))
+      (:notify-group-membership-invites
+        (unsub "You are now unsubscribed from reciving notificaitons when someone invites you to join a group on Kindista "))
+      (:notify-inventory-expiration
+        (unsub "You are now unsubscribed from reciving notificaitons when your offers and requests are about to expire"))
+      (:notify-inventory-digest
+        (unsub "You are now unsubscribed from reciving notificaitons of new offers and requests in your area"))
+      (:notify-kindista
+        (unsub "You are now unsubscribed from reciving updates and information about Kindista"))
+      (:notify-message
+        (unsub  "You are now unsubscribed from reciving notificaitons when someone sends you a message or responds to your offers/requests"))
+      (:notify-new-contact
+        (unsub "You are now unsubscribed from reciving notificaitons when someone adds you to their list of contacts"))
+      (:notify-reminders
+        (unsub "You are now unsubscribed from reciving reminders for how to get the most out of Kindista")))))
 
 (defun settings-unsubscribe-all ()
      (settings-item-html
-     "Unsubscribe Notifications"
-     (html 
+     "Unsubscribe"
+     (html
        (awhen (get-parameter-string "k")
          (htm (:input :type "hidden" :name "k" :value it)))
        (awhen (get-parameter-string "email")
@@ -990,93 +992,88 @@
             (htm (:input :type "hidden" :name "type" :value "none")))
        ;(when (get-parameter-string "type")
        ;  (htm (:input :type "hidden" :name "unsub" :value "unsub-all")))
-       (:p "If you want to unsubscribe from reciving any notifications, or you can change individual preferences above"))
+       (:p (:strong "Warning: If you unsubscribe from all notifications, you will not recieve email notifications when people post gratitude about you or want to share with you."))
+       (:p "If you only want to unsubscribe from notifications sent by our system (and still want messages from other Kindista members), please adjust your individual notification preferences below."))
      :editable t
-     :buttons (html (:button :class "no small"
+     :buttons (html (:button :class (s+ "red" (when *user* " small"))
                              :type "submit"
                              :name "unsubscribe-all"
-                             "Unsubscribe All Notifications" ))
-     :action "/settings/notifications"
-     ))
+                             "Unsubscribe From All Notifications" ))
+     :action "/settings/notifications"))
 
-(defun get-settings-communication ()
-  (if *user*
-     (if (and (scan +number-scanner+ (get-parameter "invitation-id"))
+(defun get-settings-communication
+  (&aux (unsub-email (get-parameter-string "email"))
+        (unsub-type (get-parameter-string "type"))
+        (unsub-key (get-parameter-string "k"))
+        (unsub-id (awhen unsub-email
+                    (gethash it *email-index*)))
+        (unsub-user (awhen unsub-id (db it)))
+        (valid-unsub (string= (getf unsub-user :unsubscribe-key)
+                              unsub-key)))
+  (cond
+    ((and (not *user*) (not valid-unsub))
+     (login-required))
+
+    ((not *user*)
+     (let* ((unverified-groupid (get-parameter-integer "groupid"))
+            (groups (groups-with-user-as-admin unsub-id))
+            (groupid (awhen (find unverified-groupid groups :key #'car)
+                       (car it)))
+            (group (db groupid)))
+       (unsub-notify-from-email unsub-email unsub-type )
+       (header-page
+       "Communication Settings"
+       nil
+       (html
+         (dolist (flash (flashes)) (str flash))
+         (:div :class "logged-out unsubscribe"
+          (:h2 "Please let us know what types of information you would like to be notified about")
+          (:p "Notifications will be sent to your primary email address: "
+           (:strong (str (car (getf unsub-user :emails)))))
+          (when groups
+            (str (settings-identity-selection-html
+                   (or groupid unsub-id)
+                   groups
+                   :userid unsub-id
+                   :url "/settings/notifications")))
+          (str (settings-unsubscribe-all))
+          (str (settings-notifications :user unsub-user
+                                       :userid unsub-id
+                                       :group group
+                                       :groupid groupid))))
+       :hide-menu t)))
+
+    ((and (scan +number-scanner+ (get-parameter "invitation-id"))
               (get-parameter "token"))
-        (activate-email-address (parse-integer (get-parameter "invitation-id"))
-                                (get-parameter "token"))
+     (activate-email-address (parse-integer (get-parameter "invitation-id"))
+                                (get-parameter "token")))
 
-        (progn
-          (when (and (get-parameter "k")
-                     (get-parameter "email")
-                     (get-parameter "type"))
-            (if (not (find (get-parameter-string "email")
-                           (getf *user* :emails)
-                           :test #'string=))
-              (flash "You must first sign out of this account before you can change settings on a different account." :error t)
-              (unsub-notify-from-email (get-parameter-string "email")
-                                       (get-parameter-string "type"))))
-         (settings-template-html
-          (aif (get-parameter "groupid")
-            (url-compose "/settings/communication"
-                         "groupid" it)
-            "/settings/communication")
-          (html
-           (str (settings-tabs-html "communication" (awhen groupid it)))
-           (:p "We'll email you whenever something happens on Kindista that involves "
-               (str (or group-name "you"))". "
-               "You can specify which actions you would like to be notified about.")
-           (:p "Notifications will be sent to your primary email address: "
-               (:strong (str (car (getf *user* :emails))))
-               (:a :id "email-link" :href "/settings/communication#email" "change"))
-           
-           (str (settings-notifications :groupid groupid :group group))
-           (when (and (get-parameter "k")
-                      (get-parameter "email")
-                      (get-parameter "type"))
-             (str (settings-unsubscribe-all)))
-           (str (settings-push-notifications group))
-           (unless groupid
-             (str (settings-emails (string= (get-parameter "edit") "email")
-                                   :activate (get-parameter "activate"))))))))
-
-     (if (and (get-parameter "k")
-              (get-parameter "email")
-              (get-parameter "type"))
-       (let* ((email (get-parameter-string "email"))
-              (userid (gethash email *email-index*))
-              (unsub-type (get-parameter-string "type"))
-              (user (db userid))
-              (unverified-groupid (get-parameter-integer "groupid"))
-              (groups (groups-with-user-as-admin userid))
-              (groupid (awhen (find unverified-groupid groups :key #'car) (car it)))
-              (group (db groupid)))
-         (if (string= (get-parameter-string "k") (getf user :unsubscribe-key))
-           (progn
-            (unsub-notify-from-email email unsub-type )
-             (header-page
-             "Communication Settings"
-             nil
-             (html
-               (dolist (flash (flashes)) (str flash))
-               (:div :class "logged-out unsubscribe"
-                (:h2 "Please let us know what types of information you would like to be notified about")
-                (:p "Notifications will be sent to your primary email address: "
-                 (:strong (str (car (getf user :emails)))))
-                (when groups
-                  (str (settings-identity-selection-html (or groupid userid)
-                                                         groups
-                                                         :userid userid
-                                                         :url "/settings/notifications"
-                                                         )))
-                (str (settings-notifications :user user
-                                             :userid userid
-                                             :group group
-                                             :groupid groupid))
-                (str (settings-unsubscribe-all))))
-             :hide-menu t))
-           (login-required)))
-        (login-required))))
+    (t ;when *user*
+     (when unsub-id
+       (if (not (eql unsub-id *userid*))
+         (flash "You must first sign out of this account before you can change settings on a different account." :error t)
+         (when valid-unsub
+           (unsub-notify-from-email unsub-email unsub-type))))
+     (settings-template-html
+       (aif (get-parameter "groupid")
+         (url-compose "/settings/communication"
+                      "groupid" it)
+         "/settings/communication")
+       (html
+        (str (settings-tabs-html "communication" (awhen groupid it)))
+        (:p "We'll email you whenever something happens on Kindista that involves "
+            (str (or group-name "you"))". "
+            "You can specify which actions you would like to be notified about.")
+        (:p "Notifications will be sent to your primary email address: "
+            (:strong (str (car (getf *user* :emails))))
+            (:a :id "email-link" :href "/settings/communication#email" "change"))
+        (when (eql unsub-id *userid*)
+          (str (settings-unsubscribe-all)))
+        (str (settings-notifications :groupid groupid :group group))
+        (str (settings-push-notifications group))
+        (unless groupid
+          (str (settings-emails (string= (get-parameter "edit") "email")
+                                :activate (get-parameter "activate")))))))))
 
 (defun get-settings-admin-roles ()
   (require-user ()
