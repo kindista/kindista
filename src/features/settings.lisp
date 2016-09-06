@@ -49,9 +49,7 @@
       (unless groupid
         (if (equal tab "social")
           (htm (:li :class "selected" "Social Media Settings"))
-          (htm (:li (:a :href "/settings/social" "Social Media Settings")))))
-
-         )))
+          (htm (:li (:a :href "/settings/social" "Social Media Settings"))))))))
 
 (defun settings-item-html
   (item
@@ -898,8 +896,7 @@
             (modify-db *userid* :fb-id (get-facebook-user-id token)))
           (unless (getf *user* :avatar)
             (modify-db *userid* :avatar (save-facebook-profile-picture-to-avatar *userid*)))
-          (flash "You have successfully linked Kindista to your Facebook account."))
-        (facebook-debugging-log facebook-token-data))
+          (flash "You have successfully linked Kindista to your Facebook account.")))
       (settings-social-html))))
 
 (defun settings-social-html

@@ -55,17 +55,16 @@
                 (:button :type "submit" :class "yes" "Sign in")
                 (:span :class "forgot"
                  (:a :href "/reset" :class "reset"  "Forgot your password?"))))
-            (when (or (not *productionp*)
-                      (string= (get-parameter "sekrut-fb-access")
-                               "not-ready-for-prime-time"))
-              (htm
-                (str *or-divider*)
-                (:div :class "social-signin"
-                 (str (if (get-parameter "facebook-signup")
-                        (facebook-sign-in-button
-                          :redirect-uri "signup"
-                          :button-text "Use Facebook to sign up for Kindista")
-                        (facebook-sign-in-button :redirect-uri "login"))))))
+            (htm
+              (str *or-divider*)
+              (:div :class "social-signin"
+               (str;(if (get-parameter "facebook-signup")
+                   ;  (facebook-sign-in-button
+                   ;    :redirect-uri "signup"
+                   ;    :button-text "Use Facebook to sign up for Kindista")
+                      (facebook-sign-in-button :redirect-uri "login")
+                   ;  )
+                    )))
             (:div :id "join"
               (:span "Not on Kindista yet? ")
               (:a :href "/signup"

@@ -20,16 +20,19 @@
 (defun new-pending-offer-notice-handler ()
   (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-inventory-item (&key type (by *userid*) title details tags privacy expires)
-  (insert-db (list :type type
-                   :active t
-                   :by by
-                   :privacy privacy ;a list of groups who can see the item
-                   :title title
-                   :details details
-                   :tags tags
-                   :expires expires
-                   :created (get-universal-time))))
+(defun create-inventory-item (&key type (by *userid*) title details tags privacy expires publish-fb-on-account-approval)
+  (insert-db
+    (remove-nil-plist-pairs
+      (list :type type
+            :active t
+            :by by
+            :publish-fb-on-account-approval publish-fb-on-account-approval
+            :privacy privacy ;a list of groups who can see the item
+            :title title
+            :details details
+            :tags tags
+            :expires expires
+            :created (get-universal-time)))))
 
 (defun inventory-item-result (id &key data by-id by)
   (or (gethash id *db-results*)
@@ -478,6 +481,10 @@
                                  (or groupid identity-selection)
                                  *userid*)
                            :privacy groups-selected
+                           :publish-fb-on-account-approval
+                             (when (and publish-facebook
+                                        (getf *user* :pending))
+                               t)
                            :expires expiration-time
                            :title title
                            :details details

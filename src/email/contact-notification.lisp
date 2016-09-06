@@ -23,7 +23,6 @@
          (recipient (db to-id))
          (email (car (getf recipient :emails)))
          (unsubscribe-key (getf recipient :unsubscribe-key)))
-    (pprint to-id)
     (when (and (getf recipient :notify-new-contact)
                (getf recipient :active))
       (send-push-through-chrome-api (list to-id)

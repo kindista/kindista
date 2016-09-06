@@ -49,20 +49,19 @@ https://developers.facebook.com/docs/sharing/reference/send-dialog
 https://developers.facebook.com/docs/facebook-login/multiple-providers
 [x] make sure to grab fb-profile-pic when no k-avatar (esp when user relogs through the settings page)
 [x] make sure button displays right when signing up through settings page
-[ ] test functionality of "pending accounts" for Facebook signups
-[ ] when are offers/requests posted to facebook?
-[ ] when is gratitude posted?
 
 #Merge accounts (fb-id fbtoken)
 [ ] review code
 
 #Clean-up
-[ ] Remove admin restriction for :share-url in inventory-activity-item
-[ ] Remove *productionp* restriction from signup and login pages
-[ ] Create a tab for settings/social
-[ ] change facebook app setting/advanced deauthorize callback
-[ ] change "privacy" setting in publish-facebook-action
-[ ] remove all facebook-debugging blocks
+[ ] uncomment facebook-signup in features/login
+[ ] Remove *productionp* restriction from signup page
+[ ] cleanup facebook-debugging blocks
+
+# debugging
+[x] publish-facebook-action
+[ ] get-facebook-object-id
+
 
 #Deploy on server
 [ ] quickload

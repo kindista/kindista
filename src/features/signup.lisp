@@ -435,13 +435,9 @@
                                        (+ (get-universal-time) it))
                          :password (post-parameter-string "password"))))
   (setf (token-userid *token*) new-id)
-  (pprint new-id)
-  (terpri)
   (when fb-id
     (modify-db new-id :avatar (save-facebook-profile-picture-to-avatar new-id)))
 
-  (pprint (db new-id :avatar))
-  (terpri)
   (dolist (group (getf invitation :groups))
     (add-group-member new-id group))
   (add-contact host new-id)

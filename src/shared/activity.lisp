@@ -315,8 +315,6 @@
                  (unless (string= item-url (script-name*))
                    (str (activity-item-images images item-url "gift"))))
       :publish-facebook (and self
-                            (or (not *productionp*)
-                                (getf *user* :test-user))
                             (getf *user* :fb-id)
                             (not (fb-object-actions-by-user
                                    item-id
@@ -453,8 +451,6 @@
                                            :image (icon "white-request"))))
                  :class (s+ type " inventory-item")
                  :publish-facebook (and self
-                                        (or (not *productionp*)
-                                            (getf *user* :test-user))
                                         (getf *user* :fb-id)
                                         (not (fb-object-actions-by-user
                                                item-id

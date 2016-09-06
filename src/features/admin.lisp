@@ -157,6 +157,9 @@
               (let* ((item-id (result-id result))
                      (item (db item-id)))
                 (index-item item-id item)
+                (when (getf item :publish-fb-on-account-approval)
+                  (notice :new-facebook-action :item-id item-id
+                                               :userid userid))
                 (case (getf item :type)
                   ;; We probably don't have any more gratitudes in
                   ;; *pending-person-items-index* because pending accounts

@@ -34,6 +34,7 @@
 
 (defun facebook-signup-sidebar ()
   (when (and *user*
+             nil ;hide until we send the blog post
              (not (getf *user* :fb-token))
              (not (getf *user* :fb-link-active)))
     (html
