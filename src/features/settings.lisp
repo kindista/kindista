@@ -965,23 +965,25 @@
            (flash message)))
     (case unsub-type
       (:notify-expired-invites
-        (unsub "You are now unsubscribed from reciving notificaitons when invitations you sent to friends to join Kindista expire"))
+        (unsub "You are now unsubscribed from receiving notificaitons when invitations you sent to friends to join Kindista expire"))
       (:notify-gratitude
-        (unsub "You are now unsubscribed from reciving notificaitons when someone posts gratitude about you"))
+        (unsub "You are now unsubscribed from receiving notificaitons when someone posts gratitude about you"))
       (:notify-group-membership-invites
-        (unsub "You are now unsubscribed from reciving notificaitons when someone invites you to join a group on Kindista "))
+        (unsub "You are now unsubscribed from receiving notificaitons when someone invites you to join a group on Kindista "))
       (:notify-inventory-expiration
-        (unsub "You are now unsubscribed from reciving notificaitons when your offers and requests are about to expire"))
+        (unsub "You are now unsubscribed from receiving notificaitons when your offers and requests are about to expire"))
       (:notify-inventory-digest
-        (unsub "You are now unsubscribed from reciving notificaitons of new offers and requests in your area"))
+        (unsub "You are now unsubscribed from receiving notificaitons of new offers and requests in your area"))
       (:notify-kindista
-        (unsub "You are now unsubscribed from reciving updates and information about Kindista"))
+        (unsub "You are now unsubscribed from receiving updates and information about Kindista"))
+      (:notify-blog
+        (unsub "You are now unsubscribed from receiving new articles from the Kindista blog"))
       (:notify-message
-        (unsub  "You are now unsubscribed from reciving notificaitons when someone sends you a message or responds to your offers/requests"))
+        (unsub  "You are now unsubscribed from receiving notificaitons when someone sends you a message or responds to your offers/requests"))
       (:notify-new-contact
-        (unsub "You are now unsubscribed from reciving notificaitons when someone adds you to their list of contacts"))
+        (unsub "You are now unsubscribed from receiving notificaitons when someone adds you to their list of contacts"))
       (:notify-reminders
-        (unsub "You are now unsubscribed from reciving reminders for how to get the most out of Kindista")))))
+        (unsub "You are now unsubscribed from receiving reminders for how to get the most out of Kindista")))))
 
 (defun settings-unsubscribe-all ()
      (settings-item-html
