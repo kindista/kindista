@@ -56,12 +56,6 @@ https://developers.facebook.com/docs/facebook-login/multiple-providers
 #Clean-up
 [ ] uncomment facebook-signup in features/login
 [ ] Remove *productionp* restriction from signup page
-[ ] cleanup facebook-debugging blocks
-
-# debugging
-[x] publish-facebook-action
-[ ] get-facebook-object-id
-
 
 #Deploy on server
 [ ] quickload

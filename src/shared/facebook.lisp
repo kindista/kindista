@@ -262,8 +262,12 @@
                          :parameters (list (cons "access_token" fb-token)
                                            (cons "type" "large")
                                            (cons "method" "get")))))
-   (facebook-debugging-log (or *userid* (token-userid *token*))
+   (facebook-debugging-log (or k-user-id
+                               *userid*
+                               (token-userid *token*))
                            (second response)
+                           (unless (eql (second response) 200)
+                             (decode-json-octets (first response)))
                            (fourth response))
    (values (first response)
            (second response)
@@ -848,9 +852,12 @@
       (setf fb-id (safe-parse-integer (getf (alist-plist json) :user--id)))
       (setf userid (gethash fb-id *facebook-id-index*))
       (facebook-debugging-log userid nil json)
-      (modify-db userid :fb-link-active nil
-                        :fb-token nil
-                        :fb-expires (get-universal-time))
+      (when userid
+        ;; testing environment may result in no userid if
+        ;; user signed up on live server or vice versa.
+        (modify-db userid :fb-link-active nil
+                          :fb-token nil
+                          :fb-expires (get-universal-time)))
       (setf (return-code*) +http-no-content+)
       nil)
     (progn (setf (return-code*) +http-forbidden+)

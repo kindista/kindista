@@ -57,7 +57,7 @@
           (:div :id "signup"
            (:div
              (:div :class "center"
-              (:h1 (:em "Join the Revolution of Kindness")) 
+              (:h1 (:em "Join the Kindness Revolution"))
               (:a :class "purple"
                :id "big-ass-signup-button"
                :href "/signup" "SIGN UP NOW"))
@@ -70,24 +70,25 @@
          ;   (:li (:strong "Post gratitude to celebrate generosity in your community. ") "Statements of gratitude build the reputation of givers and function as a currency to promote more sharing.")
          ;   (:li (:strong "You choose who you want to share with. ")
          ;    "When considering sharing with someone you don't already know, you can check their reputation and get references from mutual connections.")
-         ;   (:li (:strong "Be kind and respectful.")))  
+         ;   (:li (:strong "Be kind and respectful.")))
 
          (:div :class "full-width green-bg"
           (:div :class "details"
-           (:h2 "Gift Economy?")
+           (:h2 "Share freely.")
            (:div :class "float-right"
             (str (icon "offers")))
-           (:p "After decades of hyper-consumerism, we live in a world of abundance.  During the same time we've lost our true sense of community and the ability to share.")
-           (:p "Kindista is a tool that allows people to gift and share their goods and services for free, the way neighbors use to.")))
+           (:p "After decades of consumerism, we live in a world of abundance.  Over the same time we've lost our culture of sharing, and with it the true sense of community.")
+           (:p "Kindista is a tool that helps people share goods and services for free, the way neighbors use to.")))
 
          (:div :class "full-width white-bg"
           (:div :class "details"
-           (:h2 :class "text-right" "Free Stuff? Really? What's the catch?")
+           (:h2 :class "text-right" "Find local goods and services.")
            (:div :class "float-left"
             (str (icon "requests")))
            (:div :class "text-right"
-            (:p "There is no catch. We're a non-profit dedicated to growing gift economy.")
-            (:p "No trading. No bartering. No renting. This is not a classified service; just free stuff in your area."))))
+            (:p "No selling. No trading. No renting. This is not a classified service; just free stuff in your area.")
+            (:p "There's no catch. We're a non-profit dedicated to growing gift economy.")
+            )))
 
          (:div :class "full-width purple-bg"
           (:div :class "details semi-transparent-lighter"
@@ -96,7 +97,7 @@
             (str (icon "gratitude-love-light")))
            (:div :class "text-left"
             (:p "When someone shares with you, or you see them do something awesome for your community, be sure to thank them.")
-            (:p "Considering sharing with someone you don't already know? Check out the reputation tab on their profile to see what they have been sharing with others. Keep the generosity flowing!")))))
+            (:p "Considering sharing with someone you don't already know? Check their reputation on their profile to see what they have been sharing with others. Keep the generosity flowing!")))))
 
 
        (:div :class "full-width details dk-grey-bg"

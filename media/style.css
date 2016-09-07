@@ -920,6 +920,33 @@ body.splash #header,
  margin-bottom: 0.3em;
 }
 
+.splash .footer {
+ margin: 1em auto;
+ color: #fff;
+ overflow: hidden;
+}
+.splash .footer > * {
+ font-size: 85%;
+}
+.splash .footer .about {
+ float: right;
+ max-width: 50%;
+}
+.splash .footer a {
+ font-weight: bold;
+ color: #fff;
+ padding-right: 1.3em;
+ font-size: 1.1em;
+}
+.splash .footer div.small a {
+ font-size: 0.85em;
+ padding-right: 0.7em;
+}
+
+.splash .footer > div:first-child {
+ margin-bottom: 0.5em;
+}
+
 @media (min-width:48em){
 #splash-top {
  background-size:100%;
@@ -1039,33 +1066,23 @@ body.splash #header,
  #big-ass-signup-button {
   font-size: 1.1em;
  }
-}
-
-.splash .footer {
- margin: 1em auto;
- color: #fff;
- overflow: hidden;
-}
-.splash .footer > * {
- font-size: 85%;
-}
-.splash .footer .about {
- float: right;
- max-width: 50%;
-}
-.splash .footer a {
- font-weight: bold;
- color: #fff;
- padding-right: 1.3em;
- font-size: 1.1em;
-}
-.splash .footer div.small a {
- font-size: 0.85em;
- padding-right: 0.7em;
-}
-
-.splash .footer > div:first-child {
- margin-bottom: 0.5em;
+ .splash .footer .about,
+ .splash .footer > * {
+  text-align: center;
+  float: none;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto 1.2rem;
+ }
+ .splash .footer > div:first-child {
+  margin-bottom: 0.8rem;
+ }
+ .splash .footer a {
+  padding: 0 1.2rem;
+ }
+ .splash .footer div.small a {
+  padding: 0 0.6rem;
+ }
 }
 
 .settings-item .submit-image label {
