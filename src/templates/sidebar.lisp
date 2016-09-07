@@ -34,14 +34,14 @@
 
 (defun facebook-signup-sidebar ()
   (when (and *user*
-             nil ;hide until we send the blog post
+             (not *productionp*) ; hide until blog post
              (not (getf *user* :fb-token))
              (not (getf *user* :fb-link-active)))
     (html
       (:div :class "item right"
        (str (facebook-sign-in-button :redirect-uri "settings/social"
                                      :button-text "Facebook Activation"))
-       (:p :class "small" "Activating Facebook on Kindista enables you to share your Offers, Requests, and Gratitude with your Facebook friends.")))))
+       (:p :class "small" "Activating Facebook on Kindista enables you to share your Offers, Requests, and Gratitude with your Facebook friends. Spread the love!")))))
 
 (defun events-sidebar (&aux (count 6))
   (multiple-value-bind (events featured-events)

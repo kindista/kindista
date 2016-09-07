@@ -906,9 +906,10 @@ body.splash h1,
 
 body.splash #header,
 .splash .full-width > div {
- max-width: 34em;
- max-width: 34rem;
+ max-width: 42em;
+ max-width: 42rem;
  margin: 0 auto;
+ font-size: 1.05rem;
 }
 
 .splash .details ol {
@@ -1082,6 +1083,14 @@ body.splash #header,
  }
  .splash .footer div.small a {
   padding: 0 0.6rem;
+ }
+ #signup , #login {
+  margin: 0 1em;
+ }
+ #signup > a.blue, #login > a.blue {
+  white-space: normal;
+  min-height: 2.1em;
+  height: initial;
  }
 }
 
