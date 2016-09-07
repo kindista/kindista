@@ -781,7 +781,7 @@
                  (if (current-fb-token-p)
                    (progn (notice :new-facebook-action :item-id id)
                           (flash (s+ "Your "
-                                     (string-downcase (symbol-name type))
+                                     type
                                      " has been published on Facebook"))
                           (see-other next))
                    (renew-fb-token :item-to-publish id
