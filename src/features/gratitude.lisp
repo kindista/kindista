@@ -481,9 +481,7 @@
                       (str text))
 
            (when (and (getf *user* :fb-token)
-                          (or (not (getf *user* :test-user))
-                              (and (= 1 (length subjects))
-                                   (db (car subjects) :test-user))))
+                      (getf *user* :fb-link-active))
                  (htm
                    (:div :id "facebook"
                      (:input :type "checkbox"
