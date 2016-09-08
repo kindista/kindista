@@ -475,6 +475,8 @@
     (facebook-debugging-log userid
                             (second reply)
                             (strcat* "ITEM-PUBLISHED-TO-FB:" id)
+                            (list :fb-id (getf user :fb-id)
+                                  :fb-token (getf user :fb-token))
                             data)
     (awhen (getf data :id) (safe-parse-integer it))))
 
