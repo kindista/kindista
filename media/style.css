@@ -3211,8 +3211,6 @@ button:disabled,
 .new-gratitude button.cancel,
 .new-gratitude button.yes {
  margin-left: 0.7em;
- padding-top: 0;
- padding-bottom: 0;
  vertical-align: baseline;
 }
 
