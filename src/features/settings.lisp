@@ -893,7 +893,10 @@
                          :fb-link-active t
                          :fb-permissions fb-scope)))
           (unless (getf *user* :fb-id)
-            (modify-db *userid* :fb-id (get-facebook-user-id token)))
+            (let ((fb-id (get-facebook-user-id token)))
+              (modify-db *userid* :fb-id fb-id)
+              (with-locked-hash-table (*facebook-id-index*)
+                (setf (gethash fb-id *facebook-id-index*) *userid*))))
           (unless (getf *user* :avatar)
             (modify-db *userid* :avatar (save-facebook-profile-picture-to-avatar *userid*)))
           (flash "You have successfully linked Kindista to your Facebook account.")))

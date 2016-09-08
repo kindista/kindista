@@ -230,7 +230,9 @@
                            (eql fb-expires (getf user :fb-expires)))
                 (modify-db userid :fb-id fb-id
                                   :fb-token fb-token
-                                  :fb-expires fb-expires))
+                                  :fb-expires fb-expires)
+                (with-locked-hash-table (*facebook-id-index*)
+                  (setf (gethash fb-id *facebook-id-index*) userid)))
 
               (unless (find fb-name (getf user :aliases) :test #'equalp)
                 (setf new-name fb-name)
@@ -262,11 +264,11 @@
                   (invite-data (db invite-id))
                   (new-invite-id (unless existing-invitation
                                    (create-invitation fb-email
-                                                       :fb-id fb-id
-                                                       :fb-token fb-token
-                                                       :fb-expires fb-expires
-                                                       :host +kindista-id+
-                                                       :name fb-name))))
+                                                      :fb-id fb-id
+                                                      :fb-token fb-token
+                                                      :fb-expires fb-expires
+                                                      :host +kindista-id+
+                                                      :name fb-name))))
              (awhen invite-data
                (unless (and (eql fb-id (getf invite-data :fb-id))
                             (string= fb-token (getf invite-data :fb-token))
