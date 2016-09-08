@@ -988,7 +988,7 @@ body.splash #header,
  }
  #header #splashlogin,*/
  body.splash a#logo {
-  display: block;
+  display: inline-block;
   margin-right: auto;
   margin-left: auto;
  }
