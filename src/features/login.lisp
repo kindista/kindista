@@ -57,14 +57,16 @@
                  (:a :href "/reset" :class "reset"  "Forgot your password?"))))
             (htm
               (str *or-divider*)
-              (:div :class "social-signin"
-               (str (if (and (get-parameter "facebook-signup")
-                             (not *productionp*))
-                      (facebook-sign-in-button
-                        :redirect-uri "signup"
-                        :button-text "Use Facebook to sign up for Kindista")
-                      (facebook-sign-in-button :redirect-uri "login"))
-                    )))
+              (when *enable-facebook*
+                (htm
+                  (:div :class "social-signin"
+                     (str (if (and (get-parameter "facebook-signup")
+                                   (not *productionp*))
+                            (facebook-sign-in-button
+                              :redirect-uri "signup"
+                              :button-text "Use Facebook to sign up for Kindista")
+                            (facebook-sign-in-button :redirect-uri "login"))
+                          )))))
             (:div :id "join"
               (:span "Not on Kindista yet? ")
               (:a :href "/signup"

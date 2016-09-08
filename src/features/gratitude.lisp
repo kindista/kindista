@@ -480,7 +480,8 @@
                       :name "text"
                       (str text))
 
-           (when (and (getf *user* :fb-token)
+           (when (and *enable-facebook*
+                      (getf *user* :fb-token)
                       (getf *user* :fb-link-active))
                  (htm
                    (:div :id "facebook"

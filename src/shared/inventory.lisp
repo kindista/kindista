@@ -955,8 +955,9 @@
                   groups-selected
                   :onchange "this.form.submit()")))
 
-         (when (and (getf *user* :fb-token)
-                    (not restrictedp))
+         (when (and *enable-facebook*
+                    (getf *user* :fb-token)
+                       (not restrictedp))
            (htm
              (:div :id "facebook"
                (:input :type "checkbox"

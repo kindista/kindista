@@ -46,7 +46,7 @@
         (htm (:li :class "selected" "Communication Settings"))
         (htm (:li (:a :href (url-compose "/settings/communication" "groupid" groupid)
                       "Communication Settings"))))
-      (unless groupid
+      (unless (or groupid (not *enable-facebook*))
         (if (equal tab "social")
           (htm (:li :class "selected" "Social Media Settings"))
           (htm (:li (:a :href "/settings/social" "Social Media Settings"))))))))

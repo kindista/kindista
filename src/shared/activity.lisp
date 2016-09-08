@@ -449,6 +449,7 @@
                                            :image (icon "white-request"))))
                  :class (s+ type " inventory-item")
                  :publish-facebook (and self
+                                        *enable-facebook*
                                         (getf *user* :fb-id)
                                         (not (getf data :fb-publishing-in-process))
                                         (not (fb-object-actions-by-user
