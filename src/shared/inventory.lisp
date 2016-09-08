@@ -221,7 +221,8 @@
            (progn (notice :new-facebook-action :item-id id)
                   (flash (s+ "Your "
                              (string-downcase (symbol-name type))
-                             " has been published on Facebook")))
+                             " has been published on Facebook"))
+                  (modify-db id :fb-publishing-in-process (get-universal-time)))
            (renew-fb-token :item-to-publish id
                            :next (resource-url id data))))
 
@@ -790,6 +791,7 @@
                           (flash (s+ "Your "
                                      type
                                      " has been published on Facebook"))
+                          (modify-db id :fb-publishing-in-process (get-universal-time))
                           (see-other next))
                    (renew-fb-token :item-to-publish id
                                    :next next))

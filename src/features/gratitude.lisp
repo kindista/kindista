@@ -1128,6 +1128,7 @@
                (not (fb-object-actions-by-user id)))
           (if (current-fb-token-p)
             (progn (notice :new-facebook-action :item-id id)
+                   (modify-db id :fb-publishing-in-process (get-universal-time))
                    (flash (s+ "Your gratitude has been published on Facebook"))
                    (see-other next))
             (renew-fb-token :item-to-publish id

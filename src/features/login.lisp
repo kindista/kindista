@@ -58,12 +58,12 @@
             (htm
               (str *or-divider*)
               (:div :class "social-signin"
-               (str;(if (get-parameter "facebook-signup")
-                   ;  (facebook-sign-in-button
-                   ;    :redirect-uri "signup"
-                   ;    :button-text "Use Facebook to sign up for Kindista")
-                      (facebook-sign-in-button :redirect-uri "login")
-                   ;  )
+               (str (if (and (get-parameter "facebook-signup")
+                             (not *productionp*))
+                      (facebook-sign-in-button
+                        :redirect-uri "signup"
+                        :button-text "Use Facebook to sign up for Kindista")
+                      (facebook-sign-in-button :redirect-uri "login"))
                     )))
             (:div :id "join"
               (:span "Not on Kindista yet? ")
@@ -97,6 +97,7 @@
            (item (db id))
            (type (getf item :type)))
       (notice :new-facebook-action :item-id id)
+      (modify-db id :fb-publishing-in-process (get-universal-time))
       (flash (s+ "Your "
                  (string-downcase (symbol-name type))
                  " has been published on Facebook"))

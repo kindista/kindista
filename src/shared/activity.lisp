@@ -316,6 +316,7 @@
                    (str (activity-item-images images item-url "gift"))))
       :publish-facebook (and self
                             (getf *user* :fb-id)
+                            (not (getf data :fb-publishing-in-process))
                             (not (fb-object-actions-by-user
                                    item-id
                                    :data data)))
@@ -452,6 +453,7 @@
                  :class (s+ type " inventory-item")
                  :publish-facebook (and self
                                         (getf *user* :fb-id)
+                                        (not (getf data :fb-publishing-in-process))
                                         (not (fb-object-actions-by-user
                                                item-id
                                                :data data)))
