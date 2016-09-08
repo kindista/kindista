@@ -93,6 +93,7 @@
            (item (db id))
            (type (getf item :type)))
       (notice :new-facebook-action :item-id id)
+      (modify-db id :fb-publishing-in-process (get-universal-time))
       (flash (s+ "Your "
                  (string-downcase (symbol-name type))
                  " has been published on Facebook"))
