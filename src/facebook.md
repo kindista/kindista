@@ -54,7 +54,7 @@ https://developers.facebook.com/docs/facebook-login/multiple-providers
 [ ] review code
 
 #Clean-up
-[ ] uncomment facebook-signup in features/login
+[ ] uncomment facebook-signup in features/login and features/signup
 [ ] Remove *productionp* restriction from signup page
 
 #Deploy on server

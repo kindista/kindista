@@ -151,10 +151,7 @@
                    " &middot; "
                    (str (comment-button url))))
 
-               (when (and publish-facebook
-                          (or (not *productionp*)
-                              (getf *user* :test-user)
-                              (getf *user* :admin)))
+               (when publish-facebook
                  (htm
                    (:form :method "post" :action url
                      " &middot; "
