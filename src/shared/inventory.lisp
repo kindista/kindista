@@ -785,7 +785,8 @@
                                      " has been published on Facebook"))
                           (see-other next))
                    (renew-fb-token :item-to-publish id
-                                   :next next)))
+                                   :next next))
+                 (see-other (or (referer) "/home")))
 
                 ((not title)
                  (flash (s+ "Please enter a title for your " type "."))
