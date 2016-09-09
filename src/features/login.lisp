@@ -183,8 +183,7 @@
      (notice :auth-failure :username userid)
      (see-other (if next
                   (url-compose "/login" "next" (url-encode next))
-                  "/login"))
-     )))
+                  "/login")))))
 
 (defun get-logout ()
   (notice :logout)

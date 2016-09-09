@@ -1085,7 +1085,7 @@ body.splash #header,
   padding: 0 0.6rem;
  }
  #signup , #login {
-  margin: 0 1em;
+  padding: 0 1em;
  }
  #signup > a.blue, #login > a.blue {
   white-space: normal;
