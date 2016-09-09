@@ -25,6 +25,20 @@
 (defvar *facebook-user-token-expiration* nil)
 (defvar *fb-id* nil)
 
+(defun find-nil-fb-actions (&aux items)
+  (dolist (result *recent-activity-index*)
+    (when (find (result-type result) '(:gratitude :offer :request))
+      (let* ((id (result-id result))
+             (data (db id)))
+        (when (and (getf data :fb-actions)
+                   (not (getf (first (getf data :fb-actions))
+                              :fb-action-id)))
+          (push (list :userid (or (getf data :author)
+                                  (getf data :by))
+                      :item-id id)
+                items)))))
+  items)
+
 (defun fix-fb-link-active-error ()
   (dolist (id *active-people-index*)
     (let ((person (db id)))
@@ -432,6 +446,7 @@
       (http-request
         (s+ +base-url+ "publish-facebook")
         :parameters (list (cons "item-id" (strcat item-id))
+                          (cons "userid" (strcat userid))
                           (cons "fb-action-id" (strcat fb-action-id))
                           (cons "fb-action-type" action-type)
                           (cons "fb-object-id" (strcat fb-object-id))
@@ -440,6 +455,7 @@
 
 (defun post-new-facebook-data
   (&aux (item-id (post-parameter-integer "item-id"))
+        (userid (post-parameter-integer "userid"))
         (fb-action-id (post-parameter-integer "fb-action-id"))
         (fb-object-id (post-parameter-integer "fb-object-id"))
         (fb-id (post-parameter-integer "fb-id"))
@@ -447,17 +463,23 @@
   (if (server-side-request-p)
     (progn
       (facebook-debugging-log
-        nil
+        userid
         nil
         "modifying the DB"
         (post-parameters*)
         (strcat* "fb-object-id: " fb-object-id)
         (amodify-db item-id :fb-object-id fb-object-id
                             :fb-publishing-in-process nil
-                            :fb-actions (cons (list :fb-id fb-id
-                                                    :fb-action-type fb-action-type
-                                                    :fb-action-id fb-action-id)
-                                              it)))
+                            :fb-publishing-error (unless fb-action-id
+                                                   (cons (list :time (local-time:now)
+                                                               :userid userid)
+                                                         it))
+                            :fb-actions (if fb-action-id
+                                          (cons (list :fb-id fb-id
+                                                      :fb-action-type fb-action-type
+                                                      :fb-action-id fb-action-id)
+                                                 it)
+                                          it)))
       (setf (return-code*) +http-no-content+)
       nil)
     (progn
