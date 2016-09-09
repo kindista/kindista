@@ -148,7 +148,9 @@
               "Your Facebook session has expired on Kindista")))
      (str (facebook-sign-in-button
             :redirect-uri "/login"
-            :button-text "Reauthorize Facebook"
+            :button-text (if permission-requested
+                           "Authorize Facebook"
+                           "Reauthorize Facebook")
             :re-request permission-requested
             :scope (mapcar (lambda (permission)
                              (regex-replace-all
