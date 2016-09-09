@@ -217,13 +217,14 @@
 
       (cond
         ((and publish-facebook-p (not fb-action-id))
-         (if (current-fb-token-p)
+         (if (current-fb-token-p :publish-actions)
            (progn (notice :new-facebook-action :item-id id)
                   (flash (s+ "Your "
                              (string-downcase (symbol-name type))
                              " has been published on Facebook"))
                   (modify-db id :fb-publishing-in-process (get-universal-time)))
            (renew-fb-token :item-to-publish id
+                           :fb-permission-requested :publish-actions
                            :next (resource-url id data))))
 
         ((and fb-action-id publish-facebook-p)
@@ -532,13 +533,15 @@
                   ((or (not (getf *user* :fb-id))
                        (not publish-facebook))
                    (see-other new-url))
-                  ((current-fb-token-p)
+                  ((current-fb-token-p :publish-actions)
                    (notice :new-facebook-action :item-id new-id)
+                   (modify-db new-id :fb-publishing-in-process (get-universal-time))
                    (flash (s+ "Your "
                               type
                               " has been published on Facebook"))
                    (see-other new-url))
                   (t (renew-fb-token :item-to-publish new-id
+                                     :fb-permission-requested :publish-actions
                                      :next new-url)))))))
 
          (t (inventory-details)))))))
@@ -786,7 +789,7 @@
                 ((and publish-facebook
                       (not (post-parameter "create"))
                       (not (fb-object-actions-by-user id)))
-                 (if (current-fb-token-p)
+                 (if (current-fb-token-p :publish-actions)
                    (progn (notice :new-facebook-action :item-id id)
                           (flash (s+ "Your "
                                      type
@@ -794,6 +797,7 @@
                           (modify-db id :fb-publishing-in-process (get-universal-time))
                           (see-other next))
                    (renew-fb-token :item-to-publish id
+                                   :fb-permission-requested :publish-actions
                                    :next next))
                  (see-other (or (referer) "/home")))
 
@@ -955,9 +959,10 @@
                   groups-selected
                   :onchange "this.form.submit()")))
 
-         (when (and *enable-facebook*
+         (when (and (or *enable-facebook*
+                        (getf *user* :test-user))
                     (getf *user* :fb-token)
-                       (not restrictedp))
+                    (not restrictedp))
            (htm
              (:div :id "facebook"
                (:input :type "checkbox"

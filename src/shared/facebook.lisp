@@ -40,15 +40,20 @@
                      "client_secret" *facebook-secret*
                      "grant_type" "client_credentials"))))
 
-(defun current-fb-token-p ()
+(defun current-fb-token-p (&optional permission)
   (with-user (and (integerp *facebook-user-token-expiration*)
                   (> *facebook-user-token-expiration*
                      (+ (get-universal-time) +day-in-seconds+))
-                  (not (facebook-token-validation-error-p *userid*)))))
+                  (not (facebook-token-validation-error-p *userid*))
+                  (or (not permission)
+                      (check-facebook-permission permission)))))
 
 (defun renew-fb-token
   (&key item-to-publish
-        (next "/home"))
+        (next "/home")
+        fb-permission-requested)
+  (setf (getf (token-session-data *token*) :fb-permission-requested)
+        fb-permission-requested)
   (setf (getf (token-session-data *token*) :publish-to-fb)
         item-to-publish)
   (setf (getf (token-session-data *token*) :login-redirect)
@@ -127,20 +132,30 @@
 (defun get-renew-fb-token
   (&aux (next (or (get-parameter-string "next") "/home"))
         (new-fb-item (getf (token-session-data *token*) :publish-to-fb))
+        (permission-requested (getf (token-session-data *token*) :fb-permission-requested))
         (item-type (string-downcase (awhen new-fb-item (symbol-name (db it :type))))))
   (standard-page
-    "Reauthorize Facebook App"
+    (if permission-requested
+     "Authorize Facebok App"
+     "Reauthorize Facebook App")
    (html
-     (:h2 "Your Facebook session has expired on Kindista")
+     (:h2
+       (str (aif permission-requested
+              (case it
+                (:publish-actions
+                  "Kindista needs your permission to be able to publish items to Facebook")
+                (t "Kindista needs special permission for this action on Facebook"))
+              "Your Facebook session has expired on Kindista")))
      (str (facebook-sign-in-button
             :redirect-uri "/login"
             :button-text "Reauthorize Facebook"
+            :re-request permission-requested
             :scope (mapcar (lambda (permission)
                              (regex-replace-all
                                "-"
                                (string-downcase (symbol-name permission))
                                "_"))
-                           (getf *user* :fb-permissions))))
+                           (cons permission-requested (getf *user* :fb-permissions)))))
      (:p (:strong "Please note: ")
       (awhen item-type
         (htm "We will publish your " (str it) " to Facebook after you reauthorize Kindista's access to your Facebook account. "))

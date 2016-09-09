@@ -480,7 +480,8 @@
                       :name "text"
                       (str text))
 
-           (when (and *enable-facebook*
+           (when (and (or *enable-facebook*
+                          (getf *user* :test-user))
                       (getf *user* :fb-token)
                       (getf *user* :fb-link-active))
                  (htm
@@ -1000,11 +1001,13 @@
                  (fb-taggable-friends-auth-warning (second taggable-friends))
 
                  (cond
-                   ((current-fb-token-p)
+                   ((current-fb-token-p :publish-actions)
                     (notice :new-facebook-action :item-id new-id)
+                    (modify-db new-id :fb-publishing-in-process (get-universal-time))
                     (flash "Your statement of gratitude has been published on Facebook")
                     (see-other next))
                    (t (renew-fb-token :item-to-publish new-id
+                                      :fb-permission-requested :publish-actions
                                       :next next)))))))
 
           (t
@@ -1125,12 +1128,13 @@
           (see-other (or (post-parameter "next") "/home")))
          ((and (post-parameter "publish-facebook")
                (not (fb-object-actions-by-user id)))
-          (if (current-fb-token-p)
+          (if (current-fb-token-p :publish-actions)
             (progn (notice :new-facebook-action :item-id id)
                    (modify-db id :fb-publishing-in-process (get-universal-time))
                    (flash (s+ "Your gratitude has been published on Facebook"))
                    (see-other next))
             (renew-fb-token :item-to-publish id
+                            :fb-permission-requested :publish-actions
                             :next next)))
          (friends-to-tag
           (tag-facebook-friends id friends-to-tag)
