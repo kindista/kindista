@@ -468,6 +468,7 @@
                                 (cons object-type
                                       (s+ "https://kindista.org"
                                           (resource-url id item)))
+                                (cons "debug" "all")
                                 (cons "fb:explicitly_shared" "true"))))))
 
   (let ((data (when (= (second reply) 200)
@@ -477,7 +478,10 @@
                             (strcat* "ITEM-PUBLISHED-TO-FB:" id)
                             (list :fb-id (getf user :fb-id)
                                   :fb-token (getf user :fb-token))
-                            data)
+                            (or data
+                                (if (stringp (first reply))
+                                  (first reply)
+                                  (decode-json-octets (first reply)))))
     (awhen (getf data :id) (safe-parse-integer it))))
 
 (defun get-facebook-object-id
