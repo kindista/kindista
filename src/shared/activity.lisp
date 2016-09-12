@@ -312,11 +312,11 @@
                  (unless (string= item-url (script-name*))
                    (str (activity-item-images images item-url "gift"))))
       :publish-facebook (and self
-                            (getf *user* :fb-id)
-                            (not (getf data :fb-publishing-in-process))
-                            (not (fb-object-actions-by-user
-                                   item-id
-                                   :data data)))
+                             (show-fb-p)
+                             (not (getf data :fb-publishing-in-process))
+                             (not (fb-object-actions-by-user
+                                    item-id
+                                    :data data)))
       :related-items (when (and (getf data :on) show-on-item)
                        (html
                          (when (and (getf data :on) show-on-item)
@@ -449,9 +449,7 @@
                                            :image (icon "white-request"))))
                  :class (s+ type " inventory-item")
                  :publish-facebook (and self
-                                        (or *enable-facebook*
-                                            (getf *user* :test-user))
-                                        (getf *user* :fb-id)
+                                        (show-fb-p)
                                         (not (getf data :fb-publishing-in-process))
                                         (not (fb-object-actions-by-user
                                                item-id

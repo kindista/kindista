@@ -48,6 +48,7 @@
                       "Communication Settings"))))
       (when (and (not groupid)
                  (or *enable-facebook*
+                     (find *userid* *alpha-testers*)
                      (getf *user* :test-user)))
         (if (equal tab "social")
           (htm (:li :class "selected" "Social Media Settings"))

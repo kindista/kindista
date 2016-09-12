@@ -36,8 +36,18 @@
           (push (list :userid (or (getf data :author)
                                   (getf data :by))
                       :item-id id)
-                items)))))
-  items)
+                items)
+          (modify-db id :fb-actions nil)))))
+  (values items
+          (mapcar (lambda (item) (db (getf item :userid) :name)) items)))
+
+(defun show-fb-p (&key (userid *userid*) (user *user*))
+  (and (getf user :fb-id)
+       (getf user :fb-link-active)
+       (getf user :fb-token)
+       (or *enable-facebook*
+           (find userid *alpha-testers*)
+           (getf user :test-user))))
 
 (defun fix-fb-link-active-error ()
   (dolist (id *active-people-index*)

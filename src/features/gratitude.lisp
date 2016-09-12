@@ -480,19 +480,16 @@
                       :name "text"
                       (str text))
 
-           (when (and (or *enable-facebook*
-                          (getf *user* :test-user))
-                      (getf *user* :fb-token)
-                      (getf *user* :fb-link-active))
-                 (htm
-                   (:div :id "facebook"
-                     (:input :type "checkbox"
-                             :id "publish-facebook"
-                             :name "publish-facebook"
-                             :checked "")
-                     (str (icon "facebook" "facebook-icon"))
-                     (:label :for "publish-facebook"
-                      (str (s+ "Share on Facebook"))))))
+           (when (show-fb-p)
+             (htm
+               (:div :id "facebook"
+                 (:input :type "checkbox"
+                         :id "publish-facebook"
+                         :name "publish-facebook"
+                         :checked "")
+                 (str (icon "facebook" "facebook-icon"))
+                 (:label :for "publish-facebook"
+                  (str (s+ "Share on Facebook"))))))
 
            (unless existing-url
              (htm
