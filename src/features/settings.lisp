@@ -953,7 +953,11 @@
   (email
    unsub-type
    &aux (userid (gethash email *email-index*))
-        (notify-type (string-upcase (s+ "notify-" unsub-type))))
+        (notify-type (string-upcase (s+ "notify-" unsub-type)))
+        (unverified-groupid (get-parameter-integer "groupid"))
+        (users-groups (groups-with-user-as-admin userid))
+        (groupid (awhen (find unverified-groupid users-groups :key #'car)
+                   (car it))))
 
   (when (find notify-type
               (mapcar #'symbol-name *notification-types*)
@@ -961,17 +965,27 @@
     (setf unsub-type (intern notify-type :keyword)))
 
   (flet ((unsub (message)
-           (modify-db userid unsub-type nil)
+           (if groupid
+             (amodify-db groupid unsub-type (remove userid it))
+             (modify-db userid unsub-type nil))
            (flash message)))
     (case unsub-type
       (:notify-expired-invites
         (unsub "You are now unsubscribed from receiving notificaitons when invitations you sent to friends to join Kindista expire"))
       (:notify-gratitude
-        (unsub "You are now unsubscribed from receiving notificaitons when someone posts gratitude about you"))
+        (unsub
+          (if groupid
+            "You are now unsubscribed from receiving notifications when this group recieves a statment of gratitude"
+            "You are now unsubscribed from receiving notificaitons when someone posts gratitude about you")))
       (:notify-group-membership-invites
         (unsub "You are now unsubscribed from receiving notificaitons when someone invites you to join a group on Kindista "))
+      (:notify-membership-request
+        (unsub "You are now unsubscribed from reciving notifications when someone requests to join this group"))
       (:notify-inventory-expiration
-        (unsub "You are now unsubscribed from receiving notificaitons when your offers and requests are about to expire"))
+        (unsub
+          (if groupid
+            "You are now unsubscribed from receiving notifications when this group's offers and requests are about to expire"
+            "You are now unsubscribed from receiving notificaitons when your offers and requests are about to expire")))
       (:notify-inventory-digest
         (unsub "You are now unsubscribed from receiving notificaitons of new offers and requests in your area"))
       (:notify-kindista
@@ -979,7 +993,10 @@
       (:notify-blog
         (unsub "You are now unsubscribed from receiving new articles from the Kindista blog"))
       (:notify-message
-        (unsub  "You are now unsubscribed from receiving notificaitons when someone sends you a message or responds to your offers/requests"))
+        (unsub
+          (if groupid
+            "You are now unsubscribed from receiving notifications when this group recives a message or a response for an offer/request"
+            "You are now unsubscribed from receiving notificaitons when someone sends you a message or responds to your offers/requests")))
       (:notify-new-contact
         (unsub "You are now unsubscribed from receiving notificaitons when someone adds you to their list of contacts"))
       (:notify-reminders
@@ -1035,13 +1052,13 @@
           (:h2 "Please let us know what types of information you would like to be notified about")
           (:p "Notifications will be sent to your primary email address: "
            (:strong (str (car (getf unsub-user :emails)))))
-          (when groups
+          (if groups
             (str (settings-identity-selection-html
                    (or groupid unsub-id)
                    groups
                    :userid unsub-id
-                   :url "/settings/notifications")))
-          (str (settings-unsubscribe-all))
+                   :url "/settings/notifications"))
+            (str (settings-unsubscribe-all)))
           (str (settings-notifications :user unsub-user
                                        :userid unsub-id
                                        :group group
@@ -1072,11 +1089,11 @@
         (:p "Notifications will be sent to your primary email address: "
             (:strong (str (car (getf *user* :emails))))
             (:a :id "email-link" :href "/settings/communication#email" "change"))
-        (when (eql unsub-id *userid*)
-          (str (settings-unsubscribe-all)))
         (str (settings-notifications :groupid groupid :group group))
         (str (settings-push-notifications group))
         (unless groupid
+          (when (eql unsub-id *userid*)
+            (str (settings-unsubscribe-all)))
           (str (settings-emails (string= (get-parameter "edit") "email")
                                 :activate (get-parameter "activate")))))))))
 
@@ -1275,7 +1292,7 @@
            (group (db groupid))
            (next (or (post-parameter "next")
                      (url-compose "/settings/communication"
-                          ;"groupid" groupid
+                          "groupid" groupid
                           "type" unsub-type
                           "email" unverified-email
                           "k" k))))
