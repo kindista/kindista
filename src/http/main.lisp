@@ -130,7 +130,7 @@
           ((string= param-type "email")
            (setf pattern "(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})"))
           ((string= param-type "str")
-           (setf pattern  "([a-zA-Z0-9_%+-]+)"))
+           (setf pattern  "([a-zA-Z0-9_%+-=]+)"))
           (t
            (setf pattern "([^\/]+)")))
 
