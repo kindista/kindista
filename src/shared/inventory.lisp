@@ -884,6 +884,7 @@
    &aux (typestring (if (string= selected "offers") "offer" "request"))
         (suggested (or tags (get-tag-suggestions item-title))))
 
+  (pprint groupid)
   (standard-page page-title
     (html
       (:div :class "item inventory-details" :id "enter-inventory-details"
@@ -959,7 +960,10 @@
                   groups-selected
                   :onchange "this.form.submit()")))
 
-         (when (show-fb-p)
+         (when (and (show-fb-p)
+                    (not groupid)
+                    (or (not identity-selection)
+                        (eql identity-selection *userid*)))
            (htm
              (:div :id "facebook"
                (:input :type "checkbox"

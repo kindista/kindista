@@ -480,7 +480,8 @@
                       :name "text"
                       (str text))
 
-           (when (show-fb-p)
+           (when (and (show-fb-p)
+                      (not groupid))
              (htm
                (:div :id "facebook"
                  (:input :type "checkbox"
