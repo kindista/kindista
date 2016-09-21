@@ -480,19 +480,17 @@
                       :name "text"
                       (str text))
 
-           (when (and (getf *user* :fb-token)
-                          (or (not (getf *user* :test-user))
-                              (and (= 1 (length subjects))
-                                   (db (car subjects) :test-user))))
-                 (htm
-                   (:div :id "facebook"
-                     (:input :type "checkbox"
-                             :id "publish-facebook"
-                             :name "publish-facebook"
-                             :checked "")
-                     (str (icon "facebook" "facebook-icon"))
-                     (:label :for "publish-facebook"
-                      (str (s+ "Share on Facebook"))))))
+           (when (and (show-fb-p)
+                      (not groupid))
+             (htm
+               (:div :id "facebook"
+                 (:input :type "checkbox"
+                         :id "publish-facebook"
+                         :name "publish-facebook"
+                         :checked "")
+                 (str (icon "facebook" "facebook-icon"))
+                 (:label :for "publish-facebook"
+                  (str (s+ "Share on Facebook"))))))
 
            (unless existing-url
              (htm
@@ -1001,11 +999,13 @@
                  (fb-taggable-friends-auth-warning (second taggable-friends))
 
                  (cond
-                   ((current-fb-token-p)
+                   ((current-fb-token-p :publish-actions)
                     (notice :new-facebook-action :item-id new-id)
+                    (modify-db new-id :fb-publishing-in-process (get-universal-time))
                     (flash "Your statement of gratitude has been published on Facebook")
                     (see-other next))
                    (t (renew-fb-token :item-to-publish new-id
+                                      :fb-permission-requested :publish-actions
                                       :next next)))))))
 
           (t
@@ -1126,11 +1126,13 @@
           (see-other (or (post-parameter "next") "/home")))
          ((and (post-parameter "publish-facebook")
                (not (fb-object-actions-by-user id)))
-          (if (current-fb-token-p)
+          (if (current-fb-token-p :publish-actions)
             (progn (notice :new-facebook-action :item-id id)
+                   (modify-db id :fb-publishing-in-process (get-universal-time))
                    (flash (s+ "Your gratitude has been published on Facebook"))
                    (see-other next))
             (renew-fb-token :item-to-publish id
+                            :fb-permission-requested :publish-actions
                             :next next)))
          (friends-to-tag
           (tag-facebook-friends id friends-to-tag)

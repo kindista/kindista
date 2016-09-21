@@ -32,6 +32,17 @@
           (:p :class "small" "Want to express gratitude for your friends? It's easy to invite them to join Kindista. "
               (:a :href "/faq#how-do-invitations-work" "Learn how invitations work") "."))))))
 
+(defun facebook-signup-sidebar ()
+  (when (and *user*
+             (not *productionp*) ; hide until blog post
+             (not (getf *user* :fb-token))
+             (not (getf *user* :fb-link-active)))
+    (html
+      (:div :class "item right"
+       (str (facebook-sign-in-button :redirect-uri "settings/social"
+                                     :button-text "Facebook Activation"))
+       (:p :class "small" "Activating Facebook on Kindista enables you to share your Offers, Requests, and Gratitude with your Facebook friends. Spread the love!")))))
+
 (defun events-sidebar (&aux (count 6))
   (multiple-value-bind (events featured-events)
     (local-upcoming-events)

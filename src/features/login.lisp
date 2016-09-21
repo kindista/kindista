@@ -55,17 +55,20 @@
                 (:button :type "submit" :class "yes" "Sign in")
                 (:span :class "forgot"
                  (:a :href "/reset" :class "reset"  "Forgot your password?"))))
-            (when (or (not *productionp*)
-                      (string= (get-parameter "sekrut-fb-access")
-                               "not-ready-for-prime-time"))
-              (htm
-                (str *or-divider*)
-                (:div :class "social-signin"
-                 (str (if (get-parameter "facebook-signup")
-                        (facebook-sign-in-button
-                          :redirect-uri "signup"
-                          :button-text "Use Facebook to sign up for Kindista")
-                        (facebook-sign-in-button :redirect-uri "login"))))))
+            (htm
+              (str *or-divider*)
+              (when (or *enable-facebook*
+                        (string= (get-parameter-string "sekrut-fb-access")
+                                 "not-ready-for-prime-time"))
+                (htm
+                  (:div :class "social-signin"
+                     (str (if (and (get-parameter "facebook-signup")
+                                   (not *productionp*))
+                            (facebook-sign-in-button
+                              :redirect-uri "signup"
+                              :button-text "Use Facebook to sign up for Kindista")
+                            (facebook-sign-in-button :redirect-uri "login"))
+                          )))))
             (:div :id "join"
               (:span "Not on Kindista yet? ")
               (:a :href "/signup"
@@ -88,11 +91,17 @@
                    :fb-link-active t))))
   (asetf (token-session-data *token*)
          (remove-from-plist it :login-redirect))
+  (let ((*user* (db userid)))
+    (when (and (getf *user* :fb-token)
+               (getf *user* :fb-link-active)
+               (not (getf *user* :avatar))))
+    (modify-db userid :avatar (save-facebook-profile-picture-to-avatar userid)))
   (when (getf (token-session-data *token*) :publish-to-fb)
     (let* ((id (getf (token-session-data *token*) :publish-to-fb))
            (item (db id))
            (type (getf item :type)))
       (notice :new-facebook-action :item-id id)
+      (modify-db id :fb-publishing-in-process (get-universal-time))
       (flash (s+ "Your "
                  (string-downcase (symbol-name type))
                  " has been published on Facebook"))
@@ -174,8 +183,7 @@
      (notice :auth-failure :username userid)
      (see-other (if next
                   (url-compose "/login" "next" (url-encode next))
-                  "/login"))
-     )))
+                  "/login")))))
 
 (defun get-logout ()
   (notice :logout)

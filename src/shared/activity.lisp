@@ -151,10 +151,7 @@
                    " &middot; "
                    (str (comment-button url))))
 
-               (when (and publish-facebook
-                          (or (not *productionp*)
-                              (getf *user* :test-user)
-                              (getf *user* :admin)))
+               (when publish-facebook
                  (htm
                    (:form :method "post" :action url
                      " &middot; "
@@ -315,12 +312,11 @@
                  (unless (string= item-url (script-name*))
                    (str (activity-item-images images item-url "gift"))))
       :publish-facebook (and self
-                            (or (not *productionp*)
-                                (getf *user* :test-user))
-                            (getf *user* :fb-id)
-                            (not (fb-object-actions-by-user
-                                   item-id
-                                   :data data)))
+                             (show-fb-p)
+                             (not (getf data :fb-publishing-in-process))
+                             (not (fb-object-actions-by-user
+                                    item-id
+                                    :data data)))
       :related-items (when (and (getf data :on) show-on-item)
                        (html
                          (when (and (getf data :on) show-on-item)
@@ -453,9 +449,8 @@
                                            :image (icon "white-request"))))
                  :class (s+ type " inventory-item")
                  :publish-facebook (and self
-                                        (or (not *productionp*)
-                                            (getf *user* :test-user))
-                                        (getf *user* :fb-id)
+                                        (show-fb-p)
+                                        (not (getf data :fb-publishing-in-process))
                                         (not (fb-object-actions-by-user
                                                item-id
                                                :data data)))

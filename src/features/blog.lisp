@@ -61,7 +61,7 @@
                        str
                        created
                        :format '((:year 4) #\/ (:month 2) #\/ (:day 2) #\/))))
-        (hyphenated-title (hyphenate (getf data :title)))
+        (hyphenated-title (url-encode (hyphenate (getf data :title))))
         (blog-path (s+ *blog-path* local-dir hyphenated-title)))
 
   (unless (and (not update) (file-exists-p blog-path))
@@ -85,7 +85,7 @@
         preview-paragraph-count
    &aux (id (result-id result))
         (data (db id))
-        (hyphenated-title (hyphenate (getf data :title)))
+        (hyphenated-title (url-encode (hyphenate (getf data :title))))
         (date-string (universal-to-datestring (getf data :created)))
         (url (s+ "/blog/" date-string hyphenated-title))
         (comments (gethash id *comment-index*))
@@ -184,7 +184,7 @@
    day
    title
    &aux (date-path (strcat *blog-path* year "/" month "/" day "/"))
-        (path (merge-pathnames date-path title)))
+        (path (merge-pathnames date-path (url-encode title))))
 
   (with-open-file (file path :direction :input :if-does-not-exist nil)
     (if file
@@ -212,6 +212,5 @@
                         :send-email-p nil
                         :text it
                         )
-        (see-other "/blog")
-        )
+        (see-other "/blog"))
        (t (not-found)))))

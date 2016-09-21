@@ -20,7 +20,7 @@ https://developers.facebook.com/docs/sharing/opengraph/using-actions
 [x] create a notice to actually do the publishing
 [x] test
 [x] test that redirect urls work
-[ ] test "share on facebook" links under items both when fb token is inactive and active
+[x] test "share on facebook" links under items both when fb token is inactive and active
 
 #Gratitude
 [x] taggable friends:
@@ -44,36 +44,23 @@ https://developers.facebook.com/docs/sharing/reference/send-dialog
 [ ] when signing a person up, if they are FB friends with the inviter, add them to kindista friends as host
 [ ] invitation via gratitude
 
-#FAQs
-[ ] how do I share my offers/req/grat on facebook?
-[ ] how do I tag my fb friends in gratitude?
-
 #FB login
+[x] add button on home screen to get registerred with facebook
 https://developers.facebook.com/docs/facebook-login/multiple-providers
-[ ] steps above "adding manual login info to a Facebook Login created account" are done
-[ ] make sure to grab fb-profile-pic when no k-avatar (esp when user relogs through the settings page)
-[ ] make sure button displays right when signing up through settings page
-
-
-#Review
-[ ] take screen shots
-https://developers.facebook.com/docs/apps/review
-[ ] submit to facebook for review
+[x] make sure to grab fb-profile-pic when no k-avatar (esp when user relogs through the settings page)
+[x] make sure button displays right when signing up through settings page
 
 #Merge accounts (fb-id fbtoken)
 [ ] review code
 
 #Clean-up
-[ ] Remove admin restriction for :share-url in inventory-activity-item
-[ ] Remove *productionp* restriction from signup and login pages
-[ ] Create a tab for settings/social
-[ ] change facebook app setting/advanced deauthorize callback
-[ ] change "privacy" setting in publish-facebook-action
-[ ] remove all facebook-debugging blocks
+[ ] uncomment facebook-signup in features/login and features/signup
+[ ] Remove *productionp* restriction from signup page
 
 #Deploy on server
 [ ] quickload
 [ ] reload routes
 [ ] redefine with-user with-token
+[ ] redefine defparamater *faq-html*
 [ ] load notice handlers
 [ ] (setf *facebook-app-token* (get-facebook-app-token))

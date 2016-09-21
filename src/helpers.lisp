@@ -718,10 +718,15 @@
           "This "
           (str (aif type it "item"))
           " will be displayed on Kindista after we have a chance to review "
-          "your account and confirm that you're not a spammer. "
-          (:strong "You won't be able to send messages to other Kindista members "
-          "until you post some offers and we have a chance to review your "
-          "initial activity.")))
+          "your account. "
+          "Posting your first offer shows us that you understand our "
+          (:a :href "/terms" "Terms of Use")
+          " and that you intend to be a contributing member "
+          "of our community. "
+          (unless (string= type "offer")
+            (htm
+              (:strong "You won't be able to send messages to other Kindista "
+               "members until after we have a chance to review your first offer.")))))
       (:br))))
 
 (defparameter *integrity-reminder*

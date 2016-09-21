@@ -46,12 +46,13 @@
         (htm (:li :class "selected" "Communication Settings"))
         (htm (:li (:a :href (url-compose "/settings/communication" "groupid" groupid)
                       "Communication Settings"))))
-      (unless t; groupid
+      (when (and (not groupid)
+                 (or *enable-facebook*
+                     (find *userid* *alpha-testers*)
+                     (getf *user* :test-user)))
         (if (equal tab "social")
           (htm (:li :class "selected" "Social Media Settings"))
-          (htm (:li (:a :href "/settings/social" "Social Media Settings")))))
-
-         )))
+          (htm (:li (:a :href "/settings/social" "Social Media Settings"))))))))
 
 (defun settings-item-html
   (item
@@ -866,42 +867,45 @@
   (require-user (:allow-test-user t)
     (cond
       ((post-parameter "fb-logout")
-       (modify-db *userid* :fb-token nil)
+       (modify-db *userid* :fb-token nil
+                           :fb-expires nil
+                           :fb-link-active nil)
        (flash "Kindista no longer has access to your Facebook account")))
     (see-other (or (post-parameter-string "next") "/settings/social"))))
 
 (defun get-settings-social ()
-  (when (or (not *productionp*)
-            (getf *user* :admin)
-            (getf *user* :test-user))
-    (require-user (:allow-test-user t)
-      (let* ((now (get-universal-time))
-             (facebook-token-data (when (get-parameter "code")
-                                    (register-facebook-user "settings/social")))
-             (token (cdr (assoc "access_token"
-                                facebook-token-data
-                                :test #'string=)))
-             (fb-scope (when facebook-token-data
-                         (awhen (get-parameter-string "granted_scopes")
-                           (mapcar #'string-to-keyword
-                                   (words-from-string it)))))
-             (expires (awhen facebook-token-data
-                        (+ now (safe-parse-integer
-                                 (cdr (assoc "expires" it :test #'string=)))))))
-        (when token
-          (apply #'modify-db
-                 *userid*
-                 (remove-nil-plist-pairs
-                   (list :fb-token token
-                         :fb-expires (+ (get-universal-time)
-                                        (safe-parse-integer expires))
-                         :fb-link-active t
-                         :fb-permissions fb-scope)))
-          (unless (getf *user* :fb-id)
-            (modify-db *userid* :fb-id (get-facebook-user-id token)))
-          (flash "You have successfully linked Kindista to your Facebook account."))
-        (facebook-debugging-log facebook-token-data))
-      (settings-social-html))))
+  (require-user (:allow-test-user t)
+    (let* ((now (get-universal-time))
+           (facebook-token-data (when (get-parameter "code")
+                                  (register-facebook-user "settings/social")))
+           (token (cdr (assoc "access_token"
+                              facebook-token-data
+                              :test #'string=)))
+           (fb-scope (when facebook-token-data
+                       (awhen (get-parameter-string "granted_scopes")
+                         (mapcar #'string-to-keyword
+                                 (words-from-string it)))))
+           (expires (awhen facebook-token-data
+                      (+ now (safe-parse-integer
+                               (cdr (assoc "expires" it :test #'string=)))))))
+      (when token
+        (apply #'modify-db
+               *userid*
+               (remove-nil-plist-pairs
+                 (list :fb-token token
+                       :fb-expires (+ (get-universal-time)
+                                      (safe-parse-integer expires))
+                       :fb-link-active t
+                       :fb-permissions fb-scope)))
+        (unless (getf *user* :fb-id)
+          (let ((fb-id (get-facebook-user-id token)))
+            (modify-db *userid* :fb-id fb-id)
+            (with-locked-hash-table (*facebook-id-index*)
+              (setf (gethash fb-id *facebook-id-index*) *userid*))))
+        (unless (getf *user* :avatar)
+          (modify-db *userid* :avatar (save-facebook-profile-picture-to-avatar *userid*)))
+        (flash "You have successfully linked Kindista to your Facebook account.")))
+    (settings-social-html)))
 
 (defun settings-social-html
   (&aux (fb-token-p (getf *user* :fb-token))

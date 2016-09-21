@@ -188,7 +188,7 @@
   (text
    title
    &aux (now (local-time:now))
-        (hyphenated-title (hyphenate title))
+        (hyphenated-title (url-encode (hyphenate title)))
         (local-dir (with-output-to-string (str)
                      (format-timestring
                        str
