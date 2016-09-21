@@ -1015,7 +1015,7 @@
        ;(when (get-parameter-string "type")
        ;  (htm (:input :type "hidden" :name "unsub" :value "unsub-all")))
        (:p (:strong "Warning: If you unsubscribe from all notifications, you will not recieve email notifications when people post gratitude about you or want to share with you."))
-       (:p "If you only want to unsubscribe from notifications sent by our system (and still want messages from other Kindista members), please adjust your individual notification preferences below."))
+       (:p "If you only want to unsubscribe from notifications sent by our system (and still want messages from other Kindista members), please adjust your individual notification preferences above."))
      :editable t
      :buttons (html (:button :class (s+ "red" (when *user* " small"))
                              :type "submit"
@@ -1057,12 +1057,12 @@
                    (or groupid unsub-id)
                    groups
                    :userid unsub-id
-                   :url "/settings/notifications"))
-            (str (settings-unsubscribe-all)))
+                   :url "/settings/notifications")))
           (str (settings-notifications :user unsub-user
                                        :userid unsub-id
                                        :group group
-                                       :groupid groupid))))
+                                       :groupid groupid))
+          (unless group (str (settings-unsubscribe-all)))))
        :hide-menu t)))
 
     ((and (scan +number-scanner+ (get-parameter "invitation-id"))
@@ -1323,6 +1323,9 @@
                     :notify-message (if (post-parameter "message")
                                       (pushnew userid it)
                                       (remove userid it))
+                    :notify-inventory-expiration (if (post-parameter "inventory-expiration")
+                                                   (pushnew userid it)
+                                                   (remove userid it))
                     :notify-membership-request (if (post-parameter "group-membership-request")
                                                  (pushnew userid it)
                                                  (remove userid it)))
