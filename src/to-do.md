@@ -1,20 +1,4 @@
-## unsubscriptions
- [x] new-contact
- [x] gratitude
- [x] inventory-digest
- [x] message
- [x] reminders
- [x] expired-invites
- [?] membership-request
- [x] inventory-expiration
- [x] group-membership-invites
- [x] blog
- [x] kindista
- [x] make sure there's a case in unsub-notify-from-email for each *notification-types*
- [x] make sure group notifications work for inventory-expirations
- [x] make sure group unsubscribes work for inventory-expirations
- [x] add notify-inventory-expiration in creation of groups and people
-
+## subscribe users and group admins to :notify-inventory-expiration
 ## post offers/requests to facebook
 ## split up database
   - if we create different directories for datatypes, make sure to get a comprehensive list of all datatypes in the database (including "deleted" types)

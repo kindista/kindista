@@ -179,7 +179,7 @@
                             from-email
                             (format nil "\"~A\" <~A>" name email)
                             (if blog-p
-                              "The Kindista Blog: Adventures in Gift"
+                              (strcat "Kindista Blog: " (getf broadcast :title))
                               (getf broadcast :title))
                             text-message
                             :html-message html-message)))))
