@@ -28,7 +28,7 @@
         (by (db by-id))
         (group-p (eql (getf by :type) :group))
         (group-name (when group-p (getf by :name)))
-        (group-notify-expiration (getf by :notify-inventory-expiration))
+        (group-notify-expiration (when group-p (getf by :notify-inventory-expiration)))
         (recipients)
         (status (if (< (getf item :expires)
                     (get-universal-time))

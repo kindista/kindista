@@ -45,6 +45,7 @@
                    :notify-gratitude (list creator)
                    :notify-reminders (list creator)
                    :notify-membership-request (list creator)
+                   :notify-inventory-expiration (list creator)
                    :created (get-universal-time))))
 
 (defun index-group (id data)
@@ -393,11 +394,13 @@
                         :notify-message (pushnew personid it)
                         :notify-gratitude (pushnew personid it)
                         :notify-reminders (pushnew personid it)
+                        :notify-inventory-expiration (pushnew personid it)
                         :notify-membership-request (pushnew personid it))
     (amodify-db groupid :admins (pushnew personid it)
                         :notify-message (pushnew personid it)
                         :notify-gratitude (pushnew personid it)
                         :notify-reminders (pushnew personid it)
+                        :notify-inventory-expiration (pushnew personid it)
                         :notify-membership-request (pushnew personid it))))
 
 (defun remove-group-admin (personid groupid)
@@ -408,7 +411,12 @@
      (asetf (getf (gethash personid *group-privileges-index*) :member)
             (pushnew groupid it)))
   (amodify-db groupid :admins (remove personid it)
-                      :members (pushnew personid it)))
+                      :members (pushnew personid it)
+                      :notify-message (remove personid it)
+                      :notify-gratitude (remove personid it)
+                      :notify-reminders (remove personid it)
+                      :notify-inventory-expiration (remove personid it)
+                      :notify-membership-request (remove personid it)))
 
 (defun group-activity-html (groupid &key type)
   (profile-activity-html groupid :type type

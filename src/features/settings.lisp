@@ -677,8 +677,6 @@
             (htm (:input :type "hidden" :name "k" :value it)))
           (awhen (get-parameter-string "email")
             (htm (:input :type "hidden" :name "email" :value it)))
-          (when (get-parameter-string "type")
-            (htm (:input :type "hidden" :name "type" :value "none")))
           (when groupid
             (htm (:input :type "hidden" :name "groupid" :value groupid)))
           (:ul :class "padding-top"
@@ -1014,10 +1012,6 @@
          (htm (:input :type "hidden" :name "k" :value it)))
        (awhen (get-parameter-string "email")
          (htm (:input :type "hidden" :name "email" :value it)))
-       (when (get-parameter-string "type")
-            (htm (:input :type "hidden" :name "type" :value "none")))
-       ;(when (get-parameter-string "type")
-       ;  (htm (:input :type "hidden" :name "unsub" :value "unsub-all")))
        (:p (:strong "Warning: If you unsubscribe from all notifications, you will not recieve email notifications when people post gratitude about you or want to share with you."))
        (:p "If you only want to unsubscribe from notifications sent by our system (and still want messages from other Kindista members), please adjust your individual notification preferences above."))
      :editable t
@@ -1056,7 +1050,7 @@
           (:h2 "Please let us know what types of information you would like to be notified about")
           (:p "Notifications will be sent to your primary email address: "
            (:strong (str (car (getf unsub-user :emails)))))
-          (if groups
+          (when groups
             (str (settings-identity-selection-html
                    (or groupid unsub-id)
                    groups
@@ -1094,10 +1088,10 @@
             (:strong (str (car (getf *user* :emails))))
             (:a :id "email-link" :href "/settings/communication#email" "change"))
         (str (settings-notifications :groupid groupid :group group))
+        (when (and (not groupid) (eql unsub-id *userid*))
+          (str (settings-unsubscribe-all)))
         (str (settings-push-notifications group))
         (unless groupid
-          (when (eql unsub-id *userid*)
-            (str (settings-unsubscribe-all)))
           (str (settings-emails (string= (get-parameter "edit") "email")
                                 :activate (get-parameter "activate")))))))))
 
