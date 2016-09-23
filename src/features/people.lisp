@@ -116,7 +116,7 @@
                  (getf person :notify-message)
                  (getf person :notify-new-contact)
                  (getf person :notify-reminders)
-                 (getf person :notify-inventory-exipration)
+                 (getf person :notify-inventory-expiration)
                  (getf person :notify-expired-invites)
                  (getf person :notify-blog)
                  (getf person :notify-inventory-digest)
