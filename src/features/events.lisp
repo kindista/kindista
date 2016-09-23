@@ -42,7 +42,8 @@
 (defmacro ensuring-eventid ((event-id base-url) &body body)
   (let ((is-number (gensym))
         (custom-url (gensym))
-        (event-data (gensym)))
+        (event-data (gensym))
+        (event-result (gensym)))
     `(let ((,is-number (scan +number-scanner+ ,event-id)))
        (if ,is-number
          (let* ((,event-id (parse-integer ,event-id))
@@ -57,7 +58,8 @@
                                (format nil ,base-url ,custom-url)
                                (flatten (get-parameters*)))))
             (t (progn ,@body))))
-         (let ((,event-id (result-id (gethash ,event-id *eventname-index*))))
+         (let* ((,event-result (gethash ,event-id *eventname-index*))
+                (,event-id (when ,event-result (result-id ,event-result))))
            (if ,event-id
              (progn ,@body)
              (not-found)))))))
