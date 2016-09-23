@@ -191,11 +191,20 @@
       (let* ((file-contents (read file))
              (id (car file-contents))
              (html (cadr file-contents))
-             (data (db id)))
+             (data (db id))
+             (blog-title (getf data :title)))
         (standard-page
-          (getf data :title)
+          blog-title
           (blog-post-html (gethash id *db-results*) :contents html)
-          :right (blog-sidebar)))
+          :right (blog-sidebar)
+          :extra-head (facebook-item-meta-content
+                        id
+                        "article"
+                        blog-title
+                        :url (s+ +base-url+
+                                 "blog/"
+                                 (regex-replace ".md" (getf data :path) ""))
+                        :kindista-object nil)))
       (not-found))))
 
  (defun post-blog-post

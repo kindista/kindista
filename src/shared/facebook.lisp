@@ -91,12 +91,15 @@
    &key description
         determiner
         url
+        (kindista-object t)
         image)
   (html
     (when typestring
       (htm
         (:meta :property "og:type"
-               :content (s+ "kindistadotorg:" typestring))))
+               :content (if kindista-object
+                          (s+ "kindistadotorg:" typestring)
+                          typestring))))
     (awhen determiner
       (htm (:meta :property "og:determiner" :content it)))
     (:meta :property "fb:app_id"
