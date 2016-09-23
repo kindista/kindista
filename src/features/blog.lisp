@@ -186,9 +186,6 @@
    &aux (date-path (strcat *blog-path* year "/" month "/" day "/"))
         (path (merge-pathnames date-path (url-encode title))))
 
-  (pprint title)
-  (pprint (url-parts (script-name*)))
-  (terpri)
   (with-open-file (file path :direction :input :if-does-not-exist nil)
     (if file
       (let* ((file-contents (read file))
