@@ -17,22 +17,26 @@
 
 (in-package :kindista)
 
-(defun add-notify-inventory-expiration ()
+(defun add-notify-inventory-expiration (&aux (people-modified 0) (groups-modified 0))
   (dolist (id (hash-table-keys *db*))
-    (let* ((user-db (when (eq (getf (db id) :type) :person) (db id)))
-          (group-db (when (eq (getf (db id) :type) :group) (db id)))
-          (admins (getf group-db :admins))
-          (user-notify-message-p (getf user-db :notify-message))
-          (user-notify-expiration-p (getf user-db :notify-inventory-expiration )))
+    (let* ((data (db id))
+           (user-db (when (eq (getf data :type) :person) data))
+           (group-db (when (eq (getf data :type) :group) data))
+           (admins (getf group-db :admins))
+           (user-notify-message-p (getf user-db :notify-message))
+           (user-notify-expiration-p (getf user-db :notify-inventory-expiration )))
       (when (and user-notify-message-p
                 (not user-notify-expiration-p))
                 ;user has notify-message but not notify-expiration
-        (modify-db id :notify-inventory-expiration t))
+        (modify-db id :notify-inventory-expiration t)
+        (incf people-modified))
 
       (when group-db
-        (dolist (admin admins)
-          (unless (find admin (getf group-db :notify-inventory-expiration))
-            (amodify-db id :notify-inventory-expiration (pushnew admin it))))))))
+        (modify-db id :notify-inventory-expiration admins)
+        (incf groups-modified))))
+
+  (list :groups-modified groups-modified
+        :people-modified people-modified))
 
 (defun reset-blog-notification-settings (&aux (count 0))
   "accidentally unsubscribed people from the blog when they were trying to unsubscribe from reminders"
