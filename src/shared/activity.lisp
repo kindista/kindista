@@ -301,7 +301,10 @@
                      (:a :href item-url "gratitude")
                      " for "
                      (str (name-list (getf data :subjects)
-                                     :maximum-links 100)))
+                                     :maximum-links 100))
+                     (when (and (getf *user* :admin) (getf data :fb-object-id))
+                       (htm
+                         (str (icon "facebook")))))
                  (:p
                    (str
                      (if truncate
@@ -510,7 +513,9 @@
                           (str (if q
                                  (highlight-stems-in-text q it)
                                  it)))))))))
-      (:div
+      (:div :class "author"
+        (when (and (getf *user* :admin) (getf data :fb-object-id))
+          (htm (str (icon "facebook"))))
         (str (if requestp
                "requested by "
                "offered by "))

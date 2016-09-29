@@ -3050,6 +3050,13 @@ div.card.inventory-item {
  padding-top: 0.9em;
 }
 
+div.card.inventory-item div.author img {
+ padding-right: 0.1em;
+ height: 1.1em;
+ width: auto;
+ vertical-align: middle;
+}
+
 .card .right {
  font-size: 0.8em;
  margin: 0 0 0.5em 1em;
