@@ -764,7 +764,7 @@
     (flash (s+ (name-list-all id-list)
                (if (> (length id-list) 1)
                  " are"  " is")
-               " not logged into Facebook through Kindista. You can tag them in this statement of gratitude after they reauthorize their Facebook account through Kindista.")
+               " not logged into Facebook through Kindista. You can tag them in this statement of gratitude after they authorize their Facebook account through Kindista.")
            :error t)))
 
 (defun facebook-friends-permission-html
