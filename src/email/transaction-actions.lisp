@@ -81,10 +81,11 @@
                   (gift-text :html-p html-p))
                  ((not log-event)
                   (s+ event-actor-name
-                      " replied to "
-                      (if groupid
-                        (s+ group-name "'s ")
-                        "your ")
+                      " sent you a message about "
+                      (cond
+                        ((eql inventory-by userid) "your ")
+                        ((eql inventory-by event-actor-id) "their ")
+                        (t (s+ (db inventory-by :name) "'s "))) ;if it's a group
                       on-type-string
                       (unless title-p ":")))
                  (t (transaction-action-text
