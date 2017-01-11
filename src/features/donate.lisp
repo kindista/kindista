@@ -462,7 +462,6 @@
                 (stripe:create-charge :card (donate-info-token*)
                                       :amount (* 100 (donate-info-amount*))
                                       :currency "USD"
-                                      :receipt_email (donate-info-email*)
                                       :description (strcat* "Donation from " (donate-info-email*)))
                 (when *user* (modify-db *userid* :donated t))
                 (flash "Thank you so much for your donation! You will receive email from us shortly.")
