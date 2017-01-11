@@ -635,7 +635,10 @@
            (next (post-parameter "next")))
 
       (cond
-        ((and (or (post-parameter "reply-text")
+        ((post-parameter "cancel")
+         (see-other (or next "/home")))
+
+        ((and (or (post-parameter-string "reply-text")
                   (post-parameter "reply"))
               (getf *user* :pending))
          (pending-flash "contact other Kindista members")
@@ -668,9 +671,6 @@
         ((and (not (eql by *userid*))
               (item-view-denied (result-privacy (gethash id *db-results*))))
          (permission-denied))
-
-        ((post-parameter "cancel")
-         (see-other (or next "/home")))
 
         (t
          (require-test ((or (eql *userid* (getf item :by))
