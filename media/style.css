@@ -4252,9 +4252,7 @@ body.donate {
 form#donate button {
  outline: medium none;
  padding: 0.25em 0.1em;
- background: -moz-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #008FC5;
- background: -ms-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #008FC5;
- background: -webkit-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #008FC5;
+ background: #008FC5;
  border: 2px solid #7EC7E2;
  color: #fff;
  border-radius: 0.35em;
