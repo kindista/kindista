@@ -742,6 +742,7 @@
 
                    (:menu :id "fine-print-links"
                           :type "toolbar"
+                     (:li (:a :href "/donate" "donate"))
                      (:li (:a :href "/blog" "blog"))
                      (:li (:a :href "/about" "about"))
                      (:li (:a :href "/terms" "terms"))
