@@ -1,5 +1,7 @@
 # ![Kindista](http://media.kindista.org/email-logo.png)
 
+[![Join the chat at https://gitter.im/kindista/kindista](https://badges.gitter.im/kindista/kindista.svg)](https://gitter.im/kindista/kindista?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Kindista ([kindista.org](https://kindista.org)) is a social network for local resource sharing. 
 It helps people develop trust, opportunities, and mutual generosity within their real-world communities. 
 
