@@ -46,6 +46,22 @@
             (delete-duplicates (gethash *token* *flashes*) :test #'string=))
       (remhash *token* *flashes*))))
 
+(defun admin-mailbox-reboot-flash ()
+  (let ((mailbox-count (sb-concurrency:mailbox-count *notice-mailbox*)))
+    (when (or (find *userid* *alpha-users*) (getf *user* :admin))
+      (when (> mailbox-count 1)
+       (with-locked-hash-table (*flashes*)
+         (push
+           (format nil
+              "<div class=\"flash err\"><span>~a~a</span></div>"
+              (s+ "The Kindista mail system has crashed! We need your help. No one is able to receive messages now. Mail System Queue: " (write-to-string mailbox-count))
+              (html (htm (:form :method "post" :action "/admin/mail-system"
+                (:button :type "submit"
+                         :class "yes"
+                         :name "reboot-notice-thread"
+                         "Reboot Mail System")))))
+                                (gethash *token* *flashes*)))))))
+
 (defun not-found ()
   (flash "The page you requested could not be found." :error t)
   (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
@@ -645,6 +661,7 @@
 
 (defun standard-page (title body &key selected top right search search-scope class extra-head)
   (declare (optimize (speed 3) (debug 0) (safety 0)))
+  (admin-mailbox-reboot-flash)
   (header-page title
                (html
                  (:div

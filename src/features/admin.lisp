@@ -303,10 +303,10 @@
         :selected "admin"))))
 
 (defun post-admin-mail-system ()
-  (require-admin
+  (require-test ((or (find *userid* *alpha-users*) (getf *user* :admin)))
     (when (post-parameter "reboot-notice-thread")
       (reboot-notice-thread)
-      (see-other "/admin/mail-system"))))
+      (see-other (or (referer) "/admin/mail-system")))))
 
 (defun get-admin-sendmail ()
   (require-admin (new-broadcast-html "/admin/sendmail")))
