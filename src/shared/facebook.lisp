@@ -57,12 +57,15 @@
         (modify-db id :fb-link-active nil)))))
 
 (defun get-facebook-app-token ()
-    (string-left-trim "access_token="
-      (http-request
-        (url-compose "https://graph.facebook.com/oauth/access_token"
-                     "client_id" *facebook-app-id*
-                     "client_secret" *facebook-secret*
-                     "grant_type" "client_credentials"))))
+  (getf
+    (alist-plist
+      (decode-json-octets
+        (http-request
+          (url-compose "https://graph.facebook.com/oauth/access_token"
+                       "client_id" *facebook-app-id*
+                       "client_secret" *facebook-secret*
+                       "grant_type" "client_credentials"))))
+    :access--token))
 
 (defun current-fb-token-p (&optional permission)
   (with-user (and (integerp *facebook-user-token-expiration*)
