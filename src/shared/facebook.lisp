@@ -41,6 +41,28 @@
   (values items
           (mapcar (lambda (item) (db (getf item :userid) :name)) items)))
 
+(defun fix-fb-publishing-error-time-data ()
+  (dolist (id (hash-table-keys *db*))
+    (let* ((data (db id))
+           (fb-errors (getf data :fb-publishing-error))
+           (new-error-data)
+           (modify-data nil))
+      (when fb-errors
+        (dolist (fb-error fb-errors)
+          (push
+            (if (and (getf fb-error :time)
+                     (eql (type-of (getf fb-error :time))
+                          'local-time:timestamp))
+              (progn
+                (setf modify-data t)
+                (list :time (local-time:timestamp-to-universal
+                            (getf fb-error :time))
+                      :userid (getf fb-error :userid)))
+              fb-error)
+            new-error-data))
+        (when modify-data
+          (modify-db id :fb-publishing-error new-error-data))))))
+
 (defun show-fb-p (&key (userid *userid*) (user *user*))
   (and (getf user :fb-id)
        (getf user :fb-link-active)
@@ -487,7 +509,7 @@
         (amodify-db item-id :fb-object-id fb-object-id
                             :fb-publishing-in-process nil
                             :fb-publishing-error (unless fb-action-id
-                                                   (cons (list :time (local-time:now)
+                                                   (cons (list :time (get-universal-time)
                                                                :userid userid)
                                                          it))
                             :fb-actions (if fb-action-id
