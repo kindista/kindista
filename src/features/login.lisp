@@ -122,14 +122,10 @@
                     (awhen (get-parameter-string "granted_scopes")
                       (mapcar #'string-to-keyword
                               (words-from-string it)))))
-        (fb-token (cdr (assoc "access_token"
-                              fb-token-data
-                              :test #'string=)))
+        (fb-token (getf fb-token-data :access--token))
         (fb-expires (when fb-token-data
                       (+ (get-universal-time)
-                         (safe-parse-integer (cdr (assoc "expires"
-                                                         fb-token-data
-                                                         :test #'string=))))))
+                         (safe-parse-integer (getf fb-token-data :expires--in)))))
         (fb-data (when fb-token (get-facebook-user-data fb-token)))
    &aux (username (remove-whitespace-around-string (post-parameter "username")))
         (password (post-parameter-string "password"))

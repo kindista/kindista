@@ -254,19 +254,17 @@
         reply)
   (when (and *token* (get-parameter "code"))
     (setf reply (multiple-value-list (http-request request :force-binary t)))
-    (let* ((token-data-params (when (<= (second reply) 200)
-                                (octets-to-string (first reply))))
-           (token-data (awhen token-data-params
-                         (quri.decode:url-decode-params it))))
+    (let* ((token-data (when (<= (second reply) 200)
+                         (alist-plist (decode-json-octets (first reply))))))
       (facebook-debugging-log
         *userid*
         (second reply)
-        (or token-data-params
+        (or token-data
             (cdr (assoc :message
                         (cdr (assoc :error (decode-json-octets (first reply)))))))
         token-data)
 
-      token-data) ))
+      token-data)))
 
 (defun check-facebook-user-token
   (&optional (userid *userid*)

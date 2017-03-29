@@ -1,4 +1,4 @@
-;;; Copyright 2012-2016 CommonGoods Network, Inc.
+;;; Copyright 2012-2017 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -895,29 +895,27 @@
 (defun get-settings-social ()
   (require-user (:allow-test-user t)
     (let* ((now (get-universal-time))
-           (facebook-token-data (when (get-parameter "code")
+           (fb-token-data (when (get-parameter "code")
                                   (register-facebook-user "settings/social")))
-           (token (cdr (assoc "access_token"
-                              facebook-token-data
-                              :test #'string=)))
-           (fb-scope (when facebook-token-data
+           (fb-token (getf fb-token-data :access--token))
+           (fb-expires (when fb-token-data
+                      (+ (get-universal-time)
+                         (safe-parse-integer (getf fb-token-data :expires--in)))))
+           (fb-scope (when fb-token-data
                        (awhen (get-parameter-string "granted_scopes")
                          (mapcar #'string-to-keyword
-                                 (words-from-string it)))))
-           (expires (awhen facebook-token-data
-                      (+ now (safe-parse-integer
-                               (cdr (assoc "expires" it :test #'string=)))))))
-      (when token
+                                 (words-from-string it))))))
+      (when fb-token
         (apply #'modify-db
                *userid*
                (remove-nil-plist-pairs
-                 (list :fb-token token
+                 (list :fb-token fb-token
                        :fb-expires (+ (get-universal-time)
-                                      (safe-parse-integer expires))
+                                      (safe-parse-integer fb-expires))
                        :fb-link-active t
                        :fb-permissions fb-scope)))
         (unless (getf *user* :fb-id)
-          (let ((fb-id (get-facebook-user-id token)))
+          (let ((fb-id (get-facebook-user-id fb-token)))
             (modify-db *userid* :fb-id fb-id)
             (with-locked-hash-table (*facebook-id-index*)
               (setf (gethash fb-id *facebook-id-index*) *userid*))))

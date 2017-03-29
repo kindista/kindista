@@ -1,4 +1,4 @@
-;;; Copyright 2012-2016 CommonGoods Network, Inc.
+;;; Copyright 2012-2017 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -189,15 +189,10 @@
         (invite-request-id (getf invitation :invite-request-id))
         (fb-token-data (when (get-parameter-string "code")
                                (register-facebook-user "signup")))
-        (fb-token (if fb-token-data
-                    (cdr (assoc "access_token" fb-token-data :test #'string=))
-                    (getf invitation :fb-token)))
-        (fb-expires (if fb-token-data
-                      (awhen (safe-parse-integer (cdr (assoc "expires"
-                                                             fb-token-data
-                                                             :test #'string=)))
-                        (+ (get-universal-time) it))
-                      (getf invitation :fb-expires)))
+        (fb-token (getf fb-token-data :access--token))
+        (fb-expires (when fb-token-data
+                      (+ (get-universal-time)
+                         (safe-parse-integer (getf fb-token-data :expires--in)))))
         (fb-id (getf invitation :fb-id)))
 
   (when *user* (reset-token-cookie))
