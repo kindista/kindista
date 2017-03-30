@@ -82,7 +82,7 @@
         "updates and information about Kindista"))
 
     (when group
-      (record-option :notify-group-membership-request
+      (record-option :notify-membership-request
                      (s+ "when someone wants to join "
                          entity 
                          " on Kindista"))))
