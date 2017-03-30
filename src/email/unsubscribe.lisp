@@ -59,6 +59,11 @@
                     (push text it)))))
     (record-option :notify-gratitude
                    (s+ "when someone posts gratitude about " entity))
+    (record-option :notify-inventory-expiration
+                   (s+ "when " (if group
+                                 (s+ entity "'s")
+                                 "your")
+                       " offers and requests are about to expire"))
     (record-option :notify-message
                    (s+ "when someone sends "
                        entity
