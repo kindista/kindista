@@ -52,7 +52,9 @@
    &aux (preferences))
 
   (flet ((record-option (option text)
-           (if (getf (or group user) option)
+           (if (if group
+                 (find userid (getf group option))
+                 (getf user option))
              (asetf (getf preferences :subscribed)
                     (push text it))
              (asetf (getf preferences :unsubscribed)
