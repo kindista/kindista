@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -28,6 +28,11 @@
                          (ip (when (boundp 'hunchentoot:*request*) (header-in* :x-real-ip)))
                     &allow-other-keys)
   (send-message *notice-mailbox* `(,type ,time ,userid ,ip ,@rest)))
+
+(defun notice-data
+  (&aux (notice *notice*)
+        (userid (third notice)))
+  (append (list :userid userid) (cddddr notice)))
 
 (defun add-notice-handler (notice thunk)
   (with-locked-hash-table (*notice-handlers*)

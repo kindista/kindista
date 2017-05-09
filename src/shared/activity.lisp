@@ -17,9 +17,10 @@
 
 (in-package :kindista)
 
-(defun timestamp (time &key type verb class)
+(defun timestamp (time &key type verb class icon)
   (html
     (:h3 :class (strcat* "timestamp " class) :data-time time :data-type type
+       (awhen icon (str it))
        (awhen verb (htm (str it) " "))
        (str (humanize-universal-time time)))))
 
@@ -50,7 +51,7 @@
       )))
 
 (defun activity-item
-  (&key id url share-url content time primary-action loves comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t) event-time
+  (&key id url publish-facebook content time primary-action loves comments distance delete deactivate reactivate image-text edit reply class admin-delete related-items matchmaker (show-actions t) event-time
    &aux (here (request-uri*))
         (next (if (find (strcat id) (url-parts here) :test #'string=)
                 here
@@ -102,10 +103,6 @@
                        ;; don't use anchor link. otherwise user can't see
                        ;; the success flash after they post a reply
                        :value (request-uri*))
-               (awhen share-url
-                 (htm
-                   " &middot; "
-                   (:a :href it "Share on Facebook")))
                (when reply
                  (htm
                   " &middot; "
@@ -119,28 +116,28 @@
                  (htm
                    " &middot; "
                    (:input :type "submit" :name "delete" :value "Delete")))
-               (when edit
+               (when (or edit reactivate)
                  (htm
                    " &middot; "
                    (:input :type "submit" :name "edit" :value "Edit")
                    " &middot; "
-                   (cond
-                     (admin-delete
-                      (htm (:input :type "submit"
-                                   :name "inappropriate-item"
-                                   :value "Inappropriate")))
-                     (deactivate
-                      (htm (:input :type "submit"
-                                   :name "deactivate"
-                                   :value "Deactivate")))
-                     (t
-                      (htm (:input :type "submit"
-                                   :name "delete"
-                                   :value "Delete")))))))
-               (awhen reactivate
-                 (htm
-                   " &middot; "
-                   (:a :href it "Reactivate")))
+                   (if reactivate
+                     (htm (:input :type "submit"
+                           :name "reactivate"
+                           :value "Reactivate"))
+                     (cond
+                       (admin-delete
+                         (htm (:input :type "submit"
+                               :name "inappropriate-item"
+                               :value "Inappropriate")))
+                       (deactivate
+                         (htm (:input :type "submit"
+                               :name "deactivate"
+                               :value "Deactivate")))
+                       (t
+                        (htm (:input :type "submit"
+                              :name "delete"
+                              :value "Delete"))))))))
 
                (when image-text
                  (htm
@@ -152,7 +149,13 @@
                (when comments
                  (htm
                    " &middot; "
-                   (str (comment-button url))))))))
+                   (str (comment-button url))))
+
+               (when publish-facebook
+                 (htm
+                   (:form :method "post" :action url
+                     " &middot; "
+                     (:input :type "submit" :name "publish-facebook" :value "Share on Facebook"))))))))
 
       (when (or loves related-items)
         (htm
@@ -186,9 +189,14 @@
       :edit (or (eql host *userid*)
                 group-adminp
                 (getf *user* :admin))
-      :deactivate (or (eql host *userid*)
-                      group-adminp
-                      (getf *user* :admin))
+      :deactivate (and (getf data :active)
+                       (or (eql host *userid*)
+                         group-adminp
+                         (getf *user* :admin)))
+      :reactivate (and (not (getf data :active))
+                       (or (eql host *userid*)
+                         group-adminp
+                         (getf *user* :admin)))
       :loves (loves item-id)
       ;:comments (length (comments item-id))
       :content (html
@@ -259,15 +267,15 @@
          ; result-people is a list
          ; car of list is person showing gratitude
          ; cdr of list is subjects
-    &aux (user-id (first (result-people result)))
-         ; tests to see if the user is the author of this item
-         (self (eql user-id *userid*))
-         ;item-id is derived from "result" which is passed in.
+    &aux ;item-id is derived from "result" which is passed in.
          (item-id (result-id result))
          ; data is a plist with all relevant info about the gratitude
          ; item.
          (data (db item-id))
+         ; tests to see if the user is the author of this item
          (author (getf data :author))
+         (self (eql author *userid*))
+        ;(gratitude-recipients (remove author (result-people result)))
          (adminp (group-admin-p author))
          (images (getf data :images))
          (item-url (strcat "/gratitude/" item-id)))
@@ -288,12 +296,15 @@
       :loves (loves item-id)
       ;:comments (length (comments item-id))
       :content (html
-                 (:p (str (person-link user-id))
+                 (:p (str (person-link author))
                      " expressed "
                      (:a :href item-url "gratitude")
                      " for "
                      (str (name-list (getf data :subjects)
-                                     :maximum-links 100)))
+                                     :maximum-links 100))
+                     (when (and (getf *user* :admin) (getf data :fb-object-id))
+                       (htm
+                         (str (icon "facebook")))))
                  (:p
                    (str
                      (if truncate
@@ -303,7 +314,13 @@
                        (html-text (getf data :text)))))
                  (unless (string= item-url (script-name*))
                    (str (activity-item-images images item-url "gift"))))
-      :related-items (when (and reciprocity (getf data :on) show-on-item)
+      :publish-facebook (and self
+                             (show-fb-p)
+                             (not (getf data :fb-publishing-in-process))
+                             (not (fb-object-actions-by-user
+                                    item-id
+                                    :data data)))
+      :related-items (when (and (getf data :on) show-on-item)
                        (html
                          (when (and (getf data :on) show-on-item)
                            (str (gratitude-on-item-html
@@ -347,9 +364,9 @@
   (result
    &key truncate
         show-distance
-        show-what
+        show-icon
         show-tags
-        (show-when t)
+        show-recent-action
    &aux (user-id (first (result-people result)))
         (self (eql user-id *userid*))
         (item-id (result-id result))
@@ -362,6 +379,8 @@
         (images (getf data :images))
         (item-url (strcat "/" type "s/" item-id))
         (active-p (getf data :active))
+        (refreshed (getf data :refreshed))
+        (edited (getf data :edited))
         (renew-link (s+ (url-compose item-url
                                      "edit" "t"
                                      "focus" "expiration")
@@ -371,20 +390,30 @@
         (timestamp (if active-p
                      (timestamp
                        time
+                       ;; indicate to admins which items are refreshed
+                       ;; to make sure refreshing thread hasn't died
+                       :icon (when (and (getf *user* :admin)
+                                        refreshed
+                                        (or (not edited)
+                                            (> refreshed edited)))
+                               (icon "home"))
                        :class (when
                                 (or (not active-p)
                                     (and self
-                                        (< time (+ (get-universal-time)
-                                                   (* 5 +day-in-seconds+)))))
+                                         (< time (+ (get-universal-time)
+                                                    (* 5 +day-in-seconds+)))))
                                 "red")
                        :type type
                        :verb (if self
                                "expires"
-                               (when (and show-what
-                                          (not show-when))
+                               (when show-recent-action
                                  (cond
-                                   ((getf data :refreshed) "refreshed")
-                                   ((getf data :edited) "edited")
+                                   ((and refreshed edited)
+                                    (if (> refreshed edited)
+                                      "refreshed"
+                                      "edited"))
+                                   (refreshed "refreshed")
+                                   (edited  "edited")
                                    ((string= type "request") "requested")
                                    ((string= type "offer") "offered")))))
                      (html (:h3 :class "timestamp red" "inactive")))))
@@ -399,11 +428,10 @@
                             (or self group-adminp (getf *user* :admin)))
                  :deactivate (and active-p
                                   (or self group-adminp (getf *user* :admin)))
-                 :reactivate (when (and (not active-p)
-                                        (or self
-                                            group-adminp
-                                            (getf *user* :admin)))
-                               renew-link)
+                 :reactivate (and (not active-p)
+                                  (or self
+                                      group-adminp
+                                      (getf *user* :admin)))
                  :admin-delete (and (getf *user* :admin)
                                     (not self)
                                     (not group-adminp))
@@ -423,23 +451,12 @@
                                            :text "Request This"
                                            :image (icon "white-request"))))
                  :class (s+ type " inventory-item")
-                 :share-url (when (and self
-                                       (not *productionp*)
-                                       (getf *user* :fb-id)
-                                       (not (getf data :fb-action-id)))
-                              (url-compose
-                                "https://www.facebook.com/dialog/share_open_graph"
-                                "app_id" *facebook-app-id*
-                                "display" "popup"
-                                "action_type" "kindistadotorg:post"
-                                "action_properties" (url-encode
-                                                      (json:encode-json-to-string
-                                                        (list
-                                                          (cons
-                                                            type
-                                                            (s+ "https://kindista.org" item-url)))))
-                                "redirect_uri" (s+ +base-url+
-                                                   (string-left-trim "/" (request-uri*)))))
+                 :publish-facebook (and self
+                                        (show-fb-p)
+                                        (not (getf data :fb-publishing-in-process))
+                                        (not (fb-object-actions-by-user
+                                               item-id
+                                               :data data)))
                  :reply (unless (or self
                                     (not (getf data :active)))
                           t)
@@ -452,7 +469,7 @@
                                                   :truncate truncate
                                                   :data data
                                                   :show-distance show-distance
-                                                  :show-what show-what
+                                                  :show-icon show-icon
                                                   :show-tags show-tags)
 
                  :related-items (when (and (or self
@@ -473,7 +490,7 @@
 
 (defun inventory-item-content
   (result
-   &key show-distance show-what show-tags truncate data
+   &key show-distance show-icon show-tags truncate data
    &aux (item-id (result-id result))
         (item (or data (db item-id)))
         (by (getf item :by))
@@ -486,9 +503,9 @@
         (tags (getf item :tags)))
   (html
     (:div
-      (when (or title show-what)
+      (when (or title show-icon)
         (htm (:div :class "inventory-title"
-               (when (and title show-what)
+               (when (and title show-icon)
                  (htm (str (icon (if requestp "requests" "offers")))))
                (awhen title
                  (htm (:h3 :class "inventory-title"
@@ -496,7 +513,9 @@
                           (str (if q
                                  (highlight-stems-in-text q it)
                                  it)))))))))
-      (:div
+      (:div :class "author"
+        (when (and (getf *user* :admin) (getf data :fb-object-id))
+          (htm (str (icon "facebook"))))
         (str (if requestp
                "requested by "
                "offered by "))
@@ -571,9 +590,9 @@
                      (:person
                        (str (joined-activity-item item)))
                      (:offer
-                       (str (inventory-activity-item item :show-what t :show-distance location :show-tags show-tags :truncate t)))
+                       (str (inventory-activity-item item :show-icon t :show-distance location :show-tags show-tags :truncate t)))
                      (:request
-                       (str (inventory-activity-item item :show-what t :show-distance location :truncate t :show-tags show-tags)))))
+                       (str (inventory-activity-item item :show-icon t :show-distance location :truncate t :show-tags show-tags)))))
                  (setf items (cdr items)))
 
                 (t

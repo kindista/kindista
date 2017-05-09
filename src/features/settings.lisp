@@ -1,4 +1,4 @@
-;;; Copyright 2012-2016 CommonGoods Network, Inc.
+;;; Copyright 2012-2017 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -16,6 +16,36 @@
 ;;; along with Kindista.  If not, see <http://www.gnu.org/licenses/>.
 
 (in-package :kindista)
+
+(defun add-notify-inventory-expiration (&aux (people-modified 0) (groups-modified 0))
+  (dolist (id (hash-table-keys *db*))
+    (let* ((data (db id))
+           (user-db (when (eq (getf data :type) :person) data))
+           (group-db (when (eq (getf data :type) :group) data))
+           (admins (getf group-db :admins))
+           (user-notify-message-p (getf user-db :notify-message))
+           (user-notify-expiration-p (getf user-db :notify-inventory-expiration )))
+      (when (and user-notify-message-p
+                (not user-notify-expiration-p))
+                ;user has notify-message but not notify-expiration
+        (modify-db id :notify-inventory-expiration t)
+        (incf people-modified))
+
+      (when group-db
+        (modify-db id :notify-inventory-expiration admins)
+        (incf groups-modified))))
+
+  (list :groups-modified groups-modified
+        :people-modified people-modified))
+
+(defun reset-blog-notification-settings (&aux (count 0))
+  "accidentally unsubscribed people from the blog when they were trying to unsubscribe from reminders"
+  (dolist (id *active-people-index*)
+    (let ((data (db id)))
+      (when (and (getf data :notify-kindista)
+                 (not (getf data :notify-blog)))
+        (modify-db id :notify-blog t))))
+  count)
 
 (defun settings-tabs-html (tab &optional groupid)
   (html
@@ -37,12 +67,13 @@
         (htm (:li :class "selected" "Communication Settings"))
         (htm (:li (:a :href (url-compose "/settings/communication" "groupid" groupid)
                       "Communication Settings"))))
-      (unless t; groupid
+      (when (and (not groupid)
+                 (or *enable-facebook*
+                     (find *userid* *alpha-testers*)
+                     (getf *user* :test-user)))
         (if (equal tab "social")
           (htm (:li :class "selected" "Social Media Settings"))
-          (htm (:li (:a :href "/settings/social" "Social Media Settings")))))
-
-         )))
+          (htm (:li (:a :href "/settings/social" "Social Media Settings"))))))))
 
 (defun settings-item-html
   (item
@@ -62,8 +93,7 @@
                  (:div :class "title"
                   (str (or title (string-capitalize item))))))))
   (html
-    (:a :id (hyphenate item))
-    (:div :class "item settings-item"
+    (:div :id (hyphenate item) :class "item settings-item"
       (:div :class "settings-item-table"
         (str title-div)
         (:div :class (s+ "details " class)
@@ -222,7 +252,7 @@
                    (html
                      (if public-location
                        (htm "This address is currently "
-                             (:strong "set to be displayed publicly ")
+                              (:strong "set to be displayed publicly ")
                              "to anyone viewing "
                              (str (s+ (getf entity :name) "'s"))
                              " profile. ")
@@ -264,7 +294,7 @@
                           (if (eql (getf entity :location-privacy) :public)
                             "displayed publicly" "hidden")
                           ". You can change the visibility of this address on your group's settings page. ")
-                    (s+ "We will never share your exact location with anyone else.")))
+                    (s+ "We will never share your exact location with anyone else. ")))
                   "If you would like to know more about how we use the information you share with us,
                    please read our " (:a :href "/privacy" "privacy policy") ".")
               (str (static-google-map :size "280x150"
@@ -639,6 +669,19 @@
                 " to your Kindista account."))
      (see-other "/settings/communication")))))
 
+(defun settings-push-notifications
+  (&optional group)
+  (unless group
+    (settings-item-html
+     "push notifications"
+     (html (:script :type "text/javascript" :src "/push-notification-button.js"))
+     :help-text (html (:span :id "push-help-text" "Push notifications allow you to recieve messages from other users on your phone or browser. ")
+                      (:strong "Currently only availabe on Chrome and Chromium version 42 and above."))
+     :editable t
+     :buttons (html (:button :id "push-notification-button"
+                             :class "yes small"
+                             :disabled t "Enable Push Messages" )))))
+
 (defun settings-notifications (&key groupid group user (userid *userid*))
   (let* ((entity (or group  user *user*))
          (group-name (when group (getf group :name)))
@@ -671,10 +714,13 @@
                           " a message or responds to "
                           (if group "our" "my")
                           " offers/requests")))
-            (:li (:input :type "checkbox"
+           (:li (:input :type "checkbox"
                   :name "inventory-expiration"
                   :checked (checkbox-value :notify-inventory-expiration))
-                 "when my offers and requests are about to expire ")
+                 (str
+                   (s+ "when "
+                       (if group-name "this group's" "my")
+                       " offers and requests are about to expire ")))
 
             (when group
               (htm
@@ -685,10 +731,6 @@
 
             (unless group
               (htm
-               ;(:li (:input :type "checkbox"
-               ;      :name "new-contact"
-               ;      :checked (checkbox-value :notify-new-contact))
-               ;     "when someone adds me to their list of contacts")
                 (:li (:input :type "checkbox"
                       :name "expired-invites"
                       :checked (checkbox-value :notify-expired-invites))
@@ -697,6 +739,10 @@
                       :name "group-membership-invites"
                       :checked (checkbox-value :notify-group-membership-invites))
                      "when someone invites me to join a group on Kindista (e.g. a business, non-profit, or other organization I belong to within my community)")
+                (:li (:input :type "checkbox"
+                           :name "new-contact"
+                           :checked (checkbox-value :notify-new-contact))
+                          "when someone adds me to their list of contacts")
                 (:li :class "notifications border-top"
                      (:input :type "checkbox"
                       :name "reminders"
@@ -840,62 +886,49 @@
   (require-user (:allow-test-user t)
     (cond
       ((post-parameter "fb-logout")
-       (modify-db *userid* :fbtoken nil)
+       (modify-db *userid* :fb-token nil
+                           :fb-expires nil
+                           :fb-link-active nil)
        (flash "Kindista no longer has access to your Facebook account")))
-    (see-other "/settings/social")))
+    (see-other (or (post-parameter-string "next") "/settings/social"))))
 
 (defun get-settings-social ()
-  (unless *productionp*
-    (require-user (:allow-test-user t)
-      (when (get-parameter "code")
-        (let ((now (get-universal-time))
-              (reply (multiple-value-list
-                       (http-request
-                         (url-compose
-                           "https://graph.facebook.com/oauth/access_token"
-                           "client_id" *facebook-app-id*
-                           "redirect_uri" (s+ +base-url+ "settings/social")
-                           "client_secret" *facebook-secret*
-                           "code" (get-parameter "code"))
-                         :force-binary t))))
-          (cond
-            ((<= (second reply) 200)
-             (let* ((alist (quri.decode:url-decode-params
-                             (octets-to-string (first reply))))
-                    (token (cdr (assoc "access_token" alist :test #'string=)))
-                    (expires (+ now (parse-integer (cdr (assoc "expires" alist :test #'string=))))))
-
-               (modify-db *userid* :fbtoken token :fbexpires expires)
-               (unless (getf *user* :fb-id)
-                 (modify-db *userid* :fb-id (get-facebook-user-id)))
-               (flash "You have successfully linked Kindista to your Facebook account.")
-
-             (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
-               (format s "~A ~A ~A~%" alist token expires))))
-            ((>= (second reply) 400)
-             (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
-               (format s "~S~%"
-                       (cdr (assoc :message
-                                   (cdr (assoc :error
-                                               (decode-json-octets (first reply)))))))))
-            (t
-             (with-open-file (s (s+ +db-path+ "/tmp/log") :direction :output :if-exists :supersede)
-               (format s ":-(")))))
-        ; take this code + facebook private to make a token
-        )
-
-      (settings-social-html))))
+  (require-user (:allow-test-user t)
+    (let* ((now (get-universal-time))
+           (fb-token-data (when (get-parameter "code")
+                                  (register-facebook-user "settings/social")))
+           (fb-token (getf fb-token-data :access--token))
+           (fb-expires (when fb-token-data
+                      (+ (get-universal-time)
+                         (safe-parse-integer (getf fb-token-data :expires--in)))))
+           (fb-scope (when fb-token-data
+                       (awhen (get-parameter-string "granted_scopes")
+                         (mapcar #'string-to-keyword
+                                 (words-from-string it))))))
+      (when fb-token
+        (apply #'modify-db
+               *userid*
+               (remove-nil-plist-pairs
+                 (list :fb-token fb-token
+                       :fb-expires (+ (get-universal-time)
+                                      (safe-parse-integer fb-expires))
+                       :fb-link-active t
+                       :fb-permissions fb-scope)))
+        (unless (getf *user* :fb-id)
+          (let ((fb-id (get-facebook-user-id fb-token)))
+            (modify-db *userid* :fb-id fb-id)
+            (with-locked-hash-table (*facebook-id-index*)
+              (setf (gethash fb-id *facebook-id-index*) *userid*))))
+        (unless (getf *user* :avatar)
+          (modify-db *userid* :avatar (save-facebook-profile-picture-to-avatar *userid*)))
+        (flash "You have successfully linked Kindista to your Facebook account.")))
+    (settings-social-html)))
 
 (defun settings-social-html
-  (&aux (fb-token-p (getf *user* :fbtoken))
-        (sign-in-button
-          (html (:a :class "blue"
-                    :href (url-compose "https://www.facebook.com/dialog/oauth"
-                                       "client_id" *facebook-app-id*
-                                       "scope" "public_profile,publish_actions"
-                                       "redirect_uri" (s+ +base-url+
-                                                          "settings/social"))
-                    "Sign in to Facebook")))
+  (&aux (fb-token-p (getf *user* :fb-token))
+        (sign-in-button (facebook-sign-in-button
+                          :redirect-uri "settings/social"
+                          :button-text "Sign in to Facebook"))
         (sign-out-button
           (html (:button :class "cancel"
                          :type "submit"
@@ -920,78 +953,166 @@
               (:span
                 (str (if fb-token-p
                        "Your Kindista account is currently linked to your Facebook account."
-                       "Your Kindista account is not currently linked to Facebook.")))))
+                       "Your Kindista account is not currently linked to Facebook."))))
+            )
 
        :buttons (if fb-token-p sign-out-button sign-in-button)
-       :help-text "You can connect your Kindista account with Facebook to post your offers, requests, and gratitude to your Facebook timeline."
+       :help-text (if fb-token-p
+                    (html
+                       "You can manage the types of Facebook data that Kindista has access to "
+                       (:strong
+                         (:a :href "https://www.facebook.com/settings?tab=applications"
+                             "here"))
+              ".")
+                    "You can connect your Kindista account with Facebook to post your offers, requests, and gratitude to your Facebook timeline.")
        :action "/settings/social"
        :class "facebook"
        :title "Facebook"
        :editable t)))))
 
-(defun get-settings-communication ()
-  (if *user*
-     (if (and (scan +number-scanner+ (get-parameter "invitation-id"))
+(defun unsub-notify-from-email
+  (email
+   unsub-type
+   &aux (userid (gethash email *email-index*))
+        (notify-type (string-upcase (s+ "notify-" unsub-type)))
+        (unverified-groupid (get-parameter-integer "groupid"))
+        (users-groups (groups-with-user-as-admin userid))
+        (groupid (awhen (find unverified-groupid users-groups :key #'car)
+                   (car it))))
+
+  (when (find notify-type
+              (mapcar #'symbol-name *notification-types*)
+              :test #'string=)
+    (setf unsub-type (intern notify-type :keyword)))
+
+  (flet ((unsub (message)
+           (if groupid
+             (amodify-db groupid unsub-type (remove userid it))
+             (modify-db userid unsub-type nil))
+           (flash message)))
+    (case unsub-type
+      (:notify-expired-invites
+        (unsub "You are now unsubscribed from receiving notificaitons when invitations you sent to friends to join Kindista expire"))
+      (:notify-gratitude
+        (unsub
+          (if groupid
+            "You are now unsubscribed from receiving notifications when this group recieves a statment of gratitude"
+            "You are now unsubscribed from receiving notificaitons when someone posts gratitude about you")))
+      (:notify-group-membership-invites
+        (unsub "You are now unsubscribed from receiving notificaitons when someone invites you to join a group on Kindista "))
+      (:notify-membership-request
+        (unsub "You are now unsubscribed from reciving notifications when someone requests to join this group"))
+      (:notify-inventory-expiration
+        (unsub
+          (if groupid
+            "You are now unsubscribed from receiving notifications when this group's offers and requests are about to expire"
+            "You are now unsubscribed from receiving notificaitons when your offers and requests are about to expire")))
+      (:notify-inventory-digest
+        (unsub "You are now unsubscribed from receiving notificaitons of new offers and requests in your area"))
+      (:notify-kindista
+        (unsub "You are now unsubscribed from receiving updates and information about Kindista"))
+      (:notify-blog
+        (unsub "You are now unsubscribed from receiving new articles from the Kindista blog"))
+      (:notify-message
+        (unsub
+          (if groupid
+            "You are now unsubscribed from receiving notifications when this group recives a message or a response for an offer/request"
+            "You are now unsubscribed from receiving notificaitons when someone sends you a message or responds to your offers/requests")))
+      (:notify-new-contact
+        (unsub "You are now unsubscribed from receiving notificaitons when someone adds you to their list of contacts"))
+      (:notify-reminders
+        (unsub "You are now unsubscribed from receiving reminders for how to get the most out of Kindista")))))
+
+(defun settings-unsubscribe-all ()
+     (settings-item-html
+     "Unsubscribe"
+     (html
+       (awhen (get-parameter-string "k")
+         (htm (:input :type "hidden" :name "k" :value it)))
+       (awhen (get-parameter-string "email")
+         (htm (:input :type "hidden" :name "email" :value it)))
+       (:p (:strong "Warning: If you unsubscribe from all notifications, you will not recieve email notifications when people post gratitude about you or want to share with you."))
+       (:p "If you only want to unsubscribe from notifications sent by our system (and still want messages from other Kindista members), please adjust your individual notification preferences above."))
+     :editable t
+     :buttons (html (:button :class (s+ "red" (when *user* " small"))
+                             :type "submit"
+                             :name "unsubscribe-all"
+                             "Unsubscribe From All Notifications" ))
+     :action "/settings/notifications"))
+
+(defun get-settings-communication
+  (&aux (unsub-email (get-parameter-string "email"))
+        (unsub-type (get-parameter-string "type"))
+        (unsub-key (get-parameter-string "k"))
+        (unsub-id (awhen unsub-email
+                    (gethash it *email-index*)))
+        (unsub-user (awhen unsub-id (db it)))
+        (valid-unsub (string= (getf unsub-user :unsubscribe-key)
+                              unsub-key)))
+  (cond
+    ((and (not *user*) (not valid-unsub))
+     (login-required))
+
+    ((not *user*)
+     (let* ((unverified-groupid (get-parameter-integer "groupid"))
+            (groups (groups-with-user-as-admin unsub-id))
+            (groupid (awhen (find unverified-groupid groups :key #'car)
+                       (car it)))
+            (group (db groupid)))
+       (unsub-notify-from-email unsub-email unsub-type )
+       (header-page
+       "Communication Settings"
+       nil
+       (html
+         (dolist (flash (flashes)) (str flash))
+         (:div :class "logged-out unsubscribe"
+          (:h2 "Please let us know what types of information you would like to be notified about")
+          (:p "Notifications will be sent to your primary email address: "
+           (:strong (str (car (getf unsub-user :emails)))))
+          (when groups
+            (str (settings-identity-selection-html
+                   (or groupid unsub-id)
+                   groups
+                   :userid unsub-id
+                   :url "/settings/notifications")))
+          (str (settings-notifications :user unsub-user
+                                       :userid unsub-id
+                                       :group group
+                                       :groupid groupid))
+          (unless group (str (settings-unsubscribe-all)))))
+       :hide-menu t)))
+
+    ((and (scan +number-scanner+ (get-parameter "invitation-id"))
               (get-parameter "token"))
-        (activate-email-address (parse-integer (get-parameter "invitation-id"))
-                                (get-parameter "token"))
+     (activate-email-address (parse-integer (get-parameter "invitation-id"))
+                                (get-parameter "token")))
 
-        (progn
-          (when (and (get-parameter "k")
-                     (get-parameter "email")
-                     (not (find (get-parameter-string "email")
-                                (getf *user* :emails)
-                                :test #'string=)))
-            (flash "You must first sign out of this account before you can change settings on a different account." :error t))
-
-         (settings-template-html
-          (aif (get-parameter "groupid")
-            (url-compose "/settings/communication"
-                         "groupid" it)
-            "/settings/communication")
-          (html
-           (str (settings-tabs-html "communication" (awhen groupid it)))
-           (:p "We'll email you whenever something happens on Kindista that involves "
-               (str (or group-name "you"))". "
-               "You can specify which actions you would like to be notified about.")
-           (:p "Notifications will be sent to your primary email address: "
-               (:strong (str (car (getf *user* :emails)))))
-           (str (settings-notifications :groupid groupid :group group))
-           (unless groupid
-             (str (settings-emails (string= (get-parameter "edit") "email")
-                                   :activate (get-parameter "activate"))))))))
-
-     (if (and (get-parameter "k") (get-parameter "email"))
-       (let* ((email (get-parameter-string "email"))
-              (userid (gethash email *email-index*))
-              (user (db userid))
-              (unverified-groupid (get-parameter-integer "groupid"))
-              (groups (groups-with-user-as-admin userid))
-              (groupid (awhen (find unverified-groupid groups :key #'car) (car it)))
-              (group (db groupid)))
-         (if (string= (get-parameter-string "k") (getf user :unsubscribe-key))
-           (header-page
-             "Communication Settings"
-             nil
-             (html
-               (dolist (flash (flashes)) (str flash))
-               (:div :class "logged-out unsubscribe"
-                (:h2 "Please let us know what types of information you would like to be notified about")
-                (:p "Notifications will be sent to your primary email address: "
-                 (:strong (str (car (getf user :emails)))))
-                (when groups
-                  (str (settings-identity-selection-html (or groupid userid)
-                                                         groups
-                                                         :userid userid
-                                                         :url "/settings/notifications"
-                                                         )))
-                (str (settings-notifications :user user
-                                             :userid userid
-                                             :group group
-                                             :groupid groupid))))
-             :hide-menu t)
-           (login-required)))
-        (login-required))))
+    (t ;when *user*
+     (when unsub-id
+       (if (not (eql unsub-id *userid*))
+         (flash "You must first sign out of this account before you can change settings on a different account." :error t)
+         (when valid-unsub
+           (unsub-notify-from-email unsub-email unsub-type))))
+     (settings-template-html
+       (aif (get-parameter "groupid")
+         (url-compose "/settings/communication"
+                      "groupid" it)
+         "/settings/communication")
+       (html
+        (str (settings-tabs-html "communication" (awhen groupid it)))
+        (:p "We'll email you whenever something happens on Kindista that involves "
+            (str (or group-name "you"))". "
+            "You can specify which actions you would like to be notified about.")
+        (:p "Notifications will be sent to your primary email address: "
+            (:strong (str (car (getf *user* :emails))))
+            (:a :id "email-link" :href "/settings/communication#email" "change"))
+        (str (settings-notifications :groupid groupid :group group))
+        (when (and (not groupid) (eql unsub-id *userid*))
+          (str (settings-unsubscribe-all)))
+        (str (settings-push-notifications group))
+        (unless groupid
+          (str (settings-emails (string= (get-parameter "edit") "email")
+                                :activate (get-parameter "activate")))))))))
 
 (defun get-settings-admin-roles ()
   (require-user ()
@@ -1163,7 +1284,8 @@
 
 (defun post-settings-notification
   (&aux (k (post-parameter-string "k"))
-        (unverified-email (post-parameter-string "email")))
+        (unverified-email (post-parameter-string "email"))
+        (unsub-type (post-parameter-string "type")))
   "Requires a logged in user or credentials from an unsubscribe link.  When both are present, unsubscribe link credentials are used."
   (if (and (not *user*)
            (or (not k) (not unverified-email)))
@@ -1178,6 +1300,7 @@
            (userid (or (when verified-user unverified-userid)
                        *userid*))
            (user (or verified-user *user*))
+           (unsub-all-p (post-parameter "unsubscribe-all"))
            (save (post-parameter "save-notifications"))
            ;; for identity-selection-html
            (identity (post-parameter-integer "identity-selection"))
@@ -1187,6 +1310,7 @@
            (next (or (post-parameter "next")
                      (url-compose "/settings/communication"
                           "groupid" groupid
+                          "type" unsub-type
                           "email" unverified-email
                           "k" k))))
 
@@ -1216,12 +1340,30 @@
                     :notify-message (if (post-parameter "message")
                                       (pushnew userid it)
                                       (remove userid it))
+                    :notify-inventory-expiration (if (post-parameter "inventory-expiration")
+                                                   (pushnew userid it)
+                                                   (remove userid it))
                     :notify-membership-request (if (post-parameter "group-membership-request")
                                                  (pushnew userid it)
                                                  (remove userid it)))
          (notice :updated-notifications :userid userid :groupid groupid)
          (flash "Your notification preferences have been saved.")
-         (see-other next) )
+         (see-other next))
+        (unsub-all-p
+         (modify-db userid
+                    :notify-gratitude nil
+                    :notify-message nil
+                    :notify-inventory-expiration nil
+                    :notify-new-contact nil
+                    :notify-reminders nil
+                    :notify-inventory-digest nil
+                    :notify-blog nil
+                    :notify-expired-invites nil
+                    :notify-group-membership-invites nil
+                    :notify-kindista nil)
+         (notice :updated-notifications :userid userid)
+         (flash "You are now unsubscribed from reciving any notifications from Kindista")
+         (see-other next))
         (save
          (modify-db userid
                     :notify-gratitude (when (post-parameter "gratitude") t)
@@ -1230,7 +1372,7 @@
                     :notify-new-contact (when (post-parameter "new-contact") t)
                     :notify-reminders (when (post-parameter "reminders") t)
                     :notify-inventory-digest (when (post-parameter "inventory-digest") t)
-                    :notify-blog (when (post-parameter "reminders") t)
+                    :notify-blog (when (post-parameter "blog") t)
                     :notify-expired-invites (when (post-parameter "expired-invites") t)
                     :notify-group-membership-invites (when (post-parameter "group-membership-invites") t)
                    :notify-kindista (when (post-parameter "kindista") t))

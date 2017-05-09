@@ -42,6 +42,8 @@
       )
       |#
 
+    (str (facebook-signup-sidebar))
+
     (str (donate-sidebar))
 
     (str (invite-sidebar :mobile t))
@@ -108,8 +110,11 @@
                  (:a :href "/signup" (:strong "sign up"))
                  ". "
                  "Please be aware that some features may not be available to "
-                 "you until you post some offers and we have time to review "
-                 "them to make sure you're not a spammer."))
+                 "you until you post your first offer to show us that "
+                 "you understand  our "
+                 (:a :href "/terms" "Terms of Use")
+                 " and that you intend to be a contributing member "
+                 "of our community."))
               nil))
            ((getf *user* :help)
             (welcome-bar
@@ -146,8 +151,7 @@
           (:p "Kindista is a social network for " (:strong "building and supporting real community") ".
                We use your location to help you find " (:strong "local people, offers, and events") ".
                To get started, we need to know where you call home.")
-          (:p "We will never share your exact location with anyone else.
-               If you would like to know more about how we use the information you share with us,
+          (:p "We will never share your exact location with anyone else. If you would like to know more about how we use the information you share with us,
                please read our " (:a :href "/privacy" "privacy policy") ".")
           (:h2 "Where do you call home?")
           (:em "If you are travelling or do not have a permanent address, you may enter the city or location where you will be sleeping tonight. You can change your address at any time on the settings page.")

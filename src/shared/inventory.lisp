@@ -20,16 +20,19 @@
 (defun new-pending-offer-notice-handler ()
   (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-inventory-item (&key type (by *userid*) title details tags privacy expires)
-  (insert-db (list :type type
-                   :active t
-                   :by by
-                   :privacy privacy ;a list of groups who can see the item
-                   :title title
-                   :details details
-                   :tags tags
-                   :expires expires
-                   :created (get-universal-time))))
+(defun create-inventory-item (&key type (by *userid*) title details tags privacy expires publish-fb-on-account-approval)
+  (insert-db
+    (remove-nil-plist-pairs
+      (list :type type
+            :active t
+            :by by
+            :publish-fb-on-account-approval publish-fb-on-account-approval
+            :privacy privacy ;a list of groups who can see the item
+            :title title
+            :details details
+            :tags tags
+            :expires expires
+            :created (get-universal-time)))))
 
 (defun inventory-item-result (id &key data by-id by)
   (or (gethash id *db-results*)
@@ -52,7 +55,7 @@
 
 (defun index-inventory-item
   (id
-   data
+   &optional (data (db id))
    &aux (by-id (getf data :by))
         (by (db by-id))
         (type (getf data :type))
@@ -159,9 +162,8 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
-         (fb-object-id (getf data :fb-object-id))
-         (fb-action-id (getf data :fb-action-id))
-         (fb-id (or fb-object-id fb-action-id))
+         (reactivate (not (getf data :active)))
+         (fb-action-id (first (fb-object-actions-by-user id :data data)))
          (by (getf data :by))
          (now (get-universal-time)))
 
@@ -206,39 +208,45 @@
 
     (setf (result-privacy result) privacy)
 
-    (let ((data (list :title title
-                      :details details
-                      :active t
-                      :tags tags
-                      :fb-id fb-id
-                      :expires expires
-                      :privacy privacy))
-
-         ;(typestring (string-downcase (symbol-name type)))
-          )
+    (let ((new-data (list :title title
+                          :details details
+                          :active t
+                          :tags tags
+                          :expires expires
+                          :privacy privacy)))
 
       (cond
-        ((and publish-facebook-p (not fb-id))
-         (setf (getf data :fb-action-id)
-               (publish-facebook-action id))
-         (modify-db id :fb-object-id (get-facebook-object-id id)))
+        ((and publish-facebook-p (not fb-action-id))
+         (if (current-fb-token-p :publish-actions)
+           (progn (notice :new-facebook-action :item-id id)
+                  (flash (s+ "Your "
+                             (string-downcase (symbol-name type))
+                             " has been published on Facebook"))
+                  (modify-db id :fb-publishing-in-process (get-universal-time)))
+           (renew-fb-token :item-to-publish id
+                           :fb-permission-requested :publish-actions
+                           :next (resource-url id data))))
 
-        ((and fb-id publish-facebook-p)
-         (update-facebook-object id))
+        ((and fb-action-id publish-facebook-p)
+         (notice :new-facebook-action :object-modified t
+                                      :userid nil
+                                      :fb-object-id (getf data :fb-object-id)))
 
         ((and (not publish-facebook-p) fb-action-id)
          (delete-facebook-action fb-action-id)))
-
-      (deindex-inventory-expiration id data)
-      (index-inventory-expiration id data)
 
       (unless (and (getf *user* :admin)
                    (not (group-admin-p by))
                    (not (eql *userid* by)))
         (refresh-item-time-in-indexes id :time now)
-        (append data (list :edited now)))
+        (append new-data (list :edited now)))
 
-      (apply #'modify-db id data))
+      (apply #'modify-db id new-data)
+      (if reactivate
+        (index-inventory-item id)
+        (progn
+          (deindex-inventory-expiration id)
+          (index-inventory-expiration id))))
 
     (case (result-type result)
       (:offer (update-matchmaker-offer-data id))
@@ -251,7 +259,7 @@
   (let* ((result (gethash id *db-results*))
          (type (result-type result))
          (data (db id))
-         (fb-action-id (getf data :fb-action-id))
+         (fb-actions (getf data :fb-actions))
          (now (get-universal-time))
          (by-id (getf data :by))
          (by-group-p (eq (db by-id :type) :group))
@@ -334,12 +342,13 @@
         (with-mutex (*recent-activity-mutex*)
           (asetf *recent-activity-index* (remove id it :key #'result-id)))))
 
-    (when fb-action-id
-      (delete-facebook-action fb-action-id))
+    (when fb-actions
+      (dolist (action fb-actions)
+        (delete-facebook-action (getf action :fb-action-id))))
 
     (modify-db id :active nil
-                  :deleted-fb-action-id fb-action-id
-                  :fb-action-id nil
+                  :deleted-fb-actions fb-actions
+                  :fb-actions nil
                   :deactivated now
                   :violates-terms violates-terms)))
 
@@ -467,22 +476,27 @@
            (inventory-details :error (s+ "You entered too many keywords. Please choose only the most relevant ones (up to 10). If you are trying to post multiple items at once, please create separate " type "s for each one.")))
 
          ((and (post-parameter "create") title)
-          (let ((new-id (create-inventory-item
-                          :type (if (string= type "request") :request
-                                                             :offer)
-                          :by (if adminp
-                                (or groupid identity-selection)
-                                *userid*)
-                          :privacy groups-selected
-                          :expires expiration-time
-                          :title title
-                          :details details
-                          :tags tags)))
+          (let* ((new-id (create-inventory-item
+                           :type (if (string= type "request") :request
+                                                              :offer)
+                           :by (if adminp
+                                 (or groupid identity-selection)
+                                 *userid*)
+                           :privacy groups-selected
+                           :publish-fb-on-account-approval
+                             (when (and publish-facebook
+                                        (getf *user* :pending))
+                               t)
+                           :expires expiration-time
+                           :title title
+                           :details details
+                           :tags tags))
+                 (new-url (strcat "/" type "s/" new-id)))
 
-            (send-metric* (if (string= type "request")
-                            :new-request
-                            :new-offer)
-                          new-id)
+             (send-metric* (if (string= type "request")
+                             :new-request
+                             :new-offer)
+                           new-id)
 
             (if (getf *user* :pending)
               (progn
@@ -496,10 +510,6 @@
                 (see-other "/home"))
               (progn
                 (contact-opt-out-flash (list *userid*) :item-type type)
-
-                (when (post-parameter "publish-facebook")
-                  (publish-facebook-action new-id))
-
                 (flash
                   (s+ "Congratulations, your "
                       type
@@ -519,7 +529,20 @@
                       "; you decide who you want to share with on Kindista."))
                 (when (string= type "offer")
                   (update-matchmaker-offer-data new-id))
-                (see-other (format nil (strcat "/" type "s/" new-id)))))))
+                (cond
+                  ((or (not (getf *user* :fb-id))
+                       (not publish-facebook))
+                   (see-other new-url))
+                  ((current-fb-token-p :publish-actions)
+                   (notice :new-facebook-action :item-id new-id)
+                   (modify-db new-id :fb-publishing-in-process (get-universal-time))
+                   (flash (s+ "Your "
+                              type
+                              " has been published on Facebook"))
+                   (see-other new-url))
+                  (t (renew-fb-token :item-to-publish new-id
+                                     :fb-permission-requested :publish-actions
+                                     :next new-url)))))))
 
          (t (inventory-details)))))))
 
@@ -539,9 +562,11 @@
         reply
    &aux (type (getf item :type))
         (by (getf item :by))
+        (groupid (awhen (post-parameter-integer "identity-selection")
+                              (unless (= it *userid*) it)))
         (adminp (group-admin-p by)))
 
-  (require-user ()
+  (require-user (:require-email t)
     (cond
       ((and (or (and (eq type :offer)
                      (eq action-type :offered))
@@ -564,6 +589,7 @@
                   :text reply-text
                   :action-type action-type
                   :next next
+                  :identity-selection groupid
                   :match (post-parameter-integer "match")
                   :error (when (and (not (post-parameter "reply"))
                                     (not reply-text)
@@ -589,6 +615,7 @@
                                                *userid*)))
              (create-transaction :on id
                                  :text reply-text
+                                 :groupid groupid
                                  :action (cond
                                            ((string= action-type "offer")
                                             :offered)
@@ -598,16 +625,20 @@
              (see-other (or next (strcat "/transactions/" id)))))))))
 
 (defun post-existing-inventory-item (type &key id url edit deactivate)
-  (require-user (:allow-test-user t)
+  (require-user (:allow-test-user t :require-email t)
     (let* ((id (safe-parse-integer id))
            (item (db id))
            (by (getf item :by))
+           (publish-facebook (post-parameter "publish-facebook"))
            (action-type (post-parameter-string "action-type"))
            (adminp (group-admin-p by))
            (next (post-parameter "next")))
 
       (cond
-        ((and (or (post-parameter "reply-text")
+        ((post-parameter "cancel")
+         (see-other (or next "/home")))
+
+        ((and (or (post-parameter-string "reply-text")
                   (post-parameter "reply"))
               (getf *user* :pending))
          (pending-flash "contact other Kindista members")
@@ -640,9 +671,6 @@
         ((and (not (eql by *userid*))
               (item-view-denied (result-privacy (gethash id *db-results*))))
          (permission-denied))
-
-        ((post-parameter "cancel")
-         (see-other (or next "/home")))
 
         (t
          (require-test ((or (eql *userid* (getf item :by))
@@ -679,7 +707,7 @@
 
              (flet ((inventory-details
                       (&key error
-                            (publish-facebook (post-parameter "publish-facebook")))
+                            (publish-facebook-p publish-facebook))
                       (enter-inventory-item-details
                         :page-title (s+ "Edit your " type)
                         :action url
@@ -687,7 +715,7 @@
                         :details details
                         :tags (or tags (getf item :tags))
                         :groups-selected groups-selected
-                        :publish-facebook publish-facebook
+                        :publish-facebook publish-facebook-p
                         :restrictedp restrictedp
                         :next (or (post-parameter "next") (referer))
                         :existingp t
@@ -700,7 +728,8 @@
                (cond
                 ((or (post-parameter "edit") edit)
                  (inventory-details
-                   :publish-facebook (when (getf item :facebook-id) t)))
+                   :publish-facebook-p (when (fb-object-actions-by-user id :data item)
+                                         t)))
 
                 ((or deactivate (post-parameter "deactivate"))
                  (confirm-delete :url url
@@ -712,6 +741,12 @@
                                  :next-url (if (string= (referer) (strcat "/" type "s/" id))
                                              "/home"
                                              (referer))))
+
+                ((post-parameter "reactivate")
+                  (see-other (s+ (url-compose (resource-url id)
+                                              "edit" "t"
+                                              "focus" "expiration")
+                                 "#expiration")))
 
                 ((and (post-parameter "really-delete")
                       (not (post-parameter "delete-inappropriate-item")))
@@ -751,6 +786,21 @@
                                 "/home"
                                 (post-parameter "next")))))
 
+                ((and publish-facebook
+                      (not (post-parameter "create"))
+                      (not (fb-object-actions-by-user id)))
+                 (if (current-fb-token-p :publish-actions)
+                   (progn (notice :new-facebook-action :item-id id)
+                          (flash (s+ "Your "
+                                     type
+                                     " has been published on Facebook"))
+                          (modify-db id :fb-publishing-in-process (get-universal-time))
+                          (see-other next))
+                   (renew-fb-token :item-to-publish id
+                                   :fb-permission-requested :publish-actions
+                                   :next next))
+                 (see-other (or (referer) "/home")))
+
                 ((not title)
                  (flash (s+ "Please enter a title for your " type "."))
                  (inventory-details))
@@ -782,16 +832,18 @@
                 ((post-parameter "create")
                  (require-test ((not (getf item :violates-terms))
                                 "This item violated Kindista's Terms of Use. It has been deactivated and cannot be modified.")
-                   (when (not (getf item :active))
-                     (index-inventory-item id (modify-db id :active t)))
                    (modify-inventory-item id :title (post-parameter "title")
                                              :details (post-parameter "details")
                                              :tags tags
                                              :expires expiration-time
-                                             :publish-facebook-p (post-parameter "publish-facebook")
+                                             :publish-facebook-p publish-facebook
                                              :privacy (when restrictedp
                                                       groups-selected)))
-                 (see-other (strcat "/" type "s/" id)))
+                 ;; new fb actions are redirected via
+                 ;; modify-inventory-item to ensure current fb-token
+                 (when (or (not publish-facebook)
+                           (fb-object-actions-by-user id))
+                   (see-other (strcat "/" type "s/" id))))
 
                 (t
                   (inventory-details)))))))))))
@@ -832,9 +884,10 @@
    &aux (typestring (if (string= selected "offers") "offer" "request"))
         (suggested (or tags (get-tag-suggestions item-title))))
 
+  (pprint groupid)
   (standard-page page-title
     (html
-      (:div :class "item inventory-details" :id "edit-tags"
+      (:div :class "item inventory-details" :id "enter-inventory-details"
        (str (pending-disclaimer))
        (when error
          (htm
@@ -907,17 +960,21 @@
                   groups-selected
                   :onchange "this.form.submit()")))
 
-         (when (and (getf *user* :fbtoken)
-                    (not restrictedp))
+         (when (and (show-fb-p)
+                    (not groupid)
+                    (or (not identity-selection)
+                        (eql identity-selection *userid*)))
            (htm
-             (:div :id "publish-facebook"
+             (:div :id "facebook"
                (:input :type "checkbox"
-                :name "publish-facebook"
-                :checked (when (or (not existingp)
-                                   publish-facebook)
-                    ""))
+                       :id "publish-facebook"
+                       :name "publish-facebook"
+                       :checked (when (or (not existingp)
+                                          publish-facebook)
+                           ""))
                (str (icon "facebook" "facebook-icon"))
-               (:span (str (s+ "Publish this "
+               (:label :for "publish-facebook"
+                 (str (s+ "Publish this "
                         typestring
                         " on my Facebook timeline."))))))
 
@@ -926,16 +983,19 @@
            (:legend "Select 1-5 categories")
            (:p :class "small"
              "Please note: selecting irrelevant categories is considered spam.")
-           (dolist (tag *top-tags*)
-             (htm
-               (:div :class "tag"
-                (:input :type "checkbox"
-                 :name "tag"
-                 :value tag
-                 :checked (when (member tag suggested :test #'string=)
-                            (setf suggested (remove tag suggested :test #'string=))
-                            ""))
-                (:span (str tag))))))
+           (:div :id "categories"
+             (dolist (tag *top-tags*)
+               (htm
+                 (:div :class "category"
+                   (:input :type "checkbox"
+                    :name "tag"
+                    :value tag
+                    :id tag
+                    :checked (when (member tag suggested :test #'string=)
+                               (setf suggested (remove tag suggested :test #'string=))
+                               ""))
+                  (:label :for tag (str tag))
+                )))))
          (:label :for "tags" "Additional keywords (optional)")
          (:p :class "small"
           "Please note: adding irrelevant keywords is considered spam.")
@@ -1118,7 +1178,6 @@
 
                 ((and (>= i start) items)
                  (str (inventory-activity-item (pop items)
-                                               :show-when nil
                                                :show-distance t
                                                :truncate t
                                                :show-tags t)))
@@ -1239,49 +1298,66 @@
                      (unless (= i 1)
                        (str ", ")))))))))))))
 
-(defun inventory-item-reply (type id data &key action-type next match text error)
-  (let ((next (or next (get-parameter "next")))
+(defun inventory-item-reply
+  (type
+   id
+   data
+   &key action-type
+        next
+        match
+        text
+        error
+        (identity-selection *userid*)
+   &aux (next (or next (get-parameter "next")))
         (url (strcat "/" type "s/" id)))
-    (if (item-view-denied (result-privacy (gethash id *db-results*)))
-      (permission-denied)
-      (standard-page
-        "Reply"
-        (html
-          (when error
-            (flash "Please enter a message to send." :error t))
-          (htm
-            (:h2
-              (str (s+ (if action-type "Respond" "Reply")
-                       " to "
-                       (person-link (getf data :by) :possessive t)
-                       type
-                       ":"))))
-          (:blockquote
-            (:p
-              (awhen (getf data :title)
-                (htm (:strong (:a :href url (str (html-text it))))
-                     (:br)))
-              (awhen (getf data :details)
-                (str (html-text it)))))
-          (if action-type
-            (htm (:h4 "Include a message: (optional)"))
-            (htm (:h4 "Write your reply:")))
-          (:div :class "reply item"
-            (:form :method "post" :action url
-              (:input :type "hidden" :name "next" :value next)
-              (:input :type "hidden" :name "match" :value match)
-              (:input :type "hidden" :name "action-type" :value action-type)
+  (if (item-view-denied (result-privacy (gethash id *db-results*)))
+    (permission-denied)
+    (standard-page
+      "Reply"
+      (html
+        (when error
+          (flash "Please enter a message to send." :error t))
+        (htm
+          (:h2
+            (str (s+ (if action-type "Respond" "Reply")
+                     " to "
+                     (person-link (getf data :by) :possessive t)
+                     type
+                     ":"))))
+        (:blockquote
+          (:p
+            (awhen (getf data :title)
+              (htm (:strong (:a :href url (str (html-text it))))
+                   (:br)))
+            (awhen (getf data :details)
+              (str (html-text it)))))
+        (:div :class "reply item"
+          (:form :method "post" :action url
+            (:input :type "hidden" :name "next" :value next)
+            (:input :type "hidden" :name "match" :value match)
+            (:input :type "hidden" :name "action-type" :value action-type)
+            (awhen (groups-with-user-as-admin)
+              (htm
+                (:label :for "identity-selection"
+                  (str (if action-type
+                         (s+ (string-capitalize action-type) "ed by:")
+                         "Reply as:")))
+                (str (identity-selection-html identity-selection it))))
 
-              (:textarea :cols "1000" :rows "4" :name "reply-text" (str text))
+            (:label :for "reply-text"
+              (str (if action-type
+                     "Include a message: (optional)"
+                     "Write your reply:")))
+            (:textarea :cols "1000" :rows "4" :id "reply-text" :name "reply-text" (str text))
 
-              (:div
-                (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
-                (:button :class "yes"
-                 :type "submit"
-                 :class "submit"
-                 (str (aif action-type
-                        (s+ (string-capitalize it) " This")
-                        "Reply")))))))
+            (:div
+              (:button :type "submit" :class "cancel" :name "cancel" "Cancel")
+              (:button :class "yes"
+               :type "submit"
+               :class "submit"
+               (str (aif action-type
+                      (s+ (string-capitalize it) " This")
+                      "Reply")))))))
 
-        :selected (s+ type "s")
-        :class "inventory-reply"))))
+      :selected (s+ type "s")
+      :class "inventory-reply")))

@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -52,13 +52,20 @@
    &aux (preferences))
 
   (flet ((record-option (option text)
-           (if (getf (or group user) option)
+           (if (if group
+                 (find userid (getf group option))
+                 (getf user option))
              (asetf (getf preferences :subscribed)
                     (push text it))
              (asetf (getf preferences :unsubscribed)
                     (push text it)))))
     (record-option :notify-gratitude
                    (s+ "when someone posts gratitude about " entity))
+    (record-option :notify-inventory-expiration
+                   (s+ "when " (if group
+                                 (s+ entity "'s")
+                                 "your")
+                       " offers and requests are about to expire"))
     (record-option :notify-message
                    (s+ "when someone sends "
                        entity
@@ -68,6 +75,10 @@
     (unless group
       (record-option :notify-expired-invites
         "when invitatations you send for your friends to join Kindista expire" )
+
+      (record-option :notify-new-contact
+        "when someone sends you to their list of contacts")
+
       (record-option :notify-group-membership-invites
         "when someone invites you to join a group on Kindista (e.g. a business, non-profit, or other organization I belong to within my community)")
 
@@ -78,7 +89,7 @@
         "updates and information about Kindista"))
 
     (when group
-      (record-option :notify-group-membership-request
+      (record-option :notify-membership-request
                      (s+ "when someone wants to join "
                          entity 
                          " on Kindista"))))

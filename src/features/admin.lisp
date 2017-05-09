@@ -157,6 +157,9 @@
               (let* ((item-id (result-id result))
                      (item (db item-id)))
                 (index-item item-id item)
+                (when (getf item :publish-fb-on-account-approval)
+                  (notice :new-facebook-action :item-id item-id
+                                               :userid userid))
                 (case (getf item :type)
                   ;; We probably don't have any more gratitudes in
                   ;; *pending-person-items-index* because pending accounts
@@ -202,7 +205,7 @@
           (dolist (request requests)
             (str (inventory-activity-item request :truncate t
                                                   :show-distance t
-                                                  :show-what t
+                                                  :show-icon t
                                                   :show-tags t)))
           (str (paginate-links page more (url-compose  "matchmaker"
                                                        "selected" "without-matchmaker"))))))))
@@ -300,10 +303,10 @@
         :selected "admin"))))
 
 (defun post-admin-mail-system ()
-  (require-admin
+  (require-test ((or (find *userid* *alpha-users*) (getf *user* :admin)))
     (when (post-parameter "reboot-notice-thread")
       (reboot-notice-thread)
-      (see-other "/admin/mail-system"))))
+      (see-other (or (referer) "/admin/mail-system")))))
 
 (defun get-admin-sendmail ()
   (require-admin (new-broadcast-html "/admin/sendmail")))

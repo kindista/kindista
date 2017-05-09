@@ -23,8 +23,9 @@
 
 (defparameter +text-scanner+ (create-scanner "[a-zA-Z]+"))
 
-(defparameter +email-scanner+ (create-scanner
-                                 "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"))
+;old-email-scanner "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"))
+;;http://www.regular-expressions.info/email.html
+(defparameter +email-scanner+ (create-scanner "^(?=[a-zA-Z0-9][a-zA-Z0-9@._%+-]{5,253}$)[a-zA-Z0-9._%+-]{1,64}@(?:(?=[a-zA-Z0-9-]{1,63}\\.)[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*\\.){1,8}[a-zA-Z]{2,63}$"))
 (defparameter *english-list*
   "~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}")
 (defparameter *english-list-or*
@@ -152,6 +153,9 @@
 (defun string-intersection (list1 list2)
   (intersection list1 list2 :test #'string=))
 
+(defun string-to-keyword (string)
+  (make-keyword (string-upcase (substitute #\- #\_ string))))
+
 (defun remove-nil-plist-pairs (plist)
   (let (new-list)
     (doplist (key value plist)
@@ -168,15 +172,19 @@
 (defun hyphenate (string)
   (ppcre:regex-replace-all " "
                            (remove-if #'(lambda (char)
-                                          (find char '("," "." "!" "?" "(" ")" "'")
+                                          (find char
+                                                '("," "." "!" "?" "(" ")" "'")
                                                 :test #'string=))
                                       (string-downcase string))
                            "-"))
 
-(defun words-from-string (string)
-  (iter (for word in (split " " (ppcre:regex-replace-all "[\\r\\n,<|>]" (string-downcase string) " ")))
-        (when (ppcre:scan +text-scanner+ word)
-          (collect word))))
+(defun words-from-string (string-to-split)
+  (when string-to-split
+    (iter (for word in (split " " (ppcre:regex-replace-all "[\\r\\n,<|>]"
+                                                           (string-downcase string-to-split)
+                                                           " ")))
+          (when (ppcre:scan +text-scanner+ word)
+            (collect word)))))
 
 (defun word-count (string)
   (length (words-from-string string)))
@@ -186,9 +194,9 @@
         (when (ppcre:scan +email-scanner+ email)
           (collect email))))
 
-(defun decode-json-octets (octets)
-  (json:decode-json-from-string (octets-to-string octets
-                                                  :external-format :utf-8)))
+(defun decode-json-octets (octets &key (external-format :utf-8))
+  (json:decode-json-from-string
+    (octets-to-string octets :external-format external-format)))
 
 (defun mailinate-user-emails (&key (accounts-to-omit (list 1)) groups-to-omit)
   "For use in development environment only. Gives all users a mailinator email address for testing functionality and to prevent emails from being sent to users by mistake."
@@ -208,8 +216,13 @@
                                           "@mailinator.com")
                                       it))))))))
 
-(defun separate-with-commas (list)
-  (format nil "~{~A, ~}" list))
+(defun separate-with-commas (list &key omit-spaces)
+  (format nil (if omit-spaces "~{~A,~}" "~{~A, ~}") list))
+
+(defun remove-whitespace-around-string (string)
+  (string-trim
+    '(#\Space #\Newline #\Backspace #\Tab #\Linefeed #\Page #\Return #\Rubout)
+    string))
 
 (defun separate-with-spaces (list)
   (format nil "~{~A ~}" list))
@@ -236,8 +249,9 @@
         (contact-multiplier 1)
         (distance-multiplier 1)
         (sitewide)
-   &aux (age (- (get-universal-time)
-                (or (result-time result) 0)))
+   &aux (age (max (- (get-universal-time)
+                     (or (result-time result) 0))
+                  1))
         (contacts (getf user :following))
         (lat (or (getf user :lat) *latitude*))
         (long (or (getf user :long) *longitude*))
@@ -337,6 +351,7 @@
          (group-adminp (member *userid* (db by :admins))))
 
     (when (and (or (eql *userid* by) group-adminp server-side-trigger-p)
+               (not (db by :test-user))
                (or (eq type :gratitude)
                    (eq type :offer)
                    (eq type :request)))
@@ -611,11 +626,13 @@
               (append (mapcar #'format-function display-ids ) (list it))
               (mapcar #'format-function display-ids))))))
 
-(defun name-list-all (ids &key stringp)
-  (format nil *english-list* (if stringp
-                               (loop for id in ids
-                                     collect (db id :name))
-                               (mapcar #'person-link ids))))
+(defun name-list-all (ids &key stringp (conjunction :and))
+  (format nil (case conjunction
+                (:and *english-list*)
+                (t *english-list-or*))
+          (if stringp
+            (loop for id in ids collect (db id :name))
+            (mapcar #'person-link ids))))
 
 
 (defun humanize-number (n)
@@ -631,7 +648,10 @@
         (group-opt-outs))
     (dolist (id id-list)
       (let ((entity (db id)))
-        (when (not (getf entity :notify-message))
+        (when (or (not (getf entity :notify-message))
+                  ;; it's possible to use FB to sign up w/out an email
+                  (and (eql (getf entity :type) :person)
+                       (not (car (getf entity :emails)))))
           (if (eql (getf entity :type) :person)
             (push id people-opt-outs)
             (push id group-opt-outs)))))
@@ -698,10 +718,15 @@
           "This "
           (str (aif type it "item"))
           " will be displayed on Kindista after we have a chance to review "
-          "your account and confirm that you're not a spammer. "
-          (:strong "You won't be able to send messages to other Kindista members "
-          "until you post some offers and we have a chance to review your "
-          "initial activity.")))
+          "your account. "
+          "Posting your first offer shows us that you understand our "
+          (:a :href "/terms" "Terms of Use")
+          " and that you intend to be a contributing member "
+          "of our community. "
+          (unless (string= type "offer")
+            (htm
+              (:strong "You won't be able to send messages to other Kindista "
+               "members until after we have a chance to review your first offer.")))))
       (:br))))
 
 (defparameter *integrity-reminder*
@@ -742,8 +767,24 @@
   (when (scan +number-scanner+ (get-parameter name))
     (parse-integer (get-parameter name))))
 
+(defun get-parameter-integer-list (name)
+  (remove nil
+          (loop for pair in (get-parameters*)
+                for i = (parse-integer (cdr pair) :junk-allowed t)
+                when (and (string= (car pair) name) i)
+                collect i)))
+
 (defun post-parameter-float (name)
   (awhen (post-parameter name) (when (scan +float-scanner+ it) (read-from-string it))))
+
+(defun possessive-name
+  (owner-id
+   &key (userid *userid*)
+        linkp)
+  (cond
+    ((= owner-id userid) "your")
+    (linkp (person-link owner-id :possessive t))
+    (t (s+ (db owner-id :name) "'s"))))
 
 (defun post-parameter-integer (name)
   (when (scan +number-scanner+ (post-parameter name))

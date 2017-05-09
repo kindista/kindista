@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -53,6 +53,7 @@
 (defindex *banned-emails-index* :test 'equalp)
 (defindex *event-geo-index*)
 (defindex *event-stem-index* :test 'equalp)
+(defindex *facebook-id-index*)
 (defindex *followers-index*)
 (defindex *geo-index-index* :test 'equal)
 (defindex *gratitude-index*)
@@ -82,7 +83,6 @@
 (defindex *person-alias-index*)
 (defindex *person-mailbox-index*)
 (defindex *person-invitation-index*)
-(defindex *person-notification-index*) ;doesn't appear to be used yet
 (defindex *person-suggested-connections-index*)
 (defindex *profile-activity-index*)
 (defindex *account-inventory-matches-index*) ;k=person/groupid v=(:requests :offers)
@@ -118,6 +118,7 @@
 (defvar *inventory-refresh-timer-index* ())
 (defvar *invite-request-mutex* (make-mutex))
 (defvar *invite-request-index* ())
+
 (defvar *recent-activity-mutex* (make-mutex))
 (defvar *recent-activity-index* ())
 (defvar *requests-without-matchmakers-mutex* (make-mutex))

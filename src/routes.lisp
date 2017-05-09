@@ -390,6 +390,18 @@
     :get get-admin-sendmail
     :post post-admin-sendmail)
 
+  ("/client-side-error-logger"
+    :post client-side-error-logger)
+
+  ("/publish-facebook"
+   :post post-new-facebook-data)
+
+  ("/renew-fb-token"
+   :get get-renew-fb-token)
+
+  ("/uninstall-facebook"
+    :post post-uninstall-facebook)
+
   ; redirects
 
   ("/people/"
@@ -398,8 +410,9 @@
   ("/home/"
     :get go-home)
 
-  ("/uninstall-facebook"
-    :post post-uninstall-facebook)
+  ("/push-notification-subscription"
+    :post post-push-notification-subscription)
+
   ;cron-jobs
 
   ("/inventory-expiration-reminders"

@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -152,7 +152,8 @@
                                         "emails for new articles from the Kindista blog"
                                         "updates from Kindista")
                                       :detailed-notification-description
-                                        (unless blog-p "occasional updates like this from Kindista")))))
+                                        (unless blog-p "occasional updates like this from Kindista")
+                                      :unsub-type "blog"))))
            (text-message (s+ (when blog-p
                                (strcat
                                  (getf broadcast :title)
@@ -168,7 +169,8 @@
                                (if blog-p
                                  "emails for new articles from the Kindista blog"
                                  "updates from Kindista")
-                               :detailed-notification-description (unless blog-p "occasional updates like this from Kindista")))) )
+                               :detailed-notification-description (unless blog-p "occasional updates like this from Kindista")
+                               :unsub-type "blog"))))
       (when (and email
                  (if blog-p
                    (getf user :notify-blog)
@@ -177,7 +179,7 @@
                             from-email
                             (format nil "\"~A\" <~A>" name email)
                             (if blog-p
-                              "The Kindista Blog: Adventures in Gift"
+                              (strcat "Kindista Blog: " (getf broadcast :title))
                               (getf broadcast :title))
                             text-message
                             :html-message html-message)))))
@@ -186,7 +188,7 @@
   (text
    title
    &aux (now (local-time:now))
-        (hyphenated-title (hyphenate title))
+        (hyphenated-title (url-encode (hyphenate title)))
         (local-dir (with-output-to-string (str)
                      (format-timestring
                        str
@@ -210,10 +212,11 @@
 (defvar *latest-broadcast*)
 
 (defun post-broadcast-new
-  (&aux (author-id (awhen (post-parameter "author-id")
-                     (if (safe-parse-integer it)
+  (&aux (author-post-id (post-parameter-string "author-id"))
+        (author-id (when author-post-id
+                     (aif (safe-parse-integer author-post-id)
                        it
-                       (gethash it *username-index*))))
+                       (gethash author-post-id *username-index*))))
         (admin-email (first (getf *user* :emails)))
         (author-email (post-parameter-string "from"))
         (blog-p (when (post-parameter "blog-p") t))
@@ -267,7 +270,8 @@
                  (getf *user* :unsubscribe-key)
                  admin-email
                  "updates from Kindista"
-                 :detailed-notification-description "occasional updates like this from Kindista"))
+                 :detailed-notification-description "occasional updates like this from Kindista"
+                 :unsub-type "kindista"))
            :html-message (html-email-base
                            (strcat* html-broadcast
                                     (when amazon-smile-p
@@ -277,7 +281,8 @@
                                             :unsubscribe-key)
                                       admin-email
                                       "updates from Kindista"
-                                      :detailed-notification-description "occasional updates like this from Kindista"))))
+                                      :detailed-notification-description "occasional updates like this from Kindista"
+                                      :unsub-type "kindista"))))
          (flash "test email has been sent")
          (try-again))
 

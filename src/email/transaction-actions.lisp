@@ -17,10 +17,11 @@
 
 (in-package :kindista)
 
-(defun send-transaction-action-notification-email
+(defun send-transaction-action-notifications
   (transaction-id
    log-event
-   &optional message
+   &key message
+        party
    &aux (transaction (db transaction-id))
         (inventory-id (getf transaction :on))
         (on-item (db inventory-id))
@@ -31,9 +32,10 @@
                           (:request "request")))
         (on-title (getf on-item :title))
         (on-details (getf on-item :details))
-        (event-party (if (getf transaction :log)
-                       (getf log-event :party)
-                       (list (getf transaction :by))))
+        (event-party (or party
+                         (if (getf transaction :log)
+                           (getf log-event :party)
+                           (list (getf transaction :by)))))
         (transaction-action (getf log-event :action))
         (event-actor-id (car event-party))
         (event-actor (db event-actor-id))
@@ -59,51 +61,66 @@
         (recipients (remove nil
                             (if other-party-is-group-p
                               (getf other-party :notify-message)
-                              (when (getf other-party :notify-message)
+                              (when (and (getf other-party :notify-message)
+                                         (getf other-party :active))
                                 (list other-party-id))))))
-
-  (labels ((gift-text (&key html-p)
-             (gift-given-notification-text (aif group-actor
-                                               (getf it :name)
-                                               event-actor-name)
-                                           (if groupid
-                                             group-name
-                                             "you")
-                                           transaction-url
-                                          :html-p html-p))
-           (notification-text (userid &key title-p (html-p nil))
-             (cond
-               ((and (eq (getf log-event :action) :gave) title-p)
-                "Please confirm the gift you received through Kindista")
-               ((eq (getf log-event :action) :gave)
-                (gift-text :html-p html-p))
-               ((not log-event)
-                (s+ event-actor-name
-                    " replied to "
-                    (if groupid
-                      (s+ group-name "'s ")
-                      "your ")
-                    on-type-string
-                    (unless title-p ":")))
-               (t (transaction-action-text
-                    log-event
-                    transaction
-                    on-item
-                    :userid userid
-                    :inventory-descriptor (case on-type
-                                            (:offer "an offer")
-                                            (:request "a request")))))))
+    (labels ((gift-text (&key html-p)
+               (gift-given-notification-text (aif group-actor
+                                                 (getf it :name)
+                                                 event-actor-name)
+                                             (if groupid
+                                               group-name
+                                               "you")
+                                             transaction-url
+                                            :html-p html-p))
+             (notification-text (userid &key title-p (html-p nil))
+               (cond
+                 ((and (eq (getf log-event :action) :gave) title-p)
+                  "please confirm the gift you received through kindista")
+                 ((eq (getf log-event :action) :gave)
+                  (gift-text :html-p html-p))
+                 ((not log-event)
+                  (s+ event-actor-name
+                      " sent you a message about "
+                      (cond
+                        ((eql inventory-by userid) "your ")
+                        ((eql inventory-by event-actor-id) "their ")
+                        (t (s+ (db inventory-by :name) "'s "))) ;if it's a group
+                      on-type-string
+                      (unless title-p ":")))
+                 (t (transaction-action-text
+                      log-event
+                      transaction
+                      on-item
+                      :userid userid
+                      :inventory-descriptor (case on-type
+                                              (:offer "an offer")
+                                              (:request "a request")))))))
 
     (when (and recipients (> (length recipients) 0))
       (dolist (recipient-id recipients)
         (let* ((recipient (db recipient-id))
+               (push-message-author-and-type
+                 (s+ (if (eql inventory-by recipient-id)
+                           "your "
+                           (s+ (string-capitalize (db inventory-by :name)) "'s "))
+                     on-type-string))
                (inventory-author-and-type
                  (s+ (if (eql inventory-by recipient-id)
-                       "Your "
-                       (s+ (db inventory-by :name) "'s "))
+                        "Your "
+                        (s+ (db inventory-by :name) "'s "))
                      on-type-string))
                (email (car (getf recipient :emails)))
                (unsub-key (getf recipient :unsubscribe-key)))
+
+          (send-push-through-chrome-api (list recipient-id)
+                                        :message-title (s+ "New message about " push-message-author-and-type)
+                                        :message-body on-title
+                                        :message-tag "transaction-tag"
+                                        ;:message-type on-type
+                                        :message-url (strcat +base-url+
+                                                             "transactions/"
+                                                             transaction-id))
           (when (or *productionp*
                     (getf recipient :test-user))
             (cl-smtp:send-email

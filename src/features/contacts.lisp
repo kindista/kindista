@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -17,41 +17,39 @@
 
 (in-package :kindista)
 
-(defun sign-users-up-for-new-contact-notifications ()
+(defun new-contact-notice-handler ()
+  (send-contact-notification (getf (cddddr *notice*) :from-id)
+                             (getf (cddddr *notice*) :to-id)))
+
+(defun sign-users-up-for-new-contact-notifications
+  (&aux (modifications 0))
   "To be run when we implement contact notifications"
   (dolist (id (hash-table-keys *db*))
-    (let ((data (db id)))
-      (when (or (eq (getf data :type) :person)
-                (eq (getf data :type) :deleted-person-account))
-        (modify-db id :notify-new-contact (and (getf data :notify-message)
-                                               (getf data :active)))))))
+    (let* ((data (db id))
+           (notify-new-contact (and (getf data :notify-message)
+                                    (getf data :active))))
+      (when (and (or (eq (getf data :type) :person)
+                     (eq (getf data :type) :deleted-person-account))
+                 (or (not (find :notify-new-contact data))
+                     (and notify-new-contact
+                          (not (getf data :notify-new-contact)))))
+        (modify-db id :notify-new-contact notify-new-contact)
+        (incf modifications))))
+  modifications)
 
-(defun create-contact-notification (&key follower contact)
-  (let* ((time (get-universal-time))
-         (recipient-mailboxes (maphash #'list (mailbox-ids (list contact))))
-         (id (insert-db (list :type :contact-n
-                              :follower follower
-                              :mailboxes (list :unread recipient-mailboxes)
-                              :time time))))
-
-
-    id))
-
-;; this doesn't appear be used for anything yet
-(defun index-contact-notification (id data)
-  (let ((result (make-result :id id
-                             :type :contact-n
-                             :time (getf data :time))))
-    (index-message id data)
-    (push result (gethash (getf data :object) *person-notification-index*))))
-
-(defun add-contact (new-contact-id userid)
+(defun add-contact
+  (new-contact-id
+   userid
+   &aux (time (get-universal-time)))
   (unless (find new-contact-id (db userid :following))
     (amodify-db userid :following (cons new-contact-id it))
     (with-locked-hash-table (*followers-index*)
       (push userid (gethash new-contact-id *followers-index*)))
     (remove-suggestion new-contact-id userid)
     (remove-suggestion new-contact-id userid :hidden t)
+    (notice :new-contact :time time
+                         :from-id userid
+                         :to-id new-contact-id)
     (unless (or (not *userid*) ;if done from the REPL
                 (string= (strcat +base-url+
                                    "people/"
@@ -61,7 +59,8 @@
                 ;; an invitation
                 (= *userid* new-contact-id))
       (flash (html (str (person-link new-contact-id))
-                   " has been added to your contacts."))))
+                   " has been added to your contacts."))
+      ))
 
   ;;is this really how we want to implement contact notifications?
   ;(create-contact-notification :follower userid :contact new-contact-id)
@@ -74,13 +73,17 @@
   (amodify-db *userid* :hidden-suggested-contacts (push  (cons contact-id (quick-rank contact-id)) it)))
 
 (defun post-contacts ()
-  (require-user ()
+  (require-user (:require-active-user t :allow-test-user t)
     (let ((contacts (getf *user* :following)))
       (cond
         ((scan +number-scanner+ (post-parameter "add"))
          (let ((id (parse-integer (post-parameter "add"))))
-           (unless (member id contacts)
-             (add-contact id *userid*)))
+           (if (and (getf *user* :test-user)
+                    (not (db id :test-user)))
+             (flash "Test users can only add other test users to their contacts."
+                    :error t)
+             (unless (member id contacts)
+               (add-contact id *userid*))))
          (see-other (or (post-parameter "next") "/home")))
 
         ((scan +number-scanner+ (post-parameter "remove"))

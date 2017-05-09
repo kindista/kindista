@@ -1,7 +1,5 @@
 ;;; Copyright 2012-2016 CommonGoods Network, Inc.
 ;;;
-;;; This file is part of Kindista.
-;;;
 ;;; Kindista is free software: you can redistribute it and/or modify it
 ;;; under the terms of the GNU Affero General Public License as published
 ;;; by the Free Software Foundation, either version 3 of the License, or
@@ -31,9 +29,12 @@
   (load-db)
   (load-tokens)
   (setf *acceptor-thread* (make-thread #'(lambda () (start *acceptor*))))
- ;(start-scheduler-thread)
+  ;; don't use scheduler until we figure out what has caused
+  ;; scheduler-loop to get hung on a waitqueue (maybe in (sleep)).
+  ;(start-scheduler-thread)
   (start (acceptor-metric-system *acceptor*))
-  (start-notice-thread))
+  (start-notice-thread)
+  (setf *facebook-app-token* (get-facebook-app-token)))
 
 (defun load-notice-handlers ()
   (clrhash *notice-handlers*)
@@ -48,10 +49,12 @@
   (add-notice-handler :new-invite-request #'new-invite-request-notice-handler)
   (add-notice-handler :error #'new-error-notice-handler)
   (add-notice-handler :new-transaction-action #'new-transaction-action-notice-handler)
+  (add-notice-handler :new-facebook-action #'new-facebook-action-notice-handler)
   (add-notice-handler :new-group-membership-request
                       #'new-group-membership-request-notice-handler)
   (add-notice-handler :new-group-membership-invitation
                       #'new-group-membership-invitation-notice-handler)
+  (add-notice-handler :new-contact #'new-contact-notice-handler)
   (add-notice-handler :new-gratitude #'new-gratitude-notice-handler)
   (add-notice-handler :updated-notifications #'updated-notifications-handler))
 

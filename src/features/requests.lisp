@@ -32,7 +32,7 @@
           " at the top of the screen.")))))
 
 (defun get-requests-new ()
-  (require-user (:allow-test-user t)
+  (require-user (:allow-test-user t :require-email t)
     (enter-inventory-item-details :page-title "Post a request"
                                   :action "/requests/new"
                                   :button-text "Post request"
@@ -67,15 +67,12 @@
                      *userid*))
          (self (eql userid by))
          (group-admin-p (group-admin-p by *userid*))
-         (fb-action-id (when (string= (referer)
-                                          "https://www.facebook.com")
-                             (get-parameter-integer "post_id")))
+         ;; now using publish-facebook-action to get action-id
+        ;(fb-action-id (when (string= (referer)
+        ;                             "https://www.facebook.com/")
+        ;                (get-parameter-integer "post_id")))
          (matchmaker-admin (matchmaker-admin-p))
          (result (gethash id *db-results*)))
-
-    (when (and fb-action-id
-               (not (eql (getf request :fb-action-id) fb-action-id)))
-      (modify-db id :fb-action-id fb-action-id))
 
     (cond
      ((or (not request)
@@ -132,7 +129,11 @@
               (unless (getf request :active)
                 (htm
                   (:h2 :class "red" "This request is no longer active.")))
-              (str (inventory-activity-item result :show-distance t :show-tags t))
+              (str (inventory-activity-item result
+                                            :show-icon t
+                                            :show-recent-action t
+                                            :show-distance t
+                                            :show-tags t))
               (str (item-images-html id))
               (when (and (getf request :active)
                          (or self
@@ -145,10 +146,12 @@
                                            :without-terms without-terms
                                            :distance distance
                                            :notify-matches notify-matches)))))
-          :extra-head (facebook-item-meta-content id
-                                                  "request"
-                                                  (getf request :title)
-                                                  (getf request :details))
+          :extra-head (facebook-item-meta-content
+                        id
+                        "request"
+                        (strcat* "Request: " (getf request :title))
+                        :image (awhen (first (getf request :images))
+                                 (get-image-thumbnail it 1200 1200)))
           :selected "requests"))))))
 
 (defun get-request-reply (id)

@@ -98,6 +98,7 @@
                                            (:file "offers")
                                            (:file "people")
                                            (:file "privacy")
+                                           (:file "push-notifications")
                                            (:file "requests")
                                            (:file "request-invitation")
                                            (:file "reset-password")
@@ -113,6 +114,7 @@
                              (:module email
                               :serial t
                               :components ((:file "helpers")
+                                           (:file "contact-notification")
                                            (:file "email-verification")
                                            (:file "error-notifications")
                                            (:file "expired-inventory-notice")

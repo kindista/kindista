@@ -24,6 +24,7 @@
 (setf hunchentoot:*show-lisp-backtraces-p* t)
 (setf hunchentoot:*show-lisp-errors-p* t)
 
+(defvar *client-errors-log-lock* (make-mutex :name "client errors log"))
 (defvar *flashes* (make-hash-table :synchronized t :size 500 :rehash-size 1.25))
 
 (defvar *base-url* "/")
@@ -45,12 +46,21 @@
             (delete-duplicates (gethash *token* *flashes*) :test #'string=))
       (remhash *token* *flashes*))))
 
-(defun new-error-notice-handler ()
-  (let ((data (cddddr *notice*)))
-   (send-error-notification-email :on (getf data :on)
-                                  :url (getf data :url)
-                                  :data (getf data :data)
-                                  :userid (getf data :userid))))
+(defun admin-mailbox-reboot-flash ()
+  (let ((mailbox-count (sb-concurrency:mailbox-count *notice-mailbox*)))
+    (when (or (find *userid* *alpha-users*) (getf *user* :admin))
+      (when (> mailbox-count 1)
+       (with-locked-hash-table (*flashes*)
+         (push
+           (format nil
+              "<div class=\"flash err\"><span>~a~a</span></div>"
+              (s+ "The Kindista mail system has crashed! We need your help. No one is able to receive messages now. Mail System Queue: " (write-to-string mailbox-count))
+              (html (htm (:form :method "post" :action "/admin/mail-system"
+                (:button :type "submit"
+                         :class "yes"
+                         :name "reboot-notice-thread"
+                         "Reboot Mail System")))))
+                                (gethash *token* *flashes*)))))))
 
 (defun not-found ()
   (flash "The page you requested could not be found." :error t)
@@ -86,6 +96,16 @@
 
 (defun active-status-required ()
   (flash "Sorry, you must reactivate your account to perform that action." :error t)
+  (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
+    (see-other "/home")
+    (see-other (or (referer) "/home"))))
+
+(defun email-required ()
+  (flash (html "You must have an email associated with your account to perform this action. "
+               "Add an email address on your "
+               (:a :href "/settings/communication#email" "settings page")
+               " so that you can be notified when people respond to your post.")
+         :error t)
   (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
     (see-other "/home")
     (see-other (or (referer) "/home"))))
@@ -126,7 +146,7 @@
           ((string= param-type "email")
            (setf pattern "(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})"))
           ((string= param-type "str")
-           (setf pattern  "([a-zA-Z0-9_%+-]+)"))
+           (setf pattern  "([a-zA-Z0-9_%+-=]+)"))
           (t
            (setf pattern "([^\/]+)")))
 
@@ -269,8 +289,11 @@
            (*user-group-privileges* (or *user-group-privileges*
                                          (gethash *userid* *group-privileges-index*)))
            (*user-mailbox* (or *user-mailbox*
-                               (gethash *userid* *person-mailbox-index*))))
-       ,@body)))
+                               (gethash *userid* *person-mailbox-index*)))
+           (*fb-id* (getf *user* :fb-id))
+           (*facebook-user-token* (getf *user* :fb-token))
+           (*facebook-user-token-expiration* (getf *user* :fb-expires)))
+      ,@body)))
 
 (defmacro with-location (&body body)
   `(let ((*latitude* (or (getf *user* :lat) 44.028297))
@@ -291,6 +314,7 @@
 
 (defmacro require-user
   ((&key require-active-user
+         require-email
          allow-test-user)
    &body body)
   `(with-user
@@ -300,6 +324,11 @@
           (progn
             (flash "This account has been suspended for posting inappropriate content or otherwise violating Kindista's Terms of Use.  If you believe this to be an error please email us so we can resolve this issue." :error t)
             (get-logout)))
+
+         ((and ,require-email
+               (not (car (getf *user* :emails))))
+          (email-required))
+
          ((and (getf *user* :test-user)
                (not ,allow-test-user))
           (test-users-prohibited))
@@ -335,6 +364,23 @@
            (flash ,message)
            (see-other "/")) 
         `(see-other "/"))))
+
+(defun new-error-notice-handler ()
+  (let ((data (cddddr *notice*)))
+   (send-error-notification-email :on (getf data :on)
+                                  :url (getf data :url)
+                                  :data (getf data :data)
+                                  :userid (getf data :userid))))
+(defun client-side-error-logger
+  (&aux
+   (errorJSON (json:decode-json-from-string (raw-post-data :force-text t))))
+  (require-user ()
+    (with-mutex (*client-errors-log-lock*)
+      (with-open-file (s (s+ +db-path+ "client-side-errors") :direction :output
+                                                             :if-exists :append
+                                                             :if-does-not-exist :create)
+        (let ((*print-readably* nil))
+          (format s "~{~S~%~}" errorJSON))))))
 
 (defun markdown-file (path)
   (nth-value 1 (markdown (pathname path) :stream nil)))
@@ -383,11 +429,15 @@
                                              (not *productionp*))
                                          (or (string= (script-name*) "/send-all-reminders")
                                              (string= (script-name*) "/inventory-refresh")
+                                             (string= (script-name*) "/inventory-expiration-reminders")
                                              (string= (script-name*) "/send-inventory-digest")))
                                     60)
                                    ((and (getf *user* :admin)
                                          (string= (script-name*) "/admin/sendmail")) 600)
-                                   (t 5)))
+                                   ((string= (script-name*)
+                                             "/settings/social")
+                                    15)
+                                   (t 10)))
                                (unwind-protect
                                  (apply (fdefinition rule-function) (coerce results 'list))
                                  (unschedule-timer timer)))))
@@ -556,14 +606,25 @@
         (:meta :name "HandheldFriendly" :content "True")
         (:meta :property "og:site_name" :content "Kindista Generosity Network")
         (:meta :property "og:locale" :content "en_US")
+        (:meta :name "apple-mobile-web-app-capable" :content "yes") ;hide safari user interface
         ;(:meta :name "apple-mobile-web-app-status-bar-style" :content "black")
         (:link :rel "stylesheet" :href "/media/style.css")
         (:link :href "//fonts.googleapis.com/css?family=Varela+Round"
                :rel "stylesheet"
                :type "text/css")
-        (:link :rel "manifest" :href "/manifest.json") ;link for phone integration
+        (:link :rel "manifest" :href "/manifest.json") ;link for android integration
+        (:link :rel "apple-touch-icon" :sizes "76x76" :href "/media/icons/kindista_favicon_76.png")
+        (:link :rel "apple-touch-icon" :sizes "120x120" :href "/media/icons/kindista_favicon_120.png")
+        (:link :rel "apple-touch-icon" :sizes "152x152" :href "/media/icons/kindista_favicon_152.png")
+        (:link :rel "apple-touch-icon" :sizes "180x180" :href  "/media/icons/kindista_favicon_180.png")
         (:script :type "text/javascript" :src "/kindista.js")
-        (:script :type "text/javascript" :src "/service-worker-registration.js")
+        (:script :type "text/javascript" :src "/service-worker-registration.js?v=1.0") ;add query version number to ensure cache busting
+        (when (and *userid* (or (string= (referer) (s+ +base-url+ "login"))
+                                (string= (referer) "http://localhost/login")))
+          (htm (:script :type "text/javascript"
+                        :src "/update-push-registration.js")))
+        ;; if serviceworker js, inline login subscription here
+
         ;(str "<!--[if lt IE 9]>")
         ;(:link :rel "stylesheet" :href "/media/ie.css" :type "text/css")
         ;(str "<![endif]-->")
@@ -600,6 +661,7 @@
 
 (defun standard-page (title body &key selected top right search search-scope class extra-head)
   (declare (optimize (speed 3) (debug 0) (safety 0)))
+  (admin-mailbox-reboot-flash)
   (header-page title
                (html
                  (:div
@@ -676,7 +738,7 @@
                              (:td
                                (:a :class (when (eq selected :settings) "selected") :href "/settings" "Settings")
                                " &middot; "
-                               (:a :href "/logout" "Log&nbsp;out"))))))
+                               (:a :href "/logout" :id "logout" "Log&nbsp;out"))))))
                      (str (login-box nil)))
 
                    (when *user*
@@ -697,6 +759,7 @@
 
                    (:menu :id "fine-print-links"
                           :type "toolbar"
+                     (:li (:a :href "/donate" "donate"))
                      (:li (:a :href "/blog" "blog"))
                      (:li (:a :href "/about" "about"))
                      (:li (:a :href "/terms" "terms"))

@@ -76,11 +76,6 @@ body {
  font-size: 0.85em;
 }
 
-body.splash {
- background: url('hands.jpg') no-repeat;
- background-size: 100% auto;
-}
-
 html {
  overflow-y: scroll;
 }
@@ -117,6 +112,11 @@ img.map {
 
 li {
  list-style-type: none;
+}
+
+ol.numeric,
+ol.numeric > li {
+ list-style-type: decimal;
 }
 
 hr {
@@ -253,7 +253,7 @@ input[type=text], input[type=password] {
  border: 1px solid #444;
  margin: .3em 0;
  padding: 0 0.4em;
- height: 2.05em;
+ height: 2.5em;
  border-radius: 0.25em;
  box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);
 }
@@ -338,17 +338,199 @@ body.about h3 {
 }
 
 #signup h2 {
- margin-bottom:.5em;
+ margin-bottom:0.5em;
+}
+
+#login {
+ width: 100%;
+ max-width: 30em;
+ margin: 0 auto;
+ text-align: center;
+}
+
+#login h1 {
+ font-size: 2em;
+ margin-bottom:0.1em;
+}
+
+#login h3 {
+ margin: 0 auto 0.7em;
+ font-weight: normal;
+ color: #333;
+}
+
+#login-form {
+ text-align: left;
+}
+
+#login hr {
+ position: relative;
+ top: -1.3em;
+ color: #ccc;
+ background: #ccc;
+ height: 0.15em;
+ z-index: -1;
+}
+
+#login div#join {
+ margin-top: 1.5em;
+ font-size: 1.1em;
+ font-weight: bold;
+}
+
+
+#login button,
+#login a.blue {
+ font-size: 1.3em;
+ height: 2.1em;
+ vertical-align: middle;
+ line-height: inherit;
+ padding: 0.4em;
+}
+
+#login a.blue {
+ width: 100%;
+ display: block;
+}
+
+#login span.forgot,
+#login button {
+ width: 50%;
+ margin-right: 0;
+}
+
+#login span.forgot {
+ text-align: center;
+ display: inline-block;
+}
+
+#login span a {
+ font-size: 1em;
+ color: #333;
+}
+
+#signup,
+#login {
+ width: 100%;
+ max-width: 30em;
+ margin: 3em auto;
+ text-align: center;
+}
+
+#signup-resend-confirmation {
+ width: 100%;
+ max-width: 30em;
+ margin: 3em auto;
+}
+
+#login h1 {
+ font-size: 2em;
+ margin-bottom:0.1em;
+}
+
+#login h3 {
+ margin: 0 auto 0.7em;
+ font-weight: normal;
+ color: #333;
+}
+
+#signup-form,
+#login-form {
+ text-align: left;
+}
+
+.or-divider {
+ margin: 1em auto;
+ text-align: center;
+}
+
+.or-divider > span {
+ -webkit-border-top-right-radius: 1.2em;
+ -webkit-border-bottom-right-radius: 1.2em;
+ -moz-border-radius-topright: 1.2em;
+ -moz-border-radius-bottomright: 1.2em;
+ border-top-right-radius: 1.2em;
+ border-bottom-right-radius: 1.2em;
+ -webkit-border-top-left-radius: 1.2em;
+ -webkit-border-bottom-left-radius: 1.2em;
+ -moz-border-radius-topleft: 1.2em;
+ -moz-border-radius-bottomleft: 1.2em;
+ border-top-left-radius: 1.2em;
+ border-bottom-left-radius: 1.2em;
+ z-index: 10;
+ font-size:0.9em;
+ padding: 0.6em 0.6em;
+ color: #fff;
+ background: #888; }
+
+.or-divider hr {
+ position: relative;
+ top: -1.15em;
+ background: #888;
+ height: 0.13em;
+ z-index: -1;
+}
+
+#signup div#login,
+#login div#join {
+ margin-top: 1.5em;
+ font-size: 1.1em;
+ font-weight: bold;
+}
+
+
+#login button,
+#login a.blue,
+#signup button,
+#signup a.blue {
+ font-size: 1.3em;
+ height: 2.1em;
+ vertical-align: middle;
+ line-height: inherit;
+ padding: 0.4em;
+}
+
+#signup a.blue,
+#login a.blue {
+ width: 100%;
+ display: block;
+}
+
+#signup a.blue {
+ margin-bottom: 1.5em;
+}
+
+#signup button,
+#signup p.fineprint,
+#login span.forgot,
+#login button {
+ display: inline-block;
+ width: 50%;
+ margin-right: 0;
+}
+
+#signup p.fineprint {
+ padding-left: 1em;
+ margin: 0;
+ vertical-align: middle;
+}
+
+#login span.forgot {
+ text-align: center;
+ display: inline-block;
+}
+
+#login span a {
+ font-size: 1em;
+ color: #333;
+}
+
+#signup #login span a {
+ color: #5c8a2f;
 }
 
 #broadcast label {
  display: block;
-}
-
-#signup label {
- display: inline-block;
- vertical-align: middle;
- width: 6em;
 }
 
 input[type=radio] {
@@ -360,7 +542,15 @@ input[type=radio].first-option {
 }
 
 #signup .identity-selection {
- margin-top: 0.8em;
+ margin: 0.8em 0 1em;
+}
+
+#signup .identity-selection input {
+ margin-left: 0;
+}
+
+#signup .identity-selection label {
+ font-weight: normal;
 }
 
 #signup .fineprint {
@@ -379,13 +569,16 @@ div.new-gratitude div#gratitude-by-email p.small,
  max-width: 50em;
 }
 
+.invite.item {
+ margin-top: 1.5em;
+}
 
 #signup button, .login button {
  padding-left: 0;
  padding-right: 0;
 }
 
-#signup button, #broadcast button, .login button.yes {
+#broadcast button, .login button.yes {
  min-width: 5em;
  margin-right: 1.2em;
  vertical-align: middle;
@@ -522,216 +715,421 @@ body.landing > p {
  box-shadow: 0 0 1px rgba(0,0,0,0.8);
 }
 
-body.splash #header {
- background: rgba(255,255,255,0.7);
- height: 4.3em;
- box-shadow: none;
- overflow: hidden;
+body.splash div.container {
+ background:#858585;
+ z-index: -1;
 }
 
-body.splash #symbol {
- margin: 0.7em 1em;
- width: 13em;
+body.splash div.container > * {
+ max-width: 60em;
+ margin: auto;
+ z-index; 1;
 }
 
-#splashbox h2 {
- font-size: 1.6em;
+body.splash div.container > div:first-child {
+ width: 100%;
+ max-width: 100%;
+ position:absolute;
+ height: 6em;
+ z-index: 0;
+ background: rgba(255,255,255,0.9);
 }
 
-#splashbox #big-ass-signup-button {
- display: block;
- margin: 0.75em auto;
- line-height: 2em;
- width: 13em;
+#splash-top {
+ background: url('team-hands.jpg') no-repeat;
+ background-position: center top;
+ position: relative;
+}
+
+body.splash h1 {
+ font-size: 2.3em;
+}
+
+body.splash .details img.icon {
+ height: 5em;
+ width: 5em;
+}
+
+body.splash .float-right img.icon {
+ margin-left: 1em;
+}
+
+body.splash .float-left img.icon {
+ margin-right: 1em;
+}
+
+.semi-transparent-lt {
+ color: rgba(255,255,255,0.6);
+}
+
+.semi-transparent-lighter {
+ color: rgba(255,255,255,0.8);
+}
+
+.semi-transparent-drker
+body.splash h1 {
+ color: rgba(0,0,0,0.7);
+}
+
+.semi-transparent-drk {
+ color: rgba(0,0,0,0.6);
+}
+
+.splash h2 {
+ margin-bottom: 0.5em;
  font-size: 1.5em;
 }
 
-#splashbox > div {
- padding: 0.5em;
+body.splash #header-container {
+ margin: 0 0;
+ width: 100%;
+ height: 5em;
+ max-width: none;
+ padding: 1em;
+ font-size: 1.2em;
+ background: rgba(255,255,255,0.9);
 }
 
-#splashbox a:last-of-type {
- font-size: 1.2em;
+body.splash #header {
+ box-shadow: none;
+ background: none;
+}
+
+body.splash #symbol {
+ padding: 0.2em;
+ margin: 0 0 0 0;
+ width: 13em;
+}
+
+#splashlogin > a.yes {
+ font-size: 0.85em;
+ display: block;
+ line-height: inherit;
+ margin: 0.5em 0;
 }
 
 #splashlogin {
  float: right;
- margin: 0 0.5em 0 2em;
 }
 
-#splashlogin label {
+.splash #signup {
+  font-size: 1.3em;
+  margin: 0 auto;
+  height: 20em;
+  max-width: 22em;
+  padding-top: 3.3em;
+}
+
+body.splash h1,
+.splash #demo a {
+ color: #fff;
+ text-shadow: 0 0 6px rgba(0,0,0,0.3);
+}
+
+.splash #demo a {
+ font-size: 0.85em;
+}
+
+#big-ass-signup-button {
+ display: block;
+ margin: 0.75em auto;
+ line-height: inherit;
  display: inline-block;
- font-size: 1.1em;
- font-weight: bold;
- margin: 0 0.2em 0 0.4em;
+ font-size: 1.4em;
 }
 
-#splashlogin a {
- display: inline-block;
- margin-top: 0.2em;
- margin-left: 0.4em;
+#splashlogin form {
+ display:none;
 }
 
-#splashlogin button.yes {
- margin-left: 0.5em;
+.splash .full-width {
+ width: 100%;
+ padding: 2em 1em;
+ margin: 0 0;
+}
+
+.white {
+ color:#fff;
+}
+
+.white-bg {
+ background:#fff;
+}
+
+.green-bg {
+ background:#97c642;
+}
+
+.lt-green-bg {
+ background:#ddeb80;
+}
+
+.blue-bg {
+ background:#347977;
+}
+.lt-blue-bg {
+ background:#589391;
+}
+
+.fuchsia-bg {
+ background: #a44676;
+}
+
+.lt-fuchsia-bg {
+ background:#c777a0;
+}
+
+.pale-fuchsia-bg {
+ background:#e1abc6;
+}
+
+.lt-brown-bg {
+ background:#f2d191;
+}
+.brown-bg {
+ background:#c8ab56;
+}
+.dk-brown-bg {
+ background:#9f822b;
+}
+.dk-grey-bg {
+ background:#484848;
+}
+
+.rust-bg {
+ background:#eb9b7d;
+}
+
+.purple-bg {
+ background:#652b75;
+}
+
+body.splash #header,
+.splash .full-width > div {
+ max-width: 42em;
+ max-width: 42rem;
+ margin: 0 auto;
+ font-size: 1.05rem;
+}
+
+.splash .details ol {
+ padding-left: 1.2em;
  margin-top: 0;
- padding: 0;
- width: 4.5em;
+}
+
+.splash ol li {
+ margin-bottom: 0.3em;
+}
+
+.splash .footer {
+ margin: 1em auto;
+ color: #fff;
+ overflow: hidden;
+}
+.splash .footer > * {
+ font-size: 85%;
+}
+.splash .footer .about {
  float: right;
+ max-width: 50%;
+}
+.splash .footer a {
+ font-weight: bold;
+ color: #fff;
+ padding-right: 1.3em;
+ font-size: 1.1em;
+}
+.splash .footer div.small a {
+ font-size: 0.85em;
+ padding-right: 0.7em;
 }
 
-#splashlogin input:focus {
- border: 1px solid #5be;
- box-shadow: 0 0 0.5em rgba(80,160,230,0.6) inset 0 1px 3px rgba(0,0,0,0.1);
+.splash .footer > div:first-child {
+ margin-bottom: 0.5em;
 }
 
-#splashlogin input,
-#splashlogin button.yes {
- height:1.7em;
- padding: 0 0.4em;
+@media (min-width:48em){
+#splash-top {
+ background-size:100%;
+}
+#splashlogin > a.yes {
+ font-size: inherit;
+ margin: 0.6em 0;
+ line-height: inherit;
+}
+ body.splash h2,
+ body.splash h1 {
+  margin: 0.5em auto 0.1em;
+}
 }
 
-#splashlogin input[type=text] {
- width: 15em;
-}
-
-#splashlogin input[value=] {
- background: red;
-}
-
-#splashlogin input[type=password] {
- width: 10em;
-}
-
-#splashlogin p {
- text-align: right;
- margin-top: -0.3em;
-}
-
-#splashbox > p {
- font-size: 1.5em;
-}
-
-#splashbox {
- background: rgba(255,255,255,0.85);
- padding: 2em;
- border-radius: 2em;
- box-shadow: 0.05em 0.05em 2em rgba(0,0,0,0.3);
- width: 54em;
- margin: 4em auto;
-}
-
-@media (max-width:50em) {
- #splashbox {
-  width: 100%;
-  padding: 1em;
-  background: none;
-  margin: 0;
-  box-shadow: none;
- }
+@media (max-width:32em) {
  body.splash {
-  background: none;
+ font-size: 1em;
+ font-size: 1rem;
+ }
+ #splash-top {
+  background-size: auto 120%;
  }
  body.splash #header-container {
-  height: 4.3em;
-  background: url('hands.jpg') no-repeat;
-  background-size: cover;
+  height: auto;
+  font-size: 1em;
  }
-}
-
-@media (max-width:42em) {
- #splashbox > div.half {
-  width:100%;
-  text-align: center;
- }
- body.splash {
-  background: none;
- }
- body.splash #header-container {
-  height: 17em;
-  background: url('hands.jpg') no-repeat;
-  background-size: cover;
- }
- body.splash #header {
-  height: 17em;
-  background-color: rgba(255, 255, 255, 0.7);
+/* body.splash #header {
+  height: auto;
+  padding-bottom: 2em;
  }
  body.splash #symbol {
-  width: 18em;
+   width: 18em;
+   max-width:100%;
+   padding: 1em 0;
+   margin: 0 auto;
+   display: block;
  }
- #header #splashlogin,
+ #header #splashlogin,*/
  body.splash a#logo {
-  display: block;
+  display: inline-block;
   margin-right: auto;
   margin-left: auto;
  }
  body.splash a#logo,
  #header #splashlogin {
-  float: none;
+/*float: none;
   position: relative;
-  width: 20em;
+  width: 100%;
+  max-width: 30em;*/
  }
- #splashlogin input,
- #splashlogin button.yes {
-  height:2.3em;
+ #splashlogin form {
+  display:block;
+ }
+ #splashlogin > a.yes {
+ }
+ #splashlogin p {
+  text-align: right;
+  margin-top: -0.3em;
+ }
+ #splashlogin input {
+  height: 2.5em;
  }
  #splashlogin label {
-  margin-right: 0.5em;
+  display: block;
+  font-weight: bold;
+  margin: 0.2em 0.5em 0 0;
  }
- #splashlogin input[type=text] {
-  width: 16em;
+ #splashlogin #password {
+  margin-bottom: 1em;
  }
- #splashlogin input[type=password] {
-  width: 13.9em;
+ #splashlogin input {
+  -moz-box-shadow: 1px 2px 5px #ddd inset;
+  -webkit-box-shadow: 1px 2px 5px #ddd inset;
+  box-shadow: 1px 2px 5px #ddd inset;
+  width:100%;
  }
- #splashlogin button.yes {
-  margin-top: 0.3em;
+ #splashlogin input[value=] {
+  background: red;
  }
- #splashlogin a {
-  margin-top: 0.9em;
+ #splashlogin input:focus {
+  border: 1px solid #5be;
+  box-shadow: 0 0 0.5em rgba(80,160,230,0.6) inset 0 1px 3px rgba(0,0,0,0.1);
+ }
+ #splashlogin #email-signin a,
+ #splashlogin #email-signin div#signin-button {
+  display: table-cell;
+  font-size: inherit;
+  margin: 0 0;
+ }
+ #splashlogin #email-signin div#signin-button {
+  text-align: right;
+ }
+ #splashlogin #email-signin button {
+  display: inline;
+  width: 9em;
+ }
+ #splashlogin #email-signin > div {
+  display: table;
+  width: 100%;
+ }
+ #splashlogin #email-signin {
+  overflow: hidden;
+ }
+ #splashlogin .social-signin a.blue {
+  width: 100%;
+  display: block;
+  text-align: center;
+  margin: 0;
+ }
+ #splashlogin #email-signin button,
+ #splashlogin .social-signin a.blue {
+  line-height: inherit;
+  height: 2.3em;
+  font-size: 1.1em;
+ }
+ #big-ass-signup-button {
+  font-size: 1.1em;
+ }
+ .splash .footer .about,
+ .splash .footer > * {
+  text-align: center;
+  float: none;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto 1.2rem;
+ }
+ .splash .footer > div:first-child {
+  margin-bottom: 0.8rem;
+ }
+ .splash .footer a {
+  padding: 0 1.2rem;
+ }
+ .splash .footer div.small a {
+  padding: 0 0.6rem;
+ }
+ #signup , #login {
+  padding: 0 1em;
+ }
+ #signup > a.blue, #login > a.blue {
+  white-space: normal;
+  min-height: 2.1em;
+  height: initial;
  }
 }
 
-.splactions {
- padding-top: 2em;
- text-align: center;
-}
-
-.splactions.footer a {
- color: #ccc;
- font-size: 1.3em;
- padding: 0 .5em;
-}
-
-.settings-item .submit-image label,
-.splactions a.yes {
+.settings-item .submit-image label {
  margin: 0.5em;
  line-height: 4em;
 }
 
+.settings-item .submit-image label,
+button.gray,
+button.red,
 button.yes,
 button.cancel,
 a.yes,
+button.purple,
+a.purple,
 button.blue,
 a.blue {
+ color: #fff;
  font-weight: bold;
  vertical-align: middle;
- height: 2.5em;
- padding: 0.2em 0.4em;
+ height: inherit;
+ padding: 0.5em 0.7em;
  margin: 0.35em 0;
- border: 1px solid #444;
- border-radius: 0.25em;
+ border-radius: 0.5em;
  white-space: nowrap;
- box-shadow: 1px 1px 0px rgba(255,255,255,0.2), inset 1px 1px 0px rgba(209,209,209,0.3);
+ border:none;
+ text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+ box-shadow: 0 0 1px rgba(0,0,0,0.3),
+       inset 0 0 2px 1px rgba(0,0,0,0.3);
 }
 
 div.horiz a.button.blue {
- font-size: 0.9em;
  margin-right: 0.7em;
- color: #fff;
- padding: 0.4em;
+ font-size: 0.95em;
  display: inline-block;
- line-height: 1em;
+}
+div.horiz a.button.blue:last-child {
+ margin-right: 0;
 }
 
 div.horiz a.button.blue img {
@@ -739,13 +1137,13 @@ div.horiz a.button.blue img {
  margin-right: 0.4em;
 }
 
-@media (max-width:28em) {
+@media (max-width:31em) {
  .home div.horiz a.button.blue {
    display: block;
    width: 100%;
-   font-size: 1em;
+   font-size: 1.1em;
    text-align: center;
-   margin-bottom: 0.6em;
+   margin-bottom: 1em;
  }
  .home div.horiz a.button.blue span {
    display: inline-block;
@@ -777,15 +1175,10 @@ button.yes, a.yes {
   linear, left top, left bottom, 
   from(#96c42b),
   to(#6f9321));
- border: 1px solid #474747;
- text-shadow:
-  1px 1px 2px rgba(0,0,0,0.4);
   padding: 0.5em 0.7em;
 }
 
 button.red  {
- font-weight: bold;
- color: #fff;
  background: #f76959;
  background: -moz-linear-gradient(
   top,
@@ -807,10 +1200,6 @@ button.red  {
   linear, left top, left bottom, 
   from(#f76959),
   to(#92020));
- border: 1px solid #474747;
- text-shadow:
-  1px 1px 2px rgba(0,0,0,0.4);
-  padding: 0.5em 0.7em;
 }
 
 button.red.simple-link {
@@ -855,14 +1244,34 @@ a.blue {
   linear, left top, left bottom, 
   from(#3c6dc8),
   to(#29519c));
- border: 1px solid #474747;
- text-shadow:
-  1px 1px 2px rgba(0,0,0,0.4);
-  padding: 0.5em 0.7em;
+}
+
+a.purple,
+button.purple {
+ background: #570e6a;
+ background: -moz-linear-gradient(
+  top,
+  #ac3cc8 0%,
+  #570e6a);
+ background: -ms-linear-gradient(
+  top,
+  #ac3cc8 0%,
+  #570e6a);
+ background: -o-linear-gradient(
+  top,
+  #ac3cc8 0%,
+  #570e6a);
+ background: -webkit-linear-gradient(
+  top,
+  #ac3cc8 0%,
+  #570e6a);
+ background: -webkit-gradient(
+  linear, left top, left bottom, 
+  from(#ac3cc8),
+  to(#570e6a));
 }
 
 a.yes, a.blue {
- line-height: 2.5em;
  margin: 0.35em 0.5em 0.35em 0;
  height: auto;
 }
@@ -873,8 +1282,6 @@ button, .settings-item .content a {
 }
 
 button.gray {
- font-weight: bold;
- color: #fff;
  background: -moz-linear-gradient(
   top,
   #999 0%,
@@ -891,10 +1298,6 @@ button.gray {
   linear, left top, left bottom, 
   from(#999),
   to(#666));
- border: 1px solid #474747;
- text-shadow:
-  1px 1px 2px rgba(0,0,0,0.4);
-  padding: 0.5em 0.7em;
 }
 
 .gray-text {
@@ -960,16 +1363,18 @@ button.simple-link {
  border:0;
  background-color: transparent;
  font-size: inherit;
+ box-shadow:none;
 }
 
 button.no-padding {
- padding: 0;
+ padding: 0 0 0 0;
 }
 
 button.link:hover {
  text-decoration: underline;
 }
 
+button:disabled,
 button.cancel, input.cancel, a.button.cancel {
  font-weight: bold;
  color: #fff;
@@ -989,10 +1394,8 @@ button.cancel, input.cancel, a.button.cancel {
   linear, left top, left bottom, 
   from(#999),
   to(#666));
- border: 1px solid #474747;
  text-shadow:
   1px 1px 2px rgba(0,0,0,0.4);
-  padding: 0.5em 0.7em;
 }
 
 a.cancel, button.cancel {
@@ -1008,7 +1411,6 @@ button.small, a.small {
  font-size: 0.8em;
  line-height: normal;
  height: auto;
- padding: 0.3em;
 }
 
 button span {
@@ -1029,42 +1431,6 @@ img.small {
  width: auto;
 }
 
-#preview {
- margin-top: 3em;
- background: #444;
- padding: 2em;
- box-shadow: 0 0 4em #000;
-}
-
-#preview h2, #screenshots h2 {
- color: #fff;
- text-align: center;
- font-size: 3em;
-}
-
-#preview > p, #screenshots > p {
- font-size: 1.3em;
- text-align: center;
- font-weight: bold;
- margin-bottom: 1.5em;
- color: #fff;
-}
-
-#preview-cards {
- column-count: 3;
- -moz-column-count: 3;
- -webkit-column-count: 3;
-}
-
-#preview-cards .card {
- padding: 0em 1.2em 1.2em 1.2em;
- background: #fff;
- position: static; /* safari bug */
- display: inline-block;
-}
-
-
-#preview-cards .card,
 .card.joined,
 .card.offer,
 .card.request,
@@ -1104,31 +1470,6 @@ img.small {
 #screenshots h2 {
  font-size: 3em;
 }
-
-@media (max-width:49em) {
- #preview-cards {
-  column-count: 2;
-  -moz-column-count: 2;
-  -webkit-column-count: 2;
- }
-}
-
-@media (max-width:30em) {
- #splashbox h2 {
-  margin-top: 2em;
-  font-size: 1.5em;
- }
- #preview {
-  margin-top: 0;
-  box-shadow: none;
- }
- #preview-cards {
-  column-count: 1;
-  -moz-column-count: 1;
-  -webkit-column-count: 1;
- }
-}
-
 
 #header h1 {
  color:#5c8a2f;
@@ -1521,12 +1862,9 @@ menu#fine-print-links a {
  clear:left;
 }
 
-.white, .item {
- margin:1em 0;
-}
-
 .item {
  clear:left;
+ margin:1em 0;
  padding-bottom: 1em;
  border-bottom: 1px solid #eee;
 }
@@ -1548,6 +1886,8 @@ menu#fine-print-links a {
  max-width: 60em;
 }
 
+#login label,
+#signup label,
 .blog.item label,
 .item.create-event label,
 .item.create-group label,
@@ -1559,6 +1899,7 @@ menu#fine-print-links a {
  margin-top: 0.5em;
 }
 
+#tag-fb-friends fieldset,
 .item.inventory-details label,
 .item.inventory-details fieldset {
  margin-top: 1em;
@@ -1612,6 +1953,8 @@ select.focus {
  border: 0.2em solid;
 }
 
+#signup input[type=text],
+#login input,
 .inventory-details select.identity,
 .inventory-details input[type=text],
 .matchmaker input[type=text],
@@ -2223,6 +2566,10 @@ button.card > img {
  font-size: 0.9em;
 }
 
+.large {
+ font-size: 1.2em;
+}
+
 .item.reverse {
  background: #87a767;
 }
@@ -2272,29 +2619,25 @@ button.card > img {
  margin: 0.5em 0;
 }
 
-@media (min-width:56em) {
+@media (min-width:62em) {
  .profile .item.right {
   margin:50px 8px 8px;
  }
-
   menu.bar .no-rightbar {
   display:none;
  }
-
  #body {
   padding: 1em;
  }
-
  body.right #body {
   margin-right:21em;
  }
-
  #right {
   position: absolute;
   right: 0;
   top: 3em;
   background: #ffffff;
-  padding: 0 1em 4em;
+  padding: 1em 1em 4em;
   margin: 1em 0;
   border-left: 1px solid #eee;
   border-bottom: none;
@@ -2306,10 +2649,9 @@ button.card > img {
  body.right #full, body.right .flash {
   margin-right: 21em;
  }
-
 }
 
-@media (max-width:56em) {
+@media (max-width:62em) {
  .item.right.only {
   display:none;
  }
@@ -2687,7 +3029,6 @@ form.primary-action {
 
 .card button.primary-action {
  margin: 0 0.5em 0.4em 0;
- padding: 0.4em 0.5em;
  font-size: 0.9em;
 }
 
@@ -2705,9 +3046,15 @@ button.primary-action img {
  vertical-align: middle;
 }
 
-#preview-cards .card.inventory-item,
 div.card.inventory-item {
  padding-top: 0.9em;
+}
+
+div.card.inventory-item div.author img {
+ padding-right: 0.1em;
+ height: 1.1em;
+ width: auto;
+ vertical-align: middle;
 }
 
 .card .right {
@@ -2722,6 +3069,12 @@ div.card.inventory-item {
 .card h3.timestamp a {
  font-weight: normal;
  color:#666;
+}
+
+.timestamp img {
+ height: 1.3em;
+ width: 1.3em;
+ vertical-align: -0.2em;
 }
 
 .item .timestamp a {
@@ -2807,13 +3160,15 @@ div.submit-image {
  /*display:inline-block;*/
 }
 
+.submit-image label,
 .settings-item .submit-image label {
  border-radius: 0.25em;
  cursor: pointer;
 }
 
-.submit-image label {
- cursor: pointer;
+.logged-out #unsubscribe button,
+.settings #unsubscribe button {
+ min-width: 10em;
 }
 
 form.submit-image:after {
@@ -2845,8 +3200,9 @@ div.activity-image {
  font-weight: bold;
 }
 
+button:disabled,
 .id-bar a {
- text-decoration: none;
+ text-decoration: none !important;
 }
 
 .id-bar img {
@@ -2868,8 +3224,6 @@ div.activity-image {
 .new-gratitude button.cancel,
 .new-gratitude button.yes {
  margin-left: 0.7em;
- padding-top: 0;
- padding-bottom: 0;
  vertical-align: baseline;
 }
 
@@ -3155,25 +3509,38 @@ div.settings-avatar {
  white-space: nowrap;
 }
 
-#edit-tags {
+#edit-inventory-details {
  max-width: 40em;
 }
 
-#edit-tags blockquote.review-text {
+#edit-inventory-details blockquote.review-text {
  margin: .5em 0 .5em 0;
 }
 
-#edit-tags p.small {
+#edit-inventory-details p.small {
  margin: 0 0 0.2em;
 }
 
-#edit-tags #publish-facebook {
- margin-top: 0.7em;
+a.facebook-button {
+ line-height:1.5em;
 }
 
-#edit-tags #publish-facebook img {
- vertical-align: sub;
- margin-right: 0.3em;
+a.facebook-button img {
+ height: 1em;
+ width: auto;
+ vertical-align: -0.1em;
+ margin-right: 0.625em;
+}
+
+form #facebook {
+ margin: 0.7em 0;
+}
+
+form #facebook img {
+ vertical-align: middle;
+ margin: 0 0.3em;
+ height: 1.5em;
+ width: 1.5em;
 }
 
 div.item-group-privacy {
@@ -3190,13 +3557,49 @@ div.item-group-privacy span {
  display: table-cell;
 }
 
-div.tag {
+#enter-inventory-details div.category {
  margin: 0.5em 0;
  display: inline-block;
+ width: 11em;
 }
 
-div.tag {
- width: 11em;
+form #facebook label,
+#enter-inventory-details #categories label {
+ font-weight: normal;
+ display: inline;
+}
+
+form #facebook label,
+form #facebook input,
+div#tag-fb-friends div.g-recipient *,
+#enter-inventory-details #categories input {
+ vertical-align: middle;
+}
+
+div#tag-fb-friends h3 {
+ margin-bottom: 0.5em;
+}
+
+div#tag-fb-friends legend {
+ font-size: 1.2em;
+}
+
+div#tag-fb-friends div.g-recipient {
+ width: 100%;
+ max-width: 25em;
+ padding: 0.4em 0;
+}
+
+div#tag-fb-friends div.g-recipient input {
+ padding-right: 0.5em;
+}
+
+div#tag-fb-friends div.g-recipient img {
+ display: inline-block;
+ max-width: 3em;
+ height: auto;
+ margin-left: 0.5em;
+ margin-right: 0.3em;
 }
 
 form.matchmaker {
@@ -3477,6 +3880,11 @@ div.settings menu.bar {
  max-width: 55em;
 }
 
+div.settings #email-link {
+ font-size: 0.85em;
+ padding-left: 0.5em;
+}
+
 .settings-item li.notifications.border-top {
  border-color: #dadada;
  padding-top: 0.5em;
@@ -3558,12 +3966,6 @@ div.settings menu.bar {
 @media (max-width:40em) {
  .settings-item .details {
    display: block;
- }
-}
-
-@media (max-width:40em) {
- .settings-item .details.facebook {
-   display: table-cell;
  }
 }
 
@@ -3705,7 +4107,7 @@ div.setup p.help-text {
 
 div.settings p.help-text {
  margin-top: 0.4em;
- width: 100%
+ width: 100%;
  max-width: 55em;
 }
 
@@ -3850,9 +4252,7 @@ body.donate {
 form#donate button {
  outline: medium none;
  padding: 0.25em 0.1em;
- background: -moz-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #008FC5;
- background: -ms-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #008FC5;
- background: -webkit-linear-gradient(center bottom, rgba(0, 0, 0, 0.1) 0%, rgba(255, 255, 255, 0.1) 100%) repeat scroll 0 0 #008FC5;
+ background: #008FC5;
  border: 2px solid #7EC7E2;
  color: #fff;
  border-radius: 0.35em;
@@ -4093,6 +4493,12 @@ span.highlight {
  padding-top: 0.5em;
 }
 
+.inventory-reply label {
+ font-weight: bold;
+ display: block;
+ margin: 0.8em 0 0.3em;
+}
+
 .inventory-reply blockquote {
  margin-bottom: 1em;
  padding: 0.5em 0.4em;
@@ -4244,8 +4650,13 @@ background-color: #f8f8f8;
  float: left;
 }
 
+.text-right {
+ text-align: right;
+}
+
 .clear {
  clear: both;
+ line-height: 0;
 }
 
 .bold {
@@ -4254,6 +4665,14 @@ background-color: #f8f8f8;
 
 .middle {
  vertical-align: middle;
+}
+
+.no-margin {
+ margin: 0 0 0 0;
+}
+
+.no-padding {
+ padding: 0 0 0 0;
 }
 
 .center {
@@ -4320,12 +4739,16 @@ background-color: #f8f8f8;
  color:#333333;
 }
 
+div.or-divider hr,
 div.related.activity.items hr {
  display: block;
+ border: none;
+}
+
+div.related.activity.items hr {
+ height: 0.1em;
  color: #fafafa;
  background: #fafafa;
- height: 0.1em;
- border: none;
 }
 
 .tags a, .side-sug a {

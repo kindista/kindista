@@ -131,7 +131,7 @@
     :selected "messages"))
 
 (defun get-conversations-new ()
-  (require-active-user
+  (require-user (:require-active-user t :require-email t)
     (if (getf *user* :pending)
        (progn
          (pending-flash "contact other Kindista members")
@@ -139,7 +139,7 @@
       (new-conversation :people (parse-subject-list (get-parameter "people"))))))
 
 (defun post-conversations-new ()
-  (require-active-user
+  (require-user (:require-active-user t :require-email t)
     (cond
       ((getf *user* :pending)
        (pending-flash "contact other Kindista members")

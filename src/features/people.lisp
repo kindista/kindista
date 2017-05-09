@@ -74,12 +74,14 @@
                    :notify-message t
                    :notify-reminders t
                    :notify-expired-invites t
+                   :notify-inventory-expiration t
                    :notify-blog t
                    :notify-inventory-digest t
+                   :notify-new-contact t
                    :notify-group-membership-invites t
                    :notify-kindista t))
 
-(defun create-person (&key name email password host aliases pending test-user-p)
+(defun create-person (&key name email password host aliases pending test-user-p fb-id fb-token fb-expires)
   (let* ((person-id (insert-db (list :type :person
                                      :name name
                                      :aliases aliases
@@ -88,15 +90,21 @@
                                      :pending pending
                                      :active t
                                      :help t
-                                     :pass (new-password password)
+                                     :pass (awhen password (new-password it))
                                      :created (get-universal-time)
                                      :unsubscribe-key (random-password 18)
+                                     :fb-id fb-id
+                                     :fb-token fb-token
+                                     :fb-expires fb-expires
+                                     :fb-link-active (when fb-id t)
                                      :test-user test-user-p
                                      :notify-gratitude t
                                      :notify-message t
                                      :notify-reminders t
                                      :notify-expired-invites t
+                                     :notify-inventory-expiration t
                                      :notify-blog t
+                                     :notify-new-contact t
                                      :notify-group-membership-invites t
                                      :notify-inventory-digest t
                                      :notify-kindista t)))
@@ -106,7 +114,9 @@
     (unless (and (getf person :active)
                  (getf person :notify-gratitude)
                  (getf person :notify-message)
+                 (getf person :notify-new-contact)
                  (getf person :notify-reminders)
+                 (getf person :notify-inventory-expiration)
                  (getf person :notify-expired-invites)
                  (getf person :notify-blog)
                  (getf person :notify-inventory-digest)
@@ -132,17 +142,19 @@
     (with-locked-hash-table (*db-results*)
       (setf (gethash id *db-results*) result))
 
-    (setf (gethash (getf data :username) *username-index*) id)
+    (when (getf data :username)
+      (with-locked-hash-table (*username-index*)
+        (setf (gethash (getf data :username) *username-index*) id)))
 
     (with-locked-hash-table (*profile-activity-index*)
       (asetf (gethash id *profile-activity-index*)
              (safe-sort (push result it) #'> :key #'result-time)))
 
-    (unless (getf data :test-user)
-
-      (when (getf data :active)
-        (with-mutex (*active-people-mutex*)
-          (push id *active-people-index*)))
+    ;; index fb-id's even when :fb-link-active is nil so we can use it to log in and reactivate
+    ;; the app
+    (when (getf data :fb-id)
+      (with-locked-hash-table (*facebook-id-index*)
+        (setf (gethash (getf data :fb-id) *facebook-id-index*) id)))
 
       (when (and (getf data :emails)
                  (not (getf data :banned)))
@@ -150,6 +162,14 @@
           (dolist (email (getf data :emails))
             (when email ;some deleted accounts might have :emails (nil)
               (setf (gethash email *email-index*) id)))))
+
+    ;; don't index test-users on the live server
+    (unless (and (getf data :test-user)
+                 *productionp*)
+
+      (when (getf data :active)
+        (with-mutex (*active-people-mutex*)
+          (push id *active-people-index*)))
 
       (awhen (getf data :banned)
         (with-locked-hash-table (*banned-emails-index*)
@@ -354,7 +374,7 @@
                            (cons +kindista-id+ ids-to-deactivate))))
         (setf (getf data-to-keep :host) (getf data :host)))
 
-      (dolist (prop '(:bio :bio-summary :bio-doing :bio-contact :bio-skills :bio-into))
+      (dolist (prop '(:bio :bio-summary :bio-doing :bio-contact :bio-skills :bio-into :fb-id :fb-token :fb-link-active :fb-expires))
         (when (or (not (getf data-to-keep prop))
                   (string= (getf data-to-keep prop) ""))
           (setf (getf data-to-keep prop)
@@ -706,8 +726,10 @@
     (deactivate-inventory-item offer-id))
   (modify-db id :active nil
                 :notify-message nil
+                :notify-new-contact nil
                 :notify-kindista nil
                 :notify-reminders nil
+                :notify-inventory-expiration nil
                 :notify-expired-invites nil
                 :notify-gratitude nil))
 
@@ -734,8 +756,10 @@
           (modify-db gratitude-id :pending nil)))))
   (modify-db id :active t
                 :notify-message t
+                :notify-new-contatct t
                 :notify-kindista t
                 :notify-reminders t
+                :notify-inventory-expiration t
                 :notify-expired-invites t
                 :notify-gratitude t))
 
