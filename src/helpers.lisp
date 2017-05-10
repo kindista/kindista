@@ -63,6 +63,9 @@
           (scan +number-scanner+ int?))
      (parse-integer int?))))
 
+(defun average (list)
+  (/ (reduce #'+ list) (length list)))
+
 (defun progress-bar (percent)
   (html
     (:div :class "progress-bar"
@@ -248,10 +251,20 @@
         (user *user*)
         (contact-multiplier 1)
         (distance-multiplier 1)
+        (now (get-universal-time))
         (sitewide)
-   &aux (age (max (- (get-universal-time)
+   &aux (age (max (- now
                      (or (result-time result) 0))
                   1))
+        (refresh-offset (or (when (and (result-created result)
+                                       (not (eq (result-created result)
+                                                (result-time result))))
+                              (- 0
+                                 (* 9 (+ 1 (log (+ 1
+                                                   (/ (- now
+                                                         (result-created result))
+                                                      10000)))))))
+                            0))
         (contacts (getf user :following))
         (lat (or (getf user :lat) *latitude*))
         (long (or (getf user :long) *longitude*))
@@ -260,7 +273,7 @@
                        ;; don't use "=" because userid can be nil
                        -50
                        0))
-        (time-component (/ 3000 (log (+ 1 (/ age 400)))))
+        (time-component (/ 1000 (+ 1 (log (+ 1 (/ age 300000))))))
         (distance (unless sitewide
                     (if (and (result-latitude result)
                              (result-longitude result))
@@ -271,19 +284,20 @@
                                               (result-longitude result)))
                          5000)))
         (distance-component (unless sitewide
-                              (/ (* 150 distance-multiplier)
-                                 (log (+ 4 distance)))))
+                              (/ (* 200 distance-multiplier)
+                                 (log (+ 6 distance)))))
         (contact-component (if contact-p
-                             (* 70 contact-multiplier)
+                             (* 18 contact-multiplier)
                              0))
         (love-component (aif (loves (result-id result))
                           (* (log (* 1.4 (length it)))
-                             27)
+                             9)
                           0)))
   "Higher scores rank higher."
   (declare (optimize (speed 3) (safety 0) (debug 0)))
   (values (round (apply #'+ (remove nil
                                     (list self-offset
+                                          refresh-offset
                                           time-component
                                           distance-component
                                           contact-component
@@ -292,6 +306,7 @@
 
           (list :distance-component distance-component
                 :self-offset self-offset
+                :refresh-offset refresh-offset
                 :time-component time-component
                 :contact-component contact-component
                 :love-component love-component

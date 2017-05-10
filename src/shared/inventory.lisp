@@ -51,7 +51,8 @@
                                             (list (getf item :refreshed)
                                                   (getf item :edited)
                                                   (getf item :created))))
-                       :tags (getf item :tags))))))
+                       :tags (getf item :tags)
+                       :created (getf item :created))))))
 
 (defun index-inventory-item
   (id
