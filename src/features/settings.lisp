@@ -83,6 +83,7 @@
         editable
         edit-text
         buttons
+        hidden-input
         extra-form
         class
         (form-markup t)
@@ -103,6 +104,8 @@
                 (htm (:form :method method
                             :action action
                             (:div :class "content-container"
+                              (awhen hidden-input
+                                (str it))
                               (if buttons
                                 (htm
                                   (:div :class "form-elements" (str body))
@@ -477,8 +480,10 @@
             (:button :class "blue small float-right" :type "submit" :name "edit-card" "Update card")))))
     ))
 
-(defun settings-deactivate ()
-  (let ((action (if (eq (getf *user* :active) t)
+(defun settings-deactivate
+  (&optional groupid
+   &aux (group (db groupid)))
+  (let ((action (if (eq (getf (or group *user*) :active) t)
                   "deactivate"
                   "reactivate")))
     (settings-item-html
@@ -488,40 +493,59 @@
                  (:button :class "simple-link red link no-padding"
                           :name action
                           :type "submit"
-                          (str (s+ (string-capitalize action) " account"))))
+                          (str (strcat* (string-capitalize action)
+                                        (when groupid " group")
+                                        " account"))))
+      :hidden-input (when groupid
+                      (html (:input :type "hidden"
+                                    :name "groupid"
+                                    :value groupid)))
       :editable t
-      :help-text (s+ "Warning: "
-                     "Deactivating your account will delete all of your current offers "
-                     "and requests, and prevent people from "
-                     "contacting you through Kindista or finding you using the search bar. "
-                     "Deactivating your account will not remove any statements of gratitude "
-                     "you have given or received. "
-                     "You may reactivate your account anytime by logging into Kindista and "
-                     "clicking \"Reactivate account\" on this page."))))
+      :help-text (s+ (account-deactivation-warning-text groupid)
+                     "You may reactivate this account anytime by logging into Kindista and clicking \"Reactivate account\" on this page."
+                     ))))
+
+(defun account-deactivation-warning-text (groupid)
+  (if groupid
+    (s+ "Warning: "
+        "Deactivating a group account will delete all of its current offers "
+        "and requests, and prevent people from "
+        "finding it using the search bar. "
+        "Deactivating a group account will not remove any statements of gratitude "
+        "it has given or received.")
+    (s+ "Warning: "
+        "Deactivating your account will delete all of your current offers "
+        "and requests, and prevent people from "
+        "contacting you through Kindista or finding you using the search bar. "
+        "Deactivating your account will not remove any statements of gratitude "
+        "you have given or received.")))
 
 (defun confirm-deactivation ()
   (standard-page
     "Confirm Deactivation"
-    (html
-      (:div :class "item"
-        (:h1 "Are you sure you want to deactivate your account?")
-        (:p
-          (:strong "Warning: ")
-          "Deactivating your account will delete all of your current offers "
-          "and requests, and prevent people from "
-          "contacting you through Kindista or finding you using the search bar. "
-          "Deactivating your account will not remove any statements of gratitude "
-          "you have given or received. "
-          "You may reactivate your account anytime by logging into Kindista and "
-          "clicking \"Reactivate account\" on this page.")
-        (:form :method "post" :action "/settings"
-          (:input :type "hidden" :name "next" :value "/settings")
-          (:a :class "cancel" :href "/settings" "No, I didn't mean it!")
-          (:button :class "yes"
-                   :type "submit"
-                   :name "confirm-deactivation"
-                   "Yes, deactivate my Kindista account."))
-        ))
+    (let ((groupid (get-parameter-integer "groupid")))
+      (html
+        (:div :class "item"
+          (:h1 (str
+                 (s+ "Are you sure you want to deactivate "
+                     (aif groupid
+                       (s+ (db it :name ) "'s group")
+                       "your")
+                     " account?")))
+          (:p
+            (str (account-deactivation-warning-text groupid)))
+          (:form :method "post" :action "/settings"
+            (:input :type "hidden" :name "next" :value "/settings")
+            (when groupid
+              (htm (:input :type "hidden" :name "groupid" :value groupid)))
+            (:a :class "cancel" :href "/settings" "No, I didn't mean it!")
+            (:button :class "yes"
+                     :type "submit"
+                     :name "confirm-deactivation"
+                     (str (s+ "Yes, deactivate "
+                              (if groupid "our" "my")
+                              " Kindista account."))))
+          )))
     :class "text"))
 
 (defun settings-emails (editable &key activate)
@@ -879,8 +903,8 @@
           (when (not groupid)
             (htm (str (settings-password))
                  (when (getf *user* :plan)
-                   (str (settings-donate))))
-            (str (settings-deactivate)))))))
+                   (str (settings-donate)))))
+          (str (settings-deactivate groupid))))))
 
 (defun post-settings-social ()
   (require-user (:allow-test-user t)
@@ -1462,12 +1486,9 @@
 
 (defun post-settings ()
   (require-user ()
-    (let* ((groupid (or (post-parameter "on")
-                        (post-parameter "groupid")))
-           (id (or (when groupid
-                     (unless (string= groupid "")
-                       (parse-integer groupid)))
-                   *userid*))
+    (let* ((groupid (or (post-parameter-integer "on")
+                        (post-parameter-integer "groupid")))
+           (id (or groupid *userid*))
            (entity (if (eql id *userid*) *user* (db id))))
 
       (if (or (eql id *userid*)
@@ -1485,7 +1506,7 @@
                           "k" (post-parameter-string "k"))))
 
           ((post-parameter "image")
-           (let ((groupid (awhen (post-parameter "on") (parse-integer it))))
+           (let ((groupid (when (post-parameter "on") groupid)))
              (handler-case
                ;hunchentoot returns a list containing
                ;(path file-name content-type)
@@ -1558,13 +1579,23 @@
               (see-other (or (post-parameter "next") "/home")))))
 
           ((post-parameter "deactivate")
-           (flash "Please confirm your choice to deactivate your account." :error t)
-           (see-other "/deactivate-account"))
+           (flash "Please confirm your choice to deactivate this account." :error t)
+           (see-other (url-compose "/deactivate-account"
+                                   "groupid" groupid)))
 
           ((post-parameter "confirm-deactivation")
-           (deactivate-person *userid*)
-           (flash "You have deactivated you account. If you change your mind you can reactivate your account on the settings page.")
-           (see-other "/"))
+           (if groupid
+             (progn
+               (deactivate-group groupid)
+               (flash (s+ "You have deactivated "
+                          (db groupid :name)
+                          "'s group account. If you change your mind you can reactivate this account on the group's settings page."))
+               (see-other (url-compose "/settings/public"
+                                       "groupid" groupid)))
+             (progn
+               (deactivate-person *userid*)
+               (flash "You have deactivated you account. If you change your mind you can reactivate your account on the settings page.")
+               (see-other "/"))))
 
           ((post-parameter "cancel-plan")
 
@@ -1611,9 +1642,17 @@
                 (see-other "/settings/personal")))))
 
           ((post-parameter "reactivate")
-           (reactivate-person *userid*)
-           (flash "You have reactivated your Kindista account.")
-           (see-other "/settings/personal"))
+           (if groupid
+
+             (progn (reactivate-group groupid)
+                    (flash (s+ "You have reactivated "
+                               (db groupid :name)
+                               "'s Kindista account."))
+                    (see-other (url-compose "/settings/public"
+                                            "groupid" groupid)))
+             (progn (reactivate-person *userid*)
+                    (flash "You have reactivated your Kindista account.")
+                    (see-other "/settings/personal"))))
 
           ((post-parameter "remove-email")
            (let ((email (post-parameter "remove-email")))

@@ -1,4 +1,4 @@
-;;; Copyright 2012-2016 CommonGoods Network, Inc.
+;;; Copyright 2012-2017 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -466,7 +466,7 @@
                (htm (:input :type "hidden" :name "next" :value next))))
 
            (unless existing-url
-             (awhen (groups-with-user-as-admin)
+             (awhen (groups-with-user-as-admin *userid* t)
                (htm
                  (:div :class "clear identity-selection"
                   (:label :for "identity-selection" :class "from" "From:")

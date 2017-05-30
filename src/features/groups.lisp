@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2017 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -173,6 +173,28 @@
                        :group-creator group-creator
                        :keep-new-name keep-new-name
                        :keep-new-location keep-new-location))
+
+(defun deactivate-group
+  (id
+   &aux (result (gethash id *db-results*)))
+  (metaphone-index-insert (list nil) result)
+  (geo-index-remove *groups-geo-index* result)
+  (geo-index-remove *activity-geo-index* result)
+  (dolist (request-id (gethash id *request-index*))
+    (deactivate-inventory-item request-id))
+  (dolist (offer-id (gethash id *offer-index*))
+    (deactivate-inventory-item offer-id))
+  (modify-db id :active nil))
+
+(defun reactivate-group
+  (id
+   &aux (result (gethash id *db-results*))
+        (data (db id))
+        (name (getf data :name)))
+  (metaphone-index-insert (list name) result)
+  (geo-index-insert *groups-geo-index* result)
+  (geo-index-insert *activity-geo-index* result)
+  (modify-db id :active t))
 
 (defun delete-group (id &key pre-existing-duplicate-id group-creator keep-new-name keep-new-location)
 "WARNING: This needs further testing before use on the live server."
@@ -422,21 +444,31 @@
   (profile-activity-html groupid :type type
                                  :right (group-sidebar groupid)))
 
-(defun groups-with-user-as-admin (&optional (userid *userid*))
+(defun groups-with-user-as-admin (&optional (userid *userid*)
+                                            omit-deactivated-groups
+                                  &aux group)
 "Returns an a-list of (groupid . group-name)"
   (loop for id in (getf (if (eql userid *userid*)
                           *user-group-privileges*
                           (gethash userid *group-privileges-index*))
                         :admin)
+        do (setf group (db id))
+        when (or (not omit-deactivated-groups)
+                 (getf group :active))
         collect (cons id (db id :name))))
 
 
-(defun groups-with-user-as-member (&optional (userid *userid*))
+(defun groups-with-user-as-member (&optional (userid *userid*)
+                                             omit-deactivated-groups
+                                   &aux group)
 "Returns an a-list of (groupid . group-name)"
   (loop for id in (getf (if (eql userid *userid*)
                           *user-group-privileges*
                           (gethash userid *group-privileges-index*))
                         :member)
+        do (setf group (db id))
+        when (or (not omit-deactivated-groups)
+                 (getf group :active))
         collect (cons id (db id :name))))
 
 (defun group-admin-p (groupid &optional (userid *userid*))
@@ -1053,7 +1085,12 @@
 (defun get-invite-group-members (id)
   (ensuring-userid (id "/groups/~a/invite-members")
     (require-group-admin id
-      (invite-group-members id))))
+      (if (db id :active)
+        (invite-group-members id)
+        (progn
+          (flash "This group has been deactivated. Please reactivate it from the group's settings page before inviting more members to join it." :error t)
+          (see-other (url-compose "/settings/public"
+                                  "groupid" id)))))))
 
 (defun post-invite-group-members (groupid)
   (let* ((groupid (parse-integer groupid))
