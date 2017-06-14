@@ -57,12 +57,13 @@
           (:div :id "signup"
            (:div
              (:div :class "center"
-              (:h1 (:em "Join the Kindness Revolution"))
+              (:h1 (:em "Join a Revolution of Kindness"))
               (:a :class "purple"
                :id "big-ass-signup-button"
                :href "/signup" "SIGN UP NOW"))
              (:div :id "demo" :class "center"
-              (:a :href "/home" "...or try Kindista as a guest")))))
+              (:a :href "/home" "...or try Kindista as a guest"))
+             )))
 
          ; (:ol :class "numeric"
          ;   (:li (:strong "Everything shared is given freely. ")
@@ -116,7 +117,9 @@
             (:a :href "/terms" "TERMS")
            ;" &middot; "
             (:a :href "/privacy" "PRIVACY"))
-           (:div :class "about text-right" "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")
+           (:div :class "about text-right"
+             "Kindista is a project of CommonGoods Network, Inc., an awesome Oregon 501(c)(3) non-profit organization.")
+           (:div :class "center" (:h2 "Grow Prosperity through Community"))
            )))
 
       :extra-head (facebook-item-meta-content

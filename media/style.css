@@ -412,7 +412,7 @@ body.about h3 {
 #signup,
 #login {
  width: 100%;
- max-width: 30em;
+ max-width: 35em;
  margin: 3em auto;
  text-align: center;
 }
@@ -815,12 +815,13 @@ body.splash #symbol {
 .splash #signup {
   font-size: 1.3em;
   margin: 0 auto;
-  height: 20em;
+  min-height: 20em;
   max-width: 22em;
-  padding-top: 3.3em;
+  padding: 3em 0 1em;
 }
 
 body.splash h1,
+.splash #signup h2,
 .splash #demo a {
  color: #fff;
  text-shadow: 0 0 6px rgba(0,0,0,0.3);
@@ -929,6 +930,14 @@ body.splash #header,
 .splash .footer > * {
  font-size: 85%;
 }
+
+.splash .footer > div.center h2 {
+ color: #fff;
+ font-size: 1.5em;
+ padding-top: 0.5em;
+ clear: both;
+}
+
 .splash .footer .about {
  float: right;
  max-width: 50%;
