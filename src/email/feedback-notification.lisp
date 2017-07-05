@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2017 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -20,24 +20,50 @@
 (defun send-feedback-notification-email (id)
   (let* ((feedback (db id))
          (by (db (getf feedback :by) :name))
-         (text (getf feedback :text)))
+         (text (getf feedback :text))
+         (feedback-url (strcat *email-url* "feedback#" id)))
     (cl-smtp:send-email +mail-server+
                         "Kindista <noreply@kindista.org>"
-                        "feedback@kindista.org"
+                        (if *productionp*
+                          "feedback@kindista.org"
+                          *error-message-email*)
                         (s+ "Kindista feedback from " by)
                         (feedback-notification-email-text id
                                                           by
-                                                          text))))
+                                                          text
+                                                          feedback-url)
+                        :html-message (feedback-notification-email-html
+                                        id
+                                        by
+                                        text
+                                        feedback-url))))
 
-(defun feedback-notification-email-text (id by text)
+(defun feedback-notification-email-text (id by text feedback-url)
   (strcat
+"New User Feedback on Kindista"
+#\linefeed #\linefeed
 "Feedback ID: " id
-"
+#\linefeed #\linefeed
+"Posted by: " by
+#\linefeed #\linefeed
+"Text: " text
+#\linefeed #\linefeed
+"Link: " feedback-url))
 
-Posted by: " by
-"
+(defun feedback-notification-email-html
+  (id by text feedback-url)
+  (html-email-base
+    (html
+      (:p :style *style-p*
+       (:h2 "New User Feedback on Kindista"))
 
-Text:
-" text))
+      (:p :style *style-p* "Feedback ID: " (str id))
+
+      (:p :style *style-p* "Posted by: " (str by))
+
+      (:p :style *style-p* "Text: " (str text))
+
+      (str (email-action-button feedback-url "Review and Respond"))
+)))
 
 

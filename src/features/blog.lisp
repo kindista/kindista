@@ -27,6 +27,9 @@
           (unless (getf data :notify-blog)
             (modify-db id :notify-blog nil)))))))
 
+(defun new-blog-comment-notice-handler ()
+  (send-blog-comment-notification-email (getf (cddddr *notice*) :id)))
+
 (defun index-blog
   (id
    data
@@ -78,6 +81,22 @@
 
 (defun update-blog-file (id)
   (ensure-blog-file id :update t))
+
+(defun blog-url
+  (id
+   &key (data (db id))
+        include-domain
+   &aux (created (universal-to-timestamp (getf data :created)))
+        (local-dir (with-output-to-string (str)
+                     (format-timestring
+                       str
+                       created
+                       :format '((:year 4) #\/ (:month 2) #\/ (:day 2) #\/))))
+        (hyphenated-title (url-encode (hyphenate (getf data :title))))
+        (blog-path (s+ local-dir hyphenated-title)))
+  (strcat* (when include-domain *email-url*)
+           "blog/"
+           blog-path))
 
 (defun blog-post-html
   (result
@@ -217,9 +236,10 @@
        ((not data)
         (not-found))
        ((post-parameter-string "comment-text")
-        (create-comment :on blog-id
-                        :send-email-p nil
-                        :text it
-                        )
+        (let ((new-comment (create-comment :on blog-id
+                                           :send-email-p nil
+                                           :text it)))
+          (unless (eql *userid* (getf data :author))
+            (notice :new-blog-comment :id new-comment)))
         (see-other "/blog"))
        (t (not-found)))))
