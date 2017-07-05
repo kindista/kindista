@@ -8,6 +8,7 @@
 - [Should I request things that I can afford to buy myself?](#can-i-request-things-i-can-afford-to-buy)
 - [Can I use Kindista to barter with other members?](#can-i-barter-on-kindista)
 - [Are resources shared using Kindista taxable?](#are-resources-taxable)
+- [How do I include pictures with my offers, requests, and gratitude?](#how-do-i-add-pictures)
 
 ### People
 - [How do I know I can trust someone on Kindista?](#can-i-trust-someone-on-kindista)
@@ -23,6 +24,7 @@
 
 ### Expressing Gratitude
 - [What is a statement of gratitude?](#what-is-gratitude)
+- [How do I include pictures with my statement of gratitude?](#how-do-i-add-pictures)
 - [Can I post gratitude about someone if I haven't  received any resources from them?](#can-i-post-gratitude-about-anyone)
 - [Why should I express my gratitude publicly?](#why-express-gratitude-publicly)
 
@@ -165,6 +167,7 @@ so that they can pay for needs that are hard to meet directly through sharing,
 such as utilities, car insurance, and phone bills.
 
 <small><a href="#questions">Return to questions</a></small>
+
 <a id="can-i-barter-on-kindista"></a>
 
 ### Can I use Kindista to barter with other members?
@@ -183,6 +186,7 @@ to provide materials that will be used in creating a gift
 (such as yarn for knitted clothing or wood and nails for a deck).
 
 <small><a href="#questions">Return to questions</a></small>
+
 <a id="are-resources-taxable"></a>
 
 ### Are resources shared using Kindista taxable?
@@ -194,6 +198,14 @@ and
 [here](http://www.irs.gov/uac/Eight-Tips-to-Determine-if-Your-Gift-is-Taxable).
 If you are still unsure about whether your gift is taxable
 you may want to consult a tax attorney.
+
+<small><a href="#questions">Return to questions</a></small>
+
+<a id="how-do-i-add-pictures"></a>
+
+### How do I include pictures with my offers, requests, and gratitude?
+
+First post the text for your item. After you post it, there will be a link to add pictures.
 
 <small><a href="#questions">Return to questions</a></small>
 
