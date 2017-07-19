@@ -114,12 +114,14 @@
                              (:module email
                               :serial t
                               :components ((:file "helpers")
+                                           (:file "blog-comment-notification")
                                            (:file "contact-notification")
                                            (:file "email-verification")
                                            (:file "error-notifications")
                                            (:file "expired-inventory-notice")
                                            (:file "inventory-digest")
                                            (:file "feedback-notification")
+                                           (:file "feedback-reply-notification")
                                            (:file "gratitude-notification")
                                            (:file "message-notification")
                                            (:file "pending-offer-notification")
