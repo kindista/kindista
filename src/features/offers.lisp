@@ -113,7 +113,7 @@
           :extra-head (facebook-item-meta-content
                         id
                         "offer"
-                        (strcat* "Offer: " (getf offer :title))
+                        (strcat* "Kindista Offer: " (getf offer :title))
                         :image (awhen (first (getf offer :images))
                                  (get-image-thumbnail it 1200 1200)))
           :selected "offers"))))))

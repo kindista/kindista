@@ -1,7 +1,20 @@
+https://developers.facebook.com/docs/sharing/opengraph/custom
+https://developers.facebook.com/docs/sharing/opengraph/custom-open-graph-deprecation
+https://developers.facebook.com/docs/sharing/web
+https://developers.facebook.com/docs/plugins/share-button/
 https://developers.facebook.com/tools/debug/sharing
-
 https://developers.facebook.com/docs/facebook-login/permissions/v2.3
 https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
+
+
+#Migrate to generic FB sharing method
+[ ] review how blog is posting
+[ ] maybe replace activity-item facebook shares with facebook-share-button
+[ ] change (remove?) new-facebook-action-notice handler and any calls to it
+[ ] facebook-item-meta-content
+[ ] maybe change :fb-publishing-in-process parameter
+[ ] remove code for posting to FB while creating offer/request/gratitude
+
 
 #Settings Page
  - List of permissions possible to select:
@@ -64,3 +77,5 @@ https://developers.facebook.com/docs/facebook-login/multiple-providers
 [ ] redefine defparamater *faq-html*
 [ ] load notice handlers
 [ ] (setf *facebook-app-token* (get-facebook-app-token))
+
+#Depreciate FB Open Graph Stories

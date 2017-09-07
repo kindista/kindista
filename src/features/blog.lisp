@@ -222,8 +222,7 @@
                         blog-title
                         :url (s+ +base-url+
                                  "blog/"
-                                 (regex-replace ".md" (getf data :path) ""))
-                        :kindista-object nil)))
+                                 (regex-replace ".md" (getf data :path) "")))))
       (not-found))))
 
  (defun post-blog-post

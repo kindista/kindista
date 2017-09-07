@@ -114,19 +114,9 @@
    typestring
    title
    &key description
-        determiner
         url
-        (kindista-object t)
         image)
   (html
-    (when typestring
-      (htm
-        (:meta :property "og:type"
-               :content (if kindista-object
-                          (s+ "kindistadotorg:" typestring)
-                          typestring))))
-    (awhen determiner
-      (htm (:meta :property "og:determiner" :content it)))
     (:meta :property "fb:app_id"
            :content *facebook-app-id*)
     (:meta :property "og:url"
@@ -152,6 +142,18 @@
                         (aif image
                           (regex-replace "/media" it "")
                           "/biglogo4fb.jpg")))))
+
+(defun facebook-share-button (url &optional text)
+  (html
+    (:div
+      :class "fb-share-button"
+      :data-href url
+      :data-layout "button"
+      :data-size "small"
+      :data-mobile-iframe "true"
+      (:a :class "fb-xfbml-parse-ignore"
+          :target "_blank"
+          :href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fdevelopers.facebook.com%2Fdocs%2Fplugins%2F&amp;src=sdkpreparse" (or text "Share on Facebook")))))
 
 (defun facebook-sign-in-button
   (&key (redirect-uri "home")
