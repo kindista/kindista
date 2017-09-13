@@ -161,7 +161,7 @@
                     (if (eql (char url 0) #\/)
                       (subseq url 1)
                       url)))
-       (str (or text "Share on Facebook")))
+      (str (or text "Share on Facebook"))))
 
    ;(:div
    ;  :class "fb-share-button"
