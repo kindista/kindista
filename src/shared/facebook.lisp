@@ -153,6 +153,30 @@
                           (regex-replace "/media" it "")
                           "/biglogo4fb.jpg")))))
 
+(defun facebook-share-button (url &optional text)
+  (html
+    (:a :href (s+ "https://www.facebook.com/sharer/sharer.php?u="
+                  +base-url+
+                  (url-encode
+                    (if (eql (char url 0) #\/)
+                      (subseq url 1)
+                      url)))
+       (str (or text "Share on Facebook")))
+
+   ;(:div
+   ;  :class "fb-share-button"
+   ;  :data-href url
+   ;  :data-layout "button"
+   ;  :data-size "small"
+   ;  :data-mobile-iframe "true"
+   ;  (:a :class "fb-xfbml-parse-ignore"
+   ;      :target "_blank"
+   ;      :href (s+ "https://www.facebook.com/sharer/sharer.php?u="
+   ;                (url-encode url)
+   ;                "&amp;src=sdkpreparse")
+   ;      (or text "Share on Facebook")))
+    ))
+
 (defun facebook-sign-in-button
   (&key (redirect-uri "home")
         (button-text "Sign in with Facebook")
