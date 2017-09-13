@@ -175,7 +175,7 @@
    ;                (url-encode url)
    ;                "&amp;src=sdkpreparse")
    ;      (or text "Share on Facebook")))
-    ))
+    )
 
 (defun facebook-sign-in-button
   (&key (redirect-uri "home")
