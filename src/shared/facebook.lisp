@@ -160,7 +160,7 @@
                   (url-encode
                     (if (eql (char url 0) #\/)
                       (subseq url 1)
-                      url)))
+                      url))))
        (str (or text "Share on Facebook")))
 
    ;(:div
