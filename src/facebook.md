@@ -9,11 +9,12 @@ https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
 
 #Migrate to generic FB sharing method
 [ ] review how blog is posting
-[ ] maybe replace activity-item facebook shares with facebook-share-button
+[ ] replace activity-item facebook shares with facebook-share-button
 [ ] change (remove?) new-facebook-action-notice handler and any calls to it
 [ ] facebook-item-meta-content
 [ ] maybe change :fb-publishing-in-process parameter
 [ ] remove code for posting to FB while creating offer/request/gratitude
+[ ] remove facebook js and junky share-button code if not necessary
 
 
 #Settings Page
