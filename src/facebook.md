@@ -10,6 +10,9 @@ https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
 #Migrate to generic FB sharing method
 [ ] review how blog is posting
 [ ] replace activity-item facebook shares with facebook-share-button
+[ ] after posting to facebook, go back where you came from
+[ ] remove "shared a link" from the facebook activity
+[ ] is there a way to find out what was shared?
 [ ] change (remove?) new-facebook-action-notice handler and any calls to it
 [ ] facebook-item-meta-content
 [ ] maybe change :fb-publishing-in-process parameter

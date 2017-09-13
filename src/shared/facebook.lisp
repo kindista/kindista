@@ -147,8 +147,11 @@
   (html
     (:a :href (s+ "https://www.facebook.com/sharer/sharer.php?u="
                   +base-url+
-                  (url-encode url))
-       (str (or text "Share on Facebook")))
+                  (url-encode
+                    (if (eql (char url 0) #\/)
+                      (subseq url 1)
+                      url)))
+      (str (or text "Share on Facebook"))))
 
    ;(:div
    ;  :class "fb-share-button"
@@ -162,7 +165,7 @@
    ;                (url-encode url)
    ;                "&amp;src=sdkpreparse")
    ;      (or text "Share on Facebook")))
-    ))
+    )
 
 (defun facebook-sign-in-button
   (&key (redirect-uri "home")
