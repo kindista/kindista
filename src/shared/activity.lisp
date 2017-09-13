@@ -153,9 +153,16 @@
 
                (when publish-facebook
                  (htm
-                   (:form :method "post" :action url
-                     " &middot; "
-                     (:input :type "submit" :name "publish-facebook" :value "Share on Facebook"))))))))
+                   " &middot; "
+                   (if (getf *user* :test-user)
+                     (str (facebook-share-button url))
+
+                   (htm
+                     (:form :method "post" :action url
+                       " &middot; "
+                       (:input :type "submit" :name "publish-facebook" :value "Share on Facebook")
+                     )))))
+               ))))
 
       (when (or loves related-items)
         (htm
@@ -170,6 +177,7 @@
       ;  (htm
       ;    " &middot; "
       ;    (str (flag-button url))))))))
+
 
 (defun event-activity-item (result &key featuredp sidebar truncate (show-distance nil) time date)
   (let* ((host (first (result-people result)))
