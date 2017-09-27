@@ -151,7 +151,7 @@
                    " &middot; "
                    (str (comment-button url))))
 
-               (when publish-facebook
+               (when (and publish-facebook *enable-facebook-posting*)
                  (htm
                    " &middot; "
                    (if (getf *user* :test-user)

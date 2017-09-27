@@ -67,7 +67,7 @@
   (and (getf user :fb-id)
        (getf user :fb-link-active)
        (getf user :fb-token)
-       (or *enable-facebook*
+       (or *enable-facebook-posting*
            (find userid *alpha-testers*)
            (getf user :test-user))))
 

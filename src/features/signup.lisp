@@ -54,7 +54,7 @@
   (signup-base
     (html
       (:h1 "Sign up for Kindista ")
-      (when (or *enable-facebook*
+      (when (or *enable-facebook-login*
                 (string= (get-parameter "sekrut-fb-access")
                          "not-ready-for-prime-time"))
         (htm

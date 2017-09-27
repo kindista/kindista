@@ -57,7 +57,7 @@
                  (:a :href "/reset" :class "reset"  "Forgot your password?"))))
             (htm
               (str *or-divider*)
-              (when (or *enable-facebook*
+              (when (or *enable-facebook-login*
                         (string= (get-parameter-string "sekrut-fb-access")
                                  "not-ready-for-prime-time"))
                 (htm

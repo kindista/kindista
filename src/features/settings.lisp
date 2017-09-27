@@ -68,7 +68,7 @@
         (htm (:li (:a :href (url-compose "/settings/communication" "groupid" groupid)
                       "Communication Settings"))))
       (when (and (not groupid)
-                 (or *enable-facebook*
+                 (or *enable-facebook-login*
                      (find *userid* *alpha-testers*)
                      (getf *user* :test-user)))
         (if (equal tab "social")
