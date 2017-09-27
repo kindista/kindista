@@ -962,6 +962,7 @@
                   :onchange "this.form.submit()")))
 
          (when (and (show-fb-p)
+                    *enable-facebook-posting*
                     (not groupid)
                     (or (not identity-selection)
                         (eql identity-selection *userid*)))
