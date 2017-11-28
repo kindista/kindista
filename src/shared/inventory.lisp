@@ -535,11 +535,11 @@
                        (not publish-facebook))
                    (see-other new-url))
                   ((current-fb-token-p :publish-actions)
-                   (notice :new-facebook-action :item-id new-id)
+                   ;(notice :new-facebook-action :item-id new-id)
                    (modify-db new-id :fb-publishing-in-process (get-universal-time))
-                   (flash (s+ "Your "
-                              type
-                              " has been published on Facebook"))
+                   ;(flash (s+ "Your "
+                   ;           type
+                   ;           " has been published on Facebook"))
                    (see-other new-url))
                   (t (renew-fb-token :item-to-publish new-id
                                      :fb-permission-requested :publish-actions
