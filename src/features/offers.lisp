@@ -97,6 +97,13 @@
           "Offers"
           (html
             (:div :class  "inventory-item-page"
+              (when (and (eql (getf offer :by)
+                               *userid*)
+                         (getf offer :fb-publishing-in-process)
+                         (< (- (get-universal-time)
+                               (getf offer :fb-publishing-in-process))
+                            300))
+              (htm *fb-share-dialog-on-page-load*))
               (unless (getf offer :active)
                 (htm
                   (:h2 :class "red" "This offer is no longer active.")))
