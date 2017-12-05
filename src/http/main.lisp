@@ -594,7 +594,7 @@
             (:button :class "corner" :type "submit" :name "help" :value "0" "[ hide help text ]"))))
       (str content))))
 
-(defun base-page (title body &key class extra-head)
+(defun base-page (title body &key class extra-head extra-fb-js)
   (declare (optimize (speed 3) (debug 0) (safety 0)))
   (html
     "<!DOCTYPE html>"
@@ -636,9 +636,10 @@
 "<script>
  window.fbAsyncInit = function() {
    FB.init({
-     appId            : " *facebook-app-id* ",
+     appId            : " (str *facebook-app-id*) ",
      autoLogAppEvents : true,
      xfbml            : true,
+     cookie           : true,
      version          : 'v2.10'
    });
    FB.AppEvents.logPageView();
@@ -651,6 +652,9 @@
     js.src = \"//connect.facebook.net/en_US/sdk.js\";
     fjs.parentNode.insertBefore(js, fjs);
   }(document, 'script', 'facebook-jssdk'));
+ "
+     (str (or extra-fb-js ""))
+     "
 </script>"))
         (str body)))))
 
@@ -672,16 +676,17 @@
         (:button :type "submit" :class "yes" "Log in")
         (:a :href "/reset" :class "reset" "Forgot your password?")))))
 
-(defun header-page (title header-extra body &key class hide-menu extra-head)
+(defun header-page (title header-extra body &key class hide-menu extra-head extra-fb-js)
   (base-page title
              (html
                (unless hide-menu (htm (:a :id "top")))
                (str (page-header header-extra))
                (str body))
              :class (s+ class (when hide-menu " hide-menu"))
+             :extra-fb-js extra-fb-js
              :extra-head extra-head))
 
-(defun standard-page (title body &key selected top right search search-scope class extra-head)
+(defun standard-page (title body &key selected top right search search-scope class extra-head extra-fb-js)
   (declare (optimize (speed 3) (debug 0) (safety 0)))
   (admin-mailbox-reboot-flash)
   (header-page title
@@ -790,6 +795,7 @@
                    (:a :class "dark" :href "#top"
                        "Back to the top")))
                :extra-head extra-head
+               :extra-fb-js extra-fb-js
                :class (cond
                         ((and right class) (s+ "right " class))
                         (right "right")

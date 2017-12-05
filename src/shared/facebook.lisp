@@ -24,6 +24,24 @@
 (defvar *facebook-user-token* nil)
 (defvar *facebook-user-token-expiration* nil)
 (defvar *fb-id* nil)
+(defparameter *fb-share-dialog-on-page-load*
+"(function() {
+    FB.ui(
+       {
+         method: 'share',
+         link: 'http://developers.facebook.com/docs/',
+       },
+       function(response) {
+         if (response && response.post_id) {
+           alert('Post was published.');
+         } else {
+           alert('Post was not published.');
+         }
+       }
+     );
+    });
+"
+)
 
 (defun find-nil-fb-actions (&aux items)
   (dolist (result *recent-activity-index*)
@@ -166,37 +184,6 @@
    ;                "&amp;src=sdkpreparse")
    ;      (or text "Share on Facebook")))
     )
-
-(defparameter *fb-share-dialog-on-page-load*
-"<script>
-function sharePrompt()
-{
-    FB.ui(
-       {
-         method: 'share',
-         link: 'http://developers.facebook.com/docs/',
-       },
-       function(response) {
-         if (response && response.post_id) {
-           alert('Post was published.');
-         } else {
-           alert('Post was not published.');
-         }
-       }
-     );
- }
-
-sharePrompttion listen(\"load\", window, sharePrompt) {
-    if (window.addEventListener)  // W3C DOM
-        window.addEventListener(\"load\",sharePrompt,false);
-    else if (window.attachEvent) { // IE DOM
-         var r = window.attachEvent(\"onload\", sharePrompt);
-         return r;
-    }
-    else window.alert('I\'m sorry Dave, I\'m afraid I can\'t do that.');
-}
-</script>"
-)
 
 (defun facebook-sign-in-button
   (&key (redirect-uri "home")

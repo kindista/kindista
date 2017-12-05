@@ -97,13 +97,6 @@
           "Offers"
           (html
             (:div :class  "inventory-item-page"
-              (when (and (eql (getf offer :by)
-                               *userid*)
-                         (getf offer :fb-publishing-in-process)
-                         (< (- (get-universal-time)
-                               (getf offer :fb-publishing-in-process))
-                            300))
-              (htm *fb-share-dialog-on-page-load*))
               (unless (getf offer :active)
                 (htm
                   (:h2 :class "red" "This offer is no longer active.")))
@@ -123,6 +116,13 @@
                         (strcat* "Kindista Offer: " (getf offer :title))
                         :image (awhen (first (getf offer :images))
                                  (get-image-thumbnail it 1200 1200)))
+          :extra-fb-js (when (and (eql (getf offer :by)
+                                  *userid*)
+                                  (getf offer :fb-publishing-in-process)
+                                  (< (- (get-universal-time)
+                                        (getf offer :fb-publishing-in-process))
+                                     30000))
+                         *fb-share-dialog-on-page-load*)
           :selected "offers"))))))
 
 (defun get-offer-reply (id)
