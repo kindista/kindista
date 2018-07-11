@@ -205,6 +205,8 @@
    (with-standard-io-syntax
      (prin1 "######### Completed Transactions #########" s)
      (fresh-line s)
+     (prin1 (strcat (length transactions) " completed transactions"))
+     (fresh-line s)
      (dolist (transaction transactions)
        (let* ((gratitude (db (getf transaction :gratitude)))
               (recipient (db (getf gratitude :author))))

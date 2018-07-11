@@ -64,6 +64,25 @@
              (progn ,@body)
              (not-found)))))))
 
+(defun deactivate-old-events (&aux (now (get-universal-time))
+                                   (count 0))
+  (dolist (event *event-index*)
+    (let* ((id (result-id event))
+           (data (db id)))
+      (when (and (getf data :active)
+                 (< (max (or (getf data :local-end-date) 0)
+                         (or (getf data :local-time) 0)
+                         (or (getf data :auto-updated-time) 0))
+                    (- now +day-in-seconds+)))
+        (deactivate-event id)
+        (incf count))))
+  count)
+
+(defun deactivate-event (id)
+  (modify-db id :auto-updated-time nil
+                :recurring nil)
+  (deactivate-inventory-item id))
+
 (defun eventname-or-id (id &aux (event (db id)))
   (or (getf event :custom-url)
       (write-to-string id)))
@@ -100,19 +119,18 @@
          (asetf (gethash by-id *profile-activity-index*)
                 (safe-sort (push result it) #'> :key #'result-time))))
 
-    (cond
-     ((stale-eventp result); when it needs an :auto-updated-time
-      (when (getf data :recurring)
-        (update-recurring-event-time id data result)))
-     ((getf data :active)
-       (event-index-insert result)
-       (geo-index-insert *event-geo-index* result)))
-
     (awhen (getf data :custom-url)
       (with-locked-hash-table (*eventname-index*)
         (setf (gethash it *eventname-index*) result)))
 
     (when (getf data :active)
+       (event-index-insert result)
+       (geo-index-insert *event-geo-index* result)
+
+       (when (and (stale-eventp result); when it needs an :auto-updated-time
+                  (getf data :recurring))
+           (update-recurring-event-time id data result))
+
       (let ((stems (stem-text (s+ (getf data :title) " " (getf data :details)))))
         (with-locked-hash-table (*event-stem-index*)
           (dolist (stem stems)
@@ -452,10 +470,12 @@
                         (update-recurring-event-time id data event)
                         (unless global-search
                           (push event updated-local-event-list)))
-                       (t
-                        (geo-index-remove *event-geo-index* event)
-                        (with-mutex (*event-mutex*)
-                          (asetf *event-index* (remove event it)))))))))
+                       ((and (getf data :active)
+                             (< (max (or (getf data :local-end-date) 0)
+                                     (or (getf data :local-time) 0)
+                                     (or (getf data :auto-updated-time) 0))
+                                (- now +day-in-seconds+)))
+                        (deactivate-event id)))))))
 
         (setf local-events (populate-calendar (remove-private-items
                                                 (trim-and-update
@@ -1027,8 +1047,7 @@
                               :next-url (referer)))
 
              ((post-parameter "really-delete")
-              (modify-db id :auto-updated-time nil)
-              (deactivate-inventory-item id)
+              (deactivate-event id)
               (flash "Your event has been deactivated!")
               (see-other (or (post-parameter "next") "/home")))
 
