@@ -7,12 +7,13 @@ https://developers.facebook.com/docs/facebook-login/permissions/v2.3
 https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
 
 
+[ ] check v3.0 get-facebook-kindista-friends
+
 #Migrate to generic FB sharing method
 [ ] debug *fb-share-dialog-on-page-load*
 [ ] trigger *fb-share-dialog-on-page-load* after posting a new item with the "share-fb" checkbox checked
 [ ] review how blog is posting
-[ ] replace activity-item facebook shares with facebook-share-dialog
-[ ] after posting to facebook, go back where you came from
+[ ] replace activity-item facebook shares with facebook-share-dialog [ ] after posting to facebook, go back where you came from
 [ ] remove "shared a link" from the facebook activity
 [ ] is there a way to find out what was shared?
 [ ] change (remove?) new-facebook-action-notice handler and any calls to it

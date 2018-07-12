@@ -310,7 +310,9 @@
           (http-request
             (s+ *fb-graph-url* "debug_token")
             :parameters (list (cons "input_token" fb-token)
-                              (cons "access_token" *facebook-app-token*)))))
+                              (cons "access_token" *facebook-app-token*)
+                              (cons "appsecret_proof" (fb-app-secret-proof))
+                              ))))
 
   (when (= (second reply) 200)
     (setf data
@@ -357,8 +359,9 @@
   (when (and fb-token fb-user-id (getf user :fb-link-active))
    (setf response
          (multiple-value-list
-           (http-request (strcat *fb-graph-url* "v2.5/" fb-user-id "/picture")
+           (http-request (strcat *fb-graph-url* "v3.0/" fb-user-id "/picture")
                          :parameters (list (cons "access_token" fb-token)
+                                           (cons "appsecret_proof" (fb-app-secret-proof fb-token))
                                            (cons "type" "large")
                                            (cons "method" "get")))))
    (facebook-debugging-log (or k-user-id
@@ -394,6 +397,7 @@
   (k-id
    &optional (user (db k-id))
    &aux (fb-id (getf user :fb-id))
+        (user-token (getf user :fb-token))
         response
         current-permissions)
   (when (and fb-id (getf user :fb-link-active))
@@ -401,10 +405,11 @@
            (multiple-value-list
              (http-request
                (strcat *fb-graph-url*
-                       "v2.5/"
+                       "v3.0/"
                        fb-id "/permissions")
                :parameters (list (cons "access_token" *facebook-app-token*)
-                                 (cons "access_token" (getf user :fb-token))
+                                 (cons "access_token" user-token)
+                                 (cons "appsecret_proof" (fb-app-secret-proof user-token))
                                  (cons "method" "get"))))))
 
   (mapcar
@@ -440,6 +445,7 @@
 (defun get-facebook-kindista-friends
   (&optional (k-id *userid*)
    &aux (user (db k-id))
+        (user-token (getf user :fb-token))
         (fb-id (getf user :fb-id))
         (response)
         friends)
@@ -449,10 +455,11 @@
           (multiple-value-list
             (http-request
               (strcat *fb-graph-url*
-                      "v2.5/"
+                      "v3.0/"
                       fb-id "/friends")
               :parameters (list (cons "access_token" *facebook-app-token*)
-                                (cons "access_token" (getf user :fb-token))
+                                (cons "access_token" user-token)
+                                (cons "appsecret_proof" (fb-app-secret-proof user-token))
                                 (cons "method" "get"))))))
   (when (= (second response) 200)
     (setf friends
@@ -479,10 +486,11 @@
       (assoc :location
              (decode-json-octets
                (http-request (strcat *fb-graph-url*
-                                     "v2.5/"
+                                     "v3.0/"
                                      fb-location-id)
                              :parameters (list (cons "access_token" fb-token)
                                                (cons "access_token" *facebook-app-token*)
+                                               (cons "appsecret_proof" (fb-app-secret-proof fb-token))
                                                (cons "fields" "location")
                                                (cons "method" "get"))))))))
 
@@ -563,15 +571,17 @@
         (userid *userid*)
    &aux (object-type (string-downcase (symbol-name (getf item :type))))
         (user (db userid))
+        (user-token (getf user :fb-token))
         (reply
           (multiple-value-list
             (http-request
               (strcat *fb-graph-url*
-                      "v2.5/me"
+                      "v3.0/me"
                       "/kindistadotorg:"
                       action-type)
-              :parameters (list (cons "access_token" (getf user :fb-token))
+              :parameters (list (cons "access_token" user-token)
                                 (cons "method" "post")
+                                (cons "appsecret_proof" (fb-app-secret-proof user-token))
                                 (cons object-type
                                       (s+ "https://kindista.org"
                                           (resource-url id item)))
@@ -584,7 +594,7 @@
                             (second reply)
                             (strcat* "ITEM-PUBLISHED-TO-FB:" id)
                             (list :fb-id (getf user :fb-id)
-                                  :fb-token (getf user :fb-token))
+                                  :fb-token user-token)
                             (or data
                                 (if (stringp (first reply))
                                   (first reply)
@@ -727,10 +737,11 @@
   (&optional (userid *userid*)
              (user (if (eql userid *userid*) *user* (db userid)))
              (url (strcat *fb-graph-url*
-                          "v2.6/"
+                          "v3.0/"
                           (getf user :fb-id)
                           "/taggable_friends"))
-   &aux (response))
+   &aux (response)
+        (user-token (getf user :fb-token)))
   "Performs a call to the FB graph taggable_friends endpoint to get a list of all taggable friends."
   (when (active-facebook-user-p userid user)
     (setf response
@@ -738,7 +749,8 @@
             (http-request
               url
               :parameters (list (cons "access_token" *facebook-app-token*)
-                                (cons "access_token" (getf user :fb-token))
+                                (cons "access_token" user-token)
+                                (cons "appsecret_proof" (fb-app-secret-proof user-token))
                                 (cons "limit" "5000")
                                 (cons "method" "get"))))))
   (case (second response)
@@ -892,6 +904,7 @@
    &optional (userid *userid*)
    &aux (item (db k-item-id))
         (user (if (eql userid *userid*) *user* (db userid)))
+        (user-token (getf user :fb-token))
         (response)
         (taggable-friend-tokens (facebook-taggable-friend-tokens
                                   k-contacts-to-tag-on-fb
@@ -917,9 +930,11 @@
           (multiple-value-list
             (http-request
               (strcat *fb-graph-url*
-                      "v2.6/"
+                      "v3.0/"
                       action-id)
-              :parameters (list (cons "access_token" (getf user :fb-token))
+              :parameters (list (cons "access_token" user-token)
+
+                                (cons "appsecret_proof" (fb-app-secret-proof user-token))
                                 (cons "tags" friends-to-tag))
               :method :post)))
     (setf response (decode-json-octets (first response)))
@@ -936,6 +951,15 @@
                             friends-to-tag
                             response)
     response))
+
+
+(defun fb-app-secret-proof
+  (&optional (access-token *facebook-app-token*)
+             &aux (hmac (ironclad:make-hmac (ironclad:ascii-string-to-byte-array *facebook-secret*) :sha256))
+        (hmac-hash (ironclad:update-hmac hmac (ironclad:ascii-string-to-byte-array access-token)))
+        (digest (ironclad:hmac-digest hmac-hash)))
+          (ironclad:byte-array-to-hex-string digest))
+
 
 (defun post-uninstall-facebook
   (&aux (signed-request (post-parameter "signed_request"))
