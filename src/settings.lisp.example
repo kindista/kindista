@@ -35,6 +35,7 @@
 (defparameter *kindista-root-path* "/home/USERNAME/kindista/")
 (defparameter *test-email-ip* nil)
 (defparameter *alpha-users* nil)
+(defparameter *facebook-secret* nil)
 (defparameter *facebook-app-id* "779034685520810")
 (defparameter *top-level-resources* nil)
 (defparameter *enable-facebook-posting* nil)
