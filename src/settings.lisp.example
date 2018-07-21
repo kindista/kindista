@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2018 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -25,6 +25,22 @@
 (defparameter *images-base* "/media/images/")
 (defparameter *avatar-not-found* "/media/avatar/404.png")
 (defparameter *error-message-email* "email@your-email-service.com")
+
+(defparameter *local-ipv4-address* "127.0.0.1")
+(defparameter *local-ipv6-address* nil)
+(defparameter *broadcast-path* "/home/USERNAME/kindista/data/broadcasts/")
+(defparameter *blog-path* "/home/USERNAME/kindista/media/blog/")
+(defparameter *blog-base* "/media/blog/")
+(defparameter *metrics-path* "/home/USERNAME/kindista/data/metrics/")
+(defparameter *kindista-root-path* "/home/USERNAME/kindista/")
+(defparameter *test-email-ip* nil)
+(defparameter *alpha-users* nil)
+(defparameter *facebook-app-id* "779034685520810")
+(defparameter *top-level-resources* nil)
+(defparameter *enable-facebook-posting* nil)
+(defparameter *enable-facebook-login* nil)
+(defparameter *push-encryption-path* "/home/USERNAME/kindista/src/encrypt.sh")
+(defparameter *alpha-testers* '())
 
 (define-constant +db-path+ "/srv/kindista/data/" :test #'string=)
 (define-constant +markdown-path+ "/srv/kindista/src/markdown/" :test #'string=)
