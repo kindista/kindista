@@ -1,4 +1,4 @@
-;;; Copyright 2015-2016 CommonGoods Network, Inc.
+;;; Copyright 2015-2018 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -461,6 +461,10 @@
                                 (cons "access_token" user-token)
                                 (cons "appsecret_proof" (fb-app-secret-proof user-token))
                                 (cons "method" "get"))))))
+  (pprint (find :data
+                           (decode-json-octets (first response))
+                           :key 'car))
+  (terpri)
   (when (= (second response) 200)
     (setf friends
           (mapcar (lambda (friend)
