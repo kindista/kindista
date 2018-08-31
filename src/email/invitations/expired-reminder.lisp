@@ -65,7 +65,8 @@
 (unsubscribe-notice-ps-text unsubscribe-key
                             host-email
                             "notifications when invitations you send for people to join Kindista expire"
-                            :detailed-notification-description "these notifications")
+                            :detailed-notification-description "these notifications"
+                            :unsub-type "expired-invites")
 ))
 
 (defun expired-invitations-reminder-html
@@ -101,5 +102,6 @@
              unsubscribe-key
              host-email
              "notifications when invitations you send for people to join Kindista expire"
-             :detailed-notification-description "these notifications")))))
+             :detailed-notification-description "these notifications"
+             :unsub-type "expired-invites")))))
 

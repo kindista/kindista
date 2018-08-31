@@ -1,4 +1,4 @@
-;;; Copyright 2014-2015 CommonGoods Network, Inc.
+;;; Copyright 2014-2016 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -26,6 +26,9 @@
           (modify-db id :notify-blog t)
           (unless (getf data :notify-blog)
             (modify-db id :notify-blog nil)))))))
+
+(defun new-blog-comment-notice-handler ()
+  (send-blog-comment-notification-email (getf (cddddr *notice*) :id)))
 
 (defun index-blog
   (id
@@ -61,7 +64,7 @@
                        str
                        created
                        :format '((:year 4) #\/ (:month 2) #\/ (:day 2) #\/))))
-        (hyphenated-title (hyphenate (getf data :title)))
+        (hyphenated-title (url-encode (hyphenate (getf data :title))))
         (blog-path (s+ *blog-path* local-dir hyphenated-title)))
 
   (unless (and (not update) (file-exists-p blog-path))
@@ -79,13 +82,29 @@
 (defun update-blog-file (id)
   (ensure-blog-file id :update t))
 
+(defun blog-url
+  (id
+   &key (data (db id))
+        include-domain
+   &aux (created (universal-to-timestamp (getf data :created)))
+        (local-dir (with-output-to-string (str)
+                     (format-timestring
+                       str
+                       created
+                       :format '((:year 4) #\/ (:month 2) #\/ (:day 2) #\/))))
+        (hyphenated-title (url-encode (hyphenate (getf data :title))))
+        (blog-path (s+ local-dir hyphenated-title)))
+  (strcat* (when include-domain *email-url*)
+           "blog/"
+           blog-path))
+
 (defun blog-post-html
   (result
    &key contents
         preview-paragraph-count
    &aux (id (result-id result))
         (data (db id))
-        (hyphenated-title (hyphenate (getf data :title)))
+        (hyphenated-title (url-encode (hyphenate (getf data :title))))
         (date-string (universal-to-datestring (getf data :created)))
         (url (s+ "/blog/" date-string hyphenated-title))
         (comments (gethash id *comment-index*))
@@ -184,18 +203,26 @@
    day
    title
    &aux (date-path (strcat *blog-path* year "/" month "/" day "/"))
-        (path (merge-pathnames date-path title)))
+        (path (merge-pathnames date-path (url-encode title))))
 
   (with-open-file (file path :direction :input :if-does-not-exist nil)
     (if file
       (let* ((file-contents (read file))
              (id (car file-contents))
              (html (cadr file-contents))
-             (data (db id)))
+             (data (db id))
+             (blog-title (getf data :title)))
         (standard-page
-          (getf data :title)
+          blog-title
           (blog-post-html (gethash id *db-results*) :contents html)
-          :right (blog-sidebar)))
+          :right (blog-sidebar)
+          :extra-head (facebook-item-meta-content
+                        id
+                        "article"
+                        blog-title
+                        :url (s+ +base-url+
+                                 "blog/"
+                                 (regex-replace ".md" (getf data :path) "")))))
       (not-found))))
 
  (defun post-blog-post
@@ -208,10 +235,10 @@
        ((not data)
         (not-found))
        ((post-parameter-string "comment-text")
-        (create-comment :on blog-id
-                        :send-email-p nil
-                        :text it
-                        )
-        (see-other "/blog")
-        )
+        (let ((new-comment (create-comment :on blog-id
+                                           :send-email-p nil
+                                           :text it)))
+          (unless (eql *userid* (getf data :author))
+            (notice :new-blog-comment :id new-comment)))
+        (see-other "/blog"))
        (t (not-found)))))

@@ -34,7 +34,7 @@
   ;(start-scheduler-thread)
   (start (acceptor-metric-system *acceptor*))
   (start-notice-thread)
-  (setf *facebook-app-token* (get-facebook-app-token)))
+  (when *facebook-secret* (setf *facebook-app-token* (get-facebook-app-token))))
 
 (defun load-notice-handlers ()
   (clrhash *notice-handlers*)
@@ -43,6 +43,8 @@
   (add-notice-handler :broadcast-email #'broadcast-email-notice-handler)
   (add-notice-handler :new-comment #'new-comment-notice-handler)
   (add-notice-handler :new-feedback #'new-feedback-notice-handler)
+  (add-notice-handler :new-feedback-reply #'new-feedback-reply-notice-handler)
+  (add-notice-handler :new-blog-comment #'new-blog-comment-notice-handler)
   (add-notice-handler :send-invitation #'send-invitation-notice-handler)
   (add-notice-handler :new-pending-offer #'new-pending-offer-notice-handler)
   (add-notice-handler :new-matching-offer #'new-matching-offer-notice-handler)

@@ -46,6 +46,22 @@
             (delete-duplicates (gethash *token* *flashes*) :test #'string=))
       (remhash *token* *flashes*))))
 
+(defun admin-mailbox-reboot-flash ()
+  (let ((mailbox-count (sb-concurrency:mailbox-count *notice-mailbox*)))
+    (when (or (find *userid* *alpha-users*) (getf *user* :admin))
+      (when (> mailbox-count 1)
+       (with-locked-hash-table (*flashes*)
+         (push
+           (format nil
+              "<div class=\"flash err\"><span>~a~a</span></div>"
+              (s+ "The Kindista mail system has crashed! We need your help. No one is able to receive messages now. Mail System Queue: " (write-to-string mailbox-count))
+              (html (htm (:form :method "post" :action "/admin/mail-system"
+                (:button :type "submit"
+                         :class "yes"
+                         :name "reboot-notice-thread"
+                         "Reboot Mail System")))))
+                                (gethash *token* *flashes*)))))))
+
 (defun not-found ()
   (flash "The page you requested could not be found." :error t)
   (if (equal (fourth (split "/" (referer) :limit 4)) (subseq (script-name*) 1))
@@ -130,7 +146,7 @@
           ((string= param-type "email")
            (setf pattern "(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})"))
           ((string= param-type "str")
-           (setf pattern  "([a-zA-Z0-9_%+-]+)"))
+           (setf pattern  "([a-zA-Z0-9_%+-=]+)"))
           (t
            (setf pattern "([^\/]+)")))
 
@@ -578,7 +594,7 @@
             (:button :class "corner" :type "submit" :name "help" :value "0" "[ hide help text ]"))))
       (str content))))
 
-(defun base-page (title body &key class extra-head)
+(defun base-page (title body &key class extra-head extra-fb-js)
   (declare (optimize (speed 3) (debug 0) (safety 0)))
   (html
     "<!DOCTYPE html>"
@@ -614,6 +630,32 @@
         ;(str "<![endif]-->")
         (str extra-head))
       (:body :class class :onload "if(!location.hash){window.scrollTo(0,0);};document.body.className+=\" js\";"
+        (when (and *user*
+                   (current-fb-token-p :publish-actions))
+          (htm
+"<script>
+ window.fbAsyncInit = function() {
+   FB.init({
+     appId            : " (str *facebook-app-id*) ",
+     autoLogAppEvents : true,
+     xfbml            : true,
+     cookie           : true,
+     version          : 'v2.10'
+   });
+   FB.AppEvents.logPageView();
+ };
+
+ (function(d, s, id){
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) {return;}
+    js = d.createElement(s); js.id = id;
+    js.src = \"//connect.facebook.net/en_US/sdk.js\";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+ "
+     (str (or extra-fb-js ""))
+     "
+</script>"))
         (str body)))))
 
 (defun login-box (&optional (mobile t))
@@ -634,17 +676,19 @@
         (:button :type "submit" :class "yes" "Log in")
         (:a :href "/reset" :class "reset" "Forgot your password?")))))
 
-(defun header-page (title header-extra body &key class hide-menu extra-head)
+(defun header-page (title header-extra body &key class hide-menu extra-head extra-fb-js)
   (base-page title
              (html
                (unless hide-menu (htm (:a :id "top")))
                (str (page-header header-extra))
                (str body))
              :class (s+ class (when hide-menu " hide-menu"))
+             :extra-fb-js extra-fb-js
              :extra-head extra-head))
 
-(defun standard-page (title body &key selected top right search search-scope class extra-head)
+(defun standard-page (title body &key selected top right search search-scope class extra-head extra-fb-js)
   (declare (optimize (speed 3) (debug 0) (safety 0)))
+  (admin-mailbox-reboot-flash)
   (header-page title
                (html
                  (:div
@@ -742,6 +786,7 @@
 
                    (:menu :id "fine-print-links"
                           :type "toolbar"
+                     (:li (:a :href "/donate" "donate"))
                      (:li (:a :href "/blog" "blog"))
                      (:li (:a :href "/about" "about"))
                      (:li (:a :href "/terms" "terms"))
@@ -750,6 +795,7 @@
                    (:a :class "dark" :href "#top"
                        "Back to the top")))
                :extra-head extra-head
+               :extra-fb-js extra-fb-js
                :class (cond
                         ((and right class) (s+ "right " class))
                         (right "right")

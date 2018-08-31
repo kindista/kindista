@@ -23,7 +23,6 @@
          (recipient (db to-id))
          (email (car (getf recipient :emails)))
          (unsubscribe-key (getf recipient :unsubscribe-key)))
-    (pprint to-id)
     (when (and (getf recipient :notify-new-contact)
                (getf recipient :active))
       (send-push-through-chrome-api (list to-id)
@@ -59,7 +58,8 @@
   unsubscribe-key
   email
   "notifications when people add you to their list of Kindista contacts "
-  :detailed-notification-description "notifications when people add you")))
+  :detailed-notification-description "notifications when people add you"
+  :unsub-type "new-contact")))
 
 
 (defun contact-notification-email-html
@@ -77,5 +77,6 @@
              unsubscribe-key
              email
              "notifications when people add you to their list of Kindista contacts "
-             :detailed-notification-description "notifications when people add you")))))
+             :detailed-notification-description "notifications when people add you"
+             :unsub-type "new-contact")))))
 

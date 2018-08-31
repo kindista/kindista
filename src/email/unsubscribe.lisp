@@ -52,13 +52,20 @@
    &aux (preferences))
 
   (flet ((record-option (option text)
-           (if (getf (or group user) option)
+           (if (if group
+                 (find userid (getf group option))
+                 (getf user option))
              (asetf (getf preferences :subscribed)
                     (push text it))
              (asetf (getf preferences :unsubscribed)
                     (push text it)))))
     (record-option :notify-gratitude
                    (s+ "when someone posts gratitude about " entity))
+    (record-option :notify-inventory-expiration
+                   (s+ "when " (if group
+                                 (s+ entity "'s")
+                                 "your")
+                       " offers and requests are about to expire"))
     (record-option :notify-message
                    (s+ "when someone sends "
                        entity
@@ -82,7 +89,7 @@
         "updates and information about Kindista"))
 
     (when group
-      (record-option :notify-group-membership-request
+      (record-option :notify-membership-request
                      (s+ "when someone wants to join "
                          entity 
                          " on Kindista"))))

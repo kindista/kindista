@@ -20,6 +20,9 @@
 (defun new-feedback-notice-handler ()
   (send-feedback-notification-email (getf (cddddr *notice*) :id)))
 
+(defun new-feedback-reply-notice-handler ()
+  (send-feedback-reply-notification-email (getf (cddddr *notice*) :id)))
+
 (defun create-feedback (&key (by *userid*) text (time (get-universal-time)))
   (let ((id (insert-db (list :type :feedback
                              :text text
@@ -156,7 +159,9 @@
            (see-other (or (post-parameter "next") "/feedback")))
           ((and (post-parameter "text")
                 (getf *user* :admin))
-           (create-comment :on id :text (post-parameter "text"))
+           (notice :new-feedback-reply
+                   :id (create-comment :on id
+                                       :text (post-parameter "text")))
            (see-other "/feedback"))
           (t
            (flash "WTF?" :error t)

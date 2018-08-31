@@ -136,6 +136,30 @@
                                    :class "yes"
                                    "Approve account"))))))))))))))
 
+(defun approve-account (userid &optional message)
+  (modify-db userid :pending nil)
+  (let ((results (copy-list (gethash userid
+                                     *pending-person-items-index*))))
+     (dolist (result results)
+       (let* ((item-id (result-id result))
+              (item (db item-id)))
+         (index-item item-id item)
+         (when (getf item :publish-fb-on-account-approval)
+           (notice :new-facebook-action :item-id item-id
+                                        :userid userid))
+         (case (getf item :type)
+           ;; We probably don't have any more gratitudes in
+           ;; *pending-person-items-index* because pending accounts
+           ;; can now post gratitude.
+           ;; Confirm, then delete the following line.
+           (:gratitude
+             (notice :new-gratitude :id item-id))
+           (:offer
+             (update-matchmaker-offer-data item-id)))))
+    (with-locked-hash-table (*pending-person-items-index*)
+      (remhash userid *pending-person-items-index*)))
+  (notice :account-approval :id userid :text message))
+
 (defun post-admin-pending-account (id)
   (require-admin
     (let* ((userid (parse-integer id))
@@ -150,26 +174,7 @@
          (flash (strcat "Pending account " userid " has been deleted."))
          (see-other "/admin/pending-accounts"))
         ((post-parameter "approve")
-         (modify-db userid :pending nil)
-         (let ((results (copy-list (gethash userid
-                                            *pending-person-items-index*))))
-            (dolist (result results)
-              (let* ((item-id (result-id result))
-                     (item (db item-id)))
-                (index-item item-id item)
-                (case (getf item :type)
-                  ;; We probably don't have any more gratitudes in
-                  ;; *pending-person-items-index* because pending accounts
-                  ;; can now post gratitude.
-                  ;; Confirm, then delete the following line.
-                  (:gratitude
-                    (notice :new-gratitude :id item-id))
-                  (:offer
-                    (update-matchmaker-offer-data item-id)))))
-           (with-locked-hash-table (*pending-person-items-index*)
-             (remhash userid *pending-person-items-index*)))
-         (notice :account-approval :id userid
-                                   :text (post-parameter "message"))
+         (approve-account userid (post-parameter "message"))
          (flash (strcat "You have approved "
                         (getf user :name)
                         "'s account: "
@@ -300,10 +305,10 @@
         :selected "admin"))))
 
 (defun post-admin-mail-system ()
-  (require-admin
+  (require-test ((or (find *userid* *alpha-users*) (getf *user* :admin)))
     (when (post-parameter "reboot-notice-thread")
       (reboot-notice-thread)
-      (see-other "/admin/mail-system"))))
+      (see-other (or (referer) "/admin/mail-system")))))
 
 (defun get-admin-sendmail ()
   (require-admin (new-broadcast-html "/admin/sendmail")))

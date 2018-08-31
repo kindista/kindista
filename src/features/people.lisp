@@ -74,6 +74,7 @@
                    :notify-message t
                    :notify-reminders t
                    :notify-expired-invites t
+                   :notify-inventory-expiration t
                    :notify-blog t
                    :notify-inventory-digest t
                    :notify-new-contact t
@@ -101,6 +102,7 @@
                                      :notify-message t
                                      :notify-reminders t
                                      :notify-expired-invites t
+                                     :notify-inventory-expiration t
                                      :notify-blog t
                                      :notify-new-contact t
                                      :notify-group-membership-invites t
@@ -114,6 +116,7 @@
                  (getf person :notify-message)
                  (getf person :notify-new-contact)
                  (getf person :notify-reminders)
+                 (getf person :notify-inventory-expiration)
                  (getf person :notify-expired-invites)
                  (getf person :notify-blog)
                  (getf person :notify-inventory-digest)
@@ -726,6 +729,7 @@
                 :notify-new-contact nil
                 :notify-kindista nil
                 :notify-reminders nil
+                :notify-inventory-expiration nil
                 :notify-expired-invites nil
                 :notify-gratitude nil))
 
@@ -755,6 +759,7 @@
                 :notify-new-contatct t
                 :notify-kindista t
                 :notify-reminders t
+                :notify-inventory-expiration t
                 :notify-expired-invites t
                 :notify-gratitude t))
 

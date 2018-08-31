@@ -1,4 +1,4 @@
-;;; Copyright 2012-2016 CommonGoods Network, Inc.
+;;; Copyright 2012-2017 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -255,6 +255,9 @@
          (transaction-pending-gratitude-p))
     (dolist (image-id (getf data :images))
       (delete-image image-id))
+    (awhen (getf data :fb-actions)
+      (dolist (action it)
+        (delete-facebook-action (getf action :fb-action-id))))
     (delete-comments id)
     ;; remove it from the transaction-log
     (when transaction-id
@@ -291,6 +294,7 @@
 
   (when (gethash id *db-messages*)
     (remove-message-from-indexes id))
+  
   (deindex-gratitude id)
   (remove-from-db id))
 
@@ -462,7 +466,7 @@
                (htm (:input :type "hidden" :name "next" :value next))))
 
            (unless existing-url
-             (awhen (groups-with-user-as-admin)
+             (awhen (groups-with-user-as-admin *userid* t)
                (htm
                  (:div :class "clear identity-selection"
                   (:label :for "identity-selection" :class "from" "From:")
@@ -476,19 +480,17 @@
                       :name "text"
                       (str text))
 
-           (when (and (getf *user* :fb-token)
-                          (or (not (getf *user* :test-user))
-                              (and (= 1 (length subjects))
-                                   (db (car subjects) :test-user))))
-                 (htm
-                   (:div :id "facebook"
-                     (:input :type "checkbox"
-                             :id "publish-facebook"
-                             :name "publish-facebook"
-                             :checked "")
-                     (str (icon "facebook" "facebook-icon"))
-                     (:label :for "publish-facebook"
-                      (str (s+ "Share on Facebook"))))))
+           (when (and (show-fb-p)
+                      (not groupid))
+             (htm
+               (:div :id "facebook"
+                 (:input :type "checkbox"
+                         :id "publish-facebook"
+                         :name "publish-facebook"
+                         :checked "")
+                 (str (icon "facebook" "facebook-icon"))
+                 (:label :for "publish-facebook"
+                  (str (s+ "Share on Facebook"))))))
 
            (unless existing-url
              (htm
@@ -997,11 +999,13 @@
                  (fb-taggable-friends-auth-warning (second taggable-friends))
 
                  (cond
-                   ((current-fb-token-p)
+                   ((current-fb-token-p :publish-actions)
                     (notice :new-facebook-action :item-id new-id)
+                    (modify-db new-id :fb-publishing-in-process (get-universal-time))
                     (flash "Your statement of gratitude has been published on Facebook")
                     (see-other next))
                    (t (renew-fb-token :item-to-publish new-id
+                                      :fb-permission-requested :publish-actions
                                       :next next)))))))
 
           (t
@@ -1043,20 +1047,18 @@
          (possible-fb-friends-to-tag friend-tags-to-authorize))
 
     (when (and self-author-p
-               (getf *user* :fb-link-active)
-               (not (getf data :fb-tagged-friends))
-               (not possible-fb-friends-to-tag))
-      (setf fb-taggable-friends
-            (multiple-value-list (facebook-taggable-friend-tokens
-                                   (getf data :subjects))))
-      (setf possible-fb-friends-to-tag
-            (remove nil (mapcar 'car (first fb-taggable-friends))))
+               (getf *user* :fb-link-active))
+      (unless possible-fb-friends-to-tag
+        (setf fb-taggable-friends
+              (multiple-value-list (facebook-taggable-friend-tokens
+                                     (getf data :subjects))))
+        (awhen (remove nil (mapcar 'car (first fb-taggable-friends)))
+          (when (set-difference it (getf data :fb-tagged-friends))
+            (setf possible-fb-friends-to-tag it))))
       (when (and (not new-fb-authorization)
                  possible-fb-friends-to-tag)
         (setf fb-user-friends-permission
               (multiple-value-list (check-facebook-permission :user-friends *userid*)))))
-    (pprint possible-fb-friends-to-tag)
-    (terpri)
 
     (cond
       ((not data) (not-found))
@@ -1102,6 +1104,7 @@
 (defun post-gratitude
   (id
    &aux (url (strcat "/gratitude/" id))
+        (next (or (post-parameter-string "next") url))
         (friends-to-tag (when (post-parameter "tag-friends")
                           (post-parameter-integer-list "tag-fb-friend"))))
   (require-user (:require-active-user t :allow-test-user t)
@@ -1121,6 +1124,16 @@
           (delete-gratitude id)
           (flash "Your statement of gratitude has been deleted!")
           (see-other (or (post-parameter "next") "/home")))
+         ((and (post-parameter "publish-facebook")
+               (not (fb-object-actions-by-user id)))
+          (if (current-fb-token-p :publish-actions)
+            (progn (notice :new-facebook-action :item-id id)
+                   (modify-db id :fb-publishing-in-process (get-universal-time))
+                   (flash (s+ "Your gratitude has been published on Facebook"))
+                   (see-other next))
+            (renew-fb-token :item-to-publish id
+                            :fb-permission-requested :publish-actions
+                            :next next)))
          (friends-to-tag
           (tag-facebook-friends id friends-to-tag)
           (see-other url))

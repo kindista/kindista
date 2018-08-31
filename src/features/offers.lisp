@@ -113,9 +113,16 @@
           :extra-head (facebook-item-meta-content
                         id
                         "offer"
-                        (strcat* "Offer: " (getf offer :title))
+                        (strcat* "Kindista Offer: " (getf offer :title))
                         :image (awhen (first (getf offer :images))
                                  (get-image-thumbnail it 1200 1200)))
+          :extra-fb-js (when (and (eql (getf offer :by)
+                                  *userid*)
+                                  (getf offer :fb-publishing-in-process)
+                                  (< (- (get-universal-time)
+                                        (getf offer :fb-publishing-in-process))
+                                     30000))
+                         *fb-share-dialog-on-page-load*)
           :selected "offers"))))))
 
 (defun get-offer-reply (id)

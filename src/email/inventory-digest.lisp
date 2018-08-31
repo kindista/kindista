@@ -235,7 +235,8 @@
            (amazon-smile-reminder)
            (unsubscribe-notice-ps-text (getf user :unsubscribe-key)
                                        (car (getf user :emails))
-                                       "email summaries of new offers and requests in your area"))))
+                                       "email summaries of new offers and requests in your area"
+                                       :unsub-type "inventory-digest"))))
 
 (defun inventory-digest-email-html
   (userid
@@ -298,7 +299,8 @@
       (str (unsubscribe-notice-ps-html
              (getf user :unsubscribe-key)
              (car (getf user :emails))
-             "email summaries of new offers and requests in your area")))))
+             "email summaries of new offers and requests in your area"
+             :unsub-type "inventory-digest")))))
 
 (defun email-inventory-item-html
   (id

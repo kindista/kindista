@@ -149,7 +149,7 @@
           :extra-head (facebook-item-meta-content
                         id
                         "request"
-                        (strcat* "Request: " (getf request :title))
+                        (strcat* "Kindista Request: " (getf request :title))
                         :image (awhen (first (getf request :images))
                                  (get-image-thumbnail it 1200 1200)))
           :selected "requests"))))))

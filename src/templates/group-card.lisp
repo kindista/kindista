@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2017 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -39,7 +39,9 @@
         (:div :class "image" (:a :href link (:img :alt id :src (get-avatar-thumbnail id 300 300))))
         (:div :class "card-details"
           (:h3 (:a :href link
-                 (str name)))
+                 (str name))
+           (unless (getf group :active)
+             (htm (:strong :class "gray" " (Deactivated account)"))))
 
           (aif (show-different-location :city)
             (htm

@@ -1,4 +1,4 @@
-;;; Copyright 2012-2016 CommonGoods Network, Inc.
+;;; Copyright 2012-2017 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -54,7 +54,7 @@
   (signup-base
     (html
       (:h1 "Sign up for Kindista ")
-      (when (or (not *productionp*)
+      (when (or *enable-facebook-login*
                 (string= (get-parameter "sekrut-fb-access")
                          "not-ready-for-prime-time"))
         (htm
@@ -189,31 +189,24 @@
         (invite-request-id (getf invitation :invite-request-id))
         (fb-token-data (when (get-parameter-string "code")
                                (register-facebook-user "signup")))
-        (fb-token (cdr (assoc "access_token"
-                              fb-token-data
-                              :test #'string=)))
-        (fb-expires (cdr (assoc "expires"
-                                fb-token-data
-                                :test #'string=))))
+        (fb-token (getf fb-token-data :access--token))
+        (fb-expires (when fb-token-data
+                      (+ (get-universal-time)
+                         (safe-parse-integer (getf fb-token-data :expires--in)))))
+        (fb-id (getf invitation :fb-id)))
 
   (when *user* (reset-token-cookie))
   (cond
     ;; Facebook signup
-    (fb-token-data
+    ((and fb-token-data (not invitation))
       (let* ((fb-data (get-facebook-user-data fb-token))
              (fb-id (safe-parse-integer (getf fb-data :id)))
-             (unvalidated-fb-email (getf fb-data :email))
-             (fb-email (when (scan +email-scanner+ unvalidated-fb-email)
-                         unvalidated-fb-email))
+             (raw-fb-email (getf fb-data :email))
+             (fb-email (when (scan +email-scanner+ raw-fb-email)
+                         raw-fb-email))
              (fb-name (getf fb-data :name))
              (existing-k-id (gethash fb-id *facebook-id-index*))
-             (existing-k-email-id (gethash fb-email *email-index*))
-            ;(fb-location-node (getf fb-data :location))
-            ;(fb-location-id (safe-parse-integer
-            ;                  (cdr (assoc :id fb-location-node))))
-            ;(fb-location-name (cdr (assoc :name fb-location-node)))
-            ;(fb-location (get-facebook-location-data fb-location-id fb-token))
-             )
+             (existing-k-email-id (gethash fb-email *email-index*)))
         (cond
           (existing-k-id
             (flash (strcat* "There is already an existing Kindista acccount for "
@@ -227,9 +220,14 @@
                    (user (db userid))
                    (new-name)
                    (new-data))
-              (modify-db userid :fb-id fb-id
-                                :fb-token fb-token
-                                :fb-expires fb-expires)
+              (unless (and (eql fb-id (getf user :fb-id))
+                           (string= fb-token (getf user :fb-token))
+                           (eql fb-expires (getf user :fb-expires)))
+                (modify-db userid :fb-id fb-id
+                                  :fb-token fb-token
+                                  :fb-expires fb-expires)
+                (with-locked-hash-table (*facebook-id-index*)
+                  (setf (gethash fb-id *facebook-id-index*) userid)))
 
               (unless (find fb-name (getf user :aliases) :test #'equalp)
                 (setf new-name fb-name)
@@ -253,12 +251,29 @@
            (flash "Kindista needs a valid email address so we can let you know when someone is replying to an offer or request that you post. After you sign up, you can edit which types of notifications you want to receive from Kindista on your settings page." :error t)
            (see-other "/signup?rerequest-email-permission=t"))
           (t
-            (create-new-person-account fb-name
-                                       fb-email
-                                       :fb-id fb-id
-                                       :fb-token fb-token
-                                       :fb-expires fb-expires)
-            (see-other "/home")))))
+           (let* ((existing-invitation (find email
+                                             (unconfirmed-invites +kindista-id+)
+                                             :key #'(lambda (item) (getf item :email))
+                                             :test #'string=))
+                  (invite-id (getf existing-invitation :id))
+                  (invite-data (db invite-id))
+                  (new-invite-id (unless existing-invitation
+                                   (create-invitation fb-email
+                                                      :fb-id fb-id
+                                                      :fb-token fb-token
+                                                      :fb-expires fb-expires
+                                                      :host +kindista-id+
+                                                      :name fb-name))))
+             (awhen invite-data
+               (unless (and (eql fb-id (getf invite-data :fb-id))
+                            (string= fb-token (getf invite-data :fb-token))
+                            (eql fb-expires (getf invite-data :fb-expires)))
+                 (modify-db invite-id :fb-id fb-id
+                                      :fb-token fb-token
+                                      :fb-expires fb-expires))
+               (resend-invitation invite-id))
+             (signup-confirmation-sent (or invite-id new-invite-id)
+                                       fb-email))))))
 
     ;; Invitations
     (invitation
@@ -314,6 +329,9 @@
                                       email
                                       :invitation invitation
                                       :host host
+                                      :fb-id fb-id
+                                      :fb-token fb-token
+                                      :fb-expires fb-expires
                                       :invite-request-id invite-request-id)
            (see-other "/home")))))
 
@@ -416,6 +434,7 @@
   (setf (token-userid *token*) new-id)
   (when fb-id
     (modify-db new-id :avatar (save-facebook-profile-picture-to-avatar new-id)))
+
   (dolist (group (getf invitation :groups))
     (add-group-member new-id group))
   (add-contact host new-id)

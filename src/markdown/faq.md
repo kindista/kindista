@@ -8,6 +8,7 @@
 - [Should I request things that I can afford to buy myself?](#can-i-request-things-i-can-afford-to-buy)
 - [Can I use Kindista to barter with other members?](#can-i-barter-on-kindista)
 - [Are resources shared using Kindista taxable?](#are-resources-taxable)
+- [How do I include pictures with my offers, requests, and gratitude?](#how-do-i-add-pictures)
 
 ### People
 - [How do I know I can trust someone on Kindista?](#can-i-trust-someone-on-kindista)
@@ -23,14 +24,22 @@
 
 ### Expressing Gratitude
 - [What is a statement of gratitude?](#what-is-gratitude)
+- [How do I include pictures with my statement of gratitude?](#how-do-i-add-pictures)
 - [Can I post gratitude about someone if I haven't  received any resources from them?](#can-i-post-gratitude-about-anyone)
 - [Why should I express my gratitude publicly?](#why-express-gratitude-publicly)
+
+### Accounts
+- [Oops, I accidentily created a second Kindista account. How do I merge them?](#duplicate-accounts)
+
+### Facebook Integration
+- [How do I share my Offers, Requests, and Gratitude on Facebook?](#facebook-activation)
+- [How do I tag someone in a Statement of Gratitude so it shows up on their Facebook Wall?](#facebook-tagging)
 
 ### Events
 - [What are the guidelines for posting events on Kindista?](#event-guidelines)
 
 </div>
-  
+
 ## Offers and Requests
 
 <a id="sharing-guidelines"></a>
@@ -158,6 +167,7 @@ so that they can pay for needs that are hard to meet directly through sharing,
 such as utilities, car insurance, and phone bills.
 
 <small><a href="#questions">Return to questions</a></small>
+
 <a id="can-i-barter-on-kindista"></a>
 
 ### Can I use Kindista to barter with other members?
@@ -176,6 +186,7 @@ to provide materials that will be used in creating a gift
 (such as yarn for knitted clothing or wood and nails for a deck).
 
 <small><a href="#questions">Return to questions</a></small>
+
 <a id="are-resources-taxable"></a>
 
 ### Are resources shared using Kindista taxable?
@@ -187,6 +198,14 @@ and
 [here](http://www.irs.gov/uac/Eight-Tips-to-Determine-if-Your-Gift-is-Taxable).
 If you are still unsure about whether your gift is taxable
 you may want to consult a tax attorney.
+
+<small><a href="#questions">Return to questions</a></small>
+
+<a id="how-do-i-add-pictures"></a>
+
+### How do I include pictures with my offers, requests, and gratitude?
+
+First post the text for your item. After you post it, there will be a link to add pictures.
 
 <small><a href="#questions">Return to questions</a></small>
 
@@ -420,6 +439,49 @@ if they see that other people are already getting
 lots of their needs met through the system. 
 That's why it's up to us to be 
 as publicly generous and appreciative as possible right now. 
+
+<small><a href="#questions">Return to questions</a></small>
+
+## Accounts
+
+<a id="duplicate-accounts"></a>
+
+### Oops, I accidentily created a second Kindista account. How do I merge them?
+
+Please email [support@kindista.org](mailto:support@kindista.org) from 
+the primary email address associated with each Kindista account (check the 
+[settings page](/settings/communication#email) to verify which email is the 
+primary email address). In each email that you send, make sure to reference 
+the userid and email address associated with both accounts to be merged 
+(look at the url for your Kindista profile page to see your userid).
+
+<small><a href="#questions">Return to questions</a></small>
+
+## Facebook Integration
+
+<a id="facebook-activation"></a>
+
+### How do I share my Offers, Requests, and Gratitude on Facebook?
+
+Link your Kindista account to your Facebook account from the Kindista 
+[settings page](/settings/social). 
+After linking your accounts, you will see an option to to publish items to 
+Facebook when you post them on Kindista.
+
+<small><a href="#questions">Return to questions</a></small>
+
+<a id="facebook-tagging"></a>
+
+### How do I tag someone in a Statement of Gratitude so it shows up on their Facebook Wall?
+
+You will have the option to tag someone in a Statement of Gratitude 
+on Facebook if all of the following are true:
+
+- You are both Facebook friends with each other;
+- You and the other person have both 
+[linked your Kindista account to your Facebook account](#facebook-activation);
+- The other person has allowed their friends to tag them on their 
+[Facebook settings page](https://www.facebook.com/settings?tab=timeline).
 
 <small><a href="#questions">Return to questions</a></small>
 

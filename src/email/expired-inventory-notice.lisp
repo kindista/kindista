@@ -28,6 +28,7 @@
         (by (db by-id))
         (group-p (eql (getf by :type) :group))
         (group-name (when group-p (getf by :name)))
+        (group-notify-expiration (when group-p (getf by :notify-inventory-expiration)))
         (recipients)
         (status (if (< (getf item :expires)
                     (get-universal-time))
@@ -58,10 +59,10 @@
           recipients))
     (dolist (admin-id (getf by :admins))
       (let ((person (db admin-id)))
-        (when (getf person :notify-inventory-expiration)
+        (when (find admin-id group-notify-expiration)
           (push (list :group-name group-name
                       :name (getf person :name)
-                      :groupid by
+                      :groupid by-id
                       :email (car (getf person :emails))
                       :unsubscribe-key (getf person :unsubscribe-key)
                       :id admin-id)
@@ -106,7 +107,8 @@
       (getf recipient :unsubscribe-key)
       (getf recipient :email)
       "notifications when your offers and requests are about to expire"
-      :groupid (getf recipient :groupid))))
+      :groupid (getf recipient :groupid)
+      :unsub-type "inventory-expiration")))
 
 (defun inventory-expiration-email-html
   (message item-description typestring url recipient)
@@ -127,7 +129,8 @@
              (getf recipient :unsubscribe-key)
              (getf recipient :email)
              "notifications when your offers and requests are about to expire"
-             :groupid (getf recipient :groupid)))
+             :groupid (getf recipient :groupid)
+             :unsub-type "inventory-expiration"))
       )))
 
 (defun send-inventory-expiration-by-account-notice
@@ -137,6 +140,7 @@
    &aux (by (db account-id))
         (group-p (eql (getf by :type) :group))
         (group-name (when group-p (getf by :name)))
+        (group-notify-expiration (getf by :notify-inventory-expiration))
         (recipients)
         (title (strcat* (aif group-name (s+ it " has ") "You have ")
                         (pluralize count typestring)
@@ -163,10 +167,10 @@
     (dolist (admin-id (getf by :admins))
       (let ((person (db admin-id)))
         (when (and (getf person :active)
-                   (getf person :notify-inventory-expiration))
+                   (find admin-id group-notify-expiration))
           (push (list :group-name group-name
                       :name (getf person :name)
-                      :groupid by
+                      :groupid account-id
                       :email (car (getf person :emails))
                       :unsubscribe-key (getf person :unsubscribe-key)
                       :id admin-id)
@@ -209,7 +213,8 @@
       (getf recipient :unsubscribe-key)
       (getf recipient :email)
       "notifications when your offers and requests are about to expire"
-      :groupid (getf recipient :groupid))))
+      :groupid (getf recipient :groupid)
+      :unsub-type "inventory-expiration")))
 
 (defun inventory-expiration-by-account-email-html
   (message typestring count url recipient)
@@ -231,6 +236,7 @@
              (getf recipient :unsubscribe-key)
              (getf recipient :email)
              "notifications when your offers and requests are about to expire"
-             :groupid (getf recipient :groupid)))
+             :groupid (getf recipient :groupid)
+             :unsub-type "inventory-expiration"))
       )))
 

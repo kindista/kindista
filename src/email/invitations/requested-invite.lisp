@@ -48,13 +48,9 @@
 (if auto-reminder
 "We are writing to let you know that the Kindista invitation you requested will  be expiring soon."
 "Here is the invitation you requested to join Kindista!")
-
 "
 
-Your invitation code is " (write-to-string token) ".
-
 "
-
 (when text
 (s+ "Personal message from the Kindista crew: 
 \""
@@ -74,9 +70,9 @@ text "\"
              "token" token)
 
 "
-As a reminder, in an effort to prevent spam some features may not be "
-"available until someone on Kindista vouches for you, or until you "
-"post some offers and we have time to review them. 
+Please note: some features on Kindista will not be "
+"available until you "
+"post your first offer and we have time to review it.
 "
 "
 Thanks for sharing your gifts with us!
@@ -89,14 +85,11 @@ Thanks for sharing your gifts with us!
   (html
     (:p :style *style-p*
       "Hi " (str name) ","
-      (:br)
+    (:p :style *style-p*
       (str
         (if auto-reminder
           "We are writing to let you know that the Kindista invitation you requested will  be expiring soon."
-          "Here is the invitation you requested to join Kindista!")))
-
-    (:p :style *style-p*
-     "Your invitation code is " (:strong (str (write-to-string token)) "."))
+          "Here is the invitation you requested to join Kindista!"))))
 
     (when text
       (htm (:table :cellspacing 0
@@ -121,9 +114,9 @@ Thanks for sharing your gifts with us!
                                   "email" email
                                   "token" token))))
     (:p :style *style-p*
-      "As a reminder, in an effort to prevent spam some features may not be "
-      "available until someone on Kindista vouches for you, or until you "
-      "post some offers and we have time to review them." )
+      "Please note: some features on Kindista will not be "
+      "available until you "
+      "post your first offer and we have time to review it." )
 
     (:p :style *style-p*
       "Thanks for sharing your gifts with us!")

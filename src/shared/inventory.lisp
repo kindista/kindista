@@ -20,16 +20,19 @@
 (defun new-pending-offer-notice-handler ()
   (send-pending-offer-notification-email (getf (cddddr *notice*) :id)))
 
-(defun create-inventory-item (&key type (by *userid*) title details tags privacy expires)
-  (insert-db (list :type type
-                   :active t
-                   :by by
-                   :privacy privacy ;a list of groups who can see the item
-                   :title title
-                   :details details
-                   :tags tags
-                   :expires expires
-                   :created (get-universal-time))))
+(defun create-inventory-item (&key type (by *userid*) title details tags privacy expires publish-fb-on-account-approval)
+  (insert-db
+    (remove-nil-plist-pairs
+      (list :type type
+            :active t
+            :by by
+            :publish-fb-on-account-approval publish-fb-on-account-approval
+            :privacy privacy ;a list of groups who can see the item
+            :title title
+            :details details
+            :tags tags
+            :expires expires
+            :created (get-universal-time)))))
 
 (defun inventory-item-result (id &key data by-id by)
   (or (gethash id *db-results*)
@@ -48,7 +51,8 @@
                                             (list (getf item :refreshed)
                                                   (getf item :edited)
                                                   (getf item :created))))
-                       :tags (getf item :tags))))))
+                       :tags (getf item :tags)
+                       :created (getf item :created))))))
 
 (defun index-inventory-item
   (id
@@ -214,12 +218,14 @@
 
       (cond
         ((and publish-facebook-p (not fb-action-id))
-         (if (current-fb-token-p)
+         (if (current-fb-token-p :publish-actions)
            (progn (notice :new-facebook-action :item-id id)
                   (flash (s+ "Your "
                              (string-downcase (symbol-name type))
-                             " has been published on Facebook")))
+                             " has been published on Facebook"))
+                  (modify-db id :fb-publishing-in-process (get-universal-time)))
            (renew-fb-token :item-to-publish id
+                           :fb-permission-requested :publish-actions
                            :next (resource-url id data))))
 
         ((and fb-action-id publish-facebook-p)
@@ -478,6 +484,10 @@
                                  (or groupid identity-selection)
                                  *userid*)
                            :privacy groups-selected
+                           :publish-fb-on-account-approval
+                             (when (and publish-facebook
+                                        (getf *user* :pending))
+                               t)
                            :expires expiration-time
                            :title title
                            :details details
@@ -524,13 +534,15 @@
                   ((or (not (getf *user* :fb-id))
                        (not publish-facebook))
                    (see-other new-url))
-                  ((current-fb-token-p)
-                   (notice :new-facebook-action :item-id new-id)
-                   (flash (s+ "Your "
-                              type
-                              " has been published on Facebook"))
+                  ((current-fb-token-p :publish-actions)
+                   ;(notice :new-facebook-action :item-id new-id)
+                   (modify-db new-id :fb-publishing-in-process (get-universal-time))
+                   ;(flash (s+ "Your "
+                   ;           type
+                   ;           " has been published on Facebook"))
                    (see-other new-url))
                   (t (renew-fb-token :item-to-publish new-id
+                                     :fb-permission-requested :publish-actions
                                      :next new-url)))))))
 
          (t (inventory-details)))))))
@@ -618,12 +630,16 @@
     (let* ((id (safe-parse-integer id))
            (item (db id))
            (by (getf item :by))
+           (publish-facebook (post-parameter "publish-facebook"))
            (action-type (post-parameter-string "action-type"))
            (adminp (group-admin-p by))
            (next (post-parameter "next")))
 
       (cond
-        ((and (or (post-parameter "reply-text")
+        ((post-parameter "cancel")
+         (see-other (or next "/home")))
+
+        ((and (or (post-parameter-string "reply-text")
                   (post-parameter "reply"))
               (getf *user* :pending))
          (pending-flash "contact other Kindista members")
@@ -656,9 +672,6 @@
         ((and (not (eql by *userid*))
               (item-view-denied (result-privacy (gethash id *db-results*))))
          (permission-denied))
-
-        ((post-parameter "cancel")
-         (see-other (or next "/home")))
 
         (t
          (require-test ((or (eql *userid* (getf item :by))
@@ -695,7 +708,7 @@
 
              (flet ((inventory-details
                       (&key error
-                            (publish-facebook (post-parameter "publish-facebook")))
+                            (publish-facebook-p publish-facebook))
                       (enter-inventory-item-details
                         :page-title (s+ "Edit your " type)
                         :action url
@@ -703,7 +716,7 @@
                         :details details
                         :tags (or tags (getf item :tags))
                         :groups-selected groups-selected
-                        :publish-facebook publish-facebook
+                        :publish-facebook publish-facebook-p
                         :restrictedp restrictedp
                         :next (or (post-parameter "next") (referer))
                         :existingp t
@@ -716,8 +729,8 @@
                (cond
                 ((or (post-parameter "edit") edit)
                  (inventory-details
-                   :publish-facebook (when (fb-object-actions-by-user id :data item)
-                                       t)))
+                   :publish-facebook-p (when (fb-object-actions-by-user id :data item)
+                                         t)))
 
                 ((or deactivate (post-parameter "deactivate"))
                  (confirm-delete :url url
@@ -774,6 +787,21 @@
                                 "/home"
                                 (post-parameter "next")))))
 
+                ((and publish-facebook
+                      (not (post-parameter "create"))
+                      (not (fb-object-actions-by-user id)))
+                 (if (current-fb-token-p :publish-actions)
+                   (progn (notice :new-facebook-action :item-id id)
+                          (flash (s+ "Your "
+                                     type
+                                     " has been published on Facebook"))
+                          (modify-db id :fb-publishing-in-process (get-universal-time))
+                          (see-other next))
+                   (renew-fb-token :item-to-publish id
+                                   :fb-permission-requested :publish-actions
+                                   :next next))
+                 (see-other (or (referer) "/home")))
+
                 ((not title)
                  (flash (s+ "Please enter a title for your " type "."))
                  (inventory-details))
@@ -809,12 +837,12 @@
                                              :details (post-parameter "details")
                                              :tags tags
                                              :expires expiration-time
-                                             :publish-facebook-p (post-parameter "publish-facebook")
+                                             :publish-facebook-p publish-facebook
                                              :privacy (when restrictedp
                                                       groups-selected)))
                  ;; new fb actions are redirected via
                  ;; modify-inventory-item to ensure current fb-token
-                 (when (or (not (post-parameter "publish-facebook"))
+                 (when (or (not publish-facebook)
                            (fb-object-actions-by-user id))
                    (see-other (strcat "/" type "s/" id))))
 
@@ -857,6 +885,7 @@
    &aux (typestring (if (string= selected "offers") "offer" "request"))
         (suggested (or tags (get-tag-suggestions item-title))))
 
+  (pprint groupid)
   (standard-page page-title
     (html
       (:div :class "item inventory-details" :id "enter-inventory-details"
@@ -932,8 +961,11 @@
                   groups-selected
                   :onchange "this.form.submit()")))
 
-         (when (and (getf *user* :fb-token)
-                    (not restrictedp))
+         (when (and (show-fb-p)
+                    *enable-facebook-posting*
+                    (not groupid)
+                    (or (not identity-selection)
+                        (eql identity-selection *userid*)))
            (htm
              (:div :id "facebook"
                (:input :type "checkbox"

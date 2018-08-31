@@ -96,7 +96,7 @@
   (setf (donate-info-token donate-info) new-value))
 
 (defstruct result
-  latitude longitude time tags people id type privacy)
+  latitude longitude time tags people id type privacy created)
 
 (defun get-result (id)
   (gethash id *db-results*))

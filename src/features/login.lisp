@@ -55,17 +55,20 @@
                 (:button :type "submit" :class "yes" "Sign in")
                 (:span :class "forgot"
                  (:a :href "/reset" :class "reset"  "Forgot your password?"))))
-            (when (or (not *productionp*)
-                      (string= (get-parameter "sekrut-fb-access")
-                               "not-ready-for-prime-time"))
-              (htm
-                (str *or-divider*)
-                (:div :class "social-signin"
-                 (str (if (get-parameter "facebook-signup")
-                        (facebook-sign-in-button
-                          :redirect-uri "signup"
-                          :button-text "Use Facebook to sign up for Kindista")
-                        (facebook-sign-in-button :redirect-uri "login"))))))
+            (htm
+              (str *or-divider*)
+              (when (or *enable-facebook-login*
+                        (string= (get-parameter-string "sekrut-fb-access")
+                                 "not-ready-for-prime-time"))
+                (htm
+                  (:div :class "social-signin"
+                     (str (if (and (get-parameter "facebook-signup")
+                                   (not *productionp*))
+                            (facebook-sign-in-button
+                              :redirect-uri "signup"
+                              :button-text "Use Facebook to sign up for Kindista")
+                            (facebook-sign-in-button :redirect-uri "login"))
+                          )))))
             (:div :id "join"
               (:span "Not on Kindista yet? ")
               (:a :href "/signup"
@@ -74,21 +77,31 @@
 
 (defun register-login (userid &key next fb-token fb-expires fb-scope &aux (user (db userid)))
   (setf (token-userid *token*) userid)
-  (unless (and (getf user :fb-link-active)
-               (string= (getf user :fb-token)
-                        fb-token)
-               (eql fb-expires (getf user :fb-expires)))
-    (modify-db userid :fb-token fb-token
-                      :fb-expires fb-expires
-                      :fb-scope fb-scope
-                      :fb-link-active t))
+  (when (and fb-token
+             fb-expires
+             (or (not (string= (getf user :fb-token)
+                               fb-token))
+                 (not (eql fb-expires (getf user :fb-expires)))))
+    (apply #'modify-db
+           userid
+           (remove-nil-plist-pairs
+             (list :fb-token fb-token
+                   :fb-expires fb-expires
+                   :fb-scope fb-scope
+                   :fb-link-active t))))
   (asetf (token-session-data *token*)
          (remove-from-plist it :login-redirect))
+  (let ((*user* (db userid)))
+    (when (and (getf *user* :fb-token)
+               (getf *user* :fb-link-active)
+               (not (getf *user* :avatar)))
+      (modify-db userid :avatar (save-facebook-profile-picture-to-avatar userid))))
   (when (getf (token-session-data *token*) :publish-to-fb)
     (let* ((id (getf (token-session-data *token*) :publish-to-fb))
            (item (db id))
            (type (getf item :type)))
       (notice :new-facebook-action :item-id id)
+      (modify-db id :fb-publishing-in-process (get-universal-time))
       (flash (s+ "Your "
                  (string-downcase (symbol-name type))
                  " has been published on Facebook"))
@@ -109,16 +122,12 @@
                     (awhen (get-parameter-string "granted_scopes")
                       (mapcar #'string-to-keyword
                               (words-from-string it)))))
-        (fb-token (cdr (assoc "access_token"
-                              fb-token-data
-                              :test #'string=)))
+        (fb-token (getf fb-token-data :access--token))
         (fb-expires (when fb-token-data
                       (+ (get-universal-time)
-                         (safe-parse-integer (cdr (assoc "expires"
-                                                         fb-token-data
-                                                         :test #'string=))))))
+                         (safe-parse-integer (getf fb-token-data :expires--in)))))
         (fb-data (when fb-token (get-facebook-user-data fb-token)))
-   &aux (username (post-parameter "username"))
+   &aux (username (remove-whitespace-around-string (post-parameter "username")))
         (password (post-parameter-string "password"))
         (login-token-redirect (getf (token-session-data *token*) :login-redirect))
         (next (or login-token-redirect
@@ -170,8 +179,7 @@
      (notice :auth-failure :username userid)
      (see-other (if next
                   (url-compose "/login" "next" (url-encode next))
-                  "/login"))
-     )))
+                  "/login")))))
 
 (defun get-logout ()
   (notice :logout)

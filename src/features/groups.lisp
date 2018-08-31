@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2017 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -45,6 +45,7 @@
                    :notify-gratitude (list creator)
                    :notify-reminders (list creator)
                    :notify-membership-request (list creator)
+                   :notify-inventory-expiration (list creator)
                    :created (get-universal-time))))
 
 (defun index-group (id data)
@@ -172,6 +173,28 @@
                        :group-creator group-creator
                        :keep-new-name keep-new-name
                        :keep-new-location keep-new-location))
+
+(defun deactivate-group
+  (id
+   &aux (result (gethash id *db-results*)))
+  (metaphone-index-insert (list nil) result)
+  (geo-index-remove *groups-geo-index* result)
+  (geo-index-remove *activity-geo-index* result)
+  (dolist (request-id (gethash id *request-index*))
+    (deactivate-inventory-item request-id))
+  (dolist (offer-id (gethash id *offer-index*))
+    (deactivate-inventory-item offer-id))
+  (modify-db id :active nil))
+
+(defun reactivate-group
+  (id
+   &aux (result (gethash id *db-results*))
+        (data (db id))
+        (name (getf data :name)))
+  (metaphone-index-insert (list name) result)
+  (geo-index-insert *groups-geo-index* result)
+  (geo-index-insert *activity-geo-index* result)
+  (modify-db id :active t))
 
 (defun delete-group (id &key pre-existing-duplicate-id group-creator keep-new-name keep-new-location)
 "WARNING: This needs further testing before use on the live server."
@@ -393,11 +416,13 @@
                         :notify-message (pushnew personid it)
                         :notify-gratitude (pushnew personid it)
                         :notify-reminders (pushnew personid it)
+                        :notify-inventory-expiration (pushnew personid it)
                         :notify-membership-request (pushnew personid it))
     (amodify-db groupid :admins (pushnew personid it)
                         :notify-message (pushnew personid it)
                         :notify-gratitude (pushnew personid it)
                         :notify-reminders (pushnew personid it)
+                        :notify-inventory-expiration (pushnew personid it)
                         :notify-membership-request (pushnew personid it))))
 
 (defun remove-group-admin (personid groupid)
@@ -408,27 +433,42 @@
      (asetf (getf (gethash personid *group-privileges-index*) :member)
             (pushnew groupid it)))
   (amodify-db groupid :admins (remove personid it)
-                      :members (pushnew personid it)))
+                      :members (pushnew personid it)
+                      :notify-message (remove personid it)
+                      :notify-gratitude (remove personid it)
+                      :notify-reminders (remove personid it)
+                      :notify-inventory-expiration (remove personid it)
+                      :notify-membership-request (remove personid it)))
 
 (defun group-activity-html (groupid &key type)
   (profile-activity-html groupid :type type
                                  :right (group-sidebar groupid)))
 
-(defun groups-with-user-as-admin (&optional (userid *userid*))
+(defun groups-with-user-as-admin (&optional (userid *userid*)
+                                            omit-deactivated-groups
+                                  &aux group)
 "Returns an a-list of (groupid . group-name)"
   (loop for id in (getf (if (eql userid *userid*)
                           *user-group-privileges*
                           (gethash userid *group-privileges-index*))
                         :admin)
+        do (setf group (db id))
+        when (or (not omit-deactivated-groups)
+                 (getf group :active))
         collect (cons id (db id :name))))
 
 
-(defun groups-with-user-as-member (&optional (userid *userid*))
+(defun groups-with-user-as-member (&optional (userid *userid*)
+                                             omit-deactivated-groups
+                                   &aux group)
 "Returns an a-list of (groupid . group-name)"
   (loop for id in (getf (if (eql userid *userid*)
                           *user-group-privileges*
                           (gethash userid *group-privileges-index*))
                         :member)
+        do (setf group (db id))
+        when (or (not omit-deactivated-groups)
+                 (getf group :active))
         collect (cons id (db id :name))))
 
 (defun group-admin-p (groupid &optional (userid *userid*))
@@ -1045,7 +1085,12 @@
 (defun get-invite-group-members (id)
   (ensuring-userid (id "/groups/~a/invite-members")
     (require-group-admin id
-      (invite-group-members id))))
+      (if (db id :active)
+        (invite-group-members id)
+        (progn
+          (flash "This group has been deactivated. Please reactivate it from the group's settings page before inviting more members to join it." :error t)
+          (see-other (url-compose "/settings/public"
+                                  "groupid" id)))))))
 
 (defun post-invite-group-members (groupid)
   (let* ((groupid (parse-integer groupid))
