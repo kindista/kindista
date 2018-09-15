@@ -440,7 +440,7 @@
     (let (latest)
       (when *db-log*
         (close *db-log*))
-      (with-open-file (in (s+ +db-path+ "db") :if-does-not-exist nil)
+      (with-open-file (in (s+ +db-path+ "db") :if-does-not-exist :create)
         (when in
           (with-standard-io-syntax
             (setf latest (read in))
@@ -452,7 +452,7 @@
                     (asetf *db-top* (max (car item) it))
                     (setf (gethash (car item) *db*) (cdr item)))
                   (end-of-file (e) (declare (ignore e)) (return))))))))
-      (with-open-file (in (s+ +db-path+ "db-log") :if-does-not-exist nil)
+      (with-open-file (in (s+ +db-path+ "db-log") :if-does-not-exist :create)
         (when in
           (with-standard-io-syntax
             (with-locked-hash-table (*db*)
