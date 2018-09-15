@@ -446,7 +446,7 @@
           (prin1 now out)
           (fresh-line out)
           (prin1 (list 0 :type :person
-                         :name "Kindista Alfa User"
+                         :name "Kindista Alpha User"
                          :emails '("kindista-alpha@mailinator.com")
                          :test-user t
                          :notify-new-contact nil
@@ -478,7 +478,8 @@
                          :notify-comment nil
                          :notify-gratitude nil
                          :notify-message nil
-                         :notify-kindista nil))
+                         :notify-kindista nil)
+                 out)
           (finish-output out))))))
 
 (defun load-db ()
