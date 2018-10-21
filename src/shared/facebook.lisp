@@ -195,7 +195,8 @@
          (strcat* (if (listp scope)
                     (format nil "~{~A,~}" scope)
                     (s+ scope ","))
-                  "public_profile,publish_actions,email"))
+                 ;"public_profile,publish_actions,email"
+                  "public_profile,email"))
   (html
     (:a :class "blue facebook-button"
         :href (apply #'url-compose
