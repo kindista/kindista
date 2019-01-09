@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2018 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -312,9 +312,7 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
                                       (days-in-month now)))))
                  (with-standard-io-syntax
                    (with-open-file (summary file :direction :input)
-                     (setf file-data (read summary))))
-
-                 (flet ((record-data (data-type &aux (data (getf file-data data-type)))
+                     (setf file-data (read summary)))) (flet ((record-data (data-type &aux (data (getf file-data data-type)))
                           (push (list time (if (listp data)
                                              (length data)
                                              data))
@@ -348,7 +346,10 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
       (save-stream s))
     (finish-output s)))
 
-(defun monthly-statistic (year month statistic &aux dir summary-file)
+(defun monthly-statistic
+  (year month statistic
+  &key (return-list nil)
+  &aux dir summary-file)
   (setf month (if (< (/ month 10) 1)
                 (strcat "0" month)
                 (strcat month)))
@@ -360,18 +361,47 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
         (with-open-file (s summary-file)
           (let* ((data (read s))
                  (stat (getf data statistic)))
-            (if (listp stat)
-              (length stat)
-              stat))))))
+            (cond
+             ((and (listp stat) return-list)
+              stat)
+             ((listp stat)
+              (length stat))
+             (t stat)))))))
 
-(defun transactions-completed-in-year (year &aux (transactions 0))
+(defun transactions-completed-in-year (year)
+  (average-statistic-in-year year :completed-transactions))
+
+(defun average-statistic-in-year
+  (year statistic
+  &key (total-annual-count nil)
+  &aux (return-value)
+       (monthly-counts))
+  (unless total-annual-count (setf return-value 0))
   (loop for month from 1 to 12
-        do (asetf transactions
-                  (+ it
-                     (or (monthly-statistic year
-                                            month
-                                            :completed-transactions) 0))))
-  transactions)
+        do (asetf return-value
+                  (if total-annual-count
+                    (let ((monthly-statistic (monthly-statistic year
+                                                                month
+                                                                statistic
+                                                                :return-list t)))
+
+                      (setf monthly-counts
+                            (append monthly-counts
+                                    (list (length monthly-statistic))))
+                      (remove-duplicates
+                        (append it monthly-statistic)))
+                    (+ it
+                       (or (monthly-statistic year
+                                              month
+                                              statistic) 0)))))
+  (when total-annual-count (asetf return-value (length it)))
+  (values (list :monthly-counts monthly-counts)
+          (list :total return-value)
+          (list :average (coerce (if monthly-counts
+                                   (/ (apply '+ monthly-counts)
+                                      (length monthly-counts))
+                                   (/ return-value 12))
+                                 'float))))
 
 (defun create-past-monthly-activity-reports (years)
   (dolist (year years)
