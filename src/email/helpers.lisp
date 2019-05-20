@@ -95,6 +95,19 @@
     :notify-new-contact
     :notify-reminders))
 
+(defun unsubscribe-emails-from-all-messages
+  (email-addresses
+   &aux (now (get-universal-time))
+        (unsubscribe-reason "User has complained about Kindista spam."))
+  (dolist (email email-addresses)
+    (when (and (validate-email email) (gethash email *email-index*))
+      (let* ((user-id (gethash email *email-index*)))
+        (dolist (notification-type *notification-types*)
+          (modify-db user-id notification-type nil))
+        (modify-db user-id
+                   :email-suppression-notes
+                   (strcat unsubscribe-reason " Suppressing all further emails to this user as of " (universal-to-datestring now) "."))))))
+
 (defun person-name (id)
   (db id :name))
 
