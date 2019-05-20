@@ -596,6 +596,7 @@
 
 (defun base-page (title body &key class extra-head extra-fb-js)
   (declare (optimize (speed 3) (debug 0) (safety 0)))
+  (flash "There is currently a problem with our email delivery service. No email is being sent right now through Kindista. For the time being, please only rely on messages posted directly in your Kindista mailbox. We are working to resolve this issue as soon as possible." :error t)
   (html
     "<!DOCTYPE html>"
     (:html
