@@ -1133,7 +1133,8 @@
         (str (settings-notifications :groupid groupid :group group))
         (when (and (not groupid) (eql unsub-id *userid*))
           (str (settings-unsubscribe-all)))
-        (str (settings-push-notifications group))
+      ;; Push notifications are currently broken. Android changed the API.
+      ;;(str (settings-push-notifications group))
         (unless groupid
           (str (settings-emails (string= (get-parameter "edit") "email")
                                 :activate (get-parameter "activate")))))))))
