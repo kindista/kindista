@@ -400,6 +400,7 @@
    &aux (fb-id (getf user :fb-id))
         (user-token (getf user :fb-token))
         response
+        fb-permissions
         current-permissions)
   (when (and fb-id (getf user :fb-link-active))
      (setf response
@@ -411,20 +412,21 @@
                :parameters (list (cons "access_token" *facebook-app-token*)
                                  (cons "access_token" user-token)
                                  (cons "appsecret_proof" (fb-app-secret-proof user-token))
-                                 (cons "method" "get"))))))
-
+                                 (cons "method" "get")))))
+     (setf fb-permissions (getf (alist-plist (decode-json-octets
+                                               (first response)))
+                                  :data)))
   (mapcar
     (lambda (pair)
       (push (string-to-keyword (car pair))
             (getf current-permissions (cdr pair))))
-    (loop for permission in (getf (alist-plist
-                                    (decode-json-octets
-                                      (first response)))
-                                  :data)
+    (loop for permission in fb-permissions
           collect (cons (cdar permission)
-                        (if (string= (cdadr permission) "granted")
-                          :granted
-                          :declined))))
+                        (cond
+                          ((string= (cdadr permission) "granted") :granted)
+                          ((string= (cdadr permission) "declined") :declined)
+                          ((string= (cdadr permission) "expired") :expired)
+                          (t :error)))))
    ;(facebook-debugging-log k-id
    ;                        (second response)
    ;                        (strcat* "FB Permissions:" current-permissions))
@@ -440,8 +442,12 @@
   (when (set-exclusive-or saved-fb-permissions granted-fb-permissions)
     (modify-db userid :fb-permissions granted-fb-permissions))
   (values (find permission granted-fb-permissions)
-          (when (find permission (getf current-fb-permissions :declined))
-            :declined)))
+          (cond
+            ((find permission (getf current-fb-permissions :declined))
+             :declined)
+            ((find permission (getf current-fb-permissions :expired))
+             :expired)
+            (t nil))))
 
 (defun get-facebook-kindista-friends
   (&optional (k-id *userid*)
