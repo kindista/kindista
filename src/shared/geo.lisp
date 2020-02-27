@@ -35,14 +35,13 @@
 
 (defun geocode-address (address)
   (let* ((key *google-geocode-api-key*)
+         (uri (quri:make-uri :defaults "https://maps.googleapis.com/maps/api/geocode/json"
+                             :query `(("address" . ,address)
+                                            ("key" . ,key)
+                                            ("sensor" . "false"))))
          (response (json:decode-json-from-string
                           (octets-to-string
-                            (http-request
-                              "https://maps.googleapis.com/maps/api/geocode/json"
-                              :verify nil
-                              :parameters `(("address" . ,address)
-                                            ("key" . ,key)
-                                            ("sensor" . "false")))
+                            (dex:get uri :force-binary T)
                             :external-format :utf-8)))
          (results (first (cdr (assoc :results response))))
 
