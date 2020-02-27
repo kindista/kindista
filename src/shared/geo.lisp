@@ -39,6 +39,7 @@
                           (octets-to-string
                             (http-request
                               "https://maps.googleapis.com/maps/api/geocode/json"
+                              :verify nil
                               :parameters `(("address" . ,address)
                                             ("key" . ,key)
                                             ("sensor" . "false")))
