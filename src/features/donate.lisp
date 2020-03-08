@@ -225,7 +225,7 @@
                 ((@ element set-attribute) "class" ""))
               ((@ *stripe set-publishable-key) (ps:lisp *stripe-publish-key*))
               ((@ *stripe create-token)
-               (create
+               (parenscript:create
                  :number (@ ((@ document get-element-by-id) "ccn") value)
                  :cvc (@ ((@ document get-element-by-id) "cvc") value)
                  :exp_month (@ ((@ document get-element-by-id) "ccm") value)
