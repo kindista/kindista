@@ -1895,6 +1895,30 @@ menu#fine-print-links a {
  max-width: 60em;
 }
 
+#cookiedisclaimer {
+ font-weight: bold;
+ margin-top: 0.5em;
+ padding: 10px;
+ background: #FFFAE1;
+ position: fixed;
+ bottom: 5px;
+ right: 25%;
+ width: 50%;
+ border: 3px solid #73AD21;
+ border-radius: 10px;
+}
+#cookiedisclaimer #accept-button {
+float: right;
+height: 100%;
+padding-right: 5px;
+}
+#cookiedisclaimer #disclaimer-text {
+height: 100%;
+width: 95%;
+}
+
+
+
 #login label,
 #signup label,
 .blog.item label,

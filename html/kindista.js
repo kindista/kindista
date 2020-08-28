@@ -19,3 +19,6 @@ function KlimitCharacters(Kmessage, KcharCount, Kindicator) {
     document.getElementById(Kindicator).innerHTML = KcharCount - Kchars;
     return Kchars > KcharCount ? (Kmessage.value = Kmessage.value.substring(0, KcharCount)) : null;
 };
+function acceptCookies() {
+    document.getElementById('cookiedisclaimer').style.visibility = 'hidden';
+};

@@ -337,6 +337,7 @@
     :get get-terms)
 
   ("/privacy"
+    :post post-privacy
     :get get-privacy)
 
   ("/donate"

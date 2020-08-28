@@ -30,4 +30,9 @@
                (str (donate-sidebar))
                (when *user* (str (invite-sidebar)))))))
 
+(defun post-privacy ()
+  ;; saves info about cookie policy being accepted
+  (let* ()
+    (setf (getf (token-session-data *token*) :cookies-accepted) (get-universal-time))
+    (see-other (or (referer) "home"))))
 

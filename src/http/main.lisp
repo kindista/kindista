@@ -653,10 +653,20 @@
     fjs.parentNode.insertBefore(js, fjs);
   }(document, 'script', 'facebook-jssdk'));
  "
-     (str (or extra-fb-js ""))
+        (str (or extra-fb-js ""))
      "
 </script>"))
-        (str body)))))
+
+        (str body))
+
+      ; cookie policy form
+      (unless (getf (token-session-data *token*) :cookies-accepted)
+        (htm (:div :id "cookiedisclaimer"
+              ( :form :id "accept-button" :method "post" :action "/privacy"
+                (:button :class "yes submit" :type "submit" :onclick "javascript:acceptCookies()" :name "post-privacy" "Accept"))
+              (:div :id "disclaimer-text" (str "Please note that we use cookies for a number of reasons, such as keeping Kindista reliable and secure, personalising content, providing social media features and to analyse how the site is used. To learn more about the information we keep please read our ") (:a :href "/privacy" "Privacy Policy") (str "."))
+             ))))))
+
 
 (defun login-box (&optional (mobile t))
   (html
@@ -794,6 +804,7 @@
 
                    (:a :class "dark" :href "#top"
                        "Back to the top")))
+
                :extra-head extra-head
                :extra-fb-js extra-fb-js
                :class (cond
