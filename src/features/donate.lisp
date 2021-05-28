@@ -1,4 +1,4 @@
-;;; Copyright 2012-2020 CommonGoods Network, Inc.
+;;; Copyright 2012-2021 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -117,9 +117,9 @@
            (:br)
            "C/O CommonGoods Network"
            (:br)
-           "7233 SE Alder Street"
+           "7929 SE 106th Avenue"
            (:br)
-           "Portland, OR 97405")
+           "Portland, OR 97266")
       (:p "Please make sure to include your email address so we can send you a thank you!"))))
 
 (defun donate-once-1 ()
@@ -148,9 +148,9 @@
            (:br)
            "C/O CommonGoods Network"
            (:br)
-           "7233 SE Alder Street"
+           "7929 SE 106th Avenue"
            (:br)
-           "Portland, OR 97215")
+           "Portland, OR 97266")
       (:p "Please make sure to include your email address so we can send you a thank you!")   )))
 
 (defun donate-dialog-2 (&optional show-error)
