@@ -1,4 +1,4 @@
-;;; Copyright 2012-2017 CommonGoods Network, Inc.
+;;; Copyright 2012-2021 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -19,7 +19,7 @@
 
 (defparameter +number-scanner+ (create-scanner "^\\d+$"))
 (defparameter +full-name-scanner+ (create-scanner "^([a-zA-Z]+\\.? )[a-zA-Z]+"))
-(defparameter +bot-scanner+ (create-scanner "(spider)|(bot)" :case-insensitive-mode t))
+(defparameter +bot-scanner+ (create-scanner "(spider)|(bot)|(rackspace monitoring)|(monitoring.api.rackspacecloud)" :case-insensitive-mode t))
 
 (defparameter +text-scanner+ (create-scanner "[a-zA-Z]+"))
 
