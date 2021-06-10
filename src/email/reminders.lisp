@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2021 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -52,6 +52,20 @@
 
 (defvar *last-reminder-email-time* 0)
 
+(defun users-subscribed-to-notification (&optional notification-type)
+  (let ((subscribed-users (list))
+        (notification (or notification-type :notify-reminders)))
+    (dolist (userid (remove-duplicates *active-people-index*))
+      (let ((person (db userid)))
+        (acase notification
+          (:notify-reminders (when (or (getf person :notify-reminders)
+                                       (getf person :notify-expired-invites))
+            (push userid subscribed-users)))
+          (:notify-inventory-digest
+            (when (getf person :notify-inventory-digest)
+              (push userid subscribed-users))))))
+    (length subscribed-users)))
+
 (defun get-send-all-reminders ()
   (when (or (getf *user* :admin)
             (server-side-request-p))
@@ -59,7 +73,9 @@
     (see-other "/home")))
 
 (defun send-all-reminders (&optional person-id)
-  (when (and (or *productionp* person-id)
+  (declare (optimize (space 2) (speed 1) (debug 0) (safety 1)))
+  (when
+    (and (or *productionp* person-id)
              (< *last-reminder-email-time* (- (get-universal-time) 300)))
     (setf *last-reminder-email-time* (get-universal-time))
     (let ((complete-profile (read-file-into-string (s+ +markdown-path+ "reminders/complete-profile.md")))

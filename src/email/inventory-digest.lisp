@@ -1,4 +1,4 @@
-;;; Copyright 2015-2016 CommonGoods Network, Inc.
+;;; Copyright 2015-2021 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -35,6 +35,7 @@
 
 (defun get-daily-inventory-digest-mailer
   (&aux (day (local-time:timestamp-day-of-week (local-time:now))) )
+  (declare (optimize (space 2) (speed 1) (debug 0) (safety 1)))
   (when (and (or (getf *user* :admin)
                  (server-side-request-p))
              ;; wait if last called less than 22 hours ago
