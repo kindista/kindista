@@ -1,4 +1,4 @@
-;;; Copyright 2012-2017 CommonGoods Network, Inc.
+;;; Copyright 2012-2018 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -984,19 +984,23 @@
              (if (not publish-facebook-p)
                (see-other (or next
                               (if inactive-subject "/home" gratitude-url)))
-               (let* ((taggable-friends (multiple-value-list
-                                          (facebook-taggable-friend-tokens
-                                            g-subjects)))
-                      (next (apply #'url-compose
-                                  gratitude-url
-                                  (awhen (first taggable-friends)
-                                    (flatten
-                                      (mapcar (lambda (pair)
-                                                (cons "authorize-fb-friend-tag"
-                                                      (strcat (car pair))))
-                                              it))))))
+               (let* (
+                     ;;Facebook tagging functionality is broken since Facebook ended support for custom open graph stories
+                     ;(taggable-friends (multiple-value-list
+                     ;                    (facebook-taggable-friend-tokens
+                     ;                      g-subjects)))
+                      (next gratitude-url
+                           ;(apply #'url-compose
+                           ;      gratitude-url
+                           ;      (awhen (first taggable-friends)
+                           ;        (flatten
+                           ;          (mapcar (lambda (pair)
+                           ;                    (cons "authorize-fb-friend-tag"
+                           ;                          (strcat (car pair))))
+                           ;                  it)))
+                                  ))
 
-                 (fb-taggable-friends-auth-warning (second taggable-friends))
+                ;(fb-taggable-friends-auth-warning (second taggable-friends))
 
                  (cond
                    ((current-fb-token-p :publish-actions)
@@ -1039,26 +1043,28 @@
                              :image (awhen (first (getf data :images))
                                       (get-image-thumbnail it 1200 1200)))
                :selected (awhen (get-parameter-string "menu") it))))
-         (friend-tags-to-authorize (get-parameter-integer-list
-                                     "authorize-fb-friend-tag"))
-         (new-fb-authorization (string= (get-parameter-string "state") "user_friends_scope_granted"))
-         (fb-user-friends-permission)
-         (fb-taggable-friends)
-         (possible-fb-friends-to-tag friend-tags-to-authorize))
+        ;(friend-tags-to-authorize (get-parameter-integer-list
+        ;                            "authorize-fb-friend-tag"))
+        ;(new-fb-authorization (string= (get-parameter-string "state") "user_friends_scope_granted"))
+        ;(fb-user-friends-permission)
+        ;(fb-taggable-friends)
+        ;(possible-fb-friends-to-tag friend-tags-to-authorize)
+         )
 
-    (when (and self-author-p
-               (getf *user* :fb-link-active))
-      (unless possible-fb-friends-to-tag
-        (setf fb-taggable-friends
-              (multiple-value-list (facebook-taggable-friend-tokens
-                                     (getf data :subjects))))
-        (awhen (remove nil (mapcar 'car (first fb-taggable-friends)))
-          (when (set-difference it (getf data :fb-tagged-friends))
-            (setf possible-fb-friends-to-tag it))))
-      (when (and (not new-fb-authorization)
-                 possible-fb-friends-to-tag)
-        (setf fb-user-friends-permission
-              (multiple-value-list (check-facebook-permission :user-friends *userid*)))))
+   ;;Facebook tagging functionality is broken since Facebook ended support for custom open graph stories
+   ;(when (and self-author-p
+   ;           (getf *user* :fb-link-active))
+   ;  (unless possible-fb-friends-to-tag
+   ;    (setf fb-taggable-friends
+   ;          (multiple-value-list (facebook-taggable-friend-tokens
+   ;                                 (getf data :subjects))))
+   ;    (awhen (remove nil (mapcar 'car (first fb-taggable-friends)))
+   ;      (when (set-difference it (getf data :fb-tagged-friends))
+   ;        (setf possible-fb-friends-to-tag it))))
+   ;  (when (and (not new-fb-authorization)
+   ;             possible-fb-friends-to-tag)
+   ;    (setf fb-user-friends-permission
+   ;          (multiple-value-list (check-facebook-permission :user-friends *userid*)))))
 
     (cond
       ((not data) (not-found))
@@ -1076,37 +1082,45 @@
            (update-folder-data message :read))
          gratitude-page))
 
-      ((or (getf data :fb-tagged-friends)
-           (not possible-fb-friends-to-tag)
-           (get-parameter "skip-fb-tagging"))
-       gratitude-page)
+     ;((or (getf data :fb-tagged-friends)
+     ;     (not possible-fb-friends-to-tag)
+     ;     (get-parameter "skip-fb-tagging"))
+     ; gratitude-page)
 
-      ;; Tagging is convoluted until Facebook changes it's API to allow apps to pass
-      ;; FB user ids to tag an item. Now they only pass a special token that prevents
+      ;; Tagging was convoluted because Facebook's  API didn't allow apps to pass
+      ;; FB user ids to tag an item. They only passed a special token that prevented
       ;; us from verifying that a gratitude recipient is also a facebook friend.
+      ;; Now Facebook tagging functionality is totally broken since Facebook ended support
+      ;; for custom open graph stories
 
-      ((not (first fb-user-friends-permission))
-       (fb-taggable-friends-auth-warning (second fb-taggable-friends))
-       (facebook-friends-permission-html
-             :redirect-uri (strcat "gratitude/" id)
-             :re-request (eql (second fb-user-friends-permission) :declined)
-             :cancel-link (url-compose (strcat "gratitude/" id)
-                                       "skip-fb-tagging" "t")
-             :fb-gratitude-subjects possible-fb-friends-to-tag))
+     ;((not (first fb-user-friends-permission))
+     ; (fb-taggable-friends-auth-warning (second fb-taggable-friends))
+     ; (facebook-friends-permission-html
+     ;       :redirect-uri (strcat "gratitude/" id)
+     ;       :re-request (eql (second fb-user-friends-permission) :declined)
+     ;       :cancel-link (url-compose (strcat "gratitude/" id)
+     ;                                 "skip-fb-tagging" "t")
+     ;       :fb-gratitude-subjects possible-fb-friends-to-tag))
 
-      (possible-fb-friends-to-tag
-        (tag-facebook-friends-html
-          :gratitude-id id
-          :fb-gratitude-subjects (mapcar (lambda (id) (cons (db id :name)
-                                                            id))
-                                         possible-fb-friends-to-tag))))))
+     ;(possible-fb-friends-to-tag
+     ;  (tag-facebook-friends-html
+     ;    :gratitude-id id
+     ;    :fb-gratitude-subjects (mapcar (lambda (id) (cons (db id :name)
+     ;                                                      id))
+     ;                                   possible-fb-friends-to-tag)
+    (t gratitude-page)
+    )))
 
 (defun post-gratitude
   (id
    &aux (url (strcat "/gratitude/" id))
         (next (or (post-parameter-string "next") url))
-        (friends-to-tag (when (post-parameter "tag-friends")
-                          (post-parameter-integer-list "tag-fb-friend"))))
+
+       ;Facebook tagging functionality is broken since Facebook ended support for
+       ;custom open graph stories
+       ;(friends-to-tag (when (post-parameter "tag-friends")
+       ;                  (post-parameter-integer-list "tag-fb-friend")))
+        )
   (require-user (:require-active-user t :allow-test-user t)
     (setf id (parse-integer id))
     (aif (db id)
@@ -1134,9 +1148,11 @@
             (renew-fb-token :item-to-publish id
                             :fb-permission-requested :publish-actions
                             :next next)))
-         (friends-to-tag
-          (tag-facebook-friends id friends-to-tag)
-          (see-other url))
+        ;Facebook tagging functionality is broken since Facebook ended support for
+        ;custom open graph stories
+        ;(friends-to-tag
+        ; (tag-facebook-friends id friends-to-tag)
+        ; (see-other url))
          ((post-parameter "edit")
           (see-other (s+ url "/edit")))))
       (not-found))))

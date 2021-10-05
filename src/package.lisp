@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-20 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -27,7 +27,7 @@
                   :kindista-js
                   :adw-charting
                   :iterate)
-            (:import-from :parenscript :ps :ps-inline :ps-inline* :@ :create :f)
+            (:import-from :parenscript :ps :ps-inline :ps-inline* :@ :f)
             (:import-from :cl-fad :file-exists-p)
             (:import-from :ps-dom1-symbols :document :get-element-by-id :submit :set-attribute
                                            :remove-attribute)

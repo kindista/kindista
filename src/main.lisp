@@ -34,7 +34,7 @@
   ;(start-scheduler-thread)
   (start (acceptor-metric-system *acceptor*))
   (start-notice-thread)
-  (setf *facebook-app-token* (get-facebook-app-token)))
+  (when *facebook-secret* (setf *facebook-app-token* (get-facebook-app-token))))
 
 (defun load-notice-handlers ()
   (clrhash *notice-handlers*)

@@ -19,6 +19,7 @@
                :vecto
                :double-metaphone
                :drakma
+               :dexador
                :flexi-streams
                :hunchentoot
                :ironclad

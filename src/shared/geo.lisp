@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2018 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -34,17 +34,16 @@
                                     :private)))))
 
 (defun geocode-address (address)
-  (let* ((results (first
-                    (cdr
-                      (assoc
-                        :results
-                        (json:decode-json-from-string
+  (let* ((key *google-geocode-api-key*)
+         (uri (quri:make-uri :defaults "https://maps.googleapis.com/maps/api/geocode/json"
+                             :query `(("address" . ,address)
+                                            ("key" . ,key)
+                                            ("sensor" . "false"))))
+         (response (json:decode-json-from-string
                           (octets-to-string
-                            (http-request
-                              "http://maps.googleapis.com/maps/api/geocode/json"
-                              :parameters `(("address" . ,address)
-                                            ("sensor" . "false")))
-                            :external-format :utf-8))))))
+                            (dex:get uri :force-binary T)
+                            :external-format :utf-8)))
+         (results (first (cdr (assoc :results response))))
 
          (location (cdr (assoc :location (cdr (assoc :geometry results)))))
          city
@@ -102,6 +101,8 @@
            long
            "&sensor=false&zoom="
            zoom
+           "&key="
+           *google-staticmaps-api-key*
            (if marker
              (strcat "&markers=color:0x90B04B|" lat "," long)
              "")

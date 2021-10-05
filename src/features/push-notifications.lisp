@@ -95,7 +95,18 @@
         :encrypted-message (third encryption-results)
         :reg-id (getf subscription-params :reg-id)))
 
+
 (defun send-push-through-chrome-api
+(recipients
+    &key
+      message-title
+      message-body
+      message-tag
+      message-url)
+"https://android.googleapis.com/gcm/send is deprecated. Removing this function for now."
+nil)
+
+(defun send-push-through-chrome-api-depreciated
   (recipients
     &key
       message-title
@@ -113,6 +124,7 @@
       (plaintext-data (json:encode-json-to-string json-message-list))
       (chrome-api-status)
       (subscriptions))
+"https://android.googleapis.com/gcm/send is deprecated. Removing this function for now."
   (dolist (recipient recipients)
     (setf subscriptions (db recipient :push-notification-subscriptions))
     (dolist (client '(:chrome :mobile-chrome))

@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2019 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -94,6 +94,19 @@
     :notify-message
     :notify-new-contact
     :notify-reminders))
+
+(defun unsubscribe-emails-from-all-messages
+  (email-addresses
+   &optional (unsubscribe-reason "User has complained about Kindista spam.")
+   &aux (now (get-universal-time)))
+  (dolist (email email-addresses)
+    (when (and (validate-email email) (gethash email *email-index*))
+      (let* ((user-id (gethash email *email-index*)))
+        (dolist (notification-type *notification-types*)
+          (modify-db user-id notification-type nil))
+        (modify-db user-id
+                   :email-suppression-notes
+                   (strcat unsubscribe-reason " Suppressing all further emails to this user as of " (universal-to-datestring now) "."))))))
 
 (defun person-name (id)
   (db id :name))

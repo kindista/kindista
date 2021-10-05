@@ -1,4 +1,4 @@
-;;; Copyright 2012-2016 CommonGoods Network, Inc.
+;;; Copyright 2012-2018 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -376,7 +376,8 @@
 
       (dolist (prop '(:bio :bio-summary :bio-doing :bio-contact :bio-skills :bio-into :fb-id :fb-token :fb-link-active :fb-expires))
         (when (or (not (getf data-to-keep prop))
-                  (string= (getf data-to-keep prop) ""))
+                  (and (stringp (getf data-to-keep prop))
+                       (string= (getf data-to-keep prop) "")))
           (setf (getf data-to-keep prop)
                 (getf data prop))))
 

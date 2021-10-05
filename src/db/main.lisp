@@ -435,12 +435,62 @@
                            :direction :output))
       (fsync *db-log*))))
 
+(defun initialize-db ()
+  (unless (probe-file (s+ +db-path+ "db"))
+    (with-standard-io-syntax
+      (let ((*print-pretty* t)
+            (now (get-universal-time)))
+        (with-open-file (out (s+ +db-path+ "db")
+                             :direction :output
+                             :if-does-not-exist :create)
+          (prin1 now out)
+          (fresh-line out)
+          (prin1 (list 0 :type :person
+                         :name "Kindista Alpha User"
+                         :emails '("kindista-alpha@mailinator.com")
+                         :test-user t
+                         :notify-new-contact nil
+                         :notify-inventory-expiration nil
+                         :notify-inventory-digest nil
+                         :location-privacy :private
+                         :notify-blog nil
+                         :unsubscribe-key "s0mo4v1dun08cbbfjb"
+                         :notify-group-membership-invites nil
+                         :notify-expired-invites nil
+                         :notify-reminders nil
+                         :distance 100
+                         :avatar nil
+                         :country "US"
+                         :zip "97401"
+                         :street nil
+                         :state "OR"
+                         :city "Eugene"
+                         :address "Eugene, OR 97401, USA"
+                         :admin t
+                         :lat 44.060644
+                         :long -123.1925903
+                         :active t
+                         :location t
+                         :help nil
+                         :pass "sv5xz4qvgp:a7c63bd2b1f9d6685a33f6b5a7caa518ce622ab71063c91ffc37f5af88149443"
+                         :created now
+                         :notify-contact nil
+                         :notify-comment nil
+                         :notify-gratitude nil
+                         :notify-message nil
+                         :notify-kindista nil)
+                 out)
+          (finish-output out))))))
+
 (defun load-db ()
   (with-mutex (*db-log-lock*)
-    (let (latest)
+    (let ((latest)
+          (db-file (or (probe-file (s+ +db-path+ "db"))
+                       (progn (initialize-db)
+                              (probe-file (s+ +db-path+ "db"))))))
       (when *db-log*
         (close *db-log*))
-      (with-open-file (in (s+ +db-path+ "db") :if-does-not-exist nil)
+      (with-open-file (in db-file :if-does-not-exist nil)
         (when in
           (with-standard-io-syntax
             (setf latest (read in))
