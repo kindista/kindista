@@ -1,4 +1,4 @@
-;;; Copyright 2012-2017 CommonGoods Network, Inc.
+;;; Copyright 2012-2021 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -1454,6 +1454,9 @@
         (acond
          ((post-parameter "address")
           (cond
+            ((string= it "")
+             (flash "Please enter a valid address. You can use your city or town if you don't want to use your exact address" :error t)
+             (see-other (referer)))
             ((and groupid
                    (string= it (getf entity :address))
                    (getf entity :location)
