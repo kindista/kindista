@@ -1,4 +1,4 @@
-;;; Copyright 2012-2018 CommonGoods Network, Inc.
+;;; Copyright 2012-2021 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -81,6 +81,7 @@
                (setf city (cdr (assoc :long--name component)))))))
 
 
+    (pprint response)
     (values (cdr (assoc :lat location))
             (cdr (assoc :lng location))
             (cdr (assoc :formatted--address results))
@@ -91,7 +92,7 @@
             zip)))
 
 (defun static-google-map (&key (size "400x400") lat long (marker t) (zoom 13) (scale 2))
-  (strcat "<img src=\"http://maps.googleapis.com/maps/api/staticmap?size="
+  (strcat "<img src=\"https://maps.googleapis.com/maps/api/staticmap?size="
            size
            "&scale="
            scale

@@ -21,7 +21,7 @@ https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow
 [ ] maybe change :fb-publishing-in-process parameter
 [ ] remove code for posting to FB while creating offer/request/gratitude
 [ ] remove facebook js and junky share-button code if not necessary
-
+[ ] *enable-facebook-posting* t on the server
 
 #Settings Page
  - List of permissions possible to select:

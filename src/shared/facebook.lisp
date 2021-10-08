@@ -1,4 +1,4 @@
-;;; Copyright 2015-2016 CommonGoods Network, Inc.
+;;; Copyright 2015-2021 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -337,14 +337,22 @@
 
 (defun get-facebook-user-data
   (fb-token
-   &aux (response (alist-plist
+   &aux initial-response
+        user-data)
+  (setf initial-response
+        (alist-plist (decode-json-octets
+                       (http-request
+                         (strcat *fb-graph-url* "me")
+                         :parameters (list (cons "access_token" fb-token)
+                                           (cons "method" "get"))))))
+  (setf user-data (flatten
                     (decode-json-octets
-                      (http-request
-                        (strcat *fb-graph-url* "me")
-                        :parameters (list (cons "access_token" fb-token)
-                                          (cons "method" "get")))))))
-  (facebook-debugging-log *userid* (when response 200) response)
-  response)
+                      (http-request (strcat *fb-graph-url* "v12.0/" (getf initial-response :id))
+                                    :parameters (list (cons "access_token" fb-token)
+                                                      (cons "fields" "id,name,email")
+                                                      (cons "method" "get"))))))
+  (facebook-debugging-log *userid* user-data)
+  user-data)
 
 (defun get-facebook-user-id (fb-token)
   (safe-parse-integer (getf (get-facebook-user-data fb-token) :id)))
@@ -361,7 +369,7 @@
   (when (and fb-token fb-user-id (getf user :fb-link-active))
    (setf response
          (multiple-value-list
-           (http-request (strcat *fb-graph-url* "v3.0/" fb-user-id "/picture")
+           (http-request (strcat *fb-graph-url* "v12.0/" fb-user-id "/picture")
                          :parameters (list (cons "access_token" fb-token)
                                            (cons "appsecret_proof" (fb-app-secret-proof fb-token))
                                            (cons "type" "large")
@@ -408,7 +416,7 @@
            (multiple-value-list
              (http-request
                (strcat *fb-graph-url*
-                       "v3.0/"
+                       "v12.0/"
                        fb-id "/permissions")
                :parameters (list (cons "access_token" *facebook-app-token*)
                                  (cons "access_token" user-token)
@@ -469,6 +477,10 @@
                                 (cons "access_token" user-token)
                                 (cons "appsecret_proof" (fb-app-secret-proof user-token))
                                 (cons "method" "get"))))))
+  (pprint (find :data
+                           (decode-json-octets (first response))
+                           :key 'car))
+  (terpri)
   (when (= (second response) 200)
     (setf friends
           (mapcar (lambda (friend)
@@ -494,7 +506,7 @@
       (assoc :location
              (decode-json-octets
                (http-request (strcat *fb-graph-url*
-                                     "v3.0/"
+                                     "v12.0/"
                                      fb-location-id)
                              :parameters (list (cons "access_token" fb-token)
                                                (cons "access_token" *facebook-app-token*)
