@@ -12,4 +12,10 @@
 ### Fix /settings/location
 [x] empty string should trigger error
 
-BJC Avatar 59575
+post-signup flow
+- fb-token and not signing up via invitation (redundant?)
+  - already using fb with kindista
+  - already a kindista user (no existing fb auth)
+  - new fb auth but no email permission
+
+[ ] create random password for new facebook user

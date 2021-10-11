@@ -29,14 +29,20 @@
 
 (defvar *base-url* "/")
 
-(defun flash (message &key error)
+(defun flash (message &key error additional-class)
   (with-locked-hash-table (*flashes*)
     (push
-      (format nil
-              (if error
-                "<div class=\"flash err\"><span>~a</span></div>"
-                "<div class=\"flash\"><span>~a</span></div>")
-              message)
+       (strcat* "<div class=\""
+                 "flash " (when error "err ") additional-class
+                 "\"><span>"
+                 message
+                 "</span></div>"
+                 )
+     ;(format nil
+     ;         (if error
+     ;           "<div class=\"flash err\"><span>~a</span></div>"
+     ;           "<div class=\"flash\"><span>~a</span></div>")
+     ;         message)
       (gethash *token* *flashes*))))
 
 (defun flashes ()
