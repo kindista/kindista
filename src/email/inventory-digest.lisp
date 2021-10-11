@@ -328,7 +328,7 @@
       (:div :style "margin: 0.7em 0 0.3em;"
         (awhen title
           (htm
-            (:img :src (s+ "http://media.kindista.org/"
+            (:img :src (s+ *email-url* "media/icons/"
                            typestring
                            "s.png")
                   :alt typestring
@@ -352,7 +352,7 @@
              (s+ url "?action-type=" response-type)
              (s+ (string-capitalize response-type) " This")
              :style *small-style-button* 
-             :image (html (:img :src (s+ "http://media.kindista.org/white-"
+             :image (html (:img :src (s+ *email-url* "media/icons/white-"
                                     response-type
                                     ".png")
                                 :alt response-type
