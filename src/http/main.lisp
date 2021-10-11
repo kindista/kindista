@@ -36,13 +36,7 @@
                  "flash " (when error "err ") additional-class
                  "\"><span>"
                  message
-                 "</span></div>"
-                 )
-     ;(format nil
-     ;         (if error
-     ;           "<div class=\"flash err\"><span>~a</span></div>"
-     ;           "<div class=\"flash\"><span>~a</span></div>")
-     ;         message)
+                 "</span></div>")
       (gethash *token* *flashes*))))
 
 (defun flashes ()
