@@ -1,4 +1,4 @@
-;;; Copyright 2012-2018 CommonGoods Network, Inc.
+;;; Copyright 2012-2021 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -290,7 +290,7 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
 
 (defun update-metrics-chart
   (&key (start-month 1)
-        (start-year 2014)
+        (start-year (- (current-year) 3))
    &aux (chart-data)
         (now (local-time:now))
         (current-year (timestamp-year now))
@@ -323,7 +323,7 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
                                                :new-requests
                                                :got-offers
                                                :got-requests
-                                               :messages-sent
+                                              ;:messages-sent
                                                :completed-transactions)))))))
 
   (with-open-file (s (strcat *metrics-path* "/kindista-metrics-chart.png")

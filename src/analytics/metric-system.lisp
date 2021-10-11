@@ -1,4 +1,4 @@
-;;; Copyright 2012-2013 CommonGoods Network, Inc.
+;;; Copyright 2012-2021 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -171,7 +171,7 @@
               (let ((now (local-time:now)))
                 (monthly-activity-report (local-time:timestamp-month now)
                                          (local-time:timestamp-year now))
-                (update-metrics-chart :start-year 2015)
+                (update-metrics-chart :start-year (- (current-year) 3))
                 (send-progress-report-email
                   (format-timestring t
                                      now
