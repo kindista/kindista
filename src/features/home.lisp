@@ -1,4 +1,4 @@
-;;; Copyright 2012-2015 CommonGoods Network, Inc.
+;;; Copyright 2012-2021 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -126,7 +126,9 @@
                     (htm (:li (:a :href "/settings/personal" "Upload a picture") " so that other people can recognize you.")))
                   (:li (:a :href "/gratitude/new" "Express gratitude") " for someone who has affected your life.")
                   (:li (:a :href "/people" "Make a connection") " to say that you know someone.")
-                  (:li (:a :href "/requests/new" "Post a request") " to the community for something you need.")
+                  (if (eql (getf *user* :host) +kindista-id+)
+                    (htm (:li (:a :href "/offers/new" "Post an offer") " to contribute to the community.")) 
+                    (htm(:li (:a :href "/requests/new" "Post a request") " to the community for something you need.")))
                   )
                 (:p "On this page you can see what's going on around you and with people you have made
                      a connection with. Use the menu "
@@ -134,8 +136,7 @@
                     (:span :class "menu-showing" " on the left ")
                     " to explore the site.")))))
   :selected "home"
-  :right (home-rightbar)))
-
+  :right (home-rightbar))) 
 (defun newuser-home ()
   (header-page
     "Welcome"
@@ -172,6 +173,17 @@
 (defun get-home ()
   (cond
     ((or (confirmed-location) (not *user*))
+     (when (and (getf *user* :fb-id)
+                (not (getf *user* :pass)))
+       (let ((password (random-password 11)))
+         (modify-db *userid* :pass (new-password password))
+         (delete-all-but-current-token-cookie)
+         (flash
+           (strcat* "<p>Your automatically generated password is:</p>"
+                    "<p><strong>" password "</strong></p>"
+                    "<p>You can change it on the settings page or by clicking "
+                    "\"Forgot your password?\" when signing in.</p>")
+           :additional-class "auto-fb-password")))
      (notice :home)
      (standard-home))
 

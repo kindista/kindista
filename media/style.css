@@ -650,6 +650,11 @@ div.new-gratitude div#gratitude-by-email p.small,
  font-weight: normal;
 }
 
+.flash.auto-fb-password strong {
+ margin: 1em 1em;
+ font-size: 150%;
+}
+
 @media (min-width:40em) {
  #biglogo {
   margin:2em 0 2em 2em;

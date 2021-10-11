@@ -24,8 +24,8 @@
          (name (getf invitation :name))
          (email (getf invitation :recipient-email)))
     (cl-smtp:send-email
-      +mail-server+
-      "Kindista <noreply@kindista.org>"
+       +mail-server+
+       "Kindista <noreply@kindista.org>"
       email
       (if auto-reminder
         "Reminder: The Kindista invitation you requested will be expiring soon!"

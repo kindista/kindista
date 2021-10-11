@@ -1455,7 +1455,7 @@
          ((post-parameter "address")
           (cond
             ((string= it "")
-             (flash "Please enter a valid address. You can use your city or town if you don't want to use your exact address" :error t)
+             ; try-again, we need an actual address
              (see-other (referer)))
             ((and groupid
                    (string= it (getf entity :address))
