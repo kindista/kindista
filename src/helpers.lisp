@@ -1,4 +1,4 @@
-;;; Copyright 2012-2021 CommonGoods Network, Inc.
+;;; Copyright 2012-2022 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -47,6 +47,14 @@
 
 (defmacro s+ (&rest strings)
   `(concatenate 'string ,@strings))
+
+(defmacro html (&body body)
+  (let ((sym (gensym)))
+    `(with-html-output-to-string (,sym)
+       ,@body)))
+
+(defmacro asetf (place value)
+  `(anaphora::symbolic setf ,place ,value))
 
 (defun find-string (string list)
   (find string list :test #'string=))
@@ -130,14 +138,6 @@
            ,@body)
          (ignore-errors
            (delete-file ,lock-path))))))
-
-(defmacro html (&body body)
-  (let ((sym (gensym)))
-    `(with-html-output-to-string (,sym)
-       ,@body)))
-
-(defmacro asetf (place value)
-  `(anaphora::symbolic setf ,place ,value))
 
 (defun sublist (list &optional start count)
   (when start

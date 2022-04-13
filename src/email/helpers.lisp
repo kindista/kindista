@@ -65,7 +65,7 @@
 
 (defparameter *email-url* (or (awhen *test-email-ip*
                                 (s+ it "/"))
-                              *email-url*))
+                              +base-url+))
 
 (defun person-email-link (id)
   (awhen (db id)

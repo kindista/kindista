@@ -2,7 +2,7 @@
   :name "Kindista"
   :description "A social network for local sharing"
   :license "GNU Affero General Public License Version 3 (see file COPYING)"
-  :maintainer "Nicholas E. Walker"
+  :maintainer "Benjamin J. Crandall"
   :serial t
   :depends-on (:alexandria
                :anaphora
