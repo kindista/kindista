@@ -1328,9 +1328,9 @@
            (see-other (referer)))
 
           ((post-parameter "confirm-new-admin")
-           (if (< (length (getf group :admins)) 3)
+           (if (< (length (getf group :admins)) 4)
              (add-group-admin (parse-integer (post-parameter "item-id")) id)
-             (flash (s+ "This account already has the maximum of three administrators. "
+             (flash (s+ "This account already has the maximum of four administrators. "
                         "If you would like to add an additional admin for this account, one "
                         "of the current admins must first revoke their admin privileges.")
                     :error t))
