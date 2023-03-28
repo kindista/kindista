@@ -1,4 +1,4 @@
-;;; Copyright 2012-2017 CommonGoods Network, Inc.
+;;; Copyright 2012-2023 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -48,7 +48,8 @@
         (str flash))
       (when error (htm (:div :class "signup flash err" (str error))))
       (:div :id "signup" (str body)))
-    :hide-menu t))
+    :hide-menu t
+    ))
 
 (defun signup-page (&key error name email email2)
   (signup-base
@@ -269,6 +270,8 @@
                                :email email
                                :email2 (when (equalp email email2) email2))))
           (cond
+            ((or (not id) (not valid-email-invites))
+                        (try-again "In response to malicous attacks on our system, and our limited volunteer development resources, Kindista is currently Invite Only. Please use the email address in your invitation to sign up. If you have not yet been invited, you must first receive an invitation from a current Kindista member."))
             (group-p
               (try-again "This form is for creating personal accounts only. Once you create your personal account you can create group accounts from the \"Groups\" section of Kindista. If you ignore this warning you will create mass confusion for our community and will not be able to invite people to join your group. (Also we will probably end up deleting group accounts created with this form.)"))
 

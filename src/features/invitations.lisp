@@ -18,6 +18,25 @@
 
 (in-package :kindista)
 
+(defun find-first-malicious-signup ()
+  "This funcion is no longer needed and can be deleted. Kindista suffered a malicious attack on 3/26/2023. Someone spammed the signup page. This function was used to find the malicious invites."
+  (let* ((kindista-invite-ids (gethash +kindista-id+ *person-invitation-index*))
+         (now (get-universal-time))
+         (attack-start (- now (* 4 +day-in-seconds+)))
+         (attack-invites)
+         (first-attack-invite (cons 1000000 (+ now +year-in-seconds+))))
+    (dolist (id kindista-invite-ids)
+      (let* ((invite (db id))
+             (invite-date (getf invite :valid-until)))
+        (when (> invite-date attack-start)
+          (push id attack-invites)
+          (when (and (< id (car first-attack-invite))
+                     (not (> invite-date (cdr first-attack-invite))))
+            (setf first-attack-invite (cons id  invite-date))
+            ))))
+    (values first-attack-invite
+            (humanize-exact-time (cdr first-attack-invite) :detailed t))))
+
 (defun send-invitation-notice-handler ()
   (let* ((invitation-id (getf (cddddr *notice*) :id))
          (new-group (getf (cddddr *notice*) :new-group))
