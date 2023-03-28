@@ -380,8 +380,8 @@
   ("/admin/metrics/active-accounts.png"
     :get get-admin-active-accounts-png)
 
-  ("/admin/metrics/metrics-chart.png"
-    :get get-admin-metrics-chart-png)
+ ;("/admin/metrics/metrics-chart.png"
+ ;  :get get-admin-metrics-chart-png)
 
   ("/admin/recent"
     :get get-admin-recent)

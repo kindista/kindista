@@ -38,14 +38,14 @@
             (:li (:a :href "/admin/sendmail" "send email to everyone")))))
       :selected "admin")))
 
-(defun get-admin-metrics ()
-  (require-admin
-    (standard-page
-      "Admin"
-       (html
-         (:p (:a :href "/admin" "back to admin"))
-         (:div (:img :src "/admin/metrics/metrics-chart.png"))
-         (:div (:img :src "/admin/metrics/active-accounts.png"))))))
+;(defun get-admin-metrics ()
+;  (require-admin
+;    (standard-page
+;      "Admin"
+;       (html
+;         (:p (:a :href "/admin" "back to admin"))
+;         (:div (:img :src "/admin/metrics/metrics-chart.png"))
+;         (:div (:img :src "/admin/metrics/active-accounts.png"))))))
 
 (defun get-admin-pending-accounts
   (&aux (pending-accounts (sort (hash-table-alist *pending-person-items-index*)

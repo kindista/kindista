@@ -27,7 +27,7 @@
                :paren-files
                :sb-concurrency
                :stem
-               :adw-charting-vecto
+              ;:adw-charting-vecto
                :kindista-js
                :quri)
   :components ((:module src

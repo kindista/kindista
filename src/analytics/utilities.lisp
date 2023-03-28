@@ -25,26 +25,26 @@
 ; number of users who have commented on a conversation (&key period-start period-end)
 ; number of users who have used kindista (&key period-start period-end)
 
-(defun get-admin-active-accounts-png ()
-  (setf (content-type*) "image/png")
-  (with-chart (:line 600 600)
-   (add-series "Active Kindista Accounts"
-     (active-kindista-accounts-over-time))
-     (set-axis :y "Accounts" :data-interval 20)
-     (set-axis :x "Date"
-               :label-formatter #'chart-date-labels
-               :angle 90)
-     (save-stream (send-headers))))
+;(defun get-admin-active-accounts-png ()
+;  (setf (content-type*) "image/png")
+;  (with-chart (:line 600 600)
+;   (add-series "Active Kindista Accounts"
+;     (active-kindista-accounts-over-time))
+;     (set-axis :y "Accounts" :data-interval 20)
+;     (set-axis :x "Date"
+;               :label-formatter #'chart-date-labels
+;               :angle 90)
+;     (save-stream (send-headers))))
 
-(defun get-admin-metrics-chart-png ()
-  (handle-static-file (merge-pathnames *metrics-path* "kindista-metrics-chart.png")
-                      "image/png"))
+;(defun get-admin-metrics-chart-png ()
+;  (handle-static-file (merge-pathnames *metrics-path* "kindista-metrics-chart.png")
+;                      "image/png"))
 
-(defun chart-date-labels (timecode)
-  (multiple-value-bind (time date-name formatted-date)
-    (humanize-exact-time timecode)
-    (declare (ignore time date-name))
-    formatted-date))
+;(defun chart-date-labels (timecode)
+;  (multiple-value-bind (time date-name formatted-date)
+;    (humanize-exact-time timecode)
+;    (declare (ignore time date-name))
+;    formatted-date))
 
 (defun active-kindista-accounts-over-time ()
   (let ((day nil))
@@ -66,15 +66,15 @@
                              (subseq users 0 (- count 1))))
   active-users)
 
-(defun basic-chart ()
-  (with-open-file (file (s+ *metrics-path* "active-accounts")
-                        :direction :output
-                        :if-exists :supersede)
-    (with-standard-io-syntax
-      (let ((*print-pretty* t))
-        (prin1
-          (active-kindista-accounts-over-time)
-          file)))))
+;(defun basic-chart ()
+;  (with-open-file (file (s+ *metrics-path* "active-accounts")
+;                        :direction :output
+;                        :if-exists :supersede)
+;    (with-standard-io-syntax
+;      (let ((*print-pretty* t))
+;        (prin1
+;          (active-kindista-accounts-over-time)
+;          file)))))
 
 (defun active-people (&optional date)
   "Returns number of active accounts on Kindista.
@@ -288,63 +288,63 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
     (values people (length people))))
 
 
-(defun update-metrics-chart
-  (&key (start-month 1)
-        (start-year (- (current-year) 3))
-   &aux (chart-data)
-        (now (local-time:now))
-        (current-year (timestamp-year now))
-        (current-month (timestamp-month now)))
+;(defun update-metrics-chart
+;  (&key (start-month 1)
+;        (start-year (- (current-year) 3))
+;   &aux (chart-data)
+;        (now (local-time:now))
+;        (current-year (timestamp-year now))
+;        (current-month (timestamp-month now)))
 
-  (loop for year from start-year to current-year
-        do (dolist (month '("01" "02" "03" "04" "05" "06" "07" "08" "09" "10" "11" "12"))
-             (let ((file (pathname (strcat *metrics-path* year "/" month "/monthly-summary")))
-                   (time (encode-universal-time 0 0 1 15 (parse-integer month) year))
-                   (file-data))
-               (when (and (file-exists-p file)
-                          (or (and (= year start-year)
-                                   (>= (parse-integer month) start-month))
-                              (> year start-year))
-                          (or (< year current-year)
-                              (< (parse-integer month) current-month)
-                              (and (= (parse-integer month) current-month)
-                                   (= (local-time:timestamp-day now)
-                                      (days-in-month now)))))
-                 (with-standard-io-syntax
-                   (with-open-file (summary file :direction :input)
-                     (setf file-data (read summary)))) (flet ((record-data (data-type &aux (data (getf file-data data-type)))
-                          (push (list time (if (listp data)
-                                             (length data)
-                                             data))
-                                (getf chart-data data-type))))
-                   (mapcar #'record-data (list :active-users
-                                               :used-search
-                                               :new-offers
-                                               :new-requests
-                                               :got-offers
-                                               :got-requests
-                                              ;:messages-sent
-                                               :completed-transactions)))))))
+;  (loop for year from start-year to current-year
+;        do (dolist (month '("01" "02" "03" "04" "05" "06" "07" "08" "09" "10" "11" "12"))
+;             (let ((file (pathname (strcat *metrics-path* year "/" month "/monthly-summary")))
+;                   (time (encode-universal-time 0 0 1 15 (parse-integer month) year))
+;                   (file-data))
+;               (when (and (file-exists-p file)
+;                          (or (and (= year start-year)
+;                                   (>= (parse-integer month) start-month))
+;                              (> year start-year))
+;                          (or (< year current-year)
+;                              (< (parse-integer month) current-month)
+;                              (and (= (parse-integer month) current-month)
+;                                   (= (local-time:timestamp-day now)
+;                                      (days-in-month now)))))
+;                 (with-standard-io-syntax
+;                   (with-open-file (summary file :direction :input)
+;                     (setf file-data (read summary)))) (flet ((record-data (data-type &aux (data (getf file-data data-type)))
+;                          (push (list time (if (listp data)
+;                                             (length data)
+;                                             data))
+;                                (getf chart-data data-type))))
+;                   (mapcar #'record-data (list :active-users
+;                                               :used-search
+;                                               :new-offers
+;                                               :new-requests
+;                                               :got-offers
+;                                               :got-requests
+;                                              ;:messages-sent
+;                                               :completed-transactions)))))))
 
-  (with-open-file (s (strcat *metrics-path* "/kindista-metrics-chart.png")
-                     :direction :output
-                     :if-does-not-exist :create
-                     :if-exists :supersede
-                     :element-type '(unsigned-byte 8))
-    (with-chart (:line 1200 600)
-      (doplist (key val chart-data)
-        (add-series (string-capitalize
-                      (string-downcase
-                        (ppcre:regex-replace-all "-" (symbol-name key) " ")))
-                    val))
-      (set-axis :y "" :data-interval 10)
-      (set-axis :x "Month"
-                :label-formatter #'format-month-for-activity-charts
-                )
+;  (with-open-file (s (strcat *metrics-path* "/kindista-metrics-chart.png")
+;                     :direction :output
+;                     :if-does-not-exist :create
+;                     :if-exists :supersede
+;                     :element-type '(unsigned-byte 8))
+;    (with-chart (:line 1200 600)
+;      (doplist (key val chart-data)
+;        (add-series (string-capitalize
+;                      (string-downcase
+;                        (ppcre:regex-replace-all "-" (symbol-name key) " ")))
+;                    val))
+;      (set-axis :y "" :data-interval 10)
+;      (set-axis :x "Month"
+;                :label-formatter #'format-month-for-activity-charts
+;                )
       ;(add-title "Kindista Usage over time")
       ;(add-feature :label)
-      (save-stream s))
-    (finish-output s)))
+;      (save-stream s))
+;    (finish-output s)))
 
 (defun monthly-statistic
   (year month statistic
@@ -415,18 +415,18 @@ Any id can be used as long as (getf id :lat/long) provides meaningful result."
           when (cl-fad::directory-exists-p dir)
           do (monthly-activity-report month year))))
 
-(defun send-progress-report-email (title)
-  (cl-smtp:send-email
-    +mail-server+
-    "Kindista <info@kindista.org>"
-    (if *productionp*
-      "Progress Reports <progress-reports@kindista.org>"
-      *error-message-email*)
-    title
-    (strcat
-      "Please see the attached file for a chart of various metrics we are collecting for Kindista usage. "
-      #\linefeed #\linefeed
-      "Please note: Due to a bug in the graphing library we are using, some of the dates may be repeated on the x-axis. "
-      "The data points should be correct and there is one data point per month for each metric . "
-      "Also, we didn't start collecting metrics for new offers/requests until July/2015.")
-    :attachments (merge-pathnames *metrics-path* "kindista-metrics-chart.png")))
+;(defun send-progress-report-email (title)
+;  (cl-smtp:send-email
+;    +mail-server+
+;    "Kindista <info@kindista.org>"
+;    (if *productionp*
+;      "Progress Reports <progress-reports@kindista.org>"
+;      *error-message-email*)
+;    title
+;    (strcat
+;      "Please see the attached file for a chart of various metrics we are collecting for Kindista usage. "
+;      #\linefeed #\linefeed
+;      "Please note: Due to a bug in the graphing library we are using, some of the dates may be repeated on the x-axis. "
+;      "The data points should be correct and there is one data point per month for each metric . "
+;      "Also, we didn't start collecting metrics for new offers/requests until July/2015.")
+;    :attachments (merge-pathnames *metrics-path* "kindista-metrics-chart.png")))
