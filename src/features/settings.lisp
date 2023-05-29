@@ -1,4 +1,4 @@
-;;; Copyright 2012-2021 CommonGoods Network, Inc.
+;;; Copyright 2012-2023 CommonGoods Network, Inc.
 ;;;
 ;;; This file is part of Kindista.
 ;;;
@@ -609,7 +609,7 @@
                               (:button :type "submit"
                                :class "simple-link no-padding"
                                :name "resend-code"
-                               :value email
+                               :value invite-id
                                "Resend code")
                               (:span "|")
                               (:button :class "simple-link red"
@@ -1712,7 +1712,7 @@
                                    (post-parameter "token")))
 
           ((post-parameter "resend-code")
-           (let* ((id (parse-integer (post-parameter "invitation-id")))
+           (let* ((id (parse-integer (post-parameter "resend-code")))
                   (invitation (db id))
                   (email (getf invitation :recipient-email)))
              (cond
