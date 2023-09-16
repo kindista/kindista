@@ -1174,7 +1174,7 @@
       :url (strcat "/groups/" groupid)
       :item-id new-admin
       :post-parameter "confirm-new-admin"
-      :details (s+ "At this time, each group account can have a maximum of three admins. "
+      :details (s+ "At this time, each group account can have a maximum of four admins. "
                    "We recommend that you only give admin privileges to people who are "
                    "actually in leadership or administrative roles within this group. "
                    "Once you make "
@@ -1246,7 +1246,7 @@
                    (:p (:a :href (strcat "/groups/" groupid "/invite-members")
                          "+add group members"))))
 
-                ((< (length (getf group :admins)) 3)
+                ((< (length (getf group :admins)) 4)
                  (htm
                    (:form :method "get"
                           :action "/settings/admin-roles"
