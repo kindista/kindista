@@ -496,6 +496,23 @@
                       "Kindista Error - Notifying Humans"
                       message))
 
+(defun count-open-string-streams ()
+  "Count currently open string-output-streams for leak monitoring"
+  (let ((count 0))
+    (sb-vm:map-allocated-objects
+     (lambda (obj type size)
+       (declare (ignore size))
+       (when (and (= type sb-vm:instance-widetag)
+                  (typep obj 'sb-impl::string-output-stream)
+                  (open-stream-p obj))
+         (incf count)))
+     :all)
+    count))
+
+(defun get-memory-usage-mb ()
+  "Get current dynamic space memory usage in MB"
+  (/ (sb-vm::%dynamic-space-free-pointer) 1048576))
+
 (defmethod acceptor-log-access
   ((acceptor k-acceptor)
    &key return-code
@@ -513,7 +530,8 @@
     (unless (string= (acceptor-access-log-destination acceptor) log-file)
       (setf (acceptor-access-log-destination acceptor) log-file))
     (hunchentoot::with-log-stream (stream (acceptor-access-log-destination acceptor) hunchentoot::*access-log-lock*)
-      (format stream "~:[-~@[ (~A)~]~;~:*~A~@[ (~A)~]~] ~:[-~;~:*~A~] [~A] \"~A ~A~@[?~A~] ~
+      (handler-case
+        (format stream "~:[-~@[ (~A)~]~;~:*~A~@[ (~A)~]~] ~:[-~;~:*~A~] [~A] \"~A ~A~@[?~A~] ~
                       ~A\" ~D ~:[-~;~:*~D~] \"~:[-~;~:*~A~]\" \"~:[-~;~:*~A~]\"~%"
               (header-in* :x-real-ip)
               (header-in* :x-forwarded-for)
@@ -526,7 +544,17 @@
               return-code
               (content-length*)
               (referer)
-              (user-agent)))))
+              (user-agent))
+        (error (e)
+          (ignore-errors
+           (acceptor-log-message acceptor :error
+                                "Error writing to access log from IP ~A (forwarded: ~A): ~A [Open streams: ~A, Memory: ~A MB]"
+                                (header-in* :x-real-ip)
+                                (header-in* :x-forwarded-for)
+                                e
+                                (count-open-string-streams)
+                                (floor (get-memory-usage-mb)))
+           )))))))
 
 (defvar *acceptor* (make-instance 'k-acceptor
                                   :port 5000
