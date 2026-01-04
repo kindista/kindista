@@ -53,6 +53,9 @@
             ((not ,event-data)
              (not-found))
 
+            ((not (eq (getf ,event-data :type) :event))
+             (not-found))
+
             (,custom-url
              (see-other (apply #'url-compose
                                (format nil ,base-url ,custom-url)

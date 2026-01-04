@@ -482,8 +482,9 @@
                        (post-parameters*)
                        format-string
                        format-arguments)))
-        (send-hunchentoot-error-notification-email (error-message nil))
-        (error-message stream))
+        (error-message stream)
+        (ignore-errors
+         (send-hunchentoot-error-notification-email (error-message nil))))
       (error (e)
         (ignore-errors
          (format *trace-output* "error ~A while writing to error log, error not logged~%" e))))))
@@ -510,8 +511,8 @@
     count))
 
 (defun get-memory-usage-mb ()
-  "Get current dynamic space memory usage in MB"
-  (/ (sb-vm::%dynamic-space-free-pointer) 1048576))
+  "Get dynamic space usage in MB"
+  (floor (/ (sb-kernel:dynamic-usage) 1048576)))
 
 (defmethod acceptor-log-access
   ((acceptor k-acceptor)
@@ -553,8 +554,7 @@
                                 (header-in* :x-forwarded-for)
                                 e
                                 (count-open-string-streams)
-                                (floor (get-memory-usage-mb)))
-           )))))))
+                                (floor (get-memory-usage-mb)))))))))
 
 (defvar *acceptor* (make-instance 'k-acceptor
                                   :port 5000
