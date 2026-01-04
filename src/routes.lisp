@@ -421,6 +421,9 @@
   ("/inventory-refresh"
    :get get-inventory-refresh)
 
+  ("/cleanup-tokens"
+   :get get-cleanup-tokens)
+
   ("/schedule-metric-system-timer"
    :get get-schedule-metric-system-timer)
 

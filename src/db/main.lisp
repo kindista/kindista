@@ -399,6 +399,35 @@
               (end-of-file (e) (declare (ignore e)) (return)))))))))
 
 
+(defun cleanup-old-tokens (&aux (now (get-universal-time))
+                                (anon-cutoff (- now +day-in-seconds+))
+                                (user-cutoff (- now (* 90 +day-in-seconds+)))
+                                (removed 0))
+  "Remove anonymous tokens older than 24 hours and user tokens older than 90 days"
+  (with-locked-hash-table (*tokens*)
+    (iter (for (key value) in-hashtable *tokens*)
+          (let* ((userid (token-userid value))
+                 (last-activity (or (token-last-seen value)
+                                   (token-created value)))
+                 (cutoff (if userid user-cutoff anon-cutoff)))
+            (when (< last-activity cutoff)
+              (remhash key *tokens*)
+              (incf removed)))))
+  removed)
+
+(defun cleanup-and-save-tokens ()
+  "Clean up old tokens and save to disk"
+  (prog1 (cleanup-old-tokens)
+    (save-tokens)))
+
+(defun get-cleanup-tokens ()
+  "HTTP handler for scheduled token cleanup"
+  (when (or (not *productionp*)
+            (getf *user* :admin)
+            (server-side-request-p))
+    (let ((removed (cleanup-and-save-tokens)))
+      (format nil "Removed ~A old tokens and saved to disk" removed))))
+
 (defun save-tokens ()
   (with-open-file (out (s+ +db-path+ "tokens-tmp")
                        :direction :output
